@@ -16,11 +16,11 @@
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from zenml.model.artifact_config import ArtifactConfig
+    from zenml.model.artifact_config import DataArtifactConfig
 
 
 def link_output_to_model(
-    artifact_config: "ArtifactConfig",
+    artifact_config: "DataArtifactConfig",
     output_name: Optional[str] = None,
 ) -> None:
     """Log artifact metadata.

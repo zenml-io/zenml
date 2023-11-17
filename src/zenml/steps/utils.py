@@ -24,7 +24,7 @@ from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from zenml.logger import get_logger
-from zenml.model.artifact_config import ArtifactConfig
+from zenml.model.artifact_config import DataArtifactConfig
 from zenml.steps.step_output import Output
 from zenml.utils import source_code_utils
 
@@ -37,7 +37,7 @@ class OutputSignature(BaseModel):
     """The signature of an output artifact."""
 
     resolved_annotation: Any
-    artifact_config: Optional[ArtifactConfig]
+    artifact_config: Optional[DataArtifactConfig]
 
 
 def get_args(obj: Any) -> Tuple[Any, ...]:
@@ -181,7 +181,7 @@ def resolve_type_annotation(obj: Any) -> Any:
 
 def get_output_name_from_annotation_metadata(
     annotation: Any,
-) -> Tuple[Optional[str], Optional[ArtifactConfig]]:
+) -> Tuple[Optional[str], Optional[DataArtifactConfig]]:
     """Get the output name from a type annotation.
 
     Example:
@@ -217,7 +217,7 @@ def get_output_name_from_annotation_metadata(
                 output_name = metadata_instance
             else:
                 msg += "Annotation metadata can not contain multiple output names.\n"
-        elif isinstance(metadata_instance, ArtifactConfig):
+        elif isinstance(metadata_instance, DataArtifactConfig):
             if artifact_config is None:
                 artifact_config = metadata_instance
             else:
