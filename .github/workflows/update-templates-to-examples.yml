@@ -97,6 +97,7 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
+          git rm -r --cached examples
           git add .
           git commit -am "Auto-update of E2E template"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
