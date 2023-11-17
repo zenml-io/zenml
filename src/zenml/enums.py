@@ -315,3 +315,11 @@ class TaggableResourceTypes(StrEnum):
     """All possible resource types for tagging."""
 
     MODEL = "model"
+
+
+class ResponseUpdateStrategy(StrEnum):
+    """All available strategies to handle updated properties in the response."""
+
+    ALLOW = "allow"
+    IGNORE = "ignore"
+    DENY = "deny"

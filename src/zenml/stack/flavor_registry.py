@@ -21,9 +21,9 @@ from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import (
-    FlavorFilterModel,
-    FlavorResponseModel,
-    FlavorUpdateModel,
+    FlavorFilter,
+    FlavorResponse,
+    FlavorUpdate,
 )
 from zenml.stack import Flavor
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -40,7 +40,7 @@ class FlavorRegistry:
     def __init__(self) -> None:
         """Initialization of the flavors."""
         self._flavors: DefaultDict[
-            StackComponentType, Dict[str, FlavorResponseModel]
+            StackComponentType, Dict[str, FlavorResponse]
         ] = defaultdict(dict)
 
     def register_flavors(self, store: BaseZenStore) -> None:
@@ -116,7 +116,7 @@ class FlavorRegistry:
                     is_custom=False,
                 )
                 existing_flavor = store.list_flavors(
-                    FlavorFilterModel(
+                    FlavorFilter(
                         name=flavor_request_model.name,
                         type=flavor_request_model.type,
                     )
@@ -125,7 +125,7 @@ class FlavorRegistry:
                 if len(existing_flavor) == 0:
                     store.create_flavor(flavor_request_model)
                 else:
-                    flavor_update_model = FlavorUpdateModel.parse_obj(
+                    flavor_update_model = FlavorUpdate.parse_obj(
                         flavor_request_model
                     )
                     store.update_flavor(
@@ -150,7 +150,7 @@ class FlavorRegistry:
                             is_custom=False,
                         )
                         existing_flavor = store.list_flavors(
-                            FlavorFilterModel(
+                            FlavorFilter(
                                 name=flavor_request_model.name,
                                 type=flavor_request_model.type,
                             )
@@ -158,7 +158,7 @@ class FlavorRegistry:
                         if len(existing_flavor) == 0:
                             store.create_flavor(flavor_request_model)
                         else:
-                            flavor_update_model = FlavorUpdateModel.parse_obj(
+                            flavor_update_model = FlavorUpdate.parse_obj(
                                 flavor_request_model
                             )
                             store.update_flavor(

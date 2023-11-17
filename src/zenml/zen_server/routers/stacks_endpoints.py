@@ -19,8 +19,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import StackFilterModel, StackResponseModel, StackUpdateModel
-from zenml.models.page_model import Page
+from zenml.models import Page, StackFilter, StackResponse, StackUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -38,22 +37,24 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[StackResponseModel],
+    response_model=Page[StackResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_stacks(
-    stack_filter_model: StackFilterModel = Depends(
-        make_dependable(StackFilterModel)
-    ),
+    stack_filter_model: StackFilter = Depends(make_dependable(StackFilter)),
+    hydrate: bool = False,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> Page[StackResponseModel]:
+) -> Page[StackResponse]:
     """Returns all stacks.
 
     Args:
-        stack_filter_model: Filter model used for pagination, sorting, filtering
+        stack_filter_model: Filter model used for pagination, sorting,
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         auth_context: Authentication Context
 
     Returns:
@@ -61,41 +62,46 @@ def list_stacks(
     """
     stack_filter_model.set_scope_user(user_id=auth_context.user.id)
 
-    return zen_store().list_stacks(stack_filter_model=stack_filter_model)
+    return zen_store().list_stacks(
+        stack_filter_model=stack_filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
     "/{stack_id}",
-    response_model=StackResponseModel,
+    response_model=StackResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_stack(
     stack_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> StackResponseModel:
+) -> StackResponse:
     """Returns the requested stack.
 
     Args:
         stack_id: ID of the stack.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested stack.
     """
-    return zen_store().get_stack(stack_id)
+    return zen_store().get_stack(stack_id, hydrate=hydrate)
 
 
 @router.put(
     "/{stack_id}",
-    response_model=StackResponseModel,
+    response_model=StackResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_stack(
     stack_id: UUID,
-    stack_update: StackUpdateModel,
+    stack_update: StackUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> StackResponseModel:
+) -> StackResponse:
     """Updates a stack.
 
     Args:

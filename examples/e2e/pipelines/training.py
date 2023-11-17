@@ -101,7 +101,7 @@ def e2e_use_case_training(
             target=target,
         )
         after.append(step_name)
-    best_model = hp_tuning_select_best_model(after=after)
+    best_model = hp_tuning_select_best_model(step_names=after, after=after)
 
     ########## Training stage ##########
     model = model_trainer(

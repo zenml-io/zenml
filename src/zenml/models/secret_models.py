@@ -19,6 +19,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr
 
+from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     GenericFilterOps,
     LogicalOperators,
@@ -30,8 +31,7 @@ from zenml.models.base_models import (
     WorkspaceScopedResponseModel,
     update_model,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 
 # ---- #
 # BASE #
@@ -122,11 +122,11 @@ class SecretResponseModel(SecretBaseModel, WorkspaceScopedResponseModel):
 # ------ #
 
 
-class SecretFilterModel(WorkspaceScopedFilterModel):
+class SecretFilterModel(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Secrets."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "values",
     ]
 
