@@ -476,6 +476,7 @@ def _import_components(
     data: Dict[str, Any],
     stack_spec_dir: str,
     component_name: Optional[str] = None,
+    provider: Optional[str] = None,
 ) -> Dict[StackComponentType, UUID]:
     """Imports components based on the provided data.
 
@@ -483,6 +484,7 @@ def _import_components(
         data: The parsed YAML data containing component details.
         stack_spec_dir: The path to the directory containing the stack spec.
         component_name: The name of the component to import (if any).
+        provider: The cloud provider for which the stack is deployed.
 
     Returns:
         A dictionary mapping component types to their respective IDs.
@@ -490,21 +492,27 @@ def _import_components(
     component_ids = {}
     for component_type_str, component_config in data["components"].items():
         component_type = StackComponentType(component_type_str)
-        component_spec_path = os.path.join(
-            stack_spec_dir,
-            f"{component_name or component_config['flavor']}-{component_type_str}.yaml",
-        )
-        if component_name:
-            component_config["name"] = component_name
+        # the k3d recipe outputs a container registry component, though it
+        # does not use it. we skip it here.
+        if (
+            component_type == StackComponentType.CONTAINER_REGISTRY
+            and provider != "k3d"
+        ):
+            component_spec_path = os.path.join(
+                stack_spec_dir,
+                f"{component_name or component_config['flavor']}-{component_type_str}.yaml",
+            )
+            if component_name:
+                component_config["name"] = component_name
 
-        from zenml.cli.stack import _import_stack_component
+            from zenml.cli.stack import _import_stack_component
 
-        component_id = _import_stack_component(
-            component_type=component_type,
-            component_dict=component_config,
-            component_spec_path=component_spec_path,
-        )
-        component_ids[component_type] = component_id
+            component_id = _import_stack_component(
+                component_type=component_type,
+                component_dict=component_config,
+                component_spec_path=component_spec_path,
+            )
+            component_ids[component_type] = component_id
 
     return component_ids
 
@@ -526,7 +534,11 @@ def import_new_mlstacks_stack(
     data, stack_spec_file = _setup_import(
         provider, stack_name, stack_spec_dir, user_stack_spec_file
     )
-    component_ids = _import_components(data, stack_spec_dir)
+    component_ids = _import_components(
+        data=data,
+        stack_spec_dir=stack_spec_dir,
+        provider=provider,
+    )
 
     imported_stack = Client().create_stack(
         name=stack_name,
