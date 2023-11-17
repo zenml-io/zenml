@@ -3108,6 +3108,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             pipeline_run: The pipeline run to get or create.
 
+        # noqa: DAR401
         Raises:
             ValueError: If the request does not contain an orchestrator run ID.
             EntityExistsError: If a run with the same name already exists.
