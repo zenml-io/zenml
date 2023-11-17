@@ -1,0 +1,30 @@
+---
+# This is a basic workflow to help you get started with Actions
+name: DB Migration Testing
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches: [main]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+jobs:
+  db-migration-testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: '3.10'
+          os: ubuntu-latest
+      - name: Test migrations across versions
+        run: bash scripts/test-migrations.sh
