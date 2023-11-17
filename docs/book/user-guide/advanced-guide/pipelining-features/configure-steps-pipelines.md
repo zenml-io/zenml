@@ -169,19 +169,21 @@ if __name__=="__main__":
 There might be conflicting settings for step inputs, while working with YAML configuration files. Such situation happens when you define a step parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instruction on how to fix.
 Example of such a conflict:
 ```yaml
+# config.yaml
 steps:
   my_step:
     parameters:
       input_2: 42
 ```
 ```python
+# run.py
 @step
 def my_step(input_1: int, input_2: int) -> None:
     pass
 
 @pipeline
 def my_pipeline():
-    # here an error will be raise because `input_2` is
+    # here an error will be raised since `input_2` is
     # `42` in config, but `43` was provided in the code
     my_step(input_1=42, input_2=43)
 ```
