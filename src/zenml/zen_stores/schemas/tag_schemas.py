@@ -16,7 +16,7 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, List
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column
 from sqlmodel import Field, Relationship
