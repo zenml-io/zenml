@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 
 from zenml.client import Client
-from zenml.models import ModelFilterModel
 from zenml.models.tag_models import TagFilterModel
 from zenml.utils.string_utils import random_str
 
@@ -15,7 +14,7 @@ def sample_name(prefix: str = "aria") -> str:
 def model_killer():
     def cleanup():
         client = Client()
-        models = client.list_models(ModelFilterModel(size=999))
+        models = client.list_models()
         for model in models:
             try:
                 client.delete_model(model.name)
