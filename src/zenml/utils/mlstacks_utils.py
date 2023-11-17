@@ -492,27 +492,21 @@ def _import_components(
     component_ids = {}
     for component_type_str, component_config in data["components"].items():
         component_type = StackComponentType(component_type_str)
-        # the k3d recipe outputs a container registry component, though it
-        # does not use it. we skip it here.
-        if not (
-            component_type == StackComponentType.CONTAINER_REGISTRY
-            and provider == "k3d"
-        ):
-            component_spec_path = os.path.join(
-                stack_spec_dir,
-                f"{component_name or component_config['flavor']}-{component_type_str}.yaml",
-            )
-            if component_name:
-                component_config["name"] = component_name
+        component_spec_path = os.path.join(
+            stack_spec_dir,
+            f"{component_name or component_config['flavor']}-{component_type_str}.yaml",
+        )
+        if component_name:
+            component_config["name"] = component_name
 
-            from zenml.cli.stack import _import_stack_component
+        from zenml.cli.stack import _import_stack_component
 
-            component_id = _import_stack_component(
-                component_type=component_type,
-                component_dict=component_config,
-                component_spec_path=component_spec_path,
-            )
-            component_ids[component_type] = component_id
+        component_id = _import_stack_component(
+            component_type=component_type,
+            component_dict=component_config,
+            component_spec_path=component_spec_path,
+        )
+        component_ids[component_type] = component_id
 
     return component_ids
 
