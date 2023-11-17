@@ -618,7 +618,7 @@ def print_stack_component_configuration(
     if component.user:
         user_name = component.user.name
     else:
-        user_name = "[DELETED]"
+        user_name = "-"
 
     declare(
         f"{component.type.value.title()} '{component.name}' of flavor "
@@ -1481,7 +1481,7 @@ def print_stacks_table(
         if stack.user:
             user_name = stack.user.name
         else:
-            user_name = "[DELETED]"
+            user_name = "-"
 
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
@@ -2249,7 +2249,7 @@ def print_pipeline_runs_table(
         if pipeline_run.user:
             user_name = pipeline_run.user.name
         else:
-            user_name = "[DELETED]"
+            user_name = "-"
 
         if pipeline_run.pipeline is None:
             pipeline_name = "unlisted"

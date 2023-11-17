@@ -268,4 +268,3 @@ def update_model(_cls: Type[T]) -> Type[T]:
         value.allow_none = True
 
     return _cls
-

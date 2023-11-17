@@ -15,21 +15,55 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Set, Type, TypeVar
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from fastapi import HTTPException
+from pydantic import BaseModel
 
-from zenml.models import Page
+from zenml.models import (
+    BaseResponse,
+    BaseResponseBody,
+    BaseResponseMetadata,
+    ComponentResponse,
+    Page,
+    StackResponse,
+    UserScopedResponse,
+)
 from zenml.models.base_models import BaseResponseModel, UserScopedResponseModel
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.utils import rbac, server_config
 
-M = TypeVar("M", bound=BaseResponseModel)
+AnyOldResponseModel = TypeVar("AnyOldResponseModel", bound=BaseResponseModel)
+AnyNewResponseModel = TypeVar(
+    "AnyNewResponseModel", bound=Union[StackResponse, ComponentResponse]
+)
+AnyResponseModel = TypeVar(
+    "AnyResponseModel",
+    bound=Union[StackResponse, ComponentResponse, BaseResponseModel],
+)
+
+AnyResponseBody = TypeVar("AnyResponseBody", bound=BaseResponseBody)
+AnyResponseMetadata = TypeVar(
+    "AnyResponseMetadata", bound=BaseResponseMetadata
+)
+AnyModel = TypeVar("AnyModel", bound=BaseModel)
 
 
-def dehydrate_page(page: Page[M]) -> Page[M]:
+def dehydrate_page(
+    page: Page[AnyResponseModel],
+) -> Page[AnyResponseModel]:
     """Dehydrate all items of a page.
 
     Args:
@@ -59,8 +93,8 @@ def dehydrate_page(page: Page[M]) -> Page[M]:
 
 
 def dehydrate_response_model(
-    model: M, permissions: Optional[Dict[Resource, bool]] = None
-) -> M:
+    model: AnyModel, permissions: Optional[Dict[Resource, bool]] = None
+) -> AnyModel:
     """Dehydrate a model if necessary.
 
     Args:
@@ -99,7 +133,7 @@ def _dehydrate_value(
     Returns:
         The recursively dehydrated value.
     """
-    if isinstance(value, BaseResponseModel):
+    if isinstance(value, (BaseResponse, BaseResponseModel)):
         value = get_surrogate_permission_model_for_model(
             value, action=Action.READ
         )
@@ -112,6 +146,8 @@ def _dehydrate_value(
             return dehydrate_response_model(value, permissions=permissions)
         else:
             return get_permission_denied_model(value)
+    elif isinstance(value, BaseModel):
+        return dehydrate_response_model(value, permissions=permissions)
     elif isinstance(value, Dict):
         return {
             k: _dehydrate_value(v, permissions=permissions)
@@ -126,7 +162,7 @@ def _dehydrate_value(
         return value
 
 
-def has_permissions_for_model(model: "BaseResponseModel", action: str) -> bool:
+def has_permissions_for_model(model: AnyResponseModel, action: str) -> bool:
     """If the active user has permissions to perform the action on the model.
 
     Args:
@@ -146,9 +182,32 @@ def has_permissions_for_model(model: "BaseResponseModel", action: str) -> bool:
         return False
 
 
-def get_permission_denied_model(
-    model: M, keep_id: bool = True, keep_name: bool = True
-) -> M:
+def get_permission_denied_model(model: AnyResponseModel) -> AnyResponseModel:
+    if isinstance(model, BaseResponse):
+        return get_permission_denied_model_v2(model)
+    else:
+        return get_permission_denied_model_v1(model)
+
+
+def get_permission_denied_model_v2(
+    model: AnyNewResponseModel,
+) -> AnyNewResponseModel:
+    """Get a model to return in case of missing read permissions.
+
+    This function removes the body and metadata of the model.
+
+    Args:
+        model: The original model.
+
+    Returns:
+        The model with body and metadata removed.
+    """
+    return model.copy(exclude={"body", "metadata"})
+
+
+def get_permission_denied_model_v1(
+    model: AnyOldResponseModel, keep_id: bool = True, keep_name: bool = True
+) -> AnyOldResponseModel:
     """Get a model to return in case of missing read permissions.
 
     This function replaces all attributes except name and ID in the given model.
@@ -173,9 +232,11 @@ def get_permission_denied_model(
         elif field.allow_none:
             value = None
         elif isinstance(value, BaseResponseModel):
-            value = get_permission_denied_model(
+            value = get_permission_denied_model_v1(
                 value, keep_id=False, keep_name=False
             )
+        elif isinstance(value, BaseResponse):
+            value = get_permission_denied_model_v2(value)
         elif isinstance(value, UUID):
             value = UUID(int=0)
         elif isinstance(value, datetime):
@@ -197,7 +258,7 @@ def get_permission_denied_model(
 
 
 def batch_verify_permissions_for_models(
-    models: Sequence["BaseResponseModel"],
+    models: Sequence[AnyResponseModel],
     action: str,
 ) -> None:
     """Batch permission verification for models.
@@ -224,7 +285,7 @@ def batch_verify_permissions_for_models(
 
 
 def verify_permission_for_model(
-    model: "BaseResponseModel",
+    model: AnyResponseModel,
     action: str,
 ) -> None:
     """Verifies if a user has permission to perform an action on a model.
@@ -329,7 +390,7 @@ def get_allowed_resource_ids(
     return {UUID(id) for id in allowed_ids}
 
 
-def get_resource_for_model(model: "BaseResponseModel") -> Optional[Resource]:
+def get_resource_for_model(model: AnyResponseModel) -> Optional[Resource]:
     """Get the resource associated with a model object.
 
     Args:
@@ -348,8 +409,8 @@ def get_resource_for_model(model: "BaseResponseModel") -> Optional[Resource]:
 
 
 def get_surrogate_permission_model_for_model(
-    model: "BaseResponseModel", action: str
-) -> "BaseResponseModel":
+    model: AnyResponseModel, action: str
+) -> Union[BaseResponse[Any, Any], BaseResponseModel]:
     """Get a surrogate permission model for a model.
 
     In some cases a different model instead of the original model is used to
@@ -365,7 +426,7 @@ def get_surrogate_permission_model_for_model(
     """
     from zenml.models import ModelVersionResponseModel
 
-    if action == Action.READ == isinstance(model, ModelVersionResponseModel):
+    if action == Action.READ and isinstance(model, ModelVersionResponseModel):
         # Permissions to read a model version is the same as reading the model
         return model.model
 
@@ -373,7 +434,7 @@ def get_surrogate_permission_model_for_model(
 
 
 def get_resource_type_for_model(
-    model: "BaseResponseModel",
+    model: AnyResponseModel,
 ) -> Optional[ResourceType]:
     """Get the resource type associated with a model object.
 
@@ -385,33 +446,36 @@ def get_resource_type_for_model(
         is not associated with any resource type.
     """
     from zenml.models import (
-        ArtifactResponseModel,
-        CodeRepositoryResponseModel,
-        ComponentResponseModel,
-        FlavorResponseModel,
+        ArtifactResponse,
+        CodeRepositoryResponse,
+        ComponentResponse,
+        FlavorResponse,
         ModelResponseModel,
-        PipelineResponseModel,
+        PipelineResponse,
         SecretResponseModel,
-        ServiceConnectorResponseModel,
-        StackResponseModel,
+        ServiceConnectorResponse,
+        StackResponse,
     )
 
-    mapping: Dict[Type[BaseResponseModel], ResourceType] = {
-        FlavorResponseModel: ResourceType.FLAVOR,
-        ServiceConnectorResponseModel: ResourceType.SERVICE_CONNECTOR,
-        ComponentResponseModel: ResourceType.STACK_COMPONENT,
-        StackResponseModel: ResourceType.STACK,
-        PipelineResponseModel: ResourceType.PIPELINE,
-        CodeRepositoryResponseModel: ResourceType.CODE_REPOSITORY,
+    mapping: Dict[
+        Union[Type[BaseResponseModel], Type[BaseResponse[Any, Any]]],
+        ResourceType,
+    ] = {
+        FlavorResponse: ResourceType.FLAVOR,
+        ServiceConnectorResponse: ResourceType.SERVICE_CONNECTOR,
+        ComponentResponse: ResourceType.STACK_COMPONENT,
+        StackResponse: ResourceType.STACK,
+        PipelineResponse: ResourceType.PIPELINE,
+        CodeRepositoryResponse: ResourceType.CODE_REPOSITORY,
         SecretResponseModel: ResourceType.SECRET,
         ModelResponseModel: ResourceType.MODEL,
-        ArtifactResponseModel: ResourceType.ARTIFACT,
+        ArtifactResponse: ResourceType.ARTIFACT,
     }
 
     return mapping.get(type(model))
 
 
-def is_owned_by_authenticated_user(model: "BaseResponseModel") -> bool:
+def is_owned_by_authenticated_user(model: AnyResponseModel) -> bool:
     """Returns whether the currently authenticated user owns the model.
 
     Args:
@@ -423,7 +487,7 @@ def is_owned_by_authenticated_user(model: "BaseResponseModel") -> bool:
     auth_context = get_auth_context()
     assert auth_context
 
-    if isinstance(model, UserScopedResponseModel):
+    if isinstance(model, (UserScopedResponseModel, UserScopedResponse)):
         if model.user:
             return model.user.id == auth_context.user.id
         else:
@@ -435,7 +499,7 @@ def is_owned_by_authenticated_user(model: "BaseResponseModel") -> bool:
 
 
 def get_subresources_for_model(
-    model: "BaseResponseModel",
+    model: AnyModel,
 ) -> Set[Resource]:
     """Get all subresources of a model which need permission verification.
 
@@ -463,7 +527,7 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
     Returns:
         All resources of the value which need permission verification.
     """
-    if isinstance(value, BaseResponseModel):
+    if isinstance(value, (BaseResponse, BaseResponseModel)):
         resources = set()
         if not is_owned_by_authenticated_user(value):
             value = get_surrogate_permission_model_for_model(
@@ -473,6 +537,8 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
                 resources.add(resource)
 
         return resources.union(get_subresources_for_model(value))
+    elif isinstance(value, BaseModel):
+        return get_subresources_for_model(value)
     elif isinstance(value, Dict):
         resources_list = [
             _get_subresources_for_value(v) for v in value.values()

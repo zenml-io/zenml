@@ -1,17 +1,22 @@
 """High-level helper functions to write endpoints with RBAC."""
-from typing import Callable, TypeVar, Union
+from typing import Any, Callable, TypeVar, Union
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml.exceptions import IllegalOperationError
+from zenml.models import (
+    BaseFilter,
+    BaseRequest,
+    BaseResponse,
+    Page,
+    UserScopedRequest,
+)
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     UserScopedRequestModel,
 )
-from zenml.models.filter_models import BaseFilterModel
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -22,9 +27,13 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 
-AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
-AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
-AnyFilterModel = TypeVar("AnyFilterModel", bound=BaseFilterModel)
+AnyRequestModel = TypeVar(
+    "AnyRequestModel", bound=Union[BaseRequestModel, BaseRequest]
+)
+AnyResponseModel = TypeVar(
+    "AnyResponseModel", bound=Union[BaseResponseModel, BaseResponse]
+)
+AnyFilterModel = TypeVar("AnyFilterModel", bound=BaseFilter)
 AnyUpdateModel = TypeVar("AnyUpdateModel", bound=BaseModel)
 UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])
 
@@ -48,7 +57,7 @@ def verify_permissions_and_create_entity(
     Returns:
         A model of the created entity.
     """
-    if isinstance(request_model, UserScopedRequestModel):
+    if isinstance(request_model, (UserScopedRequest, UserScopedRequestModel)):
         auth_context = get_auth_context()
         assert auth_context
 
@@ -65,13 +74,14 @@ def verify_permissions_and_create_entity(
 def verify_permissions_and_get_entity(
     id: UUIDOrStr,
     get_method: Callable[[UUIDOrStr], AnyResponseModel],
-    **get_method_kwargs,
+    **get_method_kwargs: Any,
 ) -> AnyResponseModel:
     """Verify permissions and fetch an entity.
 
     Args:
         id: The ID of the entity to fetch.
         get_method: The method to fetch the entity.
+        get_method_kwargs: Keyword arguments to pass to the get method.
 
     Returns:
         A model of the fetched entity.
@@ -85,7 +95,7 @@ def verify_permissions_and_list_entities(
     filter_model: AnyFilterModel,
     resource_type: ResourceType,
     list_method: Callable[[AnyFilterModel], Page[AnyResponseModel]],
-    **list_method_kwargs,
+    **list_method_kwargs: Any,
 ) -> Page[AnyResponseModel]:
     """Verify permissions and list entities.
 
@@ -93,6 +103,7 @@ def verify_permissions_and_list_entities(
         filter_model: The entity filter model.
         resource_type: The resource type of the entities to list.
         list_method: The method to list the entities.
+        list_method_kwargs: Keyword arguments to pass to the list method.
 
     Returns:
         A page of entity models.

@@ -767,15 +767,20 @@ class BaseFilter(BaseModel):
         from sqlmodel import or_
 
         if self._rbac_allowed_ids is not None:
-            if self._rbac_user_id and hasattr(table, "user"):
-                query = query.where(
-                    or_(
-                        table.id.in_(self._rbac_allowed_ids),  # type: ignore[attr-defined]
-                        getattr(table, "user") == self._rbac_user_id,
+            expressions = [table.id.in_(self._rbac_allowed_ids)]  # type: ignore[attr-defined]
+
+            if hasattr(table, "user_id"):
+                # Unowned entities are considered server-owned and can be seen
+                # by anyone
+                expressions.append(getattr(table, "user_id").is_(None))
+
+                if self._rbac_user_id:
+                    # The authenticated user owns this entity
+                    expressions.append(
+                        getattr(table, "user_id") == self._rbac_user_id
                     )
-                )
-            else:
-                query = query.where(table.id.in_(self._rbac_allowed_ids))  # type: ignore[attr-defined]
+
+            query = query.where(or_(*expressions))
 
         filters = self.generate_filter(table=table)
 

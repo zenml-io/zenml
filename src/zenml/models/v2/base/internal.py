@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """Utility methods for internal models."""
 
-from typing import TypeVar, Type
+from typing import Type, TypeVar
+
 from zenml.models.v2.base.base import BaseRequest
 
-
 T = TypeVar("T", bound="BaseRequest")
+
 
 def server_owned_request_model(_cls: Type[T]) -> Type[T]:
     """Convert a request model to a model which does not require a user ID.
