@@ -476,7 +476,6 @@ def _import_components(
     data: Dict[str, Any],
     stack_spec_dir: str,
     component_name: Optional[str] = None,
-    provider: Optional[str] = None,
 ) -> Dict[StackComponentType, UUID]:
     """Imports components based on the provided data.
 
@@ -484,7 +483,6 @@ def _import_components(
         data: The parsed YAML data containing component details.
         stack_spec_dir: The path to the directory containing the stack spec.
         component_name: The name of the component to import (if any).
-        provider: The cloud provider for which the stack is deployed.
 
     Returns:
         A dictionary mapping component types to their respective IDs.
@@ -529,9 +527,7 @@ def import_new_mlstacks_stack(
         provider, stack_name, stack_spec_dir, user_stack_spec_file
     )
     component_ids = _import_components(
-        data=data,
-        stack_spec_dir=stack_spec_dir,
-        provider=provider,
+        data=data, stack_spec_dir=stack_spec_dir
     )
 
     imported_stack = Client().create_stack(
