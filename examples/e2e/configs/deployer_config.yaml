@@ -34,7 +34,7 @@ steps:
       notify_on_success: False
 
 # configuration of the Model Control Plane
-model_config:
+model_version:
   name: e2e_use_case
   version: staging
 
