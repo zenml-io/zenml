@@ -3110,6 +3110,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             ValueError: If the request does not contain an orchestrator run ID.
+            EntityExistsError: If a run with the same name already exists.
+            RuntimeError: If the run fetching failed unexpectedly.
 
         Returns:
             The pipeline run, and a boolean indicating whether the run was
@@ -3155,29 +3157,42 @@ class SqlZenStore(BaseZenStore):
             #     -> The `self.create_run(...) call will fail due to the unique
             #     constraint on those columns.
             return self.create_run(pipeline_run), True
-        except IntegrityError:
-            # Creating the run failed with an integrity error. This means we
-            # violated a unique constraint, which in turn means a run with the
-            # same deployment_id and orchestrator_run_id exists. We now fetch
-            # and return that run.
-            # Some additional notes:
-            # - We don't catch the EntityExistsError of the
-            #   `self.create_run(...)` call. This is raised when a run with the
-            #   same name already exists, and we want to fail/let the user know
-            #   that this is not possible.
-            # - The `IntegrityError` might also be raised when other unique
-            #   constraints get violated. The only other such constraint is the
-            #   primary key constraint on the run ID, which means we randomly
-            #   generated an existing UUID. In this case the call below will
-            #   fail, but the chance of that happening is so low we don't
-            #   handle it.
-            return (
-                self._get_run_by_orchestrator_run_id(
-                    orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                    deployment_id=pipeline_run.deployment,
-                ),
-                False,
-            )
+        except (EntityExistsError, IntegrityError) as create_error:
+            # Creating the run failed with an
+            # - IntegrityError: This happens when we violated a unique
+            #   constraint, which in turn means a run with the same
+            #   deployment_id and orchestrator_run_id exists. We now fetch and
+            #   return that run.
+            # - EntityExistsError: This happens when a run with the same name
+            #   already exists. This could be either a different run (in which
+            #   case we want to fail) or a run created by a step of the same
+            #   pipeline run (in which case we want to return it).
+            # Note: The IntegrityError might also be raised when other unique
+            # constraints get violated. The only other such constraint is the
+            # primary key constraint on the run ID, which means we randomly
+            # generated an existing UUID. In this case the call below will fail,
+            # but the chance of that happening is so low we don't handle it.
+            try:
+                return (
+                    self._get_run_by_orchestrator_run_id(
+                        orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                        deployment_id=pipeline_run.deployment,
+                    ),
+                    False,
+                )
+            except KeyError:
+                if isinstance(create_error, EntityExistsError):
+                    # There was a run with the same name which does not share
+                    # the deployment_id and orchestrator_run_id -> We fail with
+                    # the error that run names must be unique.
+                    raise create_error from None
+
+                # This should never happen as the run creation failed with an
+                # IntegrityError which means a run with the deployment_id and
+                # orchestrator_run_id exists.
+                raise RuntimeError(
+                    f"Failed to get or create run: {create_error}"
+                )
 
     def list_runs(
         self,
