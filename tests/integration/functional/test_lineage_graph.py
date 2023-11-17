@@ -238,8 +238,8 @@ def manual_artifact_saving_step() -> Annotated[int, "output"]:
 @step
 def manual_artifact_loading_step(input: int) -> None:
     """A step that loads an artifact."""
-    load_artifact(name="saved_consumed")
-    load_artifact(name="saved_before")
+    load_artifact("saved_consumed")
+    load_artifact("saved_before")
 
 
 @pipeline

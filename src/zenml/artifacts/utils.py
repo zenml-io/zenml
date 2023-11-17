@@ -198,31 +198,31 @@ def save_artifact(
 
 
 def load_artifact(
-    name: str,
+    name_or_id: Union[str, UUID],
     version: Optional[str] = None,
 ) -> Any:
     """Load an artifact.
 
     Args:
-        name: The name of the artifact to load.
-        version: The version of the artifact to load. If not provided, the
-            latest version will be loaded.
+        name_or_id: The name or ID of the artifact to load.
+        version: The version of the artifact to load, if `name_or_id` is a
+            name. If not provided, the latest version will be loaded.
 
     Returns:
         The loaded artifact.
     """
-    artifact = Client().get_artifact(name, version)
+    artifact = Client().get_artifact(name_or_id, version)
     try:
         step_run = get_step_context().step_run
         client = Client()
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdateModel(
-                loaded_artifacts={name: artifact.id}
+                loaded_artifacts={artifact.name: artifact.id}
             ),
         )
     except RuntimeError:
-        logger.debug("Unable to link loaded artifact to step run.")
+        pass  # Cannot link to step run if called outside of a step
     return load_artifact_from_model(artifact)
 
 

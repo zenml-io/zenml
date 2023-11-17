@@ -41,7 +41,7 @@ def manual_artifact_loading_step(
     expected_value: int, name: str, version: Optional[str] = None
 ) -> None:
     """A step that loads an artifact."""
-    loaded_value = load_artifact(name=name, version=version)
+    loaded_value = load_artifact(name, version)
     assert loaded_value == expected_value
 
 
