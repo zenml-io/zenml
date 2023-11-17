@@ -303,6 +303,7 @@ class Pipeline:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model_version: Optional["ModelVersion"] = None,
+        parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
     ) -> T:
         """Configures the pipeline.
@@ -338,6 +339,7 @@ class Pipeline:
                 overwrite all existing ones. See the general description of this
                 method for an example.
             model_version: configuration of the model version in the Model Control Plane.
+            parameters: input parameters for the pipeline.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -363,6 +365,7 @@ class Pipeline:
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
                 "model_version": model_version,
+                "parameters": parameters,
             }
         )
         if not self.__suppress_warnings_flag__:
@@ -432,6 +435,21 @@ class Pipeline:
         # Clear existing parameters and invocations
         self._parameters = {}
         self._invocations = {}
+
+        parameters_ = (self.configuration.parameters or {}).copy()
+        if from_file_ := self._from_config_file.get("parameters", None):
+            parameters_ = dict_utils.recursive_update(parameters_, from_file_)
+        if parameters_:
+            for k, v_runtime in kwargs.items():
+                if v_config := parameters_.get(k, None):
+                    logger.warning(
+                        f"Pipeline parameter `{k}` set in your configuration file is "
+                        "overridden by value set in the code. The value in configuration "
+                        f"file was `{v_config}`, value to be used from the code is `{v_runtime}`."
+                    )
+            for k, v_config in parameters_.items():
+                if k not in kwargs:
+                    kwargs[k] = v_config
 
         with self:
             # Enter the context manager, so we become the active pipeline. This
@@ -1317,11 +1335,7 @@ class Pipeline:
             with open(config_path, "r") as f:
                 _from_config_file = yaml.load(f, Loader=yaml.SafeLoader)
             _from_config_file = dict_utils.remove_none_values(
-                {
-                    k: v
-                    for k, v in _from_config_file.items()
-                    if k in matcher and v
-                }
+                {k: v for k, v in _from_config_file.items() if k in matcher}
             )
 
             if "model_version" in _from_config_file:
