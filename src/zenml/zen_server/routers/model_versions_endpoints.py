@@ -79,6 +79,7 @@ def list_model_versions(
     Args:
         model_version_filter_model: Filter model used for pagination, sorting,
             filtering
+        auth_context: The authentication context.
 
     Returns:
         The model versions according to query filters.

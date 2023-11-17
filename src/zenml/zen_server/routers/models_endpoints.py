@@ -189,6 +189,7 @@ def list_model_versions(
         model_name_or_id: The name or ID of the model to list in.
         model_version_filter_model: Filter model used for pagination, sorting,
             filtering
+        auth_context: The authentication context.
 
     Returns:
         The model versions according to query filters.

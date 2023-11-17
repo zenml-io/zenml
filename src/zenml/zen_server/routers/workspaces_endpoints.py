@@ -281,7 +281,7 @@ def list_workspace_stacks(
 def create_stack(
     workspace_name_or_id: Union[str, UUID],
     stack: StackRequest,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> StackResponse:
     """Creates a stack for a particular workspace.
 
@@ -370,7 +370,7 @@ def list_workspace_stack_components(
 def create_stack_component(
     workspace_name_or_id: Union[str, UUID],
     component: ComponentRequest,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> ComponentResponse:
     """Creates a stack component.
 
