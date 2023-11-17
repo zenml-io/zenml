@@ -31,7 +31,7 @@ AnyRequestModel = TypeVar(
     "AnyRequestModel", bound=Union[BaseRequestModel, BaseRequest]
 )
 AnyResponseModel = TypeVar(
-    "AnyResponseModel", bound=Union[BaseResponseModel, BaseResponse]
+    "AnyResponseModel", bound=Union[BaseResponseModel, BaseResponse]  # type: ignore[type-arg]
 )
 AnyFilterModel = TypeVar("AnyFilterModel", bound=BaseFilter)
 AnyUpdateModel = TypeVar("AnyUpdateModel", bound=BaseModel)

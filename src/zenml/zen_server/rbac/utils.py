@@ -22,9 +22,9 @@ from typing import (
     Optional,
     Sequence,
     Set,
-    Type,
     TypeVar,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -33,11 +33,7 @@ from pydantic import BaseModel
 
 from zenml.models import (
     BaseResponse,
-    BaseResponseBody,
-    BaseResponseMetadata,
-    ComponentResponse,
     Page,
-    StackResponse,
     UserScopedResponse,
 )
 from zenml.models.base_models import BaseResponseModel, UserScopedResponseModel
@@ -47,16 +43,11 @@ from zenml.zen_server.utils import rbac, server_config
 
 AnyOldResponseModel = TypeVar("AnyOldResponseModel", bound=BaseResponseModel)
 AnyNewResponseModel = TypeVar(
-    "AnyNewResponseModel", bound=Union[StackResponse, ComponentResponse]
+    "AnyNewResponseModel", bound=BaseResponse  # type: ignore[type-arg]
 )
 AnyResponseModel = TypeVar(
     "AnyResponseModel",
-    bound=Union[StackResponse, ComponentResponse, BaseResponseModel],
-)
-
-AnyResponseBody = TypeVar("AnyResponseBody", bound=BaseResponseBody)
-AnyResponseMetadata = TypeVar(
-    "AnyResponseMetadata", bound=BaseResponseMetadata
+    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
 )
 AnyModel = TypeVar("AnyModel", bound=BaseModel)
 
@@ -183,16 +174,28 @@ def has_permissions_for_model(model: AnyResponseModel, action: str) -> bool:
 
 
 def get_permission_denied_model(model: AnyResponseModel) -> AnyResponseModel:
+    """Get a model to return in case of missing read permissions.
+
+    Args:
+        model: The original model.
+
+    Returns:
+        The permission denied model.
+    """
+
     if isinstance(model, BaseResponse):
-        return get_permission_denied_model_v2(model)
+        return cast(AnyResponseModel, get_permission_denied_model_v2(model))
     else:
-        return get_permission_denied_model_v1(model)
+        return cast(
+            AnyResponseModel,
+            get_permission_denied_model_v1(cast(BaseResponseModel, model)),
+        )
 
 
 def get_permission_denied_model_v2(
     model: AnyNewResponseModel,
 ) -> AnyNewResponseModel:
-    """Get a model to return in case of missing read permissions.
+    """Get a V2 model to return in case of missing read permissions.
 
     This function removes the body and metadata of the model.
 
@@ -208,7 +211,7 @@ def get_permission_denied_model_v2(
 def get_permission_denied_model_v1(
     model: AnyOldResponseModel, keep_id: bool = True, keep_name: bool = True
 ) -> AnyOldResponseModel:
-    """Get a model to return in case of missing read permissions.
+    """Get a V1 model to return in case of missing read permissions.
 
     This function replaces all attributes except name and ID in the given model.
 
@@ -276,9 +279,11 @@ def batch_verify_permissions_for_models(
             # The model owner always has permissions
             continue
 
-        model = get_surrogate_permission_model_for_model(model, action=action)
+        permission_model = get_surrogate_permission_model_for_model(
+            model, action=action
+        )
 
-        if resource := get_resource_for_model(model):
+        if resource := get_resource_for_model(permission_model):
             resources.add(resource)
 
     batch_verify_permissions(resources=resources, action=action)
@@ -410,7 +415,7 @@ def get_resource_for_model(model: AnyResponseModel) -> Optional[Resource]:
 
 def get_surrogate_permission_model_for_model(
     model: AnyResponseModel, action: str
-) -> Union[BaseResponse[Any, Any], BaseResponseModel]:
+) -> Union[BaseResponse, BaseResponseModel]:
     """Get a surrogate permission model for a model.
 
     In some cases a different model instead of the original model is used to
@@ -458,7 +463,7 @@ def get_resource_type_for_model(
     )
 
     mapping: Dict[
-        Union[Type[BaseResponseModel], Type[BaseResponse[Any, Any]]],
+        Any,
         ResourceType,
     ] = {
         FlavorResponse: ResourceType.FLAVOR,
