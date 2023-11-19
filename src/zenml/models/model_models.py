@@ -39,7 +39,7 @@ from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
 )
-from zenml.models.model_base_model import ModelBaseModel
+from zenml.models.v2.misc.model_base_model import ModelBaseModel
 from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
