@@ -101,6 +101,15 @@ def dehydrate_response_model(
     if not server_config().rbac_enabled:
         return model
 
+    if not permissions:
+        auth_context = get_auth_context()
+        assert auth_context
+
+        resources = get_subresources_for_model(model)
+        permissions = rbac().check_permissions(
+            user=auth_context.user, resources=resources, action=Action.READ
+        )
+
     dehydrated_fields = {}
 
     for field_name in model.__fields__.keys():
@@ -208,7 +217,9 @@ def get_permission_denied_model_v2(
     Returns:
         The model with body and metadata removed.
     """
-    return model.copy(exclude={"body", "metadata"})
+    return model.copy(
+        exclude={"body", "metadata"}, update={"permission_denied": True}
+    )
 
 
 def get_permission_denied_model_v1(

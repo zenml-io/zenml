@@ -102,6 +102,7 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
     """Base domain model."""
 
     id: UUID = Field(title="The unique resource id.")
+    permission_denied: bool = False
 
     # Body and metadata pair
     body: Optional["AnyBody"] = Field(title="The body of the resource.")
