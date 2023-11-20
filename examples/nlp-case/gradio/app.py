@@ -30,13 +30,19 @@ import gradio as gr
     help="Name or the path of the tokenizer.",
 )
 @click.option(
-    "--model_name_or_path", default="model", help="Name or the path of the model."
+    "--model_name_or_path",
+    default="model",
+    help="Name or the path of the model.",
 )
 @click.option(
-    "--labels", default="Negative,Positive", help="Comma-separated list of labels."
+    "--labels",
+    default="Negative,Positive",
+    help="Comma-separated list of labels.",
 )
 @click.option(
-    "--title", default="ZenML NLP Use-Case", help="Title of the Gradio interface."
+    "--title",
+    default="ZenML NLP Use-Case",
+    help="Title of the Gradio interface.",
 )
 @click.option(
     "--description",
@@ -114,12 +120,16 @@ def sentiment_analysis(
         scores_ = output[0][0].detach().numpy()
         scores_ = softmax(scores_)
 
-        scores = {l: float(s) for (l, s) in zip(labels, scores_)}
+        scores = {
+            label: float(score) for (label, score) in zip(labels, scores_)
+        }
         return scores
 
     demo = gr.Interface(
         fn=analyze_text,
-        inputs=[gr.TextArea("Write your text or tweet here", label="Analyze Text")],
+        inputs=[
+            gr.TextArea("Write your text or tweet here", label="Analyze Text")
+        ],
         outputs=["label"],
         title=title,
         description=description,

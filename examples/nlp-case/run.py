@@ -1,32 +1,33 @@
 # Apache Software License 2.0
-# 
+#
 # Copyright (c) ZenML GmbH 2023. All rights reserved.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
 import os
-import click
 from datetime import datetime as dt
 
+import click
 from pipelines import (
-    nlp_use_case_training_pipeline,
-    nlp_use_case_promote_pipeline,
     nlp_use_case_deploy_pipeline,
+    nlp_use_case_promote_pipeline,
+    nlp_use_case_training_pipeline,
 )
+
+from zenml.enums import ModelStages
 from zenml.logger import get_logger
 from zenml.model import ModelConfig
-from zenml.enums import ModelStages
 
 logger = get_logger(__name__)
 
@@ -179,11 +180,11 @@ def main(
     # all steps in the pipeline in the correct order using the orchestrator
     # stack component that is configured in your active ZenML stack.
     pipeline_args = {
-        "config_path":os.path.join(
+        "config_path": os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             "config.yaml",
-            )
-        }
+        )
+    }
     if no_cache:
         pipeline_args["enable_cache"] = False
 
@@ -210,20 +211,26 @@ def main(
         pipeline_args[
             "run_name"
         ] = f"nlp_use_case_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-        nlp_use_case_training_pipeline.with_options(**pipeline_args)(**run_args_train)
+        nlp_use_case_training_pipeline.with_options(**pipeline_args)(
+            **run_args_train
+        )
         logger.info("Training pipeline finished successfully!")
 
     # Execute Promoting Pipeline
     if promoting_pipeline:
         run_args_promoting = {}
-        model_config = ModelConfig(name=zenml_model_name, version=ModelStages.LATEST)
+        model_config = ModelConfig(
+            name=zenml_model_name, version=ModelStages.LATEST
+        )
         pipeline_args["model_config"] = model_config
         pipeline_args[
             "run_name"
         ] = f"nlp_use_case_promoting_pipeline_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-        nlp_use_case_promote_pipeline.with_options(**pipeline_args)(**run_args_promoting)
+        nlp_use_case_promote_pipeline.with_options(**pipeline_args)(
+            **run_args_promoting
+        )
         logger.info("Promoting pipeline finished successfully!")
-    
+
     if deploying_pipeline:
         pipeline_args["enable_cache"] = False
         # Deploying pipeline has new ZenML model config
@@ -241,7 +248,9 @@ def main(
         pipeline_args[
             "run_name"
         ] = f"nlp_use_case_deploy_pipeline_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-        nlp_use_case_deploy_pipeline.with_options(**pipeline_args)(**run_args_deploying)
+        nlp_use_case_deploy_pipeline.with_options(**pipeline_args)(
+            **run_args_deploying
+        )
         logger.info("Deploying pipeline finished successfully!")
 
 

@@ -1,26 +1,25 @@
 # Apache Software License 2.0
-# 
+#
 # Copyright (c) ZenML GmbH 2023. All rights reserved.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
-from typing import Any, Dict
+from typing import Dict
+
 from zenml import get_step_context, step
-from zenml.enums import ModelStages
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.model_registries.base_model_registry import ModelVersionStage
 
 logger = get_logger(__name__)
 
@@ -66,11 +65,14 @@ def promote_metric_compare_promoter(
             f"Latest model metric={latest_metrics[metric_to_compare]:.6f}\n"
             f"Current model metric={current_metrics[metric_to_compare]:.6f}"
         )
-        if latest_metrics[metric_to_compare] < current_metrics[metric_to_compare]:
+        if (
+            latest_metrics[metric_to_compare]
+            < current_metrics[metric_to_compare]
+        ):
             logger.info(
                 "Current model versions outperformed latest versions - promoting current"
             )
-            
+
         else:
             logger.info(
                 "Latest model versions outperformed current versions - keeping latest"

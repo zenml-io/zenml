@@ -1,35 +1,40 @@
 # Apache Software License 2.0
-# 
+#
 # Copyright (c) ZenML GmbH 2023. All rights reserved.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
-from typing import Tuple, Any, Dict
+from typing import Any, Dict, Tuple
+
 from typing_extensions import Annotated
+
 from zenml import get_step_context, step
 from zenml.client import Client
-from zenml.logger import get_logger
 from zenml.enums import ModelStages
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 model_registry = Client().active_stack.model_registry
 
+
 @step
-def promote_get_metrics(
-) -> (
-    Tuple[Annotated[Dict[str, Any], "latest_metrics"], Annotated[Dict[str, Any], "current_metrics`"]]
+def promote_get_metrics() -> (
+    Tuple[
+        Annotated[Dict[str, Any], "latest_metrics"],
+        Annotated[Dict[str, Any], "current_metrics`"],
+    ]
 ):
     """Get metrics for comparison for promoting a model.
 
@@ -52,19 +57,29 @@ def promote_get_metrics(
     # Get current model version metric in current run
     model_config = get_step_context().model_config
     current_version = model_config._get_model_version()
-    current_metrics = current_version.get_model_object(name="model").metadata["metrics"].value
+    current_metrics = (
+        current_version.get_model_object(name="model")
+        .metadata["metrics"]
+        .value
+    )
     logger.info(f"Current model version metrics are {current_metrics}")
 
     # Get latest saved model version metric in target environment
     try:
         latest_version = zenml_client.get_model_version(
             model_name_or_id=model_config.name,
-            model_version_name_or_number_or_id=ModelStages(pipeline_extra["target_env"]),
+            model_version_name_or_number_or_id=ModelStages(
+                pipeline_extra["target_env"]
+            ),
         )
     except KeyError:
         latest_version = None
     if latest_version:
-        latest_metrics = current_version.get_model_object(name="model").metadata["metrics"].value
+        latest_metrics = (
+            current_version.get_model_object(name="model")
+            .metadata["metrics"]
+            .value
+        )
         logger.info(f"Current model version metrics are {latest_metrics}")
     else:
         logger.info("No currently promoted model version found.")

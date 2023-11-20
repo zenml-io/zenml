@@ -1,24 +1,25 @@
 # Apache Software License 2.0
-# 
+#
 # Copyright (c) ZenML GmbH 2023. All rights reserved.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
-from typing import Optional, List
-from typing_extensions import Annotated
 import os
 import subprocess
+from typing import List, Optional
+
+from typing_extensions import Annotated
 
 from zenml import step
 from zenml.client import Client
@@ -34,7 +35,9 @@ def deploy_locally(
     tokenizer_name_or_path: str,
     labels: List[str],
     title: Optional[str] = "ZenML NLP Use-Case",
-    description: Optional[str] = "This is a demo of the ZenML NLP use-case using Gradio.",
+    description: Optional[
+        str
+    ] = "This is a demo of the ZenML NLP use-case using Gradio.",
     interpretation: Optional[str] = "default",
     example: Optional[str] = "This use-case is awesome!",
 ) -> Annotated[int, "process_id"]:
@@ -54,6 +57,7 @@ def deploy_locally(
     Returns:
         The process ID of the Gradio app.
     """
+
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     def start_gradio_app(command: List[str]) -> int:
         """
@@ -61,7 +65,7 @@ def deploy_locally(
 
         Args:
             command: The command to start the Gradio app.
-        
+
         Returns:
             The process ID of the Gradio app.
         """
@@ -83,9 +87,24 @@ def deploy_locally(
             "this step will not work outside of a ZenML repo where the gradio folder is present."
         )
     app_path = str(os.path.join(zenml_repo_root, "gradio", "app.py"))
-    command = ["python", app_path, "--tokenizer_name_or_path", tokenizer_name_or_path, "--model_name_or_path", model_name_or_path, 
-        "--labels", lables, "--title", title, "--description", description, 
-       "--interpretation", interpretation, "--examples", example]
+    command = [
+        "python",
+        app_path,
+        "--tokenizer_name_or_path",
+        tokenizer_name_or_path,
+        "--model_name_or_path",
+        model_name_or_path,
+        "--labels",
+        lables,
+        "--title",
+        title,
+        "--description",
+        description,
+        "--interpretation",
+        interpretation,
+        "--examples",
+        example,
+    ]
     logger.info(f"Command: {command}")
     # Call the function to launch the script
     pid = start_gradio_app(command)

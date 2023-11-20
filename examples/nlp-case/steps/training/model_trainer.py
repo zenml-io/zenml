@@ -1,39 +1,42 @@
 # Apache Software License 2.0
-# 
+#
 # Copyright (c) ZenML GmbH 2023. All rights reserved.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
 from typing import Optional, Tuple
-from typing_extensions import Annotated
 
 import mlflow
 from datasets import DatasetDict
 from transformers import (
+    AutoModelForSequenceClassification,
     DataCollatorWithPadding,
     PreTrainedModel,
     PreTrainedTokenizerBase,
     Trainer,
     TrainingArguments,
-    AutoModelForSequenceClassification,
 )
+from typing_extensions import Annotated
+from utils.misc import compute_metrics
+
 from zenml import log_artifact_metadata, step
 from zenml.client import Client
-from zenml.integrations.mlflow.experiment_trackers import MLFlowExperimentTracker
+from zenml.integrations.mlflow.experiment_trackers import (
+    MLFlowExperimentTracker,
+)
 from zenml.logger import get_logger
 from zenml.model import ModelArtifactConfig
-from utils.misc import compute_metrics
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -50,6 +53,7 @@ if not experiment_tracker or not isinstance(
         "this example to work."
     )
 
+
 @step(experiment_tracker=experiment_tracker.name)
 def model_trainer(
     tokenized_dataset: DatasetDict,
@@ -62,17 +66,24 @@ def model_trainer(
     eval_batch_size: Optional[int] = 16,
     weight_decay: Optional[float] = 0.01,
     mlflow_model_name: Optional[str] = "sentiment_analysis",
-) -> Tuple[Annotated[PreTrainedModel, "model", ModelArtifactConfig(overwrite=True)], Annotated[PreTrainedTokenizerBase, "tokenizer", ModelArtifactConfig(overwrite=True)]]:
+) -> Tuple[
+    Annotated[PreTrainedModel, "model", ModelArtifactConfig(overwrite=True)],
+    Annotated[
+        PreTrainedTokenizerBase,
+        "tokenizer",
+        ModelArtifactConfig(overwrite=True),
+    ],
+]:
     """
     Configure and train a model on the training dataset.
 
-    This step takes in a dataset artifact previously loaded and pre-processed by 
-    other steps in your pipeline, then configures and trains a model on it. The 
+    This step takes in a dataset artifact previously loaded and pre-processed by
+    other steps in your pipeline, then configures and trains a model on it. The
     model is then returned as a step output artifact.
 
-    Model training steps should have caching disabled if they are not deterministic 
-    (i.e. if the model training involve some random processes like initializing 
-    weights or shuffling data that are not controlled by setting a fixed random seed). 
+    Model training steps should have caching disabled if they are not deterministic
+    (i.e. if the model training involve some random processes like initializing
+    weights or shuffling data that are not controlled by setting a fixed random seed).
 
 
     Args:
@@ -92,8 +103,8 @@ def model_trainer(
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Select the appropriate datasets based on the dataset type
-    train_dataset = tokenized_dataset['train']
-    eval_dataset = tokenized_dataset['validation']
+    train_dataset = tokenized_dataset["train"]
+    eval_dataset = tokenized_dataset["validation"]
 
     # Initialize data collator
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
@@ -112,8 +123,8 @@ def model_trainer(
         per_device_eval_batch_size=eval_batch_size,
         num_train_epochs=num_epochs,
         weight_decay=weight_decay,
-        evaluation_strategy='steps',
-        save_strategy='steps',
+        evaluation_strategy="steps",
+        save_strategy="steps",
         save_steps=1000,
         eval_steps=100,
         logging_steps=logging_steps,
