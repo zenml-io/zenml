@@ -25,19 +25,19 @@ from zenml.client import Client
 from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.models.model_models import (
-    ModelResponseModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionResponseModel,
+from zenml.models import (
+    ModelResponse,
+    ModelVersionArtifactFilter,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionResponse,
 )
 from zenml.utils.dict_utils import remove_none_values
 
 logger = get_logger(__name__)
 
 
-def _model_to_print(model: ModelResponseModel) -> Dict[str, Any]:
+def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
     return {
         "id": model.id,
         "name": model.name,
@@ -55,7 +55,7 @@ def _model_to_print(model: ModelResponseModel) -> Dict[str, Any]:
 
 
 def _model_version_to_print(
-    model_version: ModelVersionResponseModel,
+    model_version: ModelVersionResponse,
 ) -> Dict[str, Any]:
     return {
         "id": model_version.id,
@@ -357,7 +357,7 @@ def version() -> None:
     """Interact with model versions in the Model Control Plane."""
 
 
-@cli_utils.list_options(ModelVersionFilterModel)
+@cli_utils.list_options(ModelVersionFilter)
 @click.argument("model_name_or_id")
 @version.command("list", help="List model versions with filter.")
 def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
@@ -370,7 +370,7 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     model_id = Client().get_model(model_name_or_id=model_name_or_id).id
     model_versions = Client().zen_store.list_model_versions(
         model_name_or_id=model_id,
-        model_version_filter_model=ModelVersionFilterModel(**kwargs),
+        model_version_filter_model=ModelVersionFilter(**kwargs),
     )
 
     if not model_versions:
@@ -566,7 +566,7 @@ def _print_artifacts_links_generic(
 
     links = Client().list_model_version_artifact_links(
         model_version_id=model_version.id,
-        model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+        model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
             only_data_artifacts=only_data_artifacts,
             only_endpoint_artifacts=only_endpoint_artifacts,
             only_model_artifacts=only_model_artifacts,
@@ -593,7 +593,7 @@ def _print_artifacts_links_generic(
 )
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id", default="0")
-@cli_utils.list_options(ModelVersionArtifactFilterModel)
+@cli_utils.list_options(ModelVersionArtifactFilter)
 def list_model_version_data_artifacts(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
@@ -621,7 +621,7 @@ def list_model_version_data_artifacts(
 )
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id", default="0")
-@cli_utils.list_options(ModelVersionArtifactFilterModel)
+@cli_utils.list_options(ModelVersionArtifactFilter)
 def list_model_version_model_artifacts(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
@@ -649,7 +649,7 @@ def list_model_version_model_artifacts(
 )
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id", default="0")
-@cli_utils.list_options(ModelVersionArtifactFilterModel)
+@cli_utils.list_options(ModelVersionArtifactFilter)
 def list_model_version_endpoint_artifacts(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
@@ -677,7 +677,7 @@ def list_model_version_endpoint_artifacts(
 )
 @click.argument("model_name_or_id")
 @click.argument("model_version_name_or_number_or_id", default="0")
-@cli_utils.list_options(ModelVersionPipelineRunFilterModel)
+@cli_utils.list_options(ModelVersionPipelineRunFilter)
 def list_model_version_pipeline_runs(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
@@ -714,7 +714,7 @@ def list_model_version_pipeline_runs(
 
     links = Client().list_model_version_pipeline_run_links(
         model_version_id=model_version.id,
-        model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
+        model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilter(
             **kwargs,
         ),
     )
