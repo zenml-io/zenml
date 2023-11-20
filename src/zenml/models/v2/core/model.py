@@ -268,7 +268,7 @@ class ModelResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelFilterModel(WorkspaceScopedFilter):
+class ModelFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     name: Optional[str] = Field(

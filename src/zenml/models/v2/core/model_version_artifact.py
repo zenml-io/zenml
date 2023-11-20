@@ -30,7 +30,7 @@ from zenml.models.v2.base.scoped import (
 # ------------------ Request Model ------------------
 
 
-class ModelVersionArtifactRequestModel(WorkspaceScopedRequest):
+class ModelVersionArtifactRequest(WorkspaceScopedRequest):
     """Request model for model version and artifact links."""
 
     name: Optional[str] = Field(
@@ -203,7 +203,7 @@ class ModelVersionArtifactResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionArtifactFilterModel(ModelVersionScopedFilter):
+class ModelVersionArtifactFilter(ModelVersionScopedFilter):
     """Model version pipeline run links filter model."""
 
     name: Optional[str] = Field(

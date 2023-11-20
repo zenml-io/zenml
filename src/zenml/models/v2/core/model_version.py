@@ -497,7 +497,7 @@ class ModelVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionFilterModel(ModelScopedFilter):
+class ModelVersionFilter(ModelScopedFilter):
     """Filter model for model versions."""
 
     name: Optional[str] = Field(

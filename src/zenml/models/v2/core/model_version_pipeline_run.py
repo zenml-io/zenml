@@ -109,7 +109,7 @@ class ModelVersionPipelineRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionPipelineRunFilterModel(ModelVersionScopedFilter):
+class ModelVersionPipelineRunFilter(ModelVersionScopedFilter):
     """Model version pipeline run links filter model."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(
