@@ -1,7 +1,7 @@
 """Data Versioning [389046140cad].
 
 Revision ID: 389046140cad
-Revises: 0.46.0
+Revises: 14d687c8fa1c
 Create Date: 2023-10-09 14:12:01.280877
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "389046140cad"
-down_revision = "0.46.0"
+down_revision = "14d687c8fa1c"
 branch_labels = None
 depends_on = None
 
@@ -31,7 +31,7 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("version_number", sa.Integer(), nullable=True)
         )
-        batch_op.add_column(sa.Column("tags", sa.TEXT(), nullable=True))
+
     op.execute("UPDATE artifact SET has_custom_name = FALSE")
     op.execute("UPDATE artifact SET version = 'UNVERSIONED'")
     with op.batch_alter_table("artifact", schema=None) as batch_op:

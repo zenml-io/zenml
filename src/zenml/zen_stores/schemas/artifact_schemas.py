@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
-import json
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
@@ -23,7 +22,7 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
-from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.enums import ArtifactType, ExecutionStatus, TaggableResourceTypes
 from zenml.models import (
     ArtifactRequest,
     ArtifactResponse,
@@ -49,6 +48,7 @@ if TYPE_CHECKING:
         ModelVersionArtifactSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
 class ArtifactSchema(NamedSchema, table=True):
@@ -64,7 +64,13 @@ class ArtifactSchema(NamedSchema, table=True):
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
-    tags: str = Field(sa_column=Column(TEXT, nullable=True))
+    tags: List["TagResourceSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
+            cascade="delete",
+        ),
+    )
 
     # Foreign keys
     artifact_store_id: Optional[UUID] = build_foreign_key_field(
@@ -146,7 +152,6 @@ class ArtifactSchema(NamedSchema, table=True):
             uri=artifact_request.uri,
             materializer=artifact_request.materializer.json(),
             data_type=artifact_request.data_type.json(),
-            tags=json.dumps(artifact_request.tags),
         )
 
     def to_model(self, hydrate: bool = False) -> ArtifactResponse:
@@ -193,6 +198,7 @@ class ArtifactSchema(NamedSchema, table=True):
 
         metadata = None
         if hydrate:
+            tags = [t.tag.to_model() for t in self.tags]
             metadata = ArtifactResponseMetadata(
                 workspace=self.workspace.to_model(),
                 artifact_store_id=self.artifact_store_id,
@@ -201,7 +207,7 @@ class ArtifactSchema(NamedSchema, table=True):
                 run_metadata={m.key: m.to_model() for m in self.run_metadata},
                 materializer=materializer,
                 data_type=data_type,
-                tags=json.loads(self.tags) if self.tags else None,
+                tags=tags,
             )
 
         return ArtifactResponse(
@@ -222,7 +228,5 @@ class ArtifactSchema(NamedSchema, table=True):
         """
         if artifact_update.name:
             self.name = artifact_update.name
-        if artifact_update.tags:
-            self.tags = json.dumps(artifact_update.tags)
         self.updated = datetime.utcnow()
         return self

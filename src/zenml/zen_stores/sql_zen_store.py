@@ -1403,6 +1403,14 @@ class SqlZenStore(BaseZenStore):
                     )
                     session.add(vis_schema)
 
+            # Save tags of the artifact.
+            if artifact.tags:
+                self._attach_tags_to_resource(
+                    tag_names=artifact.tags,
+                    resource_id=artifact_schema.id,
+                    resource_type=TaggableResourceTypes.ARTIFACT,
+                )
+
             session.commit()
             return artifact_schema.to_model(hydrate=True)
 
@@ -1491,6 +1499,22 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if not existing_artifact:
                 raise KeyError(f"Artifact with ID {artifact_id} not found.")
+
+            if artifact_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=artifact_update.add_tags,
+                    resource_id=existing_artifact.id,
+                    resource_type=TaggableResourceTypes.ARTIFACT,
+                )
+            artifact_update.add_tags = None
+            if artifact_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=artifact_update.remove_tags,
+                    resource_id=existing_artifact.id,
+                    resource_type=TaggableResourceTypes.ARTIFACT,
+                )
+            artifact_update.remove_tags = None
+
             existing_artifact.update(artifact_update=artifact_update)
             session.add(existing_artifact)
             session.commit()

@@ -328,6 +328,7 @@ class ColorVariants(StrEnum):
 class TaggableResourceTypes(StrEnum):
     """All possible resource types for tagging."""
 
+    ARTIFACT = "artifact"
     MODEL = "model"
 
 

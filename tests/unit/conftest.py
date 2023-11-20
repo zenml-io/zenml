@@ -557,6 +557,7 @@ def sample_artifact_model(
             materializer="sample_module.sample_materializer",
             data_type="sample_module.sample_data_type",
             workspace=sample_workspace_model,
+            tags=[],
         ),
     )
 

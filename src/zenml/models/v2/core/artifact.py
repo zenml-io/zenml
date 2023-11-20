@@ -22,6 +22,7 @@ from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType
 from zenml.logger import get_logger
+from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -94,7 +95,8 @@ class ArtifactUpdate(BaseModel):
     """Artifact update model."""
 
     name: Optional[str] = None
-    tags: Optional[List[str]] = None
+    add_tags: Optional[List[str]] = None
+    remove_tags: Optional[List[str]] = None
 
 
 # ------------------ Response Model ------------------
@@ -124,10 +126,8 @@ class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
         title="ID of the step run that produced this artifact.",
         default=None,
     )
-    tags: Optional[List[str]] = Field(
-        title="Tags of the artifact.",
-        description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
-        default=None,
+    tags: List[TagResponseModel] = Field(
+        title="Tags associated with the model",
     )
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
@@ -215,6 +215,15 @@ class ArtifactResponse(
             the value of the property.
         """
         return self.get_metadata().producer_step_run_id
+
+    @property
+    def tags(self) -> List[TagResponseModel]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().tags
 
     @property
     def visualizations(
