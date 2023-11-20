@@ -26,11 +26,11 @@ from zenml.constants import (
 )
 from zenml.enums import PermissionType
 from zenml.models import (
-    ModelFilterModel,
-    ModelResponseModel,
-    ModelUpdateModel,
-    ModelVersionFilterModel,
-    ModelVersionResponseModel,
+    ModelFilter,
+    ModelResponse,
+    ModelUpdate,
+    ModelVersionFilter,
+    ModelVersionResponse,
     Page,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -54,63 +54,67 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[ModelResponseModel],
+    response_model=Page[ModelResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_models(
-    model_filter_model: ModelFilterModel = Depends(
-        make_dependable(ModelFilterModel)
-    ),
+    model_filter_model: ModelFilter = Depends(make_dependable(ModelFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelResponseModel]:
+) -> Page[ModelResponse]:
     """Get models according to query filters.
 
     Args:
         model_filter_model: Filter model used for pagination, sorting,
             filtering
-
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The models according to query filters.
     """
     return zen_store().list_models(
         model_filter_model=model_filter_model,
+        hydrate=hydrate,
     )
 
 
 @router.get(
     "/{model_name_or_id}",
-    response_model=ModelResponseModel,
+    response_model=ModelResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_model(
     model_name_or_id: Union[str, UUID],
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> ModelResponseModel:
+) -> ModelResponse:
     """Get a model by name or ID.
 
     Args:
         model_name_or_id: The name or ID of the model to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The model with the given name or ID.
     """
-    return zen_store().get_model(model_name_or_id)
+    return zen_store().get_model(model_name_or_id, hydrate=hydrate)
 
 
 @router.put(
     "/{model_id}",
-    response_model=ModelResponseModel,
+    response_model=ModelResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_model(
     model_id: UUID,
-    model_update: ModelUpdateModel,
+    model_update: ModelUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ModelResponseModel:
+) -> ModelResponse:
     """Updates a model.
 
     Args:
@@ -150,17 +154,18 @@ def delete_model(
 
 @router.get(
     "/{model_name_or_id}" + MODEL_VERSIONS,
-    response_model=Page[ModelVersionResponseModel],
+    response_model=Page[ModelVersionResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_model_versions(
     model_name_or_id: Union[str, UUID],
-    model_version_filter_model: ModelVersionFilterModel = Depends(
-        make_dependable(ModelVersionFilterModel)
+    model_version_filter_model: ModelVersionFilter = Depends(
+        make_dependable(ModelVersionFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionResponseModel]:
+) -> Page[ModelVersionResponse]:
     """Get model versions according to query filters.
 
     This endpoint serves the purpose of allowing scoped filtering by model_id.
@@ -169,6 +174,8 @@ def list_model_versions(
         model_name_or_id: The name or ID of the model to list in.
         model_version_filter_model: Filter model used for pagination, sorting,
             filtering
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The model versions according to query filters.
@@ -176,4 +183,5 @@ def list_model_versions(
     return zen_store().list_model_versions(
         model_name_or_id=model_name_or_id,
         model_version_filter_model=model_version_filter_model,
+        hydrate=hydrate,
     )

@@ -50,17 +50,17 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
+    ModelFilter,
+    ModelRequest,
+    ModelResponse,
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
+    ModelVersionResponse,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -1214,17 +1214,17 @@ def list_service_connector_resources(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + MODELS,
-    response_model=ModelResponseModel,
+    response_model=ModelResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model(
     workspace_name_or_id: Union[str, UUID],
-    model: ModelRequestModel,
+    model: ModelRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> ModelResponseModel:
+) -> ModelResponse:
     """Create a new model.
 
     Args:
@@ -1258,24 +1258,24 @@ def create_model(
 
 @router.get(
     WORKSPACES + "/{workspace_name_or_id}" + MODELS,
-    response_model=Page[ModelResponseModel],
+    response_model=Page[ModelResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_models(
     workspace_name_or_id: Union[str, UUID],
-    model_filter_model: ModelFilterModel = Depends(
-        make_dependable(ModelFilterModel)
-    ),
+    model_filter_model: ModelFilter = Depends(make_dependable(ModelFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelResponseModel]:
+) -> Page[ModelResponse]:
     """Get models according to query filters.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         model_filter_model: Filter model used for pagination, sorting,
-            filtering
-
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The models according to query filters.
@@ -1284,6 +1284,7 @@ def list_workspace_models(
     model_filter_model.set_scope_workspace(workspace_id)
     return zen_store().list_models(
         model_filter_model=model_filter_model,
+        hydrate=hydrate,
     )
 
 
@@ -1293,18 +1294,18 @@ def list_workspace_models(
     + MODELS
     + "/{model_name_or_id}"
     + MODEL_VERSIONS,
-    response_model=ModelVersionResponseModel,
+    response_model=ModelVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model_version(
     workspace_name_or_id: Union[str, UUID],
     model_name_or_id: Union[str, UUID],
-    model_version: ModelVersionRequestModel,
+    model_version: ModelVersionRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> ModelVersionResponseModel:
+) -> ModelVersionResponse:
     """Create a new model version.
 
     Args:
@@ -1344,18 +1345,18 @@ def create_model_version(
     + MODEL_VERSIONS
     + "/{model_version_id}"
     + ARTIFACTS,
-    response_model=ModelVersionArtifactResponseModel,
+    response_model=ModelVersionArtifactResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model_version_artifact_link(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
-    model_version_artifact_link: ModelVersionArtifactRequestModel,
+    model_version_artifact_link: ModelVersionArtifactRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> ModelVersionArtifactResponseModel:
+) -> ModelVersionArtifactResponse:
     """Create a new model version to artifact link.
 
     Args:
@@ -1403,25 +1404,28 @@ def create_model_version_artifact_link(
     + MODEL_VERSIONS
     + "/{model_version_id}"
     + ARTIFACTS,
-    response_model=Page[ModelVersionArtifactResponseModel],
+    response_model=Page[ModelVersionArtifactResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_model_version_artifact_links(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
-    model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
-        make_dependable(ModelVersionArtifactFilterModel)
+    model_version_artifact_link_filter_model: ModelVersionArtifactFilter = Depends(
+        make_dependable(ModelVersionArtifactFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionArtifactResponseModel]:
+) -> Page[ModelVersionArtifactResponse]:
     """Get model version to artifact links according to query filters.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         model_version_id: Name or ID of the model version.
-        model_version_artifact_link_filter_model: Filter model used for pagination, sorting,
-            filtering
+        model_version_artifact_link_filter_model: Filter model used for
+            pagination, sorting, filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The model version to artifact links according to query filters.
@@ -1431,6 +1435,7 @@ def list_workspace_model_version_artifact_links(
     return zen_store().list_model_version_artifact_links(
         model_version_id=model_version_id,
         model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
+        hydrate=hydrate,
     )
 
 
@@ -1440,18 +1445,18 @@ def list_workspace_model_version_artifact_links(
     + MODEL_VERSIONS
     + "/{model_version_id}"
     + RUNS,
-    response_model=ModelVersionPipelineRunResponseModel,
+    response_model=ModelVersionPipelineRunResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model_version_pipeline_run_link(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
-    model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
+    model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
-) -> ModelVersionPipelineRunResponseModel:
+) -> ModelVersionPipelineRunResponse:
     """Create a new model version to pipeline run link.
 
     Args:
@@ -1502,25 +1507,28 @@ def create_model_version_pipeline_run_link(
     + MODEL_VERSIONS
     + "/{model_version_id}"
     + RUNS,
-    response_model=Page[ModelVersionPipelineRunResponseModel],
+    response_model=Page[ModelVersionPipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_workspace_model_version_pipeline_run_links(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
-    model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
-        make_dependable(ModelVersionPipelineRunFilterModel)
+    model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilter = Depends(
+        make_dependable(ModelVersionPipelineRunFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionPipelineRunResponseModel]:
+) -> Page[ModelVersionPipelineRunResponse]:
     """Get model version to pipeline links according to query filters.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         model_version_id: ID of the model version.
-        model_version_pipeline_run_link_filter_model: Filter model used for pagination, sorting,
-            filtering
+        model_version_pipeline_run_link_filter_model: Filter model used for
+            pagination, sorting, filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The model version to pipeline run links according to query filters.
@@ -1532,4 +1540,5 @@ def list_workspace_model_version_pipeline_run_links(
     return zen_store().list_model_version_pipeline_run_links(
         model_version_id=model_version_id,
         model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
+        hydrate=hydrate,
     )

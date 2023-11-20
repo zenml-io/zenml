@@ -27,13 +27,13 @@ from zenml.constants import (
 )
 from zenml.enums import PermissionType
 from zenml.models import (
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionResponseModel,
-    ModelVersionUpdateModel,
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactResponse,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunResponse,
+    ModelVersionResponse,
+    ModelVersionUpdate,
 )
 from zenml.models.v2.base.page import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -61,64 +61,72 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[ModelVersionResponseModel],
+    response_model=Page[ModelVersionResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_model_versions(
-    model_version_filter_model: ModelVersionFilterModel = Depends(
-        make_dependable(ModelVersionFilterModel)
+    model_version_filter_model: ModelVersionFilter = Depends(
+        make_dependable(ModelVersionFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionResponseModel]:
+) -> Page[ModelVersionResponse]:
     """Get model versions according to query filters.
 
     Args:
         model_version_filter_model: Filter model used for pagination, sorting,
             filtering
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The model versions according to query filters.
     """
     return zen_store().list_model_versions(
         model_version_filter_model=model_version_filter_model,
+        hydrate=hydrate,
     )
 
 
 @router.get(
     "/{model_version_id}",
-    response_model=ModelVersionResponseModel,
+    response_model=ModelVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_model_version(
     model_version_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> ModelVersionResponseModel:
+) -> ModelVersionResponse:
     """Get a model version by ID.
 
     Args:
         model_version_id: id of the model version to be retrieved.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The model version with the given name or ID.
     """
     return zen_store().get_model_version(
         model_version_id=model_version_id,
+        hydrate=hydrate,
     )
 
 
 @router.put(
     "/{model_version_id}",
-    response_model=ModelVersionResponseModel,
+    response_model=ModelVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_model_version(
     model_version_id: UUID,
-    model_version_update_model: ModelVersionUpdateModel,
+    model_version_update_model: ModelVersionUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ModelVersionResponseModel:
+) -> ModelVersionResponse:
     """Get all model versions by filter.
 
     Args:
@@ -158,23 +166,26 @@ def delete_model_version(
 
 @router.get(
     "/{model_version_id}" + ARTIFACTS,
-    response_model=Page[ModelVersionArtifactResponseModel],
+    response_model=Page[ModelVersionArtifactResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_model_version_artifact_links(
     model_version_id: UUID,
-    model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
-        make_dependable(ModelVersionArtifactFilterModel)
+    model_version_artifact_link_filter_model: ModelVersionArtifactFilter = Depends(
+        make_dependable(ModelVersionArtifactFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionArtifactResponseModel]:
+) -> Page[ModelVersionArtifactResponse]:
     """Get model version to artifact links according to query filters.
 
     Args:
         model_version_id: ID of the model version containing links.
-        model_version_artifact_link_filter_model: Filter model used for pagination, sorting,
-            filtering
+        model_version_artifact_link_filter_model: Filter model used for
+            pagination, sorting, filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The model version to artifact links according to query filters.
@@ -182,6 +193,7 @@ def list_model_version_artifact_links(
     return zen_store().list_model_version_artifact_links(
         model_version_id=model_version_id,
         model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
+        hydrate=hydrate,
     )
 
 
@@ -201,7 +213,8 @@ def delete_model_version_artifact_link(
 
     Args:
         model_version_id: ID of the model version containing the link.
-        model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
+        model_version_artifact_link_name_or_id: name or ID of the model version
+            to artifact link to be deleted.
     """
     zen_store().delete_model_version_artifact_link(
         model_version_id,
@@ -216,23 +229,26 @@ def delete_model_version_artifact_link(
 
 @router.get(
     "/{model_version_id}" + RUNS,
-    response_model=Page[ModelVersionPipelineRunResponseModel],
+    response_model=Page[ModelVersionPipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_model_version_pipeline_run_links(
     model_version_id: UUID,
-    model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
-        make_dependable(ModelVersionPipelineRunFilterModel)
+    model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilter = Depends(
+        make_dependable(ModelVersionPipelineRunFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ModelVersionPipelineRunResponseModel]:
+) -> Page[ModelVersionPipelineRunResponse]:
     """Get model version to pipeline run links according to query filters.
 
     Args:
         model_version_id: ID of the model version containing the link.
-        model_version_pipeline_run_link_filter_model: Filter model used for pagination, sorting,
-            and filtering
+        model_version_pipeline_run_link_filter_model: Filter model used for
+            pagination, sorting and filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The model version to pipeline run links according to query filters.
@@ -240,6 +256,7 @@ def list_model_version_pipeline_run_links(
     return zen_store().list_model_version_pipeline_run_links(
         model_version_id=model_version_id,
         model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
+        hydrate=hydrate,
     )
 
 
