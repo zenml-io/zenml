@@ -840,7 +840,7 @@ class SqlZenStore(BaseZenStore):
                 "since it does not have a `to_model` method."
             )
 
-        return Page[B](
+        return Page[Any](
             total=total,
             total_pages=total_pages,
             items=items,

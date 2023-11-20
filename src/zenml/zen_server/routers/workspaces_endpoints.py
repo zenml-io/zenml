@@ -229,7 +229,7 @@ def update_workspace(
         id=workspace_name_or_id,
         update_model=workspace_update,
         get_method=zen_store().get_workspace,
-        update_method=zen_store().update_model,
+        update_method=zen_store().update_workspace,
     )
 
 
