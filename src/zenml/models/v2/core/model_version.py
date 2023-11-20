@@ -14,6 +14,7 @@
 """Models representing model versions."""
 
 import re
+from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
@@ -124,6 +125,12 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
     pipeline_run_ids: Dict[str, UUID] = Field(
         description="Pipeline runs linked to the model version",
         default={},
+    )
+    created: datetime = Field(
+        title="The timestamp when this component was created."
+    )
+    updated: datetime = Field(
+        title="The timestamp when this component was last updated.",
     )
 
 
@@ -483,6 +490,24 @@ class ModelVersionResponse(
             the value of the property.
         """
         return self.get_body().pipeline_run_ids
+
+    @property
+    def created(self) -> datetime:
+        """The`created` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().created
+
+    @property
+    def updated(self) -> datetime:
+        """The `updated` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().updated
 
     @property
     def description(self) -> Optional[str]:
