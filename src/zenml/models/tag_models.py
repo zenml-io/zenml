@@ -77,17 +77,6 @@ class TagResourceBaseModel(BaseModel):
     resource_id: UUID
     resource_type: TaggableResourceTypes
 
-    @property
-    def tag_resource_id(self) -> UUID:
-        """Get stable ID from tag_id and resource_id.
-
-        Returns:
-            The generated stable ID.
-        """
-        from zenml.utils.tag_utils import _get_tag_resource_id
-
-        return _get_tag_resource_id(self.tag_id, self.resource_id)
-
 
 class TagResourceResponseModel(TagResourceBaseModel, BaseResponseModel):
     """Response model for tag resource relationships."""
