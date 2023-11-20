@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
@@ -21,15 +21,22 @@ from sqlmodel import Field, Relationship
 
 from zenml.enums import TaggableResourceTypes
 from zenml.models import (
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelUpdateModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
+    ModelRequest,
+    ModelResponse,
+    ModelResponseBody,
+    ModelResponseMetadata,
+    ModelUpdate,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionArtifactResponseBody,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionPipelineRunResponseBody,
+    ModelVersionRequest,
+    ModelVersionResponse,
+    ModelVersionResponseBody,
+    ModelVersionResponseMetadata,
+    UserScopedResponseMetadata,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -38,9 +45,6 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-
-if TYPE_CHECKING:
-    pass
 
 
 class ModelSchema(NamedSchema, table=True):
@@ -96,8 +100,8 @@ class ModelSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_request(cls, model_request: ModelRequestModel) -> "ModelSchema":
-        """Convert an `ModelRequestModel` to an `ModelSchema`.
+    def from_request(cls, model_request: ModelRequest) -> "ModelSchema":
+        """Convert an `ModelRequest` to an `ModelSchema`.
 
         Args:
             model_request: The request model to convert.
@@ -121,16 +125,17 @@ class ModelSchema(NamedSchema, table=True):
     def to_model(
         self,
         hydrate: bool = False,
-    ) -> ModelResponseModel:
-        """Convert an `ModelSchema` to an `ModelResponseModel`.
+    ) -> ModelResponse:
+        """Convert an `ModelSchema` to an `ModelResponse`.
 
         Args:
             hydrate: bool to decide whether to return a hydrated version of the
                 model.
 
         Returns:
-            The created `ModelResponseModel`.
+            The created `ModelResponse`.
         """
+
         tags = [t.tag.to_model() for t in self.tags]
         if self.model_versions:
             version_numbers = [mv.number for mv in self.model_versions]
@@ -139,32 +144,40 @@ class ModelSchema(NamedSchema, table=True):
             ].name
         else:
             latest_version = None
-        return ModelResponseModel(
-            id=self.id,
-            name=self.name,
+
+        metadata = None
+        if hydrate:
+            metadata = ModelResponseMetadata(
+                workspace=self.workspace.to_model(),
+                license=self.license,
+                description=self.description,
+                audience=self.audience,
+                use_cases=self.use_cases,
+                limitations=self.limitations,
+                trade_offs=self.trade_offs,
+                ethics=self.ethics,
+            )
+
+        body = ModelResponseBody(
             user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
-            license=self.license,
-            description=self.description,
-            audience=self.audience,
-            use_cases=self.use_cases,
-            limitations=self.limitations,
-            trade_offs=self.trade_offs,
-            ethics=self.ethics,
             tags=tags,
             latest_version=latest_version,
         )
 
+        return ModelResponse(
+            id=self.id, name=self.name, body=body, metadata=metadata
+        )
+
     def update(
         self,
-        model_update: ModelUpdateModel,
+        model_update: ModelUpdate,
     ) -> "ModelSchema":
-        """Updates a `ModelSchema` from a `ModelUpdateModel`.
+        """Updates a `ModelSchema` from a `ModelUpdate`.
 
         Args:
-            model_update: The `ModelUpdateModel` to update from.
+            model_update: The `ModelUpdate` to update from.
 
         Returns:
             The updated `ModelSchema`.
@@ -230,9 +243,9 @@ class ModelVersionSchema(NamedSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, model_version_request: ModelVersionRequestModel
+        cls, model_version_request: ModelVersionRequest
     ) -> "ModelVersionSchema":
-        """Convert an `ModelVersionRequestModel` to an `ModelVersionSchema`.
+        """Convert an `ModelVersionRequest` to an `ModelVersionSchema`.
 
         Args:
             model_version_request: The request model version to convert.
@@ -253,27 +266,30 @@ class ModelVersionSchema(NamedSchema, table=True):
     def to_model(
         self,
         hydrate: bool = False,
-    ) -> ModelVersionResponseModel:
-        """Convert an `ModelVersionSchema` to an `ModelVersionResponseModel`.
+    ) -> ModelVersionResponse:
+        """Convert an `ModelVersionSchema` to an `ModelVersionResponse`.
 
         Args:
             hydrate: bool to decide whether to return a hydrated version of the
                 model.
 
         Returns:
-            The created `ModelVersionResponseModel`.
+            The created `ModelVersionResponse`.
         """
-        return ModelVersionResponseModel(
-            id=self.id,
+        metadata = None
+        if hydrate:
+            metadata = ModelVersionResponseMetadata(
+                workspace=self.workspace.to_model(),
+                description=self.description,
+            )
+
+        body = ModelVersionResponseBody(
             user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
-            model=self.model.to_model(),
-            name=self.name,
-            number=self.number,
-            description=self.description,
             stage=self.stage,
+            number=self.number,
+            model=self.model.to_model(),
             model_artifact_ids={
                 f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
                     al2.version: al2.artifact_id
@@ -285,18 +301,6 @@ class ModelVersionSchema(NamedSchema, table=True):
                 }
                 for al1 in self.artifact_links
                 if al1.is_model_artifact
-            },
-            endpoint_artifact_ids={
-                f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
-                    al2.version: al2.artifact_id
-                    for al2 in self.artifact_links
-                    if al2.is_endpoint_artifact
-                    and al1.name == al2.name
-                    and al1.step_name == al2.step_name
-                    and al1.pipeline_name == al2.pipeline_name
-                }
-                for al1 in self.artifact_links
-                if al1.is_endpoint_artifact
             },
             data_artifact_ids={
                 f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
@@ -310,9 +314,28 @@ class ModelVersionSchema(NamedSchema, table=True):
                 for al1 in self.artifact_links
                 if not (al1.is_endpoint_artifact or al1.is_model_artifact)
             },
+            endpoint_artifact_ids={
+                f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
+                    al2.version: al2.artifact_id
+                    for al2 in self.artifact_links
+                    if al2.is_endpoint_artifact
+                    and al1.name == al2.name
+                    and al1.step_name == al2.step_name
+                    and al1.pipeline_name == al2.pipeline_name
+                }
+                for al1 in self.artifact_links
+                if al1.is_endpoint_artifact
+            },
             pipeline_run_ids={
                 pr.name: pr.pipeline_run_id for pr in self.pipeline_run_links
             },
+        )
+
+        return ModelVersionResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
         )
 
     def update(
@@ -409,10 +432,10 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
     @classmethod
     def from_request(
         cls,
-        model_version_artifact_request: ModelVersionArtifactRequestModel,
+        model_version_artifact_request: ModelVersionArtifactRequest,
         version: int,
     ) -> "ModelVersionArtifactSchema":
-        """Convert an `ModelVersionArtifactRequestModel` to a `ModelVersionArtifactSchema`.
+        """Convert an `ModelVersionArtifactRequest` to a `ModelVersionArtifactSchema`.
 
         Args:
             model_version_artifact_request: The request link to convert.
@@ -438,31 +461,39 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
     def to_model(
         self,
         hydrate: bool = False,
-    ) -> ModelVersionArtifactResponseModel:
-        """Convert an `ModelVersionArtifactSchema` to an `ModelVersionArtifactResponseModel`.
+    ) -> ModelVersionArtifactResponse:
+        """Convert an `ModelVersionArtifactSchema` to an `ModelVersionArtifactResponse`.
 
         Args:
             hydrate: bool to decide whether to return a hydrated version of the
                 model.
 
         Returns:
-            The created `ModelVersionArtifactResponseModel`.
+            The created `ModelVersionArtifactResponse`.
         """
-        return ModelVersionArtifactResponseModel(
-            id=self.id,
+        metadata = None
+        if hydrate:
+            metadata = UserScopedResponseMetadata()
+
+        body = ModelVersionArtifactResponseBody(
+            user=self.user.to_model() if self.user else None,
+            created=self.created,
+            updated=self.updated,
             name=self.name,
             pipeline_name=self.pipeline_name,
             step_name=self.step_name,
-            user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
-            created=self.created,
-            updated=self.updated,
+            artifact=self.artifact_id,
             model=self.model_id,
             model_version=self.model_version_id,
-            artifact=self.artifact_id,
             is_model_artifact=self.is_model_artifact,
             is_endpoint_artifact=self.is_endpoint_artifact,
             link_version=self.version,
+        )
+
+        return ModelVersionArtifactResponse(
+            id=self.id,
+            body=body,
+            metadata=metadata,
         )
 
 
@@ -530,9 +561,9 @@ class ModelVersionPipelineRunSchema(NamedSchema, table=True):
     @classmethod
     def from_request(
         cls,
-        model_version_pipeline_run_request: ModelVersionPipelineRunRequestModel,
+        model_version_pipeline_run_request: ModelVersionPipelineRunRequest,
     ) -> "ModelVersionPipelineRunSchema":
-        """Convert an `ModelVersionPipelineRunRequestModel` to an `ModelVersionPipelineRunSchema`.
+        """Convert an `ModelVersionPipelineRunRequest` to an `ModelVersionPipelineRunSchema`.
 
         Args:
             model_version_pipeline_run_request: The request link to convert.
@@ -552,24 +583,31 @@ class ModelVersionPipelineRunSchema(NamedSchema, table=True):
     def to_model(
         self,
         hydrate: bool = False,
-    ) -> ModelVersionPipelineRunResponseModel:
-        """Convert an `ModelVersionPipelineRunSchema` to an `ModelVersionPipelineRunResponseModel`.
+    ) -> ModelVersionPipelineRunResponse:
+        """Convert an `ModelVersionPipelineRunSchema` to an `ModelVersionPipelineRunResponse`.
 
         Args:
             hydrate: bool to decide whether to return a hydrated version of the
                 model.
 
         Returns:
-            The created `ModelVersionPipelineRunResponseModel`.
+            The created `ModelVersionPipelineRunResponse`.
         """
-        return ModelVersionPipelineRunResponseModel(
-            id=self.id,
-            name=self.name,
+        metadata = None
+        if hydrate:
+            metadata = UserScopedResponseMetadata()
+
+        body = ModelVersionPipelineRunResponseBody(
             user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
+            name=self.name,
+            pipeline_run=self.pipeline_run_id,
             model=self.model_id,
             model_version=self.model_version_id,
-            pipeline_run=self.pipeline_run_id,
+        )
+        return ModelVersionPipelineRunResponse(
+            id=self.id,
+            body=body,
+            metadata=metadata,
         )
