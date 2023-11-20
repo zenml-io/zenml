@@ -162,9 +162,9 @@ The project loosely follows [the recommended ZenML project structure](https://do
 │   │   ├── promote_latest.py # promote latest step
 │   │   ├── promote_metric_compare_promoter.py  # metric compare promoter step
 │   │   └── promote_get_metrics.py   # get metric step
-│   ├── registrer            # `zenml.steps.registrer` implementations
+│   ├── register            # `zenml.steps.register` implementations
 │   │   ├── __init__.py
-│   │   └── model_log_registrer.py  # model log registrer step
+│   │   └── model_log_register.py  # model log register step
 │   ├── tokenization         # `zenml.steps.tokenization` implementations
 │   │   ├── __init__.py
 │   │   └── tokenization.py   # tokenization step
