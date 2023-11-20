@@ -545,8 +545,12 @@ def list_workspace_builds(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     build_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_builds(
-        build_filter_model=build_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=build_filter_model,
+        resource_type=ResourceType.PIPELINE_BUILD,
+        list_method=zen_store().list_builds,
+        hydrate=hydrate,
     )
 
 
@@ -572,8 +576,8 @@ def create_build(
         The created build.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the build
-            does not match the current workspace or authenticated user.
+        IllegalOperationError: If the workspace specified in the build
+            does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -583,13 +587,12 @@ def create_build(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if build.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating builds for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_build(build=build)
+    return verify_permissions_and_create_entity(
+        request_model=build,
+        resource_type=ResourceType.PIPELINE_BUILD,
+        create_method=zen_store().create_build,
+    )
 
 
 @router.get(
@@ -622,8 +625,12 @@ def list_workspace_deployments(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     deployment_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_deployments(
-        deployment_filter_model=deployment_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=deployment_filter_model,
+        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+        list_method=zen_store().list_deployments,
+        hydrate=hydrate,
     )
 
 
@@ -649,9 +656,8 @@ def create_deployment(
         The created deployment.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            deployment does not match the current workspace or authenticated
-            user.
+        IllegalOperationError: If the workspace specified in the
+            deployment does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -661,13 +667,12 @@ def create_deployment(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if deployment.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating deployments for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_deployment(deployment=deployment)
+    return verify_permissions_and_create_entity(
+        request_model=deployment,
+        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+        create_method=zen_store().create_deployment,
+    )
 
 
 @router.get(
@@ -698,8 +703,12 @@ def list_runs(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     runs_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_runs(
-        runs_filter_model=runs_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=runs_filter_model,
+        resource_type=ResourceType.PIPELINE_RUN,
+        list_method=zen_store().list_runs,
+        hydrate=hydrate,
     )
 
 

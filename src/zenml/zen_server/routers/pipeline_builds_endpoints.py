@@ -20,6 +20,12 @@ from zenml.constants import API, PIPELINE_BUILDS, VERSION_1
 from zenml.models import Page, PipelineBuildFilter, PipelineBuildResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -57,8 +63,11 @@ def list_builds(
     Returns:
         List of build objects.
     """
-    return zen_store().list_builds(
-        build_filter_model=build_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=build_filter_model,
+        resource_type=ResourceType.PIPELINE_BUILD,
+        list_method=zen_store().list_builds,
+        hydrate=hydrate,
     )
 
 
@@ -83,7 +92,9 @@ def get_build(
     Returns:
         A specific build object.
     """
-    return zen_store().get_build(build_id=build_id, hydrate=hydrate)
+    return verify_permissions_and_get_entity(
+        id=build_id, get_method=zen_store().get_build, hydrate=hydrate
+    )
 
 
 @router.delete(
@@ -100,4 +111,8 @@ def delete_build(
     Args:
         build_id: ID of the build to delete.
     """
-    zen_store().delete_build(build_id=build_id)
+    verify_permissions_and_delete_entity(
+        id=build_id,
+        get_method=zen_store().get_build,
+        delete_method=zen_store().delete_build,
+    )

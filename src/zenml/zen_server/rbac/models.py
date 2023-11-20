@@ -53,6 +53,9 @@ class ResourceType(StrEnum):
     TAG = "tag"
     SERVICE_ACCOUNT = "service_account"
     WORKSPACE = "workspace"
+    PIPELINE_RUN = "pipeline_run"
+    PIPELINE_DEPLOYMENT = "pipeline_deployment"
+    PIPELINE_BUILD = "pipeline_build"
 
 
 class Resource(BaseModel):

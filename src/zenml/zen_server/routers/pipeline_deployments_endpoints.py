@@ -24,6 +24,12 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -61,8 +67,11 @@ def list_deployments(
     Returns:
         List of deployment objects.
     """
-    return zen_store().list_deployments(
-        deployment_filter_model=deployment_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=deployment_filter_model,
+        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+        list_method=zen_store().list_deployments,
+        hydrate=hydrate,
     )
 
 
@@ -87,8 +96,10 @@ def get_deployment(
     Returns:
         A specific deployment object.
     """
-    return zen_store().get_deployment(
-        deployment_id=deployment_id, hydrate=hydrate
+    return verify_permissions_and_get_entity(
+        id=deployment_id,
+        get_method=zen_store().get_deployment,
+        hydrate=hydrate,
     )
 
 
@@ -106,4 +117,8 @@ def delete_deployment(
     Args:
         deployment_id: ID of the deployment to delete.
     """
-    zen_store().delete_deployment(deployment_id=deployment_id)
+    verify_permissions_and_delete_entity(
+        id=deployment_id,
+        get_method=zen_store().get_deployment,
+        delete_method=zen_store().delete_deployment,
+    )

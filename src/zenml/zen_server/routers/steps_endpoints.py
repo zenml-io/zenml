@@ -40,6 +40,11 @@ from zenml.utils.artifact_utils import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.models import Action
+from zenml.zen_server.rbac.utils import (
+    dehydrate_response_model,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -100,6 +105,9 @@ def create_run_step(
     Returns:
         The created run step.
     """
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.UPDATE)
+
     return zen_store().create_run_step(step_run=step)
 
 
@@ -124,7 +132,11 @@ def get_step(
     Returns:
         The step.
     """
-    return zen_store().get_run_step(step_id, hydrate=hydrate)
+    step = zen_store().get_run_step(step_id, hydrate=hydrate)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    return dehydrate_response_model(step)
 
 
 @router.put(
@@ -147,9 +159,14 @@ def update_step(
     Returns:
         The updated step model.
     """
-    return zen_store().update_run_step(
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.UPDATE)
+
+    updated_step = zen_store().update_run_step(
         step_run_id=step_id, step_run_update=step_model
     )
+    return dehydrate_response_model(updated_step)
 
 
 @router.get(
@@ -170,7 +187,11 @@ def get_step_configuration(
     Returns:
         The step configuration.
     """
-    return zen_store().get_run_step(step_id).config.dict()
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    return step.config.dict()
 
 
 @router.get(
@@ -191,7 +212,11 @@ def get_step_status(
     Returns:
         The status of the step.
     """
-    return zen_store().get_run_step(step_id).status
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    return step.status
 
 
 @router.get(
@@ -215,8 +240,12 @@ def get_step_logs(
     Raises:
         HTTPException: If no logs are available for this step.
     """
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
     store = zen_store()
-    logs = store.get_run_step(step_id).logs
+    logs = step.logs
     if logs is None:
         raise HTTPException(
             status_code=404, detail="No logs available for this step"

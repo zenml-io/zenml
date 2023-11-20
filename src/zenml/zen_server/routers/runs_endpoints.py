@@ -38,6 +38,13 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -74,8 +81,11 @@ def list_runs(
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_runs(
-        runs_filter_model=runs_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=runs_filter_model,
+        resource_type=ResourceType.PIPELINE_RUN,
+        list_method=zen_store().list_runs,
+        hydrate=hydrate,
     )
 
 
@@ -100,7 +110,9 @@ def get_run(
     Returns:
         The pipeline run.
     """
-    return zen_store().get_run(run_name_or_id=run_id, hydrate=hydrate)
+    return verify_permissions_and_get_entity(
+        id=run_id, get_method=zen_store().get_run, hydrate=hydrate
+    )
 
 
 @router.put(
@@ -123,7 +135,12 @@ def update_run(
     Returns:
         The updated run model.
     """
-    return zen_store().update_run(run_id=run_id, run_update=run_model)
+    return verify_permissions_and_update_entity(
+        id=run_id,
+        update_model=run_model,
+        get_method=zen_store().get_run,
+        update_method=zen_store().update_run,
+    )
 
 
 @router.delete(
@@ -140,7 +157,11 @@ def delete_run(
     Args:
         run_id: ID of the run.
     """
-    zen_store().delete_run(run_id=run_id)
+    verify_permissions_and_delete_entity(
+        id=run_id,
+        get_method=zen_store().get_run,
+        delete_method=zen_store().delete_run,
+    )
 
 
 @router.get(
@@ -161,7 +182,9 @@ def get_run_dag(
     Returns:
         The DAG for a given pipeline run.
     """
-    run = zen_store().get_run(run_name_or_id=run_id)
+    run = verify_permissions_and_get_entity(
+        id=run_id, get_method=zen_store().get_run, hydrate=True
+    )
     graph = LineageGraph()
     graph.generate_run_nodes_and_edges(run)
     return graph
@@ -174,6 +197,7 @@ def get_run_dag(
 )
 @handle_exceptions
 def get_run_steps(
+    run_id: UUID,
     step_run_filter_model: StepRunFilter = Depends(
         make_dependable(StepRunFilter)
     ),
@@ -182,12 +206,17 @@ def get_run_steps(
     """Get all steps for a given pipeline run.
 
     Args:
+        run_id: ID of the pipeline run.
         step_run_filter_model: Filter model used for pagination, sorting,
             filtering
 
     Returns:
         The steps for a given pipeline run.
     """
+    verify_permissions_and_get_entity(
+        id=run_id, get_method=zen_store().get_run, hydrate=False
+    )
+    step_run_filter_model.pipeline_run_id = run_id
     return zen_store().list_run_steps(step_run_filter_model)
 
 
@@ -209,7 +238,10 @@ def get_pipeline_configuration(
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    return zen_store().get_run(run_name_or_id=run_id).config.dict()
+    run = verify_permissions_and_get_entity(
+        id=run_id, get_method=zen_store().get_run, hydrate=True
+    )
+    return run.config.dict()
 
 
 @router.get(
@@ -230,4 +262,7 @@ def get_run_status(
     Returns:
         The status of the pipeline run.
     """
-    return zen_store().get_run(run_id).status
+    run = verify_permissions_and_get_entity(
+        id=run_id, get_method=zen_store().get_run, hydrate=False
+    )
+    return run.status
