@@ -27,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.models.v2.base.base import (
@@ -412,5 +412,101 @@ class ShareableFilter(WorkspaceScopedFilter):
                 getattr(table, "is_shared").is_(True),
             )
             query = query.where(scope_filter)
+
+        return query
+
+
+# Model scoped filters
+
+
+class ModelScopedFilter(WorkspaceScopedFilter):
+    """Base filter model inside Model Scope."""
+
+    _model_id: UUID = PrivateAttr(None)
+
+    def set_scope_model(self, model_name_or_id: Union[str, UUID]) -> None:
+        """Set the model to scope this response.
+
+        Args:
+            model_name_or_id: The model to scope this response to.
+        """
+        try:
+            model_id = UUID(str(model_name_or_id))
+        except ValueError:
+            from zenml.client import Client
+
+            model_id = Client().get_model(model_name_or_id).id
+
+        self._model_id = model_id
+
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query=query, table=table)
+
+        if self._model_id:
+            query = query.where(getattr(table, "model_id") == self._model_id)
+
+        return query
+
+
+class ModelVersionScopedFilter(ModelScopedFilter):
+    """Base filter model inside Model Version Scope."""
+
+    _model_version_id: UUID = PrivateAttr(None)
+
+    def set_scope_model_version(
+        self, model_version_name_or_id: Union[str, UUID]
+    ) -> None:
+        """Set the model version to scope this response.
+
+        Args:
+            model_version_name_or_id: The model version to scope this response to.
+        """
+        try:
+            model_version_id = UUID(str(model_version_name_or_id))
+        except ValueError:
+            from zenml.client import Client
+
+            model_version_id = (
+                Client()
+                .get_model_version(
+                    model_name_or_id=self._model_id,
+                    model_version_name_or_number_or_id=model_version_name_or_id,
+                )
+                .id
+            )
+        self._model_version_id = model_version_id
+
+    def apply_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        query = super().apply_filter(query=query, table=table)
+
+        query = query.where(
+            getattr(table, "model_version_id") == self._model_version_id
+        )
 
         return query
