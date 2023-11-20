@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Tests for the lineage graph."""
 
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from tests.integration.functional.zen_stores.utils import (
@@ -21,6 +22,7 @@ from tests.integration.functional.zen_stores.utils import (
 )
 from zenml import pipeline, step
 from zenml.artifacts.external_artifact import ExternalArtifact
+from zenml.enums import MetadataResourceTypes
 from zenml.lineage_graph.lineage_graph import (
     ARTIFACT_PREFIX,
     STEP_PREFIX,
@@ -29,9 +31,12 @@ from zenml.lineage_graph.lineage_graph import (
 from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
 from zenml.models import PipelineRunResponse
 
+if TYPE_CHECKING:
+    from zenml.client import Client
+
 
 def test_generate_run_nodes_and_edges(
-    clean_client, connected_two_step_pipeline
+    clean_client: "Client", connected_two_step_pipeline
 ):
     """Tests that the created lineage graph has the right nodes and edges.
 
@@ -54,7 +59,8 @@ def test_generate_run_nodes_and_edges(
     # Write some metadata for the pipeline run
     clean_client.create_run_metadata(
         metadata={"orchestrator_url": Uri("https://www.ariaflow.org")},
-        pipeline_run_id=pipeline_run.id,
+        resource_id=pipeline_run.id,
+        resource_type=MetadataResourceTypes.PIPELINE_RUN,
         stack_component_id=orchestrator_id,
     )
 
@@ -65,7 +71,8 @@ def test_generate_run_nodes_and_edges(
             metadata={
                 "experiment_tracker_url": Uri("https://www.aria_and_blupus.ai")
             },
-            step_run_id=step_.id,
+            resource_id=step_.id,
+            resource_type=MetadataResourceTypes.STEP_RUN,
             stack_component_id=orchestrator_id,  # just link something
         )
 
@@ -73,7 +80,8 @@ def test_generate_run_nodes_and_edges(
         for output_artifact in step_.outputs.values():
             clean_client.create_run_metadata(
                 metadata={"aria_loves_alex": True},
-                artifact_id=output_artifact.id,
+                resource_id=output_artifact.id,
+                resource_type=MetadataResourceTypes.ARTIFACT,
             )
 
     # Get the run again so all the metadata is loaded
@@ -136,7 +144,7 @@ def pipeline_with_direct_edge():
     str_step(after=["int_step"])
 
 
-def test_add_direct_edges(clean_client):
+def test_add_direct_edges(clean_client: "Client"):
     """Test that direct `.after(...)` edges are added to the lineage graph."""
 
     # Create and retrieve a pipeline run
@@ -181,7 +189,7 @@ def second_pipeline(artifact_id: UUID):
     external_artifact_loader_step(a=ExternalArtifact(id=artifact_id))
 
 
-def test_add_external_artifacts(clean_client):
+def test_add_external_artifacts(clean_client: "Client"):
     """Test that external artifacts are added to the lineage graph."""
 
     # Create and retrieve a pipeline run
