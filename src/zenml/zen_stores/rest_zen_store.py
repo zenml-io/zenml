@@ -122,20 +122,20 @@ from zenml.models import (
     FlavorResponse,
     FlavorUpdate,
     LogsResponse,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelUpdateModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
-    ModelVersionUpdateModel,
+    ModelFilter,
+    ModelRequest,
+    ModelResponse,
+    ModelUpdate,
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
+    ModelVersionResponse,
+    ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceResponse,
     OAuthDeviceUpdate,
@@ -2818,11 +2818,9 @@ class RestZenStore(BaseZenStore):
             route=WORKSPACES,
         )
 
-    #########
-    # Model
-    #########
+    # ----------------------------- Models -----------------------------
 
-    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+    def create_model(self, model: ModelRequest) -> ModelResponse:
         """Creates a new model.
 
         Args:
@@ -2833,7 +2831,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_workspace_scoped_resource(
             resource=model,
-            response_model=ModelResponseModel,
+            response_model=ModelResponse,
             route=MODELS,
         )
 
@@ -2848,8 +2846,8 @@ class RestZenStore(BaseZenStore):
     def update_model(
         self,
         model_id: UUID,
-        model_update: ModelUpdateModel,
-    ) -> ModelResponseModel:
+        model_update: ModelUpdate,
+    ) -> ModelResponse:
         """Updates an existing model.
 
         Args:
@@ -2863,16 +2861,18 @@ class RestZenStore(BaseZenStore):
             resource_id=model_id,
             resource_update=model_update,
             route=MODELS,
-            response_model=ModelResponseModel,
+            response_model=ModelResponse,
         )
 
     def get_model(
-        self, model_name_or_id: Union[str, UUID]
-    ) -> ModelResponseModel:
+        self, model_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> ModelResponse:
         """Get an existing model.
 
         Args:
             model_name_or_id: name or id of the model to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model of interest.
@@ -2880,35 +2880,38 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=model_name_or_id,
             route=MODELS,
-            response_model=ModelResponseModel,
+            response_model=ModelResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_models(
         self,
-        model_filter_model: ModelFilterModel,
-    ) -> Page[ModelResponseModel]:
+        model_filter_model: ModelFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelResponse]:
         """Get all models by filter.
 
         Args:
             model_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all models.
         """
         return self._list_paginated_resources(
             route=MODELS,
-            response_model=ModelResponseModel,
+            response_model=ModelResponse,
             filter_model=model_filter_model,
+            params={"hydrate": hydrate},
         )
 
-    #################
-    # Model Versions
-    #################
+    # ----------------------------- Model Versions -----------------------------
 
     def create_model_version(
-        self, model_version: ModelVersionRequestModel
-    ) -> ModelVersionResponseModel:
+        self, model_version: ModelVersionRequest
+    ) -> ModelVersionResponse:
         """Creates a new model version.
 
         Args:
@@ -2919,7 +2922,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_workspace_scoped_resource(
             resource=model_version,
-            response_model=ModelVersionResponseModel,
+            response_model=ModelVersionResponse,
             route=f"{MODELS}/{model_version.model}{MODEL_VERSIONS}",
         )
 
@@ -2938,13 +2941,15 @@ class RestZenStore(BaseZenStore):
         )
 
     def get_model_version(
-        self, model_version_id: UUID
-    ) -> ModelVersionResponseModel:
+        self, model_version_id: UUID, hydrate: bool = True
+    ) -> ModelVersionResponse:
         """Get an existing model version.
 
         Args:
             model_version_id: name, id, stage or number of the model version to
                 be retrieved. If skipped - latest is retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model version of interest.
@@ -2952,14 +2957,16 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=model_version_id,
             route=MODEL_VERSIONS,
-            response_model=ModelVersionResponseModel,
+            response_model=ModelVersionResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_model_versions(
         self,
-        model_version_filter_model: ModelVersionFilterModel,
+        model_version_filter_model: ModelVersionFilter,
         model_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[ModelVersionResponseModel]:
+        hydrate: bool = False,
+    ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
@@ -2967,6 +2974,8 @@ class RestZenStore(BaseZenStore):
                 model versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model versions.
@@ -2974,21 +2983,23 @@ class RestZenStore(BaseZenStore):
         if model_name_or_id:
             return self._list_paginated_resources(
                 route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
-                response_model=ModelVersionResponseModel,
+                response_model=ModelVersionResponse,
                 filter_model=model_version_filter_model,
+                params={"hydrate": hydrate},
             )
         else:
             return self._list_paginated_resources(
                 route=MODEL_VERSIONS,
-                response_model=ModelVersionResponseModel,
+                response_model=ModelVersionResponse,
                 filter_model=model_version_filter_model,
+                params={"hydrate": hydrate},
             )
 
     def update_model_version(
         self,
         model_version_id: UUID,
-        model_version_update_model: ModelVersionUpdateModel,
-    ) -> ModelVersionResponseModel:
+        model_version_update_model: ModelVersionUpdate,
+    ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
         Args:
@@ -3003,16 +3014,14 @@ class RestZenStore(BaseZenStore):
             resource_id=model_version_id,
             resource_update=model_version_update_model,
             route=MODEL_VERSIONS,
-            response_model=ModelVersionResponseModel,
+            response_model=ModelVersionResponse,
         )
 
-    ###########################
-    # Model Versions Artifacts
-    ###########################
+    # ---------------------- Model Version Artifact Links ----------------------
 
     def create_model_version_artifact_link(
-        self, model_version_artifact_link: ModelVersionArtifactRequestModel
-    ) -> ModelVersionArtifactResponseModel:
+        self, model_version_artifact_link: ModelVersionArtifactRequest
+    ) -> ModelVersionArtifactResponse:
         """Creates a new model version link.
 
         Args:
@@ -3024,29 +3033,33 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_workspace_scoped_resource(
             resource=model_version_artifact_link,
-            response_model=ModelVersionArtifactResponseModel,
+            response_model=ModelVersionArtifactResponse,
             route=f"{MODEL_VERSIONS}/{model_version_artifact_link.model_version}{ARTIFACTS}",
         )
 
     def list_model_version_artifact_links(
         self,
         model_version_id: UUID,
-        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-    ) -> Page[ModelVersionArtifactResponseModel]:
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionArtifactResponse]:
         """Get all model version to artifact links by filter.
 
         Args:
             model_version_id: ID of the model version containing the link.
-            model_version_artifact_link_filter_model: All filter parameters including pagination
-                params.
+            model_version_artifact_link_filter_model: All filter parameters
+                including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to artifact links.
         """
         return self._list_paginated_resources(
             route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
-            response_model=ModelVersionArtifactResponseModel,
+            response_model=ModelVersionArtifactResponse,
             filter_model=model_version_artifact_link_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def delete_model_version_artifact_link(
@@ -3058,21 +3071,20 @@ class RestZenStore(BaseZenStore):
 
         Args:
             model_version_id: ID of the model version containing the link.
-            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
+            model_version_artifact_link_name_or_id: name or ID of the model
+                version to artifact link to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_artifact_link_name_or_id,
             route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
         )
 
-    ###############################
-    # Model Versions Pipeline Runs
-    ###############################
+    # -------------------- Model Version Pipeline Run Links --------------------
 
     def create_model_version_pipeline_run_link(
         self,
-        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-    ) -> ModelVersionPipelineRunResponseModel:
+        model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
+    ) -> ModelVersionPipelineRunResponse:
         """Creates a new model version to pipeline run link.
 
         Args:
@@ -3087,29 +3099,33 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_workspace_scoped_resource(
             resource=model_version_pipeline_run_link,
-            response_model=ModelVersionPipelineRunResponseModel,
+            response_model=ModelVersionPipelineRunResponse,
             route=f"{MODEL_VERSIONS}/{model_version_pipeline_run_link.model_version}{RUNS}",
         )
 
     def list_model_version_pipeline_run_links(
         self,
         model_version_id: UUID,
-        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
 
         Args:
             model_version_id: ID of the model version containing the link.
-            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
-                params.
+            model_version_pipeline_run_link_filter_model: All filter parameters
+                including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to pipeline run links.
         """
         return self._list_paginated_resources(
             route=f"{MODEL_VERSIONS}/{model_version_id}{RUNS}",
-            response_model=ModelVersionPipelineRunResponseModel,
+            response_model=ModelVersionPipelineRunResponse,
             filter_model=model_version_pipeline_run_link_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def delete_model_version_pipeline_run_link(
@@ -3121,7 +3137,8 @@ class RestZenStore(BaseZenStore):
 
         Args:
             model_version_id: ID of the model version containing the link.
-            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model
+                version to pipeline run link to be deleted.
         """
         self._delete_resource(
             resource_id=model_version_pipeline_run_link_name_or_id,
