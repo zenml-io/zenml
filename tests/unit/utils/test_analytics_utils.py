@@ -123,7 +123,7 @@ def event_context_exit(
     "os.environ", {"ZENML_DEBUG": "true", "ZENML_ANALYTICS_OPT_IN": "true"}
 )
 def test_analytics_event(
-    mocker: MockFixture, clean_client, one_step_pipeline, empty_step
+    mocker: MockFixture, clean_workspace, one_step_pipeline, empty_step
 ) -> None:
     """Checks whether the event sent for analytics has the right properties.
 
@@ -160,16 +160,16 @@ def test_analytics_event(
     )
 
     # Test zenml initialization
-    clean_client.initialize()
+    clean_workspace.initialize()
 
     # Test stack and component registration
-    clean_client.create_stack_component(
+    clean_workspace.create_stack_component(
         name="new_artifact_store",
         flavor="local",
         component_type=StackComponentType.ARTIFACT_STORE,
         configuration={"path": "/tmp/path/for/test"},  # nosec
     )
-    clean_client.create_stack(
+    clean_workspace.create_stack(
         name="new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: "new_artifact_store",

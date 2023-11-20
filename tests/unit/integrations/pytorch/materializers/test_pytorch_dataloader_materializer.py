@@ -22,7 +22,7 @@ from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer im
 )
 
 
-def test_pytorch_dataloader_materializer(clean_client):
+def test_pytorch_dataloader_materializer(clean_workspace):
     """Tests whether the steps work for the Sklearn materializer."""
     dataset = TensorDataset(torch.tensor([1, 2, 3, 4, 5]))
     dataloader = _test_materializer(

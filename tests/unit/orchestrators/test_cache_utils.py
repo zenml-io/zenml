@@ -208,7 +208,7 @@ def test_fetching_cached_step_run_queries_cache_candidates(
 
 
 def test_fetching_cached_step_run_uses_latest_candidate(
-    clean_client,
+    clean_workspace,
     sample_pipeline_deployment_request_model,
     sample_pipeline_run_request_model,
     sample_step_request_model,
@@ -216,12 +216,12 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     """Tests that the latest step run with the same cache key is used for
     caching."""
     sample_step_request_model.cache_key = "cache_key"
-    sample_step_request_model.workspace = clean_client.active_workspace.id
+    sample_step_request_model.workspace = clean_workspace.active_workspace.id
     sample_pipeline_deployment_request_model.workspace = (
-        clean_client.active_workspace.id
+        clean_workspace.active_workspace.id
     )
     sample_pipeline_run_request_model.workspace = (
-        clean_client.active_workspace.id
+        clean_workspace.active_workspace.id
     )
 
     sample_step = Step.parse_obj(
@@ -239,28 +239,28 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     }
 
     # Create a pipeline deployment, pipeline run and step run
-    deployment_response = clean_client.zen_store.create_deployment(
+    deployment_response = clean_workspace.zen_store.create_deployment(
         sample_pipeline_deployment_request_model
     )
     sample_pipeline_run_request_model.deployment = deployment_response.id
     sample_step_request_model.deployment = deployment_response.id
 
-    clean_client.zen_store.create_run(sample_pipeline_run_request_model)
+    clean_workspace.zen_store.create_run(sample_pipeline_run_request_model)
     sample_step_request_model.pipeline_run_id = (
         sample_pipeline_run_request_model.id
     )
-    response_1 = clean_client.zen_store.create_run_step(
+    response_1 = clean_workspace.zen_store.create_run_step(
         sample_step_request_model
     )
 
     # Create another pipeline run and step run, with the same cache key
     sample_pipeline_run_request_model.id = uuid4()
     sample_pipeline_run_request_model.name = "new_run_name"
-    clean_client.zen_store.create_run(sample_pipeline_run_request_model)
+    clean_workspace.zen_store.create_run(sample_pipeline_run_request_model)
     sample_step_request_model.pipeline_run_id = (
         sample_pipeline_run_request_model.id
     )
-    response_2 = clean_client.zen_store.create_run_step(
+    response_2 = clean_workspace.zen_store.create_run_step(
         sample_step_request_model
     )
 

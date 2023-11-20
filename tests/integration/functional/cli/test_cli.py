@@ -50,7 +50,7 @@ def test_ZenMLCLI_formatter():
 
 
 def test_cli_sets_custom_source_root_if_outside_of_repository(
-    clean_client, mocker
+    clean_workspace, mocker
 ):
     """Tests that the CLI root group sets a custom source root if outside of a
     ZenML repository."""

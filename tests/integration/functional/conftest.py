@@ -73,10 +73,10 @@ def step_with_logs() -> int:
 
 
 @pytest.fixture
-def clean_client_with_run(clean_client, connected_two_step_pipeline):
+def clean_client_with_run(clean_workspace, connected_two_step_pipeline):
     """Fixture to get a clean client with an existing pipeline run in it."""
     connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     ).run()
-    return clean_client
+    return clean_workspace

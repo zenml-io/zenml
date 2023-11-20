@@ -32,7 +32,7 @@ SERVER_START_STOP_TIMEOUT = 30
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_cli_up_down(clean_client, mocker):
+def test_server_cli_up_down(clean_workspace, mocker):
     """Test spinning up and shutting down ZenServer."""
     mocker.patch.dict(
         os.environ, {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}

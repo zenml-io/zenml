@@ -27,7 +27,7 @@ SERVER_START_STOP_TIMEOUT = 60
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_up_down(clean_client, mocker):
+def test_server_up_down(clean_workspace, mocker):
     """Test spinning up and shutting down ZenServer."""
     # on MAC OS, we need to set this environment variable
     # to fix problems with the fork() calls (see this thread

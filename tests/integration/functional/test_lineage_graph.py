@@ -31,14 +31,14 @@ from zenml.models import PipelineRunResponse
 
 
 def test_generate_run_nodes_and_edges(
-    clean_client, connected_two_step_pipeline
+    clean_workspace, connected_two_step_pipeline
 ):
     """Tests that the created lineage graph has the right nodes and edges.
 
     We also write some mock metadata for both pipeline runs and steps runs here
     to test that they are correctly added to the lineage graph.
     """
-    active_stack_model = clean_client.active_stack_model
+    active_stack_model = clean_workspace.active_stack_model
     orchestrator_id = active_stack_model.components["orchestrator"][0].id
 
     # Create and retrieve a pipeline run
@@ -47,12 +47,12 @@ def test_generate_run_nodes_and_edges(
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = clean_client.get_pipeline(
+    pipeline_run = clean_workspace.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
 
     # Write some metadata for the pipeline run
-    clean_client.create_run_metadata(
+    clean_workspace.create_run_metadata(
         metadata={"orchestrator_url": Uri("https://www.ariaflow.org")},
         pipeline_run_id=pipeline_run.id,
         stack_component_id=orchestrator_id,
@@ -61,7 +61,7 @@ def test_generate_run_nodes_and_edges(
     # Write some metadata for all steps
     steps = pipeline_run.steps
     for step_ in steps.values():
-        clean_client.create_run_metadata(
+        clean_workspace.create_run_metadata(
             metadata={
                 "experiment_tracker_url": Uri("https://www.aria_and_blupus.ai")
             },
@@ -71,13 +71,13 @@ def test_generate_run_nodes_and_edges(
 
         # Write some metadata for all artifacts
         for output_artifact in step_.outputs.values():
-            clean_client.create_run_metadata(
+            clean_workspace.create_run_metadata(
                 metadata={"aria_loves_alex": True},
                 artifact_id=output_artifact.id,
             )
 
     # Get the run again so all the metadata is loaded
-    pipeline_run = clean_client.get_pipeline(
+    pipeline_run = clean_workspace.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
 
@@ -136,7 +136,7 @@ def pipeline_with_direct_edge():
     str_step(after=["int_step"])
 
 
-def test_add_direct_edges(clean_client):
+def test_add_direct_edges(clean_workspace):
     """Test that direct `.after(...)` edges are added to the lineage graph."""
 
     # Create and retrieve a pipeline run
@@ -181,7 +181,7 @@ def second_pipeline(artifact_id: UUID):
     external_artifact_loader_step(a=ExternalArtifact(id=artifact_id))
 
 
-def test_add_external_artifacts(clean_client):
+def test_add_external_artifacts(clean_workspace):
     """Test that external artifacts are added to the lineage graph."""
 
     # Create and retrieve a pipeline run

@@ -2757,7 +2757,7 @@ def test_artifacts_are_not_deleted_with_run(clean_workspace):
 # '---------'
 
 
-def test_logs_are_recorded_properly(clean_client):
+def test_logs_are_recorded_properly(clean_workspace):
     """Tests if logs are stored in the artifact store."""
     client = Client()
     store = client.zen_store
@@ -2783,7 +2783,7 @@ def test_logs_are_recorded_properly(clean_client):
         assert "Step step_2 has started." in step2_logs_content
 
 
-def test_logs_are_recorded_properly_when_disabled(clean_client):
+def test_logs_are_recorded_properly_when_disabled(clean_workspace):
     """Tests no logs are stored in the artifact store when disabled"""
     client = Client()
     store = client.zen_store

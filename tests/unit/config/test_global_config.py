@@ -17,7 +17,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 
 
-def test_global_config_file_creation(clean_client):
+def test_global_config_file_creation(clean_workspace):
     """Tests whether a config file gets created when the global config object is first instantiated."""
     if fileio.exists(GlobalConfiguration()._config_file()):
         fileio.remove(GlobalConfiguration()._config_file())
@@ -27,7 +27,7 @@ def test_global_config_file_creation(clean_client):
 
 
 def test_global_config_returns_value_from_environment_variable(
-    mocker, clean_client
+    mocker, clean_workspace
 ):
     """Tests that global config attributes can be overwritten by environment variables."""
     config = GlobalConfiguration()

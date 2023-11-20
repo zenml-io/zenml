@@ -124,7 +124,7 @@ step_instance = s()
 pipeline_instance = p(step_instance)
 
 
-def test_pipeline_registration_without_repo(clean_client):
+def test_pipeline_registration_without_repo(clean_workspace):
     """Tests that the register command outside a repo works."""
     runner = CliRunner()
     register_command = cli.commands["pipeline"].commands["register"]
@@ -164,7 +164,7 @@ def test_pipeline_registration_with_repo(clean_workspace):
     assert clean_workspace.list_pipelines(name="p").total == 1
 
 
-def test_pipeline_build_without_repo(clean_client):
+def test_pipeline_build_without_repo(clean_workspace):
     """Tests that the build command outside a repo works."""
     runner = CliRunner()
     build_command = cli.commands["pipeline"].commands["build"]
@@ -304,7 +304,7 @@ def test_pipeline_build_with_different_stack(clean_workspace, mocker):
     assert builds[0].stack.id == new_stack.id
 
 
-def test_pipeline_run_without_repo(clean_client):
+def test_pipeline_run_without_repo(clean_workspace):
     """Tests that the run command outside a repo works."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]

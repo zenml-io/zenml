@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 def test_pipeline_run_artifacts(
-    clean_client: "Client", connected_two_step_pipeline
+    clean_workspace: "Client", connected_two_step_pipeline
 ):
     """Integration test for `run.artifacts` property."""
     pipeline_instance: BasePipeline = connected_two_step_pipeline(
@@ -47,7 +47,7 @@ def test_pipeline_run_artifacts(
 
 
 def test_pipeline_run_has_client_and_orchestrator_environment(
-    clean_client: "Client", connected_two_step_pipeline
+    clean_workspace: "Client", connected_two_step_pipeline
 ):
     """Test that the run has correct client and orchestrator environments."""
     pipeline_instance = connected_two_step_pipeline(
@@ -55,7 +55,7 @@ def test_pipeline_run_has_client_and_orchestrator_environment(
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = clean_client.get_pipeline(
+    pipeline_run = clean_workspace.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
     test_environment = get_run_environment_dict()
@@ -64,7 +64,7 @@ def test_pipeline_run_has_client_and_orchestrator_environment(
 
 
 def test_scheduled_pipeline_run_has_schedule_id(
-    clean_client: "Client", connected_two_step_pipeline
+    clean_workspace: "Client", connected_two_step_pipeline
 ):
     """Test that a scheduled pipeline run has a schedule ID."""
     pipeline_instance = connected_two_step_pipeline(
@@ -73,7 +73,7 @@ def test_scheduled_pipeline_run_has_schedule_id(
     )
     schedule = Schedule(cron_expression="*/5 * * * *")
     pipeline_instance.run(schedule=schedule)
-    pipeline_run = clean_client.get_pipeline(
+    pipeline_run = clean_workspace.get_pipeline(
         "connected_two_step_pipeline"
     ).runs[0]
     assert pipeline_run.schedule is not None

@@ -19,7 +19,7 @@ def artifact_metadata_logging_step() -> str:
     return "42"
 
 
-def test_log_artifact_metadata_single_output(clean_client):
+def test_log_artifact_metadata_single_output(clean_workspace):
     """Test logging artifact metadata for a single output."""
 
     @pipeline
@@ -48,7 +48,7 @@ def artifact_multi_output_metadata_logging_step() -> (
     return "42", 42
 
 
-def test_log_artifact_metadata_multi_output(clean_client):
+def test_log_artifact_metadata_multi_output(clean_workspace):
     """Test logging artifact metadata for multiple outputs."""
 
     @pipeline
@@ -82,7 +82,7 @@ def wrong_artifact_multi_output_metadata_logging_step() -> (
 
 
 def test_log_artifact_metadata_raises_error_if_output_name_unclear(
-    clean_client,
+    clean_workspace,
 ):
     """Test that `log_artifact_metadata` raises an error if the output name is unclear."""
 

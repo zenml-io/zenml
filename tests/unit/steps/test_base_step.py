@@ -624,7 +624,7 @@ def raw_artifact_test_step_4(dict_: Dict, list_: List) -> None:
     assert isinstance(list_, list)
 
 
-def test_step_can_have_raw_artifacts(clean_client):
+def test_step_can_have_raw_artifacts(clean_workspace):
     """Check that you can bypass materialization with raw artifacts."""
 
     @pipeline

@@ -23,7 +23,7 @@ from zenml.integrations.great_expectations.materializers.ge_materializer import 
 )
 
 
-def test_great_expectations_materializer(clean_client, mocker):
+def test_great_expectations_materializer(clean_workspace, mocker):
     """Tests whether the steps work for the Great Expectations materializer."""
 
     class MockContext:

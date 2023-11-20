@@ -44,19 +44,19 @@ def test_calling_entrypoint_configuration_with_invalid_deployment_id():
         )
 
 
-def test_loading_the_deployment(clean_client):
+def test_loading_the_deployment(clean_workspace):
     """Tests loading the deployment by ID."""
     request = PipelineDeploymentRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        user=clean_workspace.active_user.id,
+        workspace=clean_workspace.active_workspace.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
-        stack=clean_client.active_stack.id,
+        stack=clean_workspace.active_stack.id,
         client_version="0.12.3",
         server_version="0.12.3",
     )
 
-    deployment = clean_client.zen_store.create_deployment(request)
+    deployment = clean_workspace.zen_store.create_deployment(request)
 
     entrypoint_config = StubEntrypointConfiguration(
         arguments=["--deployment_id", str(deployment.id)]

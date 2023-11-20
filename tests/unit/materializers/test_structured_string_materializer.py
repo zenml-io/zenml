@@ -20,7 +20,7 @@ from zenml.materializers.structured_string_materializer import (
 from zenml.types import CSVString, HTMLString, MarkdownString
 
 
-def test_structured_string_materializer_for_csv_strings(clean_client):
+def test_structured_string_materializer_for_csv_strings(clean_workspace):
     """Test the `StructuredStringMaterializer` for CSV strings."""
 
     _test_materializer(
@@ -30,7 +30,7 @@ def test_structured_string_materializer_for_csv_strings(clean_client):
     )
 
 
-def test_structured_string_materializer_for_html_strings(clean_client):
+def test_structured_string_materializer_for_html_strings(clean_workspace):
     """Test the `StructuredStringMaterializer` for HTML strings."""
 
     _test_materializer(
@@ -40,7 +40,7 @@ def test_structured_string_materializer_for_html_strings(clean_client):
     )
 
 
-def test_structured_string_materializer_for_markdown_strings(clean_client):
+def test_structured_string_materializer_for_markdown_strings(clean_workspace):
     """Test the `StructuredStringMaterializer` for Markdown strings."""
 
     _test_materializer(

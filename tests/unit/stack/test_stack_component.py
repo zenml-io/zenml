@@ -134,13 +134,13 @@ def _get_stub_orchestrator(name, repo=None, **kwargs) -> ComponentRequest:
 
 @pytest.fixture
 def client_with_stub_orchestrator_flavor(
-    clean_client,
+    clean_workspace,
 ) -> Generator[Client, None, None]:
     """Create the stub orchestrator flavor temporarily."""
     flavor = StubOrchestratorFlavor()
 
-    clean_client.zen_store.create_flavor(flavor.to_model())
-    yield clean_client
+    clean_workspace.zen_store.create_flavor(flavor.to_model())
+    yield clean_workspace
 
 
 def test_stack_component_prevents_secret_references_for_some_attributes(

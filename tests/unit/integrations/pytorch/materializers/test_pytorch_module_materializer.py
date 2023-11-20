@@ -20,7 +20,7 @@ from zenml.integrations.pytorch.materializers.pytorch_module_materializer import
 )
 
 
-def test_pytorch_module_materializer(clean_client):
+def test_pytorch_module_materializer(clean_workspace):
     """Tests whether the steps work for the Sklearn materializer."""
     module = _test_materializer(
         step_output=Linear(20, 20),

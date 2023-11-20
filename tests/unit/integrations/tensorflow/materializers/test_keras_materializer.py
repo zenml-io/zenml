@@ -20,7 +20,7 @@ from zenml.integrations.tensorflow.materializers.keras_materializer import (
 )
 
 
-def test_tensorflow_keras_materializer(clean_client):
+def test_tensorflow_keras_materializer(clean_workspace):
     """Tests whether the steps work for the TensorFlow Keras materializer."""
     inputs = keras.Input(shape=(32,))
     outputs = keras.layers.Dense(1)(inputs)

@@ -20,7 +20,7 @@ from zenml.integrations.pillow.materializers.pillow_image_materializer import (
 )
 
 
-def test_materializer_works_for_pillow_image_objects(clean_client):
+def test_materializer_works_for_pillow_image_objects(clean_workspace):
     """Check the materializer is able to handle PIL image objects."""
     _test_materializer(
         step_output=Image.new("RGB", (10, 10), color="red"),

@@ -32,7 +32,7 @@ class Unmaterializable:
     cat = "aria"
 
 
-def test_cloudpickle_materializer(clean_client):
+def test_cloudpickle_materializer(clean_workspace):
     """Test that the cloudpickle materializer is used if no other is found."""
     output = _test_materializer(
         step_output=Unmaterializable(), expected_metadata_size=1
@@ -40,7 +40,7 @@ def test_cloudpickle_materializer(clean_client):
     assert output.cat == "aria"
 
 
-def test_cloudpickle_materializer_python_version_check(clean_client):
+def test_cloudpickle_materializer_python_version_check(clean_workspace):
     """Test that the cloudpickle materializer saves the Python version."""
     with TemporaryDirectory() as artifact_uri:
         materializer = CloudpickleMaterializer(uri=artifact_uri)
@@ -49,7 +49,7 @@ def test_cloudpickle_materializer_python_version_check(clean_client):
         assert version == Environment().python_version()
 
 
-def test_cloudpickle_materializer_is_not_registered(clean_client):
+def test_cloudpickle_materializer_is_not_registered(clean_workspace):
     """Test that the cloudpickle materializer is not registered by default."""
     assert (
         CloudpickleMaterializer
@@ -57,7 +57,7 @@ def test_cloudpickle_materializer_is_not_registered(clean_client):
     )
 
 
-def test_cloudpickle_materializer_can_load_pickle(clean_client):
+def test_cloudpickle_materializer_can_load_pickle(clean_workspace):
     """Test that the cloudpickle materializer can load regular pickle."""
     my_object = Unmaterializable()
     with TemporaryDirectory() as artifact_uri:

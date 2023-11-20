@@ -21,7 +21,7 @@ from zenml.integrations.huggingface.materializers.huggingface_datasets_materiali
 )
 
 
-def test_huggingface_datasets_materializer(clean_client):
+def test_huggingface_datasets_materializer(clean_workspace):
     """Tests whether the steps work for the Huggingface Datasets materializer."""
     sample_dataframe = pd.DataFrame([1, 2, 3])
     dataset = Dataset.from_pandas(sample_dataframe)

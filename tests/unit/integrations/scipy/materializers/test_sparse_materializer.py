@@ -20,7 +20,7 @@ from zenml.integrations.scipy.materializers.sparse_materializer import (
 )
 
 
-def test_scipy_sparse_matrix_materializer(clean_client):
+def test_scipy_sparse_matrix_materializer(clean_workspace):
     """Tests whether the steps work for the SciPy sparse matrix materializer."""
     sparse_matrix = _test_materializer(
         step_output=coo_matrix(

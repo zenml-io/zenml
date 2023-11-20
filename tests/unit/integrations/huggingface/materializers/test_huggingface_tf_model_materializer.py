@@ -20,7 +20,7 @@ from zenml.integrations.huggingface.materializers.huggingface_tf_model_materiali
 )
 
 
-def test_huggingface_tf_pretrained_model_materializer(clean_client):
+def test_huggingface_tf_pretrained_model_materializer(clean_workspace):
     """Tests whether the steps work for the Huggingface Tensorflow Pretrained Model materializer."""
     model = _test_materializer(
         step_output=TFAutoModelForSequenceClassification.from_pretrained(

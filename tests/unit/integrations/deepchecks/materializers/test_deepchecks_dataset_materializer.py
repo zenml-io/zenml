@@ -23,7 +23,7 @@ from zenml.integrations.deepchecks.materializers.deepchecks_dataset_materializer
 )
 
 
-def test_deepchecks_dataset_materializer(clean_client):
+def test_deepchecks_dataset_materializer(clean_workspace):
     """Test the Deepchecks dataset materializer."""
     df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]}, index=["a", "b", "c"])
     deepchecks_dataset = Dataset(
