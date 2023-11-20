@@ -25,14 +25,14 @@ from zenml.enums import ExecutionStatus, StackComponentType, VisualizationType
 from zenml.exceptions import DoesNotExistException, StepContextError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.artifact_models import (
-    ArtifactRequestModel,
-    ArtifactResponseModel,
-)
-from zenml.models.step_run_models import StepRunUpdateModel
-from zenml.models.visualization_models import (
-    LoadedVisualizationModel,
-    VisualizationModel,
+from zenml.models import (
+    ArtifactRequest,
+    ArtifactResponse,
+    ArtifactVisualizationRequest,
+    LoadedVisualization,
+    PipelineRunResponse,
+    StepRunResponse,
+    StepRunUpdate,
 )
 from zenml.new.steps.step_context import get_step_context
 from zenml.stack import StackComponent
@@ -44,8 +44,6 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.models.pipeline_run_models import PipelineRunResponseModel
-    from zenml.models.step_run_models import StepRunResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
@@ -69,7 +67,7 @@ def save_artifact(
     materializer: Optional["MaterializerClassOrSource"] = None,
     uri: Optional[str] = None,
     manual_save: bool = True,
-) -> "ArtifactResponseModel":
+) -> "ArtifactResponse":
     """Upload and publish an artifact.
 
     Args:
@@ -135,12 +133,12 @@ def save_artifact(
     materializer_object.save(data)
 
     # Save visualizations of the artifact
-    visualizations: List[VisualizationModel] = []
+    visualizations: List[ArtifactVisualizationRequest] = []
     if include_visualizations:
         try:
             vis_data = materializer_object.save_visualizations(data)
             for vis_uri, vis_type in vis_data.items():
-                vis_model = VisualizationModel(
+                vis_model = ArtifactVisualizationRequest(
                     type=vis_type,
                     uri=vis_uri,
                 )
@@ -162,7 +160,7 @@ def save_artifact(
                 f"Failed to extract metadata for output artifact '{name}': {e}"
             )
 
-    artifact = ArtifactRequestModel(
+    artifact = ArtifactRequest(
         name=name,
         version=version,
         tags=tags,
@@ -187,7 +185,7 @@ def save_artifact(
             step_run = get_step_context().step_run
             client.zen_store.update_run_step(
                 step_run_id=step_run.id,
-                step_run_update=StepRunUpdateModel(
+                step_run_update=StepRunUpdate(
                     saved_artifacts={name: response.id}
                 ),
             )
@@ -217,7 +215,7 @@ def load_artifact(
         client = Client()
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
-            step_run_update=StepRunUpdateModel(
+            step_run_update=StepRunUpdate(
                 loaded_artifacts={artifact.name: artifact.id}
             ),
         )
@@ -287,11 +285,11 @@ def log_artifact_metadata(
 
 
 def load_artifact_visualization(
-    artifact: "ArtifactResponseModel",
+    artifact: "ArtifactResponse",
     index: int = 0,
     zen_store: Optional["BaseZenStore"] = None,
     encode_image: bool = False,
-) -> LoadedVisualizationModel:
+) -> LoadedVisualization:
     """Load a visualization of the given artifact.
 
     Args:
@@ -341,10 +339,10 @@ def load_artifact_visualization(
     if visualization.type == VisualizationType.IMAGE and encode_image:
         value = base64.b64encode(bytes(value))
 
-    return LoadedVisualizationModel(type=visualization.type, value=value)
+    return LoadedVisualization(type=visualization.type, value=value)
 
 
-def load_artifact_from_model(artifact: "ArtifactResponseModel") -> Any:
+def load_artifact_from_model(artifact: "ArtifactResponse") -> Any:
     """Load the given artifact into memory.
 
     Args:
@@ -362,7 +360,7 @@ def load_artifact_from_model(artifact: "ArtifactResponseModel") -> Any:
             )
             _ = StackComponent.from_model(artifact_store_model)
             artifact_store_loaded = True
-        except KeyError:
+        except (KeyError, ImportError):
             pass
 
     if not artifact_store_loaded:
@@ -381,8 +379,8 @@ def load_artifact_from_model(artifact: "ArtifactResponseModel") -> Any:
 
 
 def get_producer_step_of_artifact(
-    artifact: "ArtifactResponseModel",
-) -> "StepRunResponseModel":
+    artifact: "ArtifactResponse",
+) -> "StepRunResponse":
     """Get the step run that produced a given artifact.
 
     Args:
@@ -403,8 +401,8 @@ def get_producer_step_of_artifact(
 
 
 def get_artifacts_of_pipeline_run(
-    pipeline_run: "PipelineRunResponseModel", only_produced: bool = False
-) -> List["ArtifactResponseModel"]:
+    pipeline_run: "PipelineRunResponse", only_produced: bool = False
+) -> List["ArtifactResponse"]:
     """Get all artifacts produced during a pipeline run.
 
     Args:
@@ -415,7 +413,7 @@ def get_artifacts_of_pipeline_run(
     Returns:
         A list of all artifacts produced during the pipeline run.
     """
-    artifacts: List["ArtifactResponseModel"] = []
+    artifacts: List["ArtifactResponse"] = []
     for step in pipeline_run.steps.values():
         if not only_produced or step.status == ExecutionStatus.COMPLETED:
             artifacts.extend(step.outputs.values())
@@ -543,7 +541,7 @@ def _get_new_artifact_version(artifact_name: str) -> int:
     Returns:
         The next auto-incremented version.
     """
-    models = Client().list_artifacts(
+    artifacts = Client().list_artifacts(
         name=artifact_name,
         sort_by="desc:version_number",
         size=1,
@@ -551,7 +549,7 @@ def _get_new_artifact_version(artifact_name: str) -> int:
 
     # If a numbered version exists, increment it
     try:
-        return int(models[0].version) + 1
+        return int(artifacts[0].version) + 1
 
     # If no numbered versions exist yet, start at 1
     except (IndexError, ValueError):
@@ -601,15 +599,16 @@ def _load_file_from_artifact_store(
 # --------------------
 
 
-def save_model_metadata(model_artifact: "ArtifactResponseModel") -> str:
+def save_model_metadata(model_artifact: "ArtifactResponse") -> str:
     """Save a zenml model artifact metadata to a YAML file.
 
-    This function is used to extract and save information from a zenml model artifact
-    such as the model type and materializer. The extracted information will be
-    the key to loading the model into memory in the inference environment.
+    This function is used to extract and save information from a zenml model
+    artifact such as the model type and materializer. The extracted information
+    will be the key to loading the model into memory in the inference
+    environment.
 
     datatype: the model type. This is the path to the model class.
-    materializer: the materializer class. This is the path to the materializer class.
+    materializer: The path to the materializer class.
 
     Args:
         model_artifact: the artifact to extract the metadata from.

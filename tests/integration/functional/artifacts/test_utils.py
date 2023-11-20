@@ -157,10 +157,10 @@ def test_log_artifact_metadata_single_output(clean_client):
     artifact_metadata_logging_pipeline()
     run_ = artifact_metadata_logging_pipeline.model.last_run
     output = run_.steps["artifact_metadata_logging_step"].output
-    assert "description" in output.metadata
-    assert output.metadata["description"].value == "Aria is great!"
-    assert "metrics" in output.metadata
-    assert output.metadata["metrics"].value == {"accuracy": 0.9}
+    assert "description" in output.run_metadata
+    assert output.run_metadata["description"].value == "Aria is great!"
+    assert "metrics" in output.run_metadata
+    assert output.run_metadata["metrics"].value == {"accuracy": 0.9}
 
 
 @step
@@ -187,13 +187,13 @@ def test_log_artifact_metadata_multi_output(clean_client):
     run_ = artifact_metadata_logging_pipeline.model.last_run
     step_ = run_.steps["artifact_multi_output_metadata_logging_step"]
     str_output = step_.outputs["str_output"]
-    assert "description" not in str_output.metadata
-    assert "metrics" not in str_output.metadata
+    assert "description" not in str_output.run_metadata
+    assert "metrics" not in str_output.run_metadata
     int_output = step_.outputs["int_output"]
-    assert "description" in int_output.metadata
-    assert int_output.metadata["description"].value == "Blupus is great!"
-    assert "metrics" in int_output.metadata
-    assert int_output.metadata["metrics"].value == {"accuracy": 0.9}
+    assert "description" in int_output.run_metadata
+    assert int_output.run_metadata["description"].value == "Blupus is great!"
+    assert "metrics" in int_output.run_metadata
+    assert int_output.run_metadata["metrics"].value == {"accuracy": 0.9}
 
 
 @step

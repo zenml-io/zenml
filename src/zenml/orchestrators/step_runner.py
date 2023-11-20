@@ -65,9 +65,11 @@ if TYPE_CHECKING:
     )
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
-    from zenml.models.artifact_models import ArtifactResponseModel
-    from zenml.models.pipeline_run_models import PipelineRunResponseModel
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.models import (
+        ArtifactResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
     from zenml.stack import Stack
     from zenml.steps import BaseStep
 
@@ -99,9 +101,9 @@ class StepRunner:
 
     def run(
         self,
-        pipeline_run: "PipelineRunResponseModel",
-        step_run: "StepRunResponseModel",
-        input_artifacts: Dict[str, "ArtifactResponseModel"],
+        pipeline_run: "PipelineRunResponse",
+        step_run: "StepRunResponse",
+        input_artifacts: Dict[str, "ArtifactResponse"],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:
@@ -310,7 +312,7 @@ class StepRunner:
         self,
         args: List[str],
         annotations: Dict[str, Any],
-        input_artifacts: Dict[str, "ArtifactResponseModel"],
+        input_artifacts: Dict[str, "ArtifactResponse"],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -419,7 +421,7 @@ class StepRunner:
         return function_params
 
     def _load_input_artifact(
-        self, artifact: "ArtifactResponseModel", data_type: Type[Any]
+        self, artifact: "ArtifactResponse", data_type: Type[Any]
     ) -> Any:
         """Loads an input artifact.
 
@@ -632,8 +634,8 @@ class StepRunner:
 
     def _prepare_model_context_for_step(self) -> None:
         try:
-            model_config = get_step_context().model_config
-            model_config.get_or_create_model_version()
+            model_version = get_step_context().model_version
+            model_version._get_or_create_model_version()
         except StepContextError:
             return
 
@@ -655,29 +657,38 @@ class StepRunner:
                 get_step_context()._get_output(artifact_name).artifact_config
             )
             if artifact_config is not None:
-                if (model_config := artifact_config._model_config) is not None:
-                    model_version = model_config._get_model_version()
-                    models.add((model_version.model.id, model_version.id))
+                if (
+                    model_version := artifact_config._model_version
+                ) is not None:
+                    model_version_response = (
+                        model_version._get_or_create_model_version()
+                    )
+                    models.add(
+                        (
+                            model_version_response.model.id,
+                            model_version_response.id,
+                        )
+                    )
                 else:
                     break
         return models
 
     def _get_model_versions_from_config(self) -> Set[Tuple[UUID, UUID]]:
-        """Gets the model versions from the step model config.
+        """Gets the model versions from the step model version.
 
         Returns:
             Set of tuples of (model_id, model_version_id).
         """
         try:
-            mc = get_step_context().model_config
-            model_version = mc._get_model_version()
+            mc = get_step_context().model_version
+            model_version = mc._get_or_create_model_version()
             return {(model_version.model.id, model_version.id)}
         except StepContextError:
             return set()
 
     def _link_pipeline_run_to_model_from_context(
         self,
-        pipeline_run: "PipelineRunResponseModel",
+        pipeline_run: "PipelineRunResponse",
     ) -> None:
         """Links the pipeline run to the model version using artifacts data.
 
@@ -704,7 +715,7 @@ class StepRunner:
 
     def _link_pipeline_run_to_model_from_artifacts(
         self,
-        pipeline_run: "PipelineRunResponseModel",
+        pipeline_run: "PipelineRunResponse",
         artifact_names: List[str],
         external_artifacts: List["ExternalArtifactConfiguration"],
     ) -> None:
@@ -756,5 +767,6 @@ class StepRunner:
             hook(**function_params)
         except Exception as e:
             logger.error(
-                f"Failed to load hook source with exception: '{hook_source}': {e}"
+                f"Failed to load hook source with exception: '{hook_source}': "
+                f"{e}"
             )

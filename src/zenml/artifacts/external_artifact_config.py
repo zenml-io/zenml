@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.models.artifact_models import ArtifactResponseModel
+    from zenml.models import ArtifactResponse
 
 
 logger = get_logger(__name__)
@@ -38,7 +38,7 @@ class ExternalArtifactConfiguration(BaseModel):
     pipeline_run_name: Optional[str] = None
     pipeline_name: Optional[str] = None
 
-    def _get_artifact_from_pipeline_run(self) -> "ArtifactResponseModel":
+    def _get_artifact_from_pipeline_run(self) -> "ArtifactResponse":
         """Get artifact from pipeline run.
 
         Returns:

@@ -112,7 +112,6 @@ else:
         ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
     ).upper()
 
-
 INSIDE_ZENML_CONTAINER = handle_bool_env_var(ENV_ZENML_CONTAINER, False)
 
 # Analytics constants
@@ -172,6 +171,7 @@ DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS = 3
 DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT = 60 * 5  # 5 minutes
 DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING = 5  # seconds
 DEFAULT_HTTP_TIMEOUT = 30
+ZENML_API_KEY_PREFIX = "ZENKEY_"
 
 # API Endpoint paths:
 API = "/api"
@@ -202,6 +202,7 @@ GRAPH = "/graph"
 STEPS = "/steps"
 LOGS = "/logs"
 ARTIFACTS = "/artifacts"
+ARTIFACT_VISUALIZATIONS = "/artifact_visualizations"
 COMPONENT_TYPES = "/component-types"
 DEACTIVATE = "/deactivate"
 EMAIL_ANALYTICS = "/email-opt-in"
@@ -213,6 +214,7 @@ GET_OR_CREATE = "/get-or-create"
 SECRETS = "/secrets"
 VISUALIZE = "/visualize"
 CODE_REPOSITORIES = "/code_repositories"
+CODE_REFERENCES = "/code_references"
 SERVICE_CONNECTORS = "/service_connectors"
 SERVICE_CONNECTOR_TYPES = "/service_connector_types"
 SERVICE_CONNECTOR_VERIFY = "/verify"
@@ -224,6 +226,10 @@ DEVICES = "/devices"
 DEVICE_AUTHORIZATION = "/device_authorization"
 DEVICE_VERIFY = "/verify"
 API_TOKEN = "/api_token"
+TAGS = "/tags"
+SERVICE_ACCOUNTS = "/service_accounts"
+API_KEYS = "/api_keys"
+API_KEY_ROTATE = "/rotate"
 
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
@@ -252,7 +258,6 @@ FILTERING_DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 METADATA_ORCHESTRATOR_URL = "orchestrator_url"
 METADATA_EXPERIMENT_TRACKER_URL = "experiment_tracker_url"
 METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"
-
 
 # Model registries constants
 MLFLOW_MODEL_FORMAT = "MLflow"
@@ -290,6 +295,10 @@ MLSTACKS_SUPPORTED_STACK_COMPONENTS = [
     "step_operator",
 ]
 
+# Parameters for internal ZenML Models
+TEXT_FIELD_MAX_LENGTH = 65535
+STR_FIELD_MAX_LENGTH = 255
+MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
+
 # Model Control Plane constants
-RUNNING_MODEL_VERSION = "running"
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"

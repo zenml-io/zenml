@@ -29,13 +29,13 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.lineage_graph.lineage_graph import LineageGraph
 from zenml.models import (
-    PipelineRunFilterModel,
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
-    StepRunFilterModel,
-    StepRunResponseModel,
+    Page,
+    PipelineRunFilter,
+    PipelineRunResponse,
+    PipelineRunUpdate,
+    StepRunFilter,
+    StepRunResponse,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -53,59 +53,67 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[PipelineRunResponseModel],
+    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_runs(
-    runs_filter_model: PipelineRunFilterModel = Depends(
-        make_dependable(PipelineRunFilterModel)
+    runs_filter_model: PipelineRunFilter = Depends(
+        make_dependable(PipelineRunFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineRunResponseModel]:
+) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
 
     Args:
-        runs_filter_model: Filter model used for pagination, sorting, filtering
+        runs_filter_model: Filter model used for pagination, sorting, filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_runs(runs_filter_model=runs_filter_model)
+    return zen_store().list_runs(
+        runs_filter_model=runs_filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
     "/{run_id}",
-    response_model=PipelineRunResponseModel,
+    response_model=PipelineRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_run(
     run_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> PipelineRunResponseModel:
+) -> PipelineRunResponse:
     """Get a specific pipeline run using its ID.
 
     Args:
         run_id: ID of the pipeline run to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The pipeline run.
     """
-    return zen_store().get_run(run_name_or_id=run_id)
+    return zen_store().get_run(run_name_or_id=run_id, hydrate=hydrate)
 
 
 @router.put(
     "/{run_id}",
-    response_model=PipelineRunResponseModel,
+    response_model=PipelineRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_run(
     run_id: UUID,
-    run_model: PipelineRunUpdateModel,
+    run_model: PipelineRunUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> PipelineRunResponseModel:
+) -> PipelineRunResponse:
     """Updates a run.
 
     Args:
@@ -161,16 +169,16 @@ def get_run_dag(
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=Page[StepRunResponseModel],
+    response_model=Page[StepRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_run_steps(
-    step_run_filter_model: StepRunFilterModel = Depends(
-        make_dependable(StepRunFilterModel)
+    step_run_filter_model: StepRunFilter = Depends(
+        make_dependable(StepRunFilter)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[StepRunResponseModel]:
+) -> Page[StepRunResponse]:
     """Get all steps for a given pipeline run.
 
     Args:

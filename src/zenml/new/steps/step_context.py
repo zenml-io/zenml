@@ -32,10 +32,12 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.model.model_config import ModelConfig
-    from zenml.models.pipeline_models import PipelineResponseModel
-    from zenml.models.pipeline_run_models import PipelineRunResponseModel
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.model.model_version import ModelVersion
+    from zenml.models import (
+        PipelineResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
     from zenml.stack.stack import Stack
 
 logger = get_logger(__name__)
@@ -87,8 +89,8 @@ class StepContext(metaclass=SingletonMetaClass):
 
     def __init__(
         self,
-        pipeline_run: "PipelineRunResponseModel",
-        step_run: "StepRunResponseModel",
+        pipeline_run: "PipelineRunResponse",
+        step_run: "StepRunResponse",
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
         output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
@@ -187,7 +189,7 @@ class StepContext(metaclass=SingletonMetaClass):
             return next(iter(self._outputs.values()))
 
     @property
-    def pipeline(self) -> "PipelineResponseModel":
+    def pipeline(self) -> "PipelineResponse":
         """Returns the current pipeline.
 
         Returns:
@@ -205,27 +207,33 @@ class StepContext(metaclass=SingletonMetaClass):
         )
 
     @property
-    def model_config(self) -> "ModelConfig":
-        """Returns configured ModelConfig.
+    def model_version(self) -> "ModelVersion":
+        """Returns configured ModelVersion.
 
-        Order of resolution to search for ModelConfig is:
-            1. ModelConfig from @step
-            2. ModelConfig from @pipeline
+        Order of resolution to search for ModelVersion is:
+            1. ModelVersion from @step
+            2. ModelVersion from @pipeline
 
         Returns:
-            The `ModelConfig` object associated with the current step.
+            The `ModelVersion` object associated with the current step.
 
         Raises:
-            StepContextError: If the `ModelConfig` object is not set in `@step` or `@pipeline`.
+            StepContextError: If the `ModelVersion` object is not set in `@step` or `@pipeline`.
         """
-        if self.step_run.config.model_config is not None:
-            return self.step_run.config.model_config
-        if self.pipeline_run.config.model_config is not None:
-            return self.pipeline_run.config.model_config
-        raise StepContextError(
-            f"Unable to get ModelConfig in step '{self.step_name}' of pipeline "
-            f"run '{self.pipeline_run.id}': It was not set in `@step` or `@pipeline`."
-        )
+        if self.step_run.config.model_version is not None:
+            model_version = self.step_run.config.model_version
+        elif self.pipeline_run.config.model_version is not None:
+            model_version = self.pipeline_run.config.model_version
+        else:
+            raise StepContextError(
+                f"Unable to get ModelVersion in step '{self.step_name}' of pipeline "
+                f"run '{self.pipeline_run.id}': it was not set in `@step` or `@pipeline`."
+            )
+
+        # warm-up the model version
+        model_version._get_or_create_model_version()
+
+        return model_version
 
     @property
     def stack(self) -> Optional["Stack"]:
@@ -392,7 +400,7 @@ class StepContext(metaclass=SingletonMetaClass):
         Returns:
             Metadata for the given output.
         """
-        return self._get_output(output_name).metadata or {}
+        return self._get_output(output_name).run_metadata or {}
 
     def add_output_metadata(
         self,
@@ -409,9 +417,9 @@ class StepContext(metaclass=SingletonMetaClass):
                 step has multiple outputs, an exception will be raised.
         """
         output = self._get_output(output_name)
-        if not output.metadata:
-            output.metadata = {}
-        output.metadata.update(**metadata)
+        if not output.run_metadata:
+            output.run_metadata = {}
+        output.run_metadata.update(**metadata)
 
     def _set_artifact_config(
         self,
@@ -445,7 +453,7 @@ class StepContextOutput:
 
     materializer_classes: Sequence[Type["BaseMaterializer"]]
     artifact_uri: str
-    metadata: Optional[Dict[str, "MetadataType"]] = None
+    run_metadata: Optional[Dict[str, "MetadataType"]] = None
     artifact_config: Optional["ArtifactConfig"]
 
     def __init__(

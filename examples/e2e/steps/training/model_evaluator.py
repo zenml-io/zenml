@@ -38,7 +38,7 @@ def model_evaluator(
     min_train_accuracy: float = 0.0,
     min_test_accuracy: float = 0.0,
     fail_on_accuracy_quality_gates: bool = False,
-):
+) -> None:
     """Evaluate a trained model.
 
     This is an example of a model evaluation step that takes in a model artifact

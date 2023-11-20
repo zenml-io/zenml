@@ -19,16 +19,16 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
-from zenml.models import StepRunFilterModel
+from zenml.models import StepRunFilter
 
 if TYPE_CHECKING:
-    from zenml.models.artifact_models import ArtifactResponseModel
+    from zenml.models import ArtifactResponse
 
 
 def resolve_step_inputs(
     step: "Step",
     run_id: UUID,
-) -> Tuple[Dict[str, "ArtifactResponseModel"], List[UUID]]:
+) -> Tuple[Dict[str, "ArtifactResponse"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
@@ -46,11 +46,11 @@ def resolve_step_inputs(
     current_run_steps = {
         run_step.name: run_step
         for run_step in Client()
-        .zen_store.list_run_steps(StepRunFilterModel(pipeline_run_id=run_id))
+        .zen_store.list_run_steps(StepRunFilter(pipeline_run_id=run_id))
         .items
     }
 
-    input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+    input_artifacts: Dict[str, "ArtifactResponse"] = {}
     for name, input_ in step.spec.inputs.items():
         try:
             step_run = current_run_steps[input_.step_name]

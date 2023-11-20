@@ -25,7 +25,7 @@ from tests.integration.functional.zen_stores.utils import (
 from zenml import pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.config.schedule import Schedule
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelVersion
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -71,7 +71,7 @@ NAME = f"{PREFIX}{uuid4()}"
 
 
 @step
-def step_1() -> Annotated[int, NAME + "a", ArtifactConfig()]:
+def step_1() -> Annotated[int, NAME + "a"]:
     return 1
 
 
@@ -82,7 +82,7 @@ def step_2() -> (
             int, ArtifactConfig(name=NAME + "b", is_model_artifact=True)
         ],
         Annotated[
-            int, ArtifactConfig(name=NAME + "c", is_deployment_artifact=True)
+            int, ArtifactConfig(name=NAME + "c", is_endpoint_artifact=True)
         ],
     ]
 ):
@@ -90,7 +90,7 @@ def step_2() -> (
 
 
 @pipeline(
-    model_config=ModelConfig(name=NAME, create_new_model_version=True),
+    model_version=ModelVersion(name=NAME),
     name=NAME,
 )
 def pipeline():

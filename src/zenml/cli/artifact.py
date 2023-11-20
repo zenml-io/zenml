@@ -22,7 +22,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models.artifact_models import ArtifactFilterModel
+from zenml.models import ArtifactFilter
 from zenml.utils.pagination_utils import depaginate
 from zenml.utils.uuid_utils import is_valid_uuid
 
@@ -34,7 +34,7 @@ def artifact() -> None:
     """List or delete artifacts."""
 
 
-@cli_utils.list_options(ArtifactFilterModel)
+@cli_utils.list_options(ArtifactFilter)
 @artifact.command("list", help="List all artifacts.")
 def list_artifacts(**kwargs: Any) -> None:
     """List all artifacts.

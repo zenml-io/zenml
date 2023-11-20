@@ -22,7 +22,7 @@ from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelVersion
 from zenml.models.model_models import (
     ModelVersionArtifactRequestModel,
 )
@@ -50,9 +50,9 @@ def link_step_artifacts_to_model(
             "step."
         )
     try:
-        model_config = step_context.model_config
+        model_version = step_context.model_version
     except StepContextError:
-        model_config = None
+        model_version = None
         logger.debug("No model context found, unable to auto-link artifacts.")
 
     for artifact_name in artifact_ids:
@@ -60,50 +60,46 @@ def link_step_artifacts_to_model(
         artifact_config = step_context._get_output(
             artifact_name
         ).artifact_config
-        if artifact_config is None and model_config is not None:
+        if artifact_config is None and model_version is not None:
             artifact_config = ArtifactConfig(
                 name=artifact_name,
-                model_name=model_config.name,
-                model_version=model_config.version,
+                model_name=model_version.name,
+                model_version=model_version.version,
             )
             logger.info(
                 f"Implicitly linking artifact `{artifact_name}` to model "
-                f"`{model_config.name}` version `{model_config.version}`."
+                f"`{model_version.name}` version `{model_version.version}`."
             )
 
-        if artifact_config and model_config:
-            link_artifact_config_to_model(
+        if artifact_config and model_version:
+            link_artifact_config_to_model_version(
                 artifact_config=artifact_config,
                 artifact_id=artifact_id,
-                model_config=model_config,
+                model_version=model_version,
             )
 
 
-def link_artifact_config_to_model(
+def link_artifact_config_to_model_version(
     artifact_config: ArtifactConfig,
-    model_config: "ModelConfig",
+    model_version: "ModelVersion",
     artifact_id: UUID,
 ) -> None:
     """Link an artifact config to a model version.
 
     Args:
         artifact_config: The artifact config to link.
-        model_config: The model config to link the artifact to.
+        model_version: The model version to link the artifact to.
         artifact_id: The ID of the artifact to link.
     """
     client = Client()
-    model_version = model_config._get_model_version()
-    model_id = model_version.model.id
-    model_version_id = model_version.id
-    is_model_object = artifact_config.is_model_artifact
-    is_deployment = artifact_config.is_deployment_artifact
+    model_version_response = model_version._get_model_version()
     request = ModelVersionArtifactRequestModel(
         user=client.active_user.id,
         workspace=client.active_workspace.id,
         artifact=artifact_id,
-        model=model_id,
-        model_version=model_version_id,
-        is_model_object=is_model_object,
-        is_deployment=is_deployment,
+        model=model_version_response.model.id,
+        model_version=model_version_response.id,
+        is_model_artifact=artifact_config.is_model_artifact,
+        is_endpoint_artifact=artifact_config.is_endpoint_artifact,
     )
     client.zen_store.create_model_version_artifact_link(request)

@@ -197,3 +197,4 @@ zenml_tutorial/
 mlstacks_reset.sh
 
 .local/
+# PLEASE KEEP THIS LINE AT THE EOF: never include here src/zenml/zen_server/dashboard, since it is affecting release flow

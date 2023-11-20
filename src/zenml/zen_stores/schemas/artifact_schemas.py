@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQLModel implementation of artifact tables."""
-
+"""SQLModel implementation of artifact table."""
 
 import json
 from datetime import datetime
@@ -24,11 +23,15 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
-from zenml.enums import ArtifactType, ExecutionStatus, VisualizationType
-from zenml.models import ArtifactRequestModel, ArtifactResponseModel
-from zenml.models.artifact_models import ArtifactUpdateModel
-from zenml.models.visualization_models import VisualizationModel
-from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.models import (
+    ArtifactRequest,
+    ArtifactResponse,
+    ArtifactResponseBody,
+    ArtifactResponseMetadata,
+    ArtifactUpdate,
+)
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.step_run_schemas import (
@@ -39,6 +42,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.artifact_visualization_schemas import (
+        ArtifactVisualizationSchema,
+    )
     from zenml.zen_stores.schemas.model_schemas import (
         ModelVersionArtifactSchema,
     )
@@ -114,9 +120,9 @@ class ArtifactSchema(NamedSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, artifact_request: ArtifactRequestModel
+        cls, artifact_request: ArtifactRequest
     ) -> "ArtifactSchema":
-        """Convert an `ArtifactRequestModel` to an `ArtifactSchema`.
+        """Convert an `ArtifactRequest` to an `ArtifactSchema`.
 
         Args:
             artifact_request: The request model to convert.
@@ -143,17 +149,16 @@ class ArtifactSchema(NamedSchema, table=True):
             tags=json.dumps(artifact_request.tags),
         )
 
-    def to_model(self) -> ArtifactResponseModel:
-        """Convert an `ArtifactSchema` to an `ArtifactModel`.
+    def to_model(self, hydrate: bool = False) -> ArtifactResponse:
+        """Convert an `ArtifactSchema` to an `ArtifactResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created `ArtifactModel`.
+            The created `ArtifactResponse`.
         """
-        metadata = {
-            metadata_schema.key: metadata_schema.to_model()
-            for metadata_schema in self.run_metadata
-        }
-
         try:
             materializer = Source.parse_raw(self.materializer)
         except ValidationError:
@@ -175,33 +180,39 @@ class ArtifactSchema(NamedSchema, table=True):
             else:
                 producer_step_run_id = step_run.original_step_run_id
 
-        return ArtifactResponseModel(
-            id=self.id,
-            name=self.name,
-            has_custom_name=self.has_custom_name,
+        # Create the body and metadata of the model
+        body = ArtifactResponseBody(
             version=self.version_number or self.version,
-            artifact_store_id=self.artifact_store_id,
-            user=self.user.to_model(_block_recursion=True)
-            if self.user
-            else None,
-            workspace=self.workspace.to_model(),
-            type=self.type,
+            has_custom_name=self.has_custom_name,
+            user=self.user.to_model() if self.user else None,
             uri=self.uri,
-            materializer=materializer,
-            data_type=data_type,
-            tags=json.loads(self.tags) if self.tags else None,
+            type=self.type,
             created=self.created,
             updated=self.updated,
-            producer_step_run_id=producer_step_run_id,
-            metadata=metadata,
-            visualizations=[vis.to_model() for vis in self.visualizations],
         )
 
-    def update(
-        self,
-        artifact_update: ArtifactUpdateModel,
-    ) -> "ArtifactSchema":
-        """Update an `ArtifactSchema` with an `ArtifactUpdateModel`.
+        metadata = None
+        if hydrate:
+            metadata = ArtifactResponseMetadata(
+                workspace=self.workspace.to_model(),
+                artifact_store_id=self.artifact_store_id,
+                producer_step_run_id=producer_step_run_id,
+                visualizations=[v.to_model() for v in self.visualizations],
+                run_metadata={m.key: m.to_model() for m in self.run_metadata},
+                materializer=materializer,
+                data_type=data_type,
+                tags=json.loads(self.tags) if self.tags else None,
+            )
+
+        return ArtifactResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
+        )
+
+    def update(self, artifact_update: ArtifactUpdate) -> "ArtifactSchema":
+        """Update an `ArtifactSchema` with an `ArtifactUpdate`.
 
         Args:
             artifact_update: The update model to apply.
@@ -215,53 +226,3 @@ class ArtifactSchema(NamedSchema, table=True):
             self.tags = json.dumps(artifact_update.tags)
         self.updated = datetime.utcnow()
         return self
-
-
-class ArtifactVisualizationSchema(BaseSchema, table=True):
-    """SQL Model for visualizations of artifacts."""
-
-    __tablename__ = "artifact_visualization"
-
-    # Fields
-    type: VisualizationType
-    uri: str = Field(sa_column=Column(TEXT, nullable=False))
-
-    # Foreign Keys
-    artifact_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ArtifactSchema.__tablename__,
-        source_column="artifact_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-
-    # Relationships
-    artifact: ArtifactSchema = Relationship(back_populates="visualizations")
-
-    @classmethod
-    def from_model(
-        cls, visualization: VisualizationModel, artifact_id: UUID
-    ) -> "ArtifactVisualizationSchema":
-        """Convert a `Visualization` to a `ArtifactVisualizationSchema`.
-
-        Args:
-            visualization: The visualization.
-            artifact_id: The ID of the artifact this visualization belongs to.
-
-        Returns:
-            The `ArtifactVisualizationSchema`.
-        """
-        return cls(
-            type=visualization.type,
-            uri=visualization.uri,
-            artifact_id=artifact_id,
-        )
-
-    def to_model(self) -> VisualizationModel:
-        """Convert an `ArtifactVisualizationSchema` to a `Visualization`.
-
-        Returns:
-            The `Visualization`.
-        """
-        return VisualizationModel(type=self.type, uri=self.uri)

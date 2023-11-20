@@ -17,7 +17,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, PrivateAttr
 
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelVersion
 
 
 class NewModelVersionRequest(BaseModel):
@@ -38,44 +38,35 @@ class NewModelVersionRequest(BaseModel):
             return f"{self.source}::{self.name}"
 
     requesters: List[Requester] = []
-    _model_config: Optional[ModelConfig] = PrivateAttr(default=None)
+    _model_version: Optional[ModelVersion] = PrivateAttr(default=None)
 
     @property
-    def model_config(self) -> ModelConfig:
-        """Model config getter.
+    def model_version(self) -> ModelVersion:
+        """Model version getter.
 
         Returns:
-            The model config.
+            The model version.
 
         Raises:
-            RuntimeError: If the model config is not set.
+            RuntimeError: If the model version is not set.
         """
-        if self._model_config is None:
-            raise RuntimeError("Model config is not set.")
-        return self._model_config
+        if self._model_version is None:
+            raise RuntimeError("Model version is not set.")
+        return self._model_version
 
     def update_request(
         self,
-        model_config: ModelConfig,
+        model_version: ModelVersion,
         requester: "NewModelVersionRequest.Requester",
     ) -> None:
-        """Update from Model Config Model object in place.
+        """Update from `ModelVersion` in place.
 
         Args:
-            model_config: Model Config Model object.
+            model_version: `ModelVersion` to use.
             requester: Requester of a new model version.
-
-        Raises:
-            ValueError: If the model version name is configured differently by different requesters.
         """
         self.requesters.append(requester)
-        if self._model_config is None:
-            self._model_config = model_config
+        if self._model_version is None:
+            self._model_version = model_version
 
-        if self._model_config.version != model_config.version:
-            raise ValueError(
-                f"A mismatch of `version` name in model configurations provided for `{model_config.name} detected."
-                "Since a new model version is requested for this model, all `version` names must match or left default."
-            )
-
-        self._model_config._merge(model_config)
+        self._model_version._merge(model_version)

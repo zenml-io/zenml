@@ -26,9 +26,11 @@ from zenml import step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import ExecutionStatus
-from zenml.models.artifact_models import ArtifactResponseModel
-from zenml.models.run_metadata_models import RunMetadataResponseModel
-from zenml.models.visualization_models import VisualizationModel
+from zenml.models import (
+    ArtifactResponse,
+    ArtifactVisualizationResponse,
+    RunMetadataResponse,
+)
 from zenml.pipelines.base_pipeline import BasePipeline
 
 if TYPE_CHECKING:
@@ -268,23 +270,23 @@ def test_disabling_artifact_metadata(clean_client, one_step_pipeline):
     _assert_metadata_enabled(clean_client)
 
 
-def _get_output_of_last_run(clean_client: "Client") -> ArtifactResponseModel:
+def _get_output_of_last_run(clean_client: "Client") -> ArtifactResponse:
     """Get the output of the last run."""
     return list(clean_client.list_pipeline_runs()[0].steps.values())[0].output
 
 
 def _get_visualizations_of_last_run(
     clean_client: "Client",
-) -> Optional[List[VisualizationModel]]:
+) -> Optional[List[ArtifactVisualizationResponse]]:
     """Get the artifact visualizations of the last run."""
     return _get_output_of_last_run(clean_client).visualizations
 
 
 def _get_metadata_of_last_run(
     clean_client: "Client",
-) -> Dict[str, "RunMetadataResponseModel"]:
+) -> Dict[str, "RunMetadataResponse"]:
     """Get the artifact metadata of the last run."""
-    return _get_output_of_last_run(clean_client).metadata
+    return _get_output_of_last_run(clean_client).run_metadata
 
 
 def _assert_visualization_enabled(clean_client: "Client"):

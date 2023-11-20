@@ -19,35 +19,32 @@ from tests.integration.functional.utils import model_killer
 from zenml import pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
-from zenml.constants import RUNNING_MODEL_VERSION
-from zenml.model.model_config import ModelConfig
-from zenml.models import (
-    ModelVersionArtifactFilterModel,
-    ModelVersionRequestModel,
-)
+from zenml.enums import ModelStages
+from zenml.model.model_version import ModelVersion
+from zenml.models import ModelVersionArtifactFilterModel
 
 MODEL_NAME = "foo"
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+@step(model_version=ModelVersion(name=MODEL_NAME))
 def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
     """Untyped single output linked as Artifact from step context."""
     return 1
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+@step(model_version=ModelVersion(name=MODEL_NAME))
 def single_output_step_from_context_model() -> (
     Annotated[int, ArtifactConfig(is_model_artifact=True)]
 ):
-    """Untyped single output linked as Model Object from step context."""
+    """Untyped single output linked as a model artifact from step context."""
     return 1
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
-def single_output_step_from_context_deployment() -> (
-    Annotated[int, ArtifactConfig(is_deployment_artifact=True)]
+@step(model_version=ModelVersion(name=MODEL_NAME))
+def single_output_step_from_context_endpoint() -> (
+    Annotated[int, ArtifactConfig(is_endpoint_artifact=True)]
 ):
-    """Untyped single output linked as Deployment from step context."""
+    """Untyped single output linked as endpoint artifact from step context."""
     return 1
 
 
@@ -58,7 +55,7 @@ def simple_pipeline():
     single_output_step_from_context_model(
         after=["single_output_step_from_context"]
     )
-    single_output_step_from_context_deployment(
+    single_output_step_from_context_endpoint(
         after=["single_output_step_from_context_model"]
     )
 
@@ -72,13 +69,11 @@ def test_link_minimalistic():
 
         simple_pipeline()
 
-        model = client.get_model(MODEL_NAME)
-        assert model.name == MODEL_NAME
-        mv = client.get_model_version(MODEL_NAME)
-        assert mv.name == "1"
+        mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
+        assert mv.name == MODEL_NAME
+        assert mv.number == 1 and mv.version == "1"
         links = client.list_model_version_artifact_links(
-            model_name_or_id=model.id,
-            model_version_name_or_number_or_id=mv.id,
+            model_version_id=mv.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -86,25 +81,25 @@ def test_link_minimalistic():
         )
         assert links.size == 3
 
-        one_is_deployment = False
-        one_is_model_object = False
-        one_is_artifact = False
+        one_is_endpoint_artifact = False
+        one_is_model_artifact = False
+        one_is_data_artifact = False
         for link in links:
-            one_is_deployment ^= (
-                link.is_deployment and not link.is_model_object
+            one_is_endpoint_artifact ^= (
+                link.is_endpoint_artifact and not link.is_model_artifact
             )
-            one_is_model_object ^= (
-                not link.is_deployment and link.is_model_object
+            one_is_model_artifact ^= (
+                not link.is_endpoint_artifact and link.is_model_artifact
             )
-            one_is_artifact ^= (
-                not link.is_deployment and not link.is_model_object
+            one_is_data_artifact ^= (
+                not link.is_endpoint_artifact and not link.is_model_artifact
             )
-        assert one_is_deployment
-        assert one_is_model_object
-        assert one_is_artifact
+        assert one_is_endpoint_artifact
+        assert one_is_model_artifact
+        assert one_is_data_artifact
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+@step(model_version=ModelVersion(name=MODEL_NAME))
 def multi_named_output_step_from_context() -> (
     Tuple[
         Annotated[int, "1"],
@@ -131,13 +126,11 @@ def test_link_multiple_named_outputs():
 
         multi_named_pipeline()
 
-        model = client.get_model(MODEL_NAME)
-        assert model.name == MODEL_NAME
-        mv = client.get_model_version(MODEL_NAME)
-        assert mv.name == "1"
+        mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
+        assert mv.name == MODEL_NAME
+        assert mv.number == 1 and mv.version == "1"
         al = client.list_model_version_artifact_links(
-            model_name_or_id=model.id,
-            model_version_name_or_number_or_id=mv.id,
+            model_version_id=mv.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -146,7 +139,7 @@ def test_link_multiple_named_outputs():
         assert al.size == 3
 
 
-@step(model_config=ModelConfig(name=MODEL_NAME, create_new_model_version=True))
+@step(model_version=ModelVersion(name=MODEL_NAME))
 def multi_named_output_step_not_tracked() -> (
     Tuple[
         Annotated[int, "1"],
@@ -154,13 +147,13 @@ def multi_named_output_step_not_tracked() -> (
         Annotated[int, "3"],
     ]
 ):
-    """Here links would be implicitly created based on step ModelConfig."""
+    """Here links would be implicitly created based on step ModelVersion."""
     return 1, 2, 3
 
 
 @pipeline(enable_cache=False)
 def multi_named_pipeline_not_tracked():
-    """Here links would be implicitly created based on step ModelConfig."""
+    """Here links would be implicitly created based on step ModelVersion."""
     multi_named_output_step_not_tracked()
 
 
@@ -173,13 +166,11 @@ def test_link_multiple_named_outputs_without_links():
 
         multi_named_pipeline_not_tracked()
 
-        model = client.get_model(MODEL_NAME)
-        assert model.name == MODEL_NAME
-        mv = client.get_model_version(MODEL_NAME)
-        assert mv.name == "1"
+        mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
+        assert mv.number == 1 and mv.version == "1"
+        assert mv.name == MODEL_NAME
         artifact_links = client.list_model_version_artifact_links(
-            model_name_or_id=model.id,
-            model_version_name_or_number_or_id=mv.id,
+            model_version_id=mv.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                 user_id=user,
                 workspace_id=ws,
@@ -226,44 +217,34 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
         ws = client.active_workspace.id
 
         # manual creation needed, as we work with specific versions
-        m1 = ModelConfig(
+        m1 = ModelVersion(
             name=MODEL_NAME,
-        ).get_or_create_model()
-        m2 = ModelConfig(
+        )._get_or_create_model()
+        m2 = ModelVersion(
             name="bar",
-        ).get_or_create_model()
+        )._get_or_create_model()
 
         mv1 = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="bar",
-                model=m1.id,
-            )
+            name="bar",
+            model_name_or_id=m1.id,
         )
         mv2 = client.create_model_version(
-            ModelVersionRequestModel(
-                user=user,
-                workspace=ws,
-                name="foo",
-                model=m2.id,
-            )
+            name="foo",
+            model_name_or_id=m2.id,
         )
 
         for run_count in range(1, 3):
             multi_named_pipeline_from_self(run_count == 2)
 
             al1 = client.list_model_version_artifact_links(
-                model_name_or_id=mv1.model.id,
-                model_version_name_or_number_or_id=mv1.id,
+                model_version_id=mv1.id,
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                     user_id=user,
                     workspace_id=ws,
                 ),
             )
             al2 = client.list_model_version_artifact_links(
-                model_name_or_id=mv2.model.id,
-                model_version_name_or_number_or_id=mv2.id,
+                model_version_id=mv2.id,
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                     user_id=user,
                     workspace_id=ws,
@@ -276,13 +257,12 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
             for mv, al in zip([mv1, mv2], [al1, al2]):
                 for al_ in al:
                     client.zen_store.delete_model_version_artifact_link(
-                        model_name_or_id=mv.model.id,
-                        model_version_name_or_id=mv.id,
+                        model_version_id=mv.id,
                         model_version_artifact_link_name_or_id=al_.id,
                     )
 
 
-@step(model_config=ModelConfig(name="step", version="step"))
+@step(model_version=ModelVersion(name="step", version="step"))
 def multi_named_output_step_mixed_linkage() -> (
     Tuple[
         Annotated[
@@ -317,7 +297,7 @@ def some_plain_outputs():
     return "bar", 42.0
 
 
-@step(model_config=ModelConfig(name="step", version="step"))
+@step(model_version=ModelVersion(name="step", version="step"))
 def and_some_typed_outputs() -> int:
     """This artifact can be implicitly tracked with step config."""
     return 1
@@ -325,7 +305,7 @@ def and_some_typed_outputs() -> int:
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelConfig(name="pipe", version="pipe"),
+    model_version=ModelVersion(name="pipe", version="pipe"),
 )
 def multi_named_pipeline_mixed_linkage():
     """Mixed linking cases, see steps description."""
@@ -347,18 +327,14 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
         mvs = []
         for n in ["pipe", "step", "artifact"]:
             models.append(
-                ModelConfig(
+                ModelVersion(
                     name=n,
-                ).get_or_create_model()
+                )._get_or_create_model()
             )
             mvs.append(
                 client.create_model_version(
-                    ModelVersionRequestModel(
-                        user=user,
-                        workspace=ws,
-                        name=n,
-                        model=models[-1].id,
-                    )
+                    name=n,
+                    model_name_or_id=models[-1].id,
                 )
             )
 
@@ -368,8 +344,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
         for mv in mvs:
             artifact_links.append(
                 client.list_model_version_artifact_links(
-                    model_name_or_id=mv.model.id,
-                    model_version_name_or_number_or_id=mv.id,
+                    model_version_id=mv.id,
                     model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
                         user_id=user,
                         workspace_id=ws,
@@ -399,7 +374,7 @@ def _cacheable_step_custom_model_annotated() -> (
     Annotated[
         str,
         "cacheable",
-        ArtifactConfig(model_name="bar", model_version=RUNNING_MODEL_VERSION),
+        ArtifactConfig(model_name="bar", model_version=ModelStages.LATEST),
     ]
 ):
     return "cacheable"
@@ -414,7 +389,7 @@ def test_artifacts_linked_from_cache_steps():
     """Test that artifacts are linked from cache steps."""
 
     @pipeline(
-        model_config=ModelConfig(name="foo", create_new_model_version=True),
+        model_version=ModelVersion(name="foo"),
         enable_cache=False,
     )
     def _inner_pipeline(force_disable_cache: bool = False):
@@ -433,52 +408,48 @@ def test_artifacts_linked_from_cache_steps():
         client = Client()
 
         for i in range(1, 3):
-            fake_version = ModelConfig(
-                name="bar", create_new_model_version=True
-            ).get_or_create_model_version()
+            ModelVersion(name="bar")._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
-            mv = client.get_model_version(
+            mvrm = client._get_model_version(
                 model_name_or_id="foo", model_version_name_or_number_or_id=i
             )
-            assert len(mv.artifact_object_ids) == 2, f"Failed on {i} run"
-            assert len(mv.model_object_ids) == 1, f"Failed on {i} run"
-            assert set(mv.artifact_object_ids.keys()) == {
+            assert len(mvrm.data_artifact_ids) == 2, f"Failed on {i} run"
+            assert len(mvrm.model_artifact_ids) == 1, f"Failed on {i} run"
+            assert set(mvrm.data_artifact_ids.keys()) == {
                 "_inner_pipeline::_non_cacheable_step::output",
                 "_inner_pipeline::_cacheable_step_not_annotated::output",
             }, f"Failed on {i} run"
-            assert set(mv.model_object_ids.keys()) == {
+            assert set(mvrm.model_artifact_ids.keys()) == {
                 "_inner_pipeline::_cacheable_step_annotated::cacheable",
             }, f"Failed on {i} run"
 
-            mv = client.get_model_version(
+            mvrm = client._get_model_version(
                 model_name_or_id="bar",
-                model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
             )
-            assert len(mv.artifact_object_ids) == 1, f"Failed on {i} run"
-            assert set(mv.artifact_object_ids.keys()) == {
+
+            assert len(mvrm.data_artifact_ids) == 1, f"Failed on {i} run"
+            assert set(mvrm.data_artifact_ids.keys()) == {
                 "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
             }, f"Failed on {i} run"
             assert (
                 len(
-                    mv.artifact_object_ids[
+                    mvrm.data_artifact_ids[
                         "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
                     ]
                 )
                 == 1
             ), f"Failed on {i} run"
 
-            fake_version._update_default_running_version_name()
-
 
 def test_artifacts_linked_from_cache_steps_same_id():
     """Test that artifacts are linked from cache steps with same id.
-    This case appears if cached step is executed inside same model version
+    This case appears if cached step is executed inside same model version,
     and we need to silently pass linkage without failing on same id.
     """
 
     @pipeline(
-        model_config=ModelConfig(name="foo", create_new_model_version=True),
+        model_version=ModelVersion(name="foo"),
         enable_cache=False,
     )
     def _inner_pipeline(force_disable_cache: bool = False):
@@ -491,22 +462,19 @@ def test_artifacts_linked_from_cache_steps_same_id():
         client = Client()
 
         for i in range(1, 3):
-            ModelConfig(
-                name="bar", create_new_model_version=True
-            ).get_or_create_model_version()
+            ModelVersion(name="bar")._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
-            mv = client.get_model_version(
+            mvrm = client._get_model_version(
                 model_name_or_id="bar",
-                model_version_name_or_number_or_id=RUNNING_MODEL_VERSION,
             )
-            assert len(mv.artifact_object_ids) == 1, f"Failed on {i} run"
-            assert set(mv.artifact_object_ids.keys()) == {
+            assert len(mvrm.data_artifact_ids) == 1, f"Failed on {i} run"
+            assert set(mvrm.data_artifact_ids.keys()) == {
                 "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
             }, f"Failed on {i} run"
             assert (
                 len(
-                    mv.artifact_object_ids[
+                    mvrm.data_artifact_ids[
                         "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
                     ]
                 )

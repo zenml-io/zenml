@@ -25,14 +25,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "zenml.serviceAccountName" . }}-db-migration
+      {{- else }}
       serviceAccountName: {{ include "zenml.serviceAccountName" . }}
+      {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- if and (eq .Values.zenml.secretsStore.type "gcp") .Values.zenml.secretsStore.gcp.google_application_credentials }}
       volumes:
         - name: gcp-credentials
           secret:
-            secretName: {{ include "zenml.fullname" . }}
+            secretName: {{ include "zenml.fullname" . }}-db-migration
             items:
               - key: GOOGLE_APPLICATION_CREDENTIALS_FILE
                 path: credentials.json
@@ -120,7 +124,7 @@ spec:
             {{- end }}
           envFrom:
           - secretRef:
-              name: {{ include "zenml.fullname" . }}
+              name: {{ include "zenml.fullname" . }}-db-migration
           {{- if and (eq .Values.zenml.secretsStore.type "gcp") .Values.zenml.secretsStore.gcp.google_application_credentials }}
           volumeMounts:
             - name: gcp-credentials

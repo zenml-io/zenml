@@ -113,7 +113,7 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
     Tuple[
         Annotated[
             int,
-            ArtifactConfig(name="custom_output", is_deployment_artifact=True),
+            ArtifactConfig(name="custom_output", is_endpoint_artifact=True),
         ],
         int,
     ]
@@ -263,7 +263,7 @@ def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
                 "custom_output": OutputSignature(
                     resolved_annotation=int,
                     artifact_config=ArtifactConfig(
-                        name="custom_output", is_deployment_artifact=True
+                        name="custom_output", is_endpoint_artifact=True
                     ),
                     has_custom_name=True,
                 ),
