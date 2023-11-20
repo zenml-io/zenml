@@ -85,13 +85,18 @@ from zenml.models import (
     StackRequest,
     StackResponse,
     WorkspaceFilter,
+    WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -135,32 +140,38 @@ def list_workspaces(
     Returns:
         A list of workspaces.
     """
-    return zen_store().list_workspaces(
-        workspace_filter_model=workspace_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=workspace_filter_model,
+        resource_type=ResourceType.WORKSPACE,
+        list_method=zen_store().list_workspaces,
+        hydrate=hydrate,
     )
 
 
-# @router.post(
-#     WORKSPACES,
-#     response_model=WorkspaceResponseModel,
-#     responses={401: error_response, 409: error_response, 422: error_response},
-# )
-# @handle_exceptions
-# def create_workspace(
-#     workspace: WorkspaceRequest,
-#     _: AuthContext = Security(authorize),
-# ) -> WorkspaceResponse:
-#     """Creates a workspace based on the requestBody.
+@router.post(
+    WORKSPACES,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_workspace(
+    workspace: WorkspaceRequest,
+    _: AuthContext = Security(authorize),
+) -> WorkspaceResponse:
+    """Creates a workspace based on the requestBody.
 
-#     # noqa: DAR401
+    # noqa: DAR401
 
-#     Args:
-#         workspace: Workspace to create.
+    Args:
+        workspace: Workspace to create.
 
-#     Returns:
-#         The created workspace.
-#     """
-#     return zen_store().create_workspace(workspace=workspace)
+    Returns:
+        The created workspace.
+    """
+    return verify_permissions_and_create_entity(
+        request_model=workspace,
+        resource_type=ResourceType.WORKSPACE,
+        create_method=zen_store().create_workspace,
+    )
 
 
 @router.get(
@@ -186,53 +197,61 @@ def get_workspace(
     Returns:
         The requested workspace.
     """
-    return zen_store().get_workspace(
-        workspace_name_or_id=workspace_name_or_id, hydrate=hydrate
+    return verify_permissions_and_get_entity(
+        id=workspace_name_or_id,
+        get_method=zen_store().get_workspace,
+        hydrate=hydrate,
     )
 
 
-# @router.put(
-#     WORKSPACES + "/{workspace_name_or_id}",
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# @handle_exceptions
-# def update_workspace(
-#     workspace_name_or_id: UUID,
-#     workspace_update: WorkspaceUpdate,
-#     _: AuthContext = Security(authorize),
-# ) -> WorkspaceResponse:
-#     """Get a workspace for given name.
+@router.put(
+    WORKSPACES + "/{workspace_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_workspace(
+    workspace_name_or_id: UUID,
+    workspace_update: WorkspaceUpdate,
+    _: AuthContext = Security(authorize),
+) -> WorkspaceResponse:
+    """Get a workspace for given name.
 
-#     # noqa: DAR401
+    # noqa: DAR401
 
-#     Args:
-#         workspace_name_or_id: Name or ID of the workspace to update.
-#         workspace_update: the workspace to use to update
+    Args:
+        workspace_name_or_id: Name or ID of the workspace to update.
+        workspace_update: the workspace to use to update
 
-#     Returns:
-#         The updated workspace.
-#     """
-#     return zen_store().update_workspace(
-#         workspace_id=workspace_name_or_id,
-#         workspace_update=workspace_update,
-#     )
+    Returns:
+        The updated workspace.
+    """
+    return verify_permissions_and_update_entity(
+        id=workspace_name_or_id,
+        update_model=workspace_update,
+        get_method=zen_store().get_workspace,
+        update_method=zen_store().update_model,
+    )
 
 
-# @router.delete(
-#     WORKSPACES + "/{workspace_name_or_id}",
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# @handle_exceptions
-# def delete_workspace(
-#     workspace_name_or_id: Union[str, UUID],
-#     _: AuthContext = Security(authorize),
-# ) -> None:
-#     """Deletes a workspace.
+@router.delete(
+    WORKSPACES + "/{workspace_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_workspace(
+    workspace_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Deletes a workspace.
 
-#     Args:
-#         workspace_name_or_id: Name or ID of the workspace.
-#     """
-#     zen_store().delete_workspace(workspace_name_or_id=workspace_name_or_id)
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+    """
+    return verify_permissions_and_delete_entity(
+        id=workspace_name_or_id,
+        get_method=zen_store().get_workspace,
+        delete_method=zen_store().delete_workspace,
+    )
 
 
 @router.get(
@@ -333,7 +352,7 @@ def list_workspace_stack_components(
         make_dependable(ComponentFilter)
     ),
     hydrate: bool = False,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> Page[ComponentResponse]:
     """List stack components that are part of a specific workspace.
 
@@ -345,7 +364,6 @@ def list_workspace_stack_components(
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
-        auth_context: Authentication Context.
 
     Returns:
         All stack components part of the specified workspace.
@@ -868,21 +886,20 @@ def create_run_metadata(
 def create_secret(
     workspace_name_or_id: Union[str, UUID],
     secret: SecretRequestModel,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> SecretResponseModel:
     """Creates a secret.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         secret: Secret to create.
-        auth_context: Authentication context.
 
     Returns:
         The created secret.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            secret does not match the current workspace or authenticated user.
+        IllegalOperationError: If the workspace specified in the
+            secret does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -892,12 +909,12 @@ def create_secret(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if secret.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating secrets for a user other than yourself "
-            "is not supported."
-        )
-    return zen_store().create_secret(secret=secret)
+
+    return verify_permissions_and_create_entity(
+        request_model=secret,
+        resource_type=ResourceType.SECRET,
+        create_method=zen_store().create_secret,
+    )
 
 
 @router.get(

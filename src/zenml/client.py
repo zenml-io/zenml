@@ -64,6 +64,7 @@ from zenml.enums import (
 from zenml.exceptions import (
     AuthorizationException,
     EntityExistsError,
+    IllegalOperationError,
     InitializationException,
     ValidationError,
     ZenKeyError,
@@ -149,7 +150,9 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
     WorkspaceFilter,
+    WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceUpdate,
 )
 from zenml.utils import io_utils, source_utils
 from zenml.utils.filesync_model import FileSyncModel
@@ -802,21 +805,21 @@ class Client(metaclass=ClientMetaClass):
 
     # -------------------------------- Workspaces ------------------------------
 
-    # def create_workspace(
-    #     self, name: str, description: str
-    # ) -> WorkspaceResponse:
-    #     """Create a new workspace.
+    def create_workspace(
+        self, name: str, description: str
+    ) -> WorkspaceResponse:
+        """Create a new workspace.
 
-    #     Args:
-    #         name: Name of the workspace.
-    #         description: Description of the workspace.
+        Args:
+            name: Name of the workspace.
+            description: Description of the workspace.
 
-    #     Returns:
-    #         The created workspace.
-    #     """
-    #     return self.zen_store.create_workspace(
-    #         WorkspaceRequest(name=name, description=description)
-    #     )
+        Returns:
+            The created workspace.
+        """
+        return self.zen_store.create_workspace(
+            WorkspaceRequest(name=name, description=description)
+        )
 
     def get_workspace(
         self,
@@ -880,53 +883,53 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-    # def update_workspace(
-    #     self,
-    #     name_id_or_prefix: Optional[Union[UUID, str]],
-    #     new_name: Optional[str] = None,
-    #     new_description: Optional[str] = None,
-    # ) -> WorkspaceResponse:
-    #     """Update a workspace.
+    def update_workspace(
+        self,
+        name_id_or_prefix: Optional[Union[UUID, str]],
+        new_name: Optional[str] = None,
+        new_description: Optional[str] = None,
+    ) -> WorkspaceResponse:
+        """Update a workspace.
 
-    #     Args:
-    #         name_id_or_prefix: Name, ID or prefix of the workspace to update.
-    #         new_name: New name of the workspace.
-    #         new_description: New description of the workspace.
+        Args:
+            name_id_or_prefix: Name, ID or prefix of the workspace to update.
+            new_name: New name of the workspace.
+            new_description: New description of the workspace.
 
-    #     Returns:
-    #         The updated workspace.
-    #     """
-    #     workspace = self.get_workspace(
-    #         name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
-    #     )
-    #     workspace_update = WorkspaceUpdate(name=new_name or workspace.name)
-    #     if new_description:
-    #         workspace_update.description = new_description
-    #     return self.zen_store.update_workspace(
-    #         workspace_id=workspace.id,
-    #         workspace_update=workspace_update,
-    #     )
+        Returns:
+            The updated workspace.
+        """
+        workspace = self.get_workspace(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        workspace_update = WorkspaceUpdate(name=new_name or workspace.name)
+        if new_description:
+            workspace_update.description = new_description
+        return self.zen_store.update_workspace(
+            workspace_id=workspace.id,
+            workspace_update=workspace_update,
+        )
 
-    # def delete_workspace(self, name_id_or_prefix: str) -> None:
-    #     """Delete a workspace.
+    def delete_workspace(self, name_id_or_prefix: str) -> None:
+        """Delete a workspace.
 
-    #     Args:
-    #         name_id_or_prefix: The name or ID of the workspace to delete.
+        Args:
+            name_id_or_prefix: The name or ID of the workspace to delete.
 
-    #     Raises:
-    #         IllegalOperationError: If the workspace to delete is the active
-    #             workspace.
-    #     """
-    #     workspace = self.get_workspace(
-    #         name_id_or_prefix, allow_name_prefix_match=False
-    #     )
-    #     if self.active_workspace.id == workspace.id:
-    #         raise IllegalOperationError(
-    #             f"Workspace '{name_id_or_prefix}' cannot be deleted since "
-    #             "it is currently active. Please set another workspace as "
-    #             "active first."
-    #         )
-    #     self.zen_store.delete_workspace(workspace_name_or_id=workspace.id)
+        Raises:
+            IllegalOperationError: If the workspace to delete is the active
+                workspace.
+        """
+        workspace = self.get_workspace(
+            name_id_or_prefix, allow_name_prefix_match=False
+        )
+        if self.active_workspace.id == workspace.id:
+            raise IllegalOperationError(
+                f"Workspace '{name_id_or_prefix}' cannot be deleted since "
+                "it is currently active. Please set another workspace as "
+                "active first."
+            )
+        self.zen_store.delete_workspace(workspace_name_or_id=workspace.id)
 
     @property
     def active_workspace(self) -> WorkspaceResponse:

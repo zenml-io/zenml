@@ -39,6 +39,15 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission_for_model
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -78,10 +87,11 @@ def create_service_account(
     Returns:
         The created service account.
     """
-    new_service_account = zen_store().create_service_account(
-        service_account=service_account
+    return verify_permissions_and_create_entity(
+        request_model=service_account,
+        resource_type=ResourceType.SERVICE_ACCOUNT,
+        create_method=zen_store().create_service_account,
     )
-    return new_service_account
 
 
 @router.get(
@@ -105,8 +115,9 @@ def get_service_account(
     Returns:
         The service account matching the given name or ID.
     """
-    return zen_store().get_service_account(
-        service_account_name_or_id=service_account_name_or_id,
+    return verify_permissions_and_get_entity(
+        id=service_account_name_or_id,
+        get_method=zen_store().get_service_account,
         hydrate=hydrate,
     )
 
@@ -135,8 +146,11 @@ def list_service_accounts(
     Returns:
         A list of service accounts matching the filter.
     """
-    return zen_store().list_service_accounts(
-        filter_model=filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=filter_model,
+        resource_type=ResourceType.SERVICE_ACCOUNT,
+        list_method=zen_store().list_service_accounts,
+        hydrate=hydrate,
     )
 
 
@@ -164,9 +178,11 @@ def update_service_account(
     Returns:
         The updated service account.
     """
-    return zen_store().update_service_account(
-        service_account_name_or_id=service_account_name_or_id,
-        service_account_update=service_account_update,
+    return verify_permissions_and_update_entity(
+        id=service_account_name_or_id,
+        update_model=service_account_update,
+        get_method=zen_store().get_service_account,
+        update_method=zen_store().update_service_account,
     )
 
 
@@ -184,7 +200,11 @@ def delete_service_account(
     Args:
         service_account_name_or_id: Name or ID of the service account.
     """
-    zen_store().delete_service_account(service_account_name_or_id)
+    return verify_permissions_and_delete_entity(
+        id=service_account_name_or_id,
+        get_method=zen_store().get_service_account,
+        delete_method=zen_store().delete_service_account,
+    )
 
 
 # --------
@@ -213,6 +233,8 @@ def create_api_key(
     Returns:
         The created API key.
     """
+    service_account = zen_store().get_service_account(service_account_id)
+    verify_permission_for_model(service_account, action=Action.UPDATE)
     created_api_key = zen_store().create_api_key(
         service_account_id=service_account_id,
         api_key=api_key,
@@ -244,6 +266,8 @@ def get_api_key(
     Returns:
         The requested API key.
     """
+    service_account = zen_store().get_service_account(service_account_id)
+    verify_permission_for_model(service_account, action=Action.READ)
     api_key = zen_store().get_api_key(
         service_account_id=service_account_id,
         api_key_name_or_id=api_key_name_or_id,
@@ -278,6 +302,8 @@ def list_api_keys(
         All API keys matching the filter and associated with the supplied
         service account.
     """
+    service_account = zen_store().get_service_account(service_account_id)
+    verify_permission_for_model(service_account, action=Action.READ)
     return zen_store().list_api_keys(
         service_account_id=service_account_id,
         filter_model=filter_model,
@@ -308,6 +334,8 @@ def update_api_key(
     Returns:
         The updated API key.
     """
+    service_account = zen_store().get_service_account(service_account_id)
+    verify_permission_for_model(service_account, action=Action.UPDATE)
     return zen_store().update_api_key(
         service_account_id=service_account_id,
         api_key_name_or_id=api_key_name_or_id,
@@ -341,6 +369,8 @@ def rotate_api_key(
     Returns:
         The updated API key.
     """
+    service_account = zen_store().get_service_account(service_account_id)
+    verify_permission_for_model(service_account, action=Action.UPDATE)
     return zen_store().rotate_api_key(
         service_account_id=service_account_id,
         api_key_name_or_id=api_key_name_or_id,
@@ -365,6 +395,8 @@ def delete_api_key(
             belongs.
         api_key_name_or_id: Name or ID of the API key to delete.
     """
+    service_account = zen_store().get_service_account(service_account_id)
+    verify_permission_for_model(service_account, action=Action.UPDATE)
     zen_store().delete_api_key(
         service_account_id=service_account_id,
         api_key_name_or_id=api_key_name_or_id,

@@ -107,7 +107,9 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
     WorkspaceFilter,
+    WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceUpdate,
 )
 
 
@@ -1768,21 +1770,21 @@ class ZenStoreInterface(ABC):
 
     # -------------------- Workspaces --------------------
 
-    # @abstractmethod
-    # def create_workspace(
-    #     self, workspace: WorkspaceRequest
-    # ) -> WorkspaceResponse:
-    #     """Creates a new workspace.
+    @abstractmethod
+    def create_workspace(
+        self, workspace: WorkspaceRequest
+    ) -> WorkspaceResponse:
+        """Creates a new workspace.
 
-    #     Args:
-    #         workspace: The workspace to create.
+        Args:
+            workspace: The workspace to create.
 
-    #     Returns:
-    #         The newly created workspace.
+        Returns:
+            The newly created workspace.
 
-    #     Raises:
-    #         EntityExistsError: If a workspace with the given name already exists.
-    #     """
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
+        """
 
     @abstractmethod
     def get_workspace(
@@ -1820,33 +1822,33 @@ class ZenStoreInterface(ABC):
             A list of all workspace matching the filter criteria.
         """
 
-    # @abstractmethod
-    # def update_workspace(
-    #     self, workspace_id: UUID, workspace_update: WorkspaceUpdate
-    # ) -> WorkspaceResponse:
-    #     """Update an existing workspace.
+    @abstractmethod
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
+    ) -> WorkspaceResponse:
+        """Update an existing workspace.
 
-    #     Args:
-    #         workspace_id: The ID of the workspace to be updated.
-    #         workspace_update: The update to be applied to the workspace.
+        Args:
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
 
-    #     Returns:
-    #         The updated workspace.
+        Returns:
+            The updated workspace.
 
-    #     Raises:
-    #         KeyError: if the workspace does not exist.
-    #     """
+        Raises:
+            KeyError: if the workspace does not exist.
+        """
 
-    # @abstractmethod
-    # def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
-    #     """Deletes a workspace.
+    @abstractmethod
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
 
-    #     Args:
-    #         workspace_name_or_id: Name or ID of the workspace to delete.
+        Args:
+            workspace_name_or_id: Name or ID of the workspace to delete.
 
-    #     Raises:
-    #         KeyError: If no workspace with the given name exists.
-    #     """
+        Raises:
+            KeyError: If no workspace with the given name exists.
+        """
 
     # -------------------- Model --------------------
 

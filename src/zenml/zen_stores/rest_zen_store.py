@@ -185,9 +185,11 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
     WorkspaceFilter,
+    WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceScopedRequest,
     WorkspaceScopedRequestModel,
+    WorkspaceUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -2396,22 +2398,22 @@ class RestZenStore(BaseZenStore):
 
     # ----------------------------- Workspaces -----------------------------
 
-    # def create_workspace(
-    #     self, workspace: WorkspaceRequest
-    # ) -> WorkspaceResponse:
-    #     """Creates a new workspace.
+    def create_workspace(
+        self, workspace: WorkspaceRequest
+    ) -> WorkspaceResponse:
+        """Creates a new workspace.
 
-    #     Args:
-    #         workspace: The workspace to create.
+        Args:
+            workspace: The workspace to create.
 
-    #     Returns:
-    #         The newly created workspace.
-    #     """
-    #     return self._create_resource(
-    #         resource=workspace,
-    #         route=WORKSPACES,
-    #         response_model=WorkspaceResponse,
-    #     )
+        Returns:
+            The newly created workspace.
+        """
+        return self._create_resource(
+            resource=workspace,
+            route=WORKSPACES,
+            response_model=WorkspaceResponse,
+        )
 
     def get_workspace(
         self, workspace_name_or_id: Union[UUID, str], hydrate: bool = True
@@ -2456,35 +2458,35 @@ class RestZenStore(BaseZenStore):
             params={"hydrate": hydrate},
         )
 
-    # def update_workspace(
-    #     self, workspace_id: UUID, workspace_update: WorkspaceUpdate
-    # ) -> WorkspaceResponse:
-    #     """Update an existing workspace.
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
+    ) -> WorkspaceResponse:
+        """Update an existing workspace.
 
-    #     Args:
-    #         workspace_id: The ID of the workspace to be updated.
-    #         workspace_update: The update to be applied to the workspace.
+        Args:
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
 
-    #     Returns:
-    #         The updated workspace.
-    #     """
-    #     return self._update_resource(
-    #         resource_id=workspace_id,
-    #         resource_update=workspace_update,
-    #         route=WORKSPACES,
-    #         response_model=WorkspaceResponse,
-    #     )
+        Returns:
+            The updated workspace.
+        """
+        return self._update_resource(
+            resource_id=workspace_id,
+            resource_update=workspace_update,
+            route=WORKSPACES,
+            response_model=WorkspaceResponse,
+        )
 
-    # def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
-    #     """Deletes a workspace.
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
 
-    #     Args:
-    #         workspace_name_or_id: Name or ID of the workspace to delete.
-    #     """
-    #     self._delete_resource(
-    #         resource_id=workspace_name_or_id,
-    #         route=WORKSPACES,
-    #     )
+        Args:
+            workspace_name_or_id: Name or ID of the workspace to delete.
+        """
+        self._delete_resource(
+            resource_id=workspace_name_or_id,
+            route=WORKSPACES,
+        )
 
     #########
     # Model

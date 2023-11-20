@@ -187,10 +187,6 @@ class UserContext:
                 name=self.user_name, password=self.password, active=True
             )
             self.created_user = self.store.create_user(new_user)
-            self.client.create_user_role_assignment(
-                role_name_or_id="admin",
-                user_name_or_id=self.created_user.id,
-            )
         else:
             self.created_user = self.store.get_user(self.user_name)
 
@@ -252,10 +248,6 @@ class ServiceAccountContext:
             )
             self.created_service_account = self.store.create_service_account(
                 new_account
-            )
-            self.client.create_user_role_assignment(
-                role_name_or_id="admin",
-                user_name_or_id=self.created_service_account.id,
             )
         else:
             self.created_service_account = self.store.get_service_account(

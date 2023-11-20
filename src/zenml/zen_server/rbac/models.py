@@ -50,6 +50,9 @@ class ResourceType(StrEnum):
     SERVICE_CONNECTOR = "service_connector"
     ARTIFACT = "artifact"
     SECRET = "secret"
+    TAG = "tag"
+    SERVICE_ACCOUNT = "service_account"
+    WORKSPACE = "workspace"
 
 
 class Resource(BaseModel):

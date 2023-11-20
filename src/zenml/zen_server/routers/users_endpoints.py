@@ -332,7 +332,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             )
         else:
             raise AuthorizationException(
-                "Users can not opt in on behalf of another " "user."
+                "Users can not opt in on behalf of another user."
             )
 
 
