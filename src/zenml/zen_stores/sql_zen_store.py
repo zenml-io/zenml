@@ -5604,13 +5604,17 @@ class SqlZenStore(BaseZenStore):
 
     def _get_tag_model_schema(
         self,
-        tag_resource_id: Union[str, UUID],
+        tag_id: UUID,
+        resource_id: UUID,
+        resource_type: TaggableResourceTypes,
         session: Session,
     ) -> TagResourceSchema:
-        """Gets a tag model schema by name or ID.
+        """Gets a tag model schema by tag and resource.
 
         Args:
-            tag_resource_id: The ID of the tag resource relation to get.
+            tag_id: The ID of the tag to get.
+            resource_id: The ID of the resource to get.
+            resource_type: The type of the resource to get.
             session: The database session to use.
 
         Returns:
@@ -5622,13 +5626,17 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             schema = session.exec(
                 select(TagResourceSchema).where(
-                    TagResourceSchema.id == tag_resource_id
+                    TagResourceSchema.tag_id == tag_id,
+                    TagResourceSchema.resource_id == resource_id,
+                    TagResourceSchema.resource_type == resource_type.value,
                 )
             ).first()
             if schema is None:
                 raise KeyError(
-                    f"Unable to get {TagResourceSchema.__tablename__} with name or ID "
-                    f"'{tag_resource_id}': No {TagResourceSchema.__tablename__} with this ID found."
+                    f"Unable to get {TagResourceSchema.__tablename__} with IDs "
+                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
+                    f"`resource_type`='{resource_type.value}': No "
+                    f"{TagResourceSchema.__tablename__} with these IDs found."
                 )
             return schema
 
@@ -6456,13 +6464,12 @@ class SqlZenStore(BaseZenStore):
             resource_id: The id of the resource.
             resource_type: The type of the resource to create link with.
         """
-        from zenml.utils.tag_utils import _get_tag_resource_id
-
         for tag_name in tag_names:
             try:
                 tag = self.get_tag(tag_name)
                 self.delete_tag_resource(
-                    tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                    tag_id=tag.id,
+                    resource_id=resource_id,
                     resource_type=resource_type,
                 )
             except KeyError:
@@ -6621,7 +6628,10 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             existing_tag_resource = session.exec(
                 select(TagResourceSchema).where(
-                    TagResourceSchema.id == tag_resource.tag_resource_id
+                    TagResourceSchema.tag_id == tag_resource.tag_id,
+                    TagResourceSchema.resource_id == tag_resource.resource_id,
+                    TagResourceSchema.resource_type
+                    == tag_resource.resource_type.value,
                 )
             ).first()
             if existing_tag_resource is not None:
@@ -6639,34 +6649,33 @@ class SqlZenStore(BaseZenStore):
 
     def delete_tag_resource(
         self,
-        tag_resource_id: UUID,
+        tag_id: UUID,
+        resource_id: UUID,
         resource_type: TaggableResourceTypes,
     ) -> None:
         """Deletes a tag resource relationship.
 
         Args:
-            tag_resource_id: id of the tag<>resource to delete.
-            resource_type: The type of the resource to create link with.
+            tag_id: The ID of the tag to delete.
+            resource_id: The ID of the resource to delete.
+            resource_type: The type of the resource to delete.
 
         Raises:
             KeyError: specified ID not found.
-            RuntimeError: on resource type mismatch.
         """
         with Session(self.engine) as session:
             tag_model = self._get_tag_model_schema(
-                tag_resource_id=tag_resource_id,
+                tag_id=tag_id,
+                resource_id=resource_id,
+                resource_type=resource_type,
                 session=session,
             )
             if tag_model is None:
                 raise KeyError(
-                    f"Unable to delete tag<>resource with ID `{tag_resource_id}`: "
-                    f"No tag<>resource with these ID found."
-                )
-            if tag_model.resource_type != resource_type.value:
-                raise RuntimeError(
-                    f"Unable to delete tag<>resource with ID `{tag_resource_id}`: "
-                    f"Resource type in request `{resource_type.value}` do not match "
-                    f"resource type defined in database `{tag_model.resource_type}`."
+                    f"Unable to delete tag<>resource with IDs: "
+                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
+                    f"`resource_type`='{resource_type.value}': No "
+                    "tag<>resource with these IDs found."
                 )
             session.delete(tag_model)
             session.commit()
