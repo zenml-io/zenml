@@ -152,6 +152,53 @@ class ModelVersion(BaseModel):
             )
         return None
 
+    def load_artifact(self, name: str, version: Optional[str] = None) -> Any:
+        """Load artifact from the Model Control Plane.
+
+        Args:
+            name: Name of the artifact to load.
+            version: Version of the artifact to load.
+
+        Returns:
+            The loaded artifact.
+        """
+        from zenml.artifacts.utils import load_artifact
+
+        artifact = self.get_artifact(name=name, version=version)
+
+        if not artifact:
+            raise ValueError(
+                f"Version {self.version} of model {self.name} does not have "
+                f"an artifact with name {name} and version {version}."
+            )
+
+        return load_artifact(artifact.id, str(artifact.version))
+
+    def get_artifact(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> Optional["ArtifactResponse"]:
+        """Get the artifact linked to this model version.
+
+        Args:
+            name: The name of the artifact to retrieve.
+            version: The version of the artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated the artifact.
+            step_name: The name of the step generated the artifact.
+
+        Returns:
+            Specific version of the artifact or None
+        """
+        return self._get_or_create_model_version().get_artifact(
+            name=name,
+            version=version,
+            pipeline_name=pipeline_name,
+            step_name=step_name,
+        )
+
     def get_model_artifact(
         self,
         name: str,

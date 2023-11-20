@@ -364,6 +364,33 @@ class ModelVersionResponseModel(
             version = max(collection[name].keys())
         return client.get_artifact(collection[name][version])
 
+    def get_artifact(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> Optional["ArtifactResponse"]:
+        """Get the artifact linked to this model version.
+
+        Args:
+            name: The name of the artifact to retrieve.
+            version: The version of the artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline-generated the artifact.
+            step_name: The name of the step-generated the artifact.
+
+        Returns:
+            Specific version of an artifact or None
+        """
+        all_artifact_ids = {
+            **self.model_artifact_ids,
+            **self.data_artifact_ids,
+            **self.endpoint_artifact_ids,
+        }
+        return self._get_linked_object(
+            all_artifact_ids, name, version, pipeline_name, step_name
+        )
+
     def get_model_artifact(
         self,
         name: str,
