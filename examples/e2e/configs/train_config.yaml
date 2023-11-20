@@ -44,7 +44,7 @@ steps:
       notify_on_success: False
 
 # configuration of the Model Control Plane
-model_config:
+model_version:
   name: e2e_use_case
   license: apache
   description: e2e_use_case E2E Batch Use Case
@@ -61,7 +61,6 @@ model_config:
   - sklearn
   - from template
   - ZenML delivered
-  create_new_model_version: true
 
 # pipeline level extra configurations
 extra:
