@@ -135,7 +135,6 @@ class ModelSchema(NamedSchema, table=True):
         Returns:
             The created `ModelResponse`.
         """
-
         tags = [t.tag.to_model() for t in self.tags]
         if self.model_versions:
             version_numbers = [mv.number for mv in self.model_versions]

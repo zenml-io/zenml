@@ -19,8 +19,14 @@ from uuid import uuid4
 import pytest
 
 from tests.unit.steps.test_external_artifact import MockZenmlClient
-from zenml.models import ModelResponse, ModelVersionResponse, ModelVersionResponseBody, ModelResponseBody, ModelResponseMetadata, ModelVersionResponseMetadata
-
+from zenml.models import (
+    ModelResponse,
+    ModelResponseBody,
+    ModelResponseMetadata,
+    ModelVersionResponse,
+    ModelVersionResponseBody,
+    ModelVersionResponseMetadata,
+)
 
 ARTIFACT_IDS = [uuid4(), uuid4()]
 
