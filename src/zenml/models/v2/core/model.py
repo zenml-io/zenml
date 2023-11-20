@@ -157,7 +157,7 @@ class ModelResponse(
         """Get the hydrated version of this model.
 
         Returns:
-            an instance of the same entity wth the metadata field attached.
+            an instance of the same entity with the metadata field attached.
         """
         from zenml.client import Client
 
