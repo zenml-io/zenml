@@ -27,25 +27,6 @@ from zenml.models.secret_models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.models.model_models import (
-    ModelFilterModel,
-    ModelResponseModel,
-    ModelRequestModel,
-    ModelUpdateModel,
-    ModelVersionBaseModel,
-    ModelVersionResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionArtifactBaseModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionPipelineRunBaseModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionUpdateModel,
-)
 from zenml.models.tag_models import (
     TagFilterModel,
     TagResourceResponseModel,
@@ -81,6 +62,8 @@ from zenml.models.v2.base.scoped import (
     ShareableResponse,
     ShareableResponseBody,
     ShareableResponseMetadata,
+    ModelScopedFilter,
+    ModelVersionScopedFilter,
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -158,6 +141,34 @@ from zenml.models.v2.core.flavor import (
     FlavorResponse,
     FlavorResponseBody,
     FlavorResponseMetadata,
+)
+from zenml.models.v2.core.model import (
+    ModelRequest,
+    ModelUpdate,
+    ModelResponse,
+    ModelResponseBody,
+    ModelResponseMetadata,
+    ModelFilter,
+)
+from zenml.models.v2.core.model_version import (
+    ModelVersionRequest,
+    ModelVersionUpdate,
+    ModelVersionResponse,
+    ModelVersionResponseBody,
+    ModelVersionResponseMetadata,
+    ModelVersionFilter,
+)
+from zenml.models.v2.core.model_version_artifact import (
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionArtifactResponseBody,
+    ModelVersionArtifactFilter,
+)
+from zenml.models.v2.core.model_version_pipeline_run import (
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionPipelineRunResponseBody,
+    ModelVersionPipelineRunFilter,
 )
 from zenml.models.v2.core.logs import (
     LogsRequest,
@@ -334,38 +345,6 @@ SecretResponseModel.update_forward_refs(
     UserResponse=UserResponse,
     WorkspaceResponse=WorkspaceResponse,
 )
-ModelRequestModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionRequestModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionArtifactRequestModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionArtifactResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionPipelineRunRequestModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionPipelineRunResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
 
 # V2
 APIKeyResponseBody.update_forward_refs(
@@ -403,6 +382,42 @@ FlavorResponseBody.update_forward_refs(
 )
 FlavorResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
+)
+ModelRequest.update_forward_refs(
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
+)
+ModelResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+    TagResponseModel=TagResponseModel,
+)
+ModelResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+ModelVersionRequest.update_forward_refs(
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
+)
+ModelVersionResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+    ModelResponse=ModelResponse,
+)
+ModelVersionResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+ModelVersionArtifactRequest.update_forward_refs(
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
+)
+ModelVersionArtifactResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+ModelVersionPipelineRunRequest.update_forward_refs(
+    UserResponse=UserResponse,
+    WorkspaceResponse=WorkspaceResponse,
+)
+ModelVersionPipelineRunResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
 )
 OAuthDeviceResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -515,23 +530,6 @@ __all__ = [
     # V1
     "BaseRequestModel",
     "BaseResponseModel",
-    "ModelFilterModel",
-    "ModelRequestModel",
-    "ModelResponseModel",
-    "ModelUpdateModel",
-    "ModelVersionBaseModel",
-    "ModelVersionFilterModel",
-    "ModelVersionRequestModel",
-    "ModelVersionResponseModel",
-    "ModelVersionUpdateModel",
-    "ModelVersionArtifactBaseModel",
-    "ModelVersionArtifactFilterModel",
-    "ModelVersionArtifactRequestModel",
-    "ModelVersionArtifactResponseModel",
-    "ModelVersionPipelineRunBaseModel",
-    "ModelVersionPipelineRunFilterModel",
-    "ModelVersionPipelineRunRequestModel",
-    "ModelVersionPipelineRunResponseModel",
     "SecretBaseModel",
     "SecretFilterModel",
     "SecretRequestModel",
@@ -565,6 +563,8 @@ __all__ = [
     "ShareableResponse",
     "ShareableResponseBody",
     "ShareableResponseMetadata",
+    "ModelScopedFilter",
+    "ModelVersionScopedFilter",
     "BaseFilter",
     "StrFilter",
     "BoolFilter",
@@ -614,6 +614,26 @@ __all__ = [
     "FlavorResponse",
     "FlavorResponseBody",
     "FlavorResponseMetadata",
+    "ModelRequest",
+    "ModelUpdate",
+    "ModelResponse",
+    "ModelResponseBody",
+    "ModelResponseMetadata",
+    "ModelFilter",
+    "ModelVersionRequest",
+    "ModelVersionUpdate",
+    "ModelVersionResponse",
+    "ModelVersionResponseBody",
+    "ModelVersionResponseMetadata",
+    "ModelVersionFilter",
+    "ModelVersionArtifactRequest",
+    "ModelVersionArtifactResponse",
+    "ModelVersionArtifactResponseBody",
+    "ModelVersionArtifactFilter",
+    "ModelVersionPipelineRunRequest",
+    "ModelVersionPipelineRunResponse",
+    "ModelVersionPipelineRunResponseBody",
+    "ModelVersionPipelineRunFilter",
     "LogsRequest",
     "LogsResponse",
     "LogsResponseBody",
