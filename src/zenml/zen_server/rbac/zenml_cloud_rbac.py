@@ -150,6 +150,10 @@ class ZenMLCloudRBAC(RBACInterface):
             # No need to send a request if there are no resources
             return {}
 
+        if user.is_service_account:
+            # Service accounts have full permissions for now
+            return {resource: True for resource in resources}
+
         params = {
             "user_id": str(user.external_user_id),
             "resources": [
@@ -183,6 +187,11 @@ class ZenMLCloudRBAC(RBACInterface):
         """
         assert not resource.id
         assert user.external_user_id
+
+        if user.is_service_account:
+            # Service accounts have full permissions for now
+            return True, []
+
         params = {
             "user_id": str(user.external_user_id),
             "resource": _convert_to_cloud_resource(resource),
