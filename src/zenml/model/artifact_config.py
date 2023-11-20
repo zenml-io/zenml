@@ -129,7 +129,7 @@ class DataArtifactConfig(BaseModel):
                 Defaults to False.
         """
         from zenml.client import Client
-        from zenml.models import(
+        from zenml.models import (
             ModelVersionArtifactFilter,
             ModelVersionArtifactRequest,
         )
