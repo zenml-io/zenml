@@ -98,6 +98,9 @@ def dehydrate_response_model(
     Returns:
         The (potentially) dehydrated model.
     """
+    if not server_config().rbac_enabled:
+        return model
+
     dehydrated_fields = {}
 
     for field_name in model.__fields__.keys():
