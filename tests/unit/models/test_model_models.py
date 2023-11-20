@@ -19,10 +19,8 @@ from uuid import uuid4
 import pytest
 
 from tests.unit.steps.test_external_artifact import MockZenmlClient
-from zenml.models.model_models import (
-    ModelResponseModel,
-    ModelVersionResponseModel,
-)
+from zenml.models import ModelResponse, ModelVersionResponse, ModelVersionResponseBody, ModelResponseBody, ModelResponseMetadata, ModelVersionResponseMetadata
+
 
 ARTIFACT_IDS = [uuid4(), uuid4()]
 
@@ -144,24 +142,38 @@ def test_getters(
             "zenml.client": MockZenmlClient,
         },
     ):
-        model = ModelResponseModel(
-            id=uuid4(),
-            name="model",
-            workspace=sample_workspace_model,
+        model_body = ModelResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
             tags=[],
         )
-        mv = ModelVersionResponseModel(
-            name="foo",
-            model=model,
-            number=-1,
+        model_metadata = ModelResponseMetadata(
             workspace=sample_workspace_model,
+        )
+        model = ModelResponse(
+            id=uuid4(),
+            name="model",
+            body=model_body,
+            metadata=model_metadata,
+        )
+
+        model_version_body = ModelVersionResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
-            id=uuid4(),
+            number=-1,
+            model=model,
             data_artifact_ids=artifact_object_ids,
         )
+        model_version_metadata = ModelVersionResponseMetadata(
+            workspace=sample_workspace_model,
+        )
+        mv = ModelVersionResponse(
+            id=uuid4(),
+            name="foo",
+            body=model_version_body,
+            metadata=model_version_metadata,
+        )
+
         if expected != "RuntimeError":
             got = mv.get_data_artifact(
                 name=query_name,
