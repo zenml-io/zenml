@@ -2750,6 +2750,8 @@ def test_connector_name_reuse_for_same_user_fails():
 
 def test_connector_name_reuse_for_different_user_fails():
     """Tests that a connector's name cannot be re-used by another user."""
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
 
     with ServiceConnectorContext(
         connector_type="cat'o'matic",
