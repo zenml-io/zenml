@@ -28,9 +28,7 @@ from zenml.model import (
     ModelVersion,
     link_output_to_model,
 )
-from zenml.models import (
-    ModelVersionArtifactFilterModel,
-)
+from zenml.models import ModelVersionArtifactFilter
 
 MODEL_NAME = "foo"
 
@@ -83,7 +81,7 @@ def test_link_minimalistic():
         assert mv.number == 1 and mv.version == "1"
         links = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),
@@ -142,7 +140,7 @@ def test_link_multiple_named_outputs():
         assert mv.number == 1 and mv.version == "1"
         al = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),
@@ -186,7 +184,7 @@ def test_link_multiple_named_outputs_without_links():
         assert mv.name == MODEL_NAME
         artifact_links = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),
@@ -254,14 +252,14 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
 
             al1 = client.list_model_version_artifact_links(
                 model_version_id=mv1.id,
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     user_id=user,
                     workspace_id=ws,
                 ),
             )
             al2 = client.list_model_version_artifact_links(
                 model_version_id=mv2.id,
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     user_id=user,
                     workspace_id=ws,
                 ),
@@ -370,7 +368,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
             artifact_links.append(
                 client.list_model_version_artifact_links(
                     model_version_id=mv.id,
-                    model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                    model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                         user_id=user,
                         workspace_id=ws,
                     ),
@@ -433,7 +431,7 @@ def test_link_no_versioning():
 
         al1 = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),
@@ -446,7 +444,7 @@ def test_link_no_versioning():
 
         al2 = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),
@@ -497,7 +495,7 @@ def test_link_with_versioning():
 
         al1 = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),
@@ -510,7 +508,7 @@ def test_link_with_versioning():
 
         al2 = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),
@@ -599,7 +597,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
 
         al1 = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),
@@ -610,7 +608,7 @@ def test_link_with_manual_linkage(pipeline: Callable):
 
         al2 = client.list_model_version_artifact_links(
             model_version_id=mv2.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),
@@ -699,7 +697,7 @@ def test_link_with_manual_linkage_flexible_config(
 
         links = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=user,
                 workspace_id=ws,
             ),

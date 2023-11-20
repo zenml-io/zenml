@@ -43,10 +43,10 @@ from zenml.models import (
     ComponentUpdate,
     FlavorFilter,
     FlavorRequest,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelUpdateModel,
-    ModelVersionRequestModel,
+    ModelFilter,
+    ModelRequest,
+    ModelUpdate,
+    ModelVersionRequest,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -665,7 +665,7 @@ class ModelVersionContext:
                 mv = client._get_model_version(self.model, self.model_version)
             except KeyError:
                 mv = client.zen_store.create_model_version(
-                    ModelVersionRequestModel(
+                    ModelVersionRequest(
                         user=user.id,
                         workspace=ws.id,
                         model=model.id,
@@ -1055,7 +1055,7 @@ service_connector_crud_test_config = CrudTestConfig(
     entity_name="service_connector",
 )
 model_crud_test_config = CrudTestConfig(
-    create_model=ModelRequestModel(
+    create_model=ModelRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name="super_model",
@@ -1068,11 +1068,11 @@ model_crud_test_config = CrudTestConfig(
         ethics="all good",
         tags=["cool", "stuff"],
     ),
-    update_model=ModelUpdateModel(
+    update_model=ModelUpdate(
         name=sample_name("updated_sample_service_connector"),
         description="new_description",
     ),
-    filter_model=ModelFilterModel,
+    filter_model=ModelFilter,
     entity_name="model",
 )
 
