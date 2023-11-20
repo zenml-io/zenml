@@ -84,11 +84,13 @@ class DataArtifactConfig(BaseModel):
             model_version = get_step_context().model_version
         except (StepContextError, RuntimeError):
             model_version = None
-        # Check if a specific model name is provided and it doesn't match the context name
+        # Check if a specific model name is provided, and it doesn't match the
+        # context name
         if (self.model_name is not None) and (
             model_version is None or model_version.name != self.model_name
         ):
-            # Create a new ModelVersion instance with the provided model name and version
+            # Create a new ModelVersion instance with the provided model name
+            # and version
             from zenml.model.model_version import ModelVersion
 
             on_the_fly_config = ModelVersion(
@@ -100,8 +102,8 @@ class DataArtifactConfig(BaseModel):
         if model_version is None:
             raise RuntimeError(
                 "No model version configuration found in @step or @pipeline. "
-                "You can configure model version inside ArtifactConfig as well, but "
-                "`model_name` and `model_version` must be provided."
+                "You can configure model version inside ArtifactConfig as well,"
+                " but `model_name` and `model_version` must be provided."
             )
         # Return the model from the context
         return model_version
@@ -115,18 +117,21 @@ class DataArtifactConfig(BaseModel):
     ) -> None:
         """Link artifact to the model version.
 
-        This method is used on exit from the step context to link artifact to the model version.
+        This method is used on exit from the step context to link artifact
+            to the model version.
 
         Args:
             artifact_uuid: The UUID of the artifact to link.
             model_version: The model version from caller.
-            is_model_artifact: Whether the artifact is a model artifact. Defaults to False.
-            is_endpoint_artifact: Whether the artifact is an endpoint artifact. Defaults to False.
+            is_model_artifact: Whether the artifact is a model artifact.
+                Defaults to False.
+            is_endpoint_artifact: Whether the artifact is an endpoint artifact.
+                Defaults to False.
         """
         from zenml.client import Client
-        from zenml.models.model_models import (
-            ModelVersionArtifactFilterModel,
-            ModelVersionArtifactRequestModel,
+        from zenml.models import(
+            ModelVersionArtifactFilter,
+            ModelVersionArtifactRequest,
         )
 
         # Create a ZenML client
@@ -138,7 +143,7 @@ class DataArtifactConfig(BaseModel):
             artifact_name = artifact.name
 
         # Create a request model for the model version artifact link
-        request = ModelVersionArtifactRequestModel(
+        request = ModelVersionArtifactRequest(
             user=client.active_user.id,
             workspace=client.active_workspace.id,
             name=artifact_name,
@@ -155,7 +160,7 @@ class DataArtifactConfig(BaseModel):
         # Create the model version artifact link using the ZenML client
         existing_links = client.list_model_version_artifact_links(
             model_version_id=model_version.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+            model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                 user_id=client.active_user.id,
                 workspace_id=client.active_workspace.id,
                 name=artifact_name,
@@ -172,7 +177,8 @@ class DataArtifactConfig(BaseModel):
             if self.overwrite:
                 # delete all model version artifact links by name
                 logger.warning(
-                    f"Existing artifact link(s) `{artifact_name}` found and will be deleted."
+                    f"Existing artifact link(s) `{artifact_name}` found and "
+                    f"will be deleted."
                 )
 
                 client.zen_store.delete_model_version_artifact_link(
@@ -181,7 +187,8 @@ class DataArtifactConfig(BaseModel):
                 )
             else:
                 logger.info(
-                    f"Artifact link `{artifact_name}` already exists, adding new version."
+                    f"Artifact link `{artifact_name}` already exists, adding "
+                    f"new version."
                 )
         client.zen_store.create_model_version_artifact_link(request)
 
