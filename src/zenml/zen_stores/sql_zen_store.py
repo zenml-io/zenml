@@ -3369,9 +3369,8 @@ class SqlZenStore(BaseZenStore):
                 run_metadata_schema = RunMetadataSchema(
                     workspace_id=run_metadata.workspace,
                     user_id=run_metadata.user,
-                    pipeline_run_id=run_metadata.pipeline_run_id,
-                    step_run_id=run_metadata.step_run_id,
-                    artifact_id=run_metadata.artifact_id,
+                    resource_id=run_metadata.resource_id,
+                    resource_type=run_metadata.resource_type.value,
                     stack_component_id=run_metadata.stack_component_id,
                     key=key,
                     value=json.dumps(value),

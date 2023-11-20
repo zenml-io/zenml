@@ -323,3 +323,11 @@ class ResponseUpdateStrategy(StrEnum):
     ALLOW = "allow"
     IGNORE = "ignore"
     DENY = "deny"
+
+
+class MetadataResourceTypes(StrEnum):
+    """All possible resource types for adding metadata."""
+
+    PIPELINE_RUN = "pipeline run"
+    STEP_RUN = "step run"
+    ARTIFACT = "artifact"

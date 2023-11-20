@@ -21,7 +21,7 @@ from uuid import UUID
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, MetadataResourceTypes
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -106,7 +106,10 @@ class PipelineRunSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="pipeline_run",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataSchema.resource_id)==PipelineRunSchema.id)",
+            cascade="delete",
+        ),
     )
     logs: Optional["LogsSchema"] = Relationship(
         back_populates="pipeline_run",

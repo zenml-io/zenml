@@ -15,12 +15,13 @@
 
 
 import json
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, VARCHAR, Column
 from sqlmodel import Field, Relationship
 
+from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     RunMetadataResponse,
@@ -42,42 +43,26 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     __tablename__ = "run_metadata"
 
-    pipeline_run_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=PipelineRunSchema.__tablename__,
-        source_column="pipeline_run_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
+    resource_id: UUID
+    resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
+    pipeline_run: List["PipelineRunSchema"] = Relationship(
+        back_populates="run_metadata",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataSchema.resource_id)==PipelineRunSchema.id)",
+        ),
     )
-    pipeline_run: Optional["PipelineRunSchema"] = Relationship(
-        back_populates="run_metadata"
+    step_run: List["StepRunSchema"] = Relationship(
+        back_populates="run_metadata",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
+        ),
     )
-
-    step_run_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="step_run_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
+    artifact: List["ArtifactSchema"] = Relationship(
+        back_populates="run_metadata",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT.value}', foreign(RunMetadataSchema.resource_id)==ArtifactSchema.id)",
+        ),
     )
-    step_run: Optional["StepRunSchema"] = Relationship(
-        back_populates="run_metadata"
-    )
-
-    artifact_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=ArtifactSchema.__tablename__,
-        source_column="artifact_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    artifact: Optional["ArtifactSchema"] = Relationship(
-        back_populates="run_metadata"
-    )
-
     stack_component_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
@@ -136,9 +121,8 @@ class RunMetadataSchema(BaseSchema, table=True):
         if hydrate:
             metadata = RunMetadataResponseMetadata(
                 workspace=self.workspace.to_model(),
-                pipeline_run_id=self.pipeline_run_id,
-                step_run_id=self.step_run_id,
-                artifact_id=self.artifact_id,
+                resource_id=self.resource_id,
+                resource_type=MetadataResourceTypes(self.resource_type),
                 stack_component_id=self.stack_component_id,
             )
 

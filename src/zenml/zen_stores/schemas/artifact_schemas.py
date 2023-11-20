@@ -21,7 +21,7 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
-from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.enums import ArtifactType, ExecutionStatus, MetadataResourceTypes
 from zenml.models import (
     ArtifactRequest,
     ArtifactResponse,
@@ -90,7 +90,10 @@ class ArtifactSchema(NamedSchema, table=True):
     workspace: "WorkspaceSchema" = Relationship(back_populates="artifacts")
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="artifact",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT.value}', foreign(RunMetadataSchema.resource_id)==ArtifactSchema.id)",
+            cascade="delete",
+        ),
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="artifact",

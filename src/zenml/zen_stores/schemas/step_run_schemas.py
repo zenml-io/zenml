@@ -23,7 +23,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, MetadataResourceTypes
 from zenml.models import (
     StepRunRequest,
     StepRunResponse,
@@ -119,7 +119,11 @@ class StepRunSchema(NamedSchema, table=True):
         back_populates="step_runs"
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
-        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="step_run",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
+            cascade="delete",
+        ),
     )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}

@@ -21,7 +21,12 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.enums import ExecutionStatus, StackComponentType, VisualizationType
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    StackComponentType,
+    VisualizationType,
+)
 from zenml.exceptions import DoesNotExistException
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -435,7 +440,9 @@ def upload_artifact(
     response = Client().zen_store.create_artifact(artifact=artifact)
     if artifact_metadata:
         Client().create_run_metadata(
-            metadata=artifact_metadata, artifact_id=response.id
+            metadata=artifact_metadata,
+            resource_id=response.id,
+            resource_type=MetadataResourceTypes.ARTIFACT,
         )
 
     return response.id
