@@ -6815,7 +6815,8 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_schema)
 
             session.commit()
-        return model_version_schema.to_model(hydrate=True)
+
+            return model_version_schema.to_model(hydrate=True)
 
     def get_model_version(
         self, model_version_id: UUID, hydrate: bool = True
@@ -7002,8 +7003,8 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             collision_msg = (
                 "Unable to create model version link {name}: "
-                "An artifact with same ID is already tracked in {version} model version "
-                "with the same name. It has to be deleted first."
+                "An artifact with same ID is already tracked in {version} "
+                "model version with the same name. It has to be deleted first."
             )
             existing_model_version_artifact_link_in_other_name = session.exec(
                 select(ModelVersionArtifactSchema)
@@ -7096,7 +7097,8 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_artifact_link_schema)
 
             session.commit()
-        return model_version_artifact_link_schema.to_model(hydrate=True)
+
+            return model_version_artifact_link_schema.to_model(hydrate=True)
 
     def list_model_version_artifact_links(
         self,
@@ -7274,7 +7276,8 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_pipeline_run_link_schema)
 
             session.commit()
-        return model_version_pipeline_run_link_schema.to_model(hydrate=True)
+
+            return model_version_pipeline_run_link_schema.to_model(hydrate=True)
 
     def list_model_version_pipeline_run_links(
         self,
