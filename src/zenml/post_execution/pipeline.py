@@ -17,14 +17,12 @@ from typing import List, Optional
 
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.models import (
-    PipelineResponseModel,
-)
+from zenml.models import PipelineResponse
 
 logger = get_logger(__name__)
 
 
-def get_pipelines() -> List["PipelineResponseModel"]:
+def get_pipelines() -> List["PipelineResponse"]:
     """(Deprecated) Fetches all pipelines in the active workspace.
 
     Returns:
@@ -41,7 +39,7 @@ def get_pipelines() -> List["PipelineResponseModel"]:
 def get_pipeline(
     pipeline: str,
     version: Optional[str] = None,
-) -> Optional["PipelineResponseModel"]:
+) -> Optional["PipelineResponse"]:
     """(Deprecated) Fetches a pipeline model.
 
     Args:

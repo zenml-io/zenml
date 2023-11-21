@@ -20,7 +20,7 @@ from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.integrations.aws.service_connectors.aws_service_connector import (
     AWS_RESOURCE_TYPE,
 )
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,

@@ -24,10 +24,7 @@ from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.logger import get_logger
-from zenml.models import (
-    APIKeyFilterModel,
-    ServiceAccountFilterModel,
-)
+from zenml.models import APIKeyFilter, ServiceAccountFilter
 
 logger = get_logger(__name__)
 
@@ -182,7 +179,7 @@ def describe_service_account(service_account_name_or_id: str) -> None:
 
 
 @service_account.command("list")
-@list_options(ServiceAccountFilterModel)
+@list_options(ServiceAccountFilter)
 @click.pass_context
 def list_service_accounts(ctx: click.Context, **kwargs: Any) -> None:
     """List all users.
@@ -196,7 +193,7 @@ def list_service_accounts(ctx: click.Context, **kwargs: Any) -> None:
         service_accounts = client.list_service_accounts(**kwargs)
         if not service_accounts:
             cli_utils.declare(
-                "No  service accounts found for the given filters."
+                "No service accounts found for the given filters."
             )
             return
 
@@ -370,7 +367,7 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
 
 
 @api_key.command("list", help="List all API keys.")
-@list_options(APIKeyFilterModel)
+@list_options(APIKeyFilter)
 @click.pass_obj
 def list_api_keys(service_account_name_or_id: str, **kwargs: Any) -> None:
     """List all API keys.

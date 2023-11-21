@@ -17,10 +17,7 @@ from typing import List, Optional
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
-from zenml.models.pipeline_deployment_models import (
-    PipelineDeploymentBaseModel,
-    PipelineDeploymentResponseModel,
-)
+from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse
 from zenml.orchestrators import BaseOrchestrator
 
 
@@ -29,7 +26,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
 
     @staticmethod
     def get_image(
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         step_name: Optional[str] = None,
     ) -> str:
         """Gets the Docker image for the pipeline/a step.
@@ -56,7 +53,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 

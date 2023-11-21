@@ -56,7 +56,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: '2023.11.01' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: '2023.11.14' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       
       - name: Clean-up
         run: |
@@ -76,6 +76,7 @@ jobs:
 
       - name: Check-out fresh E2E template
         run: |
+          rm -rf examples/e2e
           mkdir -p examples/e2e
           printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
           bash scripts/format.sh

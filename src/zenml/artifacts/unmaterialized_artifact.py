@@ -13,15 +13,16 @@
 #  permissions and limitations under the License.
 """Unmaterialized artifact class."""
 
+
 from zenml.models import (
-    ArtifactResponseModel,
-    RunMetadataResponseModel,
-    UserResponseModel,
-    WorkspaceResponseModel,
+    ArtifactResponse,
+    RunMetadataResponse,
+    UserResponse,
+    WorkspaceResponse,
 )
 
 
-class UnmaterializedArtifact(ArtifactResponseModel):
+class UnmaterializedArtifact(ArtifactResponse):
     """Unmaterialized artifact class.
 
     Typing a step input to have this type will cause ZenML to not materialize
@@ -42,7 +43,7 @@ class UnmaterializedArtifact(ArtifactResponseModel):
 
 
 UnmaterializedArtifact.update_forward_refs(
-    UserResponseModel=UserResponseModel,
-    WorkspaceResponseModel=WorkspaceResponseModel,
-    RunMetadataResponseModel=RunMetadataResponseModel,
+    UserResponseModel=UserResponse,
+    WorkspaceResponseModel=WorkspaceResponse,
+    RunMetadataResponseModel=RunMetadataResponse,
 )

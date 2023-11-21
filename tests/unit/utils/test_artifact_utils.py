@@ -21,7 +21,7 @@ import pytest
 
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.materializers.numpy_materializer import NUMPY_FILENAME
-from zenml.models import ArtifactResponseModel
+from zenml.models import ArtifactResponse
 from zenml.utils.artifact_utils import (
     METADATA_DATATYPE,
     METADATA_MATERIALIZER,
@@ -35,7 +35,7 @@ from zenml.utils.artifact_utils import (
 @pytest.fixture
 def model_artifact(mocker):
     return mocker.Mock(
-        spec=ArtifactResponseModel,
+        spec=ArtifactResponse,
         id="123",
         created="2023-01-01T00:00:00Z",
         updated="2023-01-01T00:00:00Z",

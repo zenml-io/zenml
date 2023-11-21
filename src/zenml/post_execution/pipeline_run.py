@@ -17,12 +17,12 @@ from typing import List
 
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.models import PipelineRunResponseModel
+from zenml.models import PipelineRunResponse
 
 logger = get_logger(__name__)
 
 
-def get_run(name: str) -> "PipelineRunResponseModel":
+def get_run(name: str) -> "PipelineRunResponse":
     """(Deprecated) Fetches the run with the given name.
 
     Args:
@@ -39,7 +39,7 @@ def get_run(name: str) -> "PipelineRunResponseModel":
     return Client().get_pipeline_run(name)
 
 
-def get_unlisted_runs() -> List["PipelineRunResponseModel"]:
+def get_unlisted_runs() -> List["PipelineRunResponse"]:
     """(Deprecated) Fetches the 50 most recent unlisted runs.
 
     Unlisted runs are runs that are not associated with any pipeline.
