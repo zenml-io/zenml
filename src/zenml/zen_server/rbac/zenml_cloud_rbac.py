@@ -223,11 +223,11 @@ class ZenMLCloudRBAC(RBACInterface):
         """
         url = self._config.api_url + endpoint
 
-        response = self.session.get(url=url, params=params)
+        response = self.session.get(url=url, params=params, timeout=7)
         if response.status_code == 401:
             # Refresh the auth token and try again
             self._clear_session()
-            response = self.session.get(url=url, params=params)
+            response = self.session.get(url=url, params=params, timeout=7)
 
         try:
             response.raise_for_status()
@@ -275,7 +275,9 @@ class ZenMLCloudRBAC(RBACInterface):
             "grant_type": "client_credentials",
         }
         try:
-            response = requests.post(auth0_url, headers=headers, data=payload)
+            response = requests.post(
+                auth0_url, headers=headers, data=payload, timeout=7
+            )
             response.raise_for_status()
         except Exception as e:
             raise RuntimeError(f"Error fetching auth token from auth0: {e}")
