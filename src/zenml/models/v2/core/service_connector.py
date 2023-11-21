@@ -622,10 +622,6 @@ class ServiceConnectorFilter(WorkspaceScopedFilter):
         description="The type to scope this query to.",
     )
 
-    is_shared: Optional[Union[bool, str]] = Field(
-        default=None,
-        description="If the service connector is shared or private",
-    )
     name: Optional[str] = Field(
         default=None,
         description="The name to filter by",

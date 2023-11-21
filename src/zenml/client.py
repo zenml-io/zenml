@@ -4248,7 +4248,6 @@ class Client(metaclass=ClientMetaClass):
             connectors have access to.
         """
         return self.zen_store.list_service_connector_resources(
-            user_name_or_id=self.active_user.id,
             workspace_name_or_id=self.active_workspace.id,
             connector_type=connector_type,
             resource_type=resource_type,

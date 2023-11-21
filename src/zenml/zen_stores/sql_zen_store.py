@@ -4149,53 +4149,42 @@ class SqlZenStore(BaseZenStore):
 
     def list_service_connector_resources(
         self,
-        user_name_or_id: Union[str, UUID],
         workspace_name_or_id: Union[str, UUID],
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        filter_model: Optional[ServiceConnectorFilter] = None,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
-            user_name_or_id: The name or ID of the user to scope to.
             workspace_name_or_id: The name or ID of the workspace to scope to.
             connector_type: The type of service connector to scope to.
             resource_type: The type of resource to scope to.
             resource_id: The ID of the resource to scope to.
+            filter_model: Optional filter model to use when fetching service
+                connectors.
 
         Returns:
             The matching list of resources that available service
             connectors have access to.
         """
-        user = self.get_user(user_name_or_id)
         workspace = self.get_workspace(workspace_name_or_id)
-        connector_filter_model = ServiceConnectorFilter(
-            connector_type=connector_type,
-            resource_type=resource_type,
-            is_shared=True,
-            workspace_id=workspace.id,
-        )
 
-        shared_connectors = self.list_service_connectors(
-            filter_model=connector_filter_model
-        ).items
+        if not filter_model:
+            filter_model = ServiceConnectorFilter(
+                connector_type=connector_type,
+                resource_type=resource_type,
+                workspace_id=workspace.id,
+            )
 
-        connector_filter_model = ServiceConnectorFilter(
-            connector_type=connector_type,
-            resource_type=resource_type,
-            is_shared=False,
-            user_id=user.id,
-            workspace_id=workspace.id,
-        )
-
-        private_connectors = self.list_service_connectors(
-            filter_model=connector_filter_model
+        service_connectors = self.list_service_connectors(
+            filter_model=filter_model
         ).items
 
         resource_list: List[ServiceConnectorResourcesModel] = []
 
-        for connector in list(shared_connectors) + list(private_connectors):
+        for connector in service_connectors:
             if not service_connector_registry.is_registered(connector.type):
                 # For connectors that we can instantiate, i.e. those that have a
                 # connector type available locally, we return complete

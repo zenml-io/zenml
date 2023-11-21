@@ -101,6 +101,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
+    get_allowed_resource_ids,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
@@ -1147,13 +1148,28 @@ def list_service_connector_resources(
         The matching list of resources that available service
         connectors have access to.
     """
-    # TODO: missing permissions
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    filter_model = ServiceConnectorFilter(
+        connector_type=connector_type,
+        resource_type=resource_type,
+    )
+    filter_model.set_scope_workspace(workspace.id)
+
+    allowed_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.SERVICE_CONNECTOR
+    )
+    filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id, id=allowed_ids
+    )
+
     return zen_store().list_service_connector_resources(
         user_name_or_id=auth_context.user.id,
         workspace_name_or_id=workspace_name_or_id,
         connector_type=connector_type,
         resource_type=resource_type,
         resource_id=resource_id,
+        filter_model=filter_model,
     )
 
 

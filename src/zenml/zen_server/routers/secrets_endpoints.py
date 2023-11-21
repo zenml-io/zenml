@@ -36,6 +36,7 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     get_allowed_resource_ids,
     has_permissions_for_model,
+    is_owned_by_authenticated_user,
 )
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -86,8 +87,12 @@ def list_secrets(
 
     if allowed_ids is not None:
         for secret in secrets.items:
-            if secret.id not in allowed_ids:
-                secret.remove_secrets()
+            if secret.id in allowed_ids or is_owned_by_authenticated_user(
+                secret
+            ):
+                continue
+
+            secret.remove_secrets()
 
     return secrets
 
