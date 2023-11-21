@@ -157,7 +157,7 @@ jobs:
       - name: Check-out fresh NLP template
         run: |
           mkdir -p examples/nlp-case
-          printf 'info@zenml.io' | zenml init --path examples/nlp-case --template template-nlp --template-with-defaults
+          printf 'info@zenml.io' | zenml init --path examples/nlp-case --template nlp --template-with-defaults
           bash scripts/format.sh
 
       - name: Check for changes
