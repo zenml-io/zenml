@@ -200,7 +200,7 @@ def delete_service_account(
     Args:
         service_account_name_or_id: Name or ID of the service account.
     """
-    return verify_permissions_and_delete_entity(
+    verify_permissions_and_delete_entity(
         id=service_account_name_or_id,
         get_method=zen_store().get_service_account,
         delete_method=zen_store().delete_service_account,

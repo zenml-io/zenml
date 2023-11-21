@@ -390,15 +390,15 @@ class BaseFilter(BaseModel):
         authenticated_user_id: UUID,
         **column_allowed_ids: Optional[Set[UUID]],
     ) -> None:
-        """Set allowed IDs and user ID for the query.
+        """Configure RBAC allowed column values.
 
         Args:
-            allowed_ids: Set of IDs to limit the query to. If given, the
-                remaining filters will be applied to entities within this set
-                only. If `None`, the remaining filters will applied to all
-                entries in the table.
-            user_id: ID of the authenticated user. If given, all entities owned
-                by this user will be included in addition to the `allowed_ids`.
+            authenticated_user_id: ID of the authenticated user. All entities
+                owned by this user will be included.
+            column_allowed_ids: Set of IDs per column to limit the query to.
+                If given, the remaining filters will be applied to entities
+                within this set only. If `None`, the remaining filters will
+                applied to all entries in the table.
         """
         self._rbac_configuration = (authenticated_user_id, column_allowed_ids)
 
@@ -407,6 +407,15 @@ class BaseFilter(BaseModel):
         query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
         table: Type["AnySchema"],
     ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        """Applies the RBAC filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with RBAC filter applied.
+        """
         from sqlmodel import or_
 
         if not self._rbac_configuration:

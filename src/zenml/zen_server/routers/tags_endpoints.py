@@ -176,7 +176,7 @@ def delete_tag(
     Args:
         tag_name_or_id: The name or ID of the tag to delete.
     """
-    return verify_permissions_and_delete_entity(
+    verify_permissions_and_delete_entity(
         id=tag_name_or_id,
         get_method=zen_store().get_tag,
         delete_method=zen_store().delete_tag,

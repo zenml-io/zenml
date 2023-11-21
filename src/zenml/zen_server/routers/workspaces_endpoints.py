@@ -249,7 +249,7 @@ def delete_workspace(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
     """
-    return verify_permissions_and_delete_entity(
+    verify_permissions_and_delete_entity(
         id=workspace_name_or_id,
         get_method=zen_store().get_workspace,
         delete_method=zen_store().delete_workspace,
