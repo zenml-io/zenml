@@ -112,8 +112,8 @@ def verify_permissions_and_list_entities(
     assert auth_context
 
     allowed_ids = get_allowed_resource_ids(resource_type=resource_type)
-    filter_model.set_rbac_allowed_ids_and_user(
-        allowed_ids=allowed_ids, user_id=auth_context.user.id
+    filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id, id=allowed_ids
     )
     page = list_method(filter_model, **list_method_kwargs)
     return dehydrate_page(page)

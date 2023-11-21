@@ -197,8 +197,8 @@ def list_model_versions(
     allowed_model_ids = get_allowed_resource_ids(
         resource_type=ResourceType.MODEL
     )
-    model_version_filter_model.set_rbac_allowed_model_ids_and_user(
-        allowed_model_ids=allowed_model_ids, user_id=auth_context.user.id
+    model_version_filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id, model_id=allowed_model_ids
     )
 
     model_versions = zen_store().list_model_versions(

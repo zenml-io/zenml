@@ -290,8 +290,9 @@ class BaseFilter(BaseModel):
         default=None, description="Updated"
     )
 
-    _rbac_allowed_ids: Optional[Set[UUID]] = None
-    _rbac_user_id: Optional[UUID] = None
+    _rbac_configuration: Optional[
+        Tuple[UUID, Dict[str, Optional[Set[UUID]]]]
+    ] = None
 
     @validator("sort_by", pre=True)
     def validate_sort_by(cls, v: str) -> str:
@@ -384,8 +385,10 @@ class BaseFilter(BaseModel):
 
         return column, operator
 
-    def set_rbac_allowed_ids_and_user(
-        self, allowed_ids: Optional[Set[UUID]], user_id: Optional[UUID]
+    def configure_rbac(
+        self,
+        authenticated_user_id: UUID,
+        **column_allowed_ids: Optional[Set[UUID]],
     ) -> None:
         """Set allowed IDs and user ID for the query.
 
@@ -397,8 +400,35 @@ class BaseFilter(BaseModel):
             user_id: ID of the authenticated user. If given, all entities owned
                 by this user will be included in addition to the `allowed_ids`.
         """
-        self._rbac_allowed_ids = allowed_ids
-        self._rbac_user_id = user_id
+        self._rbac_configuration = (authenticated_user_id, column_allowed_ids)
+
+    def apply_rbac_filter(
+        self,
+        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        table: Type["AnySchema"],
+    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+        from sqlmodel import or_
+
+        if not self._rbac_configuration:
+            return query
+
+        expressions = []
+
+        for column_name, allowed_ids in self._rbac_configuration[1].items():
+            if allowed_ids is not None:
+                expression = getattr(table, column_name).in_(allowed_ids)
+                expressions.append(expression)
+
+        if hasattr(table, "user_id"):
+            # Unowned entities are considered server-owned and can be seen
+            # by anyone
+            expressions.append(getattr(table, "user_id").is_(None))
+            # The authenticated user owns this entity
+            expressions.append(
+                getattr(table, "user_id") == self._rbac_configuration[0]
+            )
+
+        return query.where(or_(False, *expressions))
 
     @classmethod
     def _generate_filter_list(cls, values: Dict[str, Any]) -> List[Filter]:
@@ -764,23 +794,7 @@ class BaseFilter(BaseModel):
         Returns:
             The query with filter applied.
         """
-        from sqlmodel import or_
-
-        if self._rbac_allowed_ids is not None:
-            expressions = [table.id.in_(self._rbac_allowed_ids)]  # type: ignore[attr-defined]
-
-            if hasattr(table, "user_id"):
-                # Unowned entities are considered server-owned and can be seen
-                # by anyone
-                expressions.append(getattr(table, "user_id").is_(None))
-
-                if self._rbac_user_id:
-                    # The authenticated user owns this entity
-                    expressions.append(
-                        getattr(table, "user_id") == self._rbac_user_id
-                    )
-
-            query = query.where(or_(*expressions))
+        query = self.apply_rbac_filter(query)
 
         filters = self.generate_filter(table=table)
 

@@ -21,7 +21,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Type,
     TypeVar,
     Union,
@@ -78,23 +77,6 @@ class ModelScopedFilterModel(WorkspaceScopedFilter):
     """Base filter model inside Model Scope."""
 
     _model_id: UUID = PrivateAttr(None)
-    _rbac_allowed_model_ids: Optional[Set[UUID]] = None
-
-    def set_rbac_allowed_model_ids_and_user(
-        self, allowed_model_ids: Optional[Set[UUID]], user_id: Optional[UUID]
-    ) -> None:
-        """Set allowed model IDs and user ID for the query.
-
-        Args:
-            allowed_model_ids: Set of IDs to limit the query to. If given, the
-                remaining filters will be applied to entities within this set
-                only. If `None`, the remaining filters will applied to all
-                entries in the table.
-            user_id: ID of the authenticated user. If given, all entities owned
-                by this user will be included in addition to the `allowed_ids`.
-        """
-        self._rbac_allowed_model_ids = allowed_model_ids
-        self._rbac_user_id = user_id
 
     def set_scope_model(self, model_name_or_id: Union[str, UUID]) -> None:
         """Set the model to scope this response.
@@ -125,27 +107,7 @@ class ModelScopedFilterModel(WorkspaceScopedFilter):
         Returns:
             The query with filter applied.
         """
-        from sqlmodel import or_
-
         query = super().apply_filter(query=query, table=table)
-
-        if self._rbac_allowed_model_ids is not None:
-            expressions = [
-                getattr(table, "model_id").in_(self._rbac_allowed_model_ids)
-            ]
-
-            if hasattr(table, "user_id"):
-                # Unowned entities are considered server-owned and can be seen
-                # by anyone
-                expressions.append(getattr(table, "user_id").is_(None))
-
-                if self._rbac_user_id:
-                    # The authenticated user owns this entity
-                    expressions.append(
-                        getattr(table, "user_id") == self._rbac_user_id
-                    )
-
-            query = query.where(or_(*expressions))
 
         if self._model_id:
             query = query.where(getattr(table, "model_id") == self._model_id)
