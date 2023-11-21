@@ -794,7 +794,7 @@ class BaseFilter(BaseModel):
         Returns:
             The query with filter applied.
         """
-        query = self.apply_rbac_filter(query)
+        query = self.apply_rbac_filter(query, table=table)
 
         filters = self.generate_filter(table=table)
 

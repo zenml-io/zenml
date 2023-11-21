@@ -102,6 +102,7 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
     get_allowed_resource_ids,
+    verify_permission,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
@@ -763,25 +764,20 @@ def create_schedule(
 def create_pipeline_run(
     workspace_name_or_id: Union[str, UUID],
     pipeline_run: PipelineRunRequest,
-    auth_context: AuthContext = Security(authorize),
-    get_if_exists: bool = False,
+    _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Creates a pipeline run.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         pipeline_run: Pipeline run to create.
-        auth_context: Authentication context.
-        get_if_exists: If a similar pipeline run already exists, return it
-            instead of raising an error.
 
     Returns:
         The created pipeline run.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            pipeline run does not match the current workspace or authenticated
-            user.
+        IllegalOperationError: If the workspace specified in the
+            pipeline run does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -791,15 +787,12 @@ def create_pipeline_run(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if pipeline_run.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating pipeline runs for a user other than yourself "
-            "is not supported."
-        )
 
-    if get_if_exists:
-        return zen_store().get_or_create_run(pipeline_run=pipeline_run)[0]
-    return zen_store().create_run(pipeline_run=pipeline_run)
+    return verify_permissions_and_create_entity(
+        request_model=pipeline_run,
+        resource_type=ResourceType.PIPELINE_RUN,
+        create_method=zen_store().create_run,
+    )
 
 
 @router.post(
@@ -841,6 +834,10 @@ def get_or_create_pipeline_run(
             "Creating pipeline runs for a user other than yourself "
             "is not supported."
         )
+
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
+    )
     return zen_store().get_or_create_run(pipeline_run=pipeline_run)
 
 
@@ -884,7 +881,23 @@ def create_run_metadata(
             "is not supported."
         )
 
-    return zen_store().create_run_metadata(run_metadata=run_metadata)
+    if run_metadata.pipeline_run_id:
+        run = zen_store().get_run(run_metadata.pipeline_run_id)
+        verify_permission_for_model(run, action=Action.UPDATE)
+
+    if run_metadata.step_run_id:
+        step_run = zen_store().get_run_step(run_metadata.step_run_id)
+        verify_permission_for_model(step_run, action=Action.UPDATE)
+
+    if run_metadata.artifact_id:
+        artifact = zen_store().get_artifact(run_metadata.artifact_id)
+        verify_permission_for_model(artifact, action=Action.UPDATE)
+
+    verify_permission(
+        resource_type=ResourceType.RUN_METADATA, action=Action.CREATE
+    )
+
+    return zen_store().create_run_metadata(run_metadata)
 
 
 @router.post(
@@ -1164,7 +1177,6 @@ def list_service_connector_resources(
     )
 
     return zen_store().list_service_connector_resources(
-        user_name_or_id=auth_context.user.id,
         workspace_name_or_id=workspace_name_or_id,
         connector_type=connector_type,
         resource_type=resource_type,

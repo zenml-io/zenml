@@ -40,9 +40,11 @@ from zenml.utils.artifact_utils import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.rbac.models import Action
+from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    dehydrate_page,
     dehydrate_response_model,
+    get_allowed_resource_ids,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
@@ -69,7 +71,7 @@ def list_run_steps(
         make_dependable(StepRunFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[StepRunResponse]:
     """Get run steps according to query filters.
 
@@ -78,13 +80,23 @@ def list_run_steps(
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        auth_context: Authentication context.
 
     Returns:
         The run steps according to query filters.
     """
-    return zen_store().list_run_steps(
+    allowed_pipeline_run_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.PIPELINE_RUN
+    )
+    step_run_filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id,
+        pipeline_run_id=allowed_pipeline_run_ids,
+    )
+
+    page = zen_store().list_run_steps(
         step_run_filter_model=step_run_filter_model, hydrate=hydrate
     )
+    return dehydrate_page(page)
 
 
 @router.post(

@@ -20,6 +20,10 @@ from zenml.constants import API, RUN_METADATA, VERSION_1
 from zenml.models import Page, RunMetadataFilter, RunMetadataResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_list_entities,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -57,6 +61,9 @@ def list_run_metadata(
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_run_metadata(
-        run_metadata_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=run_metadata_filter_model,
+        resource_type=ResourceType.RUN_METADATA,
+        list_method=zen_store().list_run_metadata,
+        hydrate=hydrate,
     )
