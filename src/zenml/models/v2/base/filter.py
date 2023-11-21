@@ -428,7 +428,11 @@ class BaseFilter(BaseModel):
                 expression = getattr(table, column_name).in_(allowed_ids)
                 expressions.append(expression)
 
-        if hasattr(table, "user_id"):
+        if expressions and hasattr(table, "user_id"):
+            # If `expressions` is not empty, we do not have full access to all
+            # rows of the table. In this case, we also include rows which the
+            # user owns.
+
             # Unowned entities are considered server-owned and can be seen
             # by anyone
             expressions.append(getattr(table, "user_id").is_(None))
@@ -437,7 +441,10 @@ class BaseFilter(BaseModel):
                 getattr(table, "user_id") == self._rbac_configuration[0]
             )
 
-        return query.where(or_(False, *expressions))
+        if expressions:
+            return query.where(or_(*expressions))
+        else:
+            return query
 
     @classmethod
     def _generate_filter_list(cls, values: Dict[str, Any]) -> List[Filter]:
