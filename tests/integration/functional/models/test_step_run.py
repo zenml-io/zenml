@@ -23,12 +23,12 @@ from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from zenml.client import Client
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.models import StepRunResponse
     from zenml.pipelines.base_pipeline import BasePipeline
 
 
@@ -41,7 +41,10 @@ def test_step_run_linkage(clean_client: "Client", one_step_pipeline):
     # Non-cached run
     pipeline_run = pipe.model.last_run
     step_run = pipeline_run.steps["step_"]
-    assert step_run.run == pipeline_run
+
+    run = clean_client.get_pipeline_run(step_run.pipeline_run_id)
+
+    assert run == pipeline_run
 
     # Cached run
     pipe.run()
@@ -62,8 +65,18 @@ def test_step_run_parent_steps_linkage(
     pipeline_run = pipeline_instance.model.last_run
     step_1 = pipeline_run.steps["step_1"]
     step_2 = pipeline_run.steps["step_2"]
-    assert step_1.parent_steps == []
-    assert step_2.parent_steps == [step_1]
+
+    parent_steps = [
+        clean_client.get_run_step(step_id)
+        for step_id in step_1.parent_step_ids
+    ]
+    assert parent_steps == []
+
+    parent_steps = [
+        clean_client.get_run_step(step_id)
+        for step_id in step_2.parent_step_ids
+    ]
+    assert parent_steps == [step_1]
 
 
 def test_step_run_has_source_code(clean_client, connected_two_step_pipeline):
@@ -213,6 +226,6 @@ def _assert_step_logs_disabled(pipe: "BasePipeline"):
 
 def _get_first_step_of_last_run(
     pipe: "BasePipeline",
-) -> "StepRunResponseModel":
+) -> "StepRunResponse":
     """Get the output of the last run."""
     return pipe.model.last_run.steps["step_"]

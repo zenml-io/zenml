@@ -23,9 +23,9 @@ from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.models.pipeline_build_models import (
-    PipelineBuildBaseModel,
-    PipelineBuildRequestModel,
+from zenml.models import (
+    PipelineBuildBase,
+    PipelineBuildRequest,
 )
 from zenml.pipelines import pipeline
 from zenml.stack import Stack
@@ -125,7 +125,7 @@ pipeline_instance = p(step_instance)
 
 
 def test_pipeline_registration_without_repo(clean_client):
-    """Tests that the register command outside of a repo works."""
+    """Tests that the register command outside a repo works."""
     runner = CliRunner()
     register_command = cli.commands["pipeline"].commands["register"]
 
@@ -165,7 +165,7 @@ def test_pipeline_registration_with_repo(clean_workspace):
 
 
 def test_pipeline_build_without_repo(clean_client):
-    """Tests that the build command outside of a repo works."""
+    """Tests that the build command outside a repo works."""
     runner = CliRunner()
     build_command = cli.commands["pipeline"].commands["build"]
 
@@ -214,7 +214,7 @@ def test_pipeline_build_writes_output_file(clean_workspace, mocker, tmp_path):
     )
     assert result.exit_code == 0
 
-    build_output = PipelineBuildBaseModel.from_yaml(output_path)
+    build_output = PipelineBuildBase.from_yaml(output_path)
     assert build_output.is_local is True
     assert len(build_output.images) == 1
     assert build_output.images["key"].image == "image_name"
@@ -305,7 +305,7 @@ def test_pipeline_build_with_different_stack(clean_workspace, mocker):
 
 
 def test_pipeline_run_without_repo(clean_client):
-    """Tests that the run command outside of a repo works."""
+    """Tests that the run command outside a repo works."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
 
@@ -400,7 +400,7 @@ def test_pipeline_run_with_custom_build_id(clean_workspace):
 
     pipeline_id = pipeline_instance.register().id
 
-    request = PipelineBuildRequestModel(
+    request = PipelineBuildRequest(
         user=Client().active_user.id,
         workspace=Client().active_workspace.id,
         is_local=True,
@@ -427,7 +427,7 @@ def test_pipeline_run_with_custom_build_file(clean_workspace, tmp_path):
     pipeline_id = pipeline_instance.register().id
 
     build_path = tmp_path / "build.yaml"
-    build = PipelineBuildBaseModel(
+    build = PipelineBuildBase(
         is_local=True,
         contains_code=True,
         images={"my_key": {"image": "image_name"}},
@@ -451,7 +451,7 @@ def test_pipeline_build_list(clean_workspace):
     list_command = cli.commands["pipeline"].commands["builds"].commands["list"]
     assert runner.invoke(list_command).exit_code == 0
 
-    request = PipelineBuildRequestModel(
+    request = PipelineBuildRequest(
         user=clean_workspace.active_user.id,
         workspace=clean_workspace.active_workspace.id,
         images={},
@@ -465,7 +465,7 @@ def test_pipeline_build_list(clean_workspace):
 
 def test_pipeline_build_delete(clean_workspace):
     """Test that `zenml pipeline builds delete` works as expected."""
-    request = PipelineBuildRequestModel(
+    request = PipelineBuildRequest(
         user=clean_workspace.active_user.id,
         workspace=clean_workspace.active_workspace.id,
         images={},

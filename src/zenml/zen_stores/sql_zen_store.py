@@ -20,7 +20,6 @@ import math
 import os
 import re
 import sys
-from contextvars import ContextVar
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path, PurePath
@@ -61,6 +60,7 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    TEXT_FIELD_MAX_LENGTH,
 )
 from zenml.enums import (
     LoggingLevels,
@@ -81,31 +81,35 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
-    APIKeyFilterModel,
-    APIKeyInternalResponseModel,
-    APIKeyInternalUpdateModel,
-    APIKeyRequestModel,
-    APIKeyResponseModel,
-    APIKeyRotateRequestModel,
-    APIKeyUpdateModel,
-    ArtifactFilterModel,
-    ArtifactRequestModel,
-    ArtifactResponseModel,
-    BaseFilterModel,
+    APIKeyFilter,
+    APIKeyInternalResponse,
+    APIKeyInternalUpdate,
+    APIKeyRequest,
+    APIKeyResponse,
+    APIKeyRotateRequest,
+    APIKeyUpdate,
+    ArtifactFilter,
+    ArtifactRequest,
+    ArtifactResponse,
+    ArtifactVisualizationResponse,
+    BaseFilter,
+    BaseResponse,
     BaseResponseModel,
-    CodeReferenceRequestModel,
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentResponseModel,
-    ComponentUpdateModel,
-    FlavorFilterModel,
-    FlavorRequestModel,
-    FlavorResponseModel,
-    FlavorUpdateModel,
+    CodeReferenceRequest,
+    CodeReferenceResponse,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
+    LogsResponse,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -120,88 +124,87 @@ from zenml.models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
-    OAuthDeviceFilterModel,
-    OAuthDeviceInternalRequestModel,
-    OAuthDeviceInternalResponseModel,
-    OAuthDeviceInternalUpdateModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
+    OAuthDeviceFilter,
+    OAuthDeviceInternalRequest,
+    OAuthDeviceInternalResponse,
+    OAuthDeviceInternalUpdate,
+    OAuthDeviceResponse,
+    OAuthDeviceUpdate,
     Page,
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineBuildResponseModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineDeploymentResponseModel,
-    PipelineFilterModel,
-    PipelineRequestModel,
-    PipelineResponseModel,
-    PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
-    PipelineUpdateModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
-    RunMetadataFilterModel,
-    RunMetadataRequestModel,
-    RunMetadataResponseModel,
-    ScheduleFilterModel,
-    ScheduleRequestModel,
-    ScheduleResponseModel,
-    ScheduleUpdateModel,
+    PipelineBuildFilter,
+    PipelineBuildRequest,
+    PipelineBuildResponse,
+    PipelineDeploymentFilter,
+    PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
+    PipelineFilter,
+    PipelineRequest,
+    PipelineResponse,
+    PipelineRunFilter,
+    PipelineRunRequest,
+    PipelineRunResponse,
+    PipelineRunUpdate,
+    PipelineUpdate,
+    RoleFilter,
+    RoleRequest,
+    RoleResponse,
+    RoleUpdate,
+    RunMetadataFilter,
+    RunMetadataRequest,
+    RunMetadataResponse,
+    ScheduleFilter,
+    ScheduleRequest,
+    ScheduleResponse,
+    ScheduleUpdate,
     SecretFilterModel,
     SecretRequestModel,
     SecretUpdateModel,
     ServerDatabaseType,
     ServerModel,
-    ServiceAccountFilterModel,
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
+    ServiceAccountFilter,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountUpdate,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
+    ServiceConnectorResponse,
     ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
-    StackFilterModel,
-    StackRequestModel,
-    StackResponseModel,
-    StackUpdateModel,
-    StepRunFilterModel,
-    StepRunRequestModel,
-    StepRunResponseModel,
-    StepRunUpdateModel,
+    ServiceConnectorUpdate,
+    StackFilter,
+    StackRequest,
+    StackResponse,
+    StackUpdate,
+    StepRunFilter,
+    StepRunRequest,
+    StepRunResponse,
+    StepRunUpdate,
     TagFilterModel,
     TagRequestModel,
     TagResourceRequestModel,
     TagResourceResponseModel,
     TagResponseModel,
     TagUpdateModel,
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-    TeamUpdateModel,
+    TeamFilter,
+    TeamRequest,
+    TeamResponse,
+    TeamRoleAssignmentFilter,
+    TeamRoleAssignmentRequest,
+    TeamRoleAssignmentResponse,
+    TeamUpdate,
     UserAuthModel,
-    UserFilterModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
+    UserFilter,
+    UserRequest,
+    UserResponse,
+    UserRoleAssignmentFilter,
+    UserRoleAssignmentRequest,
+    UserRoleAssignmentResponse,
+    UserUpdate,
+    WorkspaceFilter,
+    WorkspaceRequest,
+    WorkspaceResponse,
+    WorkspaceUpdate,
 )
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -262,7 +265,7 @@ from zenml.zen_stores.schemas import (
     UserSchema,
     WorkspaceSchema,
 )
-from zenml.zen_stores.schemas.artifact_schemas import (
+from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
@@ -272,10 +275,10 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-B = TypeVar("B", bound=BaseResponseModel)
-
-params_value: ContextVar[BaseFilterModel] = ContextVar("params_value")
-
+B = TypeVar(
+    "B",
+    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
+)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -294,7 +297,7 @@ def _is_mysql_missing_database_error(error: OperationalError) -> bool:
         error: The error to check.
 
     Returns:
-        If the error if because the MySQL database doesn't exist.
+        If the error because the MySQL database doesn't exist.
     """
     from pymysql.constants.ER import BAD_DB_ERROR
 
@@ -744,7 +747,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
         table: Type[AnySchema],
-        filter_model: BaseFilterModel,
+        filter_model: BaseFilter,
         custom_schema_to_model_conversion: Optional[
             Callable[[AnySchema], B]
         ] = None,
@@ -753,11 +756,12 @@ class SqlZenStore(BaseZenStore):
                 [
                     Session,
                     Union[Select[AnySchema], SelectOfScalar[AnySchema]],
-                    BaseFilterModel,
+                    BaseFilter,
                 ],
                 List[AnySchema],
             ]
         ] = None,
+        hydrate: bool = False,
     ) -> Page[B]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -776,6 +780,8 @@ class SqlZenStore(BaseZenStore):
                 perform additional filtering). The callable should take a
                 `Session`, a `Select` query and a `BaseFilterModel` filter as
                 arguments and return a `List` of items.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -844,7 +850,7 @@ class SqlZenStore(BaseZenStore):
             # Otherwise, try to use the `to_model` method of the schema.
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                items.append(to_model())
+                items.append(to_model(hydrate=hydrate))
                 continue
             # If neither of the above work, raise an error.
             raise RuntimeError(
@@ -852,7 +858,7 @@ class SqlZenStore(BaseZenStore):
                 "since it does not have a `to_model` method."
             )
 
-        return Page(
+        return Page[B](
             total=total,
             total_pages=total_pages,
             items=items,
@@ -1044,314 +1050,673 @@ class SqlZenStore(BaseZenStore):
                 )
             return identity.id
 
-    # ------
-    # Stacks
-    # ------
-    @track_decorator(AnalyticsEvent.REGISTERED_STACK)
-    def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
-        """Register a new stack.
+    # ------------------------- API Keys -------------------------
+
+    def _get_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> APIKeySchema:
+        """Helper method to fetch an API key by name or ID.
 
         Args:
-            stack: The stack to register.
+            service_account_id: The ID of the service account for which to
+                fetch the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+            session: The database session to use for the query.
 
         Returns:
-            The registered stack.
-        """
-        with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists_for_user(
-                stack=stack, session=session
-            )
-
-            if stack.is_shared:
-                self._fail_if_stack_with_name_already_shared(
-                    stack=stack, session=session
-                )
-
-            # Get the Schemas of all components mentioned
-            component_ids = (
-                [
-                    component_id
-                    for list_of_component_ids in stack.components.values()
-                    for component_id in list_of_component_ids
-                ]
-                if stack.components is not None
-                else []
-            )
-            filters = [
-                (StackComponentSchema.id == component_id)
-                for component_id in component_ids
-            ]
-
-            defined_components = session.exec(
-                select(StackComponentSchema).where(or_(*filters))
-            ).all()
-
-            new_stack_schema = StackSchema(
-                workspace_id=stack.workspace,
-                user_id=stack.user,
-                is_shared=stack.is_shared,
-                stack_spec_path=stack.stack_spec_path,
-                name=stack.name,
-                description=stack.description,
-                components=defined_components,
-            )
-
-            session.add(new_stack_schema)
-            session.commit()
-            session.refresh(new_stack_schema)
-
-            return new_stack_schema.to_model()
-
-    def get_stack(self, stack_id: UUID) -> StackResponseModel:
-        """Get a stack by its unique ID.
-
-        Args:
-            stack_id: The ID of the stack to get.
-
-        Returns:
-            The stack with the given ID.
+            The requested API key.
 
         Raises:
-            KeyError: if the stack doesn't exist.
+            KeyError: if the name or ID does not identify an API key that is
+                configured for the given service account.
         """
-        with Session(self.engine) as session:
-            stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack_id)
-            ).first()
+        # Fetch the service account, to make sure it exists
+        service_account = self._get_account_schema(
+            service_account_id, session=session, service_account=True
+        )
 
-            if stack is None:
-                raise KeyError(f"Stack with ID {stack_id} not found.")
-            return stack.to_model()
+        if uuid_utils.is_valid_uuid(api_key_name_or_id):
+            filter_params = APIKeySchema.id == api_key_name_or_id
+        else:
+            filter_params = APIKeySchema.name == api_key_name_or_id
 
-    def list_stacks(
-        self, stack_filter_model: StackFilterModel
-    ) -> Page[StackResponseModel]:
-        """List all stacks matching the given filter criteria.
+        api_key = session.exec(
+            select(APIKeySchema)
+            .where(filter_params)
+            .where(APIKeySchema.service_account_id == service_account.id)
+        ).first()
+
+        if api_key is None:
+            raise KeyError(
+                f"An API key with ID or name '{api_key_name_or_id}' is not "
+                f"configured for service account with ID "
+                f"'{service_account_id}'."
+            )
+        return api_key
+
+    def create_api_key(
+        self, service_account_id: UUID, api_key: APIKeyRequest
+    ) -> APIKeyResponse:
+        """Create a new API key for a service account.
 
         Args:
-            stack_filter_model: All filter parameters including pagination
-                params.
+            service_account_id: The ID of the service account for which to
+                create the API key.
+            api_key: The API key to create.
 
         Returns:
-            A list of all stacks matching the filter criteria.
+            The created API key.
+
+        Raises:
+            EntityExistsError: If an API key with the same name is already
+                configured for the same service account.
         """
         with Session(self.engine) as session:
-            query = select(StackSchema)
-            if stack_filter_model.component_id:
+            # Fetch the service account
+            service_account = self._get_account_schema(
+                service_account_id, session=session, service_account=True
+            )
+
+            # Check if a key with the same name already exists for the same
+            # service account
+            try:
+                self._get_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.name,
+                    session=session,
+                )
+                raise EntityExistsError(
+                    f"Unable to register API key with name '{api_key.name}': "
+                    "Found an existing API key with the same name configured "
+                    f"for the same '{service_account.name}' service account."
+                )
+            except KeyError:
+                pass
+
+            new_api_key, key_value = APIKeySchema.from_request(
+                service_account_id=service_account.id,
+                request=api_key,
+            )
+            session.add(new_api_key)
+            session.commit()
+
+            api_key_model = new_api_key.to_model(hydrate=True)
+            api_key_model.set_key(key_value)
+            return api_key_model
+
+    def get_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> APIKeyResponse:
+        """Get an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to fetch
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The API key with the given ID.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+            return api_key.to_model(hydrate=hydrate)
+
+    def get_internal_api_key(
+        self, api_key_id: UUID, hydrate: bool = True
+    ) -> APIKeyInternalResponse:
+        """Get internal details for an API key by its unique ID.
+
+        Args:
+            api_key_id: The ID of the API key to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The internal details for the API key with the given ID.
+
+        Raises:
+            KeyError: if the API key doesn't exist.
+        """
+        with Session(self.engine) as session:
+            api_key = session.exec(
+                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
+            ).first()
+            if api_key is None:
+                raise KeyError(f"API key with ID {api_key_id} not found.")
+            return api_key.to_internal_model(hydrate=hydrate)
+
+    def list_api_keys(
+        self,
+        service_account_id: UUID,
+        filter_model: APIKeyFilter,
+        hydrate: bool = False,
+    ) -> Page[APIKeyResponse]:
+        """List all API keys for a service account matching the given filter criteria.
+
+        Args:
+            service_account_id: The ID of the service account for which to list
+                the API keys.
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all API keys matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            # Fetch the service account
+            service_account = self._get_account_schema(
+                service_account_id, session=session, service_account=True
+            )
+
+            filter_model.set_service_account(service_account.id)
+            query = select(APIKeySchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=APIKeySchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        api_key_update: APIKeyUpdate,
+    ) -> APIKeyResponse:
+        """Update an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to update
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to update.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            EntityExistsError: if the API key update would result in a name
+                conflict with an existing API key for the same service account.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            if api_key_update.name and api_key.name != api_key_update.name:
+                # Check if a key with the new name already exists for the same
+                # service account
+                try:
+                    self._get_api_key(
+                        service_account_id=service_account_id,
+                        api_key_name_or_id=api_key_update.name,
+                        session=session,
+                    )
+
+                    raise EntityExistsError(
+                        f"Unable to update API key with name "
+                        f"'{api_key_update.name}': Found an existing API key "
+                        "with the same name configured for the same "
+                        f"'{api_key.service_account.name}' service account."
+                    )
+                except KeyError:
+                    pass
+
+            api_key.update(update=api_key_update)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            return api_key.to_model(hydrate=True)
+
+    def update_internal_api_key(
+        self, api_key_id: UUID, api_key_update: APIKeyInternalUpdate
+    ) -> APIKeyResponse:
+        """Update an API key with internal details.
+
+        Args:
+            api_key_id: The ID of the API key.
+            api_key_update: The update request on the API key.
+
+        Returns:
+            The updated API key.
+
+        Raises:
+            KeyError: if the API key doesn't exist.
+        """
+        with Session(self.engine) as session:
+            api_key = session.exec(
+                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
+            ).first()
+
+            if not api_key:
+                raise KeyError(f"API key with ID {api_key_id} not found.")
+
+            api_key.internal_update(update=api_key_update)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            return api_key.to_model(hydrate=True)
+
+    def rotate_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        rotate_request: APIKeyRotateRequest,
+    ) -> APIKeyResponse:
+        """Rotate an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                rotate the API key.
+            api_key_name_or_id: The name or ID of the API key to rotate.
+            rotate_request: The rotate request on the API key.
+
+        Returns:
+            The updated API key.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            _, new_key = api_key.rotate(rotate_request)
+            session.add(api_key)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(api_key)
+            api_key_model = api_key.to_model()
+            api_key_model.set_key(new_key)
+
+            return api_key_model
+
+    def delete_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                delete the API key.
+            api_key_name_or_id: The name or ID of the API key to delete.
+        """
+        with Session(self.engine) as session:
+            api_key = self._get_api_key(
+                service_account_id=service_account_id,
+                api_key_name_or_id=api_key_name_or_id,
+                session=session,
+            )
+
+            session.delete(api_key)
+            session.commit()
+
+    # ----------------------------- Artifacts -----------------------------
+
+    def create_artifact(self, artifact: ArtifactRequest) -> ArtifactResponse:
+        """Creates an artifact.
+
+        Args:
+            artifact: The artifact to create.
+
+        Returns:
+            The created artifact.
+        """
+        with Session(self.engine) as session:
+            # Save artifact.
+            artifact_schema = ArtifactSchema.from_request(artifact)
+            session.add(artifact_schema)
+
+            # Save visualizations of the artifact.
+            if artifact.visualizations:
+                for vis in artifact.visualizations:
+                    vis_schema = ArtifactVisualizationSchema.from_model(
+                        artifact_visualization_request=vis,
+                        artifact_id=artifact_schema.id,
+                    )
+                    session.add(vis_schema)
+
+            session.commit()
+            return artifact_schema.to_model(hydrate=True)
+
+    def get_artifact(
+        self, artifact_id: UUID, hydrate: bool = True
+    ) -> ArtifactResponse:
+        """Gets an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+            artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if artifact is None:
+                raise KeyError(
+                    f"Unable to get artifact with ID {artifact_id}: "
+                    f"No artifact with this ID found."
+                )
+            return artifact.to_model(hydrate=hydrate)
+
+    def list_artifacts(
+        self,
+        artifact_filter_model: ArtifactFilter,
+        hydrate: bool = False,
+    ) -> Page[ArtifactResponse]:
+        """List all artifacts matching the given filter criteria.
+
+        Args:
+            artifact_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all artifacts matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ArtifactSchema)
+            if artifact_filter_model.only_unused:
                 query = query.where(
-                    StackCompositionSchema.stack_id == StackSchema.id
-                ).where(
-                    StackCompositionSchema.component_id
-                    == stack_filter_model.component_id
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunOutputArtifactSchema.artifact_id)
+                    )
+                )
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunInputArtifactSchema.artifact_id)
+                    )
                 )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=StackSchema,
-                filter_model=stack_filter_model,
+                table=ArtifactSchema,
+                filter_model=artifact_filter_model,
+                hydrate=hydrate,
             )
 
-    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
-        """Count all stacks, optionally within a workspace scope.
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
 
         Args:
-            workspace_id: The workspace to use for counting stacks
-
-        Returns:
-            The number of stacks in the workspace.
-        """
-        return self._count_entity(
-            schema=StackSchema, workspace_id=workspace_id
-        )
-
-    @track_decorator(AnalyticsEvent.UPDATED_STACK)
-    def update_stack(
-        self, stack_id: UUID, stack_update: StackUpdateModel
-    ) -> StackResponseModel:
-        """Update a stack.
-
-        Args:
-            stack_id: The ID of the stack update.
-            stack_update: The update request on the stack.
-
-        Returns:
-            The updated stack.
+            artifact_id: The ID of the artifact to delete.
 
         Raises:
-            KeyError: if the stack doesn't exist.
-            IllegalOperationError: if the stack is a default stack.
+            KeyError: if the artifact doesn't exist.
         """
         with Session(self.engine) as session:
-            # Check if stack with the domain key (name, workspace, owner) already
-            #  exists
-            existing_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack_id)
+            artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
             ).first()
-            if existing_stack is None:
+            if artifact is None:
                 raise KeyError(
-                    f"Unable to update stack with id '{stack_id}': Found no"
-                    f"existing stack with this id."
+                    f"Unable to delete artifact with ID {artifact_id}: "
+                    f"No artifact with this ID found."
                 )
-            if existing_stack.name == DEFAULT_STACK_NAME:
-                raise IllegalOperationError(
-                    "The default stack cannot be modified."
-                )
-            # In case of a renaming update, make sure no stack already exists
-            # with that name
-            if stack_update.name:
-                if existing_stack.name != stack_update.name:
-                    self._fail_if_stack_with_name_exists_for_user(
-                        stack=stack_update, session=session
-                    )
-
-            # Check if stack update makes the stack a shared stack. In that
-            # case, check if a stack with the same name is already shared
-            # within the workspace
-            if stack_update.is_shared:
-                if not existing_stack.is_shared and stack_update.is_shared:
-                    self._fail_if_stack_with_name_already_shared(
-                        stack=stack_update, session=session
-                    )
-
-            components = []
-            if stack_update.components:
-                filters = [
-                    (StackComponentSchema.id == component_id)
-                    for list_of_component_ids in stack_update.components.values()
-                    for component_id in list_of_component_ids
-                ]
-                components = session.exec(
-                    select(StackComponentSchema).where(or_(*filters))
-                ).all()
-
-            existing_stack.update(
-                stack_update=stack_update,
-                components=components,
-            )
-
-            session.add(existing_stack)
-            session.commit()
-            session.refresh(existing_stack)
-
-            return existing_stack.to_model()
-
-    def delete_stack(self, stack_id: UUID) -> None:
-        """Delete a stack.
-
-        Args:
-            stack_id: The ID of the stack to delete.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
-            IllegalOperationError: if the stack is a default stack.
-        """
-        with Session(self.engine) as session:
-            try:
-                stack = session.exec(
-                    select(StackSchema).where(StackSchema.id == stack_id)
-                ).one()
-
-                if stack is None:
-                    raise KeyError(f"Stack with ID {stack_id} not found.")
-                if stack.name == DEFAULT_STACK_NAME:
-                    raise IllegalOperationError(
-                        "The default stack cannot be deleted."
-                    )
-                session.delete(stack)
-            except NoResultFound as error:
-                raise KeyError from error
-
+            session.delete(artifact)
             session.commit()
 
-    def _fail_if_stack_with_name_exists_for_user(
-        self,
-        stack: StackRequestModel,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a Component with same name exists for user.
+    # ------------------------ Artifact Visualizations ------------------------
+
+    def get_artifact_visualization(
+        self, artifact_visualization_id: UUID, hydrate: bool = True
+    ) -> ArtifactVisualizationResponse:
+        """Gets an artifact visualization.
 
         Args:
-            stack: The Stack
-            session: The Session
+            artifact_visualization_id: The ID of the artifact visualization to
+                get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            None
+            The artifact visualization.
 
         Raises:
-            StackExistsError: If a Stack with the given name is already
-                                       owned by the user
+            KeyError: if the code reference doesn't exist.
         """
-        existing_domain_stack = session.exec(
-            select(StackSchema)
-            .where(StackSchema.name == stack.name)
-            .where(StackSchema.workspace_id == stack.workspace)
-            .where(StackSchema.user_id == stack.user)
-        ).first()
-        if existing_domain_stack is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=stack.workspace, session=session
-            )
-            user = self._get_account_schema(
-                account_name_or_id=stack.user, session=session
-            )
-            raise StackExistsError(
-                f"Unable to register stack with name "
-                f"'{stack.name}': Found an existing stack with the same "
-                f"name in the active workspace, '{workspace.name}', "
-                f"owned by the same user, '{user.name}'."
-            )
-        return None
+        with Session(self.engine) as session:
+            artifact_visualization = session.exec(
+                select(ArtifactVisualizationSchema).where(
+                    ArtifactVisualizationSchema.id == artifact_visualization_id
+                )
+            ).first()
+            if artifact_visualization is None:
+                raise KeyError(
+                    f"Unable to get artifact visualization with ID "
+                    f"{artifact_visualization_id}: "
+                    f"No artifact visualization with this ID found."
+                )
+            return artifact_visualization.to_model(hydrate=hydrate)
 
-    def _fail_if_stack_with_name_already_shared(
-        self,
-        stack: StackRequestModel,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a Stack with same name is already shared.
+    # ------------------------ Code References ------------------------
+
+    def get_code_reference(
+        self, code_reference_id: UUID, hydrate: bool = True
+    ) -> CodeReferenceResponse:
+        """Gets a code reference.
 
         Args:
-            stack: The Stack
-            session: The Session
+            code_reference_id: The ID of the code reference to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The code reference.
 
         Raises:
-            StackExistsError: If a stack with the given name is already shared
-                              by a user.
+            KeyError: if the code reference doesn't exist.
         """
-        # Check if component with the same name, type is already shared
-        # within the workspace
-        existing_shared_stack = session.exec(
-            select(StackSchema)
-            .where(StackSchema.name == stack.name)
-            .where(StackSchema.workspace_id == stack.workspace)
-            .where(StackSchema.is_shared == stack.is_shared)
-        ).first()
-        if existing_shared_stack is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=stack.workspace, session=session
-            )
-            error_msg = (
-                f"Unable to share stack with name '{stack.name}': Found an "
-                f"existing shared stack with the same name in workspace "
-                f"'{workspace.name}'"
-            )
-            if existing_shared_stack.user_id:
-                owner_of_shared = self._get_account_schema(
-                    existing_shared_stack.user_id, session=session
+        with Session(self.engine) as session:
+            code_reference = session.exec(
+                select(CodeReferenceSchema).where(
+                    CodeRepositorySchema.id == code_reference_id
                 )
-                error_msg += f" owned by '{owner_of_shared.name}'."
-            else:
-                error_msg += ", which is currently not owned by any user."
-            raise StackExistsError(error_msg)
+            ).first()
+            if code_reference is None:
+                raise KeyError(
+                    f"Unable to get code reference with ID "
+                    f"{code_reference_id}: "
+                    f"No code reference with this ID found."
+                )
+            return code_reference.to_model(hydrate=hydrate)
 
-    # ----------------
-    # Stack components
-    # ----------------
+    # --------------------------- Code Repositories ---------------------------
+
+    def create_code_repository(
+        self, code_repository: CodeRepositoryRequest
+    ) -> CodeRepositoryResponse:
+        """Creates a new code repository.
+
+        Args:
+            code_repository: Code repository to be created.
+
+        Returns:
+            The newly created code repository.
+
+        Raises:
+            EntityExistsError: If a code repository with the given name already
+                exists.
+        """
+        with Session(self.engine) as session:
+            existing_repo = session.exec(
+                select(CodeRepositorySchema)
+                .where(CodeRepositorySchema.name == code_repository.name)
+                .where(
+                    CodeRepositorySchema.workspace_id
+                    == code_repository.workspace
+                )
+            ).first()
+            if existing_repo is not None:
+                raise EntityExistsError(
+                    f"Unable to create code repository in workspace "
+                    f"'{code_repository.workspace}': A code repository with "
+                    "this name already exists."
+                )
+
+            new_repo = CodeRepositorySchema.from_request(code_repository)
+            session.add(new_repo)
+            session.commit()
+            session.refresh(new_repo)
+
+            return new_repo.to_model(hydrate=True)
+
+    def get_code_repository(
+        self, code_repository_id: UUID, hydrate: bool = True
+    ) -> CodeRepositoryResponse:
+        """Gets a specific code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested code repository, if it was found.
+
+        Raises:
+            KeyError: If no code repository with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            repo = session.exec(
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == code_repository_id
+                )
+            ).first()
+            if repo is None:
+                raise KeyError(
+                    f"Unable to get code repository with ID "
+                    f"'{code_repository_id}': No code repository with this "
+                    "ID found."
+                )
+
+            return repo.to_model(hydrate=hydrate)
+
+    def list_code_repositories(
+        self,
+        filter_model: CodeRepositoryFilter,
+        hydrate: bool = False,
+    ) -> Page[CodeRepositoryResponse]:
+        """List all code repositories.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all code repositories.
+        """
+        with Session(self.engine) as session:
+            query = select(CodeRepositorySchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=CodeRepositorySchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_code_repository(
+        self, code_repository_id: UUID, update: CodeRepositoryUpdate
+    ) -> CodeRepositoryResponse:
+        """Updates an existing code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to update.
+            update: The update to be applied to the code repository.
+
+        Returns:
+            The updated code repository.
+
+        Raises:
+            KeyError: If no code repository with the given name exists.
+        """
+        with Session(self.engine) as session:
+            existing_repo = session.exec(
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == code_repository_id
+                )
+            ).first()
+            if existing_repo is None:
+                raise KeyError(
+                    f"Unable to update code repository with ID "
+                    f"{code_repository_id}: No code repository with this ID "
+                    "found."
+                )
+
+            existing_repo.update(update)
+
+            session.add(existing_repo)
+            session.commit()
+
+            return existing_repo.to_model(hydrate=True)
+
+    def delete_code_repository(self, code_repository_id: UUID) -> None:
+        """Deletes a code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to delete.
+
+        Raises:
+            KeyError: If no code repository with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            existing_repo = session.exec(
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == code_repository_id
+                )
+            ).first()
+            if existing_repo is None:
+                raise KeyError(
+                    f"Unable to delete code repository with ID "
+                    f"{code_repository_id}: No code repository with this ID "
+                    "found."
+                )
+
+            session.delete(existing_repo)
+            session.commit()
+
+    # ----------------------------- Components -----------------------------
 
     @track_decorator(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def create_stack_component(
         self,
-        component: ComponentRequestModel,
-    ) -> ComponentResponseModel:
+        component: ComponentRequest,
+    ) -> ComponentResponse:
         """Create a stack component.
 
         Args:
@@ -1419,15 +1784,17 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(new_component)
 
-            return new_component.to_model()
+            return new_component.to_model(hydrate=True)
 
     def get_stack_component(
-        self, component_id: UUID
-    ) -> ComponentResponseModel:
+        self, component_id: UUID, hydrate: bool = True
+    ) -> ComponentResponse:
         """Get a stack component by ID.
 
         Args:
             component_id: The ID of the stack component to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The stack component.
@@ -1447,16 +1814,20 @@ class SqlZenStore(BaseZenStore):
                     f"Stack component with ID {component_id} not found."
                 )
 
-            return stack_component.to_model()
+            return stack_component.to_model(hydrate=hydrate)
 
     def list_stack_components(
-        self, component_filter_model: ComponentFilterModel
-    ) -> Page[ComponentResponseModel]:
+        self,
+        component_filter_model: ComponentFilter,
+        hydrate: bool = False,
+    ) -> Page[ComponentResponse]:
         """List all stack components matching the given filter criteria.
 
         Args:
             component_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all stack components matching the filter criteria.
@@ -1464,31 +1835,19 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(StackComponentSchema)
             paged_components: Page[
-                ComponentResponseModel
+                ComponentResponse
             ] = self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=StackComponentSchema,
                 filter_model=component_filter_model,
+                hydrate=hydrate,
             )
             return paged_components
 
-    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
-        """Count all components, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting components
-
-        Returns:
-            The number of components in the workspace.
-        """
-        return self._count_entity(
-            schema=StackComponentSchema, workspace_id=workspace_id
-        )
-
     def update_stack_component(
-        self, component_id: UUID, component_update: ComponentUpdateModel
-    ) -> ComponentResponseModel:
+        self, component_id: UUID, component_update: ComponentUpdate
+    ) -> ComponentResponse:
         """Update an existing stack component.
 
         Args:
@@ -1584,7 +1943,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_component)
             session.commit()
 
-            return existing_component.to_model()
+            return existing_component.to_model(hydrate=True)
 
     def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
@@ -1635,6 +1994,19 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError from error
 
             session.commit()
+
+    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
+        """Count all components, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting components
+
+        Returns:
+            The number of components in the workspace.
+        """
+        return self._count_entity(
+            schema=StackComponentSchema, workspace_id=workspace_id
+        )
 
     @staticmethod
     def _fail_if_component_with_name_type_exists_for_user(
@@ -1721,12 +2093,280 @@ class SqlZenStore(BaseZenStore):
                 f"'{workspace_id}'."
             )
 
-    # -----------------------
-    # Stack component flavors
-    # -----------------------
+    # -------------------------- Devices -------------------------
+
+    def create_authorized_device(
+        self, device: OAuthDeviceInternalRequest
+    ) -> OAuthDeviceInternalResponse:
+        """Creates a new OAuth 2.0 authorized device.
+
+        Args:
+            device: The device to be created.
+
+        Returns:
+            The newly created device.
+
+        Raises:
+            EntityExistsError: If a device for the same client ID already
+                exists.
+        """
+        with Session(self.engine) as session:
+            existing_device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.client_id == device.client_id
+                )
+            ).first()
+            if existing_device is not None:
+                raise EntityExistsError(
+                    f"Unable to create device with client ID "
+                    f"'{device.client_id}': A device with this client ID "
+                    "already exists."
+                )
+
+            (
+                new_device,
+                user_code,
+                device_code,
+            ) = OAuthDeviceSchema.from_request(device)
+            session.add(new_device)
+            session.commit()
+            session.refresh(new_device)
+
+            device_model = new_device.to_internal_model(hydrate=True)
+            # Replace the hashed user code with the original user code
+            device_model.user_code = user_code
+            # Replace the hashed device code with the original device code
+            device_model.device_code = device_code
+
+            return device_model
+
+    def get_authorized_device(
+        self, device_id: UUID, hydrate: bool = True
+    ) -> OAuthDeviceResponse:
+        """Gets a specific OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested device, if it was found.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.id == device_id
+                )
+            ).first()
+            if device is None:
+                raise KeyError(
+                    f"Unable to get device with ID {device_id}: No device with "
+                    "this ID found."
+                )
+
+            return device.to_model(hydrate=hydrate)
+
+    def get_internal_authorized_device(
+        self,
+        device_id: Optional[UUID] = None,
+        client_id: Optional[UUID] = None,
+        hydrate: bool = True,
+    ) -> OAuthDeviceInternalResponse:
+        """Gets a specific OAuth 2.0 authorized device for internal use.
+
+        Args:
+            client_id: The client ID of the device to get.
+            device_id: The ID of the device to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested device, if it was found.
+
+        Raises:
+            KeyError: If no device with the given client ID exists.
+            ValueError: If neither device ID nor client ID are provided.
+        """
+        with Session(self.engine) as session:
+            if device_id is not None:
+                device = session.exec(
+                    select(OAuthDeviceSchema).where(
+                        OAuthDeviceSchema.id == device_id
+                    )
+                ).first()
+            elif client_id is not None:
+                device = session.exec(
+                    select(OAuthDeviceSchema).where(
+                        OAuthDeviceSchema.client_id == client_id
+                    )
+                ).first()
+            else:
+                raise ValueError(
+                    "Either device ID or client ID must be provided."
+                )
+            if device is None:
+                raise KeyError(
+                    f"Unable to get device with client ID {client_id}: No "
+                    "device with this client ID found."
+                )
+
+            return device.to_internal_model(hydrate=hydrate)
+
+    def list_authorized_devices(
+        self,
+        filter_model: OAuthDeviceFilter,
+        hydrate: bool = False,
+    ) -> Page[OAuthDeviceResponse]:
+        """List all OAuth 2.0 authorized devices for a user.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all matching OAuth 2.0 authorized devices.
+        """
+        with Session(self.engine) as session:
+            query = select(OAuthDeviceSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=OAuthDeviceSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_authorized_device(
+        self, device_id: UUID, update: OAuthDeviceUpdate
+    ) -> OAuthDeviceResponse:
+        """Updates an existing OAuth 2.0 authorized device for internal use.
+
+        Args:
+            device_id: The ID of the device to update.
+            update: The update to be applied to the device.
+
+        Returns:
+            The updated OAuth 2.0 authorized device.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            existing_device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.id == device_id
+                )
+            ).first()
+            if existing_device is None:
+                raise KeyError(
+                    f"Unable to update device with ID {device_id}: No "
+                    "device with this ID found."
+                )
+
+            existing_device.update(update)
+
+            session.add(existing_device)
+            session.commit()
+
+            return existing_device.to_model(hydrate=True)
+
+    def update_internal_authorized_device(
+        self, device_id: UUID, update: OAuthDeviceInternalUpdate
+    ) -> OAuthDeviceInternalResponse:
+        """Updates an existing OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to update.
+            update: The update to be applied to the device.
+
+        Returns:
+            The updated OAuth 2.0 authorized device.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            existing_device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.id == device_id
+                )
+            ).first()
+            if existing_device is None:
+                raise KeyError(
+                    f"Unable to update device with ID {device_id}: No device "
+                    "with this ID found."
+                )
+
+            (
+                _,
+                user_code,
+                device_code,
+            ) = existing_device.internal_update(update)
+
+            session.add(existing_device)
+            session.commit()
+
+            device_model = existing_device.to_internal_model(hydrate=True)
+            if user_code:
+                # Replace the hashed user code with the original user code
+                device_model.user_code = user_code
+
+            if device_code:
+                # Replace the hashed device code with the original device code
+                device_model.device_code = device_code
+
+            return device_model
+
+    def delete_authorized_device(self, device_id: UUID) -> None:
+        """Deletes an OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to delete.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            existing_device = session.exec(
+                select(OAuthDeviceSchema).where(
+                    OAuthDeviceSchema.id == device_id
+                )
+            ).first()
+            if existing_device is None:
+                raise KeyError(
+                    f"Unable to delete device with ID {device_id}: No device "
+                    "with this ID found."
+                )
+
+            session.delete(existing_device)
+            session.commit()
+
+    def delete_expired_authorized_devices(self) -> None:
+        """Deletes all expired OAuth 2.0 authorized devices."""
+        with Session(self.engine) as session:
+            expired_devices = session.exec(
+                select(OAuthDeviceSchema).where(OAuthDeviceSchema.user is None)
+            ).all()
+            for device in expired_devices:
+                # Delete devices that have expired
+                if (
+                    device.expires is not None
+                    and device.expires < datetime.now()
+                    and device.user_id is None
+                ):
+                    session.delete(device)
+            session.commit()
+
+    # ----------------------------- Flavors -----------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_FLAVOR)
-    def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
+    def create_flavor(self, flavor: FlavorRequest) -> FlavorResponse:
         """Creates a new stack component flavor.
 
         Args:
@@ -1788,11 +2428,61 @@ class SqlZenStore(BaseZenStore):
                 session.add(new_flavor)
                 session.commit()
 
-                return new_flavor.to_model()
+                return new_flavor.to_model(hydrate=True)
+
+    def get_flavor(
+        self, flavor_id: UUID, hydrate: bool = True
+    ) -> FlavorResponse:
+        """Get a flavor by ID.
+
+        Args:
+            flavor_id: The ID of the flavor to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The stack component flavor.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+        with Session(self.engine) as session:
+            flavor_in_db = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+            ).first()
+            if flavor_in_db is None:
+                raise KeyError(f"Flavor with ID {flavor_id} not found.")
+            return flavor_in_db.to_model(hydrate=hydrate)
+
+    def list_flavors(
+        self,
+        flavor_filter_model: FlavorFilter,
+        hydrate: bool = False,
+    ) -> Page[FlavorResponse]:
+        """List all stack component flavors matching the given filter criteria.
+
+        Args:
+            flavor_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            List of all the stack component flavors matching the given criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(FlavorSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=FlavorSchema,
+                filter_model=flavor_filter_model,
+                hydrate=hydrate,
+            )
 
     def update_flavor(
-        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
-    ) -> FlavorResponseModel:
+        self, flavor_id: UUID, flavor_update: FlavorUpdate
+    ) -> FlavorResponse:
         """Updates an existing user.
 
         Args:
@@ -1819,48 +2509,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_flavor)
-            return existing_flavor.to_model()
-
-    def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
-        """Get a flavor by ID.
-
-        Args:
-            flavor_id: The ID of the flavor to fetch.
-
-        Returns:
-            The stack component flavor.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
-        """
-        with Session(self.engine) as session:
-            flavor_in_db = session.exec(
-                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
-            ).first()
-            if flavor_in_db is None:
-                raise KeyError(f"Flavor with ID {flavor_id} not found.")
-            return flavor_in_db.to_model()
-
-    def list_flavors(
-        self, flavor_filter_model: FlavorFilterModel
-    ) -> Page[FlavorResponseModel]:
-        """List all stack component flavors matching the given filter criteria.
-
-        Args:
-            flavor_filter_model: All filter parameters including pagination
-                params
-
-        Returns:
-            List of all the stack component flavors matching the given criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(FlavorSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=FlavorSchema,
-                filter_model=flavor_filter_model,
-            )
+            return existing_flavor.to_model(hydrate=True)
 
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a flavor.
@@ -1901,970 +2550,613 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-    # -----
-    # Users
-    # -----
+    # ------------------------ Logs ------------------------
 
-    @classmethod
-    @lru_cache(maxsize=1)
-    def _get_resource_references(
-        cls,
-    ) -> List[Tuple[Type[SQLModel], str]]:
-        """Get a list of all other table columns that reference the user table.
-
-        Given that this list doesn't change at runtime, we cache it.
-
-        Returns:
-            A list of all other table columns that reference the user table
-            as a list of tuples of the form
-            (<sqlmodel-schema-class>, <attribute-name>).
-        """
-        from zenml.zen_stores import schemas as zenml_schemas
-
-        # Get a list of attributes that represent relationships to other
-        # resources
-        resource_attrs = [
-            attr
-            for attr in UserSchema.__sqlmodel_relationships__.keys()
-            if not attr.startswith("_") and attr not in
-            # These are not resources owned by the user or  are resources that
-            # are deleted automatically when the user is deleted. Secrets in
-            # particular are left out because they are automatically deleted
-            # even when stored in an external secret store.
-            ["teams", "assigned_roles", "api_keys", "auth_devices", "secrets"]
-        ]
-
-        # This next part is crucial in preserving scalability: we don't fetch
-        # the values of the relationship attributes, because this would
-        # potentially load a huge amount of data into memory through
-        # lazy-loading. Instead, we use a DB query to count resources
-        # associated with the user for each individual resource attribute.
-
-        # To create this query, we need a list of all tables and their foreign
-        # keys that point to the user table.
-        foreign_keys: List[Tuple[Type[SQLModel], str]] = []
-        for resource_attr in resource_attrs:
-            # Extract the target schema from the annotation
-            annotation = UserSchema.__annotations__[resource_attr]
-
-            # The annotation must be of the form
-            # `typing.List[ForwardRef('<schema-class>')]`
-            # We need to recover the schema class from the ForwardRef
-            assert annotation._name == "List"
-            assert annotation.__args__
-            schema_ref = annotation.__args__[0]
-            assert isinstance(schema_ref, ForwardRef)
-            # We pass the zenml_schemas module as the globals dict to
-            # _evaluate, because this is where the schema classes are
-            # defined
-            if sys.version_info < (3, 9):
-                # For Python versions <3.9, leave out the third parameter to
-                # _evaluate
-                target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
-            else:
-                target_schema = schema_ref._evaluate(
-                    vars(zenml_schemas), {}, frozenset()
-                )
-            assert target_schema is not None
-            assert issubclass(target_schema, SQLModel)
-
-            # Next, we need to identify the foreign key attribute in the
-            # target table
-            table = UserSchema.metadata.tables[target_schema.__tablename__]
-            foreign_key_attr = None
-            for fk in table.foreign_keys:
-                if fk.column.table.name != UserSchema.__tablename__:
-                    continue
-                if fk.column.name != "id":
-                    continue
-                assert fk.parent is not None
-                foreign_key_attr = fk.parent.name
-                break
-
-            assert foreign_key_attr is not None
-
-            foreign_keys.append((target_schema, foreign_key_attr))
-
-        return foreign_keys
-
-    def _account_owns_resources(
-        self, account: UserSchema, session: Session
-    ) -> bool:
-        """Check if the account owns any resources.
+    def get_logs(self, logs_id: UUID, hydrate: bool = True) -> LogsResponse:
+        """Gets logs with the given ID.
 
         Args:
-            account: The account to check.
-            session: The database session to use for the query.
+            logs_id: The ID of the logs to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            Whether the account owns any resources.
-        """
-        # Get a list of all other table columns that reference the user table
-        resource_attrs = self._get_resource_references()
-        for schema, resource_attr in resource_attrs:
-            # Check if the user owns any resources of this type
-            count = session.scalar(
-                select([func.count("*")])
-                .select_from(schema)
-                .where(getattr(schema, resource_attr) == account.id)
-            )
-            if count > 0:
-                logger.debug(
-                    f"User {account.name} owns {count} resources of type "
-                    f"{schema.__tablename__}"
-                )
-                return True
-
-        return False
-
-    def create_user(self, user: UserRequestModel) -> UserResponseModel:
-        """Creates a new user.
-
-        Args:
-            user: User to be created.
-
-        Returns:
-            The newly created user.
+            The logs.
 
         Raises:
-            EntityExistsError: If a user or service account with the given name
-                already exists.
+            KeyError: if the logs doesn't exist.
         """
         with Session(self.engine) as session:
-            # Check if a user account with the given name already exists
-            try:
-                self._get_account_schema(
-                    user.name,
-                    session=session,
-                    # Filter out service accounts
-                    service_account=False,
+            logs = session.exec(
+                select(LogsSchema).where(LogsSchema.id == logs_id)
+            ).first()
+            if logs is None:
+                raise KeyError(
+                    f"Unable to get logs with ID "
+                    f"{logs_id}: "
+                    f"No logs with this ID found."
                 )
-                raise EntityExistsError(
-                    f"Unable to create user with name '{user.name}': "
-                    f"Found an existing user account with this name."
-                )
-            except KeyError:
-                pass
+            return logs.to_model(hydrate=hydrate)
 
-            # Create the user
-            new_user = UserSchema.from_user_request(user)
-            session.add(new_user)
-            session.commit()
-            return new_user.to_model()
+    # ----------------------------- Pipelines -----------------------------
 
-    def get_user(
+    @track_decorator(AnalyticsEvent.CREATE_PIPELINE)
+    def create_pipeline(
         self,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        include_private: bool = False,
-    ) -> UserResponseModel:
-        """Gets a specific user, when no id is specified the active user is returned.
-
-        # noqa: DAR401
-        # noqa: DAR402
-
-        Raises a KeyError in case a user with that name or id does not exist.
-
-        For backwards-compatibility reasons, this method can also be called
-        to fetch service accounts by their ID.
+        pipeline: PipelineRequest,
+    ) -> PipelineResponse:
+        """Creates a new pipeline in a workspace.
 
         Args:
-            user_name_or_id: The name or ID of the user to get.
-            include_private: Whether to include private user information
+            pipeline: The pipeline to create.
 
         Returns:
-            The requested user, if it was found.
+            The newly created pipeline.
 
         Raises:
-            KeyError: If the user does not exist.
+            EntityExistsError: If an identical pipeline already exists.
         """
-        if not user_name_or_id:
-            user_name_or_id = self._default_user_name
-
         with Session(self.engine) as session:
-            # If a UUID is passed, we also allow fetching service accounts
-            # with that ID.
-            service_account: Optional[bool] = False
-            if uuid_utils.is_valid_uuid(user_name_or_id):
-                service_account = None
-            user = self._get_account_schema(
-                user_name_or_id,
-                session=session,
-                service_account=service_account,
-            )
+            # Check if pipeline with the given name already exists
+            existing_pipeline = session.exec(
+                select(PipelineSchema)
+                .where(PipelineSchema.name == pipeline.name)
+                .where(PipelineSchema.version == pipeline.version)
+                .where(PipelineSchema.workspace_id == pipeline.workspace)
+            ).first()
+            if existing_pipeline is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline in workspace "
+                    f"'{pipeline.workspace}': A pipeline with this name and "
+                    f"version already exists."
+                )
 
-            return user.to_model(include_private=include_private)
+            # Create the pipeline
+            new_pipeline = PipelineSchema.from_request(pipeline)
+            session.add(new_pipeline)
+            session.commit()
+            session.refresh(new_pipeline)
 
-    def get_auth_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> UserAuthModel:
-        """Gets the auth model to a specific user.
+            return new_pipeline.to_model(hydrate=True)
+
+    def get_pipeline(
+        self, pipeline_id: UUID, hydrate: bool = True
+    ) -> PipelineResponse:
+        """Get a pipeline with a given ID.
 
         Args:
-            user_name_or_id: The name or ID of the user to get.
+            pipeline_id: ID of the pipeline.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            The requested user, if it was found.
+            The pipeline.
+
+        Raises:
+            KeyError: if the pipeline does not exist.
         """
         with Session(self.engine) as session:
-            user = self._get_account_schema(
-                user_name_or_id, session=session, service_account=False
-            )
-            return UserAuthModel(
-                id=user.id,
-                name=user.name,
-                full_name=user.full_name,
-                email_opted_in=user.email_opted_in,
-                active=user.active,
-                created=user.created,
-                updated=user.updated,
-                password=user.password,
-                activation_token=user.activation_token,
-                is_service_account=False,
-            )
+            # Check if pipeline with the given ID exists
+            pipeline = session.exec(
+                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
+            ).first()
+            if pipeline is None:
+                raise KeyError(
+                    f"Unable to get pipeline with ID '{pipeline_id}': "
+                    "No pipeline with this ID found."
+                )
 
-    def list_users(
-        self, user_filter_model: UserFilterModel
-    ) -> Page[UserResponseModel]:
-        """List all users.
+            return pipeline.to_model(hydrate=hydrate)
+
+    def list_pipelines(
+        self,
+        pipeline_filter_model: PipelineFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineResponse]:
+        """List all pipelines matching the given filter criteria.
 
         Args:
-            user_filter_model: All filter parameters including pagination
+            pipeline_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            A list of all users.
+            A list of all pipelines matching the filter criteria.
         """
         with Session(self.engine) as session:
-            query = select(UserSchema)
-            paged_user: Page[UserResponseModel] = self.filter_and_paginate(
+            query = select(PipelineSchema)
+            return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=UserSchema,
-                filter_model=user_filter_model,
+                table=PipelineSchema,
+                filter_model=pipeline_filter_model,
+                hydrate=hydrate,
             )
-            return paged_user
 
-    def update_user(
-        self, user_id: UUID, user_update: UserUpdateModel
-    ) -> UserResponseModel:
-        """Updates an existing user.
+    def count_pipelines(self, workspace_id: Optional[UUID]) -> int:
+        """Count all pipelines, optionally within a workspace scope.
 
         Args:
-            user_id: The id of the user to update.
-            user_update: The update to be applied to the user.
+            workspace_id: The workspace to use for counting pipelines
 
         Returns:
-            The updated user.
-
-        Raises:
-            IllegalOperationError: If the request tries to update the username
-                for the default user account.
-            EntityExistsError: If the request tries to update the username to
-                a name that is already taken by another user or service account.
+            The number of pipelines in the workspace.
         """
-        with Session(self.engine) as session:
-            existing_user = self._get_account_schema(
-                user_id, session=session, service_account=False
-            )
-
-            if (
-                user_update.name is not None
-                and user_update.name != existing_user.name
-            ):
-                if existing_user.name == self._default_user_name:
-                    raise IllegalOperationError(
-                        "The username of the default user account cannot be "
-                        "changed."
-                    )
-
-                try:
-                    self._get_account_schema(
-                        user_update.name,
-                        session=session,
-                        service_account=False,
-                    )
-                    raise EntityExistsError(
-                        f"Unable to update user account with name "
-                        f"'{user_update.name}': Found an existing user "
-                        "account with this name."
-                    )
-                except KeyError:
-                    pass
-
-            existing_user.update_user(user_update=user_update)
-            session.add(existing_user)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(existing_user)
-            return existing_user.to_model()
-
-    def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a user.
-
-        Args:
-            user_name_or_id: The name or the ID of the user to delete.
-
-        Raises:
-            IllegalOperationError: If the user is the default user account or
-                if the user already owns resources.
-        """
-        with Session(self.engine) as session:
-            user = self._get_account_schema(
-                user_name_or_id, session=session, service_account=False
-            )
-            if user.name == self._default_user_name:
-                raise IllegalOperationError(
-                    "The default user account cannot be deleted."
-                )
-            if self._account_owns_resources(user, session=session):
-                raise IllegalOperationError(
-                    "The user account has already been used to create "
-                    "other resources that it now owns and therefore cannot be "
-                    "deleted. Please delete all resources owned by the user "
-                    "account or consider deactivating it instead."
-                )
-
-            self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
-
-            session.delete(user)
-            session.commit()
-
-    # ----------------
-    # Service Accounts
-    # ----------------
-
-    def create_service_account(
-        self, service_account: ServiceAccountRequestModel
-    ) -> ServiceAccountResponseModel:
-        """Creates a new service account.
-
-        Args:
-            service_account: Service account to be created.
-
-        Returns:
-            The newly created service account.
-
-        Raises:
-            EntityExistsError: If a user or service account with the given name
-                already exists.
-        """
-        with Session(self.engine) as session:
-            # Check if a service account with the given name already
-            # exists
-            try:
-                self._get_account_schema(
-                    service_account.name, session=session, service_account=True
-                )
-                raise EntityExistsError(
-                    f"Unable to create service account with name "
-                    f"'{service_account.name}': Found existing service "
-                    "account with this name."
-                )
-            except KeyError:
-                pass
-
-            # Create the service account
-            new_account = UserSchema.from_service_account_request(
-                service_account
-            )
-            session.add(new_account)
-            session.commit()
-
-            return new_account.to_service_account_model()
-
-    def get_service_account(
-        self,
-        service_account_name_or_id: Union[str, UUID],
-    ) -> ServiceAccountResponseModel:
-        """Gets a specific service account.
-
-        Raises a KeyError in case a service account with that id does not exist.
-
-        Args:
-            service_account_name_or_id: The name or ID of the service account to
-                get.
-
-        Returns:
-            The requested service account, if it was found.
-        """
-        with Session(self.engine) as session:
-            account = self._get_account_schema(
-                service_account_name_or_id,
-                session=session,
-                service_account=True,
-            )
-
-            return account.to_service_account_model()
-
-    def list_service_accounts(
-        self, filter_model: ServiceAccountFilterModel
-    ) -> Page[ServiceAccountResponseModel]:
-        """List all service accounts.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of filtered service accounts.
-        """
-        with Session(self.engine) as session:
-            query = select(UserSchema)
-            paged_service_accounts: Page[
-                ServiceAccountResponseModel
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=UserSchema,
-                filter_model=filter_model,
-                custom_schema_to_model_conversion=lambda user: user.to_service_account_model(),
-            )
-            return paged_service_accounts
-
-    def update_service_account(
-        self,
-        service_account_name_or_id: Union[str, UUID],
-        service_account_update: ServiceAccountUpdateModel,
-    ) -> ServiceAccountResponseModel:
-        """Updates an existing service account.
-
-        Args:
-            service_account_name_or_id: The name or the ID of the service
-                account to update.
-            service_account_update: The update to be applied to the service
-                account.
-
-        Returns:
-            The updated service account.
-
-        Raises:
-            EntityExistsError: If a user or service account with the given name
-                already exists.
-        """
-        with Session(self.engine) as session:
-            existing_service_account = self._get_account_schema(
-                service_account_name_or_id,
-                session=session,
-                service_account=True,
-            )
-
-            if (
-                service_account_update.name is not None
-                and service_account_update.name
-                != existing_service_account.name
-            ):
-                try:
-                    self._get_account_schema(
-                        service_account_update.name,
-                        session=session,
-                        service_account=True,
-                    )
-                    raise EntityExistsError(
-                        f"Unable to update service account with name "
-                        f"'{service_account_update.name}': Found an existing "
-                        "service account with this name."
-                    )
-                except KeyError:
-                    pass
-
-            existing_service_account.update_service_account(
-                service_account_update=service_account_update
-            )
-            session.add(existing_service_account)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(existing_service_account)
-            return existing_service_account.to_service_account_model()
-
-    def delete_service_account(
-        self,
-        service_account_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Delete a service account.
-
-        Args:
-            service_account_name_or_id: The name or the ID of the service
-                account to delete.
-
-        Raises:
-            IllegalOperationError: if the service account has already been used
-                to create other resources.
-        """
-        with Session(self.engine) as session:
-            service_account = self._get_account_schema(
-                service_account_name_or_id,
-                session=session,
-                service_account=True,
-            )
-            # Check if the service account has any resources associated with it
-            # and raise an error if it does.
-            if self._account_owns_resources(service_account, session=session):
-                raise IllegalOperationError(
-                    "The service account has already been used to create "
-                    "other resources that it now owns and therefore cannot be "
-                    "deleted. Please delete all resources owned by the service "
-                    "account or consider deactivating it instead."
-                )
-
-            session.delete(service_account)
-            session.commit()
-
-    # --------
-    # API Keys
-    # --------
-
-    def _get_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-        session: Session,
-    ) -> APIKeySchema:
-        """Helper method to fetch an API key by name or ID.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                fetch the API key.
-            api_key_name_or_id: The name or ID of the API key to get.
-            session: The database session to use for the query.
-
-        Returns:
-            The requested API key.
-
-        Raises:
-            KeyError: if the name or ID does not identify an API key that is
-                configured for the given service account.
-        """
-        # Fetch the service account, to make sure it exists
-        service_account = self._get_account_schema(
-            service_account_id, session=session, service_account=True
+        return self._count_entity(
+            schema=PipelineSchema, workspace_id=workspace_id
         )
 
-        if uuid_utils.is_valid_uuid(api_key_name_or_id):
-            filter_params = APIKeySchema.id == api_key_name_or_id
-        else:
-            filter_params = APIKeySchema.name == api_key_name_or_id
-
-        api_key = session.exec(
-            select(APIKeySchema)
-            .where(filter_params)
-            .where(APIKeySchema.service_account_id == service_account.id)
-        ).first()
-
-        if api_key is None:
-            raise KeyError(
-                f"An API key with ID or name '{api_key_name_or_id}' is not "
-                f"configured for service account with ID "
-                f"'{service_account_id}'."
-            )
-        return api_key
-
-    def create_api_key(
-        self, service_account_id: UUID, api_key: APIKeyRequestModel
-    ) -> APIKeyResponseModel:
-        """Create a new API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                create the API key.
-            api_key: The API key to create.
-
-        Returns:
-            The created API key.
-
-        Raises:
-            EntityExistsError: If an API key with the same name is already
-                configured for the same service account.
-        """
-        with Session(self.engine) as session:
-            # Fetch the service account
-            service_account = self._get_account_schema(
-                service_account_id, session=session, service_account=True
-            )
-
-            # Check if a key with the same name already exists for the same
-            # service account
-            try:
-                self._get_api_key(
-                    service_account_id=service_account.id,
-                    api_key_name_or_id=api_key.name,
-                    session=session,
-                )
-                raise EntityExistsError(
-                    f"Unable to register API key with name '{api_key.name}': "
-                    "Found an existing API key with the same name configured "
-                    f"for the same '{service_account.name}' service account."
-                )
-            except KeyError:
-                pass
-
-            new_api_key, key_value = APIKeySchema.from_request(
-                service_account_id=service_account.id,
-                request=api_key,
-            )
-            session.add(new_api_key)
-            session.commit()
-
-            api_key_model = new_api_key.to_model()
-            api_key_model.set_key(key_value)
-            return api_key_model
-
-    def get_api_key(
-        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
-    ) -> APIKeyResponseModel:
-        """Get an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to fetch
-                the API key.
-            api_key_name_or_id: The name or ID of the API key to get.
-
-        Returns:
-            The API key with the given ID.
-        """
-        with Session(self.engine) as session:
-            api_key = self._get_api_key(
-                service_account_id=service_account_id,
-                api_key_name_or_id=api_key_name_or_id,
-                session=session,
-            )
-            return api_key.to_model()
-
-    def get_internal_api_key(
-        self, api_key_id: UUID
-    ) -> APIKeyInternalResponseModel:
-        """Get internal details for an API key by its unique ID.
-
-        Args:
-            api_key_id: The ID of the API key to get.
-
-        Returns:
-            The internal details for the API key with the given ID.
-
-        Raises:
-            KeyError: if the API key doesn't exist.
-        """
-        with Session(self.engine) as session:
-            api_key = session.exec(
-                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
-            ).first()
-            if api_key is None:
-                raise KeyError(f"API key with ID {api_key_id} not found.")
-            return api_key.to_internal_model()
-
-    def list_api_keys(
-        self, service_account_id: UUID, filter_model: APIKeyFilterModel
-    ) -> Page[APIKeyResponseModel]:
-        """List all API keys for a service account matching the given filter criteria.
-
-        Args:
-            service_account_id: The ID of the service account for which to list
-                the API keys.
-            filter_model: All filter parameters including pagination
-                params
-
-        Returns:
-            A list of all API keys matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            # Fetch the service account
-            service_account = self._get_account_schema(
-                service_account_id, session=session, service_account=True
-            )
-
-            filter_model.set_service_account(service_account.id)
-            query = select(APIKeySchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=APIKeySchema,
-                filter_model=filter_model,
-            )
-
-    def update_api_key(
+    def update_pipeline(
         self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-        api_key_update: APIKeyUpdateModel,
-    ) -> APIKeyResponseModel:
-        """Update an API key for a service account.
+        pipeline_id: UUID,
+        pipeline_update: PipelineUpdate,
+    ) -> PipelineResponse:
+        """Updates a pipeline.
 
         Args:
-            service_account_id: The ID of the service account for which to update
-                the API key.
-            api_key_name_or_id: The name or ID of the API key to update.
-            api_key_update: The update request on the API key.
+            pipeline_id: The ID of the pipeline to be updated.
+            pipeline_update: The update to be applied.
 
         Returns:
-            The updated API key.
+            The updated pipeline.
 
         Raises:
-            EntityExistsError: if the API key update would result in a name
-                conflict with an existing API key for the same service account.
+            KeyError: if the pipeline doesn't exist.
         """
         with Session(self.engine) as session:
-            api_key = self._get_api_key(
-                service_account_id=service_account_id,
-                api_key_name_or_id=api_key_name_or_id,
-                session=session,
-            )
-
-            if api_key_update.name and api_key.name != api_key_update.name:
-                # Check if a key with the new name already exists for the same
-                # service account
-                try:
-                    self._get_api_key(
-                        service_account_id=service_account_id,
-                        api_key_name_or_id=api_key_update.name,
-                        session=session,
-                    )
-
-                    raise EntityExistsError(
-                        f"Unable to update API key with name "
-                        f"'{api_key_update.name}': Found an existing API key "
-                        "with the same name configured for the same "
-                        f"'{api_key.service_account.name}' service account."
-                    )
-                except KeyError:
-                    pass
-
-            api_key.update(update=api_key_update)
-            session.add(api_key)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(api_key)
-            return api_key.to_model()
-
-    def update_internal_api_key(
-        self, api_key_id: UUID, api_key_update: APIKeyInternalUpdateModel
-    ) -> APIKeyResponseModel:
-        """Update an API key with internal details.
-
-        Args:
-            api_key_id: The ID of the API key.
-            api_key_update: The update request on the API key.
-
-        Returns:
-            The updated API key.
-
-        Raises:
-            KeyError: if the API key doesn't exist.
-        """
-        with Session(self.engine) as session:
-            api_key = session.exec(
-                select(APIKeySchema).where(APIKeySchema.id == api_key_id)
+            # Check if pipeline with the given ID exists
+            existing_pipeline = session.exec(
+                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
             ).first()
-
-            if not api_key:
-                raise KeyError(f"API key with ID {api_key_id} not found.")
-
-            api_key.internal_update(update=api_key_update)
-            session.add(api_key)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(api_key)
-            return api_key.to_model()
-
-    def rotate_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-        rotate_request: APIKeyRotateRequestModel,
-    ) -> APIKeyResponseModel:
-        """Rotate an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                rotate the API key.
-            api_key_name_or_id: The name or ID of the API key to rotate.
-            rotate_request: The rotate request on the API key.
-
-        Returns:
-            The updated API key.
-        """
-        with Session(self.engine) as session:
-            api_key = self._get_api_key(
-                service_account_id=service_account_id,
-                api_key_name_or_id=api_key_name_or_id,
-                session=session,
-            )
-
-            _, new_key = api_key.rotate(rotate_request)
-            session.add(api_key)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(api_key)
-            api_key_model = api_key.to_model()
-            api_key_model.set_key(new_key)
-
-            return api_key_model
-
-    def delete_api_key(
-        self,
-        service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Delete an API key for a service account.
-
-        Args:
-            service_account_id: The ID of the service account for which to
-                delete the API key.
-            api_key_name_or_id: The name or ID of the API key to delete.
-        """
-        with Session(self.engine) as session:
-            api_key = self._get_api_key(
-                service_account_id=service_account_id,
-                api_key_name_or_id=api_key_name_or_id,
-                session=session,
-            )
-
-            session.delete(api_key)
-            session.commit()
-
-    # -----
-    # Teams
-    # -----
-
-    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
-        """Creates a new team.
-
-        Args:
-            team: The team model to create.
-
-        Returns:
-            The newly created team.
-
-        Raises:
-            EntityExistsError: If a team with the given name already exists.
-        """
-        with Session(self.engine) as session:
-            # Check if team with the given name already exists
-            existing_team = session.exec(
-                select(TeamSchema).where(TeamSchema.name == team.name)
-            ).first()
-            if existing_team is not None:
-                raise EntityExistsError(
-                    f"Unable to create team with name '{team.name}': "
-                    f"Found existing team with this name."
-                )
-
-            defined_users = []
-            if team.users:
-                # Get the Schemas of all users mentioned
-                filters = [
-                    (UserSchema.id == user_id) for user_id in team.users
-                ]
-
-                defined_users = session.exec(
-                    select(UserSchema).where(or_(*filters))
-                ).all()
-
-            # Create the team
-            new_team = TeamSchema(name=team.name, users=defined_users)
-            session.add(new_team)
-            session.commit()
-
-            return new_team.to_model()
-
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
-        """Gets a specific team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to get.
-
-        Returns:
-            The requested team.
-        """
-        with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id, session=session)
-            return team.to_model()
-
-    def list_teams(
-        self, team_filter_model: TeamFilterModel
-    ) -> Page[TeamResponseModel]:
-        """List all teams matching the given filter criteria.
-
-        Args:
-            team_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all teams matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(TeamSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=TeamSchema,
-                filter_model=team_filter_model,
-            )
-
-    def update_team(
-        self, team_id: UUID, team_update: TeamUpdateModel
-    ) -> TeamResponseModel:
-        """Update an existing team.
-
-        Args:
-            team_id: The ID of the team to be updated.
-            team_update: The update to be applied to the team.
-
-        Returns:
-            The updated team.
-
-        Raises:
-            KeyError: if the team does not exist.
-        """
-        with Session(self.engine) as session:
-            existing_team = session.exec(
-                select(TeamSchema).where(TeamSchema.id == team_id)
-            ).first()
-
-            if existing_team is None:
+            if existing_pipeline is None:
                 raise KeyError(
-                    f"Unable to update team with id "
-                    f"'{team_id}': Found no"
-                    f"existing teams with this id."
+                    f"Unable to update pipeline with ID {pipeline_id}: "
+                    f"No pipeline with this ID found."
                 )
 
-            # Update the team
-            existing_team.update(team_update=team_update)
-            existing_team.users = []
-            if "users" in team_update.__fields_set__ and team_update.users:
-                for user in team_update.users:
-                    existing_team.users.append(
-                        self._get_account_schema(
-                            account_name_or_id=user, session=session
-                        )
-                    )
+            # Update the pipeline
+            existing_pipeline.update(pipeline_update)
 
-            session.add(existing_team)
+            session.add(existing_pipeline)
             session.commit()
 
-            # Refresh the Model that was just created
-            session.refresh(existing_team)
-            return existing_team.to_model()
+            return existing_pipeline.to_model(hydrate=True)
 
-    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a team.
+    def delete_pipeline(self, pipeline_id: UUID) -> None:
+        """Deletes a pipeline.
 
         Args:
-            team_name_or_id: Name or ID of the team to delete.
+            pipeline_id: The ID of the pipeline to delete.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
         """
         with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id, session=session)
-            session.delete(team)
+            # Check if pipeline with the given ID exists
+            pipeline = session.exec(
+                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
+            ).first()
+            if pipeline is None:
+                raise KeyError(
+                    f"Unable to delete pipeline with ID {pipeline_id}: "
+                    f"No pipeline with this ID found."
+                )
+
+            session.delete(pipeline)
             session.commit()
 
-    # -----
-    # Roles
-    # -----
+    # --------------------------- Pipeline Builds ---------------------------
 
-    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
+    def create_build(
+        self,
+        build: PipelineBuildRequest,
+    ) -> PipelineBuildResponse:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+        """
+        with Session(self.engine) as session:
+            # Create the build
+            new_build = PipelineBuildSchema.from_request(build)
+            session.add(new_build)
+            session.commit()
+            session.refresh(new_build)
+
+            return new_build.to_model(hydrate=True)
+
+    def get_build(
+        self, build_id: UUID, hydrate: bool = True
+    ) -> PipelineBuildResponse:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The build.
+
+        Raises:
+            KeyError: If the build does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if build with the given ID exists
+            build = session.exec(
+                select(PipelineBuildSchema).where(
+                    PipelineBuildSchema.id == build_id
+                )
+            ).first()
+            if build is None:
+                raise KeyError(
+                    f"Unable to get build with ID '{build_id}': "
+                    "No build with this ID found."
+                )
+
+            return build.to_model(hydrate=hydrate)
+
+    def list_builds(
+        self,
+        build_filter_model: PipelineBuildFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineBuildResponse]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(PipelineBuildSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineBuildSchema,
+                filter_model=build_filter_model,
+                hydrate=hydrate,
+            )
+
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+
+        Raises:
+            KeyError: if the build doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if build with the given ID exists
+            build = session.exec(
+                select(PipelineBuildSchema).where(
+                    PipelineBuildSchema.id == build_id
+                )
+            ).first()
+            if build is None:
+                raise KeyError(
+                    f"Unable to delete build with ID {build_id}: "
+                    f"No build with this ID found."
+                )
+
+            session.delete(build)
+            session.commit()
+
+    # -------------------------- Pipeline Deployments --------------------------
+
+    def create_deployment(
+        self,
+        deployment: PipelineDeploymentRequest,
+    ) -> PipelineDeploymentResponse:
+        """Creates a new deployment in a workspace.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+        """
+        with Session(self.engine) as session:
+            code_reference_id = self._create_or_reuse_code_reference(
+                session=session,
+                workspace_id=deployment.workspace,
+                code_reference=deployment.code_reference,
+            )
+
+            new_deployment = PipelineDeploymentSchema.from_request(
+                deployment, code_reference_id=code_reference_id
+            )
+            session.add(new_deployment)
+            session.commit()
+            session.refresh(new_deployment)
+
+            return new_deployment.to_model(hydrate=True)
+
+    def get_deployment(
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> PipelineDeploymentResponse:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if deployment with the given ID exists
+            deployment = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.id == deployment_id
+                )
+            ).first()
+            if deployment is None:
+                raise KeyError(
+                    f"Unable to get deployment with ID '{deployment_id}': "
+                    "No deployment with this ID found."
+                )
+
+            return deployment.to_model(hydrate=hydrate)
+
+    def list_deployments(
+        self,
+        deployment_filter_model: PipelineDeploymentFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineDeploymentResponse]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(PipelineDeploymentSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineDeploymentSchema,
+                filter_model=deployment_filter_model,
+                hydrate=hydrate,
+            )
+
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Deletes a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+
+        Raises:
+            KeyError: If the deployment doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if build with the given ID exists
+            deployment = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.id == deployment_id
+                )
+            ).first()
+            if deployment is None:
+                raise KeyError(
+                    f"Unable to delete deployment with ID {deployment_id}: "
+                    f"No deployment with this ID found."
+                )
+
+            session.delete(deployment)
+            session.commit()
+
+    # ----------------------------- Pipeline runs -----------------------------
+
+    def create_run(
+        self, pipeline_run: PipelineRunRequest
+    ) -> PipelineRunResponse:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            EntityExistsError: If an identical pipeline run already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with same name already exists.
+            existing_domain_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.name == pipeline_run.name
+                )
+            ).first()
+            if existing_domain_run is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline run: A pipeline run with name "
+                    f"'{pipeline_run.name}' already exists."
+                )
+
+            # Check if pipeline run with same ID already exists.
+            existing_id_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == pipeline_run.id
+                )
+            ).first()
+            if existing_id_run is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline run: A pipeline run with ID "
+                    f"'{pipeline_run.id}' already exists."
+                )
+
+            # Create the pipeline run
+            new_run = PipelineRunSchema.from_request(pipeline_run)
+            session.add(new_run)
+            session.commit()
+
+            return new_run.to_model(hydrate=True)
+
+    def get_run(
+        self, run_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> PipelineRunResponse:
+        """Gets a pipeline run.
+
+        Args:
+            run_name_or_id: The name or ID of the pipeline run to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The pipeline run.
+        """
+        with Session(self.engine) as session:
+            return self._get_run_schema(
+                run_name_or_id, session=session
+            ).to_model(hydrate=hydrate)
+
+    def list_runs(
+        self,
+        runs_filter_model: PipelineRunFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineRunResponse]:
+        """List all pipeline runs matching the given filter criteria.
+
+        Args:
+            runs_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all pipeline runs matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(PipelineRunSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineRunSchema,
+                filter_model=runs_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_run(
+        self, run_id: UUID, run_update: PipelineRunUpdate
+    ) -> PipelineRunResponse:
+        """Updates a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to update.
+            run_update: The update to be applied to the pipeline run.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_run = session.exec(
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
+            ).first()
+            if existing_run is None:
+                raise KeyError(
+                    f"Unable to update pipeline run with ID {run_id}: "
+                    f"No pipeline run with this ID found."
+                )
+
+            # Update the pipeline run
+            existing_run.update(run_update=run_update)
+            session.add(existing_run)
+            session.commit()
+
+            session.refresh(existing_run)
+            return existing_run.to_model(hydrate=True)
+
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_run = session.exec(
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
+            ).first()
+            if existing_run is None:
+                raise KeyError(
+                    f"Unable to delete pipeline run with ID {run_id}: "
+                    f"No pipeline run with this ID found."
+                )
+
+            # Delete the pipeline run
+            session.delete(existing_run)
+            session.commit()
+
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunRequest
+    ) -> Tuple[PipelineRunResponse, bool]:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        Returns:
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
+        """
+        # We want to have the 'create' statement in the try block since running
+        # it first will reduce concurrency issues.
+        try:
+            return self.create_run(pipeline_run), True
+        except (EntityExistsError, IntegrityError):
+            # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
+            # since either one can be raised by the database when trying
+            # to create a new pipeline run with duplicate ID or name.
+            try:
+                return self.get_run(pipeline_run.id), False
+            except KeyError:
+                return self.get_run(pipeline_run.name), False
+
+    def count_runs(self, workspace_id: Optional[UUID]) -> int:
+        """Count all pipeline runs, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting pipeline runs
+
+        Returns:
+            The number of pipeline runs in the workspace.
+        """
+        return self._count_entity(
+            schema=PipelineRunSchema, workspace_id=workspace_id
+        )
+
+    # ----------------------------- Roles -----------------------------
+
+    def create_role(self, role: RoleRequest) -> RoleResponse:
         """Creates a new role.
 
         Args:
@@ -2897,29 +3189,37 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.commit()
-            return role_schema.to_model()
+            return role_schema.to_model(hydrate=True)
 
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
+    def get_role(
+        self, role_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> RoleResponse:
         """Gets a specific role.
 
         Args:
             role_name_or_id: Name or ID of the role to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The requested role.
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(role_name_or_id, session=session)
-            return role.to_model()
+            return role.to_model(hydrate=hydrate)
 
     def list_roles(
-        self, role_filter_model: RoleFilterModel
-    ) -> Page[RoleResponseModel]:
+        self,
+        role_filter_model: RoleFilter,
+        hydrate: bool = False,
+    ) -> Page[RoleResponse]:
         """List all roles matching the given filter criteria.
 
         Args:
             role_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all roles matching the filter criteria.
@@ -2931,11 +3231,12 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=RoleSchema,
                 filter_model=role_filter_model,
+                hydrate=hydrate,
             )
 
     def update_role(
-        self, role_id: UUID, role_update: RoleUpdateModel
-    ) -> RoleResponseModel:
+        self, role_id: UUID, role_update: RoleUpdate
+    ) -> RoleResponse:
         """Update an existing role.
 
         Args:
@@ -3007,7 +3308,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_role)
-            return existing_role.to_model()
+            return existing_role.to_model(hydrate=True)
 
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
         """Deletes a role.
@@ -3048,798 +3349,98 @@ class SqlZenStore(BaseZenStore):
                 session.delete(role)
                 session.commit()
 
-    # ----------------
-    # Role assignments
-    # ----------------
+    # ----------------------------- Run Metadata -----------------------------
 
-    def list_user_role_assignments(
-        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
-    ) -> Page[UserRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
+    def create_run_metadata(
+        self, run_metadata: RunMetadataRequest
+    ) -> List[RunMetadataResponse]:
+        """Creates run metadata.
 
         Args:
-            user_role_assignment_filter_model: All filter parameters including
+            run_metadata: The run metadata to create.
+
+        Returns:
+            The created run metadata.
+        """
+        return_value: List[RunMetadataResponse] = []
+        with Session(self.engine) as session:
+            for key, value in run_metadata.values.items():
+                type_ = run_metadata.types[key]
+                run_metadata_schema = RunMetadataSchema(
+                    workspace_id=run_metadata.workspace,
+                    user_id=run_metadata.user,
+                    pipeline_run_id=run_metadata.pipeline_run_id,
+                    step_run_id=run_metadata.step_run_id,
+                    artifact_id=run_metadata.artifact_id,
+                    stack_component_id=run_metadata.stack_component_id,
+                    key=key,
+                    value=json.dumps(value),
+                    type=type_,
+                )
+                session.add(run_metadata_schema)
+                session.commit()
+                return_value.append(run_metadata_schema.to_model(hydrate=True))
+        return return_value
+
+    def get_run_metadata(
+        self, run_metadata_id: UUID, hydrate: bool = True
+    ) -> RunMetadataResponse:
+        """Gets run metadata with the given ID.
+
+        Args:
+            run_metadata_id: The ID of the run metadata to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The run metadata.
+
+        Raises:
+            KeyError: if the run metadata doesn't exist.
+        """
+        with Session(self.engine) as session:
+            run_metadata = session.exec(
+                select(RunMetadataSchema).where(
+                    RunMetadataSchema.id == run_metadata_id
+                )
+            ).first()
+            if run_metadata is None:
+                raise KeyError(
+                    f"Unable to get run metadata with ID "
+                    f"{run_metadata_id}: "
+                    f"No run metadata with this ID found."
+                )
+            return run_metadata.to_model(hydrate=hydrate)
+
+    def list_run_metadata(
+        self,
+        run_metadata_filter_model: RunMetadataFilter,
+        hydrate: bool = False,
+    ) -> Page[RunMetadataResponse]:
+        """List run metadata.
+
+        Args:
+            run_metadata_filter_model: All filter parameters including
                 pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            A list of all roles assignments matching the filter criteria.
+            The run metadata.
         """
         with Session(self.engine) as session:
-            query = select(UserRoleAssignmentSchema)
+            query = select(RunMetadataSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=UserRoleAssignmentSchema,
-                filter_model=user_role_assignment_filter_model,
+                table=RunMetadataSchema,
+                filter_model=run_metadata_filter_model,
+                hydrate=hydrate,
             )
 
-    def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequestModel
-    ) -> UserRoleAssignmentResponseModel:
-        """Assigns a role to a user or team, scoped to a specific workspace.
+    # ----------------------------- Schedules -----------------------------
 
-        Args:
-            user_role_assignment: The role assignment to create.
-
-        Returns:
-            The created role assignment.
-
-        Raises:
-            EntityExistsError: if the role assignment already exists.
-        """
-        with Session(self.engine) as session:
-            role = self._get_role_schema(
-                user_role_assignment.role, session=session
-            )
-            workspace: Optional[WorkspaceSchema] = None
-            if user_role_assignment.workspace:
-                workspace = self._get_workspace_schema(
-                    user_role_assignment.workspace, session=session
-                )
-            user = self._get_account_schema(
-                user_role_assignment.user, session=session
-            )
-            query = select(UserRoleAssignmentSchema).where(
-                UserRoleAssignmentSchema.user_id == user.id,
-                UserRoleAssignmentSchema.role_id == role.id,
-            )
-            if workspace is not None:
-                query = query.where(
-                    UserRoleAssignmentSchema.workspace_id == workspace.id
-                )
-            existing_role_assignment = session.exec(query).first()
-            if existing_role_assignment is not None:
-                raise EntityExistsError(
-                    f"Unable to assign role '{role.name}' to user "
-                    f"'{user.name}': Role already assigned in this workspace."
-                )
-            role_assignment = UserRoleAssignmentSchema(
-                role_id=role.id,
-                user_id=user.id,
-                workspace_id=workspace.id if workspace else None,
-                role=role,
-                user=user,
-                workspace=workspace,
-            )
-            session.add(role_assignment)
-            session.commit()
-            return role_assignment.to_model()
-
-    def get_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponseModel:
-        """Gets a role assignment by ID.
-
-        Args:
-            user_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The role assignment.
-
-        Raises:
-            KeyError: If the role assignment does not exist.
-        """
-        with Session(self.engine) as session:
-            user_role = session.exec(
-                select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.id == user_role_assignment_id
-                )
-            ).one_or_none()
-
-            if user_role:
-                return user_role.to_model()
-            else:
-                raise KeyError(
-                    f"Unable to get user role assignment with ID "
-                    f"'{user_role_assignment_id}': No user role assignment "
-                    f"with this ID found."
-                )
-
-    def delete_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            user_role_assignment_id: The ID of the specific role assignment.
-
-        Raises:
-            KeyError: If the role assignment does not exist.
-        """
-        with Session(self.engine) as session:
-            user_role = session.exec(
-                select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.id == user_role_assignment_id
-                )
-            ).one_or_none()
-            if not user_role:
-                raise KeyError(
-                    f"No user role assignment with id "
-                    f"{user_role_assignment_id} exists."
-                )
-
-            session.delete(user_role)
-
-            session.commit()
-
-    # ---------------------
-    # Team Role assignments
-    # ---------------------
-
-    def create_team_role_assignment(
-        self, team_role_assignment: TeamRoleAssignmentRequestModel
-    ) -> TeamRoleAssignmentResponseModel:
-        """Creates a new team role assignment.
-
-        Args:
-            team_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
-        """
-        with Session(self.engine) as session:
-            role = self._get_role_schema(
-                team_role_assignment.role, session=session
-            )
-            workspace: Optional[WorkspaceSchema] = None
-            if team_role_assignment.workspace:
-                workspace = self._get_workspace_schema(
-                    team_role_assignment.workspace, session=session
-                )
-            team = self._get_team_schema(
-                team_role_assignment.team, session=session
-            )
-            query = select(UserRoleAssignmentSchema).where(
-                UserRoleAssignmentSchema.user_id == team.id,
-                UserRoleAssignmentSchema.role_id == role.id,
-            )
-            if workspace is not None:
-                query = query.where(
-                    UserRoleAssignmentSchema.workspace_id == workspace.id
-                )
-            existing_role_assignment = session.exec(query).first()
-            if existing_role_assignment is not None:
-                raise EntityExistsError(
-                    f"Unable to assign role '{role.name}' to team "
-                    f"'{team.name}': Role already assigned in this workspace."
-                )
-            role_assignment = TeamRoleAssignmentSchema(
-                role_id=role.id,
-                team_id=team.id,
-                workspace_id=workspace.id if workspace else None,
-                role=role,
-                team=team,
-                workspace=workspace,
-            )
-            session.add(role_assignment)
-            session.commit()
-            return role_assignment.to_model()
-
-    def get_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponseModel:
-        """Gets a specific role assignment.
-
-        Args:
-            team_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The requested role assignment.
-
-        Raises:
-            KeyError: If no role assignment with the given ID exists.
-        """
-        with Session(self.engine) as session:
-            team_role = session.exec(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == team_role_assignment_id
-                )
-            ).one_or_none()
-
-            if team_role:
-                return team_role.to_model()
-            else:
-                raise KeyError(
-                    f"Unable to get team role assignment with ID "
-                    f"'{team_role_assignment_id}': No team role assignment "
-                    f"with this ID found."
-                )
-
-    def delete_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            team_role_assignment_id: The ID of the specific role assignment
-
-        Raises:
-            KeyError: If the role assignment does not exist.
-        """
-        with Session(self.engine) as session:
-            team_role = session.exec(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == team_role_assignment_id
-                )
-            ).one_or_none()
-            if not team_role:
-                raise KeyError(
-                    f"No team role assignment with id "
-                    f"{team_role_assignment_id} exists."
-                )
-
-            session.delete(team_role)
-
-            session.commit()
-
-    def list_team_role_assignments(
-        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
-    ) -> Page[TeamRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            team_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(TeamRoleAssignmentSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=TeamRoleAssignmentSchema,
-                filter_model=team_role_assignment_filter_model,
-            )
-
-    # ----------
-    # Workspaces
-    # ----------
-
-    @track_decorator(AnalyticsEvent.CREATED_WORKSPACE)
-    def create_workspace(
-        self, workspace: WorkspaceRequestModel
-    ) -> WorkspaceResponseModel:
-        """Creates a new workspace.
-
-        Args:
-            workspace: The workspace to create.
-
-        Returns:
-            The newly created workspace.
-
-        Raises:
-            EntityExistsError: If a workspace with the given name already exists.
-        """
-        with Session(self.engine) as session:
-            # Check if workspace with the given name already exists
-            existing_workspace = session.exec(
-                select(WorkspaceSchema).where(
-                    WorkspaceSchema.name == workspace.name
-                )
-            ).first()
-            if existing_workspace is not None:
-                raise EntityExistsError(
-                    f"Unable to create workspace {workspace.name}: "
-                    "A workspace with this name already exists."
-                )
-
-            # Create the workspace
-            new_workspace = WorkspaceSchema.from_request(workspace)
-            session.add(new_workspace)
-            session.commit()
-
-            # Explicitly refresh the new_workspace schema
-            session.refresh(new_workspace)
-
-            return new_workspace.to_model()
-
-    def get_workspace(
-        self, workspace_name_or_id: Union[str, UUID]
-    ) -> WorkspaceResponseModel:
-        """Get an existing workspace by name or ID.
-
-        Args:
-            workspace_name_or_id: Name or ID of the workspace to get.
-
-        Returns:
-            The requested workspace if one was found.
-        """
-        with Session(self.engine) as session:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id, session=session
-            )
-        return workspace.to_model()
-
-    def list_workspaces(
-        self, workspace_filter_model: WorkspaceFilterModel
-    ) -> Page[WorkspaceResponseModel]:
-        """List all workspace matching the given filter criteria.
-
-        Args:
-            workspace_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all workspace matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(WorkspaceSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=WorkspaceSchema,
-                filter_model=workspace_filter_model,
-            )
-
-    def update_workspace(
-        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
-    ) -> WorkspaceResponseModel:
-        """Update an existing workspace.
-
-        Args:
-            workspace_id: The ID of the workspace to be updated.
-            workspace_update: The update to be applied to the workspace.
-
-        Returns:
-            The updated workspace.
-
-        Raises:
-            IllegalOperationError: if the workspace is the default workspace.
-            KeyError: if the workspace does not exist.
-        """
-        with Session(self.engine) as session:
-            existing_workspace = session.exec(
-                select(WorkspaceSchema).where(
-                    WorkspaceSchema.id == workspace_id
-                )
-            ).first()
-            if existing_workspace is None:
-                raise KeyError(
-                    f"Unable to update workspace with id "
-                    f"'{workspace_id}': Found no"
-                    f"existing workspaces with this id."
-                )
-            if (
-                existing_workspace.name == self._default_workspace_name
-                and "name" in workspace_update.__fields_set__
-                and workspace_update.name != existing_workspace.name
-            ):
-                raise IllegalOperationError(
-                    "The name of the default workspace cannot be changed."
-                )
-
-            # Update the workspace
-            existing_workspace.update(workspace_update=workspace_update)
-            session.add(existing_workspace)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(existing_workspace)
-            return existing_workspace.to_model()
-
-    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a workspace.
-
-        Args:
-            workspace_name_or_id: Name or ID of the workspace to delete.
-
-        Raises:
-            IllegalOperationError: If the workspace is the default workspace.
-        """
-        with Session(self.engine) as session:
-            # Check if workspace with the given name exists
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id, session=session
-            )
-            if workspace.name == self._default_workspace_name:
-                raise IllegalOperationError(
-                    "The default workspace cannot be deleted."
-                )
-
-            self._trigger_event(
-                StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
-            )
-
-            session.delete(workspace)
-            session.commit()
-
-    # ---------
-    # Pipelines
-    # ---------
-    @track_decorator(AnalyticsEvent.CREATE_PIPELINE)
-    def create_pipeline(
-        self,
-        pipeline: PipelineRequestModel,
-    ) -> PipelineResponseModel:
-        """Creates a new pipeline in a workspace.
-
-        Args:
-            pipeline: The pipeline to create.
-
-        Returns:
-            The newly created pipeline.
-
-        Raises:
-            EntityExistsError: If an identical pipeline already exists.
-        """
-        with Session(self.engine) as session:
-            # Check if pipeline with the given name already exists
-            existing_pipeline = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.version == pipeline.version)
-                .where(PipelineSchema.workspace_id == pipeline.workspace)
-            ).first()
-            if existing_pipeline is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with this name and "
-                    f"version already exists."
-                )
-
-            # Create the pipeline
-            new_pipeline = PipelineSchema.from_request(pipeline)
-            session.add(new_pipeline)
-            session.commit()
-            session.refresh(new_pipeline)
-
-            return new_pipeline.to_model()
-
-    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponseModel:
-        """Get a pipeline with a given ID.
-
-        Args:
-            pipeline_id: ID of the pipeline.
-
-        Returns:
-            The pipeline.
-
-        Raises:
-            KeyError: if the pipeline does not exist.
-        """
-        with Session(self.engine) as session:
-            # Check if pipeline with the given ID exists
-            pipeline = session.exec(
-                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
-            ).first()
-            if pipeline is None:
-                raise KeyError(
-                    f"Unable to get pipeline with ID '{pipeline_id}': "
-                    "No pipeline with this ID found."
-                )
-
-            return pipeline.to_model()
-
-    def list_pipelines(
-        self, pipeline_filter_model: PipelineFilterModel
-    ) -> Page[PipelineResponseModel]:
-        """List all pipelines matching the given filter criteria.
-
-        Args:
-            pipeline_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all pipelines matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(PipelineSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineSchema,
-                filter_model=pipeline_filter_model,
-            )
-
-    def count_pipelines(self, workspace_id: Optional[UUID]) -> int:
-        """Count all pipelines, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting pipelines
-
-        Returns:
-            The number of pipelines in the workspace.
-        """
-        return self._count_entity(
-            schema=PipelineSchema, workspace_id=workspace_id
-        )
-
-    def update_pipeline(
-        self,
-        pipeline_id: UUID,
-        pipeline_update: PipelineUpdateModel,
-    ) -> PipelineResponseModel:
-        """Updates a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to be updated.
-            pipeline_update: The update to be applied.
-
-        Returns:
-            The updated pipeline.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if pipeline with the given ID exists
-            existing_pipeline = session.exec(
-                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
-            ).first()
-            if existing_pipeline is None:
-                raise KeyError(
-                    f"Unable to update pipeline with ID {pipeline_id}: "
-                    f"No pipeline with this ID found."
-                )
-
-            # Update the pipeline
-            existing_pipeline.update(pipeline_update)
-
-            session.add(existing_pipeline)
-            session.commit()
-
-            return existing_pipeline.to_model()
-
-    def delete_pipeline(self, pipeline_id: UUID) -> None:
-        """Deletes a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to delete.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if pipeline with the given ID exists
-            pipeline = session.exec(
-                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
-            ).first()
-            if pipeline is None:
-                raise KeyError(
-                    f"Unable to delete pipeline with ID {pipeline_id}: "
-                    f"No pipeline with this ID found."
-                )
-
-            session.delete(pipeline)
-            session.commit()
-
-    # ------
-    # Builds
-    # ------
-
-    def create_build(
-        self,
-        build: PipelineBuildRequestModel,
-    ) -> PipelineBuildResponseModel:
-        """Creates a new build in a workspace.
-
-        Args:
-            build: The build to create.
-
-        Returns:
-            The newly created build.
-        """
-        with Session(self.engine) as session:
-            # Create the build
-            new_build = PipelineBuildSchema.from_request(build)
-            session.add(new_build)
-            session.commit()
-            session.refresh(new_build)
-
-            return new_build.to_model()
-
-    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
-        """Get a build with a given ID.
-
-        Args:
-            build_id: ID of the build.
-
-        Returns:
-            The build.
-
-        Raises:
-            KeyError: If the build does not exist.
-        """
-        with Session(self.engine) as session:
-            # Check if build with the given ID exists
-            build = session.exec(
-                select(PipelineBuildSchema).where(
-                    PipelineBuildSchema.id == build_id
-                )
-            ).first()
-            if build is None:
-                raise KeyError(
-                    f"Unable to get build with ID '{build_id}': "
-                    "No build with this ID found."
-                )
-
-            return build.to_model()
-
-    def list_builds(
-        self, build_filter_model: PipelineBuildFilterModel
-    ) -> Page[PipelineBuildResponseModel]:
-        """List all builds matching the given filter criteria.
-
-        Args:
-            build_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A page of all builds matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(PipelineBuildSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineBuildSchema,
-                filter_model=build_filter_model,
-            )
-
-    def delete_build(self, build_id: UUID) -> None:
-        """Deletes a build.
-
-        Args:
-            build_id: The ID of the build to delete.
-
-        Raises:
-            KeyError: if the build doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if build with the given ID exists
-            build = session.exec(
-                select(PipelineBuildSchema).where(
-                    PipelineBuildSchema.id == build_id
-                )
-            ).first()
-            if build is None:
-                raise KeyError(
-                    f"Unable to delete build with ID {build_id}: "
-                    f"No build with this ID found."
-                )
-
-            session.delete(build)
-            session.commit()
-
-    # --------------------
-    # Pipeline Deployments
-    # --------------------
-
-    def create_deployment(
-        self,
-        deployment: PipelineDeploymentRequestModel,
-    ) -> PipelineDeploymentResponseModel:
-        """Creates a new deployment in a workspace.
-
-        Args:
-            deployment: The deployment to create.
-
-        Returns:
-            The newly created deployment.
-        """
-        with Session(self.engine) as session:
-            code_reference_id = self._create_or_reuse_code_reference(
-                session=session,
-                workspace_id=deployment.workspace,
-                code_reference=deployment.code_reference,
-            )
-
-            new_deployment = PipelineDeploymentSchema.from_request(
-                deployment, code_reference_id=code_reference_id
-            )
-            session.add(new_deployment)
-            session.commit()
-            session.refresh(new_deployment)
-
-            return new_deployment.to_model()
-
-    def get_deployment(
-        self, deployment_id: UUID
-    ) -> PipelineDeploymentResponseModel:
-        """Get a deployment with a given ID.
-
-        Args:
-            deployment_id: ID of the deployment.
-
-        Returns:
-            The deployment.
-
-        Raises:
-            KeyError: If the deployment does not exist.
-        """
-        with Session(self.engine) as session:
-            # Check if deployment with the given ID exists
-            deployment = session.exec(
-                select(PipelineDeploymentSchema).where(
-                    PipelineDeploymentSchema.id == deployment_id
-                )
-            ).first()
-            if deployment is None:
-                raise KeyError(
-                    f"Unable to get deployment with ID '{deployment_id}': "
-                    "No deployment with this ID found."
-                )
-
-            return deployment.to_model()
-
-    def list_deployments(
-        self, deployment_filter_model: PipelineDeploymentFilterModel
-    ) -> Page[PipelineDeploymentResponseModel]:
-        """List all deployments matching the given filter criteria.
-
-        Args:
-            deployment_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A page of all deployments matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(PipelineDeploymentSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineDeploymentSchema,
-                filter_model=deployment_filter_model,
-            )
-
-    def delete_deployment(self, deployment_id: UUID) -> None:
-        """Deletes a deployment.
-
-        Args:
-            deployment_id: The ID of the deployment to delete.
-
-        Raises:
-            KeyError: If the deployment doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if build with the given ID exists
-            deployment = session.exec(
-                select(PipelineDeploymentSchema).where(
-                    PipelineDeploymentSchema.id == deployment_id
-                )
-            ).first()
-            if deployment is None:
-                raise KeyError(
-                    f"Unable to delete deployment with ID {deployment_id}: "
-                    f"No deployment with this ID found."
-                )
-
-            session.delete(deployment)
-            session.commit()
-
-    # ---------
-    # Schedules
-    # ---------
-
-    def create_schedule(
-        self, schedule: ScheduleRequestModel
-    ) -> ScheduleResponseModel:
+    def create_schedule(self, schedule: ScheduleRequest) -> ScheduleResponse:
         """Creates a new schedule.
 
         Args:
@@ -3849,16 +3450,20 @@ class SqlZenStore(BaseZenStore):
             The newly created schedule.
         """
         with Session(self.engine) as session:
-            new_schedule = ScheduleSchema.from_create_model(model=schedule)
+            new_schedule = ScheduleSchema.from_request(schedule)
             session.add(new_schedule)
             session.commit()
-            return new_schedule.to_model()
+            return new_schedule.to_model(hydrate=True)
 
-    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+    def get_schedule(
+        self, schedule_id: UUID, hydrate: bool = True
+    ) -> ScheduleResponse:
         """Get a schedule with a given ID.
 
         Args:
             schedule_id: ID of the schedule.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The schedule.
@@ -3876,16 +3481,20 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get schedule with ID '{schedule_id}': "
                     "No schedule with this ID found."
                 )
-            return schedule.to_model()
+            return schedule.to_model(hydrate=hydrate)
 
     def list_schedules(
-        self, schedule_filter_model: ScheduleFilterModel
-    ) -> Page[ScheduleResponseModel]:
+        self,
+        schedule_filter_model: ScheduleFilter,
+        hydrate: bool = False,
+    ) -> Page[ScheduleResponse]:
         """List all schedules in the workspace.
 
         Args:
             schedule_filter_model: All filter parameters including pagination
                 params
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of schedules.
@@ -3897,13 +3506,14 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ScheduleSchema,
                 filter_model=schedule_filter_model,
+                hydrate=hydrate,
             )
 
     def update_schedule(
         self,
         schedule_id: UUID,
-        schedule_update: ScheduleUpdateModel,
-    ) -> ScheduleResponseModel:
+        schedule_update: ScheduleUpdate,
+    ) -> ScheduleResponse:
         """Updates a schedule.
 
         Args:
@@ -3928,12 +3538,10 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Update the schedule
-            existing_schedule = existing_schedule.from_update_model(
-                schedule_update
-            )
+            existing_schedule = existing_schedule.update(schedule_update)
             session.add(existing_schedule)
             session.commit()
-            return existing_schedule.to_model()
+            return existing_schedule.to_model(hydrate=True)
 
     def delete_schedule(self, schedule_id: UUID) -> None:
         """Deletes a schedule.
@@ -3959,848 +3567,595 @@ class SqlZenStore(BaseZenStore):
             session.delete(schedule)
             session.commit()
 
-    # --------------
-    # Pipeline runs
-    # --------------
+    # ------------------------- Service Accounts -------------------------
 
-    def create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
-        """Creates a pipeline run.
+    def create_service_account(
+        self, service_account: ServiceAccountRequest
+    ) -> ServiceAccountResponse:
+        """Creates a new service account.
 
         Args:
-            pipeline_run: The pipeline run to create.
+            service_account: Service account to be created.
 
         Returns:
-            The created pipeline run.
+            The newly created service account.
 
         Raises:
-            EntityExistsError: If an identical pipeline run already exists.
+            EntityExistsError: If a user or service account with the given name
+                already exists.
         """
         with Session(self.engine) as session:
-            # Check if pipeline run with same name already exists.
-            existing_domain_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.name == pipeline_run.name
-                )
-            ).first()
-            if existing_domain_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run: A pipeline run with name "
-                    f"'{pipeline_run.name}' already exists."
-                )
-
-            # Check if pipeline run with same ID already exists.
-            existing_id_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == pipeline_run.id
-                )
-            ).first()
-            if existing_id_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run: A pipeline run with ID "
-                    f"'{pipeline_run.id}' already exists."
-                )
-
-            # Create the pipeline run
-            new_run = PipelineRunSchema.from_request(pipeline_run)
-            session.add(new_run)
-            session.commit()
-
-            return new_run.to_model()
-
-    def get_run(
-        self, run_name_or_id: Union[str, UUID]
-    ) -> PipelineRunResponseModel:
-        """Gets a pipeline run.
-
-        Args:
-            run_name_or_id: The name or ID of the pipeline run to get.
-
-        Returns:
-            The pipeline run.
-        """
-        with Session(self.engine) as session:
-            return self._get_run_schema(
-                run_name_or_id, session=session
-            ).to_model()
-
-    def get_or_create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> Tuple[PipelineRunResponseModel, bool]:
-        """Gets or creates a pipeline run.
-
-        If a run with the same ID or name already exists, it is returned.
-        Otherwise, a new run is created.
-
-        Args:
-            pipeline_run: The pipeline run to get or create.
-
-        Returns:
-            The pipeline run, and a boolean indicating whether the run was
-            created or not.
-        """
-        # We want to have the 'create' statement in the try block since running
-        # it first will reduce concurrency issues.
-        try:
-            return self.create_run(pipeline_run), True
-        except (EntityExistsError, IntegrityError):
-            # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
-            # since either one can be raised by the database when trying
-            # to create a new pipeline run with duplicate ID or name.
+            # Check if a service account with the given name already
+            # exists
             try:
-                return self.get_run(pipeline_run.id), False
+                self._get_account_schema(
+                    service_account.name, session=session, service_account=True
+                )
+                raise EntityExistsError(
+                    f"Unable to create service account with name "
+                    f"'{service_account.name}': Found existing service "
+                    "account with this name."
+                )
             except KeyError:
-                return self.get_run(pipeline_run.name), False
+                pass
 
-    def list_runs(
-        self, runs_filter_model: PipelineRunFilterModel
-    ) -> Page[PipelineRunResponseModel]:
-        """List all pipeline runs matching the given filter criteria.
-
-        Args:
-            runs_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all pipeline runs matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(PipelineRunSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineRunSchema,
-                filter_model=runs_filter_model,
+            # Create the service account
+            new_account = UserSchema.from_service_account_request(
+                service_account
             )
-
-    def count_runs(self, workspace_id: Optional[UUID]) -> int:
-        """Count all pipeline runs, optionally within a workspace scope.
-
-        Args:
-            workspace_id: The workspace to use for counting pipeline runs
-
-        Returns:
-            The number of pipeline runs in the workspace.
-        """
-        return self._count_entity(
-            schema=PipelineRunSchema, workspace_id=workspace_id
-        )
-
-    def update_run(
-        self, run_id: UUID, run_update: PipelineRunUpdateModel
-    ) -> PipelineRunResponseModel:
-        """Updates a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to update.
-            run_update: The update to be applied to the pipeline run.
-
-        Returns:
-            The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if pipeline run with the given ID exists
-            existing_run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
-            ).first()
-            if existing_run is None:
-                raise KeyError(
-                    f"Unable to update pipeline run with ID {run_id}: "
-                    f"No pipeline run with this ID found."
-                )
-
-            # Update the pipeline run
-            existing_run.update(run_update=run_update)
-            session.add(existing_run)
+            session.add(new_account)
             session.commit()
 
-            session.refresh(existing_run)
-            return existing_run.to_model()
+            return new_account.to_service_account_model(hydrate=True)
 
-    def delete_run(self, run_id: UUID) -> None:
-        """Deletes a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to delete.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if pipeline run with the given ID exists
-            existing_run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
-            ).first()
-            if existing_run is None:
-                raise KeyError(
-                    f"Unable to delete pipeline run with ID {run_id}: "
-                    f"No pipeline run with this ID found."
-                )
-
-            # Delete the pipeline run
-            session.delete(existing_run)
-            session.commit()
-
-    # ------------------
-    # Pipeline run steps
-    # ------------------
-
-    def create_run_step(
-        self, step_run: StepRunRequestModel
-    ) -> StepRunResponseModel:
-        """Creates a step run.
-
-        Args:
-            step_run: The step run to create.
-
-        Returns:
-            The created step run.
-
-        Raises:
-            EntityExistsError: if the step run already exists.
-            KeyError: if the pipeline run doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if the pipeline run exists
-            run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == step_run.pipeline_run_id
-                )
-            ).first()
-            if run is None:
-                raise KeyError(
-                    f"Unable to create step '{step_run.name}': No pipeline run "
-                    f"with ID '{step_run.pipeline_run_id}' found."
-                )
-
-            # Check if the step name already exists in the pipeline run
-            existing_step_run = session.exec(
-                select(StepRunSchema)
-                .where(StepRunSchema.name == step_run.name)
-                .where(
-                    StepRunSchema.pipeline_run_id == step_run.pipeline_run_id
-                )
-            ).first()
-            if existing_step_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create step '{step_run.name}': A step with "
-                    f"this name already exists in the pipeline run with ID "
-                    f"'{step_run.pipeline_run_id}'."
-                )
-
-            # Create the step
-            step_schema = StepRunSchema.from_request(step_run)
-            session.add(step_schema)
-
-            # Add logs entry for the step if exists
-            if step_run.logs is not None:
-                log_entry = LogsSchema(
-                    uri=step_run.logs.uri,
-                    step_run_id=step_schema.id,
-                    artifact_store_id=step_run.logs.artifact_store_id,
-                )
-                session.add(log_entry)
-
-            # Save parent step IDs into the database.
-            for parent_step_id in step_run.parent_step_ids:
-                self._set_run_step_parent_step(
-                    child_id=step_schema.id,
-                    parent_id=parent_step_id,
-                    session=session,
-                )
-
-            # Save input artifact IDs into the database.
-            for input_name, artifact_id in step_run.inputs.items():
-                self._set_run_step_input_artifact(
-                    run_step_id=step_schema.id,
-                    artifact_id=artifact_id,
-                    name=input_name,
-                    session=session,
-                )
-
-            # Save output artifact IDs into the database.
-            for output_name, artifact_id in step_run.outputs.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_schema.id,
-                    artifact_id=artifact_id,
-                    name=output_name,
-                    session=session,
-                )
-
-            session.commit()
-
-            return step_schema.to_model()
-
-    def _set_run_step_parent_step(
-        self, child_id: UUID, parent_id: UUID, session: Session
-    ) -> None:
-        """Sets the parent step run for a step run.
-
-        Args:
-            child_id: The ID of the child step run to set the parent for.
-            parent_id: The ID of the parent step run to set a child for.
-            session: The database session to use.
-
-        Raises:
-            KeyError: if the child step run or parent step run doesn't exist.
-        """
-        # Check if the child step exists.
-        child_step_run = session.exec(
-            select(StepRunSchema).where(StepRunSchema.id == child_id)
-        ).first()
-        if child_step_run is None:
-            raise KeyError(
-                f"Unable to set parent step for step with ID "
-                f"{child_id}: No step with this ID found."
-            )
-
-        # Check if the parent step exists.
-        parent_step_run = session.exec(
-            select(StepRunSchema).where(StepRunSchema.id == parent_id)
-        ).first()
-        if parent_step_run is None:
-            raise KeyError(
-                f"Unable to set parent step for step with ID "
-                f"{child_id}: No parent step with ID {parent_id} "
-                "found."
-            )
-
-        # Check if the parent step is already set.
-        assignment = session.exec(
-            select(StepRunParentsSchema)
-            .where(StepRunParentsSchema.child_id == child_id)
-            .where(StepRunParentsSchema.parent_id == parent_id)
-        ).first()
-        if assignment is not None:
-            return
-
-        # Save the parent step assignment in the database.
-        assignment = StepRunParentsSchema(
-            child_id=child_id, parent_id=parent_id
-        )
-        session.add(assignment)
-
-    def _set_run_step_input_artifact(
-        self, run_step_id: UUID, artifact_id: UUID, name: str, session: Session
-    ) -> None:
-        """Sets an artifact as an input of a step run.
-
-        Args:
-            run_step_id: The ID of the step run.
-            artifact_id: The ID of the artifact.
-            name: The name of the input in the step run.
-            session: The database session to use.
-
-        Raises:
-            KeyError: if the step run or artifact doesn't exist.
-        """
-        # Check if the step exists.
-        step_run = session.exec(
-            select(StepRunSchema).where(StepRunSchema.id == run_step_id)
-        ).first()
-        if step_run is None:
-            raise KeyError(
-                f"Unable to set input artifact: No step run with ID "
-                f"'{run_step_id}' found."
-            )
-
-        # Check if the artifact exists.
-        artifact = session.exec(
-            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-        ).first()
-        if artifact is None:
-            raise KeyError(
-                f"Unable to set input artifact: No artifact with ID "
-                f"'{artifact_id}' found."
-            )
-
-        # Check if the input is already set.
-        assignment = session.exec(
-            select(StepRunInputArtifactSchema)
-            .where(StepRunInputArtifactSchema.step_id == run_step_id)
-            .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
-            .where(StepRunInputArtifactSchema.name == name)
-        ).first()
-        if assignment is not None:
-            return
-
-        # Save the input assignment in the database.
-        assignment = StepRunInputArtifactSchema(
-            step_id=run_step_id, artifact_id=artifact_id, name=name
-        )
-        session.add(assignment)
-
-    def _set_run_step_output_artifact(
+    def get_service_account(
         self,
-        step_run_id: UUID,
-        artifact_id: UUID,
-        name: str,
-        session: Session,
-    ) -> None:
-        """Sets an artifact as an output of a step run.
+        service_account_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> ServiceAccountResponse:
+        """Gets a specific service account.
+
+        Raises a KeyError in case a service account with that id does not exist.
 
         Args:
-            step_run_id: The ID of the step run.
-            artifact_id: The ID of the artifact.
-            name: The name of the output in the step run.
-            session: The database session to use.
-
-        Raises:
-            KeyError: if the step run or artifact doesn't exist.
-        """
-        # Check if the step exists.
-        step_run = session.exec(
-            select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-        ).first()
-        if step_run is None:
-            raise KeyError(
-                f"Unable to set output artifact: No step run with ID "
-                f"'{step_run_id}' found."
-            )
-
-        # Check if the artifact exists.
-        artifact = session.exec(
-            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-        ).first()
-        if artifact is None:
-            raise KeyError(
-                f"Unable to set output artifact: No artifact with ID "
-                f"'{artifact_id}' found."
-            )
-
-        # Check if the output is already set.
-        assignment = session.exec(
-            select(StepRunOutputArtifactSchema)
-            .where(StepRunOutputArtifactSchema.step_id == step_run_id)
-            .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
-        ).first()
-        if assignment is not None:
-            return
-
-        # Save the output assignment in the database.
-        assignment = StepRunOutputArtifactSchema(
-            step_id=step_run_id,
-            artifact_id=artifact_id,
-            name=name,
-        )
-        session.add(assignment)
-
-    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
-        """Get a step run by ID.
-
-        Args:
-            step_run_id: The ID of the step run to get.
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            The step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
+            The requested service account, if it was found.
         """
         with Session(self.engine) as session:
-            step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-            ).first()
-            if step_run is None:
-                raise KeyError(
-                    f"Unable to get step run with ID {step_run_id}: No step "
-                    "run with this ID found."
-                )
-            return step_run.to_model()
-
-    def list_run_steps(
-        self, step_run_filter_model: StepRunFilterModel
-    ) -> Page[StepRunResponseModel]:
-        """List all step runs matching the given filter criteria.
-
-        Args:
-            step_run_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all step runs matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(StepRunSchema)
-            return self.filter_and_paginate(
+            account = self._get_account_schema(
+                service_account_name_or_id,
                 session=session,
-                query=query,
-                table=StepRunSchema,
-                filter_model=step_run_filter_model,
+                service_account=True,
             )
 
-    def update_run_step(
+            return account.to_service_account_model(hydrate=hydrate)
+
+    def list_service_accounts(
         self,
-        step_run_id: UUID,
-        step_run_update: StepRunUpdateModel,
-    ) -> StepRunResponseModel:
-        """Updates a step run.
-
-        Args:
-            step_run_id: The ID of the step to update.
-            step_run_update: The update to be applied to the step.
-
-        Returns:
-            The updated step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if the step exists
-            existing_step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-            ).first()
-            if existing_step_run is None:
-                raise KeyError(
-                    f"Unable to update step with ID {step_run_id}: "
-                    f"No step with this ID found."
-                )
-
-            # Update the step
-            existing_step_run.update(step_run_update)
-            session.add(existing_step_run)
-
-            # Update the output artifacts.
-            for name, artifact_id in step_run_update.outputs.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_run_id,
-                    artifact_id=artifact_id,
-                    name=name,
-                    session=session,
-                )
-
-            # Input artifacts and parent steps cannot be updated after the
-            # step has been created.
-
-            session.commit()
-            session.refresh(existing_step_run)
-
-            return existing_step_run.to_model()
-
-    # ---------
-    # Artifacts
-    # ---------
-
-    def create_artifact(
-        self, artifact: ArtifactRequestModel
-    ) -> ArtifactResponseModel:
-        """Creates an artifact.
-
-        Args:
-            artifact: The artifact to create.
-
-        Returns:
-            The created artifact.
-        """
-        with Session(self.engine) as session:
-            # Save artifact.
-            artifact_schema = ArtifactSchema.from_request(artifact)
-            session.add(artifact_schema)
-
-            # Save visualizations of the artifact.
-            if artifact.visualizations:
-                for vis in artifact.visualizations:
-                    vis_schema = ArtifactVisualizationSchema.from_model(
-                        visualization=vis, artifact_id=artifact_schema.id
-                    )
-                    session.add(vis_schema)
-
-            session.commit()
-            return artifact_schema.to_model()
-
-    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
-        """Gets an artifact.
-
-        Args:
-            artifact_id: The ID of the artifact to get.
-
-        Returns:
-            The artifact.
-
-        Raises:
-            KeyError: if the artifact doesn't exist.
-        """
-        with Session(self.engine) as session:
-            artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-            ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to get artifact with ID {artifact_id}: "
-                    f"No artifact with this ID found."
-                )
-            return artifact.to_model()
-
-    def list_artifacts(
-        self, artifact_filter_model: ArtifactFilterModel
-    ) -> Page[ArtifactResponseModel]:
-        """List all artifacts matching the given filter criteria.
-
-        Args:
-            artifact_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all artifacts matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(ArtifactSchema)
-            if artifact_filter_model.only_unused:
-                query = query.where(
-                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunOutputArtifactSchema.artifact_id)
-                    )
-                )
-                query = query.where(
-                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunInputArtifactSchema.artifact_id)
-                    )
-                )
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=ArtifactSchema,
-                filter_model=artifact_filter_model,
-            )
-
-    def delete_artifact(self, artifact_id: UUID) -> None:
-        """Deletes an artifact.
-
-        Args:
-            artifact_id: The ID of the artifact to delete.
-
-        Raises:
-            KeyError: if the artifact doesn't exist.
-        """
-        with Session(self.engine) as session:
-            artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-            ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to delete artifact with ID {artifact_id}: "
-                    f"No artifact with this ID found."
-                )
-            session.delete(artifact)
-            session.commit()
-
-    # ------------
-    # Run Metadata
-    # ------------
-
-    def create_run_metadata(
-        self, run_metadata: RunMetadataRequestModel
-    ) -> List[RunMetadataResponseModel]:
-        """Creates run metadata.
-
-        Args:
-            run_metadata: The run metadata to create.
-
-        Returns:
-            The created run metadata.
-        """
-        return_value: List[RunMetadataResponseModel] = []
-        with Session(self.engine) as session:
-            for key, value in run_metadata.values.items():
-                type_ = run_metadata.types[key]
-                run_metadata_schema = RunMetadataSchema(
-                    workspace_id=run_metadata.workspace,
-                    user_id=run_metadata.user,
-                    pipeline_run_id=run_metadata.pipeline_run_id,
-                    step_run_id=run_metadata.step_run_id,
-                    artifact_id=run_metadata.artifact_id,
-                    stack_component_id=run_metadata.stack_component_id,
-                    key=key,
-                    value=json.dumps(value),
-                    type=type_,
-                )
-                session.add(run_metadata_schema)
-                session.commit()
-                return_value.append(run_metadata_schema.to_model())
-        return return_value
-
-    def list_run_metadata(
-        self,
-        run_metadata_filter_model: RunMetadataFilterModel,
-    ) -> Page[RunMetadataResponseModel]:
-        """List run metadata.
-
-        Args:
-            run_metadata_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            The run metadata.
-        """
-        with Session(self.engine) as session:
-            query = select(RunMetadataSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=RunMetadataSchema,
-                filter_model=run_metadata_filter_model,
-            )
-
-    # -----------------
-    # Code Repositories
-    # -----------------
-
-    def create_code_repository(
-        self, code_repository: CodeRepositoryRequestModel
-    ) -> CodeRepositoryResponseModel:
-        """Creates a new code repository.
-
-        Args:
-            code_repository: Code repository to be created.
-
-        Returns:
-            The newly created code repository.
-
-        Raises:
-            EntityExistsError: If a code repository with the given name already
-                exists.
-        """
-        with Session(self.engine) as session:
-            existing_repo = session.exec(
-                select(CodeRepositorySchema)
-                .where(CodeRepositorySchema.name == code_repository.name)
-                .where(
-                    CodeRepositorySchema.workspace_id
-                    == code_repository.workspace
-                )
-            ).first()
-            if existing_repo is not None:
-                raise EntityExistsError(
-                    f"Unable to create code repository in workspace "
-                    f"'{code_repository.workspace}': A code repository with "
-                    "this name already exists."
-                )
-
-            new_repo = CodeRepositorySchema.from_request(code_repository)
-            session.add(new_repo)
-            session.commit()
-            session.refresh(new_repo)
-
-            return new_repo.to_model()
-
-    def get_code_repository(
-        self, code_repository_id: UUID
-    ) -> CodeRepositoryResponseModel:
-        """Gets a specific code repository.
-
-        Args:
-            code_repository_id: The ID of the code repository to get.
-
-        Returns:
-            The requested code repository, if it was found.
-
-        Raises:
-            KeyError: If no code repository with the given ID exists.
-        """
-        with Session(self.engine) as session:
-            repo = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == code_repository_id
-                )
-            ).first()
-            if repo is None:
-                raise KeyError(
-                    f"Unable to get code repository with ID "
-                    f"'{code_repository_id}': No code repository with this "
-                    "ID found."
-                )
-
-            return repo.to_model()
-
-    def list_code_repositories(
-        self, filter_model: CodeRepositoryFilterModel
-    ) -> Page[CodeRepositoryResponseModel]:
-        """List all code repositories.
+        filter_model: ServiceAccountFilter,
+        hydrate: bool = False,
+    ) -> Page[ServiceAccountResponse]:
+        """List all service accounts.
 
         Args:
             filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            A page of all code repositories.
+            A list of filtered service accounts.
         """
         with Session(self.engine) as session:
-            query = select(CodeRepositorySchema)
-            return self.filter_and_paginate(
+            query = select(UserSchema)
+            paged_service_accounts: Page[
+                ServiceAccountResponse
+            ] = self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=CodeRepositorySchema,
+                table=UserSchema,
                 filter_model=filter_model,
+                custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
+                    hydrate=hydrate
+                ),
+                hydrate=hydrate,
             )
+            return paged_service_accounts
 
-    def update_code_repository(
-        self, code_repository_id: UUID, update: CodeRepositoryUpdateModel
-    ) -> CodeRepositoryResponseModel:
-        """Updates an existing code repository.
+    def update_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        service_account_update: ServiceAccountUpdate,
+    ) -> ServiceAccountResponse:
+        """Updates an existing service account.
 
         Args:
-            code_repository_id: The ID of the code repository to update.
-            update: The update to be applied to the code repository.
+            service_account_name_or_id: The name or the ID of the service
+                account to update.
+            service_account_update: The update to be applied to the service
+                account.
 
         Returns:
-            The updated code repository.
+            The updated service account.
 
         Raises:
-            KeyError: If no code repository with the given name exists.
+            EntityExistsError: If a user or service account with the given name
+                already exists.
         """
         with Session(self.engine) as session:
-            existing_repo = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == code_repository_id
-                )
-            ).first()
-            if existing_repo is None:
-                raise KeyError(
-                    f"Unable to update code repository with ID "
-                    f"{code_repository_id}: No code repository with this ID "
-                    "found."
-                )
+            existing_service_account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
+            )
 
-            existing_repo.update(update)
+            if (
+                service_account_update.name is not None
+                and service_account_update.name
+                != existing_service_account.name
+            ):
+                try:
+                    self._get_account_schema(
+                        service_account_update.name,
+                        session=session,
+                        service_account=True,
+                    )
+                    raise EntityExistsError(
+                        f"Unable to update service account with name "
+                        f"'{service_account_update.name}': Found an existing "
+                        "service account with this name."
+                    )
+                except KeyError:
+                    pass
 
-            session.add(existing_repo)
+            existing_service_account.update_service_account(
+                service_account_update=service_account_update
+            )
+            session.add(existing_service_account)
             session.commit()
 
-            return existing_repo.to_model()
+            # Refresh the Model that was just created
+            session.refresh(existing_service_account)
+            return existing_service_account.to_service_account_model(
+                hydrate=True
+            )
 
-    def delete_code_repository(self, code_repository_id: UUID) -> None:
-        """Deletes a code repository.
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
 
         Args:
-            code_repository_id: The ID of the code repository to delete.
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
 
         Raises:
-            KeyError: If no code repository with the given ID exists.
+            IllegalOperationError: if the service account has already been used
+                to create other resources.
         """
         with Session(self.engine) as session:
-            existing_repo = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == code_repository_id
+            service_account = self._get_account_schema(
+                service_account_name_or_id,
+                session=session,
+                service_account=True,
+            )
+            # Check if the service account has any resources associated with it
+            # and raise an error if it does.
+            if self._account_owns_resources(service_account, session=session):
+                raise IllegalOperationError(
+                    "The service account has already been used to create "
+                    "other resources that it now owns and therefore cannot be "
+                    "deleted. Please delete all resources owned by the service "
+                    "account or consider deactivating it instead."
+                )
+
+            session.delete(service_account)
+            session.commit()
+
+    # --------------------------- Service Connectors ---------------------------
+
+    @track_decorator(AnalyticsEvent.CREATED_SERVICE_CONNECTOR)
+    def create_service_connector(
+        self, service_connector: ServiceConnectorRequest
+    ) -> ServiceConnectorResponse:
+        """Creates a new service connector.
+
+        Args:
+            service_connector: Service connector to be created.
+
+        Returns:
+            The newly created service connector.
+
+        Raises:
+            Exception: If anything goes wrong during the creation of the
+                service connector.
+        """
+        # If the connector type is locally available, we validate the request
+        # against the connector type schema before storing it in the database
+        if service_connector_registry.is_registered(service_connector.type):
+            connector_type = (
+                service_connector_registry.get_service_connector_type(
+                    service_connector.type
+                )
+            )
+            service_connector.validate_and_configure_resources(
+                connector_type=connector_type,
+                resource_types=service_connector.resource_types,
+                resource_id=service_connector.resource_id,
+                configuration=service_connector.configuration,
+                secrets=service_connector.secrets,
+            )
+
+        with Session(self.engine) as session:
+            self._fail_if_service_connector_with_name_exists_for_user(
+                name=service_connector.name,
+                user_id=service_connector.user,
+                workspace_id=service_connector.workspace,
+                session=session,
+            )
+
+            if service_connector.is_shared:
+                self._fail_if_service_connector_with_name_already_shared(
+                    name=service_connector.name,
+                    workspace_id=service_connector.workspace,
+                    session=session,
+                )
+
+            # Create the secret
+            secret_id = self._create_connector_secret(
+                connector_name=service_connector.name,
+                user=service_connector.user,
+                workspace=service_connector.workspace,
+                is_shared=service_connector.is_shared,
+                secrets=service_connector.secrets,
+            )
+            try:
+                # Create the service connector
+                new_service_connector = ServiceConnectorSchema.from_request(
+                    service_connector,
+                    secret_id=secret_id,
+                )
+
+                session.add(new_service_connector)
+                session.commit()
+
+                session.refresh(new_service_connector)
+            except Exception:
+                # Delete the secret if it was created
+                if secret_id and self.secrets_store:
+                    try:
+                        self.secrets_store.delete_secret(secret_id)
+                    except Exception:
+                        # Ignore any errors that occur while deleting the
+                        # secret
+                        pass
+
+                raise
+
+            connector = new_service_connector.to_model(hydrate=True)
+            self._populate_connector_type(connector)
+            return connector
+
+    def get_service_connector(
+        self, service_connector_id: UUID, hydrate: bool = True
+    ) -> ServiceConnectorResponse:
+        """Gets a specific service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested service connector, if it was found.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            service_connector = session.exec(
+                select(ServiceConnectorSchema).where(
+                    ServiceConnectorSchema.id == service_connector_id
                 )
             ).first()
-            if existing_repo is None:
+
+            if service_connector is None:
                 raise KeyError(
-                    f"Unable to delete code repository with ID "
-                    f"{code_repository_id}: No code repository with this ID "
+                    f"Service connector with ID {service_connector_id} not "
                     "found."
                 )
 
-            session.delete(existing_repo)
+            connector = service_connector.to_model(hydrate=hydrate)
+            self._populate_connector_type(connector)
+            return connector
+
+    def list_service_connectors(
+        self,
+        filter_model: ServiceConnectorFilter,
+        hydrate: bool = False,
+    ) -> Page[ServiceConnectorResponse]:
+        """List all service connectors.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all service connectors.
+        """
+
+        def fetch_connectors(
+            session: Session,
+            query: Union[
+                Select[ServiceConnectorSchema],
+                SelectOfScalar[ServiceConnectorSchema],
+            ],
+            filter_model: BaseFilter,
+        ) -> List[ServiceConnectorSchema]:
+            """Custom fetch function for connector filtering and pagination.
+
+            Applies resource type and label filters to the query.
+
+            Args:
+                session: The database session.
+                query: The query to filter.
+                filter_model: The filter model.
+
+            Returns:
+                The filtered and paginated results.
+            """
+            assert isinstance(filter_model, ServiceConnectorFilter)
+            items = self._list_filtered_service_connectors(
+                session=session, query=query, filter_model=filter_model
+            )
+
+            return items
+
+        with Session(self.engine) as session:
+            query = select(ServiceConnectorSchema)
+            paged_connectors: Page[
+                ServiceConnectorResponse
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ServiceConnectorSchema,
+                filter_model=filter_model,
+                custom_fetch=fetch_connectors,
+                hydrate=hydrate,
+            )
+
+            self._populate_connector_type(*paged_connectors.items)
+            return paged_connectors
+
+    def update_service_connector(
+        self, service_connector_id: UUID, update: ServiceConnectorUpdate
+    ) -> ServiceConnectorResponse:
+        """Updates an existing service connector.
+
+        The update model contains the fields to be updated. If a field value is
+        set to None in the model, the field is not updated, but there are
+        special rules concerning some fields:
+
+        * the `configuration` and `secrets` fields together represent a full
+        valid configuration update, not just a partial update. If either is
+        set (i.e. not None) in the update, their values are merged together and
+        will replace the existing configuration and secrets values.
+        * the `resource_id` field value is also a full replacement value: if set
+        to `None`, the resource ID is removed from the service connector.
+        * the `expiration_seconds` field value is also a full replacement value:
+        if set to `None`, the expiration is removed from the service connector.
+        * the `secret_id` field value in the update is ignored, given that
+        secrets are managed internally by the ZenML store.
+        * the `labels` field is also a full labels update: if set (i.e. not
+        `None`), all existing labels are removed and replaced by the new labels
+        in the update.
+
+        Args:
+            service_connector_id: The ID of the service connector to update.
+            update: The update to be applied to the service connector.
+
+        Returns:
+            The updated service connector.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+            IllegalOperationError: If the service connector is referenced by
+                one or more stack components and the update would change the
+                connector type, resource type or resource ID.
+        """
+        with Session(self.engine) as session:
+            existing_connector = session.exec(
+                select(ServiceConnectorSchema).where(
+                    ServiceConnectorSchema.id == service_connector_id
+                )
+            ).first()
+
+            if existing_connector is None:
+                raise KeyError(
+                    f"Unable to update service connector with ID "
+                    f"'{service_connector_id}': Found no existing service "
+                    "connector with this ID."
+                )
+
+            # In case of a renaming update, make sure no service connector uses
+            # that name already
+            if update.name:
+                if (
+                    existing_connector.name != update.name
+                    and existing_connector.user_id is not None
+                ):
+                    self._fail_if_service_connector_with_name_exists_for_user(
+                        name=update.name,
+                        workspace_id=existing_connector.workspace_id,
+                        user_id=existing_connector.user_id,
+                        session=session,
+                    )
+
+            # Check if service connector update makes the service connector a
+            # shared service connector
+            # In that case, check if a service connector with the same name is
+            # already shared within the workspace
+            if update.is_shared is not None:
+                if not existing_connector.is_shared and update.is_shared:
+                    self._fail_if_service_connector_with_name_already_shared(
+                        name=update.name or existing_connector.name,
+                        workspace_id=existing_connector.workspace_id,
+                        session=session,
+                    )
+
+            existing_connector_model = existing_connector.to_model(
+                hydrate=True
+            )
+
+            if len(existing_connector.components):
+                # If the service connector is already used in one or more
+                # stack components, the update is no longer allowed to change
+                # the service connector's authentication method, connector type,
+                # resource type, or resource ID
+                if (
+                    update.connector_type
+                    and update.type != existing_connector_model.connector_type
+                ):
+                    raise IllegalOperationError(
+                        "The service type of a service connector that is "
+                        "already actively used in one or more stack components "
+                        "cannot be changed."
+                    )
+
+                if (
+                    update.auth_method
+                    and update.auth_method
+                    != existing_connector_model.auth_method
+                ):
+                    raise IllegalOperationError(
+                        "The authentication method of a service connector that "
+                        "is already actively used in one or more stack "
+                        "components cannot be changed."
+                    )
+
+                if (
+                    update.resource_types
+                    and update.resource_types
+                    != existing_connector_model.resource_types
+                ):
+                    raise IllegalOperationError(
+                        "The resource type of a service connector that is "
+                        "already actively used in one or more stack components "
+                        "cannot be changed."
+                    )
+
+                # The resource ID field cannot be used as a partial update: if
+                # set to None, the existing resource ID is also removed
+                if update.resource_id != existing_connector_model.resource_id:
+                    raise IllegalOperationError(
+                        "The resource ID of a service connector that is "
+                        "already actively used in one or more stack components "
+                        "cannot be changed."
+                    )
+
+            # If the connector type is locally available, we validate the update
+            # against the connector type schema before storing it in the
+            # database
+            if service_connector_registry.is_registered(
+                existing_connector.connector_type
+            ):
+                connector_type = (
+                    service_connector_registry.get_service_connector_type(
+                        existing_connector.connector_type
+                    )
+                )
+                # We need the auth method to be set to be able to validate the
+                # configuration
+                update.auth_method = (
+                    update.auth_method or existing_connector_model.auth_method
+                )
+                # Validate the configuration update. If the configuration or
+                # secrets fields are set, together they are merged into a
+                # full configuration that is validated against the connector
+                # type schema and replaces the existing configuration and
+                # secrets values
+                update.validate_and_configure_resources(
+                    connector_type=connector_type,
+                    resource_types=update.resource_types,
+                    resource_id=update.resource_id,
+                    configuration=update.configuration,
+                    secrets=update.secrets,
+                )
+
+            # Update secret
+            secret_id = self._update_connector_secret(
+                existing_connector=existing_connector_model,
+                updated_connector=update,
+            )
+
+            existing_connector.update(
+                connector_update=update, secret_id=secret_id
+            )
+            session.add(existing_connector)
             session.commit()
 
-    # ------------------
-    # Service Connectors
-    # ------------------
+            connector = existing_connector.to_model(hydrate=True)
+            self._populate_connector_type(connector)
+            return connector
+
+    def delete_service_connector(self, service_connector_id: UUID) -> None:
+        """Deletes a service connector.
+
+        Args:
+            service_connector_id: The ID of the service connector to delete.
+
+        Raises:
+            KeyError: If no service connector with the given ID exists.
+            IllegalOperationError: If the service connector is still referenced
+                by one or more stack components.
+        """
+        with Session(self.engine) as session:
+            try:
+                service_connector = session.exec(
+                    select(ServiceConnectorSchema).where(
+                        ServiceConnectorSchema.id == service_connector_id
+                    )
+                ).one()
+
+                if service_connector is None:
+                    raise KeyError(
+                        f"Service connector with ID {service_connector_id} not "
+                        "found."
+                    )
+
+                if len(service_connector.components) > 0:
+                    raise IllegalOperationError(
+                        f"Service connector with ID {service_connector_id} "
+                        f"cannot be deleted as it is still referenced by "
+                        f"{len(service_connector.components)} "
+                        "stack components. Before deleting this service "
+                        "connector, make sure to remove it from all stack "
+                        "components."
+                    )
+                else:
+                    session.delete(service_connector)
+
+                if service_connector.secret_id and self.secrets_store:
+                    try:
+                        self.secrets_store.delete_secret(
+                            service_connector.secret_id
+                        )
+                    except KeyError:
+                        # If the secret doesn't exist anymore, we can ignore
+                        # this error
+                        pass
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.commit()
 
     @staticmethod
     def _fail_if_service_connector_with_name_exists_for_user(
@@ -4945,8 +4300,9 @@ class SqlZenStore(BaseZenStore):
                     # The secret already exists, try again
                     continue
 
+    @staticmethod
     def _populate_connector_type(
-        self, *service_connectors: ServiceConnectorResponseModel
+        *service_connectors: ServiceConnectorResponse,
     ) -> None:
         """Populates the connector type of the given service connectors.
 
@@ -4961,133 +4317,20 @@ class SqlZenStore(BaseZenStore):
                 service_connector.type
             ):
                 continue
-            service_connector.connector_type = (
+            service_connector.set_connector_type(
                 service_connector_registry.get_service_connector_type(
                     service_connector.type
                 )
             )
 
-    @track_decorator(AnalyticsEvent.CREATED_SERVICE_CONNECTOR)
-    def create_service_connector(
-        self, service_connector: ServiceConnectorRequestModel
-    ) -> ServiceConnectorResponseModel:
-        """Creates a new service connector.
-
-        Args:
-            service_connector: Service connector to be created.
-
-        Returns:
-            The newly created service connector.
-
-        Raises:
-            Exception: If anything goes wrong during the creation of the
-                service connector.
-        """
-        # If the connector type is locally available, we validate the request
-        # against the connector type schema before storing it in the database
-        if service_connector_registry.is_registered(service_connector.type):
-            connector_type = (
-                service_connector_registry.get_service_connector_type(
-                    service_connector.type
-                )
-            )
-            service_connector.validate_and_configure_resources(
-                connector_type=connector_type,
-                resource_types=service_connector.resource_types,
-                resource_id=service_connector.resource_id,
-                configuration=service_connector.configuration,
-                secrets=service_connector.secrets,
-            )
-
-        with Session(self.engine) as session:
-            self._fail_if_service_connector_with_name_exists_for_user(
-                name=service_connector.name,
-                user_id=service_connector.user,
-                workspace_id=service_connector.workspace,
-                session=session,
-            )
-
-            if service_connector.is_shared:
-                self._fail_if_service_connector_with_name_already_shared(
-                    name=service_connector.name,
-                    workspace_id=service_connector.workspace,
-                    session=session,
-                )
-
-            # Create the secret
-            secret_id = self._create_connector_secret(
-                connector_name=service_connector.name,
-                user=service_connector.user,
-                workspace=service_connector.workspace,
-                is_shared=service_connector.is_shared,
-                secrets=service_connector.secrets,
-            )
-            try:
-                # Create the service connector
-                new_service_connector = ServiceConnectorSchema.from_request(
-                    service_connector,
-                    secret_id=secret_id,
-                )
-
-                session.add(new_service_connector)
-                session.commit()
-
-                session.refresh(new_service_connector)
-            except Exception:
-                # Delete the secret if it was created
-                if secret_id and self.secrets_store:
-                    try:
-                        self.secrets_store.delete_secret(secret_id)
-                    except Exception:
-                        # Ignore any errors that occur while deleting the
-                        # secret
-                        pass
-
-                raise
-
-            connector = new_service_connector.to_model()
-            self._populate_connector_type(connector)
-            return connector
-
-    def get_service_connector(
-        self, service_connector_id: UUID
-    ) -> ServiceConnectorResponseModel:
-        """Gets a specific service connector.
-
-        Args:
-            service_connector_id: The ID of the service connector to get.
-
-        Returns:
-            The requested service connector, if it was found.
-
-        Raises:
-            KeyError: If no service connector with the given ID exists.
-        """
-        with Session(self.engine) as session:
-            service_connector = session.exec(
-                select(ServiceConnectorSchema).where(
-                    ServiceConnectorSchema.id == service_connector_id
-                )
-            ).first()
-
-            if service_connector is None:
-                raise KeyError(
-                    f"Service connector with ID {service_connector_id} not "
-                    "found."
-                )
-
-            connector = service_connector.to_model()
-            self._populate_connector_type(connector)
-            return connector
-
+    @staticmethod
     def _list_filtered_service_connectors(
-        self,
         session: Session,
         query: Union[
             Select[ServiceConnectorSchema],
             SelectOfScalar[ServiceConnectorSchema],
         ],
-        filter_model: ServiceConnectorFilterModel,
+        filter_model: ServiceConnectorFilter,
     ) -> List[ServiceConnectorSchema]:
         """Refine a service connector query.
 
@@ -5121,65 +4364,10 @@ class SqlZenStore(BaseZenStore):
 
         return items
 
-    def list_service_connectors(
-        self, filter_model: ServiceConnectorFilterModel
-    ) -> Page[ServiceConnectorResponseModel]:
-        """List all service connectors.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A page of all service connectors.
-        """
-
-        def fetch_connectors(
-            session: Session,
-            query: Union[
-                Select[ServiceConnectorSchema],
-                SelectOfScalar[ServiceConnectorSchema],
-            ],
-            filter_model: BaseFilterModel,
-        ) -> List[ServiceConnectorSchema]:
-            """Custom fetch function for connector filtering and pagination.
-
-            Applies resource type and label filters to the query.
-
-            Args:
-                session: The database session.
-                query: The query to filter.
-                filter_model: The filter model.
-
-            Returns:
-                The filtered and paginated results.
-            """
-            assert isinstance(filter_model, ServiceConnectorFilterModel)
-            items = self._list_filtered_service_connectors(
-                session=session, query=query, filter_model=filter_model
-            )
-
-            return items
-
-        with Session(self.engine) as session:
-            query = select(ServiceConnectorSchema)
-            paged_connectors: Page[
-                ServiceConnectorResponseModel
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=ServiceConnectorSchema,
-                filter_model=filter_model,
-                custom_fetch=fetch_connectors,
-            )
-
-            self._populate_connector_type(*paged_connectors.items)
-            return paged_connectors
-
     def _update_connector_secret(
         self,
-        existing_connector: ServiceConnectorResponseModel,
-        updated_connector: ServiceConnectorUpdateModel,
+        existing_connector: ServiceConnectorResponse,
+        updated_connector: ServiceConnectorUpdate,
     ) -> Optional[UUID]:
         """Updates the secret for a service connector.
 
@@ -5251,229 +4439,9 @@ class SqlZenStore(BaseZenStore):
             secrets=updated_connector.secrets,
         )
 
-    def update_service_connector(
-        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
-    ) -> ServiceConnectorResponseModel:
-        """Updates an existing service connector.
-
-        The update model contains the fields to be updated. If a field value is
-        set to None in the model, the field is not updated, but there are
-        special rules concerning some fields:
-
-        * the `configuration` and `secrets` fields together represent a full
-        valid configuration update, not just a partial update. If either is
-        set (i.e. not None) in the update, their values are merged together and
-        will replace the existing configuration and secrets values.
-        * the `resource_id` field value is also a full replacement value: if set
-        to `None`, the resource ID is removed from the service connector.
-        * the `expiration_seconds` field value is also a full replacement value:
-        if set to `None`, the expiration is removed from the service connector.
-        * the `secret_id` field value in the update is ignored, given that
-        secrets are managed internally by the ZenML store.
-        * the `labels` field is also a full labels update: if set (i.e. not
-        `None`), all existing labels are removed and replaced by the new labels
-        in the update.
-
-        Args:
-            service_connector_id: The ID of the service connector to update.
-            update: The update to be applied to the service connector.
-
-        Returns:
-            The updated service connector.
-
-        Raises:
-            KeyError: If no service connector with the given ID exists.
-            IllegalOperationError: If the service connector is referenced by
-                one or more stack components and the update would change the
-                connector type, resource type or resource ID.
-        """
-        with Session(self.engine) as session:
-            existing_connector = session.exec(
-                select(ServiceConnectorSchema).where(
-                    ServiceConnectorSchema.id == service_connector_id
-                )
-            ).first()
-
-            if existing_connector is None:
-                raise KeyError(
-                    f"Unable to update service connector with ID "
-                    f"'{service_connector_id}': Found no existing service "
-                    "connector with this ID."
-                )
-
-            # In case of a renaming update, make sure no service connector uses
-            # that name already
-            if update.name:
-                if (
-                    existing_connector.name != update.name
-                    and existing_connector.user_id is not None
-                ):
-                    self._fail_if_service_connector_with_name_exists_for_user(
-                        name=update.name,
-                        workspace_id=existing_connector.workspace_id,
-                        user_id=existing_connector.user_id,
-                        session=session,
-                    )
-
-            # Check if service connector update makes the service connector a
-            # shared service connector
-            # In that case, check if a service connector with the same name is
-            # already shared within the workspace
-            if update.is_shared is not None:
-                if not existing_connector.is_shared and update.is_shared:
-                    self._fail_if_service_connector_with_name_already_shared(
-                        name=update.name or existing_connector.name,
-                        workspace_id=existing_connector.workspace_id,
-                        session=session,
-                    )
-
-            existing_connector_model = existing_connector.to_model()
-
-            if len(existing_connector.components):
-                # If the service connector is already used in one or more
-                # stack components, the update is no longer allowed to change
-                # the service connector's authentication method, connector type,
-                # resource type, or resource ID
-                if (
-                    update.connector_type
-                    and update.type != existing_connector_model.connector_type
-                ):
-                    raise IllegalOperationError(
-                        "The service type of a service connector that is "
-                        "already actively used in one or more stack components "
-                        "cannot be changed."
-                    )
-
-                if (
-                    update.auth_method
-                    and update.auth_method
-                    != existing_connector_model.auth_method
-                ):
-                    raise IllegalOperationError(
-                        "The authentication method of a service connector that "
-                        "is already actively used in one or more stack "
-                        "components cannot be changed."
-                    )
-
-                if (
-                    update.resource_types
-                    and update.resource_types
-                    != existing_connector_model.resource_types
-                ):
-                    raise IllegalOperationError(
-                        "The resource type of a service connector that is "
-                        "already actively used in one or more stack components "
-                        "cannot be changed."
-                    )
-
-                # The resource ID field cannot be used as a partial update: if
-                # set to None, the existing resource ID is also removed
-                if update.resource_id != existing_connector_model.resource_id:
-                    raise IllegalOperationError(
-                        "The resource ID of a service connector that is "
-                        "already actively used in one or more stack components "
-                        "cannot be changed."
-                    )
-
-            # If the connector type is locally available, we validate the update
-            # against the connector type schema before storing it in the
-            # database
-            if service_connector_registry.is_registered(
-                existing_connector.connector_type
-            ):
-                connector_type = (
-                    service_connector_registry.get_service_connector_type(
-                        existing_connector.connector_type
-                    )
-                )
-                # We need the auth method to be set to be able to validate the
-                # configuration
-                update.auth_method = (
-                    update.auth_method or existing_connector_model.auth_method
-                )
-                # Validate the configuration update. If the configuration or
-                # secrets fields are set, together they are merged into a
-                # full configuration that is validated against the connector
-                # type schema and replaces the existing configuration and
-                # secrets values
-                update.validate_and_configure_resources(
-                    connector_type=connector_type,
-                    resource_types=update.resource_types,
-                    resource_id=update.resource_id,
-                    configuration=update.configuration,
-                    secrets=update.secrets,
-                )
-
-            # Update secret
-            secret_id = self._update_connector_secret(
-                existing_connector=existing_connector_model,
-                updated_connector=update,
-            )
-
-            existing_connector.update(
-                connector_update=update, secret_id=secret_id
-            )
-            session.add(existing_connector)
-            session.commit()
-
-            connector = existing_connector.to_model()
-            self._populate_connector_type(connector)
-            return connector
-
-    def delete_service_connector(self, service_connector_id: UUID) -> None:
-        """Deletes a service connector.
-
-        Args:
-            service_connector_id: The ID of the service connector to delete.
-
-        Raises:
-            KeyError: If no service connector with the given ID exists.
-            IllegalOperationError: If the service connector is still referenced
-                by one or more stack components.
-        """
-        with Session(self.engine) as session:
-            try:
-                service_connector = session.exec(
-                    select(ServiceConnectorSchema).where(
-                        ServiceConnectorSchema.id == service_connector_id
-                    )
-                ).one()
-
-                if service_connector is None:
-                    raise KeyError(
-                        f"Service connector with ID {service_connector_id} not "
-                        "found."
-                    )
-
-                if len(service_connector.components) > 0:
-                    raise IllegalOperationError(
-                        f"Service connector with ID {service_connector_id} "
-                        f"cannot be deleted as it is still referenced by "
-                        f"{len(service_connector.components)} "
-                        "stack components. Before deleting this service "
-                        "connector, make sure to remove it from all stack "
-                        "components."
-                    )
-                else:
-                    session.delete(service_connector)
-
-                if service_connector.secret_id and self.secrets_store:
-                    try:
-                        self.secrets_store.delete_secret(
-                            service_connector.secret_id
-                        )
-                    except KeyError:
-                        # If the secret doesn't exist anymore, we can ignore
-                        # this error
-                        pass
-            except NoResultFound as error:
-                raise KeyError from error
-
-            session.commit()
-
     def verify_service_connector_config(
         self,
-        service_connector: ServiceConnectorRequestModel,
+        service_connector: ServiceConnectorRequest,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
@@ -5530,7 +4498,7 @@ class SqlZenStore(BaseZenStore):
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> ServiceConnectorResponseModel:
+    ) -> ServiceConnectorResponse:
         """Get a service connector client for a service connector and given resource.
 
         Args:
@@ -5590,7 +4558,7 @@ class SqlZenStore(BaseZenStore):
         """
         user = self.get_user(user_name_or_id)
         workspace = self.get_workspace(workspace_name_or_id)
-        connector_filter_model = ServiceConnectorFilterModel(
+        connector_filter_model = ServiceConnectorFilter(
             connector_type=connector_type,
             resource_type=resource_type,
             is_shared=True,
@@ -5601,7 +4569,7 @@ class SqlZenStore(BaseZenStore):
             filter_model=connector_filter_model
         ).items
 
-        connector_filter_model = ServiceConnectorFilterModel(
+        connector_filter_model = ServiceConnectorFilter(
             connector_type=connector_type,
             resource_type=resource_type,
             is_shared=False,
@@ -5712,266 +4680,1567 @@ class SqlZenStore(BaseZenStore):
             connector_type
         )
 
-    # ------------------
-    # Authorized Devices
-    # ------------------
+    # ----------------------------- Stacks -----------------------------
 
-    def create_authorized_device(
-        self, device: OAuthDeviceInternalRequestModel
-    ) -> OAuthDeviceInternalResponseModel:
-        """Creates a new OAuth 2.0 authorized device.
+    @track_decorator(AnalyticsEvent.REGISTERED_STACK)
+    def create_stack(self, stack: StackRequest) -> StackResponse:
+        """Register a new stack.
 
         Args:
-            device: The device to be created.
+            stack: The stack to register.
 
         Returns:
-            The newly created device.
-
-        Raises:
-            EntityExistsError: If a device for the same client ID already
-                exists.
+            The registered stack.
         """
         with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.client_id == device.client_id
-                )
-            ).first()
-            if existing_device is not None:
-                raise EntityExistsError(
-                    f"Unable to create device with client ID "
-                    f"'{device.client_id}': A device with this client ID "
-                    "already exists."
+            self._fail_if_stack_with_name_exists_for_user(
+                stack=stack, session=session
+            )
+
+            if stack.is_shared:
+                self._fail_if_stack_with_name_already_shared(
+                    stack=stack, session=session
                 )
 
-            (
-                new_device,
-                user_code,
-                device_code,
-            ) = OAuthDeviceSchema.from_request(device)
-            session.add(new_device)
+            # Get the Schemas of all components mentioned
+            component_ids = (
+                [
+                    component_id
+                    for list_of_component_ids in stack.components.values()
+                    for component_id in list_of_component_ids
+                ]
+                if stack.components is not None
+                else []
+            )
+            filters = [
+                (StackComponentSchema.id == component_id)
+                for component_id in component_ids
+            ]
+
+            defined_components = session.exec(
+                select(StackComponentSchema).where(or_(*filters))
+            ).all()
+
+            new_stack_schema = StackSchema(
+                workspace_id=stack.workspace,
+                user_id=stack.user,
+                is_shared=stack.is_shared,
+                stack_spec_path=stack.stack_spec_path,
+                name=stack.name,
+                description=stack.description,
+                components=defined_components,
+            )
+
+            session.add(new_stack_schema)
             session.commit()
-            session.refresh(new_device)
+            session.refresh(new_stack_schema)
 
-            device_model = new_device.to_internal_model()
-            # Replace the hashed user code with the original user code
-            device_model.user_code = user_code
-            # Replace the hashed device code with the original device code
-            device_model.device_code = device_code
+            return new_stack_schema.to_model(hydrate=True)
 
-            return device_model
-
-    def get_authorized_device(
-        self, device_id: UUID
-    ) -> OAuthDeviceResponseModel:
-        """Gets a specific OAuth 2.0 authorized device.
+    def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
+        """Get a stack by its unique ID.
 
         Args:
-            device_id: The ID of the device to get.
+            stack_id: The ID of the stack to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            The requested device, if it was found.
+            The stack with the given ID.
 
         Raises:
-            KeyError: If no device with the given ID exists.
+            KeyError: if the stack doesn't exist.
         """
         with Session(self.engine) as session:
-            device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
+            stack = session.exec(
+                select(StackSchema).where(StackSchema.id == stack_id)
             ).first()
-            if device is None:
-                raise KeyError(
-                    f"Unable to get device with ID {device_id}: No device with "
-                    "this ID found."
-                )
 
-            return device.to_model()
+            if stack is None:
+                raise KeyError(f"Stack with ID {stack_id} not found.")
+            return stack.to_model(hydrate=hydrate)
 
-    def get_internal_authorized_device(
+    def list_stacks(
         self,
-        device_id: Optional[UUID] = None,
-        client_id: Optional[UUID] = None,
-    ) -> OAuthDeviceInternalResponseModel:
-        """Gets a specific OAuth 2.0 authorized device for internal use.
+        stack_filter_model: StackFilter,
+        hydrate: bool = False,
+    ) -> Page[StackResponse]:
+        """List all stacks matching the given filter criteria.
 
         Args:
-            client_id: The client ID of the device to get.
-            device_id: The ID of the device to get.
-
-        Returns:
-            The requested device, if it was found.
-
-        Raises:
-            KeyError: If no device with the given client ID exists.
-            ValueError: If neither device ID nor client ID are provided.
-        """
-        with Session(self.engine) as session:
-            if device_id is not None:
-                device = session.exec(
-                    select(OAuthDeviceSchema).where(
-                        OAuthDeviceSchema.id == device_id
-                    )
-                ).first()
-            elif client_id is not None:
-                device = session.exec(
-                    select(OAuthDeviceSchema).where(
-                        OAuthDeviceSchema.client_id == client_id
-                    )
-                ).first()
-            else:
-                raise ValueError(
-                    "Either device ID or client ID must be provided."
-                )
-            if device is None:
-                raise KeyError(
-                    f"Unable to get device with client ID {client_id}: No "
-                    "device with this client ID found."
-                )
-
-            return device.to_internal_model()
-
-    def list_authorized_devices(
-        self, filter_model: OAuthDeviceFilterModel
-    ) -> Page[OAuthDeviceResponseModel]:
-        """List all OAuth 2.0 authorized devices for a user.
-
-        Args:
-            filter_model: All filter parameters including pagination
+            stack_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            A page of all matching OAuth 2.0 authorized devices.
+            A list of all stacks matching the filter criteria.
         """
         with Session(self.engine) as session:
-            query = select(OAuthDeviceSchema)
+            query = select(StackSchema)
+            if stack_filter_model.component_id:
+                query = query.where(
+                    StackCompositionSchema.stack_id == StackSchema.id
+                ).where(
+                    StackCompositionSchema.component_id
+                    == stack_filter_model.component_id
+                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=OAuthDeviceSchema,
-                filter_model=filter_model,
+                table=StackSchema,
+                filter_model=stack_filter_model,
+                hydrate=hydrate,
             )
 
-    def update_authorized_device(
-        self, device_id: UUID, update: OAuthDeviceUpdateModel
-    ) -> OAuthDeviceResponseModel:
-        """Updates an existing OAuth 2.0 authorized device for internal use.
+    @track_decorator(AnalyticsEvent.UPDATED_STACK)
+    def update_stack(
+        self, stack_id: UUID, stack_update: StackUpdate
+    ) -> StackResponse:
+        """Update a stack.
 
         Args:
-            device_id: The ID of the device to update.
-            update: The update to be applied to the device.
+            stack_id: The ID of the stack update.
+            stack_update: The update request on the stack.
 
         Returns:
-            The updated OAuth 2.0 authorized device.
+            The updated stack.
 
         Raises:
-            KeyError: If no device with the given ID exists.
+            KeyError: if the stack doesn't exist.
+            IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
+            # Check if stack with the domain key (name, workspace, owner)
+            # already exists
+            existing_stack = session.exec(
+                select(StackSchema).where(StackSchema.id == stack_id)
             ).first()
-            if existing_device is None:
+            if existing_stack is None:
                 raise KeyError(
-                    f"Unable to update device with ID {device_id}: No "
-                    "device with this ID found."
+                    f"Unable to update stack with id '{stack_id}': Found no"
+                    f"existing stack with this id."
                 )
+            if existing_stack.name == DEFAULT_STACK_NAME:
+                raise IllegalOperationError(
+                    "The default stack cannot be modified."
+                )
+            # In case of a renaming update, make sure no stack already exists
+            # with that name
+            if stack_update.name:
+                if existing_stack.name != stack_update.name:
+                    self._fail_if_stack_with_name_exists_for_user(
+                        stack=stack_update, session=session
+                    )
 
-            existing_device.update(update)
+            # Check if stack update makes the stack a shared stack. In that
+            # case, check if a stack with the same name is already shared
+            # within the workspace
+            if stack_update.is_shared:
+                if not existing_stack.is_shared and stack_update.is_shared:
+                    self._fail_if_stack_with_name_already_shared(
+                        stack=stack_update, session=session
+                    )
 
-            session.add(existing_device)
+            components = []
+            if stack_update.components:
+                filters = [
+                    (StackComponentSchema.id == component_id)
+                    for list_of_component_ids in stack_update.components.values()
+                    for component_id in list_of_component_ids
+                ]
+                components = session.exec(
+                    select(StackComponentSchema).where(or_(*filters))
+                ).all()
+
+            existing_stack.update(
+                stack_update=stack_update,
+                components=components,
+            )
+
+            session.add(existing_stack)
             session.commit()
+            session.refresh(existing_stack)
 
-            return existing_device.to_model()
+            return existing_stack.to_model(hydrate=True)
 
-    def update_internal_authorized_device(
-        self, device_id: UUID, update: OAuthDeviceInternalUpdateModel
-    ) -> OAuthDeviceInternalResponseModel:
-        """Updates an existing OAuth 2.0 authorized device.
+    def delete_stack(self, stack_id: UUID) -> None:
+        """Delete a stack.
 
         Args:
-            device_id: The ID of the device to update.
-            update: The update to be applied to the device.
+            stack_id: The ID of the stack to delete.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+            IllegalOperationError: if the stack is a default stack.
+        """
+        with Session(self.engine) as session:
+            try:
+                stack = session.exec(
+                    select(StackSchema).where(StackSchema.id == stack_id)
+                ).one()
+
+                if stack is None:
+                    raise KeyError(f"Stack with ID {stack_id} not found.")
+                if stack.name == DEFAULT_STACK_NAME:
+                    raise IllegalOperationError(
+                        "The default stack cannot be deleted."
+                    )
+                session.delete(stack)
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.commit()
+
+    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
+        """Count all stacks, optionally within a workspace scope.
+
+        Args:
+            workspace_id: The workspace to use for counting stacks
 
         Returns:
-            The updated OAuth 2.0 authorized device.
-
-        Raises:
-            KeyError: If no device with the given ID exists.
+            The number of stacks in the workspace.
         """
-        with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
-            ).first()
-            if existing_device is None:
-                raise KeyError(
-                    f"Unable to update device with ID {device_id}: No device "
-                    "with this ID found."
-                )
+        return self._count_entity(
+            schema=StackSchema, workspace_id=workspace_id
+        )
 
-            (
-                _,
-                user_code,
-                device_code,
-            ) = existing_device.internal_update(update)
-
-            session.add(existing_device)
-            session.commit()
-
-            device_model = existing_device.to_internal_model()
-            if user_code:
-                # Replace the hashed user code with the original user code
-                device_model.user_code = user_code
-
-            if device_code:
-                # Replace the hashed device code with the original device code
-                device_model.device_code = device_code
-
-            return device_model
-
-    def delete_authorized_device(self, device_id: UUID) -> None:
-        """Deletes an OAuth 2.0 authorized device.
+    def _fail_if_stack_with_name_exists_for_user(
+        self,
+        stack: StackRequest,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a Component with same name exists for user.
 
         Args:
-            device_id: The ID of the device to delete.
+            stack: The Stack
+            session: The Session
+
+        Returns:
+            None
 
         Raises:
-            KeyError: If no device with the given ID exists.
+            StackExistsError: If a Stack with the given name is already
+                                       owned by the user
+        """
+        existing_domain_stack = session.exec(
+            select(StackSchema)
+            .where(StackSchema.name == stack.name)
+            .where(StackSchema.workspace_id == stack.workspace)
+            .where(StackSchema.user_id == stack.user)
+        ).first()
+        if existing_domain_stack is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=stack.workspace, session=session
+            )
+            user = self._get_account_schema(
+                account_name_or_id=stack.user, session=session
+            )
+            raise StackExistsError(
+                f"Unable to register stack with name "
+                f"'{stack.name}': Found an existing stack with the same "
+                f"name in the active workspace, '{workspace.name}', "
+                f"owned by the same user, '{user.name}'."
+            )
+        return None
+
+    def _fail_if_stack_with_name_already_shared(
+        self,
+        stack: StackRequest,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a Stack with same name is already shared.
+
+        Args:
+            stack: The Stack
+            session: The Session
+
+        Raises:
+            StackExistsError: If a stack with the given name is already shared
+                              by a user.
+        """
+        # Check if component with the same name, type is already shared
+        # within the workspace
+        existing_shared_stack = session.exec(
+            select(StackSchema)
+            .where(StackSchema.name == stack.name)
+            .where(StackSchema.workspace_id == stack.workspace)
+            .where(StackSchema.is_shared == stack.is_shared)
+        ).first()
+        if existing_shared_stack is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=stack.workspace, session=session
+            )
+            error_msg = (
+                f"Unable to share stack with name '{stack.name}': Found an "
+                f"existing shared stack with the same name in workspace "
+                f"'{workspace.name}'"
+            )
+            if existing_shared_stack.user_id:
+                owner_of_shared = self._get_account_schema(
+                    existing_shared_stack.user_id, session=session
+                )
+                error_msg += f" owned by '{owner_of_shared.name}'."
+            else:
+                error_msg += ", which is currently not owned by any user."
+            raise StackExistsError(error_msg)
+
+    # ----------------------------- Step runs -----------------------------
+
+    def create_run_step(self, step_run: StepRunRequest) -> StepRunResponse:
+        """Creates a step run.
+
+        Args:
+            step_run: The step run to create.
+
+        Returns:
+            The created step run.
+
+        Raises:
+            EntityExistsError: if the step run already exists.
+            KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
+            # Check if the pipeline run exists
+            run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == step_run.pipeline_run_id
                 )
             ).first()
-            if existing_device is None:
+            if run is None:
                 raise KeyError(
-                    f"Unable to delete device with ID {device_id}: No device "
-                    "with this ID found."
+                    f"Unable to create step '{step_run.name}': No pipeline run "
+                    f"with ID '{step_run.pipeline_run_id}' found."
                 )
 
-            session.delete(existing_device)
+            # Check if the step name already exists in the pipeline run
+            existing_step_run = session.exec(
+                select(StepRunSchema)
+                .where(StepRunSchema.name == step_run.name)
+                .where(
+                    StepRunSchema.pipeline_run_id == step_run.pipeline_run_id
+                )
+            ).first()
+            if existing_step_run is not None:
+                raise EntityExistsError(
+                    f"Unable to create step '{step_run.name}': A step with "
+                    f"this name already exists in the pipeline run with ID "
+                    f"'{step_run.pipeline_run_id}'."
+                )
+
+            # Create the step
+            step_schema = StepRunSchema.from_request(step_run)
+            session.add(step_schema)
+
+            # Add logs entry for the step if exists
+            if step_run.logs is not None:
+                log_entry = LogsSchema(
+                    uri=step_run.logs.uri,
+                    step_run_id=step_schema.id,
+                    artifact_store_id=step_run.logs.artifact_store_id,
+                )
+                session.add(log_entry)
+
+            # Save parent step IDs into the database.
+            for parent_step_id in step_run.parent_step_ids:
+                self._set_run_step_parent_step(
+                    child_id=step_schema.id,
+                    parent_id=parent_step_id,
+                    session=session,
+                )
+
+            # Save input artifact IDs into the database.
+            for input_name, artifact_id in step_run.inputs.items():
+                self._set_run_step_input_artifact(
+                    run_step_id=step_schema.id,
+                    artifact_id=artifact_id,
+                    name=input_name,
+                    session=session,
+                )
+
+            # Save output artifact IDs into the database.
+            for output_name, artifact_id in step_run.outputs.items():
+                self._set_run_step_output_artifact(
+                    step_run_id=step_schema.id,
+                    artifact_id=artifact_id,
+                    name=output_name,
+                    session=session,
+                )
+
             session.commit()
 
-    def delete_expired_authorized_devices(self) -> None:
-        """Deletes all expired OAuth 2.0 authorized devices."""
+            return step_schema.to_model(hydrate=True)
+
+    def get_run_step(
+        self, step_run_id: UUID, hydrate: bool = True
+    ) -> StepRunResponse:
+        """Get a step run by ID.
+
+        Args:
+            step_run_id: The ID of the step run to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The step run.
+
+        Raises:
+            KeyError: if the step run doesn't exist.
+        """
         with Session(self.engine) as session:
-            expired_devices = session.exec(
-                select(OAuthDeviceSchema).where(OAuthDeviceSchema.user is None)
-            ).all()
-            for device in expired_devices:
-                # Delete devices that have have expired
-                if (
-                    device.expires is not None
-                    and device.expires < datetime.now()
-                    and device.user_id is None
-                ):
-                    session.delete(device)
+            step_run = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
+            ).first()
+            if step_run is None:
+                raise KeyError(
+                    f"Unable to get step run with ID {step_run_id}: No step "
+                    "run with this ID found."
+                )
+            return step_run.to_model(hydrate=hydrate)
+
+    def list_run_steps(
+        self,
+        step_run_filter_model: StepRunFilter,
+        hydrate: bool = False,
+    ) -> Page[StepRunResponse]:
+        """List all step runs matching the given filter criteria.
+
+        Args:
+            step_run_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all step runs matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(StepRunSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StepRunSchema,
+                filter_model=step_run_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_run_step(
+        self,
+        step_run_id: UUID,
+        step_run_update: StepRunUpdate,
+    ) -> StepRunResponse:
+        """Updates a step run.
+
+        Args:
+            step_run_id: The ID of the step to update.
+            step_run_update: The update to be applied to the step.
+
+        Returns:
+            The updated step run.
+
+        Raises:
+            KeyError: if the step run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if the step exists
+            existing_step_run = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
+            ).first()
+            if existing_step_run is None:
+                raise KeyError(
+                    f"Unable to update step with ID {step_run_id}: "
+                    f"No step with this ID found."
+                )
+
+            # Update the step
+            existing_step_run.update(step_run_update)
+            session.add(existing_step_run)
+
+            # Update the output artifacts.
+            for name, artifact_id in step_run_update.outputs.items():
+                self._set_run_step_output_artifact(
+                    step_run_id=step_run_id,
+                    artifact_id=artifact_id,
+                    name=name,
+                    session=session,
+                )
+
+            # Input artifacts and parent steps cannot be updated after the
+            # step has been created.
+
+            session.commit()
+            session.refresh(existing_step_run)
+
+            return existing_step_run.to_model(hydrate=True)
+
+    @staticmethod
+    def _set_run_step_parent_step(
+        child_id: UUID, parent_id: UUID, session: Session
+    ) -> None:
+        """Sets the parent step run for a step run.
+
+        Args:
+            child_id: The ID of the child step run to set the parent for.
+            parent_id: The ID of the parent step run to set a child for.
+            session: The database session to use.
+
+        Raises:
+            KeyError: if the child step run or parent step run doesn't exist.
+        """
+        # Check if the child step exists.
+        child_step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == child_id)
+        ).first()
+        if child_step_run is None:
+            raise KeyError(
+                f"Unable to set parent step for step with ID "
+                f"{child_id}: No step with this ID found."
+            )
+
+        # Check if the parent step exists.
+        parent_step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == parent_id)
+        ).first()
+        if parent_step_run is None:
+            raise KeyError(
+                f"Unable to set parent step for step with ID "
+                f"{child_id}: No parent step with ID {parent_id} "
+                "found."
+            )
+
+        # Check if the parent step is already set.
+        assignment = session.exec(
+            select(StepRunParentsSchema)
+            .where(StepRunParentsSchema.child_id == child_id)
+            .where(StepRunParentsSchema.parent_id == parent_id)
+        ).first()
+        if assignment is not None:
+            return
+
+        # Save the parent step assignment in the database.
+        assignment = StepRunParentsSchema(
+            child_id=child_id, parent_id=parent_id
+        )
+        session.add(assignment)
+
+    @staticmethod
+    def _set_run_step_input_artifact(
+        run_step_id: UUID, artifact_id: UUID, name: str, session: Session
+    ) -> None:
+        """Sets an artifact as an input of a step run.
+
+        Args:
+            run_step_id: The ID of the step run.
+            artifact_id: The ID of the artifact.
+            name: The name of the input in the step run.
+            session: The database session to use.
+
+        Raises:
+            KeyError: if the step run or artifact doesn't exist.
+        """
+        # Check if the step exists.
+        step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == run_step_id)
+        ).first()
+        if step_run is None:
+            raise KeyError(
+                f"Unable to set input artifact: No step run with ID "
+                f"'{run_step_id}' found."
+            )
+
+        # Check if the artifact exists.
+        artifact = session.exec(
+            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+        ).first()
+        if artifact is None:
+            raise KeyError(
+                f"Unable to set input artifact: No artifact with ID "
+                f"'{artifact_id}' found."
+            )
+
+        # Check if the input is already set.
+        assignment = session.exec(
+            select(StepRunInputArtifactSchema)
+            .where(StepRunInputArtifactSchema.step_id == run_step_id)
+            .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
+            .where(StepRunInputArtifactSchema.name == name)
+        ).first()
+        if assignment is not None:
+            return
+
+        # Save the input assignment in the database.
+        assignment = StepRunInputArtifactSchema(
+            step_id=run_step_id, artifact_id=artifact_id, name=name
+        )
+        session.add(assignment)
+
+    @staticmethod
+    def _set_run_step_output_artifact(
+        step_run_id: UUID,
+        artifact_id: UUID,
+        name: str,
+        session: Session,
+    ) -> None:
+        """Sets an artifact as an output of a step run.
+
+        Args:
+            step_run_id: The ID of the step run.
+            artifact_id: The ID of the artifact.
+            name: The name of the output in the step run.
+            session: The database session to use.
+
+        Raises:
+            KeyError: if the step run or artifact doesn't exist.
+        """
+        # Check if the step exists.
+        step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == step_run_id)
+        ).first()
+        if step_run is None:
+            raise KeyError(
+                f"Unable to set output artifact: No step run with ID "
+                f"'{step_run_id}' found."
+            )
+
+        # Check if the artifact exists.
+        artifact = session.exec(
+            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+        ).first()
+        if artifact is None:
+            raise KeyError(
+                f"Unable to set output artifact: No artifact with ID "
+                f"'{artifact_id}' found."
+            )
+
+        # Check if the output is already set.
+        assignment = session.exec(
+            select(StepRunOutputArtifactSchema)
+            .where(StepRunOutputArtifactSchema.step_id == step_run_id)
+            .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
+        ).first()
+        if assignment is not None:
+            return
+
+        # Save the output assignment in the database.
+        assignment = StepRunOutputArtifactSchema(
+            step_id=step_run_id,
+            artifact_id=artifact_id,
+            name=name,
+        )
+        session.add(assignment)
+
+    # ----------------------------- Teams -----------------------------
+
+    def create_team(self, team: TeamRequest) -> TeamResponse:
+        """Creates a new team.
+
+        Args:
+            team: The team model to create.
+
+        Returns:
+            The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if team with the given name already exists
+            existing_team = session.exec(
+                select(TeamSchema).where(TeamSchema.name == team.name)
+            ).first()
+            if existing_team is not None:
+                raise EntityExistsError(
+                    f"Unable to create team with name '{team.name}': "
+                    f"Found existing team with this name."
+                )
+
+            defined_users = []
+            if team.users:
+                # Get the Schemas of all users mentioned
+                filters = [
+                    (UserSchema.id == user_id) for user_id in team.users
+                ]
+
+                defined_users = session.exec(
+                    select(UserSchema).where(or_(*filters))
+                ).all()
+
+            # Create the team
+            new_team = TeamSchema(name=team.name, users=defined_users)
+            session.add(new_team)
+            session.commit()
+
+            return new_team.to_model(hydrate=True)
+
+    def get_team(
+        self, team_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> TeamResponse:
+        """Gets a specific team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested team.
+        """
+        with Session(self.engine) as session:
+            team = self._get_team_schema(team_name_or_id, session=session)
+            return team.to_model(hydrate=hydrate)
+
+    def list_teams(
+        self,
+        team_filter_model: TeamFilter,
+        hydrate: bool = False,
+    ) -> Page[TeamResponse]:
+        """List all teams matching the given filter criteria.
+
+        Args:
+            team_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all teams matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(TeamSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TeamSchema,
+                filter_model=team_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_team(
+        self, team_id: UUID, team_update: TeamUpdate
+    ) -> TeamResponse:
+        """Update an existing team.
+
+        Args:
+            team_id: The ID of the team to be updated.
+            team_update: The update to be applied to the team.
+
+        Returns:
+            The updated team.
+
+        Raises:
+            KeyError: if the team does not exist.
+        """
+        with Session(self.engine) as session:
+            existing_team = session.exec(
+                select(TeamSchema).where(TeamSchema.id == team_id)
+            ).first()
+
+            if existing_team is None:
+                raise KeyError(
+                    f"Unable to update team with id "
+                    f"'{team_id}': Found no"
+                    f"existing teams with this id."
+                )
+
+            # Update the team
+            existing_team.update(team_update=team_update)
+            existing_team.users = []
+            if "users" in team_update.__fields_set__ and team_update.users:
+                for user in team_update.users:
+                    existing_team.users.append(
+                        self._get_account_schema(
+                            account_name_or_id=user, session=session
+                        )
+                    )
+
+            session.add(existing_team)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_team)
+            return existing_team.to_model(hydrate=True)
+
+    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to delete.
+        """
+        with Session(self.engine) as session:
+            team = self._get_team_schema(team_name_or_id, session=session)
+            session.delete(team)
+            session.commit()
+
+    # -------------------------- Team role assignments -------------------------
+
+    def create_team_role_assignment(
+        self, team_role_assignment: TeamRoleAssignmentRequest
+    ) -> TeamRoleAssignmentResponse:
+        """Creates a new team role assignment.
+
+        Args:
+            team_role_assignment: The role assignment model to create.
+
+        Returns:
+            The newly created role assignment.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
+        """
+        with Session(self.engine) as session:
+            role = self._get_role_schema(
+                team_role_assignment.role, session=session
+            )
+            workspace: Optional[WorkspaceSchema] = None
+            if team_role_assignment.workspace:
+                workspace = self._get_workspace_schema(
+                    team_role_assignment.workspace, session=session
+                )
+            team = self._get_team_schema(
+                team_role_assignment.team, session=session
+            )
+            query = select(UserRoleAssignmentSchema).where(
+                UserRoleAssignmentSchema.user_id == team.id,
+                UserRoleAssignmentSchema.role_id == role.id,
+            )
+            if workspace is not None:
+                query = query.where(
+                    UserRoleAssignmentSchema.workspace_id == workspace.id
+                )
+            existing_role_assignment = session.exec(query).first()
+            if existing_role_assignment is not None:
+                raise EntityExistsError(
+                    f"Unable to assign role '{role.name}' to team "
+                    f"'{team.name}': Role already assigned in this workspace."
+                )
+            role_assignment = TeamRoleAssignmentSchema(
+                role_id=role.id,
+                team_id=team.id,
+                workspace_id=workspace.id if workspace else None,
+                role=role,
+                team=team,
+                workspace=workspace,
+            )
+            session.add(role_assignment)
+            session.commit()
+            return role_assignment.to_model(hydrate=True)
+
+    def get_team_role_assignment(
+        self, team_role_assignment_id: UUID, hydrate: bool = True
+    ) -> TeamRoleAssignmentResponse:
+        """Gets a specific role assignment.
+
+        Args:
+            team_role_assignment_id: ID of the role assignment to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested role assignment.
+
+        Raises:
+            KeyError: If no role assignment with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.id == team_role_assignment_id
+                )
+            ).one_or_none()
+
+            if team_role:
+                return team_role.to_model(hydrate=hydrate)
+            else:
+                raise KeyError(
+                    f"Unable to get team role assignment with ID "
+                    f"'{team_role_assignment_id}': No team role assignment "
+                    f"with this ID found."
+                )
+
+    def list_team_role_assignments(
+        self,
+        team_role_assignment_filter_model: TeamRoleAssignmentFilter,
+        hydrate: bool = False,
+    ) -> Page[TeamRoleAssignmentResponse]:
+        """List all roles assignments matching the given filter criteria.
+
+        Args:
+            team_role_assignment_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all roles assignments matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(TeamRoleAssignmentSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TeamRoleAssignmentSchema,
+                filter_model=team_role_assignment_filter_model,
+                hydrate=hydrate,
+            )
+
+    def delete_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> None:
+        """Delete a specific role assignment.
+
+        Args:
+            team_role_assignment_id: The ID of the specific role assignment
+
+        Raises:
+            KeyError: If the role assignment does not exist.
+        """
+        with Session(self.engine) as session:
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.id == team_role_assignment_id
+                )
+            ).one_or_none()
+            if not team_role:
+                raise KeyError(
+                    f"No team role assignment with id "
+                    f"{team_role_assignment_id} exists."
+                )
+
+            session.delete(team_role)
+
+            session.commit()
+
+    # ----------------------------- Users -----------------------------
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def _get_resource_references(
+        cls,
+    ) -> List[Tuple[Type[SQLModel], str]]:
+        """Get a list of all other table columns that reference the user table.
+
+        Given that this list doesn't change at runtime, we cache it.
+
+        Returns:
+            A list of all other table columns that reference the user table
+            as a list of tuples of the form
+            (<sqlmodel-schema-class>, <attribute-name>).
+        """
+        from zenml.zen_stores import schemas as zenml_schemas
+
+        # Get a list of attributes that represent relationships to other
+        # resources
+        resource_attrs = [
+            attr
+            for attr in UserSchema.__sqlmodel_relationships__.keys()
+            if not attr.startswith("_") and attr not in
+            # These are not resources owned by the user or  are resources that
+            # are deleted automatically when the user is deleted. Secrets in
+            # particular are left out because they are automatically deleted
+            # even when stored in an external secret store.
+            ["teams", "assigned_roles", "api_keys", "auth_devices", "secrets"]
+        ]
+
+        # This next part is crucial in preserving scalability: we don't fetch
+        # the values of the relationship attributes, because this would
+        # potentially load a huge amount of data into memory through
+        # lazy-loading. Instead, we use a DB query to count resources
+        # associated with the user for each individual resource attribute.
+
+        # To create this query, we need a list of all tables and their foreign
+        # keys that point to the user table.
+        foreign_keys: List[Tuple[Type[SQLModel], str]] = []
+        for resource_attr in resource_attrs:
+            # Extract the target schema from the annotation
+            annotation = UserSchema.__annotations__[resource_attr]
+
+            # The annotation must be of the form
+            # `typing.List[ForwardRef('<schema-class>')]`
+            # We need to recover the schema class from the ForwardRef
+            assert annotation._name == "List"
+            assert annotation.__args__
+            schema_ref = annotation.__args__[0]
+            assert isinstance(schema_ref, ForwardRef)
+            # We pass the zenml_schemas module as the globals dict to
+            # _evaluate, because this is where the schema classes are
+            # defined
+            if sys.version_info < (3, 9):
+                # For Python versions <3.9, leave out the third parameter to
+                # _evaluate
+                target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
+            else:
+                target_schema = schema_ref._evaluate(
+                    vars(zenml_schemas), {}, frozenset()
+                )
+            assert target_schema is not None
+            assert issubclass(target_schema, SQLModel)
+
+            # Next, we need to identify the foreign key attribute in the
+            # target table
+            table = UserSchema.metadata.tables[target_schema.__tablename__]
+            foreign_key_attr = None
+            for fk in table.foreign_keys:
+                if fk.column.table.name != UserSchema.__tablename__:
+                    continue
+                if fk.column.name != "id":
+                    continue
+                assert fk.parent is not None
+                foreign_key_attr = fk.parent.name
+                break
+
+            assert foreign_key_attr is not None
+
+            foreign_keys.append((target_schema, foreign_key_attr))
+
+        return foreign_keys
+
+    def _account_owns_resources(
+        self, account: UserSchema, session: Session
+    ) -> bool:
+        """Check if the account owns any resources.
+
+        Args:
+            account: The account to check.
+            session: The database session to use for the query.
+
+        Returns:
+            Whether the account owns any resources.
+        """
+        # Get a list of all other table columns that reference the user table
+        resource_attrs = self._get_resource_references()
+        for schema, resource_attr in resource_attrs:
+            # Check if the user owns any resources of this type
+            count = session.scalar(
+                select([func.count("*")])
+                .select_from(schema)
+                .where(getattr(schema, resource_attr) == account.id)
+            )
+            if count > 0:
+                logger.debug(
+                    f"User {account.name} owns {count} resources of type "
+                    f"{schema.__tablename__}"
+                )
+                return True
+
+        return False
+
+    def create_user(self, user: UserRequest) -> UserResponse:
+        """Creates a new user.
+
+        Args:
+            user: User to be created.
+
+        Returns:
+            The newly created user.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if a user account with the given name already exists
+            try:
+                self._get_account_schema(
+                    user.name,
+                    session=session,
+                    # Filter out service accounts
+                    service_account=False,
+                )
+                raise EntityExistsError(
+                    f"Unable to create user with name '{user.name}': "
+                    f"Found an existing user account with this name."
+                )
+            except KeyError:
+                pass
+
+            # Create the user
+            new_user = UserSchema.from_user_request(user)
+            session.add(new_user)
+            session.commit()
+            return new_user.to_model(hydrate=True)
+
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+        hydrate: bool = True,
+    ) -> UserResponse:
+        """Gets a specific user, when no id is specified the active user is returned.
+
+        # noqa: DAR401
+        # noqa: DAR402
+
+        Raises a KeyError in case a user with that name or id does not exist.
+
+        For backwards-compatibility reasons, this method can also be called
+        to fetch service accounts by their ID.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested user, if it was found.
+
+        Raises:
+            KeyError: If the user does not exist.
+        """
+        if not user_name_or_id:
+            user_name_or_id = self._default_user_name
+
+        with Session(self.engine) as session:
+            # If a UUID is passed, we also allow fetching service accounts
+            # with that ID.
+            service_account: Optional[bool] = False
+            if uuid_utils.is_valid_uuid(user_name_or_id):
+                service_account = None
+            user = self._get_account_schema(
+                user_name_or_id,
+                session=session,
+                service_account=service_account,
+            )
+
+            return user.to_model(
+                include_private=include_private, hydrate=hydrate
+            )
+
+    def get_auth_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserAuthModel:
+        """Gets the auth model to a specific user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+        """
+        with Session(self.engine) as session:
+            user = self._get_account_schema(
+                user_name_or_id, session=session, service_account=False
+            )
+            return UserAuthModel(
+                id=user.id,
+                name=user.name,
+                full_name=user.full_name,
+                email_opted_in=user.email_opted_in,
+                active=user.active,
+                created=user.created,
+                updated=user.updated,
+                password=user.password,
+                activation_token=user.activation_token,
+                is_service_account=False,
+            )
+
+    def list_users(
+        self,
+        user_filter_model: UserFilter,
+        hydrate: bool = False,
+    ) -> Page[UserResponse]:
+        """List all users.
+
+        Args:
+            user_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all users.
+        """
+        with Session(self.engine) as session:
+            query = select(UserSchema)
+            paged_user: Page[UserResponse] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserSchema,
+                filter_model=user_filter_model,
+                hydrate=hydrate,
+            )
+            return paged_user
+
+    def update_user(
+        self, user_id: UUID, user_update: UserUpdate
+    ) -> UserResponse:
+        """Updates an existing user.
+
+        Args:
+            user_id: The id of the user to update.
+            user_update: The update to be applied to the user.
+
+        Returns:
+            The updated user.
+
+        Raises:
+            IllegalOperationError: If the request tries to update the username
+                for the default user account.
+            EntityExistsError: If the request tries to update the username to
+                a name that is already taken by another user or service account.
+        """
+        with Session(self.engine) as session:
+            existing_user = self._get_account_schema(
+                user_id, session=session, service_account=False
+            )
+
+            if (
+                user_update.name is not None
+                and user_update.name != existing_user.name
+            ):
+                if existing_user.name == self._default_user_name:
+                    raise IllegalOperationError(
+                        "The username of the default user account cannot be "
+                        "changed."
+                    )
+
+                try:
+                    self._get_account_schema(
+                        user_update.name,
+                        session=session,
+                        service_account=False,
+                    )
+                    raise EntityExistsError(
+                        f"Unable to update user account with name "
+                        f"'{user_update.name}': Found an existing user "
+                        "account with this name."
+                    )
+                except KeyError:
+                    pass
+
+            existing_user.update_user(user_update=user_update)
+            session.add(existing_user)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_user)
+            return existing_user.to_model(hydrate=True)
+
+    def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a user.
+
+        Args:
+            user_name_or_id: The name or the ID of the user to delete.
+
+        Raises:
+            IllegalOperationError: If the user is the default user account or
+                if the user already owns resources.
+        """
+        with Session(self.engine) as session:
+            user = self._get_account_schema(
+                user_name_or_id, session=session, service_account=False
+            )
+            if user.name == self._default_user_name:
+                raise IllegalOperationError(
+                    "The default user account cannot be deleted."
+                )
+            if self._account_owns_resources(user, session=session):
+                raise IllegalOperationError(
+                    "The user account has already been used to create "
+                    "other resources that it now owns and therefore cannot be "
+                    "deleted. Please delete all resources owned by the user "
+                    "account or consider deactivating it instead."
+                )
+
+            self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
+
+            session.delete(user)
+            session.commit()
+
+    # ------------------------- User role assignments -------------------------
+
+    def create_user_role_assignment(
+        self, user_role_assignment: UserRoleAssignmentRequest
+    ) -> UserRoleAssignmentResponse:
+        """Assigns a role to a user or team, scoped to a specific workspace.
+
+        Args:
+            user_role_assignment: The role assignment to create.
+
+        Returns:
+            The created role assignment.
+
+        Raises:
+            EntityExistsError: if the role assignment already exists.
+        """
+        with Session(self.engine) as session:
+            role = self._get_role_schema(
+                user_role_assignment.role, session=session
+            )
+            workspace: Optional[WorkspaceSchema] = None
+            if user_role_assignment.workspace:
+                workspace = self._get_workspace_schema(
+                    user_role_assignment.workspace, session=session
+                )
+            user = self._get_account_schema(
+                user_role_assignment.user, session=session
+            )
+            query = select(UserRoleAssignmentSchema).where(
+                UserRoleAssignmentSchema.user_id == user.id,
+                UserRoleAssignmentSchema.role_id == role.id,
+            )
+            if workspace is not None:
+                query = query.where(
+                    UserRoleAssignmentSchema.workspace_id == workspace.id
+                )
+            existing_role_assignment = session.exec(query).first()
+            if existing_role_assignment is not None:
+                raise EntityExistsError(
+                    f"Unable to assign role '{role.name}' to user "
+                    f"'{user.name}': Role already assigned in this workspace."
+                )
+            role_assignment = UserRoleAssignmentSchema(
+                role_id=role.id,
+                user_id=user.id,
+                workspace_id=workspace.id if workspace else None,
+                role=role,
+                user=user,
+                workspace=workspace,
+            )
+            session.add(role_assignment)
+            session.commit()
+            return role_assignment.to_model(hydrate=True)
+
+    def get_user_role_assignment(
+        self, user_role_assignment_id: UUID, hydrate: bool = True
+    ) -> UserRoleAssignmentResponse:
+        """Gets a role assignment by ID.
+
+        Args:
+            user_role_assignment_id: ID of the role assignment to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The role assignment.
+
+        Raises:
+            KeyError: If the role assignment does not exist.
+        """
+        with Session(self.engine) as session:
+            user_role = session.exec(
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.id == user_role_assignment_id
+                )
+            ).one_or_none()
+
+            if user_role:
+                return user_role.to_model(hydrate=hydrate)
+            else:
+                raise KeyError(
+                    f"Unable to get user role assignment with ID "
+                    f"'{user_role_assignment_id}': No user role assignment "
+                    f"with this ID found."
+                )
+
+    def list_user_role_assignments(
+        self,
+        user_role_assignment_filter_model: UserRoleAssignmentFilter,
+        hydrate: bool = False,
+    ) -> Page[UserRoleAssignmentResponse]:
+        """List all roles assignments matching the given filter criteria.
+
+        Args:
+            user_role_assignment_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all roles assignments matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(UserRoleAssignmentSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserRoleAssignmentSchema,
+                filter_model=user_role_assignment_filter_model,
+                hydrate=hydrate,
+            )
+
+    def delete_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> None:
+        """Delete a specific role assignment.
+
+        Args:
+            user_role_assignment_id: The ID of the specific role assignment.
+
+        Raises:
+            KeyError: If the role assignment does not exist.
+        """
+        with Session(self.engine) as session:
+            user_role = session.exec(
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.id == user_role_assignment_id
+                )
+            ).one_or_none()
+            if not user_role:
+                raise KeyError(
+                    f"No user role assignment with id "
+                    f"{user_role_assignment_id} exists."
+                )
+
+            session.delete(user_role)
+
+            session.commit()
+
+    # ----------------------------- Workspaces -----------------------------
+
+    @track_decorator(AnalyticsEvent.CREATED_WORKSPACE)
+    def create_workspace(
+        self, workspace: WorkspaceRequest
+    ) -> WorkspaceResponse:
+        """Creates a new workspace.
+
+        Args:
+            workspace: The workspace to create.
+
+        Returns:
+            The newly created workspace.
+
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if workspace with the given name already exists
+            existing_workspace = session.exec(
+                select(WorkspaceSchema).where(
+                    WorkspaceSchema.name == workspace.name
+                )
+            ).first()
+            if existing_workspace is not None:
+                raise EntityExistsError(
+                    f"Unable to create workspace {workspace.name}: "
+                    "A workspace with this name already exists."
+                )
+
+            # Create the workspace
+            new_workspace = WorkspaceSchema.from_request(workspace)
+            session.add(new_workspace)
+            session.commit()
+
+            # Explicitly refresh the new_workspace schema
+            session.refresh(new_workspace)
+
+            return new_workspace.to_model(hydrate=True)
+
+    def get_workspace(
+        self, workspace_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> WorkspaceResponse:
+        """Get an existing workspace by name or ID.
+
+        Args:
+            workspace_name_or_id: Name or ID of the workspace to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested workspace if one was found.
+        """
+        with Session(self.engine) as session:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id, session=session
+            )
+        return workspace.to_model(hydrate=hydrate)
+
+    def list_workspaces(
+        self,
+        workspace_filter_model: WorkspaceFilter,
+        hydrate: bool = False,
+    ) -> Page[WorkspaceResponse]:
+        """List all workspace matching the given filter criteria.
+
+        Args:
+            workspace_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all workspace matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(WorkspaceSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=WorkspaceSchema,
+                filter_model=workspace_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
+    ) -> WorkspaceResponse:
+        """Update an existing workspace.
+
+        Args:
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
+
+        Returns:
+            The updated workspace.
+
+        Raises:
+            IllegalOperationError: if the workspace is the default workspace.
+            KeyError: if the workspace does not exist.
+        """
+        with Session(self.engine) as session:
+            existing_workspace = session.exec(
+                select(WorkspaceSchema).where(
+                    WorkspaceSchema.id == workspace_id
+                )
+            ).first()
+            if existing_workspace is None:
+                raise KeyError(
+                    f"Unable to update workspace with id "
+                    f"'{workspace_id}': Found no"
+                    f"existing workspaces with this id."
+                )
+            if (
+                existing_workspace.name == self._default_workspace_name
+                and "name" in workspace_update.__fields_set__
+                and workspace_update.name != existing_workspace.name
+            ):
+                raise IllegalOperationError(
+                    "The name of the default workspace cannot be changed."
+                )
+
+            # Update the workspace
+            existing_workspace.update(workspace_update=workspace_update)
+            session.add(existing_workspace)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_workspace)
+            return existing_workspace.to_model(hydrate=True)
+
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
+
+        Args:
+            workspace_name_or_id: Name or ID of the workspace to delete.
+
+        Raises:
+            IllegalOperationError: If the workspace is the default workspace.
+        """
+        with Session(self.engine) as session:
+            # Check if workspace with the given name exists
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id, session=session
+            )
+            if workspace.name == self._default_workspace_name:
+                raise IllegalOperationError(
+                    "The default workspace cannot be deleted."
+                )
+
+            self._trigger_event(
+                StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
+            )
+
+            session.delete(workspace)
             session.commit()
 
     # =======================
@@ -6255,13 +6524,17 @@ class SqlZenStore(BaseZenStore):
 
     def _get_tag_model_schema(
         self,
-        tag_resource_id: Union[str, UUID],
+        tag_id: UUID,
+        resource_id: UUID,
+        resource_type: TaggableResourceTypes,
         session: Session,
     ) -> TagResourceSchema:
-        """Gets a tag model schema by name or ID.
+        """Gets a tag model schema by tag and resource.
 
         Args:
-            tag_resource_id: The ID of the tag resource relation to get.
+            tag_id: The ID of the tag to get.
+            resource_id: The ID of the resource to get.
+            resource_type: The type of the resource to get.
             session: The database session to use.
 
         Returns:
@@ -6273,13 +6546,17 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             schema = session.exec(
                 select(TagResourceSchema).where(
-                    TagResourceSchema.id == tag_resource_id
+                    TagResourceSchema.tag_id == tag_id,
+                    TagResourceSchema.resource_id == resource_id,
+                    TagResourceSchema.resource_type == resource_type.value,
                 )
             ).first()
             if schema is None:
                 raise KeyError(
-                    f"Unable to get {TagResourceSchema.__tablename__} with name or ID "
-                    f"'{tag_resource_id}': No {TagResourceSchema.__tablename__} with this ID found."
+                    f"Unable to get {TagResourceSchema.__tablename__} with IDs "
+                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
+                    f"`resource_type`='{resource_type.value}': No "
+                    f"{TagResourceSchema.__tablename__} with these IDs found."
                 )
             return schema
 
@@ -6287,7 +6564,7 @@ class SqlZenStore(BaseZenStore):
     def _create_or_reuse_code_reference(
         session: Session,
         workspace_id: UUID,
-        code_reference: Optional["CodeReferenceRequestModel"],
+        code_reference: Optional["CodeReferenceRequest"],
     ) -> Optional[UUID]:
         """Creates or reuses a code reference.
 
@@ -6519,12 +6796,15 @@ class SqlZenStore(BaseZenStore):
             all_versions = session.exec(
                 select(ModelVersionSchema)
                 .where(ModelVersionSchema.model_id == model.id)
-                .order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
+                .order_by(ModelVersionSchema.number.desc())  # type: ignore[attr-defined]
             ).first()
 
             model_version.number = (
                 all_versions.number + 1 if all_versions else 1
             )
+
+            if model_version.name is None:
+                model_version.name = str(model_version.number)
 
             model_version_schema = ModelVersionSchema.from_request(
                 model_version
@@ -6536,18 +6816,13 @@ class SqlZenStore(BaseZenStore):
         return mv
 
     def get_model_version(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
+        self, model_version_id: UUID
     ) -> ModelVersionResponseModel:
         """Get an existing model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped - latest is retrieved.
+            model_version_id: name, id, stage or number of the model version to
+                be retrieved. If skipped - latest is retrieved.
 
         Returns:
             The model version of interest.
@@ -6556,54 +6831,24 @@ class SqlZenStore(BaseZenStore):
             KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
-            model = self.get_model(model_name_or_id)
-            query = select(ModelVersionSchema).where(
-                ModelVersionSchema.model_id == model.id
+            model_version = self._get_schema_by_name_or_id(
+                object_name_or_id=model_version_id,
+                schema_class=ModelVersionSchema,
+                schema_name="model_version",
+                session=session,
             )
-            if model_version_name_or_number_or_id is None:
-                model_version_name_or_number_or_id = ModelStages.LATEST
-            if (
-                str(model_version_name_or_number_or_id)
-                == ModelStages.LATEST.value
-            ):
-                query = query.order_by(ModelVersionSchema.created.desc())  # type: ignore[attr-defined]
-            elif model_version_name_or_number_or_id in [
-                stage.value for stage in ModelStages
-            ]:
-                query = query.where(
-                    ModelVersionSchema.stage
-                    == model_version_name_or_number_or_id
-                )
-            elif isinstance(model_version_name_or_number_or_id, int):
-                query = query.where(
-                    ModelVersionSchema.number
-                    == model_version_name_or_number_or_id
-                )
-
-            else:
-                try:
-                    UUID(str(model_version_name_or_number_or_id))
-                    query = query.where(
-                        ModelVersionSchema.id
-                        == model_version_name_or_number_or_id
-                    )
-                except ValueError:
-                    query = query.where(
-                        ModelVersionSchema.name
-                        == model_version_name_or_number_or_id
-                    )
-            model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
-                    f"Unable to get model version with identifier `{model_version_name_or_number_or_id}`: "
-                    f"No model version with this identifier found."
+                    f"Unable to get model version with ID "
+                    f"`{model_version_id}`: No model version with this "
+                    f"ID found."
                 )
             return ModelVersionSchema.to_model(model_version)
 
     def list_model_versions(
         self,
-        model_name_or_id: Union[str, UUID],
         model_version_filter_model: ModelVersionFilterModel,
+        model_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> Page[ModelVersionResponseModel]:
         """Get all model versions by filter.
 
@@ -6616,7 +6861,10 @@ class SqlZenStore(BaseZenStore):
             A page of all model versions.
         """
         with Session(self.engine) as session:
-            model_version_filter_model.set_scope_model(model_name_or_id)
+            if model_name_or_id:
+                model = self.get_model(model_name_or_id)
+                model_version_filter_model.set_scope_model(model.id)
+
             query = select(ModelVersionSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -6627,37 +6875,25 @@ class SqlZenStore(BaseZenStore):
 
     def delete_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
     ) -> None:
         """Deletes a model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be deleted.
+            model_version_id: name or id of the model version to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
-            model = self.get_model(model_name_or_id)
             query = select(ModelVersionSchema).where(
-                ModelVersionSchema.model_id == model.id
+                ModelVersionSchema.id == model_version_id
             )
-            try:
-                UUID(str(model_version_name_or_id))
-                query = query.where(
-                    ModelVersionSchema.id == model_version_name_or_id
-                )
-            except ValueError:
-                query = query.where(
-                    ModelVersionSchema.name == model_version_name_or_id
-                )
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
-                    f"Unable to delete model version with name `{model_version_name_or_id}`: "
-                    f"No model version with this name found."
+                    f"Unable to delete model version with id `{model_version_id}`: "
+                    f"No model version with this id found."
                 )
             session.delete(model_version)
             session.commit()
@@ -6858,15 +7094,13 @@ class SqlZenStore(BaseZenStore):
 
     def list_model_version_artifact_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get all model version to artifact links by filter.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: ID of the model version containing the link.
             model_version_artifact_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -6874,35 +7108,18 @@ class SqlZenStore(BaseZenStore):
             A page of all model version to artifact links.
         """
         with Session(self.engine) as session:
-            # issue: https://github.com/tiangolo/sqlmodel/issues/109
-            model_version_artifact_link_filter_model.set_scope_model(
-                model_name_or_id
-            )
             model_version_artifact_link_filter_model.set_scope_model_version(
-                model_version_name_or_id
+                model_version_id
             )
-            if model_version_artifact_link_filter_model.only_artifacts:
+            if model_version_artifact_link_filter_model.only_data_artifacts:
                 query = (
                     select(ModelVersionArtifactSchema)
                     .where(
-                        ModelVersionArtifactSchema.is_model_object
+                        ModelVersionArtifactSchema.is_model_artifact
                         == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.is_deployment
-                        == False  # noqa: E712
-                    )
-                    .where(
-                        ModelVersionArtifactSchema.artifact
-                        != None  # noqa: E712, E711
-                    )
-                )
-            elif model_version_artifact_link_filter_model.only_deployments:
-                query = (
-                    select(ModelVersionArtifactSchema)
-                    .where(ModelVersionArtifactSchema.is_deployment)
-                    .where(
-                        ModelVersionArtifactSchema.is_model_object
+                        ModelVersionArtifactSchema.is_endpoint_artifact
                         == False  # noqa: E712
                     )
                     .where(
@@ -6910,12 +7127,27 @@ class SqlZenStore(BaseZenStore):
                         != None  # noqa: E712, E711
                     )
                 )
-            elif model_version_artifact_link_filter_model.only_model_objects:
+            elif (
+                model_version_artifact_link_filter_model.only_endpoint_artifacts
+            ):
                 query = (
                     select(ModelVersionArtifactSchema)
-                    .where(ModelVersionArtifactSchema.is_model_object)
+                    .where(ModelVersionArtifactSchema.is_endpoint_artifact)
                     .where(
-                        ModelVersionArtifactSchema.is_deployment
+                        ModelVersionArtifactSchema.is_model_artifact
+                        == False  # noqa: E712
+                    )
+                    .where(
+                        ModelVersionArtifactSchema.artifact
+                        != None  # noqa: E712, E711
+                    )
+                )
+            elif model_version_artifact_link_filter_model.only_model_artifacts:
+                query = (
+                    select(ModelVersionArtifactSchema)
+                    .where(ModelVersionArtifactSchema.is_model_artifact)
+                    .where(
+                        ModelVersionArtifactSchema.is_endpoint_artifact
                         == False  # noqa: E712
                     )
                     .where(
@@ -6925,9 +7157,13 @@ class SqlZenStore(BaseZenStore):
                 )
             else:
                 query = select(ModelVersionArtifactSchema)
-            model_version_artifact_link_filter_model.only_artifacts = None
-            model_version_artifact_link_filter_model.only_deployments = None
-            model_version_artifact_link_filter_model.only_model_objects = None
+            model_version_artifact_link_filter_model.only_data_artifacts = None
+            model_version_artifact_link_filter_model.only_endpoint_artifacts = (
+                None
+            )
+            model_version_artifact_link_filter_model.only_model_artifacts = (
+                None
+            )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -6937,25 +7173,20 @@ class SqlZenStore(BaseZenStore):
 
     def delete_model_version_artifact_link(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_artifact_link_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version to artifact link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: ID of the model version containing the link.
             model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
-            self.get_model(model_name_or_id)
-            model_version = self.get_model_version(
-                model_name_or_id, model_version_name_or_id
-            )
+            model_version = self.get_model_version(model_version_id)
             query = select(ModelVersionArtifactSchema).where(
                 ModelVersionArtifactSchema.model_version_id == model_version.id
             )
@@ -7039,15 +7270,13 @@ class SqlZenStore(BaseZenStore):
 
     def list_model_version_pipeline_run_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: name or ID of the model version containing the link.
             model_version_pipeline_run_link_filter_model: All filter parameters including pagination
                 params.
 
@@ -7055,11 +7284,8 @@ class SqlZenStore(BaseZenStore):
             A page of all model version to pipeline run links.
         """
         with Session(self.engine) as session:
-            model_version_pipeline_run_link_filter_model.set_scope_model(
-                model_name_or_id
-            )
             model_version_pipeline_run_link_filter_model.set_scope_model_version(
-                model_version_name_or_id
+                model_version_id
             )
             return self.filter_and_paginate(
                 session=session,
@@ -7070,24 +7296,21 @@ class SqlZenStore(BaseZenStore):
 
     def delete_model_version_pipeline_run_link(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_pipeline_run_link_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version to pipeline run link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
+            model_version_id: name or ID of the model version containing the link.
             model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
 
         Raises:
             KeyError: specified ID not found.
         """
         with Session(self.engine) as session:
-            self.get_model(model_name_or_id)
             model_version = self.get_model_version(
-                model_name_or_id, model_version_name_or_id
+                model_version_id=model_version_id
             )
             query = select(ModelVersionPipelineRunSchema).where(
                 ModelVersionPipelineRunSchema.model_version_id
@@ -7161,13 +7384,12 @@ class SqlZenStore(BaseZenStore):
             resource_id: The id of the resource.
             resource_type: The type of the resource to create link with.
         """
-        from zenml.utils.tag_utils import _get_tag_resource_id
-
         for tag_name in tag_names:
             try:
                 tag = self.get_tag(tag_name)
                 self.delete_tag_resource(
-                    tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                    tag_id=tag.id,
+                    resource_id=resource_id,
                     resource_type=resource_type,
                 )
             except KeyError:
@@ -7326,7 +7548,10 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             existing_tag_resource = session.exec(
                 select(TagResourceSchema).where(
-                    TagResourceSchema.id == tag_resource.tag_resource_id
+                    TagResourceSchema.tag_id == tag_resource.tag_id,
+                    TagResourceSchema.resource_id == tag_resource.resource_id,
+                    TagResourceSchema.resource_type
+                    == tag_resource.resource_type.value,
                 )
             ).first()
             if existing_tag_resource is not None:
@@ -7344,34 +7569,33 @@ class SqlZenStore(BaseZenStore):
 
     def delete_tag_resource(
         self,
-        tag_resource_id: UUID,
+        tag_id: UUID,
+        resource_id: UUID,
         resource_type: TaggableResourceTypes,
     ) -> None:
         """Deletes a tag resource relationship.
 
         Args:
-            tag_resource_id: id of the tag<>resource to delete.
-            resource_type: The type of the resource to create link with.
+            tag_id: The ID of the tag to delete.
+            resource_id: The ID of the resource to delete.
+            resource_type: The type of the resource to delete.
 
         Raises:
             KeyError: specified ID not found.
-            RuntimeError: on resource type mismatch.
         """
         with Session(self.engine) as session:
             tag_model = self._get_tag_model_schema(
-                tag_resource_id=tag_resource_id,
+                tag_id=tag_id,
+                resource_id=resource_id,
+                resource_type=resource_type,
                 session=session,
             )
             if tag_model is None:
                 raise KeyError(
-                    f"Unable to delete tag<>resource with ID `{tag_resource_id}`: "
-                    f"No tag<>resource with these ID found."
-                )
-            if tag_model.resource_type != resource_type.value:
-                raise RuntimeError(
-                    f"Unable to delete tag<>resource with ID `{tag_resource_id}`: "
-                    f"Resource type in request `{resource_type.value}` do not match "
-                    f"resource type defined in database `{tag_model.resource_type}`."
+                    f"Unable to delete tag<>resource with IDs: "
+                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
+                    f"`resource_type`='{resource_type.value}': No "
+                    "tag<>resource with these IDs found."
                 )
             session.delete(tag_model)
             session.commit()

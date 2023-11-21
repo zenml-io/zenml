@@ -21,12 +21,16 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserUpdateModel,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountResponseBody,
+    ServiceAccountResponseMetadata,
+    ServiceAccountUpdate,
+    UserRequest,
+    UserResponse,
+    UserResponseBody,
+    UserResponseMetadata,
+    UserUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
@@ -131,11 +135,11 @@ class UserSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_user_request(cls, model: UserRequestModel) -> "UserSchema":
-        """Create a `UserSchema` from a `UserModel`.
+    def from_user_request(cls, model: UserRequest) -> "UserSchema":
+        """Create a `UserSchema` from a `UserRequest`.
 
         Args:
-            model: The `UserModel` from which to create the schema.
+            model: The `UserRequest` from which to create the schema.
 
         Returns:
             The created `UserSchema`.
@@ -154,12 +158,12 @@ class UserSchema(NamedSchema, table=True):
 
     @classmethod
     def from_service_account_request(
-        cls, model: ServiceAccountRequestModel
+        cls, model: ServiceAccountRequest
     ) -> "UserSchema":
         """Create a `UserSchema` from a Service Account request.
 
         Args:
-            model: The `ServiceAccountRequestModel` from which to create the
+            model: The `ServiceAccountRequest` from which to create the
                 schema.
 
         Returns:
@@ -174,11 +178,11 @@ class UserSchema(NamedSchema, table=True):
             full_name="",
         )
 
-    def update_user(self, user_update: UserUpdateModel) -> "UserSchema":
-        """Update a `UserSchema` from a `UserUpdateModel`.
+    def update_user(self, user_update: UserUpdate) -> "UserSchema":
+        """Update a `UserSchema` from a `UserUpdate`.
 
         Args:
-            user_update: The `UserUpdateModel` from which to update the schema.
+            user_update: The `UserUpdate` from which to update the schema.
 
         Returns:
             The updated `UserSchema`.
@@ -197,12 +201,12 @@ class UserSchema(NamedSchema, table=True):
         return self
 
     def update_service_account(
-        self, service_account_update: ServiceAccountUpdateModel
+        self, service_account_update: ServiceAccountUpdate
     ) -> "UserSchema":
-        """Update a `UserSchema` from a `ServiceAccountUpdateModel`.
+        """Update a `UserSchema` from a `ServiceAccountUpdate`.
 
         Args:
-            service_account_update: The `ServiceAccountUpdateModel` from which
+            service_account_update: The `ServiceAccountUpdate` from which
                 to update the schema.
 
         Returns:
@@ -217,78 +221,73 @@ class UserSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self, _block_recursion: bool = False, include_private: bool = False
-    ) -> UserResponseModel:
-        """Convert a `UserSchema` to a `UserResponseModel`.
+        self, hydrate: bool = False, include_private: bool = False
+    ) -> UserResponse:
+        """Convert a `UserSchema` to a `UserResponse`.
 
         Args:
-            _block_recursion: Don't recursively fill attributes
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
             include_private: Whether to include the user private information
                              this is to limit the amount of data one can get
                              about other users
 
         Returns:
-            The converted `UserResponseModel`.
+            The converted `UserResponse`.
         """
-        if _block_recursion:
-            return UserResponseModel(
-                id=self.id,
-                external_user_id=self.external_user_id,
-                name=self.name,
-                active=self.active,
-                is_service_account=self.is_service_account,
-                email_opted_in=self.email_opted_in,
+        metadata = None
+        if hydrate:
+            metadata = UserResponseMetadata(
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
-                full_name=self.full_name,
-                created=self.created,
-                updated=self.updated,
-            )
-        else:
-            return UserResponseModel(
-                id=self.id,
                 external_user_id=self.external_user_id,
-                name=self.name,
-                active=self.active,
-                is_service_account=self.is_service_account,
-                email_opted_in=self.email_opted_in,
-                email=self.email if include_private else None,
-                hub_token=self.hub_token if include_private else None,
-                teams=[t.to_model(_block_recursion=True) for t in self.teams],
-                full_name=self.full_name,
-                created=self.created,
-                updated=self.updated,
                 roles=[ra.role.to_model() for ra in self.assigned_roles],
+                teams=[t.to_model() for t in self.teams],
             )
+
+        return UserResponse(
+            id=self.id,
+            name=self.name,
+            body=UserResponseBody(
+                active=self.active,
+                full_name=self.full_name,
+                email_opted_in=self.email_opted_in,
+                is_service_account=self.is_service_account,
+                created=self.created,
+                updated=self.updated,
+            ),
+            metadata=metadata,
+        )
 
     def to_service_account_model(
-        self, _block_recursion: bool = False
-    ) -> ServiceAccountResponseModel:
-        """Convert a `UserSchema` to a `ServiceAccountResponseModel`.
+        self, hydrate: bool = False
+    ) -> ServiceAccountResponse:
+        """Convert a `UserSchema` to a `ServiceAccountResponse`.
 
         Args:
-            _block_recursion: Don't recursively fill attributes
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The converted `ServiceAccountResponseModel`.
+            The converted `ServiceAccountResponse`.
         """
-        if _block_recursion:
-            return ServiceAccountResponseModel(
-                id=self.id,
-                name=self.name,
-                description=self.description or "",
-                active=self.active,
-                created=self.created,
-                updated=self.updated,
-            )
-        else:
-            return ServiceAccountResponseModel(
-                id=self.id,
-                name=self.name,
-                description=self.description or "",
-                active=self.active,
-                teams=[t.to_model(_block_recursion=True) for t in self.teams],
-                created=self.created,
-                updated=self.updated,
+        metadata = None
+        if hydrate:
+            metadata = ServiceAccountResponseMetadata(
+                teams=[t.to_model() for t in self.teams],
                 roles=[ra.role.to_model() for ra in self.assigned_roles],
+                description=self.description or "",
             )
+
+        body = ServiceAccountResponseBody(
+            created=self.created,
+            updated=self.updated,
+            active=self.active,
+        )
+
+        return ServiceAccountResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
+        )
