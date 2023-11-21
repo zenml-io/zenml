@@ -419,22 +419,11 @@ class StepLauncher:
                         f"`{artifact_config_.model_version}` implicitly."
                     )
 
-                if artifact_config_.model_name is None:
-                    model_version = model_version_from_context
-                else:
-                    from zenml.model.model_version import ModelVersion
-
-                    model_version = ModelVersion(
-                        name=artifact_config_.model_name,
-                        version=artifact_config_.model_version,
-                    )
-                if model_version:
-                    model_version._get_or_create_model_version()
-                    link_artifact_config_to_model_version(
-                        artifact_config=artifact_config_,
-                        model_version=model_version,
-                        artifact_id=output_id,
-                    )
+                link_artifact_config_to_model_version(
+                    artifact_config=artifact_config_,
+                    model_version=model_version_from_context,
+                    artifact_id=output_id,
+                )
 
     def _run_step(
         self,

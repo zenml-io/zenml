@@ -15,6 +15,7 @@
 
 from typing import (
     Dict,
+    Optional,
 )
 from uuid import UUID
 
@@ -55,23 +56,20 @@ def link_step_artifacts_to_model(
         model_version = None
         logger.debug("No model context found, unable to auto-link artifacts.")
 
-    for artifact_name in artifact_ids:
-        artifact_id = artifact_ids[artifact_name]
+    for artifact_name, artifact_id in artifact_ids.items():
         artifact_config = step_context._get_output(
             artifact_name
         ).artifact_config
+
+        # Implicit linking
         if artifact_config is None and model_version is not None:
-            artifact_config = ArtifactConfig(
-                name=artifact_name,
-                model_name=model_version.name,
-                model_version=model_version.version,
-            )
+            artifact_config = ArtifactConfig(name=artifact_name)
             logger.info(
                 f"Implicitly linking artifact `{artifact_name}` to model "
                 f"`{model_version.name}` version `{model_version.version}`."
             )
 
-        if artifact_config and model_version:
+        if artifact_config:
             link_artifact_config_to_model_version(
                 artifact_config=artifact_config,
                 artifact_id=artifact_id,
@@ -81,25 +79,37 @@ def link_step_artifacts_to_model(
 
 def link_artifact_config_to_model_version(
     artifact_config: ArtifactConfig,
-    model_version: "ModelVersion",
     artifact_id: UUID,
+    model_version: Optional["ModelVersion"] = None,
 ) -> None:
-    """Link an artifact config to a model version.
+    """Link an artifact config to its model version.
 
     Args:
         artifact_config: The artifact config to link.
-        model_version: The model version to link the artifact to.
         artifact_id: The ID of the artifact to link.
+        model_version: The model version from the step or pipeline context.
     """
     client = Client()
-    model_version_response = model_version._get_model_version()
-    request = ModelVersionArtifactRequestModel(
-        user=client.active_user.id,
-        workspace=client.active_workspace.id,
-        artifact=artifact_id,
-        model=model_version_response.model.id,
-        model_version=model_version_response.id,
-        is_model_artifact=artifact_config.is_model_artifact,
-        is_endpoint_artifact=artifact_config.is_endpoint_artifact,
-    )
-    client.zen_store.create_model_version_artifact_link(request)
+
+    # If the artifact config specifies a model itself then always use that
+    if artifact_config.model_name is not None:
+        from zenml.model.model_version import ModelVersion
+
+        model_version = ModelVersion(
+            name=artifact_config.model_name,
+            version=artifact_config.model_version,
+        )
+
+    if model_version:
+        model_version._get_or_create_model_version()
+        model_version_response = model_version._get_model_version()
+        request = ModelVersionArtifactRequestModel(
+            user=client.active_user.id,
+            workspace=client.active_workspace.id,
+            artifact=artifact_id,
+            model=model_version_response.model.id,
+            model_version=model_version_response.id,
+            is_model_artifact=artifact_config.is_model_artifact,
+            is_endpoint_artifact=artifact_config.is_endpoint_artifact,
+        )
+        client.zen_store.create_model_version_artifact_link(request)

@@ -250,8 +250,8 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
                     workspace_id=ws,
                 ),
             )
-            assert al1.size == 2
-            assert al2.size == 1
+            assert al1.size == 2, f"Failed on {run_count} run"
+            assert al2.size == 1, f"Failed on {run_count} run"
 
             # clean-up links to test caching linkage
             for mv, al in zip([mv1, mv2], [al1, al2]):
@@ -358,7 +358,9 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
 
 
 @step(enable_cache=True)
-def _cacheable_step_annotated() -> Annotated[str, "cacheable"]:
+def _cacheable_step_annotated() -> (
+    Annotated[str, ArtifactConfig(name="cacheable", is_model_artifact=True)]
+):
     return "cacheable"
 
 
@@ -419,24 +421,17 @@ def test_artifacts_linked_from_cache_steps():
                 "_inner_pipeline::_cacheable_step_not_annotated::output",
             }, f"Failed on {i} run"
             assert set(mvrm.model_artifact_ids.keys()) == {
-                "_inner_pipeline::_cacheable_step_annotated::cacheable",
+                "cacheable",
             }, f"Failed on {i} run"
 
-            mvrm = client.get_model_version(
-                model_name_or_id="bar",
-            )
+            mvrm = client.get_model_version(model_name_or_id="bar")
 
             assert len(mvrm.data_artifact_ids) == 1, f"Failed on {i} run"
             assert set(mvrm.data_artifact_ids.keys()) == {
-                "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
+                "cacheable",
             }, f"Failed on {i} run"
             assert (
-                len(
-                    mvrm.data_artifact_ids[
-                        "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
-                    ]
-                )
-                == 1
+                len(mvrm.data_artifact_ids["cacheable"]) == 1
             ), f"Failed on {i} run"
 
 
@@ -468,13 +463,8 @@ def test_artifacts_linked_from_cache_steps_same_id():
             )
             assert len(mvrm.data_artifact_ids) == 1, f"Failed on {i} run"
             assert set(mvrm.data_artifact_ids.keys()) == {
-                "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable",
+                "cacheable",
             }, f"Failed on {i} run"
             assert (
-                len(
-                    mvrm.data_artifact_ids[
-                        "_inner_pipeline::_cacheable_step_custom_model_annotated::cacheable"
-                    ]
-                )
-                == 1
+                len(mvrm.data_artifact_ids["cacheable"]) == 1
             ), f"Failed on {i} run"
