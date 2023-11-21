@@ -28,7 +28,7 @@ from steps import (
     tokenizer_loader,
 )
 
-from zenml import pipeline
+from zenml import get_pipeline_context, pipeline
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -69,6 +69,8 @@ def nlp_use_case_training_pipeline(
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
+    pipeline_extra = get_pipeline_context().extra
+
     ########## Load Dataset stage ##########
     dataset = data_loader()
 

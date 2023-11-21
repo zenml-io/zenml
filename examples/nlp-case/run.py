@@ -27,7 +27,7 @@ from pipelines import (
 
 from zenml.enums import ModelStages
 from zenml.logger import get_logger
-from zenml.model import ModelConfig
+from zenml.model.model_config import ModelConfig
 
 logger = get_logger(__name__)
 
@@ -104,7 +104,7 @@ Examples:
     "--training-pipeline",
     is_flag=True,
     default=True,
-    help="Whether to run the pipeline that trainers the model to staging.",
+    help="Whether to run the pipeline that traines the model to staging.",
 )
 @click.option(
     "--promoting-pipeline",

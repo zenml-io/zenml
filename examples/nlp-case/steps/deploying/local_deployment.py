@@ -77,7 +77,7 @@ def deploy_locally(
 
         return process.pid
 
-    labels = ",".join(labels)
+    lables = ",".join(labels)
     # Construct the path to the app.py file
     zenml_repo_root = Client().root
     if not zenml_repo_root:
@@ -95,7 +95,7 @@ def deploy_locally(
         "--model_name_or_path",
         model_name_or_path,
         "--labels",
-        labels,
+        lables,
         "--title",
         title,
         "--description",

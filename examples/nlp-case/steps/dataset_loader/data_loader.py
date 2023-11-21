@@ -41,7 +41,7 @@ def data_loader() -> Annotated[DatasetDict, "dataset"]:
         The loaded dataset artifact.
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    logger.info("Loading dataset airline_reviews... ")
+    logger.info(f"Loading dataset airline_reviews... ")
 
     # Load dataset based on the dataset value
     dataset = load_dataset("Shayanvsf/US_Airline_Sentiment")
@@ -58,7 +58,7 @@ def data_loader() -> Annotated[DatasetDict, "dataset"]:
     logger.info(
         f"Sample Example 1 : {dataset['train'][1]['text']} with label {dataset['train'][1]['label']}"
     )
-    logger.info(" Dataset Loaded Successfully")
+    logger.info(f" Dataset Loaded Successfully")
     ### YOUR CODE ENDS HERE ###
 
     return dataset

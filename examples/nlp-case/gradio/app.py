@@ -120,9 +120,7 @@ def sentiment_analysis(
         scores_ = output[0][0].detach().numpy()
         scores_ = softmax(scores_)
 
-        scores = {
-            label: float(score) for (label, score) in zip(labels, scores_)
-        }
+        scores = {l: float(s) for (l, s) in zip(labels, scores_)}
         return scores
 
     demo = gr.Interface(

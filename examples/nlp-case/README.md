@@ -9,7 +9,7 @@ with the following properties:
 - Project name: ZenML NLP project
 - Technical Name: nlp_use_case
 - Version: `0.0.1`
-- Licensed with apache to ZenML GmbH<info@zenml.io>
+- Licensed with apache to ZenML GmbH<>
 - Deployment environment: `staging`
 
 Settings of your project are:
@@ -162,9 +162,9 @@ The project loosely follows [the recommended ZenML project structure](https://do
 │   │   ├── promote_latest.py # promote latest step
 │   │   ├── promote_metric_compare_promoter.py  # metric compare promoter step
 │   │   └── promote_get_metrics.py   # get metric step
-│   ├── register            # `zenml.steps.register` implementations
+│   ├── registrer            # `zenml.steps.registrer` implementations
 │   │   ├── __init__.py
-│   │   └── model_log_register.py  # model log register step
+│   │   └── model_log_registrer.py  # model log registrer step
 │   ├── tokenization         # `zenml.steps.tokenization` implementations
 │   │   ├── __init__.py
 │   │   └── tokenization.py   # tokenization step

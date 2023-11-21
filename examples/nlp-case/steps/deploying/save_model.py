@@ -17,6 +17,7 @@
 
 
 from zenml import get_step_context, step
+from zenml.client import Client
 from zenml.logger import get_logger
 
 # Initialize logger
@@ -39,6 +40,8 @@ def save_model_to_deploy():
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     pipeline_extra = get_step_context().pipeline_run.config.extra
+    zenml_client = Client()
+
     logger.info(
         f" Loading latest version of the model for stage {pipeline_extra['target_env']}..."
     )
