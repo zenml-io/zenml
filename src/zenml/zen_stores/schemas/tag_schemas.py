@@ -147,7 +147,6 @@ class TagResourceSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            id=request.tag_resource_id,
             tag_id=request.tag_id,
             resource_id=request.resource_id,
             resource_type=request.resource_type.value,
