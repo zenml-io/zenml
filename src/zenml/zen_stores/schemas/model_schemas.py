@@ -80,6 +80,7 @@ class ModelSchema(NamedSchema, table=True):
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
             cascade="delete",
+            overlaps="tags",
         ),
     )
     model_versions: List["ModelVersionSchema"] = Relationship(

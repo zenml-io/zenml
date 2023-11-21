@@ -123,12 +123,14 @@ class TagResourceSchema(BaseSchema, table=True):
         back_populates="tags",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
+            overlaps="tags,model",
         ),
     )
     model: List["ModelSchema"] = Relationship(
         back_populates="tags",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
+            overlaps="tags,artifact",
         ),
     )
 

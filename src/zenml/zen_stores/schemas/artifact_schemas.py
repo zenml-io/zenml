@@ -69,6 +69,7 @@ class ArtifactSchema(NamedSchema, table=True):
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
             cascade="delete",
+            overlaps="tags",
         ),
     )
 
