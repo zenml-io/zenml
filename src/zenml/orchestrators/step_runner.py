@@ -732,6 +732,19 @@ class StepRunner:
 
         models = self._get_model_versions_from_artifacts(artifact_names)
         client = Client()
+
+        # Add models from external artifacts
+        for external_artifact in external_artifacts:
+            try:
+                artifact_id = external_artifact.get_artifact_id()
+                links = client.list_model_version_artifact_links(
+                    artifact_id=artifact_id,
+                )
+                for link in links:
+                    models.add((link.model, link.model_version))
+            except RuntimeError:  # artifacts uploaded by value have no models
+                pass
+
         for model in models:
             client.zen_store.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequestModel(

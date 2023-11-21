@@ -213,8 +213,7 @@ def _this_step_produces_output() -> Annotated[int, "data"]:
 def _this_step_tries_to_recover(run_number: int):
     mv = get_step_context().model_version._get_or_create_model_version()
     assert (
-        len(mv.data_artifact_ids["bar::_this_step_produces_output::data"])
-        == run_number
+        len(mv.data_artifact_ids["data"]) == run_number
     ), "expected AssertionError"
 
     raise Exception("make pipeline fail")
@@ -270,10 +269,7 @@ def test_recovery_of_steps(model_version: ModelVersion):
         )
         assert mv.name == model_version.version
         assert len(mv.data_artifact_ids) == 1
-        assert (
-            len(mv.data_artifact_ids["bar::_this_step_produces_output::data"])
-            == 3
-        )
+        assert len(mv.data_artifact_ids["data"]) == 3
 
 
 @step(model_version=ModelVersion(name="foo"))
@@ -603,7 +599,13 @@ def _consumer_step(a: int, b: int):
 
 
 @step(model_version=ModelVersion(name="step"))
-def _producer_step() -> Tuple[int, int, int]:
+def _producer_step() -> (
+    Tuple[
+        Annotated[int, "output_0"],
+        Annotated[int, "output_1"],
+        Annotated[int, "output_2"],
+    ]
+):
     return 1, 2, 3
 
 
@@ -611,17 +613,13 @@ def _producer_step() -> Tuple[int, int, int]:
 def _consumer_pipeline_with_step_context():
     _consumer_step.with_options(
         model_version=ModelVersion(name="step", version=ModelStages.LATEST)
-    )(ExternalArtifact(model_artifact_name="output_0"), 1)
+    )(ExternalArtifact(name="output_0"), 1)
 
 
 @pipeline
 def _consumer_pipeline_with_artifact_context():
     _consumer_step(
-        ExternalArtifact(
-            model_artifact_name="output_1",
-            model_name="step",
-            model_version=ModelStages.LATEST,
-        ),
+        ExternalArtifact(name="output_1"),
         2,
     )
 
@@ -629,7 +627,7 @@ def _consumer_pipeline_with_artifact_context():
 @pipeline(model_version=ModelVersion(name="step", version=ModelStages.LATEST))
 def _consumer_pipeline_with_pipeline_context():
     _consumer_step(
-        ExternalArtifact(model_artifact_name="output_2"),
+        ExternalArtifact(name="output_2"),
         3,
     )
 
