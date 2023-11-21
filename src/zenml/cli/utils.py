@@ -1549,7 +1549,7 @@ def print_components_table(
             "NAME": component.name,
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor,
-            "OWNER": f"{component.user.name if component.user else 'DELETED!'}",
+            "OWNER": f"{component.user.name if component.user else '-'}",
         }
         configurations.append(component_config)
     print_table(configurations)
@@ -1657,7 +1657,7 @@ def print_service_connectors_table(
             "TYPE": connector.emojified_connector_type,
             "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
             "RESOURCE NAME": resource_name,
-            "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
+            "OWNER": f"{connector.user.name if connector.user else '-'}",
             "EXPIRES IN": expires_in(
                 connector.expires_at, ":name_badge: Expired!"
             )
@@ -1761,7 +1761,7 @@ def print_service_connector_configuration(
         else:
             user_name = connector.user.name
     else:
-        user_name = "[DELETED]"
+        user_name = "-"
 
     if isinstance(connector, ServiceConnectorResponse):
         declare(

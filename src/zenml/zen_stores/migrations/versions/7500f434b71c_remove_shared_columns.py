@@ -47,11 +47,18 @@ def resolve_duplicate_names() -> None:
 
     meta = sa.MetaData(bind=op.get_bind())
     meta.reflect(
-        only=("stack", "stack_component", "service_connector", "workspace")
+        only=(
+            "stack",
+            "stack_component",
+            "stack_composition",
+            "service_connector",
+            "workspace",
+        )
     )
 
     stack_table = sa.Table("stack", meta)
     stack_component_table = sa.Table("stack_component", meta)
+    stack_composition_table = sa.Table("stack_composition", meta)
     workspace_table = sa.Table("workspace", meta)
 
     _rename_old_default_entities(stack_table)
@@ -62,6 +69,7 @@ def resolve_duplicate_names() -> None:
 
     stack_components = []
     stacks = []
+    stack_compositions = []
     for row in connection.execute(workspace_query).fetchall():
         workspace_id = row[0]
         artifact_store_id = str(uuid4()).replace("-", "")
@@ -89,24 +97,28 @@ def resolve_duplicate_names() -> None:
             "updated": utcnow,
         }
 
+        stack_id = str(uuid4()).replace("-", "")
         default_stack = {
-            "id": str(uuid4()).replace("-", ""),
+            "id": stack_id,
             "workspace_id": workspace_id,
             "name": "default",
-            "components": {
-                "artifact_store": [artifact_store_id],
-                "orchestrator": [orchestrator_id],
-            },
             "is_shared": True,
             "created": utcnow,
             "updated": utcnow,
         }
+        stack_compositions.append(
+            {"stack_id": stack_id, "component_id": artifact_store_id}
+        )
+        stack_compositions.append(
+            {"stack_id": stack_id, "component_id": orchestrator_id}
+        )
         stack_components.append(default_artifact_store)
         stack_components.append(default_orchestrator)
         stacks.append(default_stack)
 
     op.bulk_insert(stack_component_table, rows=stack_components)
     op.bulk_insert(stack_table, rows=stacks)
+    op.bulk_insert(stack_composition_table, rows=stack_compositions)
 
     service_connector_table = sa.Table("service_connector", meta)
     query = sa.select(
