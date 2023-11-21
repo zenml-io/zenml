@@ -14,6 +14,8 @@
 """Endpoint definitions for run metadata."""
 
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, RUN_METADATA, VERSION_1
@@ -60,4 +62,30 @@ def list_run_metadata(
     """
     return zen_store().list_run_metadata(
         run_metadata_filter_model, hydrate=hydrate
+    )
+
+
+@router.get(
+    "/{run_metadata_id}",
+    response_model=RunMetadataResponse,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_run_metadata(
+    run_metadata_id: UUID,
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> RunMetadataResponse:
+    """Get run metadata by ID.
+
+    Args:
+        run_metadata_id_or_name: The ID of run metadata.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+
+    Returns:
+        The run metadata response.
+    """
+    return zen_store().get_run_metadata(
+        run_metadata_id=run_metadata_id, hydrate=hydrate
     )
