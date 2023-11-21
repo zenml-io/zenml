@@ -6,7 +6,9 @@ Create Date: 2023-10-16 15:15:34.865337
 
 """
 import base64
+from collections import defaultdict
 from datetime import datetime
+from typing import Optional, Set
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -19,26 +21,70 @@ branch_labels = None
 depends_on = None
 
 
-def _rename_old_default_entities(table: sa.Table) -> None:
-    """Include owner id in the name of default entities.
+def _rename_duplicate_entities(
+    table: sa.Table, reserved_names: Optional[Set[str]] = None
+) -> None:
+    """Include owner id in the name of duplicate entities.
 
     Args:
-        table: The table in which to rename the default entities.
+        table: The table in which to rename the duplicate entities.
+        reserved_names: Optional reserved names not to use.
     """
     connection = op.get_bind()
 
     query = sa.select(
         table.c.id,
+        table.c.name,
         table.c.user_id,
-    ).where(table.c.name == "default")
+    )
 
-    res = connection.execute(query).fetchall()
-    for id, owner_id in res:
-        name = f"default-{owner_id}"
+    names = reserved_names or set()
+    for id, name, user_id in connection.execute(query).fetchall():
+        if name in names:
+            for suffix_length in range(4, len(user_id)):
+                new_name = f"{name}-{user_id[:suffix_length]}"
+                if new_name not in names:
+                    name = new_name
+                    break
 
-        connection.execute(
-            sa.update(table).where(table.c.id == id).values(name=name)
-        )
+            connection.execute(
+                sa.update(table).where(table.c.id == id).values(name=name)
+            )
+
+        names.add(name)
+
+
+def _rename_duplicate_components(table: sa.Table) -> None:
+    """Include owner id in the name of duplicate entities.
+
+    Args:
+        table: The table in which to rename the duplicate entities.
+    """
+    connection = op.get_bind()
+
+    query = sa.select(
+        table.c.id,
+        table.c.type,
+        table.c.name,
+        table.c.user_id,
+    )
+
+    names_per_type = defaultdict(lambda: {"default"})
+
+    for id, type_, name, user_id in connection.execute(query).fetchall():
+        names = names_per_type[type_]
+        if name in names:
+            for suffix_length in range(4, len(user_id)):
+                new_name = f"{name}-{user_id[:suffix_length]}"
+                if new_name not in names:
+                    name = new_name
+                    break
+
+            connection.execute(
+                sa.update(table).where(table.c.id == id).values(name=name)
+            )
+
+        names.add(name)
 
 
 def resolve_duplicate_names() -> None:
@@ -60,9 +106,11 @@ def resolve_duplicate_names() -> None:
     stack_component_table = sa.Table("stack_component", meta)
     stack_composition_table = sa.Table("stack_composition", meta)
     workspace_table = sa.Table("workspace", meta)
+    service_connector_table = sa.Table("service_connector", meta)
 
-    _rename_old_default_entities(stack_table)
-    _rename_old_default_entities(stack_component_table)
+    _rename_duplicate_entities(stack_table, reserved_names={"default"})
+    _rename_duplicate_components(stack_component_table)
+    _rename_duplicate_entities(service_connector_table)
 
     workspace_query = sa.select(workspace_table.c.id)
     utcnow = datetime.utcnow()
@@ -119,28 +167,6 @@ def resolve_duplicate_names() -> None:
     op.bulk_insert(stack_component_table, rows=stack_components)
     op.bulk_insert(stack_table, rows=stacks)
     op.bulk_insert(stack_composition_table, rows=stack_compositions)
-
-    service_connector_table = sa.Table("service_connector", meta)
-    query = sa.select(
-        service_connector_table.c.id,
-        service_connector_table.c.name,
-        service_connector_table.c.user_id,
-    )
-
-    names = set()
-    for id, name, user_id in connection.execute(query).fetchall():
-        if name in names:
-            name = f"{name}-{user_id}"
-            # This will never happen, as we had a constraint on unique names
-            # per user
-            assert name not in names
-            connection.execute(
-                sa.update(service_connector_table)
-                .where(service_connector_table.c.id == id)
-                .values(name=name)
-            )
-
-        names.add(name)
 
 
 def upgrade() -> None:
