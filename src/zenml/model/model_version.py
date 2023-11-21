@@ -267,19 +267,14 @@ class ModelVersion(BaseModel):
 
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False
-    ) -> "ModelVersion":
+    ) -> None:
         """Sets this Model Version to a desired stage.
 
         Args:
             stage: the target stage for model version.
             force: whether to force archiving of current model version in target stage or raise.
-
-        Returns:
-            Updated Model Version object.
         """
-        return self._get_or_create_model_version().set_stage(
-            stage=stage, force=force
-        )
+        self._get_or_create_model_version().set_stage(stage=stage, force=force)
 
     #########################
     #   Internal methods    #
@@ -397,7 +392,7 @@ class ModelVersion(BaseModel):
         from zenml.client import Client
 
         zenml_client = Client()
-        mv = zenml_client._get_model_version(
+        mv = zenml_client.get_model_version(
             model_name_or_id=self.name,
             model_version_name_or_number_or_id=self.version,
         )

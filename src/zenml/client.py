@@ -177,7 +177,6 @@ from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
-    from zenml.model.model_version import ModelVersion
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -5074,7 +5073,7 @@ class Client(metaclass=ClientMetaClass):
         model_name_or_id: Union[str, UUID],
         name: Optional[str] = None,
         description: Optional[str] = None,
-    ) -> "ModelVersion":
+    ) -> ModelVersionResponseModel:
         """Creates a new model version in Model Control Plane.
 
         Args:
@@ -5095,7 +5094,7 @@ class Client(metaclass=ClientMetaClass):
                 workspace=self.active_workspace.id,
                 model=model_name_or_id,
             )
-        ).to_model_version(True, False)
+        )
 
     def delete_model_version(
         self,
@@ -5116,29 +5115,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_name_or_number_or_id: Optional[
             Union[str, int, ModelStages, UUID]
         ] = None,
-    ) -> "ModelVersion":
-        """Get an existing model version from Model Control Plane.
-
-        Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped - latest version is retrieved.
-
-        Returns:
-            The model version of interest.
-        """
-        return self._get_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        ).to_model_version(suppress_class_validation_warnings=True)
-
-    def _get_model_version(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, ModelStages, UUID]
-        ] = None,
-    ) -> "ModelVersionResponseModel":
+    ) -> ModelVersionResponseModel:
         """Get an existing model version from Model Control Plane.
 
         Args:
@@ -5270,7 +5247,7 @@ class Client(metaclass=ClientMetaClass):
         stage: Optional[Union[str, ModelStages]] = None,
         force: bool = False,
         name: Optional[str] = None,
-    ) -> "ModelVersion":
+    ) -> ModelVersionResponseModel:
         """Get all model versions by filter.
 
         Args:
@@ -5299,7 +5276,7 @@ class Client(metaclass=ClientMetaClass):
                 force=force,
                 name=name,
             ),
-        ).to_model_version(suppress_class_validation_warnings=True)
+        )
 
     #################################################
     # Model Versions Artifacts

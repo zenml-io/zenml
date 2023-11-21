@@ -662,7 +662,7 @@ class ModelVersionContext:
             model = client.create_model(name=self.model)
         if self.create_version:
             try:
-                mv = client._get_model_version(self.model, self.model_version)
+                mv = client.get_model_version(self.model, self.model_version)
             except KeyError:
                 mv = client.zen_store.create_model_version(
                     ModelVersionRequestModel(

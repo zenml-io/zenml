@@ -70,8 +70,8 @@ def test_link_minimalistic():
         simple_pipeline()
 
         mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
-        assert mv.name == MODEL_NAME
-        assert mv.number == 1 and mv.version == "1"
+        assert mv.model.name == MODEL_NAME
+        assert mv.number == 1 and mv.name == "1"
         links = client.list_model_version_artifact_links(
             model_version_id=mv.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
@@ -127,8 +127,8 @@ def test_link_multiple_named_outputs():
         multi_named_pipeline()
 
         mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
-        assert mv.name == MODEL_NAME
-        assert mv.number == 1 and mv.version == "1"
+        assert mv.model.name == MODEL_NAME
+        assert mv.number == 1 and mv.name == "1"
         al = client.list_model_version_artifact_links(
             model_version_id=mv.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
@@ -167,8 +167,8 @@ def test_link_multiple_named_outputs_without_links():
         multi_named_pipeline_not_tracked()
 
         mv = client.get_model_version(MODEL_NAME, ModelStages.LATEST)
-        assert mv.number == 1 and mv.version == "1"
-        assert mv.name == MODEL_NAME
+        assert mv.number == 1 and mv.name == "1"
+        assert mv.model.name == MODEL_NAME
         artifact_links = client.list_model_version_artifact_links(
             model_version_id=mv.id,
             model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
@@ -358,9 +358,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
 
 
 @step(enable_cache=True)
-def _cacheable_step_annotated() -> (
-    Annotated[str, "cacheable", ArtifactConfig()]
-):
+def _cacheable_step_annotated() -> Annotated[str, "cacheable"]:
     return "cacheable"
 
 
@@ -411,7 +409,7 @@ def test_artifacts_linked_from_cache_steps():
             ModelVersion(name="bar")._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
-            mvrm = client._get_model_version(
+            mvrm = client.get_model_version(
                 model_name_or_id="foo", model_version_name_or_number_or_id=i
             )
             assert len(mvrm.data_artifact_ids) == 2, f"Failed on {i} run"
@@ -424,7 +422,7 @@ def test_artifacts_linked_from_cache_steps():
                 "_inner_pipeline::_cacheable_step_annotated::cacheable",
             }, f"Failed on {i} run"
 
-            mvrm = client._get_model_version(
+            mvrm = client.get_model_version(
                 model_name_or_id="bar",
             )
 
@@ -465,7 +463,7 @@ def test_artifacts_linked_from_cache_steps_same_id():
             ModelVersion(name="bar")._get_or_create_model_version()
             _inner_pipeline(i != 1)
 
-            mvrm = client._get_model_version(
+            mvrm = client.get_model_version(
                 model_name_or_id="bar",
             )
             assert len(mvrm.data_artifact_ids) == 1, f"Failed on {i} run"

@@ -430,16 +430,13 @@ class ModelVersionResponseModel(
 
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False
-    ) -> "ModelVersion":
+    ) -> None:
         """Sets this Model Version to a desired stage.
 
         Args:
             stage: the target stage for model version.
             force: whether to force archiving of current model version in
                 target stage or raise.
-
-        Returns:
-            Updated Model Version object.
 
         Raises:
             ValueError: if model_stage is not valid.
@@ -450,7 +447,7 @@ class ModelVersionResponseModel(
         if stage not in [stage.value for stage in ModelStages]:
             raise ValueError(f"`{stage}` is not a valid model stage.")
 
-        return Client().update_model_version(
+        Client().update_model_version(
             model_name_or_id=self.model.id,
             version_name_or_id=self.id,
             stage=stage,

@@ -268,7 +268,6 @@ def test_recovery_of_steps(model_version: ModelVersion):
             model_name_or_id="foo",
             model_version_name_or_number_or_id=model_version.version,
         )
-        mv = client.zen_store.get_model_version(mv.id)
         assert mv.name == model_version.version
         assert len(mv.data_artifact_ids) == 1
         assert (
@@ -406,7 +405,6 @@ def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
             model_name_or_id="foo",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
-        mv = client.zen_store.get_model_version(mv.id)
 
         assert len(mv.pipeline_run_ids) == 2
         assert {run_name for run_name in mv.pipeline_run_ids} == {
@@ -460,7 +458,6 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
             model_name_or_id="foo",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
-        mv = client.zen_store.get_model_version(mv.id)
 
         assert len(mv.pipeline_run_ids) == 2
         assert {run_name for run_name in mv.pipeline_run_ids} == {
@@ -592,7 +589,6 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
                 model_name_or_id=model.id,
                 model_version_name_or_number_or_id=ModelStages.LATEST,
             )
-            mv = client.zen_store.get_model_version(mv.id)
 
             assert len(mv.pipeline_run_ids) == 2
             assert {run_name for run_name in mv.pipeline_run_ids} == {
@@ -668,7 +664,6 @@ def test_that_consumption_also_registers_run_in_model_version():
             model_name_or_id="step",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
-        mv = client.zen_store.get_model_version(mv.id)
 
         assert len(mv.pipeline_run_ids) == 4
         assert {run_name for run_name in mv.pipeline_run_ids} == {
