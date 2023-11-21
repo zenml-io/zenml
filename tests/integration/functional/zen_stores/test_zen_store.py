@@ -5307,37 +5307,37 @@ class TestRunMetadata:
                 pr if type_ == MetadataResourceTypes.PIPELINE_RUN else sr
             )
 
-            rm = client.zen_store.create_run_metadata(
-                RunMetadataRequest(
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
-                    resource_id=resource.id,
-                    resource_type=type_,
-                    values={"foo": "bar"},
-                    types={"foo": MetadataTypeEnum.STRING},
-                    stack_component_id=sc.id
-                    if type_ == MetadataResourceTypes.PIPELINE_RUN
-                    or type_ == MetadataResourceTypes.STEP_RUN
-                    else None,
-                )
-            )
-            rm = client.zen_store.get_run_metadata(rm[0].id, True)
-            assert rm.key == "foo"
-            assert rm.value == "bar"
-            assert rm.resource_id == resource.id
-            assert rm.resource_type == type_
-            assert rm.type == MetadataTypeEnum.STRING
-
-            if type_ == MetadataResourceTypes.ARTIFACT:
-                client.zen_store.delete_artifact(resource.id)
-            elif (
-                type_ == MetadataResourceTypes.PIPELINE_RUN
+        rm = client.zen_store.create_run_metadata(
+            RunMetadataRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                resource_id=resource.id,
+                resource_type=type_,
+                values={"foo": "bar"},
+                types={"foo": MetadataTypeEnum.STRING},
+                stack_component_id=sc.id
+                if type_ == MetadataResourceTypes.PIPELINE_RUN
                 or type_ == MetadataResourceTypes.STEP_RUN
-            ):
-                client.zen_store.delete_run(pr.id)
-                client.zen_store.delete_deployment(deployment.id)
+                else None,
+            )
+        )
+        rm = client.zen_store.get_run_metadata(rm[0].id, True)
+        assert rm.key == "foo"
+        assert rm.value == "bar"
+        assert rm.resource_id == resource.id
+        assert rm.resource_type == type_
+        assert rm.type == MetadataTypeEnum.STRING
 
-            with pytest.raises(KeyError):
-                client.zen_store.get_run_metadata(rm.id)
+        if type_ == MetadataResourceTypes.ARTIFACT:
+            client.zen_store.delete_artifact(resource.id)
+        elif (
+            type_ == MetadataResourceTypes.PIPELINE_RUN
+            or type_ == MetadataResourceTypes.STEP_RUN
+        ):
+            client.zen_store.delete_run(pr.id)
+            client.zen_store.delete_deployment(deployment.id)
 
-            client.zen_store.delete_stack_component(sc.id)
+        with pytest.raises(KeyError):
+            client.zen_store.get_run_metadata(rm.id)
+
+        client.zen_store.delete_stack_component(sc.id)
