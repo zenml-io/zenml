@@ -79,7 +79,7 @@ def get_run_metadata(
     """Get run metadata by ID.
 
     Args:
-        run_metadata_id_or_name: The ID of run metadata.
+        run_metadata_id: The ID of run metadata.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
