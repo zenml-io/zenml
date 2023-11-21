@@ -245,4 +245,6 @@ class StackFilter(WorkspaceScopedFilter):
 
 @server_owned_request_model
 class InternalStackRequest(StackRequest):
+    """Internal stack request model."""
+
     pass

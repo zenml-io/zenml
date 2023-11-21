@@ -360,4 +360,6 @@ class ComponentFilter(WorkspaceScopedFilter):
 
 @server_owned_request_model
 class InternalComponentRequest(ComponentRequest):
+    """Internal component request model."""
+
     pass

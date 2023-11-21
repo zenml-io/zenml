@@ -194,7 +194,6 @@ def get_permission_denied_model(model: AnyResponseModel) -> AnyResponseModel:
     Returns:
         The permission denied model.
     """
-
     if isinstance(model, BaseResponse):
         return cast(AnyResponseModel, get_permission_denied_model_v2(model))
     else:
