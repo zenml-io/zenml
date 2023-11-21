@@ -73,7 +73,7 @@ def upgrade() -> None:
         """
         UPDATE pipeline_deployment
         SET client_version = (
-            SELECT pipeline_run.client_version
+            SELECT max(pipeline_run.client_version)
             FROM pipeline_run
             WHERE pipeline_run.deployment_id = pipeline_deployment.id
         )
@@ -90,7 +90,7 @@ def upgrade() -> None:
         """
         UPDATE pipeline_deployment
         SET server_version = (
-            SELECT pipeline_run.server_version
+            SELECT max(pipeline_run.server_version)
             FROM pipeline_run
             WHERE pipeline_run.deployment_id = pipeline_deployment.id
         )
