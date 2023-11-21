@@ -21,7 +21,6 @@ from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model_version import ModelVersion
-from zenml.models import ModelVersionArtifactFilterModel
 
 MODEL_NAME = "foo"
 
@@ -74,10 +73,8 @@ def test_link_minimalistic():
         assert mv.number == 1 and mv.name == "1"
         links = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-            ),
+            user_id=user,
+            workspace_id=ws,
         )
         assert links.size == 3
 
@@ -131,10 +128,8 @@ def test_link_multiple_named_outputs():
         assert mv.number == 1 and mv.name == "1"
         al = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-            ),
+            user_id=user,
+            workspace_id=ws,
         )
         assert al.size == 3
 
@@ -171,10 +166,8 @@ def test_link_multiple_named_outputs_without_links():
         assert mv.model.name == MODEL_NAME
         artifact_links = client.list_model_version_artifact_links(
             model_version_id=mv.id,
-            model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                user_id=user,
-                workspace_id=ws,
-            ),
+            user_id=user,
+            workspace_id=ws,
         )
         assert artifact_links.size == 3
 
@@ -238,17 +231,13 @@ def test_link_multiple_named_outputs_with_self_context_and_caching():
 
             al1 = client.list_model_version_artifact_links(
                 model_version_id=mv1.id,
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                    user_id=user,
-                    workspace_id=ws,
-                ),
+                user_id=user,
+                workspace_id=ws,
             )
             al2 = client.list_model_version_artifact_links(
                 model_version_id=mv2.id,
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                    user_id=user,
-                    workspace_id=ws,
-                ),
+                user_id=user,
+                workspace_id=ws,
             )
             assert al1.size == 2, f"Failed on {run_count} run"
             assert al2.size == 1, f"Failed on {run_count} run"
@@ -345,10 +334,8 @@ def test_link_multiple_named_outputs_with_mixed_linkage():
             artifact_links.append(
                 client.list_model_version_artifact_links(
                     model_version_id=mv.id,
-                    model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                        user_id=user,
-                        workspace_id=ws,
-                    ),
+                    user_id=user,
+                    workspace_id=ws,
                 )
             )
 

@@ -57,6 +57,8 @@ from zenml.constants import (
     INFO,
     LOGIN,
     LOGS,
+    MODEL_VERSION_ARTIFACTS,
+    MODEL_VERSION_PIPELINE_RUNS,
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
@@ -3050,21 +3052,19 @@ class RestZenStore(BaseZenStore):
 
     def list_model_version_artifact_links(
         self,
-        model_version_id: UUID,
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get all model version to artifact links by filter.
 
         Args:
-            model_version_id: ID of the model version containing the link.
-            model_version_artifact_link_filter_model: All filter parameters including pagination
-                params.
+            model_version_artifact_link_filter_model: All filter parameters
+                including pagination params.
 
         Returns:
             A page of all model version to artifact links.
         """
         return self._list_paginated_resources(
-            route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
+            route=MODEL_VERSION_ARTIFACTS,
             response_model=ModelVersionArtifactResponseModel,
             filter_model=model_version_artifact_link_filter_model,
         )
@@ -3113,21 +3113,19 @@ class RestZenStore(BaseZenStore):
 
     def list_model_version_pipeline_run_links(
         self,
-        model_version_id: UUID,
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_version_id: ID of the model version containing the link.
-            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
-                params.
+            model_version_pipeline_run_link_filter_model: All filter parameters
+                including pagination params.
 
         Returns:
             A page of all model version to pipeline run links.
         """
         return self._list_paginated_resources(
-            route=f"{MODEL_VERSIONS}/{model_version_id}{RUNS}",
+            route=MODEL_VERSION_PIPELINE_RUNS,
             response_model=ModelVersionPipelineRunResponseModel,
             filter_model=model_version_pipeline_run_link_filter_model,
         )

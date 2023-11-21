@@ -117,57 +117,6 @@ class ModelScopedFilterModel(WorkspaceScopedFilter):
         return query
 
 
-class ModelVersionScopedFilterModel(ModelScopedFilterModel):
-    """Base filter model inside Model Version Scope."""
-
-    _model_version_id: UUID = PrivateAttr(None)
-
-    def set_scope_model_version(
-        self, model_version_name_or_id: Union[str, UUID]
-    ) -> None:
-        """Set the model version to scope this response.
-
-        Args:
-            model_version_name_or_id: The model version to scope this response to.
-        """
-        try:
-            model_version_id = UUID(str(model_version_name_or_id))
-        except ValueError:
-            from zenml.client import Client
-
-            model_version_id = (
-                Client()
-                .get_model_version(
-                    model_name_or_id=self._model_id,
-                    model_version_name_or_number_or_id=model_version_name_or_id,
-                )
-                .id
-            )
-        self._model_version_id = model_version_id
-
-    def apply_filter(
-        self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
-        table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        query = super().apply_filter(query=query, table=table)
-
-        query = query.where(
-            getattr(table, "model_version_id") == self._model_version_id
-        )
-
-        return query
-
-
 class ModelVersionRequestModel(
     ModelVersionBaseModel,
     WorkspaceScopedRequestModel,
@@ -542,7 +491,7 @@ class ModelVersionArtifactResponseModel(
     """Model version link with artifact response model."""
 
 
-class ModelVersionArtifactFilterModel(ModelVersionScopedFilterModel):
+class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(
@@ -551,18 +500,28 @@ class ModelVersionArtifactFilterModel(ModelVersionScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
     )
+    model_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by model ID"
+    )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by model version ID"
+    )
+    artifact_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by artifact ID"
+    )
     only_data_artifacts: Optional[bool] = False
     only_model_artifacts: Optional[bool] = False
     only_endpoint_artifacts: Optional[bool] = False
 
     CLI_EXCLUDE_FIELDS = [
-        *ModelVersionScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "only_data_artifacts",
         "only_model_artifacts",
         "only_endpoint_artifacts",
+        "model_id",
+        "model_version_id",
         "user_id",
         "workspace_id",
-        "scope_workspace",
         "updated",
         "id",
     ]
@@ -588,7 +547,7 @@ class ModelVersionPipelineRunResponseModel(
     """Model version link with pipeline run response model."""
 
 
-class ModelVersionPipelineRunFilterModel(ModelVersionScopedFilterModel):
+class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
 
     workspace_id: Optional[Union[UUID, str]] = Field(
@@ -597,6 +556,25 @@ class ModelVersionPipelineRunFilterModel(ModelVersionScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
     )
+    model_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by model ID"
+    )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by model version ID"
+    )
+    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by pipeline run ID"
+    )
+
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        "model_id",
+        "model_version_id",
+        "user_id",
+        "workspace_id",
+        "updated",
+        "id",
+    ]
 
 
 class ModelRequestModel(

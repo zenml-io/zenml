@@ -540,12 +540,10 @@ def _print_artifacts_links_generic(
 
     links = Client().list_model_version_artifact_links(
         model_version_id=model_version.id,
-        model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-            only_data_artifacts=only_data_artifacts,
-            only_endpoint_artifacts=only_endpoint_artifacts,
-            only_model_artifacts=only_model_artifacts,
-            **kwargs,
-        ),
+        only_data_artifacts=only_data_artifacts,
+        only_endpoint_artifacts=only_endpoint_artifacts,
+        only_model_artifacts=only_model_artifacts,
+        **kwargs,
     )
 
     cli_utils.print_pydantic_models(
@@ -672,9 +670,7 @@ def list_model_version_pipeline_runs(
 
     links = Client().list_model_version_pipeline_run_links(
         model_version_id=model_version_response_model.id,
-        model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
-            **kwargs,
-        ),
+        **kwargs,
     )
 
     cli_utils.print_pydantic_models(

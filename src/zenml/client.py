@@ -5286,22 +5286,59 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_artifact_links(
         self,
-        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-        model_version_id: UUID,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[UUID, str]] = None,
+        user_id: Optional[Union[UUID, str]] = None,
+        model_id: Optional[Union[UUID, str]] = None,
+        model_version_id: Optional[Union[UUID, str]] = None,
+        artifact_id: Optional[Union[UUID, str]] = None,
+        only_data_artifacts: Optional[bool] = None,
+        only_model_artifacts: Optional[bool] = None,
+        only_endpoint_artifacts: Optional[bool] = None,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get model version to artifact links by filter in Model Control Plane.
 
         Args:
-            model_version_id: id of the model version to be retrieved.
-            model_version_artifact_link_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: Use the workspace id for filtering
+            user_id: Use the user id for filtering
+            model_id: Use the model id for filtering
+            model_version_id: Use the model version id for filtering
+            artifact_id: Use the artifact id for filtering
+            only_data_artifacts: Use to filter by data artifacts
+            only_model_artifacts: Use to filter by model artifacts
+            only_endpoint_artifacts: Use to filter by endpoint artifacts
 
         Returns:
             A page of all model version to artifact links.
         """
         return self.zen_store.list_model_version_artifact_links(
-            model_version_id=model_version_id,
-            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
+            ModelVersionArtifactFilterModel(
+                sort_by=sort_by,
+                logical_operator=logical_operator,
+                page=page,
+                size=size,
+                created=created,
+                updated=updated,
+                workspace_id=workspace_id,
+                user_id=user_id,
+                model_id=model_id,
+                model_version_id=model_version_id,
+                artifact_id=artifact_id,
+                only_data_artifacts=only_data_artifacts,
+                only_model_artifacts=only_model_artifacts,
+                only_endpoint_artifacts=only_endpoint_artifacts,
+            )
         )
 
     #################################################
@@ -5312,22 +5349,50 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_pipeline_run_links(
         self,
-        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-        model_version_id: UUID,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[UUID, str]] = None,
+        user_id: Optional[Union[UUID, str]] = None,
+        model_id: Optional[Union[UUID, str]] = None,
+        model_version_id: Optional[Union[UUID, str]] = None,
+        pipeline_run_id: Optional[Union[UUID, str]] = None,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_version_id: id of the model version to be retrieved.
-            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: Use the workspace id for filtering
+            user_id: Use the user id for filtering
+            model_id: Use the model id for filtering
+            model_version_id: Use the model version id for filtering
+            pipeline_run_id: Use the pipeline run id for filtering
 
         Returns:
             A page of all model version to pipeline run links.
         """
         return self.zen_store.list_model_version_pipeline_run_links(
-            model_version_id=model_version_id,
-            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
+            ModelVersionPipelineRunFilterModel(
+                sort_by=sort_by,
+                logical_operator=logical_operator,
+                page=page,
+                size=size,
+                created=created,
+                updated=updated,
+                workspace_id=workspace_id,
+                user_id=user_id,
+                model_id=model_id,
+                model_version_id=model_version_id,
+                pipeline_run_id=pipeline_run_id,
+            )
         )
 
     # --------------------------- Authorized Devices ---------------------------
