@@ -7180,7 +7180,7 @@ class SqlZenStore(BaseZenStore):
                     ArtifactSchema.name
                     == model_version_artifact_link_name_or_id
                 ).where(
-                    ModelVersionArtifactSchema.artifact == ArtifactSchema.id
+                    ModelVersionArtifactSchema.artifact_id == ArtifactSchema.id
                 )
 
             model_version_artifact_link = session.exec(query).first()
@@ -7293,7 +7293,10 @@ class SqlZenStore(BaseZenStore):
                 )
             except ValueError:
                 query = query.where(
-                    ModelVersionPipelineRunSchema.pipeline_run.name
+                    ModelVersionPipelineRunSchema.pipeline_run_id
+                    == PipelineRunSchema.id
+                ).where(
+                    PipelineRunSchema.name
                     == model_version_pipeline_run_link_name_or_id
                 )
 

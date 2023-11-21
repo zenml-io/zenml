@@ -263,6 +263,15 @@ class ArtifactResponse(
         """
         return self.get_metadata().data_type
 
+    @property
+    def has_custom_name(self) -> bool:
+        """The `has_custom_name` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().has_custom_name
+
     # Helper methods
     @property
     def step(self) -> "StepRunResponse":

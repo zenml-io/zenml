@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Model implementation to support Model Control Plane feature."""
 
-import re
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -318,8 +317,6 @@ class ModelVersionResponseModel(
         collection: Dict[str, Dict[str, UUID]],
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the artifact linked to this model version given type.
 
@@ -327,39 +324,16 @@ class ModelVersionResponseModel(
             collection: The collection to search in (one of self.model_artifact_ids, self.data_artifact_ids, self.endpoint_artifact_ids)
             name: The name of the artifact to retrieve.
             version: The version of the artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated the artifact.
-            step_name: The name of the step-generated the artifact.
 
         Returns:
             Specific version of an artifact from collection or None
-
-        Raises:
-            RuntimeError: If more than one artifact found by given keys
         """
         from zenml.client import Client
 
         client = Client()
 
-        search_pattern = re.compile(
-            (pipeline_name or r"(.*)")
-            + r"::"
-            + (step_name or r"(.*)")
-            + r"::"
-            + name
-        )
-        names = []
-        for key in collection:
-            if search_pattern.match(key):
-                names.append(key)
-        if len(names) > 1:
-            raise RuntimeError(
-                f"Found more than one artifact linked to this model version using "
-                f"filter: pipeline_name `{pipeline_name}`, step_name `{step_name}`, name `{name}`.\n"
-                + str(names)
-            )
-        if len(names) == 0:
+        if name not in collection:
             return None
-        name = names[0]
         if version is None:
             version = max(collection[name].keys())
         return client.get_artifact(collection[name][version])
@@ -368,16 +342,12 @@ class ModelVersionResponseModel(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the artifact linked to this model version.
 
         Args:
             name: The name of the artifact to retrieve.
             version: The version of the artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated the artifact.
-            step_name: The name of the step-generated the artifact.
 
         Returns:
             Specific version of an artifact or None
@@ -387,74 +357,62 @@ class ModelVersionResponseModel(
             **self.data_artifact_ids,
             **self.endpoint_artifact_ids,
         }
-        return self._get_linked_object(
-            all_artifact_ids, name, version, pipeline_name, step_name
-        )
+        return self._get_linked_object(all_artifact_ids, name, version)
 
     def get_model_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the model artifact linked to this model version.
 
         Args:
             name: The name of the model artifact to retrieve.
             version: The version of the model artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated the model artifact.
-            step_name: The name of the step-generated the model artifact.
 
         Returns:
             Specific version of the model artifact or None
         """
-        return self._get_linked_object(
-            self.model_artifact_ids, name, version, pipeline_name, step_name
-        )
+        return self._get_linked_object(self.model_artifact_ids, name, version)
 
     def get_data_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the data artifact linked to this model version.
 
         Args:
             name: The name of the data artifact to retrieve.
             version: The version of the data artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the data artifact.
-            step_name: The name of the step generated the data artifact.
 
         Returns:
             Specific version of the data artifact or None
         """
         return self._get_linked_object(
-            self.data_artifact_ids, name, version, pipeline_name, step_name
+            self.data_artifact_ids,
+            name,
+            version,
         )
 
     def get_endpoint_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the endpoint artifact linked to this model version.
 
         Args:
             name: The name of the endpoint artifact to retrieve.
             version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the endpoint artifact.
-            step_name: The name of the step generated the endpoint artifact.
 
         Returns:
             Specific version of the endpoint artifact or None
         """
         return self._get_linked_object(
-            self.endpoint_artifact_ids, name, version, pipeline_name, step_name
+            self.endpoint_artifact_ids,
+            name,
+            version,
         )
 
     def get_pipeline_run(self, name: str) -> "PipelineRunResponse":

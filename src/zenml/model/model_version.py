@@ -161,6 +161,10 @@ class ModelVersion(BaseModel):
 
         Returns:
             The loaded artifact.
+
+        Raises:
+            ValueError: if the model version is not linked to any artifact with
+                the given name and version.
         """
         from zenml.artifacts.utils import load_artifact
 
@@ -178,16 +182,12 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the artifact linked to this model version.
 
         Args:
             name: The name of the artifact to retrieve.
             version: The version of the artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the artifact.
-            step_name: The name of the step generated the artifact.
 
         Returns:
             Specific version of the artifact or None
@@ -195,24 +195,18 @@ class ModelVersion(BaseModel):
         return self._get_or_create_model_version().get_artifact(
             name=name,
             version=version,
-            pipeline_name=pipeline_name,
-            step_name=step_name,
         )
 
     def get_model_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the model artifact linked to this model version.
 
         Args:
             name: The name of the model artifact to retrieve.
             version: The version of the model artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated the model artifact.
-            step_name: The name of the step-generated the model artifact.
 
         Returns:
             Specific version of the model artifact or None
@@ -220,24 +214,18 @@ class ModelVersion(BaseModel):
         return self._get_or_create_model_version().get_model_artifact(
             name=name,
             version=version,
-            pipeline_name=pipeline_name,
-            step_name=step_name,
         )
 
     def get_data_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the data artifact linked to this model version.
 
         Args:
             name: The name of the data artifact to retrieve.
             version: The version of the data artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the data artifact.
-            step_name: The name of the step generated the data artifact.
 
         Returns:
             Specific version of the data artifact or None
@@ -245,24 +233,18 @@ class ModelVersion(BaseModel):
         return self._get_or_create_model_version().get_data_artifact(
             name=name,
             version=version,
-            pipeline_name=pipeline_name,
-            step_name=step_name,
         )
 
     def get_endpoint_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the endpoint artifact linked to this model version.
 
         Args:
             name: The name of the endpoint artifact to retrieve.
             version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the endpoint artifact.
-            step_name: The name of the step generated the endpoint artifact.
 
         Returns:
             Specific version of the endpoint artifact or None
@@ -270,8 +252,6 @@ class ModelVersion(BaseModel):
         return self._get_or_create_model_version().get_endpoint_artifact(
             name=name,
             version=version,
-            pipeline_name=pipeline_name,
-            step_name=step_name,
         )
 
     def get_pipeline_run(self, name: str) -> "PipelineRunResponse":
