@@ -49,18 +49,21 @@ class RunMetadataSchema(BaseSchema, table=True):
         back_populates="run_metadata",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataSchema.resource_id)==PipelineRunSchema.id)",
+            overlaps="run_metadata,step_run,artifact",
         ),
     )
     step_run: List["StepRunSchema"] = Relationship(
         back_populates="run_metadata",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
+            overlaps="run_metadata,pipeline_run,artifact",
         ),
     )
     artifact: List["ArtifactSchema"] = Relationship(
         back_populates="run_metadata",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT.value}', foreign(RunMetadataSchema.resource_id)==ArtifactSchema.id)",
+            overlaps="run_metadata,pipeline_run,step_run",
         ),
     )
     stack_component_id: Optional[UUID] = build_foreign_key_field(

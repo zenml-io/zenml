@@ -109,6 +109,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataSchema.resource_id)==PipelineRunSchema.id)",
             cascade="delete",
+            overlaps="run_metadata",
         ),
     )
     logs: Optional["LogsSchema"] = Relationship(

@@ -123,6 +123,7 @@ class StepRunSchema(NamedSchema, table=True):
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
             cascade="delete",
+            overlaps="run_metadata",
         ),
     )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(

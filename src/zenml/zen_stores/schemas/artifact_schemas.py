@@ -93,6 +93,7 @@ class ArtifactSchema(NamedSchema, table=True):
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT.value}', foreign(RunMetadataSchema.resource_id)==ArtifactSchema.id)",
             cascade="delete",
+            overlaps="run_metadata",
         ),
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
