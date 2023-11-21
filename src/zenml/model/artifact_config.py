@@ -178,7 +178,7 @@ class DataArtifactConfig(BaseModel):
                 # delete all model version artifact links by name
                 logger.warning(
                     f"Existing artifact link(s) `{artifact_name}` found and "
-                    f"will be deleted."
+                    "will be deleted."
                 )
 
                 client.zen_store.delete_model_version_artifact_link(
@@ -188,7 +188,7 @@ class DataArtifactConfig(BaseModel):
             else:
                 logger.info(
                     f"Artifact link `{artifact_name}` already exists, adding "
-                    f"new version."
+                    "new version."
                 )
         client.zen_store.create_model_version_artifact_link(request)
 

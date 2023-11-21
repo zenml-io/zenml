@@ -7277,7 +7277,9 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-            return model_version_pipeline_run_link_schema.to_model(hydrate=True)
+            return model_version_pipeline_run_link_schema.to_model(
+                hydrate=True
+            )
 
     def list_model_version_pipeline_run_links(
         self,
