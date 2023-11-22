@@ -241,7 +241,7 @@ from sklearn.base import ClassifierMixin
 def predict(
     model: ClassifierMixin,
     data: pd.DataFrame,
-) -> Annotated[pd.Series, "predictions",]:
+) -> Annotated[pd.Series, "predictions"]:
     predictions = pd.Series(model.predict(data))
     return predictions
 
