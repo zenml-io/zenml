@@ -150,6 +150,11 @@ zenml:
     # used.
     externalServerID:
 
+    # Source pointing to a class implementing the RBAC interface defined by
+    # `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
+    # RBAC will not be enabled for this server.
+    rbacImplementationSource:
+
   # The root URL path to use when behind a proxy. This is useful when the
   # `rewrite-target` annotation is used in the ingress controller, e.g.:
   #
@@ -346,11 +351,6 @@ zenml:
   # should be kept secret. These will be set as Kubernetes secrets and
   # mounted as environment variables in the ZenML server container.
   secretEnvironment: {}
-
-  # Source pointing to a class implementing the RBAC interface defined by
-  # `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
-  # RBAC will not be enabled for this server.
-  rbacImplementationSource:
 
   service:
     type: ClusterIP
