@@ -16,6 +16,7 @@
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
+import pytest
 from typing_extensions import Annotated
 
 from tests.integration.functional.conftest import (
@@ -26,6 +27,7 @@ from zenml import step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import EntityExistsError
 from zenml.models import (
     ArtifactResponse,
     ArtifactVisualizationResponse,
@@ -132,6 +134,39 @@ def test_artifact_versioning(clean_client: "Client", one_step_pipeline):
     pipe.run(enable_cache=False)
     artifact = pipe.model.last_run.steps["step_"].output
     assert artifact.version == "11"
+
+
+@step
+def duplicate_int_version_step() -> (
+    Annotated[int, ArtifactConfig(name="aria", version="1")]
+):
+    return 1
+
+
+def test_artifact_versioning_duplication(
+    clean_client: "Client", one_step_pipeline
+):
+    """Test that duplicated artifact versions are not allowed."""
+    pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "1"
+
+    pipe: BasePipeline = one_step_pipeline(manual_string_version_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "cat"
+
+    # Test 1: rerunning pipeline with same manual version fails
+    pipe: BasePipeline = one_step_pipeline(manual_string_version_step)
+    with pytest.raises(EntityExistsError):
+        pipe.run(enable_cache=False)
+
+    # Test 2: running pipeline with a manual version corresponding to an
+    # existing auto-incremented version fails
+    pipe: BasePipeline = one_step_pipeline(duplicate_int_version_step)
+    with pytest.raises(EntityExistsError):
+        pipe.run(enable_cache=False)
 
 
 @step

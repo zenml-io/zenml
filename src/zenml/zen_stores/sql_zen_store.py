@@ -1390,6 +1390,19 @@ class SqlZenStore(BaseZenStore):
             The created artifact.
         """
         with Session(self.engine) as session:
+            # Check if an artifact with the given name and version exists
+            existing_artifact = session.exec(
+                select(ArtifactSchema)
+                .where(ArtifactSchema.name == artifact.name)
+                .where(ArtifactSchema.version == artifact.version)
+            ).first()
+            if existing_artifact is not None:
+                raise EntityExistsError(
+                    f"Unable to create artifact with name '{artifact.name}' "
+                    f"and version '{artifact.version}': An artifact with the "
+                    "same name and version already exists."
+                )
+
             # Save artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
             session.add(artifact_schema)
