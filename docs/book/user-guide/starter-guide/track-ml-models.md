@@ -86,9 +86,9 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 
 A ZenML model supports linking three types of artifacts:
 
-* Data artifacts: These is the default artifacts. If nothing is specified, all artifacts are grouped under this category.
-* Model artifacts: If there is a physical model artifact like a pickle file or a model neural network weights file, it should be grouped in this category.
-* Deployment artifacts: These artifacts are to do with artifacts related to the endpoints and deployments of the models.
+* `Data artifacts`: These is the default artifacts. If nothing is specified, all artifacts are grouped under this category.
+* `Model artifacts`: If there is a physical model artifact like a pickle file or a model neural network weights file, it should be grouped in this category.
+* `Deployment artifacts`: These artifacts are to do with artifacts related to the endpoints and deployments of the models.
 
 In order to tell ZenML which artifact belongs to which type, one must pass in additional configuration to your artifacts:
 
