@@ -15,16 +15,18 @@
 # limitations under the License.
 #
 
-
 import mlflow
 import pandas as pd
 from sklearn.base import ClassifierMixin
 from typing_extensions import Annotated
 
-from zenml import step
+from zenml import log_artifact_metadata, step
 from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
+)
+from zenml.integrations.mlflow.steps.mlflow_registry import (
+    mlflow_register_model_step,
 )
 from zenml.logger import get_logger
 from zenml.model import ModelArtifactConfig
@@ -47,6 +49,7 @@ def model_trainer(
     dataset_trn: pd.DataFrame,
     model: ClassifierMixin,
     target: str,
+    name: str,
 ) -> Annotated[ClassifierMixin, "model", ModelArtifactConfig()]:
     """Configure and train a model on the training dataset.
 
@@ -73,6 +76,7 @@ def model_trainer(
         dataset_trn: The preprocessed train dataset.
         model: The model instance to train.
         target: Name of target columns in dataset.
+        name: The name of the model.
 
     Returns:
         The trained model artifact.
@@ -86,6 +90,19 @@ def model_trainer(
     model.fit(
         dataset_trn.drop(columns=[target]),
         dataset_trn[target],
+    )
+
+    # register mlflow model
+    mlflow_register_model_step.entrypoint(
+        model,
+        name=name,
+    )
+    # keep track of mlflow version for future use
+    log_artifact_metadata(
+        output_name="model",
+        model_registry_version=Client()
+        .active_stack.model_registry.list_model_versions(name=name)[-1]
+        .version,
     )
     ### YOUR CODE ENDS HERE ###
 

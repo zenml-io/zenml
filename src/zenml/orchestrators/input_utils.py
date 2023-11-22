@@ -19,24 +19,24 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
-from zenml.models import StepRunFilterModel
+from zenml.models import StepRunFilter
 
 if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
-    from zenml.models.artifact_models import ArtifactResponseModel
+    from zenml.model.model_version import ModelVersion
+    from zenml.models import ArtifactResponse
 
 
 def resolve_step_inputs(
     step: "Step",
     run_id: UUID,
-    model_config: Optional["ModelConfig"] = None,
-) -> Tuple[Dict[str, "ArtifactResponseModel"], List[UUID]]:
+    model_version: Optional["ModelVersion"] = None,
+) -> Tuple[Dict[str, "ArtifactResponse"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
         step: The step for which to resolve the inputs.
         run_id: The ID of the current pipeline run.
-        model_config: The model config of the step (from step or pipeline).
+        model_version: The model version of the step (from step or pipeline).
 
     Raises:
         InputResolutionError: If input resolving failed due to a missing
@@ -49,11 +49,11 @@ def resolve_step_inputs(
     current_run_steps = {
         run_step.name: run_step
         for run_step in Client()
-        .zen_store.list_run_steps(StepRunFilterModel(pipeline_run_id=run_id))
+        .zen_store.list_run_steps(StepRunFilter(pipeline_run_id=run_id))
         .items
     }
 
-    input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+    input_artifacts: Dict[str, "ArtifactResponse"] = {}
     for name, input_ in step.spec.inputs.items():
         try:
             step_run = current_run_steps[input_.step_name]
@@ -77,7 +77,7 @@ def resolve_step_inputs(
         external_artifact,
     ) in step.config.external_input_artifacts.items():
         artifact_id = external_artifact.get_artifact_id(
-            model_config=model_config
+            model_version=model_version
         )
         input_artifacts[name] = Client().get_artifact(artifact_id=artifact_id)
 

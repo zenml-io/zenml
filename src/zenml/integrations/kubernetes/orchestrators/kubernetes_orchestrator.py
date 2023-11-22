@@ -57,9 +57,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -317,7 +315,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:

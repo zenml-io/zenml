@@ -26,18 +26,15 @@ def test_langchain_openai_embedding_materializer(clean_client):
 
     fake_key = "aria_and_blupus"
     fake_chunk_size = 1234
-    fake_model_name = "zenml_best_model"
 
     embeddings = _test_materializer(
         step_output=OpenAIEmbeddings(
             chunk_size=fake_chunk_size,
             openai_api_key=fake_key,
-            document_model_name=fake_model_name,
         ),
         materializer_class=LangchainOpenaiEmbeddingMaterializer,
         expected_metadata_size=1,
     )
 
-    assert embeddings.document_model_name == fake_model_name
     assert embeddings.openai_api_key == fake_key
     assert embeddings.chunk_size == fake_chunk_size

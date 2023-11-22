@@ -20,7 +20,11 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.models.logs_models import LogsResponseModel
+from zenml.models import (
+    LogsResponse,
+    LogsResponseBody,
+    LogsResponseMetadata,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -71,18 +75,30 @@ class LogsSchema(BaseSchema, table=True):
     )
     step_run: Optional["StepRunSchema"] = Relationship(back_populates="logs")
 
-    def to_model(self) -> "LogsResponseModel":
-        """Convert a `LogsSchema` to a `LogsResponseModel`.
+    def to_model(self, hydrate: bool = False) -> "LogsResponse":
+        """Convert a `LogsSchema` to a `LogsResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created `LogsModel`.
+            The created `LogsResponse`.
         """
-        return LogsResponseModel(
-            id=self.id,
-            pipeline_run_id=self.pipeline_run_id,
-            step_run_id=self.step_run_id,
-            artifact_store_id=self.artifact_store_id,
+        body = LogsResponseBody(
             uri=self.uri,
             created=self.created,
             updated=self.updated,
+        )
+        metadata = None
+        if hydrate:
+            metadata = LogsResponseMetadata(
+                step_run_id=self.step_run_id,
+                pipeline_run_id=self.pipeline_run_id,
+                artifact_store_id=self.artifact_store_id,
+            )
+        return LogsResponse(
+            id=self.id,
+            body=body,
+            metadata=metadata,
         )

@@ -48,7 +48,10 @@ from zenml.constants import ALPHA_MESSAGE, STACK_RECIPE_MODULAR_RECIPES
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
-from zenml.models import ComponentFilterModel, ServiceConnectorResourcesModel
+from zenml.models import (
+    ComponentFilter,
+    ServiceConnectorResourcesModel,
+)
 from zenml.utils import source_utils
 from zenml.utils.dashboard_utils import get_component_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
@@ -142,12 +145,12 @@ def generate_stack_component_describe_command(
             if active_components:
                 active_component_id = active_components[0].id
 
-                cli_utils.print_stack_component_configuration(
-                    component=component_,
-                    active_status=component_.id == active_component_id,
-                )
+            cli_utils.print_stack_component_configuration(
+                component=component_,
+                active_status=component_.id == active_component_id,
+            )
 
-                print_model_url(get_component_url(active_components[0]))
+            print_model_url(get_component_url(component_))
 
     return describe_stack_component_command
 
@@ -164,7 +167,7 @@ def generate_stack_component_list_command(
         A function that can be used as a `click` command.
     """
 
-    @list_options(ComponentFilterModel)
+    @list_options(ComponentFilter)
     @click.pass_context
     def list_stack_components_command(
         ctx: click.Context, **kwargs: Any
@@ -1220,7 +1223,8 @@ def generate_stack_component_deploy_command(
         "-x",
         "extra_config",
         multiple=True,
-        help="Extra configurations as key=value pairs. This option can be used multiple times.",
+        help="Extra configurations as key=value pairs. This option can be "
+        "used multiple times.",
     )
     @click.option(
         "--tags",
@@ -1282,8 +1286,8 @@ def generate_stack_component_deploy_command(
                     f"{', '.join(ALLOWED_FLAVORS[component_type.value])}."
                 )
 
-            # for cases like artifact store, secrets manager and container registry
-            # the flavor is the same as the cloud
+            # for cases like artifact store, secrets manager and container
+            # registry the flavor is the same as the cloud
             if flavor in {"s3", "sagemaker", "aws"} and provider != "aws":
                 cli_utils.error(
                     f"Flavor '{flavor}' is not supported for "
@@ -1344,8 +1348,9 @@ def generate_stack_component_deploy_command(
                 stack, components
             ):
                 cli_utils.error(
-                    "The specified stack and component flavors are not compatible "
-                    "with the provider or with one another. Please try again."
+                    "The specified stack and component flavors are not "
+                    "compatible with the provider or with one another. "
+                    "Please try again."
                 )
 
             stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
@@ -2162,9 +2167,9 @@ def connect_stack_component_with_service_connector(
             cli_utils.error(
                 f"The connector with ID {connector_id} does not match the "
                 f"component's `{name_id_or_prefix}` of type `{component_type}`"
-                f" connector requirements: {msg}. Please pick a connector that is"
-                "compatible with the component flavor and try again, or use "
-                "the interactive mode to select a compatible connector."
+                f" connector requirements: {msg}. Please pick a connector that "
+                f"is compatible with the component flavor and try again, or "
+                f"use the interactive mode to select a compatible connector."
             )
 
         if not resource_id:

@@ -24,6 +24,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
     STEP_SOURCE_PARAMETER_NAME,
+    TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus
@@ -31,14 +32,14 @@ from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.logging.step_logging import StepLogsStorageContext
-from zenml.models.logs_models import LogsRequestModel
-from zenml.models.pipeline_run_models import (
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-)
-from zenml.models.step_run_models import (
-    StepRunRequestModel,
-    StepRunResponseModel,
+from zenml.models import (
+    ArtifactResponse,
+    LogsRequest,
+    PipelineDeploymentResponse,
+    PipelineRunRequest,
+    PipelineRunResponse,
+    StepRunRequest,
+    StepRunResponse,
 )
 from zenml.orchestrators import (
     cache_utils,
@@ -53,11 +54,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.model import ModelConfig
-    from zenml.models.artifact_models import ArtifactResponseModel
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.model import ModelVersion
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -115,7 +112,7 @@ class StepLauncher:
 
     def __init__(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: PipelineDeploymentResponse,
         step: Step,
         orchestrator_run_id: str,
     ):
@@ -173,7 +170,7 @@ class StepLauncher:
                 logs_uri=logs_uri
             )  # type: ignore[assignment]
 
-            logs_model = LogsRequestModel(
+            logs_model = LogsRequest(
                 uri=logs_uri,
                 artifact_store_id=self._stack.artifact_store.id,
             )
@@ -199,7 +196,7 @@ class StepLauncher:
                 code_hash = self._deployment.step_configurations[
                     self._step_name
                 ].config.caching_parameters.get(STEP_SOURCE_PARAMETER_NAME)
-                step_run = StepRunRequestModel(
+                step_run = StepRunRequest(
                     name=self._step_name,
                     pipeline_run_id=pipeline_run.id,
                     deployment=self._deployment.id,
@@ -267,16 +264,16 @@ class StepLauncher:
         step_instance = BaseStep.load_from_source(self._step.spec.source)
 
         docstring = step_instance.docstring
-        if docstring and len(docstring) > 1000:
-            docstring = docstring[:1000] + "..."
+        if docstring and len(docstring) > TEXT_FIELD_MAX_LENGTH:
+            docstring = docstring[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
 
         source_code = step_instance.source_code
-        if source_code and len(source_code) > 1000:
-            source_code = source_code[:1000] + "..."
+        if source_code and len(source_code) > TEXT_FIELD_MAX_LENGTH:
+            source_code = source_code[: (TEXT_FIELD_MAX_LENGTH - 3)] + "..."
 
         return docstring, source_code
 
-    def _create_or_reuse_run(self) -> Tuple[PipelineRunResponseModel, bool]:
+    def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
 
         Returns:
@@ -299,7 +296,7 @@ class StepLauncher:
         )
 
         client = Client()
-        pipeline_run = PipelineRunRequestModel(
+        pipeline_run = PipelineRunRequest(
             id=run_id,
             name=run_name,
             orchestrator_run_id=self._orchestrator_run_id,
@@ -317,8 +314,8 @@ class StepLauncher:
 
     def _prepare(
         self,
-        step_run: StepRunRequestModel,
-    ) -> Tuple[bool, StepRunRequestModel]:
+        step_run: StepRunRequest,
+    ) -> Tuple[bool, StepRunRequest]:
         """Prepares running the step.
 
         Args:
@@ -328,16 +325,16 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
-        model_config = (
+        model_version = (
             self._deployment.step_configurations[
                 step_run.name
-            ].config.model_config
-            or self._deployment.pipeline_configuration.model_config
+            ].config.model_version
+            or self._deployment.pipeline_configuration.model_version
         )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
             run_id=step_run.pipeline_run_id,
-            model_config=model_config,
+            model_version=model_version,
         )
         input_artifact_ids = {
             input_name: artifact.id
@@ -382,7 +379,7 @@ class StepLauncher:
                     for output_name, artifact in cached_outputs.items()
                 }
                 self._link_cached_artifacts_to_model_version(
-                    model_config_from_context=model_config,
+                    model_version_from_context=model_version,
                     step_run=step_run,
                 )
                 step_run.status = ExecutionStatus.CACHED
@@ -392,16 +389,16 @@ class StepLauncher:
 
     def _link_cached_artifacts_to_model_version(
         self,
-        model_config_from_context: Optional["ModelConfig"],
-        step_run: StepRunRequestModel,
+        model_version_from_context: Optional["ModelVersion"],
+        step_run: StepRunRequest,
     ) -> None:
         """Links the output artifacts of the cached step to the model version in Control Plane.
 
         Args:
-            model_config_from_context: The model config of the current step.
+            model_version_from_context: The model version of the current step.
             step_run: The step to run.
         """
-        from zenml.model.artifact_config import ArtifactConfig
+        from zenml.model.artifact_config import DataArtifactConfig
         from zenml.steps.base_step import BaseStep
         from zenml.steps.utils import parse_return_type_annotations
 
@@ -415,39 +412,40 @@ class StepLauncher:
                 if annotation and annotation.artifact_config is not None:
                     artifact_config_ = annotation.artifact_config.copy()
                 else:
-                    artifact_config_ = ArtifactConfig(
+                    artifact_config_ = DataArtifactConfig(
                         artifact_name=output_name_
                     )
-                    logger.info(
-                        f"Linking artifact `{artifact_config_.artifact_name}` to "
-                        f"model `{artifact_config_.model_name}` version "
-                        f"`{artifact_config_.model_version}` implicitly."
-                    )
-                if artifact_config_.model_name is None:
-                    model_config = model_config_from_context
-                else:
-                    from zenml.model.model_config import ModelConfig
 
-                    model_config = ModelConfig(
+                if artifact_config_.model_name is None:
+                    model_version = model_version_from_context
+                else:
+                    from zenml.model.model_version import ModelVersion
+
+                    model_version = ModelVersion(
                         name=artifact_config_.model_name,
                         version=artifact_config_.model_version,
                     )
-                if model_config:
-                    model_config.get_or_create_model_version()
+                if model_version:
+                    model_version._get_or_create_model_version()
 
                     artifact_config_._pipeline_name = (
                         self._deployment.pipeline_configuration.name
                     )
                     artifact_config_._step_name = self._step_name
+                    logger.debug(
+                        f"Linking artifact `{artifact_config_.artifact_name}` "
+                        f"to model `{model_version.name}` version "
+                        f"`{model_version.version}`."
+                    )
                     artifact_config_.link_to_model(
                         artifact_uuid=output_,
-                        model_config=model_config,
+                        model_version=model_version,
                     )
 
     def _run_step(
         self,
-        pipeline_run: PipelineRunResponseModel,
-        step_run: StepRunResponseModel,
+        pipeline_run: PipelineRunResponse,
+        step_run: StepRunResponse,
     ) -> None:
         """Runs the current step.
 
@@ -537,10 +535,10 @@ class StepLauncher:
 
     def _run_step_without_step_operator(
         self,
-        pipeline_run: PipelineRunResponseModel,
-        step_run: StepRunResponseModel,
+        pipeline_run: PipelineRunResponse,
+        step_run: StepRunResponse,
         step_run_info: StepRunInfo,
-        input_artifacts: Dict[str, "ArtifactResponseModel"],
+        input_artifacts: Dict[str, ArtifactResponse],
         output_artifact_uris: Dict[str, str],
     ) -> None:
         """Runs the current step without a step operator.
