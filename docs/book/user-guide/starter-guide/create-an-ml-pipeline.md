@@ -4,37 +4,41 @@ description: Start with the basics of steps and pipelines.
 
 # Developing ML pipelines
 
-ZenML helps you standardize your ML workflows as **Pipelines** consisting of decoupled, modular **Steps**. This enables you to write portable code that can be moved from experimentation to production in seconds.
+Leveraging ZenML, you can create and manage robust, scalable machine learning (ML) pipelines. Whether for data preparation, model training, or deploying predictions, ZenML standardizes and streamlines the process, ensuring reproducibility and efficiency.
 
-## Start with a simple pipeline
+In the quest for production-ready ML models, workflows can quickly become complex. Decoupling and standardizing stages such as data ingestion, preprocessing, and model evaluation allows for more manageable, reusable, and scalable processes. ZenML pipelines facilitate this by enabling each stage—represented as **Steps**—to be modularly developed and then integrated smoothly into an end-to-end **Pipeline**.
 
-The simplest ZenML pipeline could look like this:
+## Start with a simple ML pipeline
+
+Let's jump into an example that demonstrates how a simple pipeline can be set up in ZenML, featuring actual ML components to give you a better sense of its application.
 
 ```python
 from zenml import pipeline, step
 
 
+# Step for loading static data
 @step
-def step_1() -> str:
-    """Returns the `world` string."""
-    return "world"
+def load_data() -> tuple:
+    # In a real-world scenario, this would be replaced
+    # with code to load and preprocess your dataset.
+    return ([0.1, 0.2, 0.3], [1])
 
-
+# Step for training a model; in this basic example, it just calculates the sum
 @step(enable_cache=False)
-def step_2(input_one: str, input_two: str) -> None:
-    """Combines the two strings at its input and prints them."""
-    combined_str = f"{input_one} {input_two}"
-    print(combined_str)
+def train_model(data: tuple) -> None:
+    # A real-world model training step would include model fitting logic.
+    total = sum(data[0]) 
+    print(f"Training 'model' with data {data}, total sum is {total}")
 
-
+# Define a pipeline that connects the steps
 @pipeline
-def my_pipeline():
-    output_step_one = step_1()
-    step_2(input_one="hello", input_two=output_step_one)
+def simple_ml_pipeline():
+    dataset = load_data()
+    train_model(dataset)
 
-
+# Run the pipeline
 if __name__ == "__main__":
-    my_pipeline()
+    simple_ml_pipeline()
 ```
 
 {% hint style="info" %}
@@ -60,35 +64,25 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 ```
 {% endcode %}
 
-In the output, there's a line with something like this.
-
-{% code overflow="wrap" %}
-```bash
-Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
-```
-{% endcode %}
-
 ## Explore the dashboard
 
-Run `zenml up` in the environment where you have ZenML installed.
-
-After a few seconds, your browser should open the ZenML Dashboard for you at [http://127.0.0.1:8237/](http://127.0.0.1:8237/)
-
-The default user account is **Username**: _**default**_ with **no** **password**.
+Once the pipeline has executed, use the `zenml up` command to view the results in the ZenML Dashboard:
 
 <figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
 
-As you can see, the dashboard shows you that there is 1 pipeline and 1 pipeline run. (feel free to ignore the stack and components for the time being) and continue to the run you just executed.
+The dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG visualization to understand the flow of data and to ensure all steps completed successfully.
 
 <figure><img src="../../.gitbook/assets/DAGofRun.png" alt=""><figcaption><p>Diagram view of the run, with the runtime attributes of step 2.</p></figcaption></figure>
 
-If you navigate to the run that you just executed, you will see a diagram view of the pipeline run, including a visualization of the data that is passed between the steps. Feel free to explore the Run, its steps, and its artifacts.
+For further insights, explore the logging and artifact information associated with each step, which can reveal details about the data and intermediate results.
 
 If you have closed the browser tab with the ZenML dashboard, you can always reopen it by running `zenml show` in your terminal.
 
-## Develop a ML pipeline
+## Expanding to a Full Machine Learning Workflow
 
-In this section, we build out the first ML pipeline. For this, let's get the imports out of the way first:
+With the fundamentals in hand, let’s escalate our simple pipeline to a complete ML workflow. For this task, we will use the well-known Iris dataset to train a Support Vector Classifier (SVC). 
+
+Let's start with the imports.
 
 ```python
 from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
@@ -222,9 +216,11 @@ Instead of configuring your pipeline runs in code, you can also do so from a YAM
 To do this, simply reference the file like this:
 
 ```python
+# Configure the pipeline
 first_pipeline = first_pipeline.with_options(
     config_path='/local/path/to/config.yaml'
 )
+# Run the pipeline
 first_pipeline()
 ```
 
@@ -240,16 +236,13 @@ steps:
 
 Please note that this would take precendence over any parameters passed in code.
 
-If you are unsure how to format this config file, you can generate a template
-config file from a pipeline.
+If you are unsure how to format this config file, you can generate a template config file from a pipeline.
 
 ```python
 first_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
-Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml)
-for more details.
-
+Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml) for advanced configuration options.
 
 ### Give each pipeline run a name
 
