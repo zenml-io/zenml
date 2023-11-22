@@ -182,7 +182,7 @@ def has_permissions_for_model(model: AnyResponseModel, action: str) -> bool:
     try:
         verify_permission_for_model(model=model, action=action)
         return True
-    except HTTPException:
+    except IllegalOperationError:
         return False
 
 
