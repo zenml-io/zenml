@@ -200,7 +200,7 @@ def training_pipeline(gamma: float = 0.002):
 
 ## Facilitating Artifacts Exchange Between Pipelines Using MCP
 
-Often times, a Model creates a picture that is multi-pipeline. A simple example is illustrated below:
+A ZenML Model spans multiple pipelines, and is a key concept that brings disparate pipelines together. A simple example is illustrated below:
 
 <figure><img src="../../.gitbook/assets/mcp_pipeline_overview.png" alt=""><figcaption><p>A simple example of two pipelines interacting between each other.</p></figcaption></figure>
 
