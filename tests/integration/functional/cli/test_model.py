@@ -300,9 +300,7 @@ def test_model_version_links_list(command: str, clean_workspace_with_models):
     """Test that zenml model version artifacts list fails."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
-        list_command = (
-            cli.commands["model"].commands["version"].commands[command]
-        )
+        list_command = cli.commands["model"].commands[command]
         result = runner.invoke(
             list_command,
             args=[NAME],

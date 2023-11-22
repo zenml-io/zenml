@@ -552,7 +552,7 @@ def _print_artifacts_links_generic(
     )
 
 
-@version.command(
+@model.command(
     "data_artifacts",
     help="List data artifacts linked to a model version.",
 )
@@ -580,7 +580,7 @@ def list_model_version_data_artifacts(
     )
 
 
-@version.command(
+@model.command(
     "model_artifacts",
     help="List model artifacts linked to a model version.",
 )
@@ -608,7 +608,7 @@ def list_model_version_model_artifacts(
     )
 
 
-@version.command(
+@model.command(
     "endpoint_artifacts",
     help="List endpoint artifacts linked to a model version.",
 )
@@ -636,7 +636,7 @@ def list_model_version_endpoint_artifacts(
     )
 
 
-@version.command(
+@model.command(
     "runs",
     help="List pipeline runs of a model version.",
 )
