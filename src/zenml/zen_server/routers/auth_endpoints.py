@@ -228,7 +228,6 @@ def generate_access_token(
     access_token = JWTToken(
         user_id=user_id,
         device_id=device.id if device else None,
-        permissions=[],
         api_key_id=api_key.id if api_key else None,
     ).encode(expires=expires)
 
