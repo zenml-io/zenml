@@ -144,8 +144,6 @@ class ZenMLCloudRBAC(RBACInterface):
             A dictionary mapping resources to a boolean which indicates whether
             the user has permissions to perform the action on that resource.
         """
-        assert user.external_user_id
-
         if not resources:
             # No need to send a request if there are no resources
             return {}
@@ -153,6 +151,10 @@ class ZenMLCloudRBAC(RBACInterface):
         if user.is_service_account:
             # Service accounts have full permissions for now
             return {resource: True for resource in resources}
+
+        # At this point its a regular user, which in the ZenML cloud with RBAC
+        # enabled is always authenticated using external authentication
+        assert user.external_user_id
 
         params = {
             "user_id": str(user.external_user_id),
@@ -186,12 +188,13 @@ class ZenMLCloudRBAC(RBACInterface):
             the action on.
         """
         assert not resource.id
-        assert user.external_user_id
-
         if user.is_service_account:
             # Service accounts have full permissions for now
             return True, []
 
+        # At this point its a regular user, which in the ZenML cloud with RBAC
+        # enabled is always authenticated using external authentication
+        assert user.external_user_id
         params = {
             "user_id": str(user.external_user_id),
             "resource": _convert_to_cloud_resource(resource),
