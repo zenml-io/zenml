@@ -351,9 +351,8 @@ def batch_verify_permissions(
 
         if not permissions[resource]:
             raise IllegalOperationError(
-                status_code=403,
-                detail=f"Insufficient permissions to {action.upper()} resource "
-                f"'{resource}'.",
+                message=f"Insufficient permissions to {action.upper()} "
+                f"resource '{resource}'.",
             )
 
 
