@@ -784,7 +784,7 @@ def connect(
     except IllegalOperationError:
         cli_utils.warning(
             f"User '{username}' does not have sufficient permissions to "
-            f"to access the server at '{url}'."
+            f"access the server at '{url}'."
         )
 
     if workspace:
