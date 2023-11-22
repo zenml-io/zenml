@@ -111,7 +111,7 @@ class DataArtifactConfig(BaseModel):
         artifact_uuid: UUID,
         model_version: "ModelVersion",
         is_model_artifact: bool = False,
-        is_endpoint_artifact: bool = False,
+        is_deployment_artifact: bool = False,
     ) -> None:
         """Link artifact to the model version.
 
@@ -121,7 +121,7 @@ class DataArtifactConfig(BaseModel):
             artifact_uuid: The UUID of the artifact to link.
             model_version: The model version from caller.
             is_model_artifact: Whether the artifact is a model artifact. Defaults to False.
-            is_endpoint_artifact: Whether the artifact is an endpoint artifact. Defaults to False.
+            is_deployment_artifact: Whether the artifact is an deployment artifact. Defaults to False.
         """
         from zenml.client import Client
         from zenml.models.model_models import (
@@ -146,7 +146,7 @@ class DataArtifactConfig(BaseModel):
             model=model_version.model_id,
             model_version=model_version.id,
             is_model_artifact=is_model_artifact,
-            is_endpoint_artifact=is_endpoint_artifact,
+            is_deployment_artifact=is_deployment_artifact,
             overwrite=self.overwrite,
             pipeline_name=self._pipeline_name,
             step_name=self._step_name,
@@ -160,9 +160,9 @@ class DataArtifactConfig(BaseModel):
                 workspace_id=client.active_workspace.id,
                 name=artifact_name,
                 only_data_artifacts=not (
-                    is_model_artifact or is_endpoint_artifact
+                    is_model_artifact or is_deployment_artifact
                 ),
-                only_endpoint_artifacts=is_endpoint_artifact,
+                only_deployment_artifacts=is_deployment_artifact,
                 only_model_artifacts=is_model_artifact,
                 pipeline_name=self._pipeline_name,
                 step_name=self._step_name,
@@ -198,7 +198,7 @@ class DataArtifactConfig(BaseModel):
             artifact_uuid,
             model_version=model_version,
             is_model_artifact=self.IS_MODEL_ARTIFACT,
-            is_endpoint_artifact=self.IS_ENDPOINT_ARTIFACT,
+            is_deployment_artifact=self.IS_ENDPOINT_ARTIFACT,
         )
 
 
@@ -213,6 +213,6 @@ class ModelArtifactConfig(DataArtifactConfig):
 
 
 class EndpointArtifactConfig(DataArtifactConfig):
-    """Used to link an endpoint artifact to the model version."""
+    """Used to link an deployment artifact to the model version."""
 
     IS_ENDPOINT_ARTIFACT = True

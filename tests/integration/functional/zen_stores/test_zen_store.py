@@ -4729,7 +4729,7 @@ class TestModelVersionArtifactLinks:
                         name=n,
                         artifact=artifact.id,
                         is_model_artifact=mo,
-                        is_endpoint_artifact=dep,
+                        is_deployment_artifact=dep,
                         pipeline_name="pipeline",
                         step_name="step",
                     )
@@ -4763,7 +4763,7 @@ class TestModelVersionArtifactLinks:
             mvls = zs.list_model_version_artifact_links(
                 model_version_id=model_version.id,
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
-                    only_endpoint_artifacts=True
+                    only_deployment_artifacts=True
                 ),
             )
             assert len(mvls) == 1 and mvls[0].name == "link3"
@@ -4774,7 +4774,7 @@ class TestModelVersionArtifactLinks:
 
             assert len(mv.model_artifact_ids) == 1
             assert len(mv.data_artifact_ids) == 1
-            assert len(mv.endpoint_artifact_ids) == 1
+            assert len(mv.deployment_artifact_ids) == 1
 
             assert isinstance(
                 mv.get_model_artifact("link2", "1"),
@@ -4785,7 +4785,7 @@ class TestModelVersionArtifactLinks:
                 ArtifactResponse,
             )
             assert isinstance(
-                mv.get_endpoint_artifact("link3", "1"),
+                mv.get_deployment_artifact("link3", "1"),
                 ArtifactResponse,
             )
 
@@ -4799,8 +4799,8 @@ class TestModelVersionArtifactLinks:
                 == mv.model_artifacts["pipeline::step::link2"]["1"]
             )
             assert (
-                mv.get_endpoint_artifact("link3", "1")
-                == mv.endpoint_artifacts["pipeline::step::link3"]["1"]
+                mv.get_deployment_artifact("link3", "1")
+                == mv.deployment_artifacts["pipeline::step::link3"]["1"]
             )
 
             # check how versioned artifacts retrieved

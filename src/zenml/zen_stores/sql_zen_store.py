@@ -7119,7 +7119,7 @@ class SqlZenStore(BaseZenStore):
                         == False  # noqa: E712
                     )
                     .where(
-                        ModelVersionArtifactSchema.is_endpoint_artifact
+                        ModelVersionArtifactSchema.is_deployment_artifact
                         == False  # noqa: E712
                     )
                     .where(
@@ -7128,11 +7128,11 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
             elif (
-                model_version_artifact_link_filter_model.only_endpoint_artifacts
+                model_version_artifact_link_filter_model.only_deployment_artifacts
             ):
                 query = (
                     select(ModelVersionArtifactSchema)
-                    .where(ModelVersionArtifactSchema.is_endpoint_artifact)
+                    .where(ModelVersionArtifactSchema.is_deployment_artifact)
                     .where(
                         ModelVersionArtifactSchema.is_model_artifact
                         == False  # noqa: E712
@@ -7147,7 +7147,7 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionArtifactSchema)
                     .where(ModelVersionArtifactSchema.is_model_artifact)
                     .where(
-                        ModelVersionArtifactSchema.is_endpoint_artifact
+                        ModelVersionArtifactSchema.is_deployment_artifact
                         == False  # noqa: E712
                     )
                     .where(
@@ -7158,7 +7158,7 @@ class SqlZenStore(BaseZenStore):
             else:
                 query = select(ModelVersionArtifactSchema)
             model_version_artifact_link_filter_model.only_data_artifacts = None
-            model_version_artifact_link_filter_model.only_endpoint_artifacts = (
+            model_version_artifact_link_filter_model.only_deployment_artifacts = (
                 None
             )
             model_version_artifact_link_filter_model.only_model_artifacts = (

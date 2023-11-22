@@ -65,7 +65,7 @@ def upgrade() -> None:
         )
         batch_op.alter_column(
             "is_deployment",
-            new_column_name="is_endpoint_artifact",
+            new_column_name="is_deployment_artifact",
             existing_type=sa.BOOLEAN(),
         )
 
@@ -98,7 +98,7 @@ def downgrade() -> None:
             existing_type=sa.BOOLEAN(),
         )
         batch_op.alter_column(
-            "is_endpoint_artifact",
+            "is_deployment_artifact",
             new_column_name="is_deployment",
             existing_type=sa.BOOLEAN(),
         )

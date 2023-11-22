@@ -286,29 +286,31 @@ class ModelVersionSchema(NamedSchema, table=True):
                 for al1 in self.artifact_links
                 if al1.is_model_artifact
             },
-            endpoint_artifact_ids={
+            deployment_artifact_ids={
                 f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
                     al2.version: al2.artifact_id
                     for al2 in self.artifact_links
-                    if al2.is_endpoint_artifact
+                    if al2.is_deployment_artifact
                     and al1.name == al2.name
                     and al1.step_name == al2.step_name
                     and al1.pipeline_name == al2.pipeline_name
                 }
                 for al1 in self.artifact_links
-                if al1.is_endpoint_artifact
+                if al1.is_deployment_artifact
             },
             data_artifact_ids={
                 f"{al1.pipeline_name}::{al1.step_name}::{al1.name}": {
                     al2.version: al2.artifact_id
                     for al2 in self.artifact_links
-                    if not (al2.is_endpoint_artifact or al2.is_model_artifact)
+                    if not (
+                        al2.is_deployment_artifact or al2.is_model_artifact
+                    )
                     and al1.name == al2.name
                     and al1.step_name == al2.step_name
                     and al1.pipeline_name == al2.pipeline_name
                 }
                 for al1 in self.artifact_links
-                if not (al1.is_endpoint_artifact or al1.is_model_artifact)
+                if not (al1.is_deployment_artifact or al1.is_model_artifact)
             },
             pipeline_run_ids={
                 pr.name: pr.pipeline_run_id for pr in self.pipeline_run_links
@@ -399,7 +401,7 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
     )
 
     is_model_artifact: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
-    is_endpoint_artifact: bool = Field(
+    is_deployment_artifact: bool = Field(
         sa_column=Column(BOOLEAN, nullable=True)
     )
     version: int = Field(sa_column=Column(INTEGER, nullable=False))
@@ -431,7 +433,7 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
             model_version_id=model_version_artifact_request.model_version,
             artifact_id=model_version_artifact_request.artifact,
             is_model_artifact=model_version_artifact_request.is_model_artifact,
-            is_endpoint_artifact=model_version_artifact_request.is_endpoint_artifact,
+            is_deployment_artifact=model_version_artifact_request.is_deployment_artifact,
             version=version,
         )
 
@@ -461,7 +463,7 @@ class ModelVersionArtifactSchema(NamedSchema, table=True):
             model_version=self.model_version_id,
             artifact=self.artifact_id,
             is_model_artifact=self.is_model_artifact,
-            is_endpoint_artifact=self.is_endpoint_artifact,
+            is_deployment_artifact=self.is_deployment_artifact,
             link_version=self.version,
         )
 

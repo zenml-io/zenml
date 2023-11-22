@@ -202,25 +202,25 @@ class ModelVersion(BaseModel):
             step_name=step_name,
         )
 
-    def get_endpoint_artifact(
+    def get_deployment_artifact(
         self,
         name: str,
         version: Optional[str] = None,
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
-        """Get the endpoint artifact linked to this model version.
+        """Get the deployment artifact linked to this model version.
 
         Args:
-            name: The name of the endpoint artifact to retrieve.
-            version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the endpoint artifact.
-            step_name: The name of the step generated the endpoint artifact.
+            name: The name of the deployment artifact to retrieve.
+            version: The version of the deployment artifact to retrieve (None for latest/non-versioned)
+            pipeline_name: The name of the pipeline generated the deployment artifact.
+            step_name: The name of the step generated the deployment artifact.
 
         Returns:
-            Specific version of the endpoint artifact or None
+            Specific version of the deployment artifact or None
         """
-        return self._get_or_create_model_version().get_endpoint_artifact(
+        return self._get_or_create_model_version().get_deployment_artifact(
             name=name,
             version=version,
             pipeline_name=pipeline_name,

@@ -81,7 +81,7 @@ def log_model_artifact_metadata(
     )
 
 
-def log_endpoint_artifact_metadata(
+def log_deployment_artifact_metadata(
     output_name: Optional[str] = None,
     description: Optional[str] = None,
     predict_url: Optional[str] = None,
@@ -90,16 +90,16 @@ def log_endpoint_artifact_metadata(
     deployer_ui_url: Optional[str] = None,
     **kwargs: MetadataType,
 ) -> None:
-    """Log metadata for an endpoint artifact.
+    """Log metadata for an deployment artifact.
 
     Args:
-        output_name: The output name of the endpoint artifact to log metadata for. Can
+        output_name: The output name of the deployment artifact to log metadata for. Can
             be omitted if there is only one output artifact.
-        description: A description of the endpoint artifact.
-        predict_url: The predict URL of the endpoint artifact.
-        explain_url: The explain URL of the endpoint artifact.
-        healthcheck_url: The healthcheck URL of the endpoint artifact.
-        deployer_ui_url: The deployer UI URL of the endpoint artifact.
+        description: A description of the deployment artifact.
+        predict_url: The predict URL of the deployment artifact.
+        explain_url: The explain URL of the deployment artifact.
+        healthcheck_url: The healthcheck URL of the deployment artifact.
+        deployer_ui_url: The deployer UI URL of the deployment artifact.
         **kwargs: Other metadata to log.
     """
     if description:
