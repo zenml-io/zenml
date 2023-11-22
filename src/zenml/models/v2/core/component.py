@@ -124,6 +124,13 @@ class ComponentRequest(ComponentBase, WorkspaceScopedRequest):
         return name
 
 
+@server_owned_request_model
+class InternalComponentRequest(ComponentRequest):
+    """Internal component request model."""
+
+    pass
+
+
 # ------------------ Update Model ------------------
 
 
@@ -356,10 +363,3 @@ class ComponentFilter(WorkspaceScopedFilter):
             type_filter = getattr(table, "type") == self.scope_type
             return and_(base_filter, type_filter)
         return base_filter
-
-
-@server_owned_request_model
-class InternalComponentRequest(ComponentRequest):
-    """Internal component request model."""
-
-    pass

@@ -8,7 +8,7 @@ Create Date: 2023-10-16 15:15:34.865337
 import base64
 from collections import defaultdict
 from datetime import datetime
-from typing import Optional, Set
+from typing import Dict, Optional, Set
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -69,7 +69,7 @@ def _rename_duplicate_components(table: sa.Table) -> None:
         table.c.user_id,
     )
 
-    names_per_type = defaultdict(lambda: {"default"})
+    names_per_type: Dict[str, Set[str]] = defaultdict(lambda: {"default"})
 
     for id, type_, name, user_id in connection.execute(query).fetchall():
         names = names_per_type[type_]

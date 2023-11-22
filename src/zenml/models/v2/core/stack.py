@@ -71,6 +71,13 @@ class StackRequest(WorkspaceScopedRequest):
         )
 
 
+@server_owned_request_model
+class InternalStackRequest(StackRequest):
+    """Internal stack request model."""
+
+    pass
+
+
 # ------------------ Update Model ------------------
 
 
@@ -241,10 +248,3 @@ class StackFilter(WorkspaceScopedFilter):
     component_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Component in the stack"
     )
-
-
-@server_owned_request_model
-class InternalStackRequest(StackRequest):
-    """Internal stack request model."""
-
-    pass

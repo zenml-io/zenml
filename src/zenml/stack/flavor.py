@@ -135,15 +135,12 @@ class Flavor:
     def to_model(
         self,
         integration: Optional[str] = None,
-        scoped_by_workspace: bool = True,
         is_custom: bool = True,
     ) -> FlavorRequest:
         """Converts a flavor to a model.
 
         Args:
             integration: The integration to use for the model.
-            scoped_by_workspace: Whether this flavor should live in the scope
-                of the active workspace
             is_custom: Whether the flavor is a custom flavor. Custom flavors
                 are then scoped by user and workspace
 
