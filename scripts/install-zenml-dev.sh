@@ -50,6 +50,7 @@ install_integrations() {
         $ignore_integrations_args
 
     # pin pyyaml>=6.0.1
+    echo "" >> integration-requirements.txt
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
 
     pip install -r integration-requirements.txt
