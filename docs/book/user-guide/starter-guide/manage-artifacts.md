@@ -47,7 +47,7 @@ Now you will be able to find the created artifact as `iris_dataset` in ZenML:
 {% tabs %}
 {% tab title="OSS (CLI)" %}
 
-The `zenml artifacts list` can be used to list of artifacts and their versions.
+`zenml artifacts list` can be used to list of artifacts and their versions.
 
 {% endtab %}
 {% tab title="Cloud (Dashboard)" %}
@@ -110,7 +110,7 @@ Now you will be able to find the created artifact version within your `iris_data
 {% tabs %}
 {% tab title="OSS (CLI)" %}
 
-The `zenml artifacts versions list` can be used to list of artifacts and their versions.
+`zenml artifacts versions list` can be used to list of artifacts and their versions.
 
 {% endtab %}
 {% tab title="Cloud (Dashboard)" %}
@@ -161,7 +161,7 @@ Using an `ExternalArtifact` with input data for your step automatically disables
 
 ## Passing external data into ZenML
 
-It is sometimes relevant to consume data that is perhaps not produced by ZenML upstream. For example, let's say you have a snowflake query that produces a dataframe, or a CSV file that you need to consume.
+It is sometimes relevant to consume data that is not produced by ZenML upstream. For example, let's say you have a snowflake query that produces a dataframe, or a CSV file that you need to read.
 
 External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
 

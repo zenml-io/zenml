@@ -1,353 +1,377 @@
 ---
-description: Inspecting a finished pipeline run and its outputs.
+description: Keeping track of ML models in ZenML
 ---
 
-# Fetch runs after execution
+# Exploring the ZenML Model Control Plane
 
-Once a pipeline run has been completed, we can access the corresponding
-information in code, which enables several use cases:
-- Loading artifacts like models or datasets saved by previous runs
-- Accessing metadata or configurations of previous runs
-- Programmatically inspecting the lineage of pipeline runs and their artifacts
+As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many `ModelVersions`. These concepts are exposed in the `Model Control Plane` (MCP for short).
 
-The hierarchy of pipelines, runs, steps, and artifacts is as follows:
-```mermaid
-flowchart LR
-    pipelines -->|1:N| runs
-    runs -->|1:N| steps
-    steps -->|1:N| artifacts
-```
+This feature empowers you to effortlessly group pipelines, artifacts, and crucial business data into a unified entity: a `Model`. A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `Production`, and decide whether the Model Version should be promoted based on your business rules during training.
 
-As you can see from the diagram, there are many layers of 1-to-N relationships. 
+These models can be viewed within ZenML:
 
-Let us investigate how to traverse this hierarchy level-by-level:
+{% tabs %}
+{% tab title="OSS (CLI)" %}
 
-## Pipelines
+`zenml model list` can be used to list of artifacts and their versions.
 
-### Access Pipeline From Class 
+{% endtab %}
+{% tab title="Cloud (Dashboard)" %}
 
-After you have run a pipeline at least once, you can access all the information
-associated with this pipeline through the corresponding
-[`PipelineResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline_models.py)
-that you can access via the pipeline's `model` property:
+The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing these models in the dashboard.
+
+<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+
+{% endtab %}
+{% endtabs %}
+
+## Configuring a Model and Model Version
+
+The easiest way to use a ZenML model is to pass a model version object as part of a pipeline run. This can be done easily:
 
 ```python
-@pipeline
-def my_pipeline():
-    ...
+from zenml import pipeline
+from zenml.model import ModelVersion
 
-my_pipeline()
+@pipeline(
+    model_version=ModelVersion(
+        # The name uniquely identifies this model
+        name="iris_classifier",
+        # The version specifies the version
+        # If None, a new one will be created
+        version=None, 
+        # Some other properties may be specified
+        license="Apache 2.0",
+        description="A classification model for the iris dataset.",
+    ),
+)
+def training_pipeline(gamma: float = 0.002):
+    # Now this pipeline will have the `iris_classifier` model active.
+    X_train, X_test, y_train, y_test = training_data_loader()
+    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 
-# get the Pydantic model representation of the pipeline
-pipeline_model = my_pipeline.model
-
-# find information about the pipeline
-name = pipeline_model.name
-version = pipeline_model.version
-...
+if __name__ == "__main__":
+    training_pipeline()
 ```
 
-{% hint style="info" %}
-These pipeline "models" are not related to machine learning models like decision
-trees or neural networks. Rather, you can think of them as similar to types in 
-strictly-typed languages. Checkout the 
-[ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md#resource-models) for
-more details.
-{% endhint %}
+The above will estabilish a link between all artifacts that pass through this ZenML pipeline and this model. You will be able to see all associated artifacts and pipeline runs all within one view:
 
-### Get Pipeline via Client
+{% tabs %}
+{% tab title="OSS (CLI)" %}
 
-Alternatively, if you don't have the pipeline definition loaded anymore, you 
-can also fetch the pipeline via the
-[`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline)
-method.
+`zenml model version list <MODEL_NAME>` can be used to list all versions of a particular model.
 
+The following commands can be used to list the various pipeline runs associated with a model:
+
+* `zenml model version runs <MODEL_NAME> <MODEL_VERSIONNAME>`
+
+The following commands can be used to list the various artifacts associated with a model:
+
+* `zenml model version data_artifacts <MODEL_NAME> <MODEL_VERSIONNAME>`
+* `zenml model version model_artifacts <MODEL_NAME> <MODEL_VERSIONNAME>`
+* `zenml model version endpoint_artifacts <MODEL_NAME> <MODEL_VERSIONNAME>`
+
+{% endtab %}
+{% tab title="Cloud (Dashboard)" %}
+
+The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
+
+<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+
+{% endtab %}
+{% endtabs %}
+
+
+## Using the Stages of a Model
+
+A models versions can exist in various stages. These are meant to signify their lifecycle state:
+
+* `staging`: This version is staged for production.
+* `production`: This version is running in a production setting.
+* `archived`: This is archived and no longer relevant. This stage occurs when a model moves out of any other stage.
+
+{% tabs %}
+{% tab title="Python SDK" %}
 ```python
-from zenml.client import Client
+from zenml.model import ModelVersion
 
-pipeline_model = Client().get_pipeline("first_pipeline")
+# Get a model from a version
+model_version=ModelVersion(
+    name="iris_classifier",
+    version="2",
+)
+
+# Pass the stage into the version field
+# to get the model by stage
+model_version=ModelVersion(
+    name="iris_classifier",
+    version="staging",
+)
+
+# This will set this version to production
+model_version.set_stage(stage="production", force=True)
 ```
+{% endtab %}
 
-{% hint style="info" %}
-Checkout the [ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md) for more 
-information on the `Client` class and its purpose.
-{% endhint %}
-
-### Discover and List Pipelines
-
-If you're not sure which pipeline you need to fetch, you can find a list of all
-registered pipelines in the ZenML dashboard, or list them programmatically 
-either via the Client or the CLI.
-
-#### List Pipelines via Client
-
-You can use the 
-[`Client.list_pipelines()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipelines) 
-method to get a list of all pipelines registered in ZenML:
-
-```python
-from zenml.client import Client
-
-pipelines = Client().list_pipelines()
-```
-
-#### List Pipelines via CLI
-
-Alternatively, you can also list pipelines with the following CLI command:
-
+{% tab title="CLI" %}
 ```shell
-zenml pipeline list
+# List staging models
+zenml model version list <MODEL_NAME> --stage staging 
+
+# Update to production
+zenml model version update <MODEL_NAME> <MODEL_VERSIONNAME> -s production 
 ```
+{% endtab %}
+{% tab title="Cloud (Dashboard)" %}
+The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include easily changing the stage:
 
-## Runs
+<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+{% endtab %}
+{% endtabs %}
 
-Each pipeline can be executed many times, resulting in several **Runs**.
+## Using a Model Version within a step
 
-### Get Runs of Pipeline
-
-You can get a list of all runs of a pipeline using the `runs` property of the
-pipeline:
+In this case, the model version will be available to all steps directly through the `StepContext`:
 
 ```python
-runs = pipeline_model.runs
-```
-
-The result will be a list of the most recent runs of this pipeline, ordered
-from newest to oldest.
-
-{% hint style="info" %}
-Alternatively, you can also use the `pipeline_model.get_runs()` method which 
-allows you to specify detailed parameters for filtering or pagination. See the
-[ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md#list-of-resources) for more
-information.
-{% endhint %}
-
-### Get Last Run of Pipeline
-
-To access the most recent run of a pipeline, you can either use the `last_run`
-property or access it through the `runs` list:
-
-```
-last_run = pipeline_model.last_run  # OR: pipeline_model.runs[0]
-```
-
-{% hint style="info" %}
-If your most recent runs have failed, and you want to find the last run that has
-succeeded, you can use the `last_successful_run` property instead.
-{% endhint %}
-
-### Get Run via Client
-
-If you already know the exact run that you want to fetch (e.g., from looking at
-the dashboard), you can use the 
-[`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline_run)
-method to fetch the run directly without having to query the pipeline first:
-
-```python
-from zenml.client import Client
-
-pipeline_run = Client().get_pipeline_run("first_pipeline-2023_06_20-16_20_13_274466")
-```
-
-{% hint style="info" %}
-Similar to pipelines, you can query runs by either ID, name, or name prefix, and
-you can also discover runs through the Client or CLI via the 
-[`Client.list_pipeline_runs()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.list_pipeline_runs)
-or `zenml pipeline runs list` commands.
-
-{% endhint %}
-
-### Run Information
-
-Each run has a collection of useful information which can help you reproduce
-your runs. In the following, you can find a list of some of the most useful 
-pipeline run information, but there is much more available. See the 
-[`PipelineRunResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline_run_models.py)
-definition for a comprehensive list.
-
-#### Status
-
-The status of a pipeline run. There are four possible states: failed, completed, running, and cached.
-
-```python
-status = run.status
-```
-
-#### Configuration
-
-The `pipeline_configuration` is an object that contains all configurations of 
-the pipeline and pipeline run, including the 
-[pipeline-level `BaseSettings`](../advanced-guide/pipelining-features/configure-steps-pipelines.md), 
-which we will learn more about later:
-
-```python
-pipeline_config = run.config
-pipeline_settings = run.config.settings
-```
-
-#### Component-Specific Metadata
-
-Depending on the stack components you use, you might have additional 
-component-specific metadata associated with your run, such as the URL to the UI
-of a remote orchestrator. You can access this component-specific metadata via 
-the `metadata` attribute:
-
-```python
-run_metadata = run.metadata
-# The following only works for runs on certain remote orchestrators
-orchestrator_url = run_metadata["orchestrator_url"]
-```
-
-## Steps
-
-Within a given pipeline run you can now further zoom in on individual steps using the `steps` attribute:
-
-```python
-# get all steps of a pipeline for a given run
-steps = run.steps
-
-# get a specific step by its invocation ID
-step = run.steps["first_step"]
-```
-
-{% hint style="info" %}
-If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex
-pipelines, check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn more about the
-invocation ID.
-{% endhint %}
-
-### Step Information
-
-Similar to the run, you can use the `step` object to access a variety of useful information:
-
-* The parameters used to run the step via `step.config.parameters`,
-* The step-level settings via `step.config.settings`,
-* Component-specific step metadata, such as the URL of an experiment tracker or model deployer, via `step.metadata`
-
-See the 
-[`StepRunResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/step_run_models.py)
-definition for a comprehensive list of available information.
-
-## Artifacts
-
-Each step of a pipeline run can have multiple output and input artifacts that
-we can inspect via the `outputs` and `inputs` properties.
-
-To inspect the output artifacts of a step, you can use the `outputs` attribute, 
-which is a dictionary that can be indexed using the name of an output.
-Alternatively, if your step only has a single output, you can use the `output`
-property as a shortcut directly:
-
-```python
-# The outputs of a step are accessible by name
-output = step.outputs["output_name"]
-
-# If there is only one output, you can use the `.output` property instead 
-output = step.output
-
-# use the `.load()` method to load the artifact into memory
-my_pytorch_model = output.load()  
-```
-
-Similarly, you can use the `inputs` and `input` properties to get the input 
-artifacts of a step instead.
-
-{% hint style="info" %}
-Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names) to see what
-the output names of your steps are and how to customize them.
-{% endhint %}
-
-### Artifact Information
-
-Similar to the other entities, each artifact is represented by a corresponding
-[`ArtifactResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/artifact_models.py)
-which contains a lot of general information about the artifact as well as
-datatype-specific metadata and visualizations.
-
-#### Artifact Metadata
-
-All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `metadata` attribute of an output, e.g.:
-
-```python
-output_metadata = output.metadata
-storage_size_in_bytes = output_metadata["storage_size"].value
-```
-
-#### Artifact Visualizations
-
-ZenML automatically saves visualizations for many common data types.
-Using the `visualize()` method you can programmatically show these 
-visualizations in Jupyer notebooks:
-
-```python
-output.visualize()
-```
-
-![output.visualize() Output](/docs/book/.gitbook/assets/artifact_visualization_evidently.png)
-
-{% hint style="info" %}
-If you're not in a Jupyter notebook, you can simply view the visualizations in
-the ZenML dashboard by running `zenml up` and clicking on the respective 
-artifact in the pipeline run DAG instead. Checkout the
-[artifact visualization page](../advanced-guide/artifact-management/visualize-artifacts.md) to learn
-more about how to build and view artifact visualizations in ZenML!
-{% endhint %}
-
-## Code Example
-
-Putting it all together, this is how we can load the model trained by the `svc_trainer` step of our example pipeline from the previous sections:
-
-```python
-from zenml.client import Client
-
-pipeline = Client().get_pipeline("first_pipeline")
-last_run = pipeline.last_run
-trainer_step = last_run.steps["svc_trainer"]
-model = trainer_step.output.load()
-```
-
-or alternatively:
-
-```python
-@pipeline
-def first_pipeline(...):
-    ...
-
-last_run = first_pipeline.model.last_run
-trainer_step = last_run.steps["svc_trainer"]
-model = trainer_step.output.load()
-```
-
-## Fetching Runs in Runs
-
-While most of this document has been focused on fetching objects after a pipeline run has been completed, the same logic can also be used within the context of a running pipeline.
-
-This is often desirable in cases where a pipeline is running continuously over time and decisions have to be made according to older runs.
-
-For example, this is how we can fetch the last pipeline run of the same pipeline
-from within a ZenML step:
-
-```python
-from zenml import get_step_context
-from zenml.client import Client
+from zenml import get_step_context, step
 
 @step
-def my_step():
-    # Get the name of the current pipeline run
-    current_run_name = get_step_context().pipeline_run.name
+def svc_trainer(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
+) -> Tuple[
+    Annotated[ClassifierMixin, "trained_model"],
+    Annotated[float, "training_acc"],
+]:
+    # This will return the Model Version specified in the 
+    # @pipeline decorator. In this case, the production version of 
+    # the `iris_classifier` will be returned in this case.
+    model_version = get_step_context().model_version
+    ...
 
-    # Fetch the current pipeline run
-    current_run = Client().get_pipeline_run(current_run_name)
-
-    # Fetch the previous run of the same pipeline 
-    previous_run = current_run.pipeline.runs[1]  # index 0 is the current run
+@pipeline(
+    model_version=ModelVersion(
+        # The name uniquely identifies this model
+        name="iris_classifier",
+        # Pass the stage you want to get the right model
+        version="production", 
+    ),
+)
+def training_pipeline(gamma: float = 0.002):
+    # Now this pipeline will have the production `iris_classifier` model active.
+    X_train, X_test, y_train, y_test = training_data_loader()
+    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
 
-{% hint style="info" %}
-As shown in the example, we can get additional information about the current
-run using the `StepContext`, which is explained in more detail in the 
-[advanced docs](../advanced-guide/pipelining-features/fetch-metadata-within-steps.md).
-{% endhint %}
+## A Practical Example of using the Model Control Plane
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+To illustrate the role of the Model Control Plane, we'll focus on two independent pipelines. Each pipeline works on its own, creating specific artifacts. But what's fascinating is that these seemingly separate pipelines are intricately connected, all with the goal of delivering precise predictions.
+
+Before the Model Control Plane, connecting these pipelines and consolidating everything was a challenge. Imagine extracting a trained model artifact from the training pipeline and smoothly integrating it into the predictions pipeline. Previously, this involved complex ID references, leading to constant config updates, or blindly relying on the latest training run. But what if that run didn't meet the necessary performance standards? Using a subpar model for predictions was out of the question, especially for vital applications!
+
+
+To illustrate these concepts, let's consider a mock `iris_classifier` Model will be created implicitly using the Python SDK.
+
+<figure><img src="../../../.gitbook/assets/mcp_pipeline_overview.png" alt=""><figcaption><p>Model Control Plane Practical Example</p></figcaption></figure>
+
+Each time the `train_and_promote` pipeline runs, it creates a new iris_classifier. However, it only promotes the created model to `Production` if a certain accuracy threshold is met. The `do_predictions` pipeline simply picks up the latest Promoted model and runs batch inference on it. That way these two pipelines can independently be run, but can rely on each others output.
+
+### Training pipeline
+
+The Training pipeline orchestrates the training of a model object, storing datasets and the model object itself as links within a newly created Model Version. This integration is achieved by configuring the pipeline within a Model Context using `ModelConfig`. The `name` and `create_new_model_version` fields are specified, while other fields remain optional for this task.
+
+```python
+from zenml import pipeline
+from zenml.model import ModelConfig
+
+@pipeline(
+    enable_cache=False,
+    model_config=ModelConfig(
+        name="iris_classifier",
+        license="Apache",
+        description="Show case Model Control Plane.",
+        create_new_model_version=True,
+        delete_new_version_on_failure=True,
+    ),
+)
+def train_and_promote_model():
+    ...
+```
+
+In the final step of the pipeline, the new Model Version is promoted to the Production stage if a quality
+control check is passed (accuracy is above a threshold).
+```python
+from zenml import get_step_context, step, pipeline
+from zenml.enums import ModelStages
+
+@step
+def promote_model(score: float):
+    # Score has to pass a threshold
+    # One can also do more business logic here, i.e. comparing to the last model
+    if score > 0.9:
+        model_config = get_step_context().model_config
+        model_version = model_config._get_model_version()
+        model_version.set_stage(ModelStages.PRODUCTION, force=True)
+
+@pipeline(
+    ...
+)
+def train_and_promote_model():
+    ...
+    promote_model(score=score)
+```
+
+Running the training pipeline creates a model and a Model Version, all while maintaining a connection to the artifacts.
+```bash
+# run training pipeline: it will create a model, a 
+# model version and link two datasets and one model 
+# object to it, pipeline run is linked automatically
+python3 train.py
+```
+Once it's done, check the results to see the newly created entities:
+```bash
+# new model `iris_classifier` created
+zenml model list
+
+# new model version `1` created
+zenml model version list iris_classifier
+
+# list generic artifacts - train and test datasets are here
+zenml model version artifacts iris_classifier 1
+
+# list model objects - trained classifier here
+zenml model version model_objects iris_classifier 1
+
+# list deployments - none, as we didn't link any
+zenml model version deployments iris_classifier 1
+
+# list runs - training run linked
+zenml model version runs iris_classifier 1
+```
+
+### Predictions pipeline
+
+The Predictions Pipeline reads a trained model object from the Model Version labeled as Production. Here, the `version` is set to a specific stage, ensuring consistency across multiple runs. This approach shields the pipeline from the underlying complexities of the Training pipeline's promotion logic.
+```python
+from zenml import pipeline
+from zenml.model import ModelConfig
+
+@pipeline(
+    enable_cache=False,
+    model_config=ModelConfig(
+        name="iris_classifier",
+        version=ModelStages.PRODUCTION,
+    ),
+)
+def do_predictions():
+    ...
+```
+
+Given the frequent execution of the predictions pipeline compared to the training pipeline, we link predictions as versioned artifacts. The `overwrite` flag in the artifact configuration controls this, allowing for a comprehensive historical view.
+```python
+@step
+def predict(
+    ...
+) -> Annotated[
+    pd.Series,
+    "predictions",
+    ArtifactConfig(artifact_name="iris_predictions", overwrite=False),
+]:
+    ...
+```
+
+Need to use a specific model version, not limited to stages? No problem. You can represent this either by version number or name, ensuring flexibility in your workflow.
+
+### Artifacts Exchange Between Pipelines: Seamless Integration
+
+In this pipeline, artifacts linked during the training stage are passed on. Leveraging `ExternalArtifact`, we effortlessly pass previously linked artifacts without repeating the model name and version setup.
+
+*Handy Tip*: Explore further possibilities by using the `model_name` and `model_version` attributes of `ExternalArtifact` to pull artifacts from other models.
+
+```python
+from zenml.artifacts.external_artifact import ExternalArtifact
+
+@pipeline(
+    model_config=...,
+    extra={"trained_classifier": "iris_classifier"},
+)
+def do_predictions():
+    ...
+    predict(
+        model=ExternalArtifact(
+            model_artifact_name=trained_classifier
+        ),  # model_name and model_version derived from pipeline context
+        ...
+    )
+    ...
+```
+
+Additionally, any extra configurations needed can be seamlessly passed and read using the `extra` pipeline argument and the new `get_pipeline_context` function.
+
+```python
+@pipeline(
+    extra={"trained_classifier": "iris_classifier"},
+)
+def do_predictions():
+    trained_classifier = get_pipeline_context().extra["trained_classifier"]
+    ...
+```
+
+Executing the prediction pipeline ensures the use of the Model Version in Production stage, generating predictions as versioned artifacts.
+
+```bash
+# run prediction pipeline: it will use Production 
+# staged Model Version to read Model Object and 
+# produce predictions as versioned artifact link
+python3 predict.py
+
+# no new model version created, just consuming existing model
+zenml model version list iris_classifier
+
+# list train, test and inference datasets and predictions artifacts
+zenml model version artifacts iris_classifier 1
+```
+
+Fantastic! By reusing the model version in the Production stage, you've connected the inference dataset and predictions seamlessly. All these elements coexist within the same model version, allowing effortless tracing back to training data and model metrics.
+
+And what if you run the prediction pipeline again?
+```bash
+# run prediction pipeline again: it will use same 
+# Model Version again and link new predictions version link
+python3 predict.py
+
+# list train, test datasets and two version of 
+# inference dataset and prediction artifacts
+zenml model version artifacts iris_classifier 1
+
+# list runs, prediction runs are also here
+zenml model version runs iris_classifier 1
+```
+
+Everything worked seamlessly! You've added two more links to your artifacts, representing new predictions and inference dataset versions. Later, this detailed history can aid analysis or retrieving predictions from specific dates. Additionally, the prediction pipeline runs are conveniently attached to the same model version, ensuring you always know which code interacted with your models.
+
+### More Command-Line Features
+
+Explore additional CLI capabilities, like updating existing models and creating new ones, using straightforward commands.
+
+#### Updating Existing Models via CLI
+
+```bash
+zenml model update iris_classifier -t tag1 -t tag2 -e "some ethical implications"
+```
+
+#### Creating a Model via CLI
+
+```bash
+zenml model register -n iris_classifier_cli -d "created from cli" -t cli
+```
+
+### Well done! Time for a Quick Cleanup
+```bash
+zenml model delete iris_classifier_cli
+zenml model delete iris_classifier -y
+```
+
+Nicely done, and now your workspace is tidy! Feel free to reach out if you have any more questions or if there's anything else you'd like to explore. Happy modeling! 😊

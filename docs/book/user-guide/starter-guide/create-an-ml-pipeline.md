@@ -178,13 +178,13 @@ Next, we will combine our two steps into a pipeline and run it. As you can see, 
 
 ```python
 @pipeline
-def first_pipeline(gamma: float = 0.002):
+def training_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = training_data_loader()
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 
 
 if __name__ == "__main__":
-    first_pipeline(gamma=0.0015)
+    training_pipeline(gamma=0.0015)
 ```
 
 {% hint style="info" %}
@@ -192,17 +192,17 @@ Best Practice: Always nest the actual execution of the pipeline inside an `if __
 
 ```python
 if __name__ == "__main__":
-    first_pipeline()
+    training_pipeline()
 ```
 {% endhint %}
 
 Running `python run.py` should look somewhat like this in the terminal:
 
-<pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `first_pipeline`.
+<pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `training_pipeline`.
 </strong>.
 .
 .
-Pipeline run `first_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
+Pipeline run `training_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
 
 In the dashboard, you should now be able to see this new run, along with its runtime configuration and a visualization of the training data.
@@ -217,11 +217,11 @@ To do this, simply reference the file like this:
 
 ```python
 # Configure the pipeline
-first_pipeline = first_pipeline.with_options(
+training_pipeline = training_pipeline.with_options(
     config_path='/local/path/to/config.yaml'
 )
 # Run the pipeline
-first_pipeline()
+training_pipeline()
 ```
 
 A simple version of such a YAML file could be:
@@ -238,7 +238,7 @@ Please note that this would take precendence over any parameters passed in code.
 If you are unsure how to format this config file, you can generate a template config file from a pipeline.
 
 ```python
-first_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
+training_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
 Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml) for advanced configuration options.
@@ -248,16 +248,16 @@ Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipe
 In the output logs of a pipeline run you will see the name of the run:
 
 ```bash
-Pipeline run first_pipeline-2023_05_24-12_41_04_576473 has finished in 3.742s.
+Pipeline run training_pipeline-2023_05_24-12_41_04_576473 has finished in 3.742s.
 ```
 
 This name is automatically generated based on the current date and time. To change the name for a run, pass `run_name` as a parameter to the `with_options()` method:
 
 ```python
-first_pipeline = first_pipeline.with_options(
+training_pipeline = training_pipeline.with_options(
     run_name="custom_pipeline_run_name"
 )
-first_pipeline()
+training_pipeline()
 ```
 
 Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
@@ -266,10 +266,10 @@ Pipeline run names must be unique, so if you plan to run your pipelines multiple
 * `{{time}}` will resolve to the current time, e.g. `11_07_09_326492`
 
 ```python
-first_pipeline = first_pipeline.with_options(
+training_pipeline = training_pipeline.with_options(
     run_name="custom_pipeline_run_name_{{date}}_{{time}}"
 )
-first_pipeline()
+training_pipeline()
 ```
 
 ### Full Code Example
@@ -308,9 +308,9 @@ def training_data_loader() -> Tuple[
 
 @step
 def svc_trainer(
-        X_train: pd.DataFrame,
-        y_train: pd.Series,
-        gamma: float = 0.001,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
 ) -> Tuple[
     Annotated[ClassifierMixin, "trained_model"],
     Annotated[float, "training_acc"],
@@ -324,19 +324,13 @@ def svc_trainer(
 
 
 @pipeline
-def first_pipeline(gamma: float = 0.002):
+def training_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = training_data_loader()
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 
 
 if __name__ == "__main__":
-    first_pipeline()
-
-    # Step one will use cache, step two will rerun due to caching
-    # being disabled on the @step decorator. Even if caching was
-    # enabled though, ZenML would detect a different value for the
-    # `gamma` input of the second step and disable caching
-    first_pipeline(gamma=0.0001)
+    training_pipeline()
 ```
 
 </details>
