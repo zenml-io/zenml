@@ -112,8 +112,14 @@ def save_artifact(
         uri = os.path.join("custom_artifacts", name, str(version))
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
-    if fileio.exists(uri) and (size := fileio.size(uri)) and size > 0:
-        raise RuntimeError(f"Artifact URI '{uri}' already exists.")
+    if fileio.exists(uri):
+        other_artifacts = client.list_artifacts(uri=uri, size=1)
+        if other_artifacts and (other_artifact := other_artifacts[0]):
+            raise RuntimeError(
+                f"Cannot save artifact {name} (version {version}) to URI "
+                f"{uri} because the URI is already used by artifact "
+                f"{other_artifact.name} (version {other_artifact.version})."
+            )
     fileio.makedirs(uri)
 
     # Find and initialize the right materializer class
