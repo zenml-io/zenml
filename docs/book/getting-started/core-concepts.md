@@ -12,9 +12,22 @@ description: Discovering the core concepts behind ZenML.
 
 First, let's look at the main concepts which play a role during the development stage of an ML workflow with ZenML.
 
-#### Pipelines & Steps
+#### Step
 
-At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case. Below, you can see four **steps** running one after another in a **pipeline**.
+Steps are functions annotated with the `@step` decorator. These functions have inputs and outputs. For ZenML to work properly, these should preferably be typed.
+
+```python
+@step(enable_cache=False)
+def step_2(input_one: str, input_two: str) -> None:
+    """Combines the two strings at its input and prints them."""
+    combined_str = f"{input_one} {input_two}"
+    return combined_str
+```
+
+#### Pipelines
+
+At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case.
+
 
 ![Representation of a pipeline dag.](../.gitbook/assets/01\_pipeline.png)
 
@@ -22,9 +35,27 @@ As seen in the image, a step might use the outputs from a previous step and thus
 
 Pipelines and steps are defined in code using Python _decorators_ or _classes_. This is where the core business logic and value of your work lives, and you will spend most of your time defining these two things.
 
+Even though pipelines are simple Python functions, you are only allowed to call steps within this function. The inputs for steps called within a pipeline can either be the outputs of previous steps or alternatively, you can pass in values directly (as long as they're JSON serializable).
+
+```python
+@pipeline
+def my_pipeline():
+    output_step_one = step_1()
+    step_2(input_one="hello", input_two=output_step_one)
+```
+
+Executing the Pipeline is as easy as just calling the function that you decorated with the `@pipeline` decorator.
+
+```python
+if __name__ == "__main__":
+    my_pipeline()
+```
+
 #### Artifacts
 
-Artifacts represent the data that goes through your steps as inputs and outputs and they are stored in the artifact store. The serialization and deserialization logic of artifacts is defined by Materializers.
+Artifacts represent the data that goes through your steps as inputs and outputs and they are stored in the artifact store. They are automatically tracked and stored by ZenML in the artifact store. Artifacts are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather at the output of a step they are written to storage and at the input of the step they are loaded from storage.
+
+The serialization and deserialization logic of artifacts is defined by Materializers.
 
 #### Materializers
 
@@ -35,6 +66,10 @@ All materializers use the base abstraction called the `BaseMaterializer` class. 
 #### Parameters & Settings
 
 When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation workflow in time, so you can return to them exactly as you run them. On top of the parameters that you provide for your steps, you can also use different `Setting`s to configure runtime configurations for your infrastructure and pipelines.
+
+#### Model and Model Versions
+
+ZenML exposes the concept of a `Model`, which consists of multiple different `Model Versions`. A `Model Version` represents a unified view of the ML models that are created, tracked, and managed as part of a ZenML project. Model Versions link all other entities to a centralized view.
 
 ## 2. Execution
 
@@ -82,7 +117,7 @@ In order to benefit from the aforementioned core concepts to their fullest exten
 
 #### ZenML Server
 
-First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/starter-guide/switch-to-production.md), so that it can communicate with these stack components and run your pipelines.
+First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/starter-guide/switch-to-production.md), so that it can communicate with these stack components and run your pipelines. The server is also responsible for storing managing ZenML business entities like pipelines, steps, models etc.
 
 ![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04\_architecture.png)
 
