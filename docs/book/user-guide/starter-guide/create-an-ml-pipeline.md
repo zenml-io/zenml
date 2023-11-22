@@ -24,7 +24,7 @@ def load_data() -> tuple:
     return ([0.1, 0.2, 0.3], [1])
 
 # Step for training a model; in this basic example, it just calculates the sum
-@step(enable_cache=False)
+@step
 def train_model(data: tuple) -> None:
     # A real-world model training step would include model fitting logic.
     total = sum(data[0]) 
@@ -146,7 +146,7 @@ ZenML records the root python logging handler's output into the artifact store a
 Here we are creating a training step for a support vector machine classifier with `sklearn`. As we might want to adjust the hyperparameter `gamma` later on, we define it as an input value to the step as well.
 
 ```python
-@step(enable_cache=False)
+@step
 def svc_trainer(
         X_train: pd.DataFrame,
         y_train: pd.Series,
@@ -229,7 +229,6 @@ A simple version of such a YAML file could be:
 ```yaml
 steps:
   svc_trainer:
-    enable_cache: False
     parameters:
       gamma: 0.01
 ```
@@ -307,7 +306,7 @@ def training_data_loader() -> Tuple[
     return X_train, X_test, y_train, y_test
 
 
-@step(enable_cache=False)
+@step
 def svc_trainer(
         X_train: pd.DataFrame,
         y_train: pd.Series,
