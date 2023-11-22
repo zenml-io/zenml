@@ -1,8 +1,8 @@
 ---
-description: Keeping track of ML models in ZenML
+description: Exploring the ZenML Model Control Plane
 ---
 
-# Exploring the ZenML Model Control Plane
+# Keeping track of ML models in ZenML
 
 As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many `ModelVersions`. These concepts are exposed in the `Model Control Plane` (MCP for short).
 
