@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
+import os
 from abc import ABC
 from typing import (
     Any,
@@ -35,6 +36,9 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    DEFAULT_STACK_AND_COMPONENT_NAME,
+    DEFAULT_WORKSPACE_NAME,
+    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     IS_DEBUG_ENV,
 )
 from zenml.enums import (
@@ -46,6 +50,7 @@ from zenml.logger import get_logger
 from zenml.models import (
     ServerDatabaseType,
     ServerModel,
+    StackFilter,
     StackResponse,
     UserFilter,
     UserResponse,
@@ -344,7 +349,7 @@ class BaseZenStore(
                     active_workspace_name_or_id
                 )
             except KeyError:
-                active_workspace = self._get_or_create_default_workspace()
+                active_workspace = self._get_default_workspace()
 
                 logger.warning(
                     f"The current {config_name} active workspace is no longer "
@@ -352,7 +357,7 @@ class BaseZenStore(
                     f"'{active_workspace.name}'."
                 )
         else:
-            active_workspace = self._get_or_create_default_workspace()
+            active_workspace = self._get_default_workspace()
 
             logger.info(
                 f"Setting the {config_name} active workspace "
@@ -372,8 +377,8 @@ class BaseZenStore(
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_or_create_default_stack(
-                    active_workspace
+                active_stack = self._get_default_stack(
+                    workspace_id=active_workspace.id
                 )
             else:
                 if active_stack.workspace.id != active_workspace.id:
@@ -382,15 +387,18 @@ class BaseZenStore(
                         "workspace. Resetting the active stack to default.",
                         config_name,
                     )
-                    active_stack = self._get_or_create_default_stack(
-                        active_workspace
+                    active_stack = self._get_default_stack(
+                        workspace_id=active_workspace.id
                     )
+
         else:
             logger.warning(
                 "Setting the %s active stack to default.",
                 config_name,
             )
-            active_stack = self._get_or_create_default_stack(active_workspace)
+            active_stack = self._get_default_stack(
+                workspace_id=active_workspace.id
+            )
 
         return active_workspace, active_stack
 
@@ -422,6 +430,62 @@ class BaseZenStore(
             True if the store is local, False otherwise.
         """
         return self.get_store_info().is_local()
+
+    # -----------------------------
+    # Default workspaces and stacks
+    # -----------------------------
+
+    @property
+    def _default_workspace_name(self) -> str:
+        """Get the default workspace name.
+
+        Returns:
+            The default workspace name.
+        """
+        return os.getenv(
+            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
+        )
+
+    def _get_default_workspace(self) -> WorkspaceResponse:
+        """Get the default workspace.
+
+        Raises:
+            KeyError: If the default workspace doesn't exist.
+
+        Returns:
+            The default workspace.
+        """
+        try:
+            return self.get_workspace(self._default_workspace_name)
+        except KeyError:
+            raise KeyError("Unable to find default workspace.")
+
+    def _get_default_stack(
+        self,
+        workspace_id: UUID,
+    ) -> StackResponse:
+        """Get the default stack for a user in a workspace.
+
+        Args:
+            workspace_id: ID of the workspace.
+
+        Returns:
+            The default stack in the workspace.
+
+        Raises:
+            KeyError: if the workspace or default stack doesn't exist.
+        """
+        default_stacks = self.list_stacks(
+            StackFilter(
+                workspace_id=workspace_id,
+                name=DEFAULT_STACK_AND_COMPONENT_NAME,
+            )
+        )
+        if default_stacks.total == 0:
+            raise KeyError(
+                f"No default stack found in workspace {workspace_id}."
+            )
+        return default_stacks.items[0]
 
     # --------------
     # Event Handlers

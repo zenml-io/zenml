@@ -63,10 +63,8 @@ from zenml.constants import (
     DEFAULT_PASSWORD,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
-    DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
-    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     TEXT_FIELD_MAX_LENGTH,
 )
@@ -4541,33 +4539,6 @@ class SqlZenStore(BaseZenStore):
             )
         return None
 
-    def _get_default_stack(
-        self,
-        workspace_id: UUID,
-    ) -> StackResponse:
-        """Get the default stack for a user in a workspace.
-
-        Args:
-            workspace_id: ID of the workspace.
-
-        Returns:
-            The default stack in the workspace.
-
-        Raises:
-            KeyError: if the workspace or default stack doesn't exist.
-        """
-        default_stacks = self.list_stacks(
-            StackFilter(
-                workspace_id=workspace_id,
-                name=DEFAULT_STACK_AND_COMPONENT_NAME,
-            )
-        )
-        if default_stacks.total == 0:
-            raise KeyError(
-                f"No default stack found in workspace {workspace_id}."
-            )
-        return default_stacks.items[0]
-
     def _create_default_stack(
         self,
         workspace_id: UUID,
@@ -5522,17 +5493,6 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(workspace)
             session.commit()
-
-    @property
-    def _default_workspace_name(self) -> str:
-        """Get the default workspace name.
-
-        Returns:
-            The default workspace name.
-        """
-        return os.getenv(
-            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
-        )
 
     def _get_or_create_default_workspace(self) -> WorkspaceResponse:
         """Get or create the default workspace if it doesn't exist.
