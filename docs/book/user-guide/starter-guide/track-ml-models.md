@@ -197,8 +197,8 @@ def train_and_promote_model():
     ...
 ```
 
-In the final step of the pipeline, the new Model Version is promoted to the Production stage if a quality
-control check is passed (accuracy is above a threshold).
+In the final step of the pipeline, the new Model Version is promoted to the Production stage if a quality control check is passed (accuracy is above a threshold).
+
 ```python
 from zenml import get_step_context, step, pipeline
 from zenml.enums import ModelStages
