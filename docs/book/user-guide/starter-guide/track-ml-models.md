@@ -6,7 +6,7 @@ description: Keeping track of ML models in ZenML
 
 As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many `ModelVersions`. These concepts are exposed in the `Model Control Plane` (MCP for short).
 
-This feature empowers you to effortlessly group pipelines, artifacts, and crucial business data into a unified entity: a `Model`. A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `Production`, and decide whether the Model Version should be promoted based on your business rules during training.
+This feature empowers you to effortlessly group pipelines, artifacts, and crucial business data into a unified entity: a `Model`. A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `production`, and decide whether the Model Version should be promoted based on your business rules during training.
 
 These models can be viewed within ZenML:
 
@@ -38,7 +38,8 @@ from zenml.model import ModelVersion
         # The name uniquely identifies this model
         name="iris_classifier",
         # The version specifies the version
-        # If None, a new one will be created
+        # If None or an unseen version is specified, it will be created
+        # Otherwise, a version will be fetched.
         version=None, 
         # Some other properties may be specified
         license="Apache 2.0",
@@ -95,10 +96,15 @@ A models versions can exist in various stages. These are meant to signify their 
 ```python
 from zenml.model import ModelVersion
 
+# Get latest model version
+model_version = ModelVersion(
+    name="iris_classifier",
+)
+
 # Get a model from a version
 model_version = ModelVersion(
     name="iris_classifier",
-    version="2",
+    version="my_version",
 )
 
 # Pass the stage into the version field
@@ -175,7 +181,7 @@ To illustrate these concepts, let's consider a mock `iris_classifier` Model will
 
 <figure><img src="../../../.gitbook/assets/mcp_pipeline_overview.png" alt=""><figcaption><p>Model Control Plane Practical Example</p></figcaption></figure>
 
-Each time the `train_and_promote` pipeline runs, it creates a new iris_classifier. However, it only promotes the created model to `Production` if a certain accuracy threshold is met. The `do_predictions` pipeline simply picks up the latest Promoted model and runs batch inference on it. That way these two pipelines can independently be run, but can rely on each others output.
+Each time the `train_and_promote` pipeline runs, it creates a new iris_classifier. However, it only promotes the created model to `production` if a certain accuracy threshold is met. The `do_predictions` pipeline simply picks up the latest Promoted model and runs batch inference on it. That way these two pipelines can independently be run, but can rely on each others output.
 
 ### Training pipeline
 
@@ -197,7 +203,7 @@ def train_and_promote_model():
     ...
 ```
 
-In the final step of the pipeline, the new Model Version is promoted to the Production stage if a quality control check is passed (accuracy is above a threshold).
+In the final step of the pipeline, the new Model Version is promoted to the production stage if a quality control check is passed (accuracy is above a threshold).
 
 ```python
 from zenml import get_step_context, step, pipeline
@@ -250,7 +256,7 @@ zenml model version runs iris_classifier 1
 
 ### Predictions pipeline
 
-The Predictions Pipeline reads a trained model object from the Model Version labeled as Production. Here, the `version` is set to a specific stage, ensuring consistency across multiple runs. This approach shields the pipeline from the underlying complexities of the Training pipeline's promotion logic.
+The Predictions Pipeline reads a trained model object from the Model Version labeled as production. Here, the `version` is set to a specific stage, ensuring consistency across multiple runs. This approach shields the pipeline from the underlying complexities of the Training pipeline's promotion logic.
 ```python
 from zenml import pipeline
 from zenml.model import ModelVersion
@@ -316,10 +322,10 @@ def do_predictions():
     ...
 ```
 
-Executing the prediction pipeline ensures the use of the Model Version in Production stage, generating predictions as versioned artifacts.
+Executing the prediction pipeline ensures the use of the Model Version in production stage, generating predictions as versioned artifacts.
 
 ```bash
-# run prediction pipeline: it will use Production 
+# run prediction pipeline: it will use production 
 # staged Model Version to read Model Object and 
 # produce predictions as versioned artifact link
 python3 predict.py
@@ -331,7 +337,7 @@ zenml model version list iris_classifier
 zenml model version artifacts iris_classifier 1
 ```
 
-Fantastic! By reusing the model version in the Production stage, you've connected the inference dataset and predictions seamlessly. All these elements coexist within the same model version, allowing effortless tracing back to training data and model metrics.
+Fantastic! By reusing the model version in the production stage, you've connected the inference dataset and predictions seamlessly. All these elements coexist within the same model version, allowing effortless tracing back to training data and model metrics.
 
 And what if you run the prediction pipeline again?
 ```bash
