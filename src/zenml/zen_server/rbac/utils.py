@@ -31,12 +31,12 @@ from uuid import UUID
 from fastapi import HTTPException
 from pydantic import BaseModel
 
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseResponse,
     Page,
     UserScopedResponse,
 )
-from zenml.exceptions import IllegalOperationError
 from zenml.models.base_models import BaseResponseModel, UserScopedResponseModel
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
