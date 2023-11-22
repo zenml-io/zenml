@@ -48,11 +48,16 @@ install_integrations() {
     zenml integration export-requirements \
         --output-file integration-requirements.txt \
         $ignore_integrations_args
+
+    # pin pyyaml>=6.0.1
+    echo "" >> integration-requirements.txt
+    echo "pyyaml>=6.0.1" >> integration-requirements.txt
+
     pip install -r integration-requirements.txt
     rm integration-requirements.txt
 
-    # install langchain and llama_index integrations separately
-    zenml integration install -y langchain llama_index
+    # install langchain separately
+    zenml integration install -y langchain
 }
 
 

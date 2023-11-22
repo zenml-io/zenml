@@ -349,6 +349,7 @@ module = [
     "datasets.*",
     "pyngrok.*",
     "cloudpickle.*",
+    "matplotlib.*",
 ]
 ignore_missing_imports = true
 
