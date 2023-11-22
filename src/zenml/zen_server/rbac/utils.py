@@ -36,6 +36,7 @@ from zenml.models import (
     Page,
     UserScopedResponse,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.models.base_models import BaseResponseModel, UserScopedResponseModel
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
@@ -326,7 +327,7 @@ def batch_verify_permissions(
         action: The action the user wants to perform.
 
     Raises:
-        HTTPException: If the user is not allowed to perform the action.
+        IllegalOperationError: If the user is not allowed to perform the action.
         RuntimeError: If the permission verification failed unexpectedly.
     """
     if not server_config().rbac_enabled:
@@ -349,7 +350,7 @@ def batch_verify_permissions(
             )
 
         if not permissions[resource]:
-            raise HTTPException(
+            raise IllegalOperationError(
                 status_code=403,
                 detail=f"Insufficient permissions to {action.upper()} resource "
                 f"'{resource}'.",
