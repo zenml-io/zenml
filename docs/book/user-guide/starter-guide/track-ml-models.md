@@ -214,10 +214,7 @@ from zenml import step, get_step_context
 @step
 def predict(
     data: pd.DataFrame,
-) -> Annotated[
-    pd.Series,
-    "predictions"
-]:
+) -> Annotated[pd.Series, "predictions"]:
     # model_name and model_version derived from pipeline context
     model_version = get_step_context().model_version
 
