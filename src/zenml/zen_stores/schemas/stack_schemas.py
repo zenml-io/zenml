@@ -115,16 +115,11 @@ class StackSchema(NamedSchema, table=True):
         Returns:
             The updated StackSchema.
         """
-        for field, value in stack_update.dict(exclude_unset=True).items():
+        for field, value in stack_update.dict(
+            exclude_unset=True, exclude={"workspace", "user"}
+        ).items():
             if field == "components":
                 self.components = components
-
-            elif field == "user":
-                assert self.user_id == value
-
-            elif field == "workspace":
-                assert self.workspace_id == value
-
             else:
                 setattr(self, field, value)
 
