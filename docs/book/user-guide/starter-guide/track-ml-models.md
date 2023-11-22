@@ -82,7 +82,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-## Associating different types of artifacts with a Model
+### Associating different types of artifacts with a Model
 
 A ZenML model supports linking three types of artifacts:
 
@@ -110,7 +110,7 @@ def svc_trainer(
     ...
 ```
 
-## Using the Stages of a Model
+### Using the Stages of a Model
 
 A models versions can exist in various stages. These are meant to signify their lifecycle state:
 
@@ -162,7 +162,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-## Using a Model Version within a step
+### Using a Model Version within a step
 
 In this case, the model version will be available to all steps directly through the `StepContext`:
 
@@ -197,6 +197,8 @@ def training_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = training_data_loader()
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
+
+## 
 
 ## A Practical Example of using the Model Control Plane
 
