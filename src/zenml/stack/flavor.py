@@ -22,6 +22,7 @@ from zenml.models import (
     FlavorResponse,
     ServiceConnectorRequirements,
 )
+from zenml.models.v2.core.flavor import InternalFlavorRequest
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils import source_utils
 
@@ -166,7 +167,8 @@ class Flavor:
             if connector_requirements
             else None
         )
-        model = FlavorRequest(
+        model_class = FlavorRequest if is_custom else InternalFlavorRequest
+        model = model_class(
             user=client.active_user.id if is_custom else None,
             workspace=client.active_workspace.id if is_custom else None,
             name=self.name,
