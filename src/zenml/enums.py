@@ -328,6 +328,6 @@ class ResponseUpdateStrategy(StrEnum):
 class MetadataResourceTypes(StrEnum):
     """All possible resource types for adding metadata."""
 
-    PIPELINE_RUN = "pipeline run"
-    STEP_RUN = "step run"
+    PIPELINE_RUN = "pipeline_run"
+    STEP_RUN = "step_run"
     ARTIFACT = "artifact"

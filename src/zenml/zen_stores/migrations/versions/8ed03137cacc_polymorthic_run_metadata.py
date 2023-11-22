@@ -45,7 +45,7 @@ def upgrade() -> None:
             """
             UPDATE run_metadata
             SET resource_id = pipeline_run_id,
-                resource_type = 'pipeline run'
+                resource_type = 'pipeline_run'
             WHERE pipeline_run_id IS NOT NULL
             """
         )
@@ -54,7 +54,7 @@ def upgrade() -> None:
             """
             UPDATE run_metadata
             SET resource_id = step_run_id,
-                resource_type = 'step run'
+                resource_type = 'step_run'
             WHERE step_run_id IS NOT NULL
             """
         )
@@ -130,7 +130,7 @@ def downgrade() -> None:
             """
             UPDATE run_metadata
             SET pipeline_run_id = resource_id
-            WHERE resource_type = 'pipeline run'
+            WHERE resource_type = 'pipeline_run'
             """
         )
         session.execute(stmt)
@@ -138,7 +138,7 @@ def downgrade() -> None:
             """
             UPDATE run_metadata
             SET step_run_id = resource_id
-            WHERE resource_type = 'step run'
+            WHERE resource_type = 'step_run'
             """
         )
         session.execute(stmt)
