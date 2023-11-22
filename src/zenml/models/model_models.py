@@ -41,13 +41,13 @@ from zenml.models.base_models import (
 from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.scoped import WorkspaceScopedFilter
+from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
     from sqlmodel.sql.expression import Select, SelectOfScalar
 
     from zenml.model.model_version import ModelVersion
-    from zenml.models.v2.core.artifact import ArtifactResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -461,7 +461,6 @@ class ModelVersionUpdateModel(BaseModel):
 class ModelVersionArtifactBaseModel(BaseModel):
     """Model version links with artifact base model."""
 
-    artifact: UUID
     model: UUID
     model_version: UUID
     is_model_artifact: bool = False
@@ -484,11 +483,15 @@ class ModelVersionArtifactRequestModel(
 ):
     """Model version link with artifact request model."""
 
+    artifact: UUID
+
 
 class ModelVersionArtifactResponseModel(
     ModelVersionArtifactBaseModel, WorkspaceScopedResponseModel
 ):
     """Model version link with artifact response model."""
+
+    artifact: ArtifactResponse
 
 
 class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):
@@ -530,7 +533,6 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):
 class ModelVersionPipelineRunBaseModel(BaseModel):
     """Model version links with pipeline run base model."""
 
-    pipeline_run: UUID
     model: UUID
     model_version: UUID
 
@@ -540,11 +542,15 @@ class ModelVersionPipelineRunRequestModel(
 ):
     """Model version link with pipeline run request model."""
 
+    pipeline_run: UUID
+
 
 class ModelVersionPipelineRunResponseModel(
     ModelVersionPipelineRunBaseModel, WorkspaceScopedResponseModel
 ):
     """Model version link with pipeline run response model."""
+
+    pipeline_run: PipelineRunResponse
 
 
 class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilter):

@@ -442,7 +442,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             updated=self.updated,
             model=self.model_id,
             model_version=self.model_version_id,
-            artifact=self.artifact_id,
+            artifact=self.artifact.to_model(),
             is_model_artifact=self.is_model_artifact,
             is_endpoint_artifact=self.is_endpoint_artifact,
         )
@@ -551,5 +551,5 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
             updated=self.updated,
             model=self.model_id,
             model_version=self.model_version_id,
-            pipeline_run=self.pipeline_run_id,
+            pipeline_run=self.pipeline_run.to_model(),
         )
