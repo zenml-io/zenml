@@ -189,7 +189,6 @@ class ArtifactSchema(NamedSchema, table=True):
         # Create the body and metadata of the model
         body = ArtifactResponseBody(
             version=self.version_number or self.version,
-            has_custom_name=self.has_custom_name,
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
             type=self.type,
@@ -209,6 +208,7 @@ class ArtifactSchema(NamedSchema, table=True):
                 materializer=materializer,
                 data_type=data_type,
                 tags=tags,
+                has_custom_name=self.has_custom_name,
             )
 
         return ArtifactResponse(

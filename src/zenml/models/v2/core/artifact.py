@@ -301,9 +301,9 @@ class ArtifactResponse(
         Returns:
             The materialized data.
         """
-        from zenml.artifacts.utils import load_artifact_from_model
+        from zenml.artifacts.utils import load_artifact_from_response
 
-        return load_artifact_from_model(self)
+        return load_artifact_from_response(self)
 
     def read(self) -> Any:
         """(Deprecated) Materializes (loads) the data stored in this artifact.

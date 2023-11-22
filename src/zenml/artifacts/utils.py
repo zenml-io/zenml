@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Utility functions for logging artifact metadata."""
+"""Utility functions for handling artifacts."""
 
 import base64
 import os
@@ -90,7 +90,7 @@ def save_artifact(
             link the artifact to the current step run.
 
     Returns:
-        The ID of the published artifact.
+        The saved artifact response.
 
     Raises:
         RuntimeError: If artifact URI already exists.
@@ -221,7 +221,7 @@ def load_artifact(
         )
     except RuntimeError:
         pass  # Cannot link to step run if called outside of a step
-    return load_artifact_from_model(artifact)
+    return load_artifact_from_response(artifact)
 
 
 def log_artifact_metadata(
@@ -342,7 +342,7 @@ def load_artifact_visualization(
     return LoadedVisualization(type=visualization.type, value=value)
 
 
-def load_artifact_from_model(artifact: "ArtifactResponse") -> Any:
+def load_artifact_from_response(artifact: "ArtifactResponse") -> Any:
     """Load the given artifact into memory.
 
     Args:

@@ -22,7 +22,7 @@ from bentoml._internal.bento import bento
 
 from zenml import get_step_context, step
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
-from zenml.artifacts.utils import load_artifact_from_model
+from zenml.artifacts.utils import load_artifact_from_response
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.logger import get_logger
 from zenml.utils import source_utils
@@ -77,7 +77,7 @@ def bento_builder_step(
     )
 
     # Load the model from the model artifact
-    model = load_artifact_from_model(model)
+    model = load_artifact_from_response(model)
 
     # Save the model to a BentoML model based on the model type
     try:

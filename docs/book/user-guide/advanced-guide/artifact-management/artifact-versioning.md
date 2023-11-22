@@ -68,7 +68,7 @@ def my_step() -> Annotated[int, ArtifactConfig(name="my_custom_name")]:
     ...
 ```
 
-Now you will be able to find the created artifact as "my_custom_name" in your
+Now you will be able to find the created artifact as `my_custom_name` in your
 ZenML dashboard.
 
 {% hint style="info" %}
@@ -104,13 +104,13 @@ def my_step() -> (
     ...
 ```
 
-The next execution of this step will then create an artifact with name
+The next execution of this step will then create an artifact with the name
 "my_custom_name" and version "my_custom_version". This is primarily useful if
 you are making a particularly important pipeline run (such as a release) whose
 artifacts you want to distinguish at a glance later.
 
 {% hint style="warning" %}
-You cannot create two artifacts with the same name or version, so rerunning a
+You cannot create two artifacts with the same name and version, so rerunning a
 step that specifies a manual artifact version will always fail.
 {% endhint %}
 
@@ -135,9 +135,11 @@ this step, which can later be used to filter for artifacts in the dashboard.
 ## Link artifacts to models
 
 `ArtifactConfig` contains several other properties that you can set to modify
-how artifacts are linked to models. 
-
-TODO: link to model control plane section
+how artifacts are linked to models:
+- `model_name`: The name of the model to link the artifact to.
+- `model_version`: The version of the model to link the artifact to.
+- `is_model_artifact`: Whether the artifact is a model artifact.
+- `is_endpoint_artifact`: Whether the artifact is an endpoint artifact.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

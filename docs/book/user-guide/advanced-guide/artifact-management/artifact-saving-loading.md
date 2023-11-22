@@ -67,7 +67,7 @@ Using an `ExternalArtifact` with input data for your step automatically disables
 
 <summary>See it in action with the E2E example</summary>
 
-*To setup the local environment used below, follow the recommendations from the
+*To set up the local environment used below, follow the recommendations from the
 [Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
 
 In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py), you can find an example using the `ExternalArtifact` concept to
@@ -126,3 +126,6 @@ x = zenml.load_artifact("my_numpy_array")
 {% hint style="info" %}
 It is also possible to use these functions inside your ZenML steps. However, it is usually cleaner to return the artifacts as outputs of your step to save them, or to use [External Artifacts](#external-artifacts) to load them instead.
 {% endhint %}
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -22,7 +22,7 @@ import pytest
 from zenml.artifacts.utils import (
     _get_new_artifact_version,
     _load_artifact_from_uri,
-    load_artifact_from_model,
+    load_artifact_from_response,
     load_model_from_metadata,
     save_model_metadata,
 )
@@ -102,19 +102,19 @@ def test_load_model_from_metadata(mocker, model_metadata_dir):
     assert model == mocked_model
 
 
-def test_load_artifact(mocker, model_artifact):
-    """Test the load_artifact function."""
+def test_load_artifact_from_response(mocker, model_artifact):
+    """Test the test_load_artifact_from_response function."""
     # Mock the model object
     model = mocker.MagicMock()
 
-    # Mock the _load_artifact function
+    # Mock the _load_artifact_from_uri function
     mocker_load_artifact = mocker.patch(
         "zenml.artifacts.utils._load_artifact_from_uri", return_value=model
     )
 
-    load_artifact_from_model(model_artifact)
+    load_artifact_from_response(model_artifact)
 
-    # Ensure the _load_artifact function is called
+    # Ensure the _load_artifact_from_uri function is called
     mocker_load_artifact.assert_called_once()
 
 
