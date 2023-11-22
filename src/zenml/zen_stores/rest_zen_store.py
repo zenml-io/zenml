@@ -448,27 +448,6 @@ class RestZenStore(BaseZenStore):
     _api_token: Optional[str] = None
     _session: Optional[requests.Session] = None
 
-    def _initialize_database(self) -> None:
-        """Initialize the database."""
-        # don't do anything for a REST store
-
-    def _create_default_stack(
-        self,
-        workspace_id: UUID,
-    ) -> StackResponse:
-        workspace = self.get_workspace(workspace_id)
-
-        raise RuntimeError(
-            f"Unable to create default stack in workspace "
-            f"{workspace.name}."
-        )
-
-    def _create_default_workspace(self) -> WorkspaceResponse:
-        raise RuntimeError(
-            f"Unable to create default workspace "
-            f"{self._default_workspace_name}."
-        )
-
     # ====================================
     # ZenML Store interface implementation
     # ====================================

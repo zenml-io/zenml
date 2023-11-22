@@ -20,7 +20,7 @@ from tests.integration.functional.cli.utils import (
     user_delete_command,
     user_update_command,
 )
-from zenml.zen_stores.base_zen_store import (
+from zenml.constants import (
     DEFAULT_USERNAME,
 )
 

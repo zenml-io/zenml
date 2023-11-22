@@ -138,6 +138,11 @@ CONFIG_FILE_NAME = "config.yaml"
 # Default store directory subpath:
 DEFAULT_STORE_DIRECTORY_NAME = "default_zen_store"
 
+DEFAULT_USERNAME = "default"
+DEFAULT_PASSWORD = ""
+DEFAULT_WORKSPACE_NAME = "default"
+DEFAULT_STACK_AND_COMPONENT_NAME = "default"
+
 # Secrets Manager
 ZENML_SCHEMA_NAME = "zenml_schema_name"
 LOCAL_SECRETS_FILENAME = "secrets.yaml"

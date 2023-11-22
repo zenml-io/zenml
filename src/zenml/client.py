@@ -948,7 +948,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
             return self.get_workspace(workspace_id)
 
-        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
+        from zenml.constants import DEFAULT_WORKSPACE_NAME
 
         # If running in a ZenML server environment, the active workspace is
         # not relevant

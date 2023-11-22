@@ -33,6 +33,7 @@ from starlette.requests import Request
 from zenml.analytics.context import AnalyticsContext
 from zenml.constants import (
     API,
+    DEFAULT_USERNAME,
     EXTERNAL_AUTHENTICATOR_TIMEOUT,
     LOGIN,
     VERSION_1,
@@ -54,7 +55,6 @@ from zenml.models import (
 )
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import server_config, zen_store
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
 

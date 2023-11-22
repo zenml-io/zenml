@@ -42,7 +42,14 @@ from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
 from zenml.client import Client
-from zenml.constants import ACTIVATE, DEACTIVATE, USERS
+from zenml.constants import (
+    ACTIVATE,
+    DEACTIVATE,
+    DEFAULT_STACK_AND_COMPONENT_NAME,
+    DEFAULT_USERNAME,
+    DEFAULT_WORKSPACE_NAME,
+    USERS,
+)
 from zenml.enums import (
     ColorVariants,
     ModelStages,
@@ -104,11 +111,6 @@ from zenml.utils.artifact_utils import (
     _load_file_from_artifact_store,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_stores.base_zen_store import (
-    DEFAULT_STACK_AND_COMPONENT_NAME,
-    DEFAULT_USERNAME,
-    DEFAULT_WORKSPACE_NAME,
-)
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 DEFAULT_NAME = "default"

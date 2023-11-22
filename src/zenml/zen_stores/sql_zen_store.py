@@ -54,15 +54,24 @@ from sqlmodel import Session, SQLModel, and_, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
-from zenml.analytics.utils import track_decorator
+from zenml.analytics.utils import analytics_disabler, track_decorator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
+from zenml.config.server_config import ServerConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    DEFAULT_PASSWORD,
+    DEFAULT_STACK_AND_COMPONENT_NAME,
+    DEFAULT_USERNAME,
+    DEFAULT_WORKSPACE_NAME,
+    ENV_ZENML_DEFAULT_USER_NAME,
+    ENV_ZENML_DEFAULT_USER_PASSWORD,
+    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     TEXT_FIELD_MAX_LENGTH,
 )
 from zenml.enums import (
+    AuthScheme,
     LoggingLevels,
     ModelStages,
     SecretScope,
@@ -190,6 +199,8 @@ from zenml.models import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
+from zenml.models.v2.core.component import InternalComponentRequest
+from zenml.models.v2.core.stack import InternalStackRequest
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -201,7 +212,6 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
-    DEFAULT_STACK_AND_COMPONENT_NAME,
     BaseZenStore,
 )
 from zenml.zen_stores.enums import StoreEvent
@@ -261,6 +271,7 @@ B = TypeVar(
 # warning
 SelectOfScalar.inherit_cache = True
 Select.inherit_cache = True
+
 
 logger = get_logger(__name__)
 
@@ -690,11 +701,6 @@ class SqlZenStore(BaseZenStore):
     _engine: Optional[Engine] = None
     _alembic: Optional[Alembic] = None
 
-    def _create_default_workspace(self) -> WorkspaceResponse:
-        workspace_name = self._default_workspace_name
-        logger.info(f"Creating default workspace '{workspace_name}' ...")
-        return self.create_workspace(WorkspaceRequest(name=workspace_name))
-
     @property
     def engine(self) -> Engine:
         """The SQLAlchemy engine.
@@ -909,6 +915,19 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+
+    def _initialize_database(self) -> None:
+        """Initialize the database on first use."""
+        default_workspace = self._get_or_create_default_workspace()
+
+        config = ServerConfiguration.get_server_config()
+        # If the auth scheme is external, don't create the default user
+        if config.auth_scheme != AuthScheme.EXTERNAL:
+            self._get_or_create_default_user()
+
+        self._get_or_create_default_stack(
+            workspace=default_workspace,
+        )
 
     def _create_mysql_database(
         self,
@@ -4522,6 +4541,118 @@ class SqlZenStore(BaseZenStore):
             )
         return None
 
+    def _get_default_stack(
+        self,
+        workspace_id: UUID,
+    ) -> StackResponse:
+        """Get the default stack for a user in a workspace.
+
+        Args:
+            workspace_id: ID of the workspace.
+
+        Returns:
+            The default stack in the workspace.
+
+        Raises:
+            KeyError: if the workspace or default stack doesn't exist.
+        """
+        default_stacks = self.list_stacks(
+            StackFilter(
+                workspace_id=workspace_id,
+                name=DEFAULT_STACK_AND_COMPONENT_NAME,
+            )
+        )
+        if default_stacks.total == 0:
+            raise KeyError(
+                f"No default stack found in workspace {workspace_id}."
+            )
+        return default_stacks.items[0]
+
+    def _create_default_stack(
+        self,
+        workspace_id: UUID,
+    ) -> StackResponse:
+        """Create the default stack components and stack.
+
+        The default stack contains a local orchestrator and a local artifact
+        store.
+
+        Args:
+            workspace_id: ID of the workspace to which the stack
+                belongs.
+
+        Returns:
+            The model of the created default stack.
+        """
+        with analytics_disabler():
+            workspace = self.get_workspace(workspace_name_or_id=workspace_id)
+
+            logger.info(
+                f"Creating default stack in workspace {workspace.name}..."
+            )
+
+            orchestrator = self.create_stack_component(
+                component=InternalComponentRequest(
+                    # Passing `None` for the user here means the orchestrator
+                    # is owned by the server, which for RBAC indicates that
+                    # everyone can read it
+                    user=None,
+                    workspace=workspace.id,
+                    name=DEFAULT_STACK_AND_COMPONENT_NAME,
+                    type=StackComponentType.ORCHESTRATOR,
+                    flavor="local",
+                    configuration={},
+                ),
+            )
+
+            artifact_store = self.create_stack_component(
+                component=InternalComponentRequest(
+                    # Passing `None` for the user here means the stack is owned
+                    # by the server, which for RBAC indicates that everyone can
+                    # read it
+                    user=None,
+                    workspace=workspace.id,
+                    name=DEFAULT_STACK_AND_COMPONENT_NAME,
+                    type=StackComponentType.ARTIFACT_STORE,
+                    flavor="local",
+                    configuration={},
+                ),
+            )
+
+            components = {
+                c.type: [c.id] for c in [orchestrator, artifact_store]
+            }
+
+            stack = InternalStackRequest(
+                # Passing `None` for the user here means the stack is owned by
+                # the server, which for RBAC indicates that everyone can read it
+                user=None,
+                name=DEFAULT_STACK_AND_COMPONENT_NAME,
+                components=components,
+                workspace=workspace.id,
+            )
+            return self.create_stack(stack=stack)
+
+    def _get_or_create_default_stack(
+        self, workspace: WorkspaceResponse
+    ) -> StackResponse:
+        """Get or create the default stack if it doesn't exist.
+
+        Args:
+            workspace: The workspace for which to create the default stack.
+
+        Returns:
+            The default stack.
+        """
+        try:
+            return self._get_default_stack(
+                workspace_id=workspace.id,
+            )
+        except KeyError:
+            return self._create_default_stack(
+                workspace_id=workspace.id,
+            )
+
     # ----------------------------- Step runs -----------------------------
 
     def create_run_step(self, step_run: StepRunRequest) -> StepRunResponse:
@@ -5203,6 +5334,38 @@ class SqlZenStore(BaseZenStore):
             session.delete(user)
             session.commit()
 
+    @property
+    def _default_user_name(self) -> str:
+        """Get the default user name.
+
+        Returns:
+            The default user name.
+        """
+        return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
+
+    def _get_or_create_default_user(self) -> UserResponse:
+        """Get or create the default user if it doesn't exist.
+
+        Returns:
+            The default user.
+        """
+        default_user_name = self._default_user_name
+        try:
+            return self.get_user(default_user_name)
+        except KeyError:
+            password = os.getenv(
+                ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
+            )
+
+            logger.info(f"Creating default user '{default_user_name}' ...")
+            return self.create_user(
+                UserRequest(
+                    name=default_user_name,
+                    active=True,
+                    password=password,
+                )
+            )
+
     # ----------------------------- Workspaces -----------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_WORKSPACE)
@@ -5359,6 +5522,35 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(workspace)
             session.commit()
+
+    @property
+    def _default_workspace_name(self) -> str:
+        """Get the default workspace name.
+
+        Returns:
+            The default workspace name.
+        """
+        return os.getenv(
+            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
+        )
+
+    def _get_or_create_default_workspace(self) -> WorkspaceResponse:
+        """Get or create the default workspace if it doesn't exist.
+
+        Returns:
+            The default workspace.
+        """
+        default_workspace_name = self._default_workspace_name
+
+        try:
+            return self.get_workspace(default_workspace_name)
+        except KeyError:
+            logger.info(
+                f"Creating default workspace '{default_workspace_name}' ..."
+            )
+            return self.create_workspace(
+                WorkspaceRequest(name=default_workspace_name)
+            )
 
     # =======================
     # Internal helper methods
