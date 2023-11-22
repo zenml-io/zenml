@@ -260,11 +260,18 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         Raises:
             IllegalOperationError: If the user lacks permission to access the
                 entity represented by this response.
+            RuntimeError: If the body was not included in the response.
         """
-        if not self.body:
+        if self.permission_denied:
             raise IllegalOperationError(
                 f"Missing permissions to access {type(self).__name__} with "
                 f"ID {self.id}."
+            )
+
+        if not self.body:
+            raise RuntimeError(
+                f"Missing response body for {type(self).__name__} with ID "
+                f"{self.id}."
             )
 
         return self.body
@@ -279,7 +286,7 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
             IllegalOperationError: If the user lacks permission to access this
                 entity represented by this response.
         """
-        if not self.body:
+        if self.permission_denied:
             raise IllegalOperationError(
                 f"Missing permissions to access {type(self).__name__} with "
                 f"ID {self.id}."
