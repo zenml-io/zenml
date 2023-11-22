@@ -21,7 +21,7 @@ from zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer impor
 )
 
 
-def test_xgboost_dmatrix_materializer(clean_workspace):
+def test_xgboost_dmatrix_materializer(clean_client):
     """Tests whether the steps work for the XGBoost Booster materializer."""
     dmatrix = _test_materializer(
         step_output=xgb.DMatrix(np.random.randn(5, 5)),

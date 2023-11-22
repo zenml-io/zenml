@@ -16,7 +16,7 @@
 # from tests.unit.test_general import _test_materializer
 
 # TODO: turn this back on when we are able to upgrade llama_index integration
-# def test_llama_index_document_materializer(clean_workspace):
+# def test_llama_index_document_materializer(clean_client):
 #     """Tests whether the steps work for the Llama Index Document
 #     materializer."""
 #     from langchain.docstore.document import Document as LCDocument

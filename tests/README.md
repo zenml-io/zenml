@@ -209,7 +209,7 @@ custom pytest fixture (`module_auto_clean_project`) that ensures that different
 tests do not interfere with each other and, in theory, can even be run in
 parallel, although there are some minor issues with some tests that need to be
 addressed to make this possible. Unit tests that require a completely isolated
-ZenML deployment use the `clean_workspace` fixture to set up a temporary client
+ZenML deployment use the `clean_client` fixture to set up a temporary client
 with its own independent global configuration.
 
 * integration and end-to-end system tests are generally written so that they are

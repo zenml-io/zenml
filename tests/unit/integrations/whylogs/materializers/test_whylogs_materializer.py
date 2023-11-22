@@ -21,7 +21,7 @@ from zenml.integrations.whylogs.materializers.whylogs_materializer import (
 )
 
 
-def test_whylogs_materializer(clean_workspace):
+def test_whylogs_materializer(clean_client):
     """Tests whether the steps work for the Whylogs materializer."""
     dataset_profile_view = _test_materializer(
         step_output=DatasetProfileView(

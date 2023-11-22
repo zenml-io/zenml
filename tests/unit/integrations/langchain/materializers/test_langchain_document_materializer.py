@@ -16,7 +16,7 @@
 from tests.unit.test_general import _test_materializer
 
 
-def test_langchain_document_materializer(clean_workspace):
+def test_langchain_document_materializer(clean_client):
     """Tests whether the steps work for the Langchain Document materializer."""
     from zenml.integrations.langchain.materializers.document_materializer import (
         LangchainDocumentMaterializer,

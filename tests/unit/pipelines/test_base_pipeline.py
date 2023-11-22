@@ -917,15 +917,15 @@ def test_compiling_a_pipeline_merges_build(
 
 
 def test_building_a_pipeline_registers_it(
-    clean_workspace, empty_pipeline  # noqa: F811
+    clean_client, empty_pipeline  # noqa: F811
 ):
     """Tests that building a pipeline registers it in the server."""
     pipeline_instance = empty_pipeline
     with pytest.raises(KeyError):
-        clean_workspace.get_pipeline(name_id_or_prefix=pipeline_instance.name)
+        clean_client.get_pipeline(name_id_or_prefix=pipeline_instance.name)
 
     pipeline_instance.build()
     assert (
-        clean_workspace.get_pipeline(name_id_or_prefix=pipeline_instance.name)
+        clean_client.get_pipeline(name_id_or_prefix=pipeline_instance.name)
         is not None
     )

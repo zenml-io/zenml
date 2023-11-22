@@ -16,7 +16,7 @@
 from tests.unit.test_general import _test_materializer
 
 
-def test_langchain_vectorstore_materializer(clean_workspace):
+def test_langchain_vectorstore_materializer(clean_client):
     """Tests the Langchain Vector Store materializer."""
     from langchain.embeddings import FakeEmbeddings
     from langchain.vectorstores import SKLearnVectorStore

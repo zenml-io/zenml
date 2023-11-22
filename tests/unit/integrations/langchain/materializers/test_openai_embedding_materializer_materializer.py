@@ -16,7 +16,7 @@
 from tests.unit.test_general import _test_materializer
 
 
-def test_langchain_openai_embedding_materializer(clean_workspace):
+def test_langchain_openai_embedding_materializer(clean_client):
     """Tests the Langchain OpenAI Embeddings materializer."""
     from langchain.embeddings import OpenAIEmbeddings
 

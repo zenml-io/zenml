@@ -116,7 +116,7 @@ def test_repository_detection(tmp_path):
 
 
 def test_initializing_repo_creates_directory_and_uses_default_stack(
-    tmp_path, clean_workspace
+    tmp_path, clean_client
 ):
     """Tests that repo initialization creates a .zen directory and uses the default local stack."""
     Client.initialize(tmp_path)
@@ -155,7 +155,7 @@ def test_freshly_initialized_repo_attributes(tmp_path):
 
 
 def test_finding_repository_directory_with_explicit_path(
-    tmp_path, clean_workspace
+    tmp_path, clean_client
 ):
     """Tests that a repository can be found using an explicit path, an environment variable and the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
@@ -220,30 +220,30 @@ def test_creating_repository_instance_during_step_execution(mocker):
         Client()
 
 
-def test_activating_nonexisting_stack_fails(clean_workspace):
+def test_activating_nonexisting_stack_fails(clean_client):
     """Tests that activating a stack name that isn't registered fails."""
     with pytest.raises(KeyError):
-        clean_workspace.activate_stack(str(uuid4()))
+        clean_client.activate_stack(str(uuid4()))
 
 
-def test_activating_a_stack_updates_the_config_file(clean_workspace):
+def test_activating_a_stack_updates_the_config_file(clean_client):
     """Tests that the newly active stack name gets persisted."""
-    stack = _create_local_stack(client=clean_workspace, stack_name="new_stack")
-    clean_workspace.activate_stack(stack.id)
+    stack = _create_local_stack(client=clean_client, stack_name="new_stack")
+    clean_client.activate_stack(stack.id)
 
-    assert Client(clean_workspace.root).active_stack_model.name == stack.name
+    assert Client(clean_client.root).active_stack_model.name == stack.name
 
 
-def test_registering_a_stack(clean_workspace):
+def test_registering_a_stack(clean_client):
     """Tests that registering a stack works and the stack gets persisted."""
     orch = _create_local_orchestrator(
-        client=clean_workspace,
+        client=clean_client,
     )
     art = _create_local_artifact_store(
-        client=clean_workspace,
+        client=clean_client,
     )
     new_stack_name = "some_new_stack_name"
-    new_stack = clean_workspace.create_stack(
+    new_stack = clean_client.create_stack(
         name=new_stack_name,
         components={
             StackComponentType.ORCHESTRATOR: str(orch.id),
@@ -251,22 +251,22 @@ def test_registering_a_stack(clean_workspace):
         },
     )
 
-    Client(clean_workspace.root)
+    Client(clean_client.root)
     with does_not_raise():
-        clean_workspace.zen_store.get_stack(new_stack.id)
+        clean_client.zen_store.get_stack(new_stack.id)
 
 
-def test_registering_a_stack_with_existing_name(clean_workspace):
+def test_registering_a_stack_with_existing_name(clean_client):
     """Tests that registering a stack for an existing name fails."""
     _create_local_stack(
-        client=clean_workspace,
+        client=clean_client,
         stack_name="axels_super_awesome_stack_of_fluffyness",
     )
-    orchestrator = _create_local_orchestrator(clean_workspace)
-    artifact_store = _create_local_artifact_store(clean_workspace)
+    orchestrator = _create_local_orchestrator(clean_client)
+    artifact_store = _create_local_artifact_store(clean_client)
 
     with pytest.raises(StackExistsError):
-        clean_workspace.create_stack(
+        clean_client.create_stack(
             name="axels_super_awesome_stack_of_fluffyness",
             components={
                 StackComponentType.ORCHESTRATOR: str(orchestrator.id),
@@ -275,21 +275,21 @@ def test_registering_a_stack_with_existing_name(clean_workspace):
         )
 
 
-def test_updating_a_stack_with_new_component_succeeds(clean_workspace):
+def test_updating_a_stack_with_new_component_succeeds(clean_client):
     """Tests that updating a new stack with already registered components updates the stack with the new or altered components passed in."""
     stack = _create_local_stack(
-        client=clean_workspace, stack_name="some_new_stack_name"
+        client=clean_client, stack_name="some_new_stack_name"
     )
-    clean_workspace.activate_stack(stack_name_id_or_prefix=stack.name)
+    clean_client.activate_stack(stack_name_id_or_prefix=stack.name)
 
     old_orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
     old_artifact_store = stack.components[StackComponentType.ARTIFACT_STORE][0]
     orchestrator = _create_local_orchestrator(
-        client=clean_workspace, orchestrator_name="different_orchestrator"
+        client=clean_client, orchestrator_name="different_orchestrator"
     )
 
     with does_not_raise():
-        updated_stack = clean_workspace.update_stack(
+        updated_stack = clean_client.update_stack(
             name_id_or_prefix=stack.name,
             component_updates={
                 StackComponentType.ORCHESTRATOR: [str(orchestrator.id)],
@@ -307,26 +307,26 @@ def test_updating_a_stack_with_new_component_succeeds(clean_workspace):
     assert active_artifact_store == old_artifact_store
 
 
-def test_renaming_stack_with_update_method_succeeds(clean_workspace):
+def test_renaming_stack_with_update_method_succeeds(clean_client):
     """Tests that renaming a stack with the update method succeeds."""
     stack = _create_local_stack(
-        client=clean_workspace, stack_name="some_new_stack_name"
+        client=clean_client, stack_name="some_new_stack_name"
     )
-    clean_workspace.activate_stack(stack.id)
+    clean_client.activate_stack(stack.id)
 
     new_stack_name = "new_stack_name"
 
     with does_not_raise():
-        clean_workspace.update_stack(
+        clean_client.update_stack(
             name_id_or_prefix=stack.id, name=new_stack_name
         )
-    assert clean_workspace.get_stack(name_id_or_prefix=new_stack_name)
+    assert clean_client.get_stack(name_id_or_prefix=new_stack_name)
 
 
-def test_register_a_stack_with_unregistered_component_fails(clean_workspace):
+def test_register_a_stack_with_unregistered_component_fails(clean_client):
     """Tests that registering a stack with an unregistered component fails."""
     with pytest.raises(KeyError):
-        clean_workspace.create_stack(
+        clean_client.create_stack(
             name="axels_empty_stack_of_disappoint",
             components={
                 StackComponentType.ORCHESTRATOR: "orchestrator_doesnt_exist",
@@ -335,49 +335,48 @@ def test_register_a_stack_with_unregistered_component_fails(clean_workspace):
         )
 
 
-def test_deregistering_the_active_stack(clean_workspace):
+def test_deregistering_the_active_stack(clean_client):
     """Tests that deregistering the active stack fails."""
     with pytest.raises(ValueError):
-        clean_workspace.delete_stack(clean_workspace.active_stack_model.id)
+        clean_client.delete_stack(clean_client.active_stack_model.id)
 
 
-def test_deregistering_a_non_active_stack(clean_workspace):
+def test_deregistering_a_non_active_stack(clean_client):
     """Tests that deregistering a non-active stack works."""
     stack = _create_local_stack(
-        client=clean_workspace, stack_name="some_new_stack_name"
+        client=clean_client, stack_name="some_new_stack_name"
     )
 
     with does_not_raise():
-        clean_workspace.delete_stack(name_id_or_prefix=stack.id)
+        clean_client.delete_stack(name_id_or_prefix=stack.id)
 
 
-def test_getting_a_stack_component(clean_workspace):
+def test_getting_a_stack_component(clean_client):
     """Tests that getting a stack component returns the correct component."""
-    component = clean_workspace.active_stack_model.components[
+    component = clean_client.active_stack_model.components[
         StackComponentType.ORCHESTRATOR
     ][0]
     with does_not_raise():
-        registered_component = clean_workspace.get_stack_component(
+        registered_component = clean_client.get_stack_component(
             component_type=component.type, name_id_or_prefix=component.id
         )
 
     assert component == registered_component
 
 
-def test_getting_a_nonexisting_stack_component(clean_workspace):
+def test_getting_a_nonexisting_stack_component(clean_client):
     """Tests that getting a stack component for a name that isn't registered fails."""
     with pytest.raises(KeyError):
-        clean_workspace.get_stack(name_id_or_prefix=str(uuid4()))
+        clean_client.get_stack(name_id_or_prefix=str(uuid4()))
 
 
-def test_registering_a_stack_component_with_existing_name(clean_workspace):
+def test_registering_a_stack_component_with_existing_name(clean_client):
     """Tests that registering a stack component for an existing name fails."""
     _create_local_orchestrator(
-        client=clean_workspace,
-        orchestrator_name="axels_orchestration_laboratory",
+        client=clean_client, orchestrator_name="axels_orchestration_laboratory"
     )
     with pytest.raises(StackComponentExistsError):
-        clean_workspace.create_stack_component(
+        clean_client.create_stack_component(
             name="axels_orchestration_laboratory",
             flavor="local",
             component_type=StackComponentType.ORCHESTRATOR,
@@ -386,11 +385,11 @@ def test_registering_a_stack_component_with_existing_name(clean_workspace):
         )
 
 
-def test_registering_a_new_stack_component_succeeds(clean_workspace):
+def test_registering_a_new_stack_component_succeeds(clean_client):
     """Tests that registering a stack component works and is persisted."""
-    new_artifact_store = _create_local_artifact_store(client=clean_workspace)
+    new_artifact_store = _create_local_artifact_store(client=clean_client)
 
-    new_client = Client(clean_workspace.root)
+    new_client = Client(clean_client.root)
 
     with does_not_raise():
         registered_artifact_store = new_client.get_stack_component(
@@ -401,111 +400,107 @@ def test_registering_a_new_stack_component_succeeds(clean_workspace):
     assert registered_artifact_store == new_artifact_store
 
 
-def test_deregistering_a_stack_component_in_stack_fails(clean_workspace):
+def test_deregistering_a_stack_component_in_stack_fails(clean_client):
     """Tests that deregistering a stack component works and is persisted."""
     component = _create_local_stack(
-        clean_workspace, "", orchestrator_name="unregistered_orchestrator"
+        clean_client, "", orchestrator_name="unregistered_orchestrator"
     ).components[StackComponentType.ORCHESTRATOR][0]
 
     with pytest.raises(IllegalOperationError):
-        clean_workspace.delete_stack_component(
+        clean_client.delete_stack_component(
             component_type=StackComponentType.ORCHESTRATOR,
             name_id_or_prefix=str(component.id),
         )
 
 
 def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
-    clean_workspace,
+    clean_client,
 ):
     """Tests that deregistering a stack component that is part of a registered stack fails."""
-    component = clean_workspace.active_stack_model.components[
+    component = clean_client.active_stack_model.components[
         StackComponentType.ORCHESTRATOR
     ][0]
 
     with pytest.raises(IllegalOperationError):
-        clean_workspace.delete_stack_component(
+        clean_client.delete_stack_component(
             name_id_or_prefix=component.id,
             component_type=StackComponentType.ORCHESTRATOR,
         )
 
 
-def test_getting_a_pipeline(clean_workspace):
+def test_getting_a_pipeline(clean_client):
     """Tests fetching of a pipeline."""
     # Non-existent ID
     with pytest.raises(KeyError):
-        clean_workspace.get_pipeline(name_id_or_prefix=uuid4())
+        clean_client.get_pipeline(name_id_or_prefix=uuid4())
 
     # Non-existent name
     with pytest.raises(KeyError):
-        clean_workspace.get_pipeline(name_id_or_prefix="non_existent")
+        clean_client.get_pipeline(name_id_or_prefix="non_existent")
 
     request = PipelineRequest(
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
         name="pipeline",
         version="1",
         version_hash="",
         spec=PipelineSpec(steps=[]),
     )
-    response_1 = clean_workspace.zen_store.create_pipeline(request)
+    response_1 = clean_client.zen_store.create_pipeline(request)
 
-    pipeline = clean_workspace.get_pipeline(name_id_or_prefix=response_1.id)
+    pipeline = clean_client.get_pipeline(name_id_or_prefix=response_1.id)
     assert pipeline == response_1
 
-    pipeline = clean_workspace.get_pipeline(name_id_or_prefix="pipeline")
+    pipeline = clean_client.get_pipeline(name_id_or_prefix="pipeline")
     assert pipeline == response_1
 
-    pipeline = clean_workspace.get_pipeline(
+    pipeline = clean_client.get_pipeline(
         name_id_or_prefix="pipeline", version="1"
     )
     assert pipeline == response_1
 
     # Non-existent version
     with pytest.raises(KeyError):
-        clean_workspace.get_pipeline(name_id_or_prefix="pipeline", version="2")
+        clean_client.get_pipeline(name_id_or_prefix="pipeline", version="2")
 
     request.version = "2"
-    response_2 = clean_workspace.zen_store.create_pipeline(request)
+    response_2 = clean_client.zen_store.create_pipeline(request)
 
     # Gets latest version
-    pipeline = clean_workspace.get_pipeline(name_id_or_prefix="pipeline")
+    pipeline = clean_client.get_pipeline(name_id_or_prefix="pipeline")
     assert pipeline == response_2
 
 
-def test_listing_pipelines(clean_workspace):
+def test_listing_pipelines(clean_client):
     """Tests listing of pipelines."""
-    assert clean_workspace.list_pipelines().total == 0
+    assert clean_client.list_pipelines().total == 0
 
     request = PipelineRequest(
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
         name="pipeline",
         version="1",
         version_hash="",
         spec=PipelineSpec(steps=[]),
     )
-    response_1 = clean_workspace.zen_store.create_pipeline(request)
+    response_1 = clean_client.zen_store.create_pipeline(request)
     request.name = "other_pipeline"
     request.version = "2"
-    response_2 = clean_workspace.zen_store.create_pipeline(request)
+    response_2 = clean_client.zen_store.create_pipeline(request)
 
-    assert clean_workspace.list_pipelines().total == 2
+    assert clean_client.list_pipelines().total == 2
 
-    assert clean_workspace.list_pipelines(name="pipeline").total == 1
-    assert (
-        clean_workspace.list_pipelines(name="pipeline").items[0] == response_1
-    )
+    assert clean_client.list_pipelines(name="pipeline").total == 1
+    assert clean_client.list_pipelines(name="pipeline").items[0] == response_1
 
-    assert clean_workspace.list_pipelines(version="1").total == 1
-    assert clean_workspace.list_pipelines(version="1").items[0] == response_1
+    assert clean_client.list_pipelines(version="1").total == 1
+    assert clean_client.list_pipelines(version="1").items[0] == response_1
 
-    assert clean_workspace.list_pipelines(version="2").total == 1
-    assert clean_workspace.list_pipelines(version="2").items[0] == response_2
+    assert clean_client.list_pipelines(version="2").total == 1
+    assert clean_client.list_pipelines(version="2").items[0] == response_2
 
     assert (
-        clean_workspace.list_pipelines(
-            name="other_pipeline", version="3"
-        ).total
+        clean_client.list_pipelines(name="other_pipeline", version="3").total
         == 0
     )
 
@@ -846,68 +841,68 @@ def test_create_secret_existing_name_different_scope():
 # ---------------
 
 
-def test_listing_builds(clean_workspace):
+def test_listing_builds(clean_client):
     """Tests listing builds."""
-    builds = clean_workspace.list_builds()
+    builds = clean_client.list_builds()
     assert len(builds) == 0
 
     request = PipelineBuildRequest(
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
         images={},
         is_local=False,
         contains_code=True,
     )
-    response = clean_workspace.zen_store.create_build(request)
+    response = clean_client.zen_store.create_build(request)
 
-    builds = clean_workspace.list_builds()
+    builds = clean_client.list_builds()
     assert len(builds) == 1
     assert builds[0] == response
 
-    builds = clean_workspace.list_builds(stack_id=uuid4())
+    builds = clean_client.list_builds(stack_id=uuid4())
     assert len(builds) == 0
 
 
-def test_getting_builds(clean_workspace):
+def test_getting_builds(clean_client):
     """Tests getting builds."""
 
     with pytest.raises(KeyError):
-        clean_workspace.get_build(str(uuid4()))
+        clean_client.get_build(str(uuid4()))
 
     request = PipelineBuildRequest(
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
         images={},
         is_local=False,
         contains_code=True,
     )
-    response = clean_workspace.zen_store.create_build(request)
+    response = clean_client.zen_store.create_build(request)
 
     with does_not_raise():
-        build = clean_workspace.get_build(str(response.id))
+        build = clean_client.get_build(str(response.id))
 
     assert build == response
 
 
-def test_deleting_builds(clean_workspace):
+def test_deleting_builds(clean_client):
     """Tests deleting builds."""
     with pytest.raises(KeyError):
-        clean_workspace.delete_build(str(uuid4()))
+        clean_client.delete_build(str(uuid4()))
 
     request = PipelineBuildRequest(
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
         images={},
         is_local=False,
         contains_code=True,
     )
-    response = clean_workspace.zen_store.create_build(request)
+    response = clean_client.zen_store.create_build(request)
 
     with does_not_raise():
-        clean_workspace.delete_build(str(response.id))
+        clean_client.delete_build(str(response.id))
 
     with pytest.raises(KeyError):
-        clean_workspace.get_build(str(response.id))
+        clean_client.get_build(str(response.id))
 
 
 # --------------------
@@ -915,105 +910,103 @@ def test_deleting_builds(clean_workspace):
 # --------------------
 
 
-def test_listing_deployments(clean_workspace):
+def test_listing_deployments(clean_client):
     """Tests listing deployments."""
-    deployments = clean_workspace.list_deployments()
+    deployments = clean_client.list_deployments()
     assert len(deployments) == 0
 
     request = PipelineDeploymentRequest(
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
-        stack=clean_workspace.active_stack.id,
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
     )
-    response = clean_workspace.zen_store.create_deployment(request)
+    response = clean_client.zen_store.create_deployment(request)
 
-    deployments = clean_workspace.list_deployments()
+    deployments = clean_client.list_deployments()
     assert len(deployments) == 1
     assert deployments[0] == response
 
-    deployments = clean_workspace.list_deployments(stack_id=uuid4())
+    deployments = clean_client.list_deployments(stack_id=uuid4())
     assert len(deployments) == 0
 
 
-def test_getting_deployments(clean_workspace):
+def test_getting_deployments(clean_client):
     """Tests getting deployments."""
     with pytest.raises(KeyError):
-        clean_workspace.get_deployment(str(uuid4()))
+        clean_client.get_deployment(str(uuid4()))
 
     request = PipelineDeploymentRequest(
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
-        stack=clean_workspace.active_stack.id,
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
     )
-    response = clean_workspace.zen_store.create_deployment(request)
+    response = clean_client.zen_store.create_deployment(request)
 
     with does_not_raise():
-        deployment = clean_workspace.get_deployment(str(response.id))
+        deployment = clean_client.get_deployment(str(response.id))
 
     assert deployment == response
 
 
-def test_deleting_deployments(clean_workspace):
+def test_deleting_deployments(clean_client):
     """Tests deleting deployments."""
     with pytest.raises(KeyError):
-        clean_workspace.delete_deployment(str(uuid4()))
+        clean_client.delete_deployment(str(uuid4()))
 
     request = PipelineDeploymentRequest(
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
-        stack=clean_workspace.active_stack.id,
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
     )
-    response = clean_workspace.zen_store.create_deployment(request)
+    response = clean_client.zen_store.create_deployment(request)
 
     with does_not_raise():
-        clean_workspace.delete_deployment(str(response.id))
+        clean_client.delete_deployment(str(response.id))
 
     with pytest.raises(KeyError):
-        clean_workspace.get_deployment(str(response.id))
+        clean_client.get_deployment(str(response.id))
 
 
-def test_get_run(clean_workspace: Client, connected_two_step_pipeline):
+def test_get_run(clean_client: Client, connected_two_step_pipeline):
     """Test that `get_run()` returns the correct run."""
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    run_ = clean_workspace.get_pipeline("connected_two_step_pipeline").runs[0]
-    assert clean_workspace.get_pipeline_run(run_.name) == run_
+    run_ = clean_client.get_pipeline("connected_two_step_pipeline").runs[0]
+    assert clean_client.get_pipeline_run(run_.name) == run_
 
 
-def test_get_run_fails_for_non_existent_run(clean_workspace: Client):
+def test_get_run_fails_for_non_existent_run(clean_client: Client):
     """Test that `get_run()` raises a `KeyError` for non-existent runs."""
     with pytest.raises(KeyError):
-        clean_workspace.get_pipeline_run("non_existent_run")
+        clean_client.get_pipeline_run("non_existent_run")
 
 
-def test_get_unlisted_runs(
-    clean_workspace: Client, connected_two_step_pipeline
-):
+def test_get_unlisted_runs(clean_client: Client, connected_two_step_pipeline):
     """Test that listing unlisted runs works."""
-    assert len(clean_workspace.list_pipeline_runs(unlisted=True)) == 0
+    assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    assert len(clean_workspace.list_pipeline_runs(unlisted=True)) == 0
+    assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
     pipeline_instance.run(unlisted=True)
-    assert len(clean_workspace.list_pipeline_runs(unlisted=True)) == 1
+    assert len(clean_client.list_pipeline_runs(unlisted=True)) == 1
 
 
 class ClientCrudTestConfig(BaseModel):
@@ -1102,17 +1095,15 @@ crud_test_configs = [
     ids=[c.entity_name for c in crud_test_configs],
 )
 def test_basic_crud_for_entity(
-    crud_test_config: ClientCrudTestConfig, clean_workspace
+    crud_test_config: ClientCrudTestConfig, clean_client
 ):
     """Tests basic CRUD method on the client."""
     create_method = getattr(
-        clean_workspace, f"create_{crud_test_config.entity_name}"
+        clean_client, f"create_{crud_test_config.entity_name}"
     )
-    get_method = getattr(
-        clean_workspace, f"get_{crud_test_config.entity_name}"
-    )
+    get_method = getattr(clean_client, f"get_{crud_test_config.entity_name}")
     delete_method = getattr(
-        clean_workspace, f"delete_{crud_test_config.entity_name}"
+        clean_client, f"delete_{crud_test_config.entity_name}"
     )
 
     entity = create_method(**crud_test_config.create_args)
@@ -1140,9 +1131,9 @@ def test_basic_crud_for_entity(
                 **crud_test_config.get_args,
             )
 
-        if hasattr(clean_workspace, f"update_{crud_test_config.entity_name}"):
+        if hasattr(clean_client, f"update_{crud_test_config.entity_name}"):
             update_method = getattr(
-                clean_workspace, f"update_{crud_test_config.entity_name}"
+                clean_client, f"update_{crud_test_config.entity_name}"
             )
 
             # Updating works with id prefix

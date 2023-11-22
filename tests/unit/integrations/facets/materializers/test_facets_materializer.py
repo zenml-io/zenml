@@ -23,7 +23,7 @@ from zenml.integrations.facets.materializers.facets_materializer import (
 from zenml.integrations.facets.models import FacetsComparison
 
 
-def test_facets_materializer(clean_workspace):
+def test_facets_materializer(clean_client):
     """Test the Facets materializer."""
     df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]}, index=["a", "b", "c"])
 

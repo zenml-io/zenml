@@ -22,7 +22,7 @@ from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer
 )
 
 
-def test_neural_prophet_booster_materializer(clean_workspace):
+def test_neural_prophet_booster_materializer(clean_client):
     """Tests whether the steps work for the Neural Prophet forecaster materializer."""
     sample_df = pd.DataFrame(
         {

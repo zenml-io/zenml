@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 def test_pipeline_run_linkage(
-    clean_workspace: "Client", connected_two_step_pipeline
+    clean_client: "Client", connected_two_step_pipeline
 ):
     """Integration test for `pipeline.get_runs()` and related properties."""
     pipeline_instance: BasePipeline = connected_two_step_pipeline(

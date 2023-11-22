@@ -20,7 +20,7 @@ from zenml.integrations.sklearn.materializers.sklearn_materializer import (
 )
 
 
-def test_sklearn_materializer(clean_workspace):
+def test_sklearn_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
     model = _test_materializer(
         step_output=SVC(gamma="auto"),

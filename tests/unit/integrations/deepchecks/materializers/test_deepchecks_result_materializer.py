@@ -50,7 +50,7 @@ def check_result():
 
 
 def test_deepchecks_dataset_materializer_with_check_result(
-    clean_workspace, check_result
+    clean_client, check_result
 ):
     """Test the Deepchecks dataset materializer for a single check result."""
     with does_not_raise():
@@ -62,7 +62,7 @@ def test_deepchecks_dataset_materializer_with_check_result(
 
 
 def test_deepchecks_dataset_materializer_with_suite_result(
-    clean_workspace, check_result
+    clean_client, check_result
 ):
     """Test the Deepchecks dataset materializer for a suite result."""
     suite = SuiteResult(name="aria_wears_suites", results=[check_result])

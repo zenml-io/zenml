@@ -24,9 +24,10 @@ from pytest_mock import MockerFixture
 from tests.harness.environment import TestEnvironment
 from tests.harness.utils import (
     check_test_requirements,
+    clean_default_client_session,
+    clean_workspace_session,
     environment_session,
 )
-from tests.integration.functional.utils import sample_name
 from tests.venv_clone_utils import clone_virtualenv
 from zenml.client import Client
 
@@ -149,32 +150,79 @@ def check_module_requirements(
 
 
 @pytest.fixture
-def clean_workspace() -> Generator[Client, None, None]:
-    """Fixture to create, activate and use a separate ZenML
+def clean_workspace(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Generator[Client, None, None]:
+    """Fixture to create, activate and use a separate ZenML repository and
     workspace for an individual test.
 
     Yields:
         A ZenML client configured to use the workspace.
     """
-    client = Client()
-    new_ws = client.create_workspace(sample_name("ws"), "")
-    client.set_active_workspace(new_ws.id)
-
-    yield client
-
-    client.set_active_workspace("default")
-    client.delete_workspace(new_ws.id)
+    with clean_workspace_session(
+        tmp_path_factory=tmp_path_factory,
+        clean_repo=True,
+    ) as client:
+        yield client
 
 
 @pytest.fixture(scope="module")
-def module_clean_workspace() -> Generator[Client, None, None]:
-    """Fixture to create, activate and use a separate ZenML
+def module_clean_workspace(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Generator[Client, None, None]:
+    """Fixture to create, activate and use a separate ZenML repository and
     workspace for an entire test module.
 
     Yields:
         A ZenML client configured to use the workspace.
     """
-    yield clean_workspace()
+    with clean_workspace_session(
+        tmp_path_factory=tmp_path_factory,
+        clean_repo=True,
+    ) as client:
+        yield client
+
+
+@pytest.fixture
+def clean_client(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Generator[Client, None, None]:
+    """Fixture to get and use a clean local client with its own global
+    configuration and isolated SQLite database for an individual test.
+
+    Args:
+        request: Pytest FixtureRequest object
+        tmp_path_factory: Pytest TempPathFactory in order to create a new
+            temporary directory
+
+    Yields:
+        A clean ZenML client.
+    """
+    with clean_default_client_session(
+        tmp_path_factory=tmp_path_factory,
+    ) as client:
+        yield client
+
+
+@pytest.fixture(scope="module")
+def module_clean_client(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Generator[Client, None, None]:
+    """Fixture to get and use a clean local client with its own global
+    configuration and isolated SQLite database for a test module.
+
+    Args:
+        request: Pytest FixtureRequest object
+        tmp_path_factory: Pytest TempPathFactory in order to create a new
+            temporary directory
+
+    Yields:
+        A clean ZenML client.
+    """
+    with clean_default_client_session(
+        tmp_path_factory=tmp_path_factory,
+    ) as client:
+        yield client
 
 
 @pytest.fixture

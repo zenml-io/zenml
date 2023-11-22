@@ -20,7 +20,7 @@ from zenml.integrations.huggingface.materializers.huggingface_tokenizer_material
 )
 
 
-def test_huggingface_tokenizer_materializer(clean_workspace):
+def test_huggingface_tokenizer_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tokenizer materializer."""
     tokenizer = _test_materializer(
         step_output=AutoTokenizer.from_pretrained("bert-base-cased"),

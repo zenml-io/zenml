@@ -81,7 +81,7 @@ def test_secret_reference_mixin_serialization_does_not_resolve_secrets():
     )
 
 
-def test_secret_reference_resolving(clean_workspace: Client):
+def test_secret_reference_resolving(clean_client: Client):
     """Tests the secret resolving of the mixin class."""
     obj = MixinSubclass(value="{{secret.key}}")
 
@@ -90,29 +90,29 @@ def test_secret_reference_resolving(clean_workspace: Client):
         _ = obj.value
 
     flavor = LocalSecretsManagerFlavor()
-    clean_workspace.create_stack_component(
+    clean_client.create_stack_component(
         "local_secrets_manager",
         flavor=flavor.name,
         component_type=flavor.type,
         configuration={},
     )
     components = {
-        StackComponentType.ORCHESTRATOR: clean_workspace.get_stack_component(
+        StackComponentType.ORCHESTRATOR: clean_client.get_stack_component(
             component_type=StackComponentType.ORCHESTRATOR
         ).id,
-        StackComponentType.ARTIFACT_STORE: clean_workspace.get_stack_component(
+        StackComponentType.ARTIFACT_STORE: clean_client.get_stack_component(
             component_type=StackComponentType.ARTIFACT_STORE
         ).id,
         flavor.type: "local_secrets_manager",
     }
-    clean_workspace.create_stack(name="stack", components=components)
-    clean_workspace.activate_stack("stack")
+    clean_client.create_stack(name="stack", components=components)
+    clean_client.activate_stack("stack")
 
     # Secret missing
     with pytest.raises(KeyError):
         _ = obj.value
 
-    secrets_manager = clean_workspace.active_stack.secrets_manager
+    secrets_manager = clean_client.active_stack.secrets_manager
     assert secrets_manager
 
     secret_without_correct_key = ArbitrarySecretSchema(
