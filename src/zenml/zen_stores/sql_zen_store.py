@@ -1388,6 +1388,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created artifact.
+
+        Raises:
+            EntityExistsError: if an artifact with the same name and version
+                already exists.
         """
         with Session(self.engine) as session:
             # Check if an artifact with the given name and version exists

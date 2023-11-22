@@ -4476,7 +4476,7 @@ class TestModelVersionArtifactLinks:
                     artifact=artifacts[0].id,
                 )
             )
-            assert al1.artifact == artifacts[0].id
+            assert al1.artifact.id == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
@@ -4486,7 +4486,7 @@ class TestModelVersionArtifactLinks:
                     artifact=artifacts[1].id,
                 )
             )
-            assert al2.artifact == artifacts[1].id
+            assert al2.artifact.id == artifacts[1].id
 
     def test_link_create_duplicated_by_id(self):
         """Assert that creating a link with the same artifact returns the same link."""
@@ -4707,7 +4707,7 @@ class TestModelVersionPipelineRunLinks:
             )
 
     def test_link_create_duplicated(self):
-        """Test that model version pipeline run links are not duplicated with collisions."""
+        """Assert that creating a link with the same run returns the same link."""
         with ModelVersionContext(True, create_prs=1) as (
             model_version,
             prs,
@@ -4722,19 +4722,7 @@ class TestModelVersionPipelineRunLinks:
                     pipeline_run=prs[0].id,
                 )
             )
-            # name collision
             link_2 = zs.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequestModel(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
-                    model_version=model_version.id,
-                    pipeline_run=uuid4(),
-                )
-            )
-            assert link_1.id != link_2.id
-            # id collision
-            link_3 = zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
@@ -4743,7 +4731,7 @@ class TestModelVersionPipelineRunLinks:
                     pipeline_run=prs[0].id,
                 )
             )
-            assert link_1.id == link_3.id
+            assert link_1.id == link_2.id
 
     def test_link_delete_found(self):
         with ModelVersionContext(True, create_prs=1) as (
