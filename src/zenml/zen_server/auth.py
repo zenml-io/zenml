@@ -25,7 +25,6 @@ from fastapi.security import (
     HTTPBasic,
     HTTPBasicCredentials,
     OAuth2PasswordBearer,
-    SecurityScopes,
 )
 from pydantic import BaseModel
 from starlette.requests import Request
@@ -652,13 +651,11 @@ def authenticate_api_key(
 
 
 def http_authentication(
-    security_scopes: SecurityScopes,
     credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
 ) -> AuthContext:
     """Authenticates any request to the ZenML Server with basic HTTP authentication.
 
     Args:
-        security_scopes: Security scope will be ignored for http_auth
         credentials: HTTP basic auth credentials passed to the request.
 
     Returns:
@@ -705,7 +702,6 @@ class CookieOAuth2TokenBearer(OAuth2PasswordBearer):
 
 
 def oauth2_authentication(
-    security_scopes: SecurityScopes,
     token: str = Depends(
         CookieOAuth2TokenBearer(
             tokenUrl=server_config().root_url_path + API + VERSION_1 + LOGIN,
@@ -715,7 +711,6 @@ def oauth2_authentication(
     """Authenticates any request to the ZenML server with OAuth2 JWT tokens.
 
     Args:
-        security_scopes: Security scope for this token
         token: The JWT bearer token to be authenticated.
 
     Returns:
@@ -736,11 +731,8 @@ def oauth2_authentication(
     return auth_context
 
 
-def no_authentication(security_scopes: SecurityScopes) -> AuthContext:
+def no_authentication() -> AuthContext:
     """Doesn't authenticate requests to the ZenML server.
-
-    Args:
-        security_scopes: Security scope will be ignored for http_auth
 
     Returns:
         The authentication context reflecting the default user.
