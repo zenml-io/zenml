@@ -12,6 +12,8 @@
   * [Create an ML pipeline](user-guide/starter-guide/create-an-ml-pipeline.md)
   * [Cache previous executions](user-guide/starter-guide/cache-previous-executions.md)
   * [Version pipelines](user-guide/starter-guide/version-pipelines.md)
+  * [Manage artifacts](user-guide/starter-guide/manage-artifacts.md)
+  * [Track ML models](user-guide/starter-guide/track-ml-models.md)
   * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
   * [Understand stacks](user-guide/starter-guide/understand-stacks.md)
   * [Follow best practices](user-guide/starter-guide/follow-best-practices.md)
