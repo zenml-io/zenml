@@ -19,8 +19,11 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    ARTIFACTS,
     CODE_REPOSITORIES,
     GET_OR_CREATE,
+    MODEL_VERSIONS,
+    MODELS,
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
@@ -47,6 +50,14 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
+    ModelRequestModel,
+    ModelResponseModel,
+    ModelVersionArtifactRequestModel,
+    ModelVersionArtifactResponseModel,
+    ModelVersionPipelineRunRequestModel,
+    ModelVersionPipelineRunResponseModel,
+    ModelVersionRequestModel,
+    ModelVersionResponseModel,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -1196,3 +1207,220 @@ def list_service_connector_resources(
         resource_type=resource_type,
         resource_id=resource_id,
     )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + MODELS,
+    response_model=ModelResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model(
+    workspace_name_or_id: Union[str, UUID],
+    model: ModelRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ModelResponseModel:
+    """Create a new model.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        model: The model to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created model.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if model.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating models outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if model.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating models for a user other than yourself "
+            "is not supported."
+        )
+    return zen_store().create_model(model)
+
+
+@router.post(
+    WORKSPACES
+    + "/{workspace_name_or_id}"
+    + MODELS
+    + "/{model_name_or_id}"
+    + MODEL_VERSIONS,
+    response_model=ModelVersionResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version(
+    workspace_name_or_id: Union[str, UUID],
+    model_name_or_id: Union[str, UUID],
+    model_version: ModelVersionRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ModelVersionResponseModel:
+    """Create a new model version.
+
+    Args:
+        model_name_or_id: Name or ID of the model.
+        workspace_name_or_id: Name or ID of the workspace.
+        model_version: The model version to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created model version.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model version does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if model_version.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating model versions outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if model_version.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating models for a user other than yourself "
+            "is not supported."
+        )
+    mv = zen_store().create_model_version(model_version)
+    return mv
+
+
+@router.post(
+    WORKSPACES
+    + "/{workspace_name_or_id}"
+    + MODEL_VERSIONS
+    + "/{model_version_id}"
+    + ARTIFACTS,
+    response_model=ModelVersionArtifactResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version_artifact_link(
+    workspace_name_or_id: Union[str, UUID],
+    model_version_id: Union[str, UUID],
+    model_version_artifact_link: ModelVersionArtifactRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ModelVersionArtifactResponseModel:
+    """Create a new model version to artifact link.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        model_version_id: Name or ID of the model version.
+        model_version_artifact_link: The model version to artifact link to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created model version to artifact link.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model version does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    if str(model_version_id) != str(model_version_artifact_link.model_version):
+        breakpoint()
+        raise IllegalOperationError(
+            f"The model version id in your path `{model_version_id}` does not "
+            f"match the model version specified in the request model "
+            f"`{model_version_artifact_link.model_version}`"
+        )
+
+    if model_version_artifact_link.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating model version to artifact links outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if model_version_artifact_link.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating model to artifact links for a user other than yourself "
+            "is not supported."
+        )
+    mv = zen_store().create_model_version_artifact_link(
+        model_version_artifact_link
+    )
+    return mv
+
+
+@router.post(
+    WORKSPACES
+    + "/{workspace_name_or_id}"
+    + MODEL_VERSIONS
+    + "/{model_version_id}"
+    + RUNS,
+    response_model=ModelVersionPipelineRunResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version_pipeline_run_link(
+    workspace_name_or_id: Union[str, UUID],
+    model_version_id: UUID,
+    model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ModelVersionPipelineRunResponseModel:
+    """Create a new model version to pipeline run link.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        model_version_id: ID of the model version.
+        model_version_pipeline_run_link: The model version to pipeline run link to create.
+        auth_context: Authentication context.
+
+    Returns:
+        - If Model Version to Pipeline Run Link already exists - returns the existing link.
+        - Otherwise, returns the newly created model version to pipeline run link.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            model version does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    if str(model_version_id) != str(
+        model_version_pipeline_run_link.model_version
+    ):
+        raise IllegalOperationError(
+            f"The model version id in your path `{model_version_id}` does not "
+            f"match the model version specified in the request model "
+            f"`{model_version_pipeline_run_link.model_version}`"
+        )
+
+    if model_version_pipeline_run_link.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating model versions outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if model_version_pipeline_run_link.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating models for a user other than yourself "
+            "is not supported."
+        )
+    mv = zen_store().create_model_version_pipeline_run_link(
+        model_version_pipeline_run_link
+    )
+    return mv
