@@ -96,14 +96,14 @@ A models versions can exist in various stages. These are meant to signify their 
 from zenml.model import ModelVersion
 
 # Get a model from a version
-model_version=ModelVersion(
+model_version = ModelVersion(
     name="iris_classifier",
     version="2",
 )
 
 # Pass the stage into the version field
 # to get the model by stage
-model_version=ModelVersion(
+model_version = ModelVersion(
     name="iris_classifier",
     version="staging",
 )
@@ -171,7 +171,6 @@ To illustrate the role of the Model Control Plane, we'll focus on two independen
 
 Before the Model Control Plane, connecting these pipelines and consolidating everything was a challenge. Imagine extracting a trained model artifact from the training pipeline and smoothly integrating it into the predictions pipeline. Previously, this involved complex ID references, leading to constant config updates, or blindly relying on the latest training run. But what if that run didn't meet the necessary performance standards? Using a subpar model for predictions was out of the question, especially for vital applications!
 
-
 To illustrate these concepts, let's consider a mock `iris_classifier` Model will be created implicitly using the Python SDK.
 
 <figure><img src="../../../.gitbook/assets/mcp_pipeline_overview.png" alt=""><figcaption><p>Model Control Plane Practical Example</p></figcaption></figure>
@@ -180,20 +179,18 @@ Each time the `train_and_promote` pipeline runs, it creates a new iris_classifie
 
 ### Training pipeline
 
-The Training pipeline orchestrates the training of a model object, storing datasets and the model object itself as links within a newly created Model Version. This integration is achieved by configuring the pipeline within a Model Context using `ModelConfig`. The `name` and `create_new_model_version` fields are specified, while other fields remain optional for this task.
+The Training pipeline orchestrates the training of a model object, storing datasets and the model object itself as links within a newly created Model Version. This integration is achieved by configuring the pipeline within a Model Context using `ModelVersion`. The `name` field is specified, while other fields remain optional for this task.
 
 ```python
 from zenml import pipeline
-from zenml.model import ModelConfig
+from zenml.model import ModelVersion
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelConfig(
+    model_version=ModelVersion(
         name="iris_classifier",
         license="Apache",
         description="Show case Model Control Plane.",
-        create_new_model_version=True,
-        delete_new_version_on_failure=True,
     ),
 )
 def train_and_promote_model():
@@ -211,8 +208,8 @@ def promote_model(score: float):
     # Score has to pass a threshold
     # One can also do more business logic here, i.e. comparing to the last model
     if score > 0.9:
-        model_config = get_step_context().model_config
-        model_version = model_config._get_model_version()
+        model_version = get_step_context().model_version
+        model_version = model_version._get_model_version()
         model_version.set_stage(ModelStages.PRODUCTION, force=True)
 
 @pipeline(
@@ -256,11 +253,11 @@ zenml model version runs iris_classifier 1
 The Predictions Pipeline reads a trained model object from the Model Version labeled as Production. Here, the `version` is set to a specific stage, ensuring consistency across multiple runs. This approach shields the pipeline from the underlying complexities of the Training pipeline's promotion logic.
 ```python
 from zenml import pipeline
-from zenml.model import ModelConfig
+from zenml.model import ModelVersion
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelConfig(
+    model_version=ModelVersion(
         name="iris_classifier",
         version=ModelStages.PRODUCTION,
     ),
@@ -294,7 +291,7 @@ In this pipeline, artifacts linked during the training stage are passed on. Leve
 from zenml.artifacts.external_artifact import ExternalArtifact
 
 @pipeline(
-    model_config=...,
+    model_version=...,
     extra={"trained_classifier": "iris_classifier"},
 )
 def do_predictions():
