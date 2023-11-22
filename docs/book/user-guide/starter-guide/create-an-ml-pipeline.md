@@ -1,8 +1,92 @@
 ---
-description: Learning how to configure pipelines and their steps.
+description: Start with the basics of steps and pipelines.
 ---
 
-# Create an ML pipeline
+# Developing ML pipelines
+
+ZenML helps you standardize your ML workflows as **Pipelines** consisting of decoupled, modular **Steps**. This enables you to write portable code that can be moved from experimentation to production in seconds.
+
+## Start with a simple pipeline
+
+The simplest ZenML pipeline could look like this:
+
+```python
+from zenml import pipeline, step
+
+
+@step
+def step_1() -> str:
+    """Returns the `world` string."""
+    return "world"
+
+
+@step(enable_cache=False)
+def step_2(input_one: str, input_two: str) -> None:
+    """Combines the two strings at its input and prints them."""
+    combined_str = f"{input_one} {input_two}"
+    print(combined_str)
+
+
+@pipeline
+def my_pipeline():
+    output_step_one = step_1()
+    step_2(input_one="hello", input_two=output_step_one)
+
+
+if __name__ == "__main__":
+    my_pipeline()
+```
+
+{% hint style="info" %}
+* **`@step`** is a decorator that converts its function into a step that can be used within a pipeline
+* **`@pipeline`** defines a function as a pipeline and within this function, the steps are called and their outputs are routed
+{% endhint %}
+
+Copy this code into a file `run.py` and run it.
+
+{% code overflow="wrap" %}
+```bash
+$ python run.py
+
+Registered pipeline my_pipeline (version 1).
+Running pipeline my_pipeline on stack default (caching enabled)
+Step step_1 has started.
+Step step_1 has finished in 0.121s.
+Step step_2 has started.
+hello world
+Step step_2 has finished in 0.046s.
+Pipeline run my_pipeline-... has finished in 0.676s.
+Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
+```
+{% endcode %}
+
+In the output, there's a line with something like this.
+
+{% code overflow="wrap" %}
+```bash
+Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
+```
+{% endcode %}
+
+## Explore the dashboard
+
+Run `zenml up` in the environment where you have ZenML installed.
+
+After a few seconds, your browser should open the ZenML Dashboard for you at [http://127.0.0.1:8237/](http://127.0.0.1:8237/)
+
+The default user account is **Username**: _**default**_ with **no** **password**.
+
+<figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
+
+As you can see, the dashboard shows you that there is 1 pipeline and 1 pipeline run. (feel free to ignore the stack and components for the time being) and continue to the run you just executed.
+
+<figure><img src="../../.gitbook/assets/DAGofRun.png" alt=""><figcaption><p>Diagram view of the run, with the runtime attributes of step 2.</p></figcaption></figure>
+
+If you navigate to the run that you just executed, you will see a diagram view of the pipeline run, including a visualization of the data that is passed between the steps. Feel free to explore the Run, its steps, and its artifacts.
+
+If you have closed the browser tab with the ZenML dashboard, you can always reopen it by running `zenml show` in your terminal.
+
+## Develop a ML pipeline
 
 In this section, we build out the first ML pipeline. For this, let's get the imports out of the way first:
 
@@ -22,7 +106,7 @@ Make sure to install the requirements as well:
 
 ```bash
 pip install matplotlib
-zenml integration install sklearn
+zenml integration install sklearn -y
 ```
 
 In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version directly.
@@ -31,10 +115,9 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 The `zenml integration install sklearn` command is simply doing a `pip install sklearn<1.3` behind the scenes. If something goes wrong, one can always use `zenml integration requirements sklearn` to see which requirements are compatible and install using pip (or any other tool) directly.
 {% endhint %}
 
+### Define a data loader with multiple outputs
 
-## Steps with multiple outputs
-
-Sometimes a step will have multiple outputs. To define such a step, use a `Tuple` type annotation.
+A typical start of a ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation.
 Additionally, you can use the `Annotated` annotation to assign
 [custom output names](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names).
 Here we load an open-source dataset and split it into a train and a test dataset.
@@ -64,7 +147,7 @@ def training_data_loader() -> Tuple[
 ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
 {% endhint %}
 
-## Parametrizing a step
+### Create a parameterized training step
 
 Here we are creating a training step for a support vector machine classifier with `sklearn`. As we might want to adjust the hyperparameter `gamma` later on, we define it as an input value to the step as well.
 
@@ -132,39 +215,11 @@ In the dashboard, you should now be able to see this new run, along with its run
 
 <figure><img src="../../.gitbook/assets/RunWithVisualization.png" alt=""><figcaption><p>Run created by the code in this section along with a visualization of the ground-truth distribution.</p></figcaption></figure>
 
-## Give each pipeline run a name
+### Configure with a yaml file
 
-In the output logs of a pipeline run you will see the name of the run:
+Instead of configuring your pipeline runs in code, you can also do so from a YAML file. This is best when we do not want to make unnecessary changes to the code (in production this is usually the case).
 
-```bash
-Pipeline run first_pipeline-2023_05_24-12_41_04_576473 has finished in 3.742s.
-```
-
-This name is automatically generated based on the current date and time. To change the name for a run, pass `run_name` as a parameter to the `with_options()` method:
-
-```python
-first_pipeline = first_pipeline.with_options(
-    run_name="custom_pipeline_run_name"
-)
-first_pipeline()
-```
-
-Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
-
-* `{{date}}` will resolve to the current date, e.g. `2023_02_19`
-* `{{time}}` will resolve to the current time, e.g. `11_07_09_326492`
-
-```python
-first_pipeline = first_pipeline.with_options(
-    run_name="custom_pipeline_run_name_{{date}}_{{time}}"
-)
-first_pipeline()
-```
-
-## Configure with a yaml file
-
-Instead of configuring your pipeline runs in code, you can also do so from a 
-yaml file. To do so, simply reference the file like this:
+To do this, simply reference the file like this:
 
 ```python
 first_pipeline = first_pipeline.with_options(
@@ -195,9 +250,39 @@ first_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml
 Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml)
 for more details.
 
-## Code Example
 
-The following example shows caching in action with the code example from the previous section.
+### Give each pipeline run a name
+
+In the output logs of a pipeline run you will see the name of the run:
+
+```bash
+Pipeline run first_pipeline-2023_05_24-12_41_04_576473 has finished in 3.742s.
+```
+
+This name is automatically generated based on the current date and time. To change the name for a run, pass `run_name` as a parameter to the `with_options()` method:
+
+```python
+first_pipeline = first_pipeline.with_options(
+    run_name="custom_pipeline_run_name"
+)
+first_pipeline()
+```
+
+Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
+
+* `{{date}}` will resolve to the current date, e.g. `2023_02_19`
+* `{{time}}` will resolve to the current time, e.g. `11_07_09_326492`
+
+```python
+first_pipeline = first_pipeline.with_options(
+    run_name="custom_pipeline_run_name_{{date}}_{{time}}"
+)
+first_pipeline()
+```
+
+### Full Code Example
+
+This section combines all the code from this section into one simple script that you can use to run easily:
 
 <details>
 
