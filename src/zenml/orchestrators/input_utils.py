@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Utilities for inputs."""
 
+import functools
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
-from zenml.models import StepRunFilter
+from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
@@ -46,11 +47,13 @@ def resolve_step_inputs(
         The IDs of the input artifacts and the IDs of parent steps of the
         current step.
     """
+    list_run_steps = functools.partial(
+        Client().list_run_steps, pipeline_run_id=run_id
+    )
+
     current_run_steps = {
         run_step.name: run_step
-        for run_step in Client()
-        .zen_store.list_run_steps(StepRunFilter(pipeline_run_id=run_id))
-        .items
+        for run_step in pagination_utils.depaginate(list_run_steps)
     }
 
     input_artifacts: Dict[str, "ArtifactResponse"] = {}
