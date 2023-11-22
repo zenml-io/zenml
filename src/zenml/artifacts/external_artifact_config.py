@@ -12,16 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """External artifact definition."""
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    from zenml.models import ArtifactResponse
-
 
 logger = get_logger(__name__)
 
@@ -35,43 +31,6 @@ class ExternalArtifactConfiguration(BaseModel):
     id: Optional[UUID] = None
     name: Optional[str] = None
     version: Optional[str] = None
-    pipeline_run_name: Optional[str] = None
-    pipeline_name: Optional[str] = None
-
-    def _get_artifact_from_pipeline_run(self) -> "ArtifactResponse":
-        """Get artifact from pipeline run.
-
-        Returns:
-            The fetched Artifact.
-
-        Raises:
-            RuntimeError: If neither pipeline run name nor pipeline name
-                were provided.
-            RuntimeError: If the artifact was not found.
-        """
-        from zenml.client import Client
-
-        client = Client()
-
-        if self.pipeline_run_name:
-            pipeline_run = client.get_pipeline_run(self.pipeline_run_name)
-        elif self.pipeline_name:
-            pipeline = client.get_pipeline(self.pipeline_name)
-            pipeline_run = pipeline.last_successful_run
-        else:
-            raise RuntimeError(
-                "Either the pipeline run name or the pipeline name must be "
-                "provided to fetch an artifact from a pipeline run."
-            )
-
-        for artifact in pipeline_run.artifacts:
-            if artifact.name == self.name:
-                return artifact
-
-        raise RuntimeError(
-            f"Artifact with name `{self.name}` was not found in pipeline run "
-            f"{pipeline_run.name}`. "
-        )
 
     def get_artifact_id(self) -> UUID:
         """Get the artifact.
@@ -94,8 +53,6 @@ class ExternalArtifactConfiguration(BaseModel):
         elif self.name:
             if self.version:
                 response = client.get_artifact(self.name, version=self.version)
-            elif self.pipeline_run_name or self.pipeline_name:
-                response = self._get_artifact_from_pipeline_run()
             else:
                 response = client.get_artifact(self.name)
         else:

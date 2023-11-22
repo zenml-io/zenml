@@ -121,7 +121,6 @@ def test_upload_by_value(sample_artifact_model, mocker):
     ea.upload_by_value()
     assert ea.id is not None
     assert ea.value is None
-    assert ea.pipeline_name is None
     assert ea.name is None
 
 
@@ -144,7 +143,6 @@ def test_get_artifact_by_id():
     """Tests that `get_artifact` works as expected for `id`."""
     ea = ExternalArtifact(id=GLOBAL_ARTIFACT_ID)
     assert ea.value is None
-    assert ea.pipeline_name is None
     assert ea.name is None
     assert ea.id is not None
     with patch.dict(
@@ -157,47 +155,11 @@ def test_get_artifact_by_id():
         assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
 
 
-def test_get_artifact_by_pipeline_run_and_artifact():
-    """Tests that `get_artifact` works as expected for pipeline run lookup."""
-    ea = ExternalArtifact(pipeline_run_name="foo", name="bar")
-    assert ea.value is None
-    assert ea.pipeline_name is None
-    assert ea.name is not None
-    assert ea.id is None
-    with patch.dict(
-        "sys.modules",
-        {
-            "zenml.artifacts.utils": MagicMock(),
-            "zenml.client": MockZenmlClient,
-        },
-    ):
-        assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
-    assert ea.id == GLOBAL_ARTIFACT_ID
-
-
-def test_get_artifact_by_pipeline_and_artifact():
-    """Tests that `get_artifact` works as expected for pipeline lookup."""
-    ea = ExternalArtifact(pipeline_name="foo", name="bar")
-    assert ea.value is None
-    assert ea.pipeline_name is not None
-    assert ea.name is not None
-    assert ea.id is None
-    with patch.dict(
-        "sys.modules",
-        {
-            "zenml.artifacts.utils": MagicMock(),
-            "zenml.client": MockZenmlClient,
-        },
-    ):
-        assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
-    assert ea.id == GLOBAL_ARTIFACT_ID
-
-
 def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
     """Tests that `get_artifact` raises in case of mismatch between artifact stores (found vs active)."""
     with pytest.raises(
         RuntimeError,
-        match=r"The artifact bar \(ID: " + str(GLOBAL_ARTIFACT_ID) + r"\)",
+        match=r"The artifact .* is not stored in the artifact store",
     ):
         try:
             old_id = MockZenmlClient.Client.ARTIFACT_STORE_ID
@@ -209,27 +171,6 @@ def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
                     "zenml.client": MockZenmlClient,
                 },
             ):
-                ExternalArtifact(
-                    pipeline_name="foo", name="bar"
-                ).get_artifact_id()
+                ExternalArtifact(name="bar").get_artifact_id()
         finally:
             MockZenmlClient.Client.ARTIFACT_STORE_ID = old_id
-
-
-def test_get_artifact_not_found_in_pipeline_run():
-    """Tests that `get_artifact` raises in case artifact not found in run."""
-    with patch.dict(
-        "sys.modules",
-        {
-            "zenml.artifacts.utils": MagicMock(),
-            "zenml.client": MockZenmlClient,
-        },
-    ):
-        with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
-            ExternalArtifact(
-                pipeline_run_name="foo", name="foobar"
-            ).get_artifact_id()
-        with pytest.raises(RuntimeError, match="Artifact with name `foobar`"):
-            ExternalArtifact(
-                pipeline_name="foo", name="foobar"
-            ).get_artifact_id()

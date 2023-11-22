@@ -26,14 +26,10 @@ def my_pipeline():
 ```
 
 You can also use an `ExternalArtifact` to pass an artifact stored in the ZenML 
-database. Search can be performed in one of the following ways:
+database. Search can be performed in one of the following two ways:
 - By providing an artifact ID.
-- By providing an artifact name and version.
-- By providing an artifact name and a pipeline run name.
-- By providing an artifact name and a pipeline name, in which case ZenML
-    will attempt to find the artifact in the latest run of the pipeline.
-- By only providing an artifact name, in which case the latest version
-    of the artifact will be used.
+- By providing an artifact name and version. If no version is provided,
+    the latest version of that artifact will be used.
 
 ```python
 from uuid import UUID
@@ -46,15 +42,6 @@ artifact = ExternalArtifact(name="my_artifact")
 
 # Fetch by name and version
 artifact = ExternalArtifact(name="my_artifact", version="my_version")
-
-# Fetch by name and pipeline run name
-artifact = ExternalArtifact(
-    name="my_artifact", 
-    pipeline_run_name="training_pipeline-2023_10_12-15_03_45_587216"
-)
-
-# Fetch by name and pipeline name - uses artifact in last successful run
-artifact = ExternalArtifact(name="model", pipeline_name="training_pipeline")
 ```
 
 Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../artifact-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.

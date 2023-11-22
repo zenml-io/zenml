@@ -55,8 +55,6 @@ def consumer_pipeline(
     id: Optional[UUID] = None,
     name: Optional[str] = None,
     version: Optional[str] = None,
-    pipeline_run_name: Optional[str] = None,
-    pipeline_name: Optional[str] = None,
 ):
     consumer(
         ExternalArtifact(
@@ -64,8 +62,6 @@ def consumer_pipeline(
             id=id,
             name=name,
             version=version,
-            pipeline_run_name=pipeline_run_name,
-            pipeline_name=pipeline_name,
         ),
         expected_value=expected_value,
     )
@@ -111,42 +107,5 @@ def test_external_artifact_by_name_and_version(clean_client: Client):
     consumer_pipeline(
         name=ARTIFACT_NAME,
         version=2,
-        expected_value=43,
-    )
-
-
-def test_external_artifact_by_name_and_pipeline_run_name(clean_client: Client):
-    """Test passing external artifact by name and pipeline run name."""
-    producer_pipeline(return_value=42)
-    run_1 = producer_pipeline.model.last_successful_run
-
-    producer_pipeline(return_value=43)
-    run_2 = producer_pipeline.model.last_successful_run
-
-    # Artifact with value 42 should be in run 1
-    consumer_pipeline(
-        name=ARTIFACT_NAME,
-        pipeline_run_name=run_1.name,
-        expected_value=42,
-    )
-
-    # Artifact with value 43 should be in run 2
-    consumer_pipeline(
-        name=ARTIFACT_NAME,
-        pipeline_run_name=run_2.name,
-        expected_value=43,
-    )
-
-
-def test_external_artifact_by_name_and_pipeline_name(clean_client: Client):
-    """Test passing external artifact by name and pipeline name."""
-    producer_pipeline(return_value=42)
-    producer_pipeline(return_value=43)
-    producer_pipeline_2(return_value=44)
-
-    # Artifact of last run in pipeline 1 should be 43
-    consumer_pipeline(
-        name=ARTIFACT_NAME,
-        pipeline_name=PIPELINE_NAME,
         expected_value=43,
     )

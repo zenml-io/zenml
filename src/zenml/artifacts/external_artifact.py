@@ -45,12 +45,8 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
     There are several ways to reference an existing artifact:
     - By providing an artifact ID.
-    - By providing an artifact name and version.
-    - By providing an artifact name and a pipeline run name.
-    - By providing an artifact name and a pipeline name, in which case ZenML
-        will attempt to find the artifact in the latest run of the pipeline.
-    - By only providing an artifact name, in which case the latest version
-        of the artifact will be used.
+    - By providing an artifact name and version. If no version is provided,
+        the latest version of that artifact will be used.
 
     Args:
         value: The artifact value.
@@ -61,10 +57,6 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             latest version of the artifact will be used.
         version: Version of the artifact to search. Only used when `name` is
             provided.
-        pipeline_run_name: Name of a pipeline run to search artifacts in. Only
-            used when `name` is provided.
-        pipeline_name: Name of a pipeline in which to search for the artifact.
-            Only used when `name` is provided.
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.
         store_artifact_metadata: Whether metadata for the artifact should
@@ -155,6 +147,4 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             id=self.id,
             name=self.name,
             version=self.version,
-            pipeline_run_name=self.pipeline_run_name,
-            pipeline_name=self.pipeline_name,
         )
