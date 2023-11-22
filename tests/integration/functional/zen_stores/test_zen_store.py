@@ -442,11 +442,6 @@ def test_delete_user_with_resources_fails():
     """Tests deleting a user with resources fails."""
     zen_store = Client().zen_store
 
-    if zen_store.type != StoreType.SQL:
-        pytest.skip(
-            "Only SQL Zen Stores allow creating resources for other accounts."
-        )
-
     with UserContext(delete=False) as user:
         with ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
@@ -698,11 +693,6 @@ def test_delete_service_account():
 def test_delete_service_account_with_resources_fails():
     """Tests deleting a service account with resources fails."""
     zen_store = Client().zen_store
-
-    if zen_store.type != StoreType.SQL:
-        pytest.skip(
-            "Only SQL Zen Stores allow creating resources for other accounts."
-        )
 
     with ServiceAccountContext(delete=False) as service_account:
         with ComponentContext(
