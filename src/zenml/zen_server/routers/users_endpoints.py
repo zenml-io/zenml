@@ -28,7 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import AuthScheme
-from zenml.exceptions import AuthorizationException
+from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -281,6 +281,39 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         # add back the original unhashed activation token
         user.get_body().activation_token = token
         return user
+
+    @router.delete(
+        "/{user_name_or_id}",
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+        },
+    )
+    @handle_exceptions
+    def delete_user(
+        user_name_or_id: Union[str, UUID],
+        auth_context: AuthContext = Security(authorize),
+    ) -> None:
+        """Deletes a specific user.
+
+        Args:
+            user_name_or_id: Name or ID of the user.
+            auth_context: The authentication context.
+
+        Raises:
+            IllegalOperationError: If the user is not authorized to delete the user.
+        """
+        user = zen_store().get_user(user_name_or_id)
+
+        if auth_context.user.name == user.name:
+            raise IllegalOperationError(
+                "You cannot delete the user account currently used to authenticate "
+                "to the ZenML server. If you wish to delete this account, "
+                "please authenticate with another account or contact your ZenML "
+                "administrator."
+            )
+        zen_store().delete_user(user_name_or_id=user_name_or_id)
 
     @router.put(
         "/{user_name_or_id}" + EMAIL_ANALYTICS,
