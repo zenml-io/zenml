@@ -113,7 +113,6 @@ from zenml.utils.artifact_utils import (
     _load_file_from_artifact_store,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.tag_utils import _get_tag_resource_id
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -5109,12 +5108,14 @@ class TestTagResource:
                 )
             )
             client.zen_store.delete_tag_resource(
-                tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                tag_id=tag.id,
+                resource_id=resource_id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
             with pytest.raises(KeyError):
                 client.zen_store.delete_tag_resource(
-                    tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                    tag_id=tag.id,
+                    resource_id=resource_id,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
 
@@ -5136,12 +5137,10 @@ class TestTagResource:
                     resource_type=TaggableResourceTypes.MODEL,
                 )
             )
-            with pytest.raises(
-                RuntimeError,
-                match="Resource type in request.*do not match",
-            ):
+            with pytest.raises(KeyError):
                 client.zen_store.delete_tag_resource(
-                    tag_resource_id=_get_tag_resource_id(tag.id, resource_id),
+                    tag_id=tag.id,
+                    resource_id=resource_id,
                     resource_type=MockTaggableResourceTypes.APPLE,
                 )
 
@@ -5194,9 +5193,7 @@ class TestTagResource:
                 )
                 # cleanup
                 client.zen_store.delete_tag_resource(
-                    _get_tag_resource_id(
-                        tag_id=tag.id,
-                        resource_id=fake_model_id,
-                    ),
+                    tag_id=tag.id,
+                    resource_id=fake_model_id,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
