@@ -1,0 +1,669 @@
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Utility functions for handling artifacts."""
+
+import base64
+import os
+import tempfile
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from uuid import UUID
+
+from zenml.client import Client
+from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
+from zenml.enums import ExecutionStatus, StackComponentType, VisualizationType
+from zenml.exceptions import DoesNotExistException, StepContextError
+from zenml.io import fileio
+from zenml.logger import get_logger
+from zenml.models import (
+    ArtifactRequest,
+    ArtifactResponse,
+    ArtifactVisualizationRequest,
+    LoadedVisualization,
+    PipelineRunResponse,
+    StepRunResponse,
+    StepRunUpdate,
+)
+from zenml.new.steps.step_context import get_step_context
+from zenml.stack import StackComponent
+from zenml.utils import source_utils
+from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.config.source import Source
+    from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.metadata.metadata_types import MetadataType
+    from zenml.zen_stores.base_zen_store import BaseZenStore
+
+    MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
+
+logger = get_logger(__name__)
+
+# ----------
+# Public API
+# ----------
+
+
+def save_artifact(
+    data: Any,
+    name: str,
+    version: Optional[Union[int, str]] = None,
+    tags: Optional[List[str]] = None,
+    extract_metadata: bool = True,
+    include_visualizations: bool = True,
+    has_custom_name: bool = True,
+    user_metadata: Optional[Dict[str, "MetadataType"]] = None,
+    materializer: Optional["MaterializerClassOrSource"] = None,
+    uri: Optional[str] = None,
+    manual_save: bool = True,
+) -> "ArtifactResponse":
+    """Upload and publish an artifact.
+
+    Args:
+        name: The name of the artifact.
+        data: The artifact data.
+        version: The version of the artifact. If not provided, a new
+            auto-incremented version will be used.
+        tags: Tags to associate with the artifact.
+        extract_metadata: If artifact metadata should be extracted and returned.
+        include_visualizations: If artifact visualizations should be generated.
+        has_custom_name: If the artifact name is custom and should be listed in
+            the dashboard "Artifacts" tab.
+        user_metadata: User-provided metadata to store with the artifact.
+        materializer: The materializer to use for saving the artifact to the
+            artifact store.
+        uri: The URI within the artifact store to upload the artifact
+            to. If not provided, the artifact will be uploaded to
+            `custom_artifacts/{name}/{version}`.
+        manual_save: If this function is called manually and should therefore
+            link the artifact to the current step run.
+
+    Returns:
+        The saved artifact response.
+
+    Raises:
+        RuntimeError: If artifact URI already exists.
+    """
+    from zenml.materializers.materializer_registry import (
+        materializer_registry,
+    )
+    from zenml.utils import source_utils
+
+    # Get new artifact version if not specified
+    version = version or _get_new_artifact_version(name)
+
+    # Get the current artifact store
+    client = Client()
+    artifact_store = client.active_stack.artifact_store
+
+    # Build and check the artifact URI
+    if not uri:
+        uri = os.path.join("custom_artifacts", name, str(version))
+    if not uri.startswith(artifact_store.path):
+        uri = os.path.join(artifact_store.path, uri)
+    if fileio.exists(uri):
+        other_artifacts = client.list_artifacts(uri=uri, size=1)
+        if other_artifacts and (other_artifact := other_artifacts[0]):
+            raise RuntimeError(
+                f"Cannot save artifact {name} (version {version}) to URI "
+                f"{uri} because the URI is already used by artifact "
+                f"{other_artifact.name} (version {other_artifact.version})."
+            )
+    fileio.makedirs(uri)
+
+    # Find and initialize the right materializer class
+    if isinstance(materializer, type):
+        materializer_class = materializer
+    elif materializer:
+        materializer_class = source_utils.load_and_validate_class(
+            materializer, expected_class=BaseMaterializer
+        )
+    else:
+        materializer_class = materializer_registry[type(data)]
+    materializer_object = materializer_class(uri)
+
+    # Save the artifact to the artifact store
+    data_type = type(data)
+    materializer_object.validate_type_compatibility(data_type)
+    materializer_object.save(data)
+
+    # Save visualizations of the artifact
+    visualizations: List[ArtifactVisualizationRequest] = []
+    if include_visualizations:
+        try:
+            vis_data = materializer_object.save_visualizations(data)
+            for vis_uri, vis_type in vis_data.items():
+                vis_model = ArtifactVisualizationRequest(
+                    type=vis_type,
+                    uri=vis_uri,
+                )
+                visualizations.append(vis_model)
+        except Exception as e:
+            logger.warning(
+                f"Failed to save visualization for output artifact '{name}': "
+                f"{e}"
+            )
+
+    # Save metadata of the artifact
+    artifact_metadata: Dict[str, "MetadataType"] = {}
+    if extract_metadata:
+        try:
+            artifact_metadata = materializer_object.extract_full_metadata(data)
+            artifact_metadata.update(user_metadata or {})
+        except Exception as e:
+            logger.warning(
+                f"Failed to extract metadata for output artifact '{name}': {e}"
+            )
+
+    artifact = ArtifactRequest(
+        name=name,
+        version=version,
+        tags=tags,
+        type=materializer_object.ASSOCIATED_ARTIFACT_TYPE,
+        uri=materializer_object.uri,
+        materializer=source_utils.resolve(materializer_object.__class__),
+        data_type=source_utils.resolve(data_type),
+        user=Client().active_user.id,
+        workspace=Client().active_workspace.id,
+        artifact_store_id=artifact_store.id,
+        visualizations=visualizations,
+        has_custom_name=has_custom_name,
+    )
+    response = Client().zen_store.create_artifact(artifact=artifact)
+    if artifact_metadata:
+        Client().create_run_metadata(
+            metadata=artifact_metadata, artifact_id=response.id
+        )
+
+    if manual_save:
+        try:
+            step_run = get_step_context().step_run
+            client.zen_store.update_run_step(
+                step_run_id=step_run.id,
+                step_run_update=StepRunUpdate(
+                    saved_artifacts={name: response.id}
+                ),
+            )
+        except RuntimeError:
+            logger.debug("Unable to link saved artifact to step run.")
+
+    return response
+
+
+def load_artifact(
+    name_or_id: Union[str, UUID],
+    version: Optional[str] = None,
+) -> Any:
+    """Load an artifact.
+
+    Args:
+        name_or_id: The name or ID of the artifact to load.
+        version: The version of the artifact to load, if `name_or_id` is a
+            name. If not provided, the latest version will be loaded.
+
+    Returns:
+        The loaded artifact.
+    """
+    artifact = Client().get_artifact(name_or_id, version)
+    try:
+        step_run = get_step_context().step_run
+        client = Client()
+        client.zen_store.update_run_step(
+            step_run_id=step_run.id,
+            step_run_update=StepRunUpdate(
+                loaded_artifacts={artifact.name: artifact.id}
+            ),
+        )
+    except RuntimeError:
+        pass  # Cannot link to step run if called outside of a step
+    return load_artifact_from_response(artifact)
+
+
+def log_artifact_metadata(
+    metadata: Dict[str, "MetadataType"],
+    artifact_name: Optional[str] = None,
+    artifact_version: Optional[str] = None,
+) -> None:
+    """Log artifact metadata.
+
+    This function can be used to log metadata for either existing artifacts or
+    artifacts that are newly created in the same step.
+
+    Args:
+        metadata: The metadata to log.
+        artifact_name: The name of the artifact to log metadata for. Can
+            be omitted when being called inside a step with only one output.
+        artifact_version: The version of the artifact to log metadata for. If
+            not provided, when being called inside a step that produces an
+            artifact named `artifact_name`, the metadata will be associated to
+            the corresponding newly created artifact. Or, if not provided when
+            being called outside of a step, or in a step that does not produce
+            any artifact named `artifact_name`, the metadata will be associated
+            to the latest version of that artifact.
+
+    Raises:
+        ValueError: If no artifact name is provided and the function is not
+            called inside a step with a single output, or, if neither an
+            artifact nor an output with the given name exists.
+    """
+    try:
+        step_context = get_step_context()
+        in_step_outputs = (artifact_name in step_context._outputs) or (
+            not artifact_name and len(step_context._outputs) == 1
+        )
+    except RuntimeError:
+        step_context = None
+        in_step_outputs = False
+
+    if not step_context or not in_step_outputs or artifact_version:
+        if not artifact_name:
+            raise ValueError(
+                "Artifact name must be provided unless the function is called "
+                "inside a step with a single output."
+            )
+        client = Client()
+        artifact = client.get_artifact(artifact_name, artifact_version)
+        client.create_run_metadata(metadata=metadata, artifact_id=artifact.id)
+
+    else:
+        try:
+            step_context.add_output_metadata(
+                metadata=metadata, output_name=artifact_name
+            )
+        except StepContextError as e:
+            raise ValueError(e)
+
+
+# -----------------
+# End of Public API
+# -----------------
+
+
+def load_artifact_visualization(
+    artifact: "ArtifactResponse",
+    index: int = 0,
+    zen_store: Optional["BaseZenStore"] = None,
+    encode_image: bool = False,
+) -> LoadedVisualization:
+    """Load a visualization of the given artifact.
+
+    Args:
+        artifact: The artifact to visualize.
+        index: The index of the visualization to load.
+        zen_store: The ZenStore to use for finding the artifact store. If not
+            provided, the client's ZenStore will be used.
+        encode_image: Whether to base64 encode image visualizations.
+
+    Returns:
+        The loaded visualization.
+
+    Raises:
+        DoesNotExistException: If the artifact does not have the requested
+            visualization or if the visualization was not found in the artifact
+            store.
+    """
+    # Get the visualization to load
+    if not artifact.visualizations:
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' has no visualizations."
+        )
+    if index < 0 or index >= len(artifact.visualizations):
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' only has {len(artifact.visualizations)} "
+            f"visualizations, but index {index} was requested."
+        )
+    visualization = artifact.visualizations[index]
+
+    # Load the visualization from the artifact's artifact store
+    if not artifact.artifact_store_id:
+        raise DoesNotExistException(
+            f"Artifact '{artifact.id}' cannot be visualized because the "
+            "underlying artifact store was deleted."
+        )
+    artifact_store = _load_artifact_store(
+        artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
+    )
+    mode = "rb" if visualization.type == VisualizationType.IMAGE else "r"
+    value = _load_file_from_artifact_store(
+        uri=visualization.uri,
+        artifact_store=artifact_store,
+        mode=mode,
+    )
+
+    # Encode image visualizations if requested
+    if visualization.type == VisualizationType.IMAGE and encode_image:
+        value = base64.b64encode(bytes(value))
+
+    return LoadedVisualization(type=visualization.type, value=value)
+
+
+def load_artifact_from_response(artifact: "ArtifactResponse") -> Any:
+    """Load the given artifact into memory.
+
+    Args:
+        artifact: The artifact to load.
+
+    Returns:
+        The artifact loaded into memory.
+    """
+    artifact_store_loaded = False
+    if artifact.artifact_store_id:
+        try:
+            artifact_store_model = Client().get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            _ = StackComponent.from_model(artifact_store_model)
+            artifact_store_loaded = True
+        except (KeyError, ImportError):
+            pass
+
+    if not artifact_store_loaded:
+        logger.warning(
+            "Unable to restore artifact store while trying to load artifact "
+            "`%s`. If this artifact is stored in a remote artifact store, "
+            "this might lead to issues when trying to load the artifact.",
+            artifact.id,
+        )
+
+    return _load_artifact_from_uri(
+        materializer=artifact.materializer,
+        data_type=artifact.data_type,
+        uri=artifact.uri,
+    )
+
+
+def get_producer_step_of_artifact(
+    artifact: "ArtifactResponse",
+) -> "StepRunResponse":
+    """Get the step run that produced a given artifact.
+
+    Args:
+        artifact: The artifact.
+
+    Returns:
+        The step run that produced the artifact.
+
+    Raises:
+        RuntimeError: If the run that created the artifact no longer exists.
+    """
+    if not artifact.producer_step_run_id:
+        raise RuntimeError(
+            f"The run that produced the artifact with id '{artifact.id}' no "
+            "longer exists. This can happen if the run was deleted."
+        )
+    return Client().get_run_step(artifact.producer_step_run_id)
+
+
+def get_artifacts_of_pipeline_run(
+    pipeline_run: "PipelineRunResponse", only_produced: bool = False
+) -> List["ArtifactResponse"]:
+    """Get all artifacts produced during a pipeline run.
+
+    Args:
+        pipeline_run: The pipeline run.
+        only_produced: If only artifacts produced by the pipeline run should be
+            returned or also cached artifacts.
+
+    Returns:
+        A list of all artifacts produced during the pipeline run.
+    """
+    artifacts: List["ArtifactResponse"] = []
+    for step in pipeline_run.steps.values():
+        if not only_produced or step.status == ExecutionStatus.COMPLETED:
+            artifacts.extend(step.outputs.values())
+    return artifacts
+
+
+# -------------------------
+# Internal Helper Functions
+# -------------------------
+
+
+def _load_artifact_from_uri(
+    materializer: Union["Source", str],
+    data_type: Union["Source", str],
+    uri: str,
+) -> Any:
+    """Load an artifact using the given materializer.
+
+    Args:
+        materializer: The source of the materializer class to use.
+        data_type: The source of the artifact data type.
+        uri: The uri of the artifact.
+
+    Returns:
+        The artifact loaded into memory.
+
+    Raises:
+        ModuleNotFoundError: If the materializer or data type cannot be found.
+    """
+    from zenml.materializers.base_materializer import BaseMaterializer
+
+    # Resolve the materializer class
+    try:
+        materializer_class = source_utils.load(materializer)
+    except (ModuleNotFoundError, AttributeError) as e:
+        logger.error(
+            f"ZenML cannot locate and import the materializer module "
+            f"'{materializer}' which was used to write this artifact."
+        )
+        raise ModuleNotFoundError(e) from e
+
+    # Resolve the artifact class
+    try:
+        artifact_class = source_utils.load(data_type)
+    except (ModuleNotFoundError, AttributeError) as e:
+        logger.error(
+            f"ZenML cannot locate and import the data type of this "
+            f"artifact '{data_type}'."
+        )
+        raise ModuleNotFoundError(e) from e
+
+    # Load the artifact
+    logger.debug(
+        "Using '%s' to load artifact of type '%s' from '%s'.",
+        materializer_class.__qualname__,
+        artifact_class.__qualname__,
+        uri,
+    )
+    materializer_object: BaseMaterializer = materializer_class(uri)
+    artifact = materializer_object.load(artifact_class)
+    logger.debug("Artifact loaded successfully.")
+
+    return artifact
+
+
+def _load_artifact_store(
+    artifact_store_id: Union[str, "UUID"],
+    zen_store: Optional["BaseZenStore"] = None,
+) -> "BaseArtifactStore":
+    """Load an artifact store (potentially inside the server).
+
+    Args:
+        artifact_store_id: The id of the artifact store to load.
+        zen_store: The ZenStore to use for finding the artifact store. If not
+            provided, the client's ZenStore will be used.
+
+    Returns:
+        The loaded artifact store.
+
+    Raises:
+        DoesNotExistException: If the artifact store does not exist or is not
+            an artifact store.
+        NotImplementedError: If the artifact store could not be loaded.
+    """
+    if isinstance(artifact_store_id, str):
+        artifact_store_id = UUID(artifact_store_id)
+
+    if zen_store is None:
+        zen_store = Client().zen_store
+
+    try:
+        artifact_store_model = zen_store.get_stack_component(artifact_store_id)
+    except KeyError:
+        raise DoesNotExistException(
+            f"Artifact store '{artifact_store_id}' does not exist."
+        )
+
+    if not artifact_store_model.type == StackComponentType.ARTIFACT_STORE:
+        raise DoesNotExistException(
+            f"Stack component '{artifact_store_id}' is not an artifact store."
+        )
+
+    try:
+        artifact_store = cast(
+            "BaseArtifactStore",
+            StackComponent.from_model(artifact_store_model),
+        )
+    except ImportError:
+        link = "https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        raise NotImplementedError(
+            f"Artifact store '{artifact_store_model.name}' could not be "
+            f"instantiated. This is likely because the artifact store's "
+            f"dependencies are not installed. For more information, see {link}."
+        )
+
+    return artifact_store
+
+
+def _get_new_artifact_version(artifact_name: str) -> int:
+    """Get the next auto-incremented version for an artifact name.
+
+    Args:
+        artifact_name: The name of the artifact.
+
+    Returns:
+        The next auto-incremented version.
+    """
+    artifacts = Client().list_artifacts(
+        name=artifact_name,
+        sort_by="desc:version_number",
+        size=1,
+    )
+
+    # If a numbered version exists, increment it
+    try:
+        return int(artifacts[0].version) + 1
+
+    # If no numbered versions exist yet, start at 1
+    except (IndexError, ValueError):
+        return 1
+
+
+def _load_file_from_artifact_store(
+    uri: str,
+    artifact_store: "BaseArtifactStore",
+    mode: str = "rb",
+) -> Any:
+    """Load the given uri from the given artifact store.
+
+    Args:
+        uri: The uri of the file to load.
+        artifact_store: The artifact store from which to load the file.
+        mode: The mode in which to open the file.
+
+    Returns:
+        The loaded file.
+
+    Raises:
+        DoesNotExistException: If the file does not exist in the artifact store.
+        NotImplementedError: If the artifact store cannot open the file.
+    """
+    try:
+        with artifact_store.open(uri, mode) as text_file:
+            return text_file.read()
+    except FileNotFoundError:
+        raise DoesNotExistException(
+            f"File '{uri}' does not exist in artifact store "
+            f"'{artifact_store.name}'."
+        )
+    except Exception as e:
+        logger.exception(e)
+        link = "https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
+        raise NotImplementedError(
+            f"File '{uri}' could not be loaded because the underlying artifact "
+            f"store '{artifact_store.name}' could not open the file. This is "
+            f"likely because the authentication credentials are not configured "
+            f"in the artifact store itself. For more information, see {link}."
+        )
+
+
+# --------------------
+# Model Artifact Utils
+# --------------------
+
+
+def save_model_metadata(model_artifact: "ArtifactResponse") -> str:
+    """Save a zenml model artifact metadata to a YAML file.
+
+    This function is used to extract and save information from a zenml model
+    artifact such as the model type and materializer. The extracted information
+    will be the key to loading the model into memory in the inference
+    environment.
+
+    datatype: the model type. This is the path to the model class.
+    materializer: The path to the materializer class.
+
+    Args:
+        model_artifact: the artifact to extract the metadata from.
+
+    Returns:
+        The path to the temporary file where the model metadata is saved
+    """
+    metadata = dict()
+    metadata["datatype"] = model_artifact.data_type
+    metadata["materializer"] = model_artifact.materializer
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".yaml", delete=False
+    ) as f:
+        write_yaml(f.name, metadata)
+    return f.name
+
+
+def load_model_from_metadata(model_uri: str) -> Any:
+    """Load a zenml model artifact from a json file.
+
+    This function is used to load information from a Yaml file that was created
+    by the save_model_metadata function. The information in the Yaml file is
+    used to load the model into memory in the inference environment.
+
+    Args:
+        model_uri: the artifact to extract the metadata from.
+
+    Returns:
+        The ML model object loaded into memory.
+    """
+    # Load the model from its metadata
+    with fileio.open(
+        os.path.join(model_uri, MODEL_METADATA_YAML_FILE_NAME), "r"
+    ) as f:
+        metadata = read_yaml(f.name)
+    data_type = metadata["datatype"]
+    materializer = metadata["materializer"]
+    model = _load_artifact_from_uri(
+        materializer=materializer, data_type=data_type, uri=model_uri
+    )
+
+    # Switch to eval mode if the model is a torch model
+    try:
+        import torch.nn as nn
+
+        if isinstance(model, nn.Module):
+            model.eval()
+    except ImportError:
+        pass
+
+    return model

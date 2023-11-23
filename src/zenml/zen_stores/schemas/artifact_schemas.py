@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
@@ -21,12 +22,13 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
-from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.enums import ArtifactType, ExecutionStatus, TaggableResourceTypes
 from zenml.models import (
     ArtifactRequest,
     ArtifactResponse,
     ArtifactResponseBody,
     ArtifactResponseMetadata,
+    ArtifactUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -46,6 +48,7 @@ if TYPE_CHECKING:
         ModelVersionArtifactSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 
 
 class ArtifactSchema(NamedSchema, table=True):
@@ -54,10 +57,21 @@ class ArtifactSchema(NamedSchema, table=True):
     __tablename__ = "artifact"
 
     # Fields
+    has_custom_name: bool
+    version: str
+    version_number: Optional[int]
     type: ArtifactType
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
+    tags: List["TagResourceSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
+            cascade="delete",
+            overlaps="tags",
+        ),
+    )
 
     # Foreign keys
     artifact_store_id: Optional[UUID] = build_foreign_key_field(
@@ -123,8 +137,15 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The converted schema.
         """
+        try:
+            version_number = int(artifact_request.version)
+        except ValueError:
+            version_number = None
         return cls(
             name=artifact_request.name,
+            has_custom_name=artifact_request.has_custom_name,
+            version=str(artifact_request.version),
+            version_number=version_number,
             artifact_store_id=artifact_request.artifact_store_id,
             workspace_id=artifact_request.workspace,
             user_id=artifact_request.user,
@@ -167,6 +188,7 @@ class ArtifactSchema(NamedSchema, table=True):
 
         # Create the body and metadata of the model
         body = ArtifactResponseBody(
+            version=self.version_number or self.version,
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
             type=self.type,
@@ -176,6 +198,7 @@ class ArtifactSchema(NamedSchema, table=True):
 
         metadata = None
         if hydrate:
+            tags = [t.tag.to_model() for t in self.tags]
             metadata = ArtifactResponseMetadata(
                 workspace=self.workspace.to_model(),
                 artifact_store_id=self.artifact_store_id,
@@ -184,6 +207,8 @@ class ArtifactSchema(NamedSchema, table=True):
                 run_metadata={m.key: m.to_model() for m in self.run_metadata},
                 materializer=materializer,
                 data_type=data_type,
+                tags=tags,
+                has_custom_name=self.has_custom_name,
             )
 
         return ArtifactResponse(
@@ -192,3 +217,17 @@ class ArtifactSchema(NamedSchema, table=True):
             body=body,
             metadata=metadata,
         )
+
+    def update(self, artifact_update: ArtifactUpdate) -> "ArtifactSchema":
+        """Update an `ArtifactSchema` with an `ArtifactUpdate`.
+
+        Args:
+            artifact_update: The update model to apply.
+
+        Returns:
+            The updated `ArtifactSchema`.
+        """
+        if artifact_update.name:
+            self.name = artifact_update.name
+        self.updated = datetime.utcnow()
+        return self

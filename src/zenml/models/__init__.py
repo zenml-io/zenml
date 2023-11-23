@@ -111,6 +111,7 @@ from zenml.models.v2.core.artifact import (
     ArtifactResponse,
     ArtifactResponseBody,
     ArtifactResponseMetadata,
+    ArtifactUpdate,
 )
 from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationRequest,
@@ -587,6 +588,7 @@ __all__ = [
     "ArtifactResponse",
     "ArtifactResponseBody",
     "ArtifactResponseMetadata",
+    "ArtifactUpdate",
     "ArtifactVisualizationRequest",
     "ArtifactVisualizationResponse",
     "ArtifactVisualizationResponseBody",

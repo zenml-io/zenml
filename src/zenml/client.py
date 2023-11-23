@@ -177,7 +177,6 @@ from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
-    from zenml.model.model_version import ModelVersion
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -2603,64 +2602,13 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The pipeline.
-
-        Raises:
-            KeyError: If no pipelines were found for the given ID/name and
-                version.
-            ZenKeyError: If multiple pipelines match the ID prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
-
-        if is_valid_uuid(name_id_or_prefix):
-            if version:
-                logger.warning(
-                    "You specified both an ID as well as a version of the "
-                    "pipeline. Ignoring the version and fetching the "
-                    "pipeline by ID."
-                )
-            if not isinstance(name_id_or_prefix, UUID):
-                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
-
-            return self.zen_store.get_pipeline(name_id_or_prefix)
-
-        assert not isinstance(name_id_or_prefix, UUID)
-        exact_name_matches = self.list_pipelines(
-            size=1,
-            sort_by="desc:created",
-            name=f"equals:{name_id_or_prefix}",
+        return self._get_entity_version_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_pipeline,
+            list_method=self.list_pipelines,
+            name_id_or_prefix=name_id_or_prefix,
             version=version,
         )
-
-        if len(exact_name_matches) == 1:
-            # If the name matches exactly, use the explicitly specified version
-            # or fallback to the latest if not given
-            return exact_name_matches.items[0]
-
-        partial_id_matches = self.list_pipelines(
-            id=f"startswith:{name_id_or_prefix}"
-        )
-        if partial_id_matches.total == 1:
-            if version:
-                logger.warning(
-                    "You specified both an ID as well as a version of the "
-                    "pipeline. Ignoring the version and fetching the "
-                    "pipeline by ID."
-                )
-            return partial_id_matches[0]
-        elif partial_id_matches.total == 0:
-            raise KeyError(
-                f"No pipelines found for name, ID or prefix "
-                f"{name_id_or_prefix}."
-            )
-        else:
-            raise ZenKeyError(
-                f"{partial_id_matches.total} pipelines have been found that "
-                "have an id prefix that matches the provided string "
-                f"'{name_id_or_prefix}':\n"
-                f"{partial_id_matches.items}.\n"
-                f"Please provide more characters to uniquely identify "
-                f"only one of the pipelines."
-            )
 
     def delete_pipeline(
         self,
@@ -3245,16 +3193,26 @@ class Client(metaclass=ClientMetaClass):
 
     # ------------------------------- Artifacts --------------------------------
 
-    def get_artifact(self, artifact_id: UUID) -> ArtifactResponse:
+    def get_artifact(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+    ) -> ArtifactResponse:
         """Get an artifact by ID.
 
         Args:
-            artifact_id: The ID of the artifact to get.
+            name_id_or_prefix: The ID or name or prefix of the artifact to get.
+            version: The version of the artifact to get.
 
         Returns:
             The artifact.
         """
-        return self.zen_store.get_artifact(artifact_id)
+        return self._get_entity_version_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_artifact,
+            list_method=self.list_artifacts,
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+        )
 
     def list_artifacts(
         self,
@@ -3266,6 +3224,8 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        version: Optional[Union[str, int]] = None,
+        version_number: Optional[int] = None,
         artifact_store_id: Optional[Union[str, UUID]] = None,
         type: Optional[ArtifactType] = None,
         data_type: Optional[str] = None,
@@ -3286,6 +3246,8 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the run to filter by.
+            version: The version of the artifact to filter by.
+            version_number: The version number of the artifact to filter by.
             artifact_store_id: The id of the artifact store to filter by.
             type: The type of the artifact to filter by.
             data_type: The data type of the artifact to filter by.
@@ -3307,6 +3269,8 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            version=version,
+            version_number=version_number,
             artifact_store_id=artifact_store_id,
             type=type,
             data_type=data_type,
@@ -3321,7 +3285,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_artifact(
         self,
-        artifact_id: UUID,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
     ) -> None:
@@ -3331,13 +3296,17 @@ class Client(metaclass=ClientMetaClass):
         database, not the artifact itself.
 
         Args:
-            artifact_id: The ID of the artifact to delete.
+            name_id_or_prefix: The ID or name or prefix of the artifact to
+                delete.
+            version: The version of the artifact to delete.
             delete_metadata: If True, delete the metadata of the artifact from
                 the database.
             delete_from_artifact_store: If True, delete the artifact itself from
                 the artifact store.
         """
-        artifact = self.get_artifact(artifact_id=artifact_id)
+        artifact = self.get_artifact(
+            name_id_or_prefix=name_id_or_prefix, version=version
+        )
         if delete_from_artifact_store:
             self._delete_artifact_from_artifact_store(artifact=artifact)
         if delete_metadata:
@@ -5104,7 +5073,7 @@ class Client(metaclass=ClientMetaClass):
         model_name_or_id: Union[str, UUID],
         name: Optional[str] = None,
         description: Optional[str] = None,
-    ) -> "ModelVersion":
+    ) -> ModelVersionResponseModel:
         """Creates a new model version in Model Control Plane.
 
         Args:
@@ -5125,7 +5094,7 @@ class Client(metaclass=ClientMetaClass):
                 workspace=self.active_workspace.id,
                 model=model_name_or_id,
             )
-        ).to_model_version(True, False)
+        )
 
     def delete_model_version(
         self,
@@ -5146,29 +5115,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_name_or_number_or_id: Optional[
             Union[str, int, ModelStages, UUID]
         ] = None,
-    ) -> "ModelVersion":
-        """Get an existing model version from Model Control Plane.
-
-        Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped - latest version is retrieved.
-
-        Returns:
-            The model version of interest.
-        """
-        return self._get_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        ).to_model_version(suppress_class_validation_warnings=True)
-
-    def _get_model_version(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, ModelStages, UUID]
-        ] = None,
-    ) -> "ModelVersionResponseModel":
+    ) -> ModelVersionResponseModel:
         """Get an existing model version from Model Control Plane.
 
         Args:
@@ -5300,7 +5247,7 @@ class Client(metaclass=ClientMetaClass):
         stage: Optional[Union[str, ModelStages]] = None,
         force: bool = False,
         name: Optional[str] = None,
-    ) -> "ModelVersion":
+    ) -> ModelVersionResponseModel:
         """Get all model versions by filter.
 
         Args:
@@ -5329,7 +5276,7 @@ class Client(metaclass=ClientMetaClass):
                 force=force,
                 name=name,
             ),
-        ).to_model_version(suppress_class_validation_warnings=True)
+        )
 
     #################################################
     # Model Versions Artifacts
@@ -5339,22 +5286,59 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_artifact_links(
         self,
-        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-        model_version_id: UUID,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[UUID, str]] = None,
+        user_id: Optional[Union[UUID, str]] = None,
+        model_id: Optional[Union[UUID, str]] = None,
+        model_version_id: Optional[Union[UUID, str]] = None,
+        artifact_id: Optional[Union[UUID, str]] = None,
+        only_data_artifacts: Optional[bool] = None,
+        only_model_artifacts: Optional[bool] = None,
+        only_endpoint_artifacts: Optional[bool] = None,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get model version to artifact links by filter in Model Control Plane.
 
         Args:
-            model_version_id: id of the model version to be retrieved.
-            model_version_artifact_link_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: Use the workspace id for filtering
+            user_id: Use the user id for filtering
+            model_id: Use the model id for filtering
+            model_version_id: Use the model version id for filtering
+            artifact_id: Use the artifact id for filtering
+            only_data_artifacts: Use to filter by data artifacts
+            only_model_artifacts: Use to filter by model artifacts
+            only_endpoint_artifacts: Use to filter by endpoint artifacts
 
         Returns:
             A page of all model version to artifact links.
         """
         return self.zen_store.list_model_version_artifact_links(
-            model_version_id=model_version_id,
-            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
+            ModelVersionArtifactFilterModel(
+                sort_by=sort_by,
+                logical_operator=logical_operator,
+                page=page,
+                size=size,
+                created=created,
+                updated=updated,
+                workspace_id=workspace_id,
+                user_id=user_id,
+                model_id=model_id,
+                model_version_id=model_version_id,
+                artifact_id=artifact_id,
+                only_data_artifacts=only_data_artifacts,
+                only_model_artifacts=only_model_artifacts,
+                only_endpoint_artifacts=only_endpoint_artifacts,
+            )
         )
 
     #################################################
@@ -5365,22 +5349,50 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_pipeline_run_links(
         self,
-        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-        model_version_id: UUID,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[UUID, str]] = None,
+        user_id: Optional[Union[UUID, str]] = None,
+        model_id: Optional[Union[UUID, str]] = None,
+        model_version_id: Optional[Union[UUID, str]] = None,
+        pipeline_run_id: Optional[Union[UUID, str]] = None,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_version_id: id of the model version to be retrieved.
-            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: Use the workspace id for filtering
+            user_id: Use the user id for filtering
+            model_id: Use the model id for filtering
+            model_version_id: Use the model version id for filtering
+            pipeline_run_id: Use the pipeline run id for filtering
 
         Returns:
             A page of all model version to pipeline run links.
         """
         return self.zen_store.list_model_version_pipeline_run_links(
-            model_version_id=model_version_id,
-            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
+            ModelVersionPipelineRunFilterModel(
+                sort_by=sort_by,
+                logical_operator=logical_operator,
+                page=page,
+                size=size,
+                created=created,
+                updated=updated,
+                workspace_id=workspace_id,
+                user_id=user_id,
+                model_id=model_id,
+                model_version_id=model_version_id,
+                pipeline_run_id=pipeline_run_id,
+            )
         )
 
     # --------------------------- Authorized Devices ---------------------------
@@ -5542,6 +5554,8 @@ class Client(metaclass=ClientMetaClass):
         """
         from zenml.utils.uuid_utils import is_valid_uuid
 
+        entity_label = get_method.__name__.replace("get_", "") + "s"
+
         # First interpret as full UUID
         if is_valid_uuid(name_id_or_prefix):
             return get_method(name_id_or_prefix)
@@ -5564,7 +5578,6 @@ class Client(metaclass=ClientMetaClass):
             )
 
         # If more than one entity with the same name is found, raise an error.
-        entity_label = get_method.__name__.replace("get_", "") + "s"
         formatted_entity_items = [
             f"- {item.name}: (id: {item.id})\n"
             if hasattr(item, "name")
@@ -5579,6 +5592,66 @@ class Client(metaclass=ClientMetaClass):
             f"Please use the id to uniquely identify "
             f"only one of the {entity_label}s."
         )
+
+    @staticmethod
+    def _get_entity_version_by_id_or_name_or_prefix(
+        get_method: Callable[..., AnyResponse],
+        list_method: Callable[..., Page[AnyResponse]],
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str],
+    ) -> "AnyResponse":
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        entity_label = get_method.__name__.replace("get_", "") + "s"
+
+        if is_valid_uuid(name_id_or_prefix):
+            if version:
+                logger.warning(
+                    "You specified both an ID as well as a version of the "
+                    f"{entity_label}. Ignoring the version and fetching the "
+                    f"{entity_label} by ID."
+                )
+            if not isinstance(name_id_or_prefix, UUID):
+                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
+
+            return get_method(name_id_or_prefix)
+
+        assert not isinstance(name_id_or_prefix, UUID)
+        exact_name_matches = list_method(
+            size=1,
+            sort_by="desc:created",
+            name=f"equals:{name_id_or_prefix}",
+            version=version,
+        )
+
+        if len(exact_name_matches) == 1:
+            # If the name matches exactly, use the explicitly specified version
+            # or fallback to the latest if not given
+            return exact_name_matches.items[0]
+
+        partial_id_matches = list_method(id=f"startswith:{name_id_or_prefix}")
+        if partial_id_matches.total == 1:
+            if version:
+                logger.warning(
+                    "You specified both a partial ID as well as a version of "
+                    f"the {entity_label}. Ignoring the version and fetching "
+                    f"the {entity_label} by partial ID."
+                )
+            return partial_id_matches[0]
+        elif partial_id_matches.total == 0:
+            raise KeyError(
+                f"No {entity_label} found for name, ID or prefix "
+                f"{name_id_or_prefix}."
+            )
+        else:
+            raise ZenKeyError(
+                f"{partial_id_matches.total} {entity_label} have been found "
+                "that have an id prefix that matches the provided string "
+                f"'{name_id_or_prefix}':\n"
+                f"{partial_id_matches.items}.\n"
+                f"Please provide more characters to uniquely identify "
+                f"only one of the {entity_label}s."
+            )
 
     @staticmethod
     def _get_entity_by_prefix(

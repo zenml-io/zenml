@@ -1,9 +1,16 @@
-name: Publish Docker image
+name: Publish Docker images
 
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      config_file:
+        description: 'YAML config for Google Cloud Build'
+        required: false
+        type: string
+        default: "release-cloudbuild.yaml"
 
 jobs:
-  publish_to_pypi:
+  publish_to_docker:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub
     runs-on: ubuntu-latest
     env:
@@ -30,5 +37,5 @@ jobs:
         run: |-
           gcloud builds submit \
             --quiet \
-            --config=release-cloudbuild.yaml \
+            --config=${{inputs.config_file}} \
             --substitutions=TAG_NAME=${{github.ref_name}} .
