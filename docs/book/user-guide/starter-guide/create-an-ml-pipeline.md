@@ -15,28 +15,33 @@ Let's jump into an example that demonstrates how a simple pipeline can be set up
 ```python
 from zenml import pipeline, step
 
-
-# Step for loading static data
 @step
-def load_data() -> tuple:
-    # In a real-world scenario, this would be replaced
-    # with code to load and preprocess your dataset.
-    return ([0.1, 0.2, 0.3], [1])
+def load_data() -> dict:
+    """Simulates loading of training data and labels"""
 
-# Step for training a model; in this basic example, it just calculates the sum
+    training_data = [[1, 2], [3, 4], [5, 6]]
+    labels = [0, 1, 0]
+    
+    return {'features': training_data, 'labels': labels}
+
 @step
-def train_model(data: tuple) -> None:
-    # A real-world model training step would include model fitting logic.
-    total = sum(data[0]) 
-    print(f"Training 'model' with data {data}, total sum is {total}")
+def train_model(data: dict) -> None:
+    """
+    A mock 'training' process that also demonstrates using the input data.
+    In a real-world scenario, this would be replaced with actual model fitting logic.
+    """
+    total_features = sum(map(sum, data['features']))
+    total_labels = sum(data['labels'])
+    
+    print(f"Trained model using {len(data['features'])} data points. "
+          f"Feature sum is {total_features}, label sum is {total_labels}")
 
-# Define a pipeline that connects the steps
 @pipeline
 def simple_ml_pipeline():
+    """Define a pipeline that connects the steps"""
     dataset = load_data()
     train_model(dataset)
 
-# Run the pipeline
 if __name__ == "__main__":
     simple_ml_pipeline()
 ```
@@ -52,14 +57,19 @@ Copy this code into a file `run.py` and run it.
 ```bash
 $ python run.py
 
-Registered pipeline my_pipeline (version 1).
-Running pipeline my_pipeline on stack default (caching enabled)
-Step step_1 has started.
-Step step_1 has finished in 0.121s.
-Step step_2 has started.
-hello world
-Step step_2 has finished in 0.046s.
-Pipeline run my_pipeline-... has finished in 0.676s.
+Initiating a new run for the pipeline: simple_ml_pipeline.
+Registered new version: (version 2).
+Executing a new run.
+Using user: hamza@zenml.io
+Using stack: default
+  orchestrator: default
+  artifact_store: default
+Step load_data has started.
+Step load_data has finished in 0.385s.
+Step train_model has started.
+Trained model using 3 data points. Feature sum is 21, label sum is 1
+Step train_model has finished in 0.265s.
+Run simple_ml_pipeline-2023_11_23-10_51_59_657489 has finished in 1.612s.
 Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
 ```
 {% endcode %}
@@ -80,7 +90,7 @@ If you have closed the browser tab with the ZenML dashboard, you can always reop
 
 ## Expanding to a Full Machine Learning Workflow
 
-With the fundamentals in hand, let’s escalate our simple pipeline to a complete ML workflow. For this task, we will use the well-known Iris dataset to train a Support Vector Classifier (SVC). 
+With the fundamentals in hand, let’s escalate our simple pipeline to a complete ML workflow. For this task, we will use the well-known Iris dataset to train a Support Vector Classifier (SVC).
 
 Let's start with the imports.
 
@@ -121,6 +131,8 @@ import logging
 
 @step
 def training_data_loader() -> Tuple[
+    # Notice we use a Tuple and Annotated to return 
+    # multiple, named outputs
     Annotated[pd.DataFrame, "X_train"],
     Annotated[pd.DataFrame, "X_test"],
     Annotated[pd.Series, "y_train"],
@@ -134,7 +146,6 @@ def training_data_loader() -> Tuple[
         iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
     )
     return X_train, X_test, y_train, y_test
-
 ```
 
 {% hint style="info" %}
@@ -148,9 +159,9 @@ Here we are creating a training step for a support vector machine classifier wit
 ```python
 @step
 def svc_trainer(
-        X_train: pd.DataFrame,
-        y_train: pd.Series,
-        gamma: float = 0.001,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
 ) -> Tuple[
     Annotated[ClassifierMixin, "trained_model"],
     Annotated[float, "training_acc"],
