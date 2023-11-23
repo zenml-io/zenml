@@ -141,8 +141,10 @@ def _dehydrate_value(
             value, action=Action.READ
         )
         resource = get_resource_for_model(value)
-        has_permissions = resource and (permissions or {}).get(resource, False)
+        if not resource:
+            return dehydrate_response_model(value, permissions=permissions)
 
+        has_permissions = (permissions or {}).get(resource, False)
         if has_permissions or has_permissions_for_model(
             model=value, action=Action.READ
         ):
@@ -468,10 +470,18 @@ def get_resource_type_for_model(
         ComponentResponse,
         FlavorResponse,
         ModelResponseModel,
+        PipelineBuildResponse,
+        PipelineDeploymentResponse,
         PipelineResponse,
+        PipelineRunResponse,
+        RunMetadataResponse,
         SecretResponseModel,
+        ServiceAccountResponse,
         ServiceConnectorResponse,
         StackResponse,
+        TagResponseModel,
+        UserResponse,
+        WorkspaceResponse,
     )
 
     mapping: Dict[
@@ -487,6 +497,14 @@ def get_resource_type_for_model(
         SecretResponseModel: ResourceType.SECRET,
         ModelResponseModel: ResourceType.MODEL,
         ArtifactResponse: ResourceType.ARTIFACT,
+        WorkspaceResponse: ResourceType.WORKSPACE,
+        UserResponse: ResourceType.USER,
+        RunMetadataResponse: ResourceType.RUN_METADATA,
+        PipelineDeploymentResponse: ResourceType.PIPELINE_DEPLOYMENT,
+        PipelineBuildResponse: ResourceType.PIPELINE_BUILD,
+        PipelineRunResponse: ResourceType.PIPELINE_RUN,
+        TagResponseModel: ResourceType.TAG,
+        ServiceAccountResponse: ResourceType.SERVICE_ACCOUNT,
     }
 
     return mapping.get(type(model))
