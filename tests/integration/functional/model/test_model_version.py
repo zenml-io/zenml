@@ -17,11 +17,8 @@ import pytest
 
 from tests.integration.functional.utils import model_killer, tags_killer
 from zenml.client import Client
-from zenml.constants import RUNNING_MODEL_VERSION
 from zenml.enums import ModelStages
-from zenml.model import ModelConfig
-from zenml.models import ModelRequestModel, ModelVersionRequestModel
-from zenml.models.model_models import ModelUpdateModel
+from zenml.model.model_version import ModelVersion
 from zenml.models.tag_models import TagRequestModel
 
 MODEL_NAME = "super_model"
@@ -45,20 +42,12 @@ class ModelContext:
         client = Client()
         if self.create_model:
             model = client.create_model(
-                ModelRequestModel(
-                    name=MODEL_NAME,
-                    user=self.user,
-                    workspace=self.workspace,
-                )
+                name=MODEL_NAME,
             )
             if self.model_version is not None:
                 mv = client.create_model_version(
-                    ModelVersionRequestModel(
-                        model=model.id,
-                        name=self.model_version,
-                        user=self.user,
-                        workspace=self.workspace,
-                    )
+                    model_name_or_id=model.id,
+                    name=self.model_version,
                 )
                 if self.stage is not None:
                     mv.set_stage(self.stage)
@@ -73,7 +62,7 @@ class ModelContext:
             pass
 
 
-class TestModelConfig:
+class TestModelVersion:
     def test_model_created_with_warning(self):
         """Test if the model is created with a warning.
 
@@ -81,20 +70,20 @@ class TestModelConfig:
         Info is expected because the model is not yet created.
         """
         with ModelContext(create_model=False):
-            mc = ModelConfig(name=MODEL_NAME)
-            with mock.patch("zenml.model.model_config.logger.info") as logger:
-                model = mc.get_or_create_model()
+            mv = ModelVersion(name=MODEL_NAME)
+            with mock.patch("zenml.model.model_version.logger.info") as logger:
+                model = mv._get_or_create_model()
                 logger.assert_called_once()
             assert model.name == MODEL_NAME
 
     def test_model_exists(self):
         """Test if model fetched fine, if exists."""
         with ModelContext() as model:
-            mc = ModelConfig(name=MODEL_NAME)
+            mv = ModelVersion(name=MODEL_NAME)
             with mock.patch(
-                "zenml.model.model_config.logger.warning"
+                "zenml.model.model_version.logger.warning"
             ) as logger:
-                model2 = mc.get_or_create_model()
+                model2 = mv._get_or_create_model()
                 logger.assert_not_called()
             assert model.name == model2.name
             assert model.id == model2.id
@@ -102,21 +91,21 @@ class TestModelConfig:
     def test_model_create_model_and_version(self):
         """Test if model and version are created, not existing before."""
         with ModelContext(create_model=False):
-            mc = ModelConfig(name=MODEL_NAME)
-            with mock.patch("zenml.model.model_config.logger.info") as logger:
-                mv = mc.get_or_create_model_version()
+            mv = ModelVersion(name=MODEL_NAME)
+            with mock.patch("zenml.model.model_version.logger.info") as logger:
+                mv = mv._get_or_create_model_version()
                 logger.assert_called()
-            assert mv.name == RUNNING_MODEL_VERSION
+            assert mv.name == str(mv.number)
             assert mv.model.name == MODEL_NAME
 
     def test_model_fetch_model_and_version_by_number(self):
         """Test model and model version retrieval by exact version number."""
         with ModelContext(model_version="1.0.0") as (model, mv):
-            mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
+            mv = ModelVersion(name=MODEL_NAME, version="1.0.0")
             with mock.patch(
-                "zenml.model.model_config.logger.warning"
+                "zenml.model.model_version.logger.warning"
             ) as logger:
-                mv_test = mc.get_or_create_model_version()
+                mv_test = mv._get_or_create_model_version()
                 logger.assert_not_called()
             assert mv_test.id == mv.id
             assert mv_test.model.name == model.name
@@ -124,20 +113,20 @@ class TestModelConfig:
     def test_model_fetch_model_and_version_by_number_not_found(self):
         """Test model and model version retrieval fails by exact version number, if version missing."""
         with ModelContext():
-            mc = ModelConfig(name=MODEL_NAME, version="1.0.0")
+            mv = ModelVersion(name=MODEL_NAME, version="1.0.0")
             with pytest.raises(KeyError):
-                mc._get_model_version()
+                mv._get_model_version()
 
     def test_model_fetch_model_and_version_by_stage(self):
         """Test model and model version retrieval by exact stage number."""
         with ModelContext(
             model_version="1.0.0", stage=ModelStages.PRODUCTION
         ) as (model, mv):
-            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+            mv = ModelVersion(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with mock.patch(
-                "zenml.model.model_config.logger.warning"
+                "zenml.model.model_version.logger.warning"
             ) as logger:
-                mv_test = mc.get_or_create_model_version()
+                mv_test = mv._get_or_create_model_version()
                 logger.assert_not_called()
             assert mv_test.id == mv.id
             assert mv_test.model.name == model.name
@@ -145,46 +134,40 @@ class TestModelConfig:
     def test_model_fetch_model_and_version_by_stage_not_found(self):
         """Test model and model version retrieval fails by exact stage number, if version in stage missing."""
         with ModelContext(model_version="1.0.0"):
-            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+            mv = ModelVersion(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with pytest.raises(KeyError):
-                mc._get_model_version()
+                mv._get_model_version()
 
     def test_model_fetch_model_and_version_latest(self):
         """Test model and model version retrieval by latest version."""
         with ModelContext(model_version="1.0.0"):
-            mc = ModelConfig(name=MODEL_NAME, version=ModelStages.LATEST)
-            mv = mc.get_or_create_model_version()
+            mv = ModelVersion(name=MODEL_NAME, version=ModelStages.LATEST)
+            mv = mv._get_or_create_model_version()
 
             assert mv.name == "1.0.0"
 
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
-        with mock.patch("zenml.model.model_config.logger.info") as logger:
-            mc = ModelConfig(
+        with mock.patch("zenml.model.model_version.logger.info") as logger:
+            mv = ModelVersion(
                 name=MODEL_NAME,
                 version=ModelStages.PRODUCTION.value,
             )
             logger.assert_called_once()
-            assert mc.version == ModelStages.PRODUCTION.value
+            assert mv.version == ModelStages.PRODUCTION.value
 
-        mc = ModelConfig(name=MODEL_NAME, version=ModelStages.PRODUCTION)
-        assert mc.version == ModelStages.PRODUCTION
+        mv = ModelVersion(name=MODEL_NAME, version=ModelStages.PRODUCTION)
+        assert mv.version == ModelStages.PRODUCTION
 
     def test_recovery_flow(self):
         """Test that model context can recover same version after failure."""
         with ModelContext():
-            mc = ModelConfig(
-                name=MODEL_NAME,
-                delete_new_version_on_failure=False,
-            )
-            mv1 = mc.get_or_create_model_version()
-            del mc
+            mv = ModelVersion(name=MODEL_NAME)
+            mv1 = mv._get_or_create_model_version()
+            del mv
 
-            mc = ModelConfig(
-                name=MODEL_NAME,
-                delete_new_version_on_failure=False,
-            )
-            mv2 = mc.get_or_create_model_version()
+            mv = ModelVersion(name=MODEL_NAME, version=1)
+            mv2 = mv._get_or_create_model_version()
 
             assert mv1.id == mv2.id
 
@@ -193,16 +176,15 @@ class TestModelConfig:
         with model_killer():
             with tags_killer():
                 Client().create_tag(TagRequestModel(name="foo", color="green"))
-                mc = ModelConfig(
+                mv = ModelVersion(
                     name=MODEL_NAME,
                     tags=["foo", "bar"],
-                    create_new_model_version=True,
                     delete_new_version_on_failure=False,
                 )
 
                 # run 2 times to first create, next get
                 for _ in range(2):
-                    model = mc.get_or_create_model()
+                    model = mv._get_or_create_model()
 
                     assert len(model.tags) == 2
                     assert {t.name for t in model.tags} == {"foo", "bar"}
@@ -214,18 +196,15 @@ class TestModelConfig:
         """Test that model context can update proper tag relationships."""
         with model_killer():
             with tags_killer():
-                mc = ModelConfig(
+                mv = ModelVersion(
                     name=MODEL_NAME,
                     tags=["foo", "bar"],
-                    create_new_model_version=True,
                     delete_new_version_on_failure=False,
                 )
-                model_id = mc.get_or_create_model().id
+                model_id = mv._get_or_create_model().id
 
-                Client().update_model(
-                    model_id, ModelUpdateModel(add_tags=["tag1", "tag2"])
-                )
-                model = mc.get_or_create_model()
+                Client().update_model(model_id, add_tags=["tag1", "tag2"])
+                model = mv._get_or_create_model()
                 assert len(model.tags) == 4
                 assert {t.name for t in model.tags} == {
                     "foo",
@@ -234,9 +213,7 @@ class TestModelConfig:
                     "tag2",
                 }
 
-                Client().update_model(
-                    model_id, ModelUpdateModel(remove_tags=["tag1", "tag2"])
-                )
-                model = mc.get_or_create_model()
+                Client().update_model(model_id, remove_tags=["tag1", "tag2"])
+                model = mv._get_or_create_model()
                 assert len(model.tags) == 2
                 assert {t.name for t in model.tags} == {"foo", "bar"}

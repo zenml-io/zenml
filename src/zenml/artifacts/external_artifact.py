@@ -22,7 +22,6 @@ from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
 from zenml.config.source import Source
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -40,29 +39,24 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     can be used to provide any value as input to a step without needing to
     write an additional step that returns this value.
 
-    This class can be configured using the following parameters:
-    - value: The artifact value (any python object), that will be uploaded to
-        the artifact store.
-    - id: The ID of an artifact that is already registered in ZenML.
-    - pipeline_name & artifact_name: Name of a pipeline and artifact to search
-        in latest run.
-    - model_name & model_version & model_artifact_name & model_artifact_version:
-        Name of a model, model version, model artifact and artifact version to
-        search.
+    The external artifact needs to have either a value associated with it
+    that will be uploaded to the artifact store, or reference an artifact
+    that is already registered in ZenML.
+
+    There are several ways to reference an existing artifact:
+    - By providing an artifact ID.
+    - By providing an artifact name and version. If no version is provided,
+        the latest version of that artifact will be used.
 
     Args:
         value: The artifact value.
         id: The ID of an artifact that should be referenced by this external
             artifact.
-        pipeline_name: Name of a pipeline to search for artifact in latest run.
-        artifact_name: Name of an artifact to be searched in latest pipeline
-            run.
-        model_name: Name of a model to search for artifact in (if None -
-            derived from step context).
-        model_version: Version of a model to search for artifact in (if None -
-            derived from step context).
-        model_artifact_name: Name of a model artifact to search for.
-        model_artifact_version: Version of a model artifact to search for.
+        name: Name of an artifact to search. If none of
+            `version`, `pipeline_run_name`, or `pipeline_name` are set, the
+            latest version of the artifact will be used.
+        version: Version of the artifact to search. Only used when `name` is
+            provided.
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.
         store_artifact_metadata: Whether metadata for the artifact should
@@ -95,40 +89,19 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
     @root_validator
     def _validate_all(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        value = values.get("value", None)
-        id = values.get("id", None)
-        pipeline_name = values.get("pipeline_name", None)
-        artifact_name = values.get("artifact_name", None)
-        model_name = values.get("model_name", None)
-        model_version = values.get("model_version", None)
-        model_artifact_name = values.get("model_artifact_name", None)
-
-        if (value is not None) + (id is not None) + (
-            pipeline_name is not None and artifact_name is not None
-        ) + (model_artifact_name is not None) > 1:
+        options = [
+            values.get(field, None) is not None
+            for field in ["value", "id", "name"]
+        ]
+        if sum(options) > 1:
             raise ValueError(
-                "Only a value, an ID, pipeline/artifact name pair or "
-                "model name/model version/model artifact name group can be "
-                "provided when creating an external artifact."
+                "Only one of `value`, `id`, or `name` can be provided when "
+                "creating an external artifact."
             )
-        elif all(
-            v is None
-            for v in [
-                value,
-                id,
-                pipeline_name or artifact_name,
-                model_name or model_version or model_artifact_name,
-            ]
-        ):
+        elif sum(options) == 0:
             raise ValueError(
-                "Either a value, an ID, pipeline/artifact name pair or "
-                "model name/model version/model artifact name group must be "
-                "provided when creating an external artifact."
-            )
-        elif (pipeline_name is None) != (artifact_name is None):
-            raise ValueError(
-                "`pipeline_name` and `artifact_name` can be only provided "
-                "together when creating an external artifact."
+                "Either `value`, `id`, or `name` must be provided when "
+                "creating an external artifact."
             )
         return values
 
@@ -137,48 +110,30 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
         Returns:
             The uploaded artifact ID.
-
-        Raises:
-            RuntimeError: If artifact URI already exists.
         """
-        from zenml.client import Client
-        from zenml.utils.artifact_utils import upload_artifact
+        from zenml.artifacts.utils import save_artifact
 
-        client = Client()
-
-        artifact_store_id = client.active_stack.artifact_store.id
-
-        logger.info("Uploading external artifact...")
         artifact_name = f"external_{uuid4()}"
-        materializer_class = self._get_materializer_class(value=self.value)
+        uri = os.path.join("external_artifacts", artifact_name)
+        logger.info("Uploading external artifact to '%s'.", uri)
 
-        uri = os.path.join(
-            client.active_stack.artifact_store.path,
-            "external_artifacts",
-            artifact_name,
-        )
-        if fileio.exists(uri):
-            raise RuntimeError(f"Artifact URI '{uri}' already exists.")
-        fileio.makedirs(uri)
-
-        materializer = materializer_class(uri)
-
-        artifact_id: UUID = upload_artifact(
+        artifact = save_artifact(
             name=artifact_name,
             data=self.value,
-            materializer=materializer,
-            artifact_store_id=artifact_store_id,
             extract_metadata=self.store_artifact_metadata,
             include_visualizations=self.store_artifact_visualizations,
+            materializer=self.materializer,
+            uri=uri,
+            has_custom_name=False,
+            manual_save=False,
         )
 
         # To avoid duplicate uploads, switch to referencing the uploaded
         # artifact by ID
-        self.id = artifact_id
-        # clean-up state after upload done
+        self.id = artifact.id
         self.value = None
-        logger.info("Finished uploading external artifact %s.", artifact_id)
 
+        logger.info("Finished uploading external artifact %s.", self.id)
         return self.id
 
     @property
@@ -190,40 +145,6 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         """
         return ExternalArtifactConfiguration(
             id=self.id,
-            pipeline_name=self.pipeline_name,
-            artifact_name=self.artifact_name,
-            model_name=self.model_name,
-            model_version=self.model_version,
-            model_artifact_name=self.model_artifact_name,
-            model_artifact_version=self.model_artifact_version,
-            model_artifact_pipeline_name=self.model_artifact_pipeline_name,
-            model_artifact_step_name=self.model_artifact_step_name,
+            name=self.name,
+            version=self.version,
         )
-
-    def _get_materializer_class(self, value: Any) -> Type[BaseMaterializer]:
-        """Gets a materializer class for a value.
-
-        If a custom materializer is defined for this artifact it will be
-        returned. Otherwise it will get the materializer class from the
-        registry, falling back to the Cloudpickle materializer if no concrete
-        materializer is registered for the type of value.
-
-        Args:
-            value: The value for which to get the materializer class.
-
-        Returns:
-            The materializer class.
-        """
-        from zenml.materializers.materializer_registry import (
-            materializer_registry,
-        )
-        from zenml.utils import source_utils
-
-        if isinstance(self.materializer, type):
-            return self.materializer
-        elif self.materializer:
-            return source_utils.load_and_validate_class(
-                self.materializer, expected_class=BaseMaterializer
-            )
-        else:
-            return materializer_registry[type(value)]
