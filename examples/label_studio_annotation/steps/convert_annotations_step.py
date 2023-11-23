@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
+from typing_extensions import Annotated
+
+from zenml import step
 from zenml.logger import get_logger
-from zenml.steps import Output, step
 
 logger = get_logger(__name__)
 
@@ -22,11 +24,11 @@ logger = get_logger(__name__)
 @step
 def convert_annotations(
     label_studio_annotations: List[Dict[Any, Any]]
-) -> Output(image_urls=List, image_labels=List):
+) -> Tuple[Annotated[List[str], "image_urls"], Annotated[List[str], "labels"]]:
     """Converts the annotation from Label Studio to a dictionary."""
     image_urls, labels = [], []
     for annotation in label_studio_annotations:
-        image_url = annotation["data"]["image"]
+        image_url = annotation["storage_filename"]
         label = annotation["annotations"][0]["result"][0]["value"]["choices"][
             0
         ]
