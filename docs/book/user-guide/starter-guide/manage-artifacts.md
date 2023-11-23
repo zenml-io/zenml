@@ -8,7 +8,7 @@ Until now, we have been focusing on step and pipeline code and configuration. No
 
 Whenever you run a ZenML pipeline, all output data of your steps are automatically versioned as artifacts into your artifact store and subsequent steps automatically load them in again. Each artifact that ZenML saves in your artifact store is assigned a name and is versioned automatically.
 
-![Walkthrough of ZenML Data Control Plane](../../.gitbook/assets/dcp_walkthrough.gif)
+![Walkthrough of ZenML Data Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/dcp_walkthrough.gif)
 
 ## Giving names to your artifacts
 
