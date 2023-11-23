@@ -31,7 +31,7 @@ class Action(StrEnum):
     READ_SECRET_VALUE = "read_secret_value"
 
     # Service connectors
-    CLIENT = "client"  # TODO: rename
+    CLIENT = "client"
 
     # Models
     PROMOTE = "promote"
@@ -57,6 +57,7 @@ class ResourceType(StrEnum):
     PIPELINE_DEPLOYMENT = "pipeline_deployment"
     PIPELINE_BUILD = "pipeline_build"
     RUN_METADATA = "run_metadata"
+    USER = "user"
 
 
 class Resource(BaseModel):
