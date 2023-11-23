@@ -1332,8 +1332,8 @@ class TestModelVersion:
                 self.MODEL_NAME, self.VERSION_NAME
             )
 
-            assert model_version.name == self.MODEL_NAME
-            assert model_version.version == self.VERSION_NAME
+            assert model_version.model.name == self.MODEL_NAME
+            assert model_version.name == self.VERSION_NAME
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
 
@@ -1344,8 +1344,8 @@ class TestModelVersion:
 
             model_version = client.get_model_version(self.MODEL_NAME, mv.id)
 
-            assert model_version.name == self.MODEL_NAME
-            assert model_version.version == self.VERSION_NAME
+            assert model_version.model.name == self.MODEL_NAME
+            assert model_version.name == self.VERSION_NAME
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
 
@@ -1354,8 +1354,8 @@ class TestModelVersion:
             client = Client()
             model_version = client.get_model_version(self.MODEL_NAME, 1)
 
-            assert model_version.name == self.MODEL_NAME
-            assert model_version.version == self.VERSION_NAME
+            assert model_version.model.name == self.MODEL_NAME
+            assert model_version.name == self.VERSION_NAME
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
 
@@ -1374,8 +1374,8 @@ class TestModelVersion:
                 self.MODEL_NAME, ModelStages.STAGING
             )
 
-            assert model_version.name == self.MODEL_NAME
-            assert model_version.version == self.VERSION_NAME
+            assert model_version.model.name == self.MODEL_NAME
+            assert model_version.name == self.VERSION_NAME
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
 
@@ -1397,7 +1397,7 @@ class TestModelVersion:
             client = Client()
             model_version = client.create_model_version(self.MODEL_NAME)
 
-            assert model_version.version == "2"
+            assert model_version.name == "2"
             assert model_version.number == 2
             assert model_version.description is None
 
@@ -1405,7 +1405,7 @@ class TestModelVersion:
                 self.MODEL_NAME, "new version"
             )
 
-            assert model_version.version == "new version"
+            assert model_version.name == "new version"
             assert model_version.number == 3
             assert model_version.description is None
 
@@ -1413,7 +1413,7 @@ class TestModelVersion:
                 self.MODEL_NAME, description="some desc"
             )
 
-            assert model_version.version == "4"
+            assert model_version.name == "4"
             assert model_version.number == 4
             assert model_version.description == "some desc"
 
@@ -1431,7 +1431,7 @@ class TestModelVersion:
                 self.MODEL_NAME, self.VERSION_NAME
             )
 
-            assert model_version.version == self.VERSION_NAME
+            assert model_version.name == self.VERSION_NAME
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
             assert model_version.stage is None
@@ -1443,7 +1443,7 @@ class TestModelVersion:
                 self.MODEL_NAME, self.VERSION_NAME
             )
 
-            assert model_version.version == self.VERSION_NAME
+            assert model_version.name == self.VERSION_NAME
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
             assert model_version.stage == ModelStages.STAGING
@@ -1455,7 +1455,7 @@ class TestModelVersion:
                 self.MODEL_NAME, "new name"
             )
 
-            assert model_version.version == "new name"
+            assert model_version.name == "new name"
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
             assert model_version.stage == ModelStages.STAGING
@@ -1479,7 +1479,7 @@ class TestModelVersion:
                 self.MODEL_NAME, "other version"
             )
 
-            assert model_version.version == "other version"
+            assert model_version.name == "other version"
             assert model_version.number == 2
             assert model_version.description is None
             assert model_version.stage == ModelStages.STAGING
@@ -1488,7 +1488,7 @@ class TestModelVersion:
                 self.MODEL_NAME, "new name"
             )
 
-            assert model_version.version == "new name"
+            assert model_version.name == "new name"
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
             assert model_version.stage == ModelStages.ARCHIVED
@@ -1551,7 +1551,7 @@ class TestModelVersion:
         return client.create_model_version(
             model_name_or_id=model.id,
             name=model_version_name,
-        )
+        ).to_model_version(suppress_class_validation_warnings=True)
 
     def test_get_by_latest(self):
         """Test that model version can be retrieved with latest."""
@@ -1560,19 +1560,27 @@ class TestModelVersion:
             mv1 = self._create_some_model_version(client=cl)
 
             # latest returns the only model
-            mv2 = Client().get_model_version(
-                model_name_or_id=mv1.model_id,
-                model_version_name_or_number_or_id=ModelStages.LATEST,
+            mv2 = (
+                Client()
+                .get_model_version(
+                    model_name_or_id=mv1.model_id,
+                    model_version_name_or_number_or_id=ModelStages.LATEST,
+                )
+                .to_model_version(suppress_class_validation_warnings=True)
             )
             assert mv2 == mv1
 
             # after second model version, latest should point to it
             mv3 = cl.create_model_version(
                 model_name_or_id=mv1.model_id, name="2.0.0"
-            )
-            mv4 = Client().get_model_version(
-                model_name_or_id=mv1.model_id,
-                model_version_name_or_number_or_id=ModelStages.LATEST,
+            ).to_model_version(suppress_class_validation_warnings=True)
+            mv4 = (
+                Client()
+                .get_model_version(
+                    model_name_or_id=mv1.model_id,
+                    model_version_name_or_number_or_id=ModelStages.LATEST,
+                )
+                .to_model_version(suppress_class_validation_warnings=True)
             )
             assert mv4 != mv1
             assert mv4 == mv3
@@ -1593,7 +1601,7 @@ class TestModelVersion:
             mv2 = cl.get_model_version(
                 model_name_or_id=mv1.model_id,
                 model_version_name_or_number_or_id=ModelStages.STAGING,
-            )
+            ).to_model_version(suppress_class_validation_warnings=True)
 
             assert mv1 == mv2
 

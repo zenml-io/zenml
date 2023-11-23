@@ -19,6 +19,7 @@ from pydantic import BaseModel, validator
 
 from zenml import get_step_context
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
+from zenml.artifacts.utils import save_model_metadata
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.exceptions import DoesNotExistException
@@ -42,7 +43,6 @@ from zenml.steps import (
     step,
 )
 from zenml.utils import io_utils, source_utils
-from zenml.utils.artifact_utils import save_model_metadata
 
 logger = get_logger(__name__)
 

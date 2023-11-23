@@ -118,6 +118,14 @@ class StepRunUpdate(BaseModel):
         title="The IDs of the output artifacts of the step run.",
         default={},
     )
+    saved_artifacts: Dict[str, UUID] = Field(
+        title="The IDs of artifacts that were saved by this step run.",
+        default={},
+    )
+    loaded_artifacts: Dict[str, UUID] = Field(
+        title="The IDs of artifacts that were loaded by this step run.",
+        default={},
+    )
     status: Optional[ExecutionStatus] = Field(
         title="The status of the step.",
         default=None,

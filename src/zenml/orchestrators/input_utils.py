@@ -14,7 +14,7 @@
 """Utilities for inputs."""
 
 import functools
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 from uuid import UUID
 
 from zenml.client import Client
@@ -23,21 +23,18 @@ from zenml.exceptions import InputResolutionError
 from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
     from zenml.models import ArtifactResponse
 
 
 def resolve_step_inputs(
     step: "Step",
     run_id: UUID,
-    model_version: Optional["ModelVersion"] = None,
 ) -> Tuple[Dict[str, "ArtifactResponse"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
         step: The step for which to resolve the inputs.
         run_id: The ID of the current pipeline run.
-        model_version: The model version of the step (from step or pipeline).
 
     Raises:
         InputResolutionError: If input resolving failed due to a missing
@@ -79,10 +76,8 @@ def resolve_step_inputs(
         name,
         external_artifact,
     ) in step.config.external_input_artifacts.items():
-        artifact_id = external_artifact.get_artifact_id(
-            model_version=model_version
-        )
-        input_artifacts[name] = Client().get_artifact(artifact_id=artifact_id)
+        artifact_id = external_artifact.get_artifact_id()
+        input_artifacts[name] = Client().get_artifact(artifact_id)
 
     parent_step_ids = [
         current_run_steps[upstream_step].id

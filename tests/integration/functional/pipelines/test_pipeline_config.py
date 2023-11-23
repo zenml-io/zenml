@@ -19,7 +19,7 @@ import pytest
 import yaml
 
 from zenml import get_step_context, pipeline, step
-from zenml.model import ModelVersion
+from zenml.model.model_version import ModelVersion
 
 
 @step
