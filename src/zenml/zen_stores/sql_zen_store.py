@@ -999,7 +999,9 @@ class SqlZenStore(BaseZenStore):
                 # tables from scratch with alembic.
                 logger.info("Creating database tables")
                 with self.engine.begin() as conn:
-                    conn.run_callable(SQLModel.metadata.create_all)
+                    conn.run_callable(
+                        SQLModel.metadata.create_all  # type: ignore[arg-type]
+                    )
             else:
                 # Case 2: the database is not empty, but has never been
                 # migrated with alembic before. We need to create the alembic

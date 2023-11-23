@@ -154,7 +154,7 @@ def test_stack_with_container_registry_creates_non_local_build(
     assert build.is_local is False
 
 
-def test_build_uses_correct_settings(mocker, empty_pipeline):
+def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
     """Tests that the build settings and pipeline ID get correctly forwarded."""
     build_config = BuildConfiguration(
         key="key",
