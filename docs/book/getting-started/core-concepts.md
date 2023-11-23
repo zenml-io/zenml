@@ -109,8 +109,6 @@ When it comes to production-grade solutions, it is rarely enough to just run you
 
 Thanks to the separation between the pipeline code and the stack in ZenML, you can easily switch your stack independently from your code. For instance, all it would take you to switch from an experimental local stack running on your machine to a remote stack that employs a full-fledged cloud infrastructure is a single CLI command.
 
-![Switching between stacks with ZenML.](<../.gitbook/assets/03\_multi\_stack (1).png>)
-
 ## 3. Management
 
 In order to benefit from the aforementioned core concepts to their fullest extent, it is essential to deploy and manage a production-grade environment that interacts with your ZenML installation.
