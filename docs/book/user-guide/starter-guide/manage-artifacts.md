@@ -19,7 +19,6 @@ from sklearn.datasets import load_iris
 
 from zenml import pipeline, step
 
-
 @step
 def training_data_loader() -> Annotated[pd.DataFrame, "iris_dataset"]:
     """Load the iris dataset as pandas dataframe."""
@@ -54,7 +53,7 @@ Now you will be able to find the created artifact as `iris_dataset` in ZenML:
 
 The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing these artifacts in the dashboard.
 
-<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>ZenML Data Control Plane.</p></figcaption></figure>
 
 {% hint style="info" %}
 To prevent visual clutter, only artifacts with custom names are displayed in
@@ -117,7 +116,7 @@ Now you will be able to find the created artifact version within your `iris_data
 
 The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing these artifacts versions in the dashboard.
 
-<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>ZenML Data Versions List.</p></figcaption></figure>
 
 {% endtab %}
 {% endtabs %}

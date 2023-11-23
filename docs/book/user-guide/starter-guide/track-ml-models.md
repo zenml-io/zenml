@@ -20,7 +20,7 @@ These models can be viewed within ZenML:
 
 The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing these models in the dashboard.
 
-<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/mcp_model_list.png" alt=""><figcaption><p>ZenML Model Control Plane.</p></figcaption></figure>
 
 {% endtab %}
 {% endtabs %}
@@ -77,7 +77,7 @@ The following commands can be used to list the various artifacts associated with
 
 The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
 
-<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt=""><figcaption><p>ZenML Model Versions List.</p></figcaption></figure>
 
 {% endtab %}
 {% endtabs %}
