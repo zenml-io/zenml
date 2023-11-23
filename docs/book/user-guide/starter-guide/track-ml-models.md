@@ -6,6 +6,8 @@ description: Exploring the ZenML Model Control Plane
 
 As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many `ModelVersions`. These concepts are exposed in the `Model Control Plane` (MCP for short).
 
+![Walkthrough of ZenML Data Control Plane](../../.gitbook/assets/mcp_walkthrough.gif)
+
 This feature empowers you to effortlessly group pipelines, artifacts, and crucial business data into a unified entity: a `Model`. A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `production`, and decide whether the model version should be promoted based on your business rules during training.
 
 These models can be viewed within ZenML:
