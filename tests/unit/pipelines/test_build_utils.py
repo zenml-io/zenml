@@ -22,6 +22,7 @@ import pytest
 
 import zenml
 from tests.unit.conftest_new import empty_pipeline  # noqa
+from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository, LocalRepositoryContext
 from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
@@ -120,7 +121,7 @@ def test_build_is_skipped_when_not_required(mocker):
 
 
 def test_stack_with_container_registry_creates_non_local_build(
-    clean_client, mocker, remote_container_registry
+    mocker, remote_container_registry
 ):
     """Tests that building for a stack with container registry creates a
     non-local build."""
@@ -153,11 +154,7 @@ def test_stack_with_container_registry_creates_non_local_build(
     assert build.is_local is False
 
 
-def test_build_uses_correct_settings(
-    clean_client,
-    mocker,
-    empty_pipeline,  # noqa: F811
-):
+def test_build_uses_correct_settings(mocker, empty_pipeline):
     """Tests that the build settings and pipeline ID get correctly forwarded."""
     build_config = BuildConfiguration(
         key="key",
@@ -205,11 +202,11 @@ def test_build_uses_correct_settings(
     image = build.images["step_name.key"]
     assert image.image == "image_name"
     assert image.settings_checksum == build_config.compute_settings_checksum(
-        stack=clean_client.active_stack
+        stack=Client().active_stack
     )
 
 
-def test_building_with_identical_keys_and_settings(clean_client, mocker):
+def test_building_with_identical_keys_and_settings(mocker):
     """Tests that two build configurations with identical keys and identical
     settings don't lead to two builds."""
     build_config_1 = BuildConfiguration(key="key", settings=DockerSettings())
@@ -241,9 +238,7 @@ def test_building_with_identical_keys_and_settings(clean_client, mocker):
     mock_build_docker_image.assert_called_once()
 
 
-def test_building_with_identical_keys_and_different_settings(
-    clean_client, mocker
-):
+def test_building_with_identical_keys_and_different_settings(mocker):
     """Tests that two build configurations with identical keys and different
     settings lead to an error."""
     build_config_1 = BuildConfiguration(key="key", settings=DockerSettings())
@@ -274,9 +269,7 @@ def test_building_with_identical_keys_and_different_settings(
         build_utils.create_pipeline_build(deployment=deployment)
 
 
-def test_building_with_different_keys_and_identical_settings(
-    clean_client, mocker
-):
+def test_building_with_different_keys_and_identical_settings(mocker):
     """Tests that two build configurations with different keys and identical
     settings don't lead to two builds."""
     build_config_1 = BuildConfiguration(key="key1", settings=DockerSettings())
@@ -397,7 +390,7 @@ def test_custom_build_verification(
         )
 
 
-def test_build_checksum_computation(clean_client, mocker):
+def test_build_checksum_computation(mocker):
     mocker.patch.object(
         BuildConfiguration,
         "compute_settings_checksum",
@@ -406,7 +399,7 @@ def test_build_checksum_computation(clean_client, mocker):
 
     build_config = BuildConfiguration(key="key", settings=DockerSettings())
     checksum = build_utils.compute_build_checksum(
-        items=[build_config], stack=clean_client.active_stack
+        items=[build_config], stack=Client().active_stack
     )
 
     # different key
@@ -414,7 +407,7 @@ def test_build_checksum_computation(clean_client, mocker):
         key="different_key", settings=DockerSettings()
     )
     new_checksum = build_utils.compute_build_checksum(
-        items=[new_build_config], stack=clean_client.active_stack
+        items=[new_build_config], stack=Client().active_stack
     )
     assert checksum != new_checksum
 
@@ -425,7 +418,7 @@ def test_build_checksum_computation(clean_client, mocker):
         return_value="different_settings_checksum",
     )
     new_checksum = build_utils.compute_build_checksum(
-        items=[build_config], stack=clean_client.active_stack
+        items=[build_config], stack=Client().active_stack
     )
     assert checksum != new_checksum
 
@@ -521,9 +514,7 @@ def test_local_repo_verification(
     assert isinstance(code_repo, StubCodeRepository)
 
 
-def test_finding_existing_build(
-    clean_client, mocker, sample_deployment_response_model
-):
+def test_finding_existing_build(mocker, sample_deployment_response_model):
     """Tests finding an existing build."""
     mock_list_builds = mocker.patch(
         "zenml.client.Client.list_builds",
@@ -563,7 +554,7 @@ def test_finding_existing_build(
     mock_list_builds.assert_called_once_with(
         sort_by="desc:created",
         size=1,
-        stack_id=clean_client.active_stack.id,
+        stack_id=Client().active_stack.id,
         is_local=False,
         contains_code=False,
         zenml_version=zenml.__version__,
