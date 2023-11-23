@@ -52,13 +52,16 @@ def upgrade() -> None:
     # Migrate data
     # ------------
     conn = op.get_bind()
-    meta = sa.MetaData(bind=op.get_bind())
+    meta = sa.MetaData()
+    bind = op.get_bind()
+
     meta.reflect(
+        bind=bind,
         only=(
             "artifacts",
             "step_run_output_artifact",
             "step_run_input_artifact",
-        )
+        ),
     )
     artifacts = sa.Table("artifacts", meta)
     step_run_output_artifact = sa.Table("step_run_output_artifact", meta)

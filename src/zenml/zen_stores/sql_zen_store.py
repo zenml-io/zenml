@@ -800,7 +800,7 @@ class SqlZenStore(BaseZenStore):
             total = len(custom_fetch(session, query, filter_model))
         else:
             total = session.scalar(
-                select([func.count("*")]).select_from(
+                select(func.count("*")).select_from(
                     query.options(noload("*")).subquery()
                 )
             )
@@ -5822,7 +5822,7 @@ class SqlZenStore(BaseZenStore):
         for schema, resource_attr in resource_attrs:
             # Check if the user owns any resources of this type
             count = session.scalar(
-                select([func.count("*")])
+                select(func.count("*"))
                 .select_from(schema)
                 .where(getattr(schema, resource_attr) == account.id)
             )

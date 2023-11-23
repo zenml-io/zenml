@@ -35,18 +35,20 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("name", "role_id"),
     )
     # get metadata from current connection
-    meta = sa.MetaData(bind=op.get_bind())
+    meta = sa.MetaData()
+    bind = op.get_bind()
 
     # pass in tuple with tables we want to reflect, otherwise whole database
     #  will get reflected
     meta.reflect(
+        bind=bind,
         only=(
             "rolepermissionschema",
             "roleschema",
             "userroleassignmentschema",
             "teamroleassignmentschema",
             "userschema",
-        )
+        ),
     )
 
     # In order to ensure unique names on roles delete potential admin/guest role
