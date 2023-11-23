@@ -234,6 +234,8 @@ app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
 app.include_router(models_endpoints.router)
 app.include_router(model_versions_endpoints.router)
+app.include_router(model_versions_endpoints.model_version_artifacts_router)
+app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
 app.include_router(tags_endpoints.router)
 
 
