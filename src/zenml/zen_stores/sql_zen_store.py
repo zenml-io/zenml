@@ -1002,6 +1002,15 @@ class SqlZenStore(BaseZenStore):
                     conn.run_callable(
                         SQLModel.metadata.create_all  # type: ignore[arg-type]
                     )
+                with Session(self.engine) as session:
+                    session.add(
+                        IdentitySchema(
+                            id=str(GlobalConfiguration().user_id).replace(
+                                "-", ""
+                            )
+                        )
+                    )
+                    session.commit()
                 self.alembic.stamp("head")
             else:
                 # Case 2: the database is not empty, but has never been
