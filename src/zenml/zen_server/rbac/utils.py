@@ -165,7 +165,7 @@ def _dehydrate_value(
         return value
 
 
-def has_permissions_for_model(model: AnyResponseModel, action: str) -> bool:
+def has_permissions_for_model(model: AnyResponseModel, action: Action) -> bool:
     """If the active user has permissions to perform the action on the model.
 
     Args:
@@ -275,7 +275,7 @@ def get_permission_denied_model_v1(
 
 def batch_verify_permissions_for_models(
     models: Sequence[AnyResponseModel],
-    action: str,
+    action: Action,
 ) -> None:
     """Batch permission verification for models.
 
@@ -304,7 +304,7 @@ def batch_verify_permissions_for_models(
 
 def verify_permission_for_model(
     model: AnyResponseModel,
-    action: str,
+    action: Action,
 ) -> None:
     """Verifies if a user has permission to perform an action on a model.
 
@@ -317,7 +317,7 @@ def verify_permission_for_model(
 
 def batch_verify_permissions(
     resources: Set[Resource],
-    action: str,
+    action: Action,
 ) -> None:
     """Batch permission verification.
 
@@ -357,7 +357,7 @@ def batch_verify_permissions(
 
 def verify_permission(
     resource_type: str,
-    action: str,
+    action: Action,
     resource_id: Optional[UUID] = None,
 ) -> None:
     """Verifies if a user has permission to perform an action on a resource.
@@ -374,7 +374,7 @@ def verify_permission(
 
 def get_allowed_resource_ids(
     resource_type: str,
-    action: str = Action.READ,
+    action: Action = Action.READ,
 ) -> Optional[Set[UUID]]:
     """Get all resource IDs of a resource type that a user can access.
 

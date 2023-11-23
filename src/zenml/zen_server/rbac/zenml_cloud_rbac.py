@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 import requests
 from pydantic import BaseModel, validator
 
-from zenml.zen_server.rbac.models import Resource
+from zenml.zen_server.rbac.models import Action, Resource
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.utils import server_config
 
@@ -131,7 +131,7 @@ class ZenMLCloudRBAC(RBACInterface):
         self._session: Optional[requests.Session] = None
 
     def check_permissions(
-        self, user: "UserResponse", resources: Set[Resource], action: str
+        self, user: "UserResponse", resources: Set[Resource], action: Action
     ) -> Dict[Resource, bool]:
         """Checks if a user has permissions to perform an action on resources.
 
@@ -152,7 +152,7 @@ class ZenMLCloudRBAC(RBACInterface):
             # Service accounts have full permissions for now
             return {resource: True for resource in resources}
 
-        # At this point its a regular user, which in the ZenML cloud with RBAC
+        # At this point it's a regular user, which in the ZenML cloud with RBAC
         # enabled is always authenticated using external authentication
         assert user.external_user_id
 
@@ -161,7 +161,7 @@ class ZenMLCloudRBAC(RBACInterface):
             "resources": [
                 _convert_to_cloud_resource(resource) for resource in resources
             ],
-            "action": action,
+            "action": str(action),
         }
         response = self._get(endpoint=PERMISSIONS_ENDPOINT, params=params)
         value = response.json()
@@ -170,7 +170,7 @@ class ZenMLCloudRBAC(RBACInterface):
         return {_convert_from_cloud_resource(k): v for k, v in value.items()}
 
     def list_allowed_resource_ids(
-        self, user: "UserResponse", resource: Resource, action: str
+        self, user: "UserResponse", resource: Resource, action: Action
     ) -> Tuple[bool, List[str]]:
         """Lists all resource IDs of a resource type that a user can access.
 
@@ -192,13 +192,13 @@ class ZenMLCloudRBAC(RBACInterface):
             # Service accounts have full permissions for now
             return True, []
 
-        # At this point its a regular user, which in the ZenML cloud with RBAC
+        # At this point it's a regular user, which in the ZenML cloud with RBAC
         # enabled is always authenticated using external authentication
         assert user.external_user_id
         params = {
             "user_id": str(user.external_user_id),
             "resource": _convert_to_cloud_resource(resource),
-            "action": action,
+            "action": str(action),
         }
         response = self._get(
             endpoint=ALLOWED_RESOURCE_IDS_ENDPOINT, params=params
