@@ -919,16 +919,12 @@ class SqlZenStore(BaseZenStore):
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
-        default_workspace = self._get_or_create_default_workspace()
+        self._get_or_create_default_workspace()
 
         config = ServerConfiguration.get_server_config()
         # If the auth scheme is external, don't create the default user
         if config.auth_scheme != AuthScheme.EXTERNAL:
             self._get_or_create_default_user()
-
-        self._get_or_create_default_stack(
-            workspace=default_workspace,
-        )
 
     def _create_mysql_database(
         self,
@@ -5486,7 +5482,10 @@ class SqlZenStore(BaseZenStore):
             # Explicitly refresh the new_workspace schema
             session.refresh(new_workspace)
 
-            return new_workspace.to_model(hydrate=True)
+            workspace_model = new_workspace.to_model(hydrate=True)
+
+        self._get_or_create_default_stack(workspace=workspace_model)
+        return workspace_model
 
     def get_workspace(
         self, workspace_name_or_id: Union[str, UUID], hydrate: bool = True
