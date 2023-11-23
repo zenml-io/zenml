@@ -18,6 +18,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security
 
+from zenml.artifacts.utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.constants import (
     API,
     LOGS,
@@ -33,10 +37,6 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
-)
-from zenml.utils.artifact_utils import (
-    _load_artifact_store,
-    _load_file_from_artifact_store,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response

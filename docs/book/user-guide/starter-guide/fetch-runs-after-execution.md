@@ -269,7 +269,7 @@ datatype-specific metadata and visualizations.
 All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `metadata` attribute of an output, e.g.:
 
 ```python
-output_metadata = output.metadata
+output_metadata = output.run_metadata
 storage_size_in_bytes = output_metadata["storage_size"].value
 ```
 

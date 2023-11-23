@@ -609,7 +609,7 @@ class ModelVersionContext:
             model = client.create_model(name=self.model)
         if self.create_version:
             try:
-                mv = client._get_model_version(self.model, self.model_version)
+                mv = client.get_model_version(self.model, self.model_version)
             except KeyError:
                 mv = client.zen_store.create_model_version(
                     ModelVersionRequestModel(
@@ -625,6 +625,7 @@ class ModelVersionContext:
                 client.zen_store.create_artifact(
                     ArtifactRequest(
                         name=sample_name("sample_artifact"),
+                        version=1,
                         data_type="module.class",
                         materializer="module.class",
                         type=ArtifactType.DATA,
@@ -911,6 +912,7 @@ pipeline_crud_test_config = CrudTestConfig(
 artifact_crud_test_config = CrudTestConfig(
     create_model=ArtifactRequest(
         name=sample_name("sample_artifact"),
+        version=1,
         data_type="module.class",
         materializer="module.class",
         type=ArtifactType.DATA,

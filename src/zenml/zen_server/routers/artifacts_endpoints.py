@@ -17,6 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
+from zenml.artifacts.utils import load_artifact_visualization
 from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
 from zenml.models import (
     ArtifactFilter,
@@ -25,7 +26,7 @@ from zenml.models import (
     LoadedVisualization,
     Page,
 )
-from zenml.utils.artifact_utils import load_artifact_visualization
+from zenml.models.v2.core.artifact import ArtifactUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -129,6 +130,29 @@ def get_artifact(
     return verify_permissions_and_get_entity(
         id=artifact_id, get_method=zen_store().get_artifact, hydrate=hydrate
     )
+
+
+@router.put(
+    "/{artifact_id}",
+    response_model=ArtifactResponse,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_artifact(
+    artifact_id: UUID,
+    artifact_update: ArtifactUpdate,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> ArtifactResponse:
+    """Update an artifact by ID.
+
+    Args:
+        artifact_id: The ID of the artifact to update.
+        artifact_update: The update to apply to the artifact.
+
+    Returns:
+        The updated artifact.
+    """
+    return zen_store().update_artifact(artifact_id, artifact_update)
 
 
 @router.delete(

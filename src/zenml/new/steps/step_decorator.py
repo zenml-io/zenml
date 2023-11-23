@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.model import ModelVersion
+    from zenml.model.model_version import ModelVersion
     from zenml.steps import BaseStep
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]

@@ -47,13 +47,10 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
-    ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
-    ModelVersionArtifactFilterModel,
     ModelVersionArtifactRequestModel,
     ModelVersionArtifactResponseModel,
-    ModelVersionPipelineRunFilterModel,
     ModelVersionPipelineRunRequestModel,
     ModelVersionPipelineRunResponseModel,
     ModelVersionRequestModel,
@@ -1226,40 +1223,6 @@ def create_model(
     )
 
 
-@router.get(
-    WORKSPACES + "/{workspace_name_or_id}" + MODELS,
-    response_model=Page[ModelResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_workspace_models(
-    workspace_name_or_id: Union[str, UUID],
-    model_filter_model: ModelFilterModel = Depends(
-        make_dependable(ModelFilterModel)
-    ),
-    _: AuthContext = Security(authorize),
-) -> Page[ModelResponseModel]:
-    """Get models according to query filters.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        model_filter_model: Filter model used for pagination, sorting,
-            filtering
-
-
-    Returns:
-        The models according to query filters.
-    """
-    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
-    model_filter_model.set_scope_workspace(workspace_id)
-
-    return verify_permissions_and_list_entities(
-        filter_model=model_filter_model,
-        resource_type=ResourceType.MODEL,
-        list_method=zen_store().list_models,
-    )
-
-
 @router.post(
     WORKSPACES
     + "/{workspace_name_or_id}"
@@ -1368,43 +1331,6 @@ def create_model_version_artifact_link(
     return mv
 
 
-@router.get(
-    WORKSPACES
-    + "/{workspace_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_id}"
-    + ARTIFACTS,
-    response_model=Page[ModelVersionArtifactResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_workspace_model_version_artifact_links(
-    workspace_name_or_id: Union[str, UUID],
-    model_version_id: UUID,
-    model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
-        make_dependable(ModelVersionArtifactFilterModel)
-    ),
-    _: AuthContext = Security(authorize),
-) -> Page[ModelVersionArtifactResponseModel]:
-    """Get model version to artifact links according to query filters.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        model_version_id: Name or ID of the model version.
-        model_version_artifact_link_filter_model: Filter model used for pagination, sorting,
-            filtering
-
-    Returns:
-        The model version to artifact links according to query filters.
-    """
-    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
-    model_version_artifact_link_filter_model.set_scope_workspace(workspace_id)
-    return zen_store().list_model_version_artifact_links(
-        model_version_id=model_version_id,
-        model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
-    )
-
-
 @router.post(
     WORKSPACES
     + "/{workspace_name_or_id}"
@@ -1467,42 +1393,3 @@ def create_model_version_pipeline_run_link(
         model_version_pipeline_run_link
     )
     return mv
-
-
-@router.get(
-    WORKSPACES
-    + "/{workspace_name_or_id}"
-    + MODEL_VERSIONS
-    + "/{model_version_id}"
-    + RUNS,
-    response_model=Page[ModelVersionPipelineRunResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_workspace_model_version_pipeline_run_links(
-    workspace_name_or_id: Union[str, UUID],
-    model_version_id: UUID,
-    model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
-        make_dependable(ModelVersionPipelineRunFilterModel)
-    ),
-    _: AuthContext = Security(authorize),
-) -> Page[ModelVersionPipelineRunResponseModel]:
-    """Get model version to pipeline links according to query filters.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        model_version_id: ID of the model version.
-        model_version_pipeline_run_link_filter_model: Filter model used for pagination, sorting,
-            filtering
-
-    Returns:
-        The model version to pipeline run links according to query filters.
-    """
-    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
-    model_version_pipeline_run_link_filter_model.set_scope_workspace(
-        workspace_id
-    )
-    return zen_store().list_model_version_pipeline_run_links(
-        model_version_id=model_version_id,
-        model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
-    )
