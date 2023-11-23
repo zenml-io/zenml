@@ -1970,23 +1970,15 @@ def test_count_stack_components():
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
     active_workspace = client.active_workspace
+    filter_model = ComponentFilter(scope_workspace=active_workspace.id)
+    count_before = store.list_stack_components(filter_model).total
 
-    count_before = store.list_stack_components(
-        ComponentFilter(scope_workspace=active_workspace.id)
-    ).total
-
-    assert (
-        store.count_stack_components(workspace_id=active_workspace.id)
-        == count_before
-    )
+    assert store.count_stack_components(filter_model) == count_before
 
     with ComponentContext(
         StackComponentType.ARTIFACT_STORE, config={}, flavor="s3"
     ):
-        assert (
-            store.count_stack_components(workspace_id=active_workspace.id)
-            == count_before + 1
-        )
+        assert store.count_stack_components(filter_model) == count_before + 1
 
 
 # .-------------------------.
@@ -2300,24 +2292,20 @@ def test_count_runs():
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
     active_workspace = client.active_workspace
-
-    num_runs = store.list_runs(
-        PipelineRunFilter(scope_workspace=active_workspace.id)
-    ).total
+    filter_model = PipelineRunFilter(scope_workspace=active_workspace.id)
+    num_runs = store.list_runs(filter_model).total
 
     # At baseline this should be the same
-    assert store.count_runs(workspace_id=active_workspace.id) == num_runs
+    assert store.count_runs(filter_model) == num_runs
 
     with PipelineRunContext(5):
         assert (
-            store.count_runs(workspace_id=active_workspace.id)
+            store.count_runs(filter_model)
             == store.list_runs(
                 PipelineRunFilter(scope_workspace=active_workspace.id)
             ).total
         )
-        assert (
-            store.count_runs(workspace_id=active_workspace.id) == num_runs + 5
-        )
+        assert store.count_runs(filter_model) == num_runs + 5
 
 
 def test_filter_runs_by_code_repo(mocker):

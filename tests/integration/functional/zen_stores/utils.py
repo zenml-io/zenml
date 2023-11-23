@@ -863,6 +863,7 @@ flavor_crud_test_config = CrudTestConfig(
         integration="",
         source="",
         config_schema="",
+        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
     filter_model=FlavorFilter,
