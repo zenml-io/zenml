@@ -21,15 +21,19 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import PermissionType
 from zenml.models import (
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-    UserRoleAssignmentRequestModel,
-)
-from zenml.models.user_role_assignment_models import (
-    UserRoleAssignmentResponseModel,
+    RoleRequest,
+    RoleResponse,
+    RoleResponseBody,
+    RoleResponseMetadata,
+    RoleUpdate,
+    TeamRoleAssignmentRequest,
+    TeamRoleAssignmentResponse,
+    TeamRoleAssignmentResponseBody,
+    TeamRoleAssignmentResponseMetadata,
+    UserRoleAssignmentRequest,
+    UserRoleAssignmentResponse,
+    UserRoleAssignmentResponseBody,
+    UserRoleAssignmentResponseMetadata,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -54,22 +58,22 @@ class RoleSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_request(cls, model: RoleRequestModel) -> "RoleSchema":
-        """Create a `RoleSchema` from a `RoleResponseModel`.
+    def from_request(cls, model: RoleRequest) -> "RoleSchema":
+        """Create a `RoleSchema` from a `RoleResponse`.
 
         Args:
-            model: The `RoleResponseModel` from which to create the schema.
+            model: The `RoleResponse` from which to create the schema.
 
         Returns:
             The created `RoleSchema`.
         """
         return cls(name=model.name)
 
-    def update(self, role_update: RoleUpdateModel) -> "RoleSchema":
-        """Update a `RoleSchema` from a `RoleUpdateModel`.
+    def update(self, role_update: RoleUpdate) -> "RoleSchema":
+        """Update a `RoleSchema` from a `RoleUpdate`.
 
         Args:
-            role_update: The `RoleUpdateModel` from which to update the schema.
+            role_update: The `RoleUpdate` from which to update the schema.
 
         Returns:
             The updated `RoleSchema`.
@@ -82,18 +86,31 @@ class RoleSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> RoleResponseModel:
+    def to_model(self, hydrate: bool = False) -> RoleResponse:
         """Convert a `RoleSchema` to a `RoleResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The converted `RoleResponseModel`.
         """
-        return RoleResponseModel(
+        body = RoleResponseBody(
+            permissions={PermissionType(p.name) for p in self.permissions},
+        )
+        metadata = None
+        if hydrate:
+            metadata = RoleResponseMetadata(
+                created=self.created,
+                updated=self.updated,
+            )
+
+        return RoleResponse(
             id=self.id,
             name=self.name,
-            created=self.created,
-            updated=self.updated,
-            permissions={PermissionType(p.name) for p in self.permissions},
+            body=body,
+            metadata=metadata,
         )
 
 
@@ -138,12 +155,12 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, role_assignment: UserRoleAssignmentRequestModel
+        cls, role_assignment: UserRoleAssignmentRequest
     ) -> "UserRoleAssignmentSchema":
-        """Create a `UserRoleAssignmentSchema` from a `RoleAssignmentRequestModel`.
+        """Create a `UserRoleAssignmentSchema` from a `RoleAssignmentRequest`.
 
         Args:
-            role_assignment: The `RoleAssignmentRequestModel` from which to
+            role_assignment: The `RoleAssignmentRequest` from which to
                 create the schema.
 
         Returns:
@@ -155,21 +172,32 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
             workspace_id=role_assignment.workspace,
         )
 
-    def to_model(self) -> UserRoleAssignmentResponseModel:
-        """Convert a `UserRoleAssignmentSchema` to a `RoleAssignmentModel`.
+    def to_model(self, hydrate: bool = False) -> UserRoleAssignmentResponse:
+        """Convert a `UserRoleAssignmentSchema` to a `UserRoleAssignmentResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The converted `RoleAssignmentModel`.
+            The converted `UserRoleAssignmentResponse`.
         """
-        return UserRoleAssignmentResponseModel(
+        body = UserRoleAssignmentResponseBody()
+        metadata = None
+        if hydrate:
+            metadata = UserRoleAssignmentResponseMetadata(
+                created=self.created,
+                updated=self.updated,
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
+                user=self.user.to_model() if self.user else None,
+                role=self.role.to_model(),
+            )
+        return UserRoleAssignmentResponse(
             id=self.id,
-            workspace=self.workspace.to_model() if self.workspace else None,
-            user=self.user.to_model(_block_recursion=True)
-            if self.user
-            else None,
-            role=self.role.to_model(),
-            created=self.created,
-            updated=self.updated,
+            body=body,
+            metadata=metadata,
         )
 
 
@@ -211,12 +239,12 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, role_assignment: TeamRoleAssignmentRequestModel
+        cls, role_assignment: TeamRoleAssignmentRequest
     ) -> "TeamRoleAssignmentSchema":
-        """Create a `TeamRoleAssignmentSchema` from a `RoleAssignmentRequestModel`.
+        """Create a `TeamRoleAssignmentSchema` from a `TeamRoleAssignmentRequest`.
 
         Args:
-            role_assignment: The `RoleAssignmentRequestModel` from which to
+            role_assignment: The `TeamRoleAssignmentRequest` from which to
                 create the schema.
 
         Returns:
@@ -228,19 +256,33 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
             workspace_id=role_assignment.workspace,
         )
 
-    def to_model(self) -> TeamRoleAssignmentResponseModel:
-        """Convert a `TeamRoleAssignmentSchema` to a `RoleAssignmentModel`.
+    def to_model(self, hydrate: bool = False) -> TeamRoleAssignmentResponse:
+        """Convert a `TeamRoleAssignmentSchema` to a `TeamRoleAssignmentResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The converted `RoleAssignmentModel`.
+            The converted `TeamRoleAssignmentResponse`.
         """
-        return TeamRoleAssignmentResponseModel(
-            id=self.id,
-            workspace=self.workspace.to_model() if self.workspace else None,
-            team=self.team.to_model(_block_recursion=True),
-            role=self.role.to_model(),
+        body = TeamRoleAssignmentResponseBody(
             created=self.created,
             updated=self.updated,
+        )
+        metadata = None
+        if hydrate:
+            metadata = TeamRoleAssignmentResponseMetadata(
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
+                team=self.team.to_model(),
+                role=self.role.to_model(),
+            )
+        return TeamRoleAssignmentResponse(
+            id=self.id,
+            body=body,
+            metadata=metadata,
         )
 
 

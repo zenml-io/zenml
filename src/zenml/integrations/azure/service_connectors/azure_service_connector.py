@@ -205,7 +205,7 @@ The Azure Service Connector is part of the Azure ZenML integration. You can
 either install the entire integration or use a pypi extra to install it
 independently of the integration:
 
-* `pip install zenml[connectors-azure]` installs only prerequisites for the
+* `pip install "zenml[connectors-azure]"` installs only prerequisites for the
 Azure Service Connector Type
 * `zenml integration install azure` installs the entire Azure ZenML integration
 

@@ -18,7 +18,7 @@ import pytest
 
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
-from zenml.models.page_model import Page
+from zenml.models import Page
 from zenml.orchestrators import input_utils
 
 
@@ -118,3 +118,51 @@ def test_input_resolution_with_missing_artifact(mocker, create_step_run):
 
     with pytest.raises(InputResolutionError):
         input_utils.resolve_step_inputs(step=step, run_id=uuid4())
+
+
+def test_input_resolution_fetches_all_run_steps(
+    mocker, sample_artifact_model, create_step_run
+):
+    """Tests that input resolution fetches all step runs of the pipeline run."""
+    step_run = create_step_run(
+        step_run_name="upstream_step",
+        output_artifacts={"output_name": sample_artifact_model},
+    )
+    second_step_run = create_step_run(
+        step_run_name="other_step",
+    )
+    return_values = [
+        Page(index=1, max_size=1, total_pages=2, total=2, items=[step_run]),
+        Page(
+            index=2,
+            max_size=1,
+            total_pages=2,
+            total=2,
+            items=[second_step_run],
+        ),
+    ]
+    mock_list_run_steps = mocker.patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
+        side_effect=return_values,
+    )
+    step = Step.parse_obj(
+        {
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": ["upstream_step"],
+                "inputs": {
+                    "input_name": {
+                        "step_name": "upstream_step",
+                        "output_name": "output_name",
+                    }
+                },
+            },
+            "config": {"name": "step_name", "enable_cache": True},
+        }
+    )
+
+    input_utils.resolve_step_inputs(step=step, run_id=uuid4())
+
+    # `resolve_step_inputs(...)` depaginates the run steps so we fetch all
+    # step runs for the pipeline run
+    assert mock_list_run_steps.call_count == 2

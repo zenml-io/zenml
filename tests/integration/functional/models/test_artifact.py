@@ -14,21 +14,175 @@
 """Integration tests for artifact models."""
 
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
+import pytest
+from typing_extensions import Annotated
 
 from tests.integration.functional.conftest import (
     constant_int_output_test_step,
     visualizable_step,
 )
+from zenml import step
+from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import ExecutionStatus
-from zenml.models.artifact_models import ArtifactResponseModel
-from zenml.models.run_metadata_models import RunMetadataResponseModel
-from zenml.models.visualization_models import VisualizationModel
+from zenml.exceptions import EntityExistsError
+from zenml.models import (
+    ArtifactResponse,
+    ArtifactVisualizationResponse,
+    RunMetadataResponse,
+)
 from zenml.pipelines.base_pipeline import BasePipeline
-from zenml.utils.artifact_utils import load_artifact_visualization
 
 if TYPE_CHECKING:
     from zenml.client import Client
+
+
+def test_default_artifact_name(clean_client: "Client", one_step_pipeline):
+    """Integration test for default artifact names."""
+    step_ = constant_int_output_test_step()
+    pipe: BasePipeline = one_step_pipeline(step_)
+    pipe.run()
+    pipeline_run = pipe.model.last_run
+    step_run = pipeline_run.steps["step_"]
+    artifact = step_run.output
+    assert artifact.name == f"{pipeline_run.pipeline.name}::step_::output"
+
+
+@step
+def custom_artifact_name_test_step() -> Annotated[int, "number_7"]:
+    return 7
+
+
+def test_custom_artifact_name(clean_client: "Client", one_step_pipeline):
+    """Integration test for custom artifact names."""
+    pipe: BasePipeline = one_step_pipeline(custom_artifact_name_test_step)
+    pipe.run()
+    pipeline_run = pipe.model.last_run
+    step_run = pipeline_run.steps["step_"]
+    artifact = step_run.output
+    assert artifact.name == "number_7"
+
+
+@step
+def multi_output_test_step() -> Tuple[Annotated[int, "number_7"], int]:
+    return 7, 42
+
+
+def test_multi_output_artifact_names(
+    clean_client: "Client", one_step_pipeline
+):
+    """Integration test for multi-output artifact names."""
+    pipe: BasePipeline = one_step_pipeline(multi_output_test_step)
+    pipe.run()
+    pipeline_run = pipe.model.last_run
+    step_run = pipeline_run.steps["step_"]
+    artifact_1 = step_run.outputs["number_7"]
+    artifact_2 = step_run.outputs["output_1"]
+    assert artifact_1.name == "number_7"
+    assert artifact_2.name == f"{pipeline_run.pipeline.name}::step_::output_1"
+
+
+@step
+def auto_versioned_step() -> Annotated[int, ArtifactConfig(name="aria")]:
+    return 1
+
+
+@step
+def manual_string_version_step() -> (
+    Annotated[int, ArtifactConfig(name="aria", version="cat")]
+):
+    return 1
+
+
+@step
+def manual_int_version_step() -> (
+    Annotated[int, ArtifactConfig(name="aria", version=10)]
+):
+    return 1
+
+
+def test_artifact_versioning(clean_client: "Client", one_step_pipeline):
+    """Test artifact versioning."""
+    # First auto-incremented artifact version starts at 1
+    pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "1"
+
+    # Manual version should be applied
+    pipe: BasePipeline = one_step_pipeline(manual_string_version_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "cat"
+
+    # Next auto-incremented artifact version is 2
+    pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "2"
+
+    # Manual int version should be applied too
+    pipe: BasePipeline = one_step_pipeline(manual_int_version_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "10"
+
+    # Next auto-incremented artifact version is 11
+    pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "11"
+
+
+@step
+def duplicate_int_version_step() -> (
+    Annotated[int, ArtifactConfig(name="aria", version="1")]
+):
+    return 1
+
+
+def test_artifact_versioning_duplication(
+    clean_client: "Client", one_step_pipeline
+):
+    """Test that duplicated artifact versions are not allowed."""
+    pipe: BasePipeline = one_step_pipeline(auto_versioned_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "1"
+
+    pipe: BasePipeline = one_step_pipeline(manual_string_version_step)
+    pipe.run(enable_cache=False)
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert artifact.version == "cat"
+
+    # Test 1: rerunning pipeline with same manual version fails
+    pipe: BasePipeline = one_step_pipeline(manual_string_version_step)
+    with pytest.raises(EntityExistsError):
+        pipe.run(enable_cache=False)
+
+    # Test 2: running pipeline with a manual version corresponding to an
+    # existing auto-incremented version fails
+    pipe: BasePipeline = one_step_pipeline(duplicate_int_version_step)
+    with pytest.raises(EntityExistsError):
+        pipe.run(enable_cache=False)
+
+
+@step
+def tagged_artifact_step() -> (
+    Annotated[int, ArtifactConfig(name="aria", tags=["cat", "grumpy"])]
+):
+    return 7
+
+
+def test_artifact_tagging(clean_client: "Client", one_step_pipeline):
+    """Test artifact tagging."""
+
+    pipe: BasePipeline = one_step_pipeline(tagged_artifact_step)
+    pipe.run()
+    artifact = pipe.model.last_run.steps["step_"].output
+    assert [t.name for t in artifact.tags] == ["cat", "grumpy"]
 
 
 def test_artifact_step_run_linkage(clean_client: "Client", one_step_pipeline):
@@ -151,23 +305,23 @@ def test_disabling_artifact_metadata(clean_client, one_step_pipeline):
     _assert_metadata_enabled(clean_client)
 
 
-def _get_output_of_last_run(clean_client: "Client") -> ArtifactResponseModel:
+def _get_output_of_last_run(clean_client: "Client") -> ArtifactResponse:
     """Get the output of the last run."""
     return list(clean_client.list_pipeline_runs()[0].steps.values())[0].output
 
 
 def _get_visualizations_of_last_run(
     clean_client: "Client",
-) -> Optional[List[VisualizationModel]]:
+) -> Optional[List[ArtifactVisualizationResponse]]:
     """Get the artifact visualizations of the last run."""
     return _get_output_of_last_run(clean_client).visualizations
 
 
 def _get_metadata_of_last_run(
     clean_client: "Client",
-) -> Dict[str, "RunMetadataResponseModel"]:
+) -> Dict[str, "RunMetadataResponse"]:
     """Get the artifact metadata of the last run."""
-    return _get_output_of_last_run(clean_client).metadata
+    return _get_output_of_last_run(clean_client).run_metadata
 
 
 def _assert_visualization_enabled(clean_client: "Client"):

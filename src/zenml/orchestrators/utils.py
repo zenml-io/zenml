@@ -34,9 +34,7 @@ from zenml.logger import get_logger
 from zenml.utils import uuid_utils
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.models import PipelineDeploymentResponse
     from zenml.orchestrators import BaseOrchestrator
 
 logger = get_logger(__name__)
@@ -54,8 +52,7 @@ def get_orchestrator_run_name(pipeline_name: str) -> str:
     Returns:
         The orchestrator run name.
     """
-    user_name = Client().active_user.name
-    return f"{pipeline_name}_{user_name}_{random.Random().getrandbits(32):08x}"
+    return f"{pipeline_name}_{random.Random().getrandbits(128):32x}"
 
 
 def get_run_id_for_orchestrator_run_id(
@@ -99,7 +96,7 @@ def is_setting_enabled(
 
 
 def get_config_environment_vars(
-    deployment: Optional["PipelineDeploymentResponseModel"] = None,
+    deployment: Optional["PipelineDeploymentResponse"] = None,
 ) -> Dict[str, str]:
     """Gets environment variables to set for mirroring the active config.
 

@@ -30,6 +30,20 @@ class ArtifactType(StrEnum):
     BASE = "BaseArtifact"
 
 
+class StepRunInputArtifactType(StrEnum):
+    """All possible types of a step run input artifact."""
+
+    DEFAULT = "default"  # input argument that is the output of a previous step
+    MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
+
+
+class StepRunOutputArtifactType(StrEnum):
+    """All possible types of a step run output artifact."""
+
+    DEFAULT = "default"  # output of the current step
+    MANUAL = "manual"  # manually saved via `zenml.save_artifact()`
+
+
 class VisualizationType(StrEnum):
     """All currently available visualization types."""
 
@@ -210,6 +224,7 @@ class OAuthGrantTypes(StrEnum):
     OAUTH_PASSWORD = "password"
     OAUTH_DEVICE_CODE = "urn:ietf:params:oauth:grant-type:device_code"
     ZENML_EXTERNAL = "zenml-external"
+    ZENML_API_KEY = "zenml-api-key"
 
 
 class OAuthDeviceStatus(StrEnum):
@@ -291,3 +306,35 @@ class ModelStages(StrEnum):
     STAGING = "staging"
     PRODUCTION = "production"
     ARCHIVED = "archived"
+    LATEST = "latest"
+
+
+class ColorVariants(StrEnum):
+    """All possible color variants for frontend."""
+
+    GREY = "grey"
+    PURPLE = "purple"
+    RED = "red"
+    GREEN = "green"
+    YELLOW = "yellow"
+    ORANGE = "orange"
+    LIME = "lime"
+    TEAL = "teal"
+    TURQUOISE = "turquoise"
+    MAGENTA = "magenta"
+    BLUE = "blue"
+
+
+class TaggableResourceTypes(StrEnum):
+    """All possible resource types for tagging."""
+
+    ARTIFACT = "artifact"
+    MODEL = "model"
+
+
+class ResponseUpdateStrategy(StrEnum):
+    """All available strategies to handle updated properties in the response."""
+
+    ALLOW = "allow"
+    IGNORE = "ignore"
+    DENY = "deny"

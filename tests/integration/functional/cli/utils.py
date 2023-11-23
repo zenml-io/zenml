@@ -23,11 +23,12 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.enums import PermissionType
 from zenml.models import (
-    RoleResponseModel,
-    TeamResponseModel,
-    UserResponseModel,
-    WorkspaceResponseModel,
+    RoleResponse,
+    TeamResponse,
+    UserResponse,
+    WorkspaceResponse,
 )
+from zenml.models.tag_models import TagFilterModel, TagRequestModel
 from zenml.utils.string_utils import random_str
 
 SAMPLE_CUSTOM_ARGUMENTS = [
@@ -55,7 +56,7 @@ def create_sample_user(
     prefix: Optional[str] = None,
     password: Optional[str] = None,
     initial_role: Optional[str] = None,
-) -> UserResponseModel:
+) -> UserResponse:
     """Function to create a sample user."""
     return Client().create_user(
         name=sample_name(prefix),
@@ -68,7 +69,7 @@ def create_sample_user(
 def create_sample_user_and_login(
     prefix: Optional[str] = None,
     initial_role: Optional[str] = None,
-) -> Generator[Tuple[UserResponseModel, Client], None, None]:
+) -> Generator[Tuple[UserResponse, Client], None, None]:
     """Context manager to create a sample user and login with it."""
     password = random_str(16)
     user = create_sample_user(prefix, password, initial_role)
@@ -96,7 +97,7 @@ def sample_team_name() -> str:
     return f"felines_{random_str(4)}"
 
 
-def create_sample_team() -> TeamResponseModel:
+def create_sample_team() -> TeamResponse:
     """Fixture to get a clean global configuration and repository for an individual test."""
     return Client().create_team(name=sample_team_name())
 
@@ -120,7 +121,7 @@ def sample_role_name() -> str:
     return f"cat_feeder_{random_str(4)}"
 
 
-def create_sample_role() -> RoleResponseModel:
+def create_sample_role() -> RoleResponse:
     """Fixture to get a global configuration with a  role."""
     return Client().create_role(
         name=sample_role_name(), permissions_list=[PermissionType.READ]
@@ -132,7 +133,7 @@ def sample_workspace_name() -> str:
     return f"cat_prj_{random_str(4)}"
 
 
-def create_sample_workspace() -> WorkspaceResponseModel:
+def create_sample_workspace() -> WorkspaceResponse:
     """Fixture to get a global configuration with a  role."""
     return Client().create_workspace(
         name=sample_workspace_name(),
@@ -189,3 +190,25 @@ def test_temporarily_setting_the_active_stack(clean_workspace):
         assert clean_workspace.active_stack_model == new_stack
 
     assert clean_workspace.active_stack_model == initial_stack
+
+
+@contextmanager
+def tags_killer(tag_create_count: int = 5):
+    tags = []
+    for _ in range(tag_create_count):
+        tags.append(
+            Client().create_tag(TagRequestModel(name=random_resource_name()))
+        )
+    yield tags
+    for tag in Client().list_tags(TagFilterModel(size=999)).items:
+        Client().delete_tag(tag.id)
+
+
+def random_resource_name(length: int = 32) -> str:
+    import random
+    import string
+
+    return "".join(
+        random.choice(string.ascii_lowercase + string.digits)
+        for _ in range(length)
+    )

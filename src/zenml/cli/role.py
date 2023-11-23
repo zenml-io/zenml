@@ -24,7 +24,7 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, PermissionType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.models import RoleFilterModel, UserRoleAssignmentFilterModel
+from zenml.models import RoleFilter, UserRoleAssignmentFilter
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -33,7 +33,7 @@ def role() -> None:
 
 
 @role.command("list")
-@list_options(RoleFilterModel)
+@list_options(RoleFilter)
 def list_roles(**kwargs: Any) -> None:
     """List all roles that fulfill the filter requirements.
 
@@ -279,7 +279,7 @@ def assignment() -> None:
 
 
 @assignment.command("list")
-@list_options(UserRoleAssignmentFilterModel)
+@list_options(UserRoleAssignmentFilter)
 def list_role_assignments(**kwargs: Any) -> None:
     """List all user role assignments that fulfill the filter requirements.
 

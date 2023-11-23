@@ -20,8 +20,7 @@ from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
-from zenml.models.pipeline_run_models import PipelineRunResponseModel
-from zenml.models.step_run_models import StepRunResponseModel
+from zenml.models import PipelineRunResponse, StepRunResponse
 from zenml.orchestrators.step_launcher import StepRunner
 from zenml.stack import Stack
 from zenml.steps import step
@@ -40,15 +39,15 @@ def failing_step() -> None:
 def test_running_a_successful_step(
     mocker,
     local_stack,
-    sample_pipeline_run: PipelineRunResponseModel,
-    sample_step_run: StepRunResponseModel,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
 ):
     """Tests that running a successful step runs the step entrypoint
     and correctly prepares/cleans up."""
     mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
     mock_cleanup_step_run = mocker.patch.object(Stack, "cleanup_step_run")
     mocker.patch(
-        "zenml.utils.artifact_utils.upload_artifact",
+        "zenml.artifacts.utils.save_artifact",
         return_value=uuid4(),
     )
     mock_publish_successful_step_run = mocker.patch(
@@ -94,8 +93,8 @@ def test_running_a_successful_step(
 def test_running_a_failing_step(
     mocker,
     local_stack,
-    sample_pipeline_run: PipelineRunResponseModel,
-    sample_step_run: StepRunResponseModel,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
 ):
     """Tests that running a failing step runs the step entrypoint
     and correctly prepares/cleans up."""
@@ -103,7 +102,7 @@ def test_running_a_failing_step(
     mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
     mock_cleanup_step_run = mocker.patch.object(Stack, "cleanup_step_run")
     mocker.patch(
-        "zenml.utils.artifact_utils.upload_artifact",
+        "zenml.artifacts.utils.save_artifact",
         return_value=uuid4(),
     )
     mock_publish_successful_step_run = mocker.patch(
@@ -170,4 +169,4 @@ def test_loading_unmaterialized_input_artifact(
     artifact = runner._load_input_artifact(
         artifact=artifact_response, data_type=UnmaterializedArtifact
     )
-    assert artifact == artifact_response
+    assert artifact.dict() == artifact_response.dict()

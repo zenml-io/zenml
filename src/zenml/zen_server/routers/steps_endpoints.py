@@ -18,6 +18,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security
 
+from zenml.artifacts.utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.constants import (
     API,
     LOGS,
@@ -28,15 +32,11 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
-    StepRunFilterModel,
-    StepRunRequestModel,
-    StepRunResponseModel,
-    StepRunUpdateModel,
-)
-from zenml.models.page_model import Page
-from zenml.utils.artifact_utils import (
-    _load_artifact_store,
-    _load_file_from_artifact_store,
+    Page,
+    StepRunFilter,
+    StepRunRequest,
+    StepRunResponse,
+    StepRunUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -55,40 +55,43 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[StepRunResponseModel],
+    response_model=Page[StepRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_run_steps(
-    step_run_filter_model: StepRunFilterModel = Depends(
-        make_dependable(StepRunFilterModel)
+    step_run_filter_model: StepRunFilter = Depends(
+        make_dependable(StepRunFilter)
     ),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[StepRunResponseModel]:
+) -> Page[StepRunResponse]:
     """Get run steps according to query filters.
 
     Args:
         step_run_filter_model: Filter model used for pagination, sorting,
-                                   filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The run steps according to query filters.
     """
     return zen_store().list_run_steps(
-        step_run_filter_model=step_run_filter_model
+        step_run_filter_model=step_run_filter_model, hydrate=hydrate
     )
 
 
 @router.post(
     "",
-    response_model=StepRunResponseModel,
+    response_model=StepRunResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_run_step(
-    step: StepRunRequestModel,
+    step: StepRunRequest,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> StepRunResponseModel:
+) -> StepRunResponse:
     """Create a run step.
 
     Args:
@@ -102,36 +105,39 @@ def create_run_step(
 
 @router.get(
     "/{step_id}",
-    response_model=StepRunResponseModel,
+    response_model=StepRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_step(
     step_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> StepRunResponseModel:
+) -> StepRunResponse:
     """Get one specific step.
 
     Args:
         step_id: ID of the step to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The step.
     """
-    return zen_store().get_run_step(step_id)
+    return zen_store().get_run_step(step_id, hydrate=hydrate)
 
 
 @router.put(
     "/{step_id}",
-    response_model=StepRunResponseModel,
+    response_model=StepRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_step(
     step_id: UUID,
-    step_model: StepRunUpdateModel,
+    step_model: StepRunUpdate,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> StepRunResponseModel:
+) -> StepRunResponse:
     """Updates a step.
 
     Args:

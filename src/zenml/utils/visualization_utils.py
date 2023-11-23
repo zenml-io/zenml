@@ -14,18 +14,20 @@
 """Utility functions for dashboard visualizations."""
 
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from IPython.core.display import HTML, Image, Markdown, display
 
+from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import VisualizationType
 from zenml.environment import Environment
-from zenml.models.artifact_models import ArtifactResponseModel
-from zenml.utils.artifact_utils import load_artifact_visualization
+
+if TYPE_CHECKING:
+    from zenml.models import ArtifactResponse
 
 
 def visualize_artifact(
-    artifact: ArtifactResponseModel, title: Optional[str] = None
+    artifact: "ArtifactResponse", title: Optional[str] = None
 ) -> None:
     """Visualize an artifact in notebook environments.
 

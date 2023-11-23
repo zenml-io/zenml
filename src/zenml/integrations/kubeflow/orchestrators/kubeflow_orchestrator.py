@@ -66,9 +66,7 @@ from zenml.stack import StackValidator
 from zenml.utils import io_utils, settings_utils
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.models import PipelineDeploymentResponse
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -467,7 +465,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
@@ -629,7 +627,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
     def _upload_and_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         pipeline_file_path: str,
         run_name: str,
     ) -> None:
@@ -725,7 +723,8 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 except ApiException:
                     raise RuntimeError(
                         f"Failed to create {run_name} on kubeflow! "
-                        "Please check stack component settings and configuration!"
+                        "Please check stack component settings and "
+                        "configuration!"
                     )
 
                 logger.info(
