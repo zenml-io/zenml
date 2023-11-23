@@ -20,7 +20,7 @@ from typing import Optional
 
 from typing_extensions import Annotated
 
-from zenml import get_step_context, step
+from zenml import ArtifactConfig, get_step_context, step
 from zenml.client import Client
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
@@ -29,7 +29,6 @@ from zenml.integrations.mlflow.steps.mlflow_deployer import (
     mlflow_model_registry_deployer_step,
 )
 from zenml.logger import get_logger
-from zenml.model import EndpointArtifactConfig
 
 logger = get_logger(__name__)
 
@@ -38,8 +37,7 @@ logger = get_logger(__name__)
 def deployment_deploy() -> (
     Annotated[
         Optional[MLFlowDeploymentService],
-        "mlflow_deployment",
-        EndpointArtifactConfig(),
+        ArtifactConfig(name="mlflow_deployment", is_endpoint_artifact=True),
     ]
 ):
     """Predictions step.

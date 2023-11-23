@@ -248,6 +248,18 @@ def _add_extra_config_to_components(
     return components
 
 
+def _validate_extra_config(config: Tuple[str]) -> bool:
+    """Validates that extra config values are correct.
+
+    Args:
+        config: A tuple of extra config values.
+
+    Returns:
+        A boolean indicating whether the extra config values are correct.
+    """
+    return all(item.count("=") <= 1 for item in config)
+
+
 def _construct_components(
     params: Dict[str, Any], zenml_component_deploy: bool = False
 ) -> List["Component"]:
@@ -261,6 +273,9 @@ def _construct_components(
 
     Returns:
         A list of mlstacks `Component` objects.
+
+    Raises:
+        ValueError: If one of the extra_config values is invalid.
     """
     from zenml.cli.utils import verify_mlstacks_prerequisites_installation
 
@@ -270,6 +285,12 @@ def _construct_components(
     provider = params["provider"]
     if not params.get("extra_config"):
         params["extra_config"] = ()
+    if not _validate_extra_config(params["extra_config"]):
+        raise ValueError(
+            "One of the `extra_config` values is invalid. You passed in "
+            f"{params['extra_config']}) in which one of the values includes "
+            "multiple '=' signs. Please fix and try again."
+        )
     extra_config = (
         dict(config.split("=") for config in params["extra_config"])
         if params.get("extra_config")
@@ -505,7 +526,9 @@ def import_new_mlstacks_stack(
     data, stack_spec_file = _setup_import(
         provider, stack_name, stack_spec_dir, user_stack_spec_file
     )
-    component_ids = _import_components(data, stack_spec_dir)
+    component_ids = _import_components(
+        data=data, stack_spec_dir=stack_spec_dir
+    )
 
     imported_stack = Client().create_stack(
         name=stack_name,
