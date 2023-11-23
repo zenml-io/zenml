@@ -112,7 +112,7 @@ def upgrade() -> None:
         batch_op.drop_column("name")
     with op.batch_alter_table("model_versions_runs", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_model_versions_runs_pipeline_run_id_pipeline_run",
+            "fk_model_versions_runs_run_id_pipeline_run",
             type_="foreignkey",
         )
         batch_op.alter_column(
