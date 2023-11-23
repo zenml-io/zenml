@@ -46,13 +46,15 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
-    from sqlmodel.sql.expression import Select, SelectOfScalar
 
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 logger = get_logger(__name__)
+
+
+AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 
 class Filter(BaseModel, ABC):
@@ -402,24 +404,22 @@ class BaseFilter(BaseModel):
         """
         self._rbac_configuration = (authenticated_user_id, column_allowed_ids)
 
-    def apply_rbac_filter(
+    def generate_rbac_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
-        """Applies the RBAC filter to a query.
+    ) -> Optional["BooleanClauseList[Any]"]:
+        """Generates an optional RBAC filter.
 
         Args:
-            query: The query to which to apply the filter.
             table: The query table.
 
         Returns:
-            The query with RBAC filter applied.
+            The RBAC filter.
         """
         from sqlmodel import or_
 
         if not self._rbac_configuration:
-            return query
+            return None
 
         expressions = []
 
@@ -442,9 +442,9 @@ class BaseFilter(BaseModel):
             )
 
         if expressions:
-            return query.where(or_(*expressions))
+            return or_(*expressions)
         else:
-            return query
+            return None
 
     @classmethod
     def _generate_filter_list(cls, values: Dict[str, Any]) -> List[Filter]:
@@ -798,9 +798,9 @@ class BaseFilter(BaseModel):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Applies the filter to a query.
 
         Args:
@@ -810,7 +810,10 @@ class BaseFilter(BaseModel):
         Returns:
             The query with filter applied.
         """
-        query = self.apply_rbac_filter(query, table=table)
+        rbac_filter = self.generate_rbac_filter(table=table)
+
+        if rbac_filter is not None:
+            query = query.where(rbac_filter)
 
         filters = self.generate_filter(table=table)
 

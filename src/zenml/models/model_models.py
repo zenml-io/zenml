@@ -40,13 +40,12 @@ from zenml.models.base_models import (
 )
 from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.tag_models import TagResponseModel
+from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
-    from sqlmodel.sql.expression import Select, SelectOfScalar
-
     from zenml.model.model_version import ModelVersion
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -97,9 +96,9 @@ class ModelScopedFilterModel(WorkspaceScopedFilter):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Applies the filter to a query.
 
         Args:

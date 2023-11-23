@@ -1025,7 +1025,7 @@ def create_code_repository(
 @handle_exceptions
 def get_workspace_statistics(
     workspace_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> Dict[str, int]:
     """Gets statistics of a workspace.
 
@@ -1039,13 +1039,40 @@ def get_workspace_statistics(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    return {
-        "stacks": zen_store().count_stacks(workspace_id=workspace.id),
-        "components": zen_store().count_stack_components(
-            workspace_id=workspace.id
+    user_id = auth_context.user.id
+    component_filter = ComponentFilter(workspace_id=workspace.id)
+    component_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(
+            resource_type=ResourceType.STACK_COMPONENT
         ),
-        "pipelines": zen_store().count_pipelines(workspace_id=workspace.id),
-        "runs": zen_store().count_runs(workspace_id=workspace.id),
+    )
+
+    stack_filter = StackFilter(workspace_id=workspace.id)
+    stack_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.STACK),
+    )
+
+    run_filter = PipelineRunFilter(workspace_id=workspace.id)
+    run_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE_RUN),
+    )
+
+    pipeline_filter = PipelineFilter(workspace_id=workspace.id)
+    pipeline_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE),
+    )
+
+    return {
+        "stacks": zen_store().count_stacks(filter_model=stack_filter),
+        "components": zen_store().count_stack_components(
+            filter_model=component_filter
+        ),
+        "pipelines": zen_store().count_pipelines(filter_model=pipeline_filter),
+        "runs": zen_store().count_runs(filter_model=run_filter),
     }
 
 

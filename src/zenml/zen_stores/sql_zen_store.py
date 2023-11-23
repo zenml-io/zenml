@@ -2032,17 +2032,19 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-    def count_stack_components(self, workspace_id: Optional[UUID]) -> int:
-        """Count all components, optionally within a workspace scope.
+    def count_stack_components(
+        self, filter_model: Optional[ComponentFilter] = None
+    ) -> int:
+        """Count all components.
 
         Args:
-            workspace_id: The workspace to use for counting components
+            filter_model: The filter model to use for counting components.
 
         Returns:
-            The number of components in the workspace.
+            The number of components.
         """
         return self._count_entity(
-            schema=StackComponentSchema, workspace_id=workspace_id
+            schema=StackComponentSchema, filter_model=filter_model
         )
 
     @staticmethod
@@ -2074,7 +2076,7 @@ class SqlZenStore(BaseZenStore):
         ).first()
         if existing_domain_component is not None:
             raise StackComponentExistsError(
-                f"Unable to register '{component_type.value}' component "
+                f"Unable to register '{component_type}' component "
                 f"with name '{name}': Found an existing "
                 f"component with the same name and type in the same "
                 f" workspace '{existing_domain_component.workspace.name}'."
@@ -2661,17 +2663,17 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
             )
 
-    def count_pipelines(self, workspace_id: Optional[UUID]) -> int:
-        """Count all pipelines, optionally within a workspace scope.
+    def count_pipelines(self, filter_model: Optional[PipelineFilter]) -> int:
+        """Count all pipelines.
 
         Args:
-            workspace_id: The workspace to use for counting pipelines
+            filter_model: The filter model to use for counting pipelines.
 
         Returns:
-            The number of pipelines in the workspace.
+            The number of pipelines.
         """
         return self._count_entity(
-            schema=PipelineSchema, workspace_id=workspace_id
+            schema=PipelineSchema, filter_model=filter_model
         )
 
     def update_pipeline(
@@ -3128,17 +3130,17 @@ class SqlZenStore(BaseZenStore):
             except KeyError:
                 return self.get_run(pipeline_run.name), False
 
-    def count_runs(self, workspace_id: Optional[UUID]) -> int:
-        """Count all pipeline runs, optionally within a workspace scope.
+    def count_runs(self, filter_model: Optional[PipelineRunFilter]) -> int:
+        """Count all pipeline runs.
 
         Args:
-            workspace_id: The workspace to use for counting pipeline runs
+            filter model: The filter model to filter the runs.
 
         Returns:
-            The number of pipeline runs in the workspace.
+            The number of pipeline runs.
         """
         return self._count_entity(
-            schema=PipelineRunSchema, workspace_id=workspace_id
+            schema=PipelineRunSchema, filter_model=filter_model
         )
 
     # ----------------------------- Run Metadata -----------------------------
@@ -4560,17 +4562,17 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-    def count_stacks(self, workspace_id: Optional[UUID]) -> int:
-        """Count all stacks, optionally within a workspace scope.
+    def count_stacks(self, filter_model: Optional[StackFilter]) -> int:
+        """Count all stacks.
 
         Args:
-            workspace_id: The workspace to use for counting stacks
+            filter model: The filter model to filter the stacks.
 
         Returns:
-            The number of stacks in the workspace.
+            The number of stacks.
         """
         return self._count_entity(
-            schema=StackSchema, workspace_id=workspace_id
+            schema=StackSchema, filter_model=filter_model
         )
 
     def _fail_if_stack_with_name_exists(
@@ -5627,23 +5629,26 @@ class SqlZenStore(BaseZenStore):
     # =======================
 
     def _count_entity(
-        self, schema: Type[BaseSchema], workspace_id: Optional[UUID]
+        self,
+        schema: Type[BaseSchema],
+        filter_model: Optional[BaseFilter] = None,
     ) -> int:
-        """Return count of a given entity, optionally scoped to workspace.
+        """Return count of a given entity.
 
         Args:
             schema: Schema of the Entity
-            workspace_id: (Optional) ID of the workspace scope
-
+            filter model: The filter model to filter the entity table.
         Returns:
             Count of the entity as integer.
         """
         with Session(self.engine) as session:
-            query = session.query(func.count(schema.id))
-            if workspace_id and hasattr(schema, "workspace_id"):
-                query = query.filter(schema.workspace_id == workspace_id)
+            query = select([func.count(schema.id)])
 
-            entity_count = query.scalar()
+            if filter_model:
+                query = filter_model.apply_filter(query=query, table=schema)
+
+            entity_count = session.scalar(query)
+
         return int(entity_count)
 
     @staticmethod

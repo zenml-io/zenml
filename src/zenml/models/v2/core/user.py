@@ -35,12 +35,11 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
-    from sqlmodel.sql.expression import Select, SelectOfScalar
 
     from zenml.models.v2.base.filter import AnySchema
 
@@ -405,9 +404,9 @@ class UserFilter(BaseFilter):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Override to filter out service accounts from the query.
 
         Args:
