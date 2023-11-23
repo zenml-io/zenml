@@ -222,6 +222,8 @@ SERVICE_CONNECTOR_RESOURCES = "/resources"
 SERVICE_CONNECTOR_CLIENT = "/client"
 MODELS = "/models"
 MODEL_VERSIONS = "/model_versions"
+MODEL_VERSION_ARTIFACTS = "/model_version_artifacts"
+MODEL_VERSION_PIPELINE_RUNS = "/model_version_pipeline_runs"
 DEVICES = "/devices"
 DEVICE_AUTHORIZATION = "/device_authorization"
 DEVICE_VERIFY = "/verify"
@@ -301,5 +303,4 @@ STR_FIELD_MAX_LENGTH = 255
 MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
 
 # Model Control Plane constants
-RUNNING_MODEL_VERSION = "running"
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"

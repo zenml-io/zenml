@@ -23,7 +23,6 @@ from tests.integration.functional.cli.conftest import NAME, PREFIX
 from tests.integration.functional.utils import model_killer
 from zenml.cli.cli import cli
 from zenml.client import Client
-from zenml.models import ModelRequestModel, ModelVersionRequestModel
 
 
 def test_model_list(clean_workspace_with_models):
@@ -258,19 +257,11 @@ def test_model_version_delete_found(clean_workspace_with_models):
         model_name = PREFIX + str(uuid4())
         model_version_name = PREFIX + str(uuid4())
         model = Client().create_model(
-            ModelRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                name=model_name,
-            )
+            name=model_name,
         )
         Client().create_model_version(
-            ModelVersionRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                name=model_version_name,
-                model=model.id,
-            )
+            name=model_version_name,
+            model_name_or_id=model.id,
         )
         delete_command = (
             cli.commands["model"].commands["version"].commands["delete"]
@@ -289,11 +280,7 @@ def test_model_version_delete_not_found(clean_workspace_with_models):
         model_name = PREFIX + str(uuid4())
         model_version_name = PREFIX + str(uuid4())
         Client().create_model(
-            ModelRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                name=model_name,
-            )
+            name=model_name,
         )
         delete_command = (
             cli.commands["model"].commands["version"].commands["delete"]
@@ -307,18 +294,16 @@ def test_model_version_delete_not_found(clean_workspace_with_models):
 
 @pytest.mark.parametrize(
     "command",
-    ("artifacts", "deployments", "model_objects", "runs"),
+    ("data_artifacts", "endpoint_artifacts", "model_artifacts", "runs"),
 )
 def test_model_version_links_list(command: str, clean_workspace_with_models):
     """Test that zenml model version artifacts list fails."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
-        list_command = (
-            cli.commands["model"].commands["version"].commands[command]
-        )
+        list_command = cli.commands["model"].commands[command]
         result = runner.invoke(
             list_command,
-            args=[NAME, "1"],
+            args=[NAME],
         )
         assert result.exit_code == 0, result.stderr
 

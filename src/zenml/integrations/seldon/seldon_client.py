@@ -320,6 +320,7 @@ class SeldonDeployment(BaseModel):
         annotations: Optional[Dict[str, str]] = None,
         is_custom_deployment: Optional[bool] = False,
         spec: Optional[Dict[Any, Any]] = None,
+        serviceAccountName: Optional[str] = None,
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
 
@@ -339,10 +340,12 @@ class SeldonDeployment(BaseModel):
                 Deployment.
             spec: A Kubernetes pod spec to use for the Seldon Deployment.
             is_custom_deployment: Whether the Seldon Deployment is a custom or a built-in one.
+            serviceAccountName: The name of the service account to associate with the predictive unit container.
 
         Returns:
             A minimal SeldonDeployment object built from the provided
             parameters.
+
         """
         if not name:
             name = f"zenml-{time.time()}"
@@ -360,6 +363,7 @@ class SeldonDeployment(BaseModel):
                         name="classifier",
                         type=SeldonDeploymentPredictiveUnitType.MODEL,
                         parameters=parameters,
+                        serviceAccountName=serviceAccountName,
                     ),
                     engineResources=engineResources,
                     componentSpecs=[
@@ -381,6 +385,7 @@ class SeldonDeployment(BaseModel):
                         implementation=implementation or "",
                         envSecretRefName=secret_name,
                         parameters=parameters,
+                        serviceAccountName=serviceAccountName,
                     ),
                     engineResources=engineResources,
                 )

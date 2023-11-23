@@ -36,6 +36,7 @@ from zenml.zen_server.routers import (
     code_repositories_endpoints,
     devices_endpoints,
     flavors_endpoints,
+    model_versions_endpoints,
     models_endpoints,
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
@@ -232,6 +233,9 @@ app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
 app.include_router(models_endpoints.router)
+app.include_router(model_versions_endpoints.router)
+app.include_router(model_versions_endpoints.model_version_artifacts_router)
+app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
 app.include_router(tags_endpoints.router)
 
 

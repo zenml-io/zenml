@@ -21,7 +21,7 @@ from sklearn.pipeline import Pipeline
 from typing_extensions import Annotated
 
 from zenml import step
-from zenml.model import ArtifactConfig
+from zenml.model import DataArtifactConfig
 
 
 @step
@@ -32,7 +32,7 @@ def inference_data_preprocessor(
 ) -> Annotated[
     pd.DataFrame,
     "dataset_inf",
-    ArtifactConfig(overwrite=False, artifact_name="inference_dataset"),
+    DataArtifactConfig(overwrite=False, artifact_name="inference_dataset"),
 ]:
     """Data preprocessor step.
 
