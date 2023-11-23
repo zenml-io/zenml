@@ -4646,6 +4646,7 @@ class Client(metaclass=ClientMetaClass):
         model_id: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[UUID, str]] = None,
         artifact_id: Optional[Union[UUID, str]] = None,
+        artifact_name: Optional[str] = None,
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
         only_endpoint_artifacts: Optional[bool] = None,
@@ -4664,6 +4665,7 @@ class Client(metaclass=ClientMetaClass):
             model_id: Use the model id for filtering
             model_version_id: Use the model version id for filtering
             artifact_id: Use the artifact id for filtering
+            artifact_name: Use the artifact name for filtering
             only_data_artifacts: Use to filter by data artifacts
             only_model_artifacts: Use to filter by model artifacts
             only_endpoint_artifacts: Use to filter by endpoint artifacts
@@ -4684,6 +4686,7 @@ class Client(metaclass=ClientMetaClass):
                 model_id=model_id,
                 model_version_id=model_version_id,
                 artifact_id=artifact_id,
+                artifact_name=artifact_name,
                 only_data_artifacts=only_data_artifacts,
                 only_model_artifacts=only_model_artifacts,
                 only_endpoint_artifacts=only_endpoint_artifacts,
@@ -4709,6 +4712,7 @@ class Client(metaclass=ClientMetaClass):
         model_id: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[UUID, str]] = None,
         pipeline_run_id: Optional[Union[UUID, str]] = None,
+        pipeline_run_name: Optional[str] = None,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
@@ -4724,6 +4728,7 @@ class Client(metaclass=ClientMetaClass):
             model_id: Use the model id for filtering
             model_version_id: Use the model version id for filtering
             pipeline_run_id: Use the pipeline run id for filtering
+            pipeline_run_name: Use the pipeline run name for filtering
 
         Returns:
             A page of all model version to pipeline run links.
@@ -4741,6 +4746,7 @@ class Client(metaclass=ClientMetaClass):
                 model_id=model_id,
                 model_version_id=model_version_id,
                 pipeline_run_id=pipeline_run_id,
+                pipeline_run_name=pipeline_run_name,
             )
         )
 

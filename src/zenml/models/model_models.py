@@ -496,6 +496,15 @@ class ModelVersionArtifactResponseModel(
 class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
 
+    # Artifact name and type are not DB fields and need to be handled separately
+    FILTER_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "artifact_name",
+        "only_data_artifacts",
+        "only_model_artifacts",
+        "only_endpoint_artifacts",
+    ]
+
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
     )
@@ -510,6 +519,10 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):
     )
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Filter by artifact ID"
+    )
+    artifact_name: Optional[str] = Field(
+        default=None,
+        description="Name of the artifact",
     )
     only_data_artifacts: Optional[bool] = False
     only_model_artifacts: Optional[bool] = False
@@ -555,6 +568,12 @@ class ModelVersionPipelineRunResponseModel(
 class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
 
+    # Pipeline run name is not a DB field and needs to be handled separately
+    FILTER_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "pipeline_run_name",
+    ]
+
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
     )
@@ -569,6 +588,10 @@ class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilter):
     )
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Filter by pipeline run ID"
+    )
+    pipeline_run_name: Optional[str] = Field(
+        default=None,
+        description="Name of the pipeline run",
     )
 
     CLI_EXCLUDE_FIELDS = [
