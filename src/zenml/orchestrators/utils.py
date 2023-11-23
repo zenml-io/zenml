@@ -52,8 +52,7 @@ def get_orchestrator_run_name(pipeline_name: str) -> str:
     Returns:
         The orchestrator run name.
     """
-    user_name = Client().active_user.name
-    return f"{pipeline_name}_{user_name}_{random.Random().getrandbits(32):08x}"
+    return f"{pipeline_name}_{random.Random().getrandbits(128):32x}"
 
 
 def get_run_id_for_orchestrator_run_id(

@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from zenml.model import ModelVersion
+from zenml.model.model_version import ModelVersion
 
 
 @pytest.mark.parametrize(

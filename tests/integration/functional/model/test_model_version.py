@@ -18,7 +18,7 @@ import pytest
 from tests.integration.functional.utils import model_killer, tags_killer
 from zenml.client import Client
 from zenml.enums import ModelStages
-from zenml.model import ModelVersion
+from zenml.model.model_version import ModelVersion
 from zenml.models.tag_models import TagRequestModel
 
 MODEL_NAME = "super_model"
