@@ -83,6 +83,12 @@ def upgrade() -> None:
         )
 
     # Model Version Artifacts and Runs Tables
+    # Drop all entries with null IDs
+    op.execute(
+        "DELETE FROM model_versions_artifacts WHERE artifact_id IS NULL"
+    )
+    op.execute("DELETE FROM model_versions_runs WHERE pipeline_run_id IS NULL")
+    # Make IDs non-nullable and drop unused columns
     with op.batch_alter_table(
         "model_versions_artifacts", schema=None
     ) as batch_op:
