@@ -19,17 +19,16 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
-from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.materializers.numpy_materializer import NUMPY_FILENAME
-from zenml.models import ArtifactResponse
-from zenml.utils.artifact_utils import (
-    METADATA_DATATYPE,
-    METADATA_MATERIALIZER,
-    _load_artifact,
-    load_artifact,
+from zenml.artifacts.utils import (
+    _get_new_artifact_version,
+    _load_artifact_from_uri,
+    load_artifact_from_response,
     load_model_from_metadata,
     save_model_metadata,
 )
+from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
+from zenml.materializers.numpy_materializer import NUMPY_FILENAME
+from zenml.models import ArtifactResponse, Page
 
 
 @pytest.fixture
@@ -59,9 +58,9 @@ def test_save_model_metadata(model_artifact):
     # Read the contents of the file
     with open(file_path, "r") as f:
         file_contents = f.read()
-        assert METADATA_DATATYPE in file_contents
+        assert "datatype" in file_contents
         assert model_artifact.data_type in file_contents
-        assert METADATA_MATERIALIZER in file_contents
+        assert "materializer" in file_contents
         assert model_artifact.materializer in file_contents
 
 
@@ -89,7 +88,7 @@ def test_load_model_from_metadata(mocker, model_metadata_dir):
 
     # Mock the _load_artifact function
     mocker_load_artifact = mocker.patch(
-        "zenml.utils.artifact_utils._load_artifact",
+        "zenml.artifacts.utils._load_artifact_from_uri",
         return_value=mocked_model,
     )
 
@@ -103,19 +102,19 @@ def test_load_model_from_metadata(mocker, model_metadata_dir):
     assert model == mocked_model
 
 
-def test_load_artifact(mocker, model_artifact):
-    """Test the load_artifact function."""
+def test_load_artifact_from_response(mocker, model_artifact):
+    """Test the test_load_artifact_from_response function."""
     # Mock the model object
     model = mocker.MagicMock()
 
-    # Mock the _load_artifact function
+    # Mock the _load_artifact_from_uri function
     mocker_load_artifact = mocker.patch(
-        "zenml.utils.artifact_utils._load_artifact", return_value=model
+        "zenml.artifacts.utils._load_artifact_from_uri", return_value=model
     )
 
-    load_artifact(model_artifact)
+    load_artifact_from_response(model_artifact)
 
-    # Ensure the _load_artifact function is called
+    # Ensure the _load_artifact_from_uri function is called
     mocker_load_artifact.assert_called_once()
 
 
@@ -146,7 +145,7 @@ def test__load_artifact(numpy_file_uri):
     # Test with invalid materializer and ensure that a ModuleNotFoundError is
     # raised
     try:
-        _load_artifact(materializer, data_type, numpy_file_uri)
+        _load_artifact_from_uri(materializer, data_type, numpy_file_uri)
         assert False, "Expected a ModuleNotFoundError to be raised."
     except ModuleNotFoundError as e:
         assert (
@@ -157,7 +156,7 @@ def test__load_artifact(numpy_file_uri):
     # raised
     materializer = "zenml.materializers.numpy_materializer.NumpyMaterializer"
     try:
-        _load_artifact(materializer, data_type, numpy_file_uri)
+        _load_artifact_from_uri(materializer, data_type, numpy_file_uri)
         assert False, "Expected a ModuleNotFoundError to be raised."
     except ModuleNotFoundError as e:
         assert (
@@ -167,6 +166,38 @@ def test__load_artifact(numpy_file_uri):
     # Test with valid materializer and data type and ensure that the artifact
     # is loaded correctly
     data_type = "numpy.ndarray"
-    artifact = _load_artifact(materializer, data_type, numpy_file_uri)
+    artifact = _load_artifact_from_uri(materializer, data_type, numpy_file_uri)
     assert artifact is not None
     assert isinstance(artifact, np.ndarray)
+
+
+def test__get_new_artifact_version(mocker, sample_artifact_model):
+    """Unit test for the `_get_new_artifact_version` function."""
+    # If no artifact exists, "1" should be returned
+    mocker.patch(
+        "zenml.client.Client.list_artifacts",
+        return_value=Page(
+            index=1,
+            max_size=1,
+            total_pages=1,
+            total=0,
+            items=[],
+        ),
+    )
+    assert _get_new_artifact_version(sample_artifact_model.name) == 1
+
+    # If an artifact exists, the next version should be returned
+    mocker.patch(
+        "zenml.client.Client.list_artifacts",
+        return_value=Page(
+            index=1,
+            max_size=1,
+            total_pages=1,
+            total=1,
+            items=[sample_artifact_model],
+        ),
+    )
+    assert (
+        _get_new_artifact_version(sample_artifact_model.name)
+        == int(sample_artifact_model.version) + 1
+    )

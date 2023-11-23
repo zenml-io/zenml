@@ -21,6 +21,8 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     ARTIFACTS,
+    MODEL_VERSION_ARTIFACTS,
+    MODEL_VERSION_PIPELINE_RUNS,
     MODEL_VERSIONS,
     RUNS,
     VERSION_1,
@@ -155,15 +157,20 @@ def delete_model_version(
 # Model Version Artifacts
 ##########################
 
+model_version_artifacts_router = APIRouter(
+    prefix=API + VERSION_1 + MODEL_VERSION_ARTIFACTS,
+    tags=["model_version_artifacts"],
+    responses={401: error_response},
+)
 
-@router.get(
-    "/{model_version_id}" + ARTIFACTS,
+
+@model_version_artifacts_router.get(
+    "",
     response_model=Page[ModelVersionArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_model_version_artifact_links(
-    model_version_id: UUID,
     model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel = Depends(
         make_dependable(ModelVersionArtifactFilterModel)
     ),
@@ -172,15 +179,13 @@ def list_model_version_artifact_links(
     """Get model version to artifact links according to query filters.
 
     Args:
-        model_version_id: ID of the model version containing links.
-        model_version_artifact_link_filter_model: Filter model used for pagination, sorting,
-            filtering
+        model_version_artifact_link_filter_model: Filter model used for
+            pagination, sorting, filtering.
 
     Returns:
         The model version to artifact links according to query filters.
     """
     return zen_store().list_model_version_artifact_links(
-        model_version_id=model_version_id,
         model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
     )
 
@@ -213,15 +218,20 @@ def delete_model_version_artifact_link(
 # Model Version Pipeline Runs
 ##############################
 
+model_version_pipeline_runs_router = APIRouter(
+    prefix=API + VERSION_1 + MODEL_VERSION_PIPELINE_RUNS,
+    tags=["model_version_pipeline_runs"],
+    responses={401: error_response},
+)
 
-@router.get(
-    "/{model_version_id}" + RUNS,
+
+@model_version_pipeline_runs_router.get(
+    "",
     response_model=Page[ModelVersionPipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_model_version_pipeline_run_links(
-    model_version_id: UUID,
     model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel = Depends(
         make_dependable(ModelVersionPipelineRunFilterModel)
     ),
@@ -230,15 +240,13 @@ def list_model_version_pipeline_run_links(
     """Get model version to pipeline run links according to query filters.
 
     Args:
-        model_version_id: ID of the model version containing the link.
-        model_version_pipeline_run_link_filter_model: Filter model used for pagination, sorting,
-            and filtering
+        model_version_pipeline_run_link_filter_model: Filter model used for
+            pagination, sorting, and filtering.
 
     Returns:
         The model version to pipeline run links according to query filters.
     """
     return zen_store().list_model_version_pipeline_run_links(
-        model_version_id=model_version_id,
         model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
     )
 
