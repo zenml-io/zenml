@@ -1033,6 +1033,7 @@ def get_workspace_statistics(
 
     Args:
         workspace_name_or_id: Name or ID of the workspace to get statistics for.
+        auth_context: Authentication context.
 
     Returns:
         All pipelines within the workspace.

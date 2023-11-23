@@ -3134,7 +3134,7 @@ class SqlZenStore(BaseZenStore):
         """Count all pipeline runs.
 
         Args:
-            filter model: The filter model to filter the runs.
+            filter_model: The filter model to filter the runs.
 
         Returns:
             The number of pipeline runs.
@@ -4566,7 +4566,7 @@ class SqlZenStore(BaseZenStore):
         """Count all stacks.
 
         Args:
-            filter model: The filter model to filter the stacks.
+            filter_model: The filter model to filter the stacks.
 
         Returns:
             The number of stacks.
@@ -5637,7 +5637,8 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             schema: Schema of the Entity
-            filter model: The filter model to filter the entity table.
+            filter_model: The filter model to filter the entity table.
+
         Returns:
             Count of the entity as integer.
         """
