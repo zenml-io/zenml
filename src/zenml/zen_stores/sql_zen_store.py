@@ -1002,6 +1002,7 @@ class SqlZenStore(BaseZenStore):
                     conn.run_callable(
                         SQLModel.metadata.create_all  # type: ignore[arg-type]
                     )
+                self.alembic.stamp("head")
             else:
                 # Case 2: the database is not empty, but has never been
                 # migrated with alembic before. We need to create the alembic
