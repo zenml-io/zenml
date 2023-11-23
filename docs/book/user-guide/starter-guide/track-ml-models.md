@@ -160,7 +160,7 @@ zenml model version update <MODEL_NAME> <MODEL_VERSIONNAME> -s production
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include easily changing the stage:
 
-<figure><img src=".gitbook/assets/intro_dashboard_details.png" alt="ZenML Dashboard Details View" width="80%"><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/dcp_transition_stage.gif" alt="ZenML Cloud Transition Model Stages" width="80%"><figcaption></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 
