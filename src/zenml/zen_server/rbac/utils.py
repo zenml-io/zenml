@@ -28,7 +28,6 @@ from typing import (
 )
 from uuid import UUID
 
-from fastapi import HTTPException
 from pydantic import BaseModel
 
 from zenml.exceptions import IllegalOperationError

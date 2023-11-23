@@ -34,6 +34,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
@@ -141,7 +142,7 @@ def get_artifact(
 def update_artifact(
     artifact_id: UUID,
     artifact_update: ArtifactUpdate,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ArtifactResponse:
     """Update an artifact by ID.
 
@@ -152,7 +153,12 @@ def update_artifact(
     Returns:
         The updated artifact.
     """
-    return zen_store().update_artifact(artifact_id, artifact_update)
+    return verify_permissions_and_update_entity(
+        id=artifact_id,
+        update_model=artifact_update,
+        get_method=zen_store().get_artifact,
+        update_method=zen_store().update_artifact,
+    )
 
 
 @router.delete(
