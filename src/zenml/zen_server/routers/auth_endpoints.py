@@ -65,6 +65,8 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.jwt import JWTToken
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     get_ip_location,
     handle_exceptions,
@@ -505,6 +507,10 @@ def api_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated.",
         )
+
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
+    )
 
     if not token.device_id:
         # If not authenticated with a device, the current API token is returned
