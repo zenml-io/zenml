@@ -245,6 +245,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                                 for key, value in environment.items()
                             ],
                         },
+                        "disk_spec": {
+                            "boot_disk_type": settings.boot_disk_type,
+                            "boot_disk_size_gb": settings.boot_disk_size_gb,
+                        },
                     }
                 ]
             },

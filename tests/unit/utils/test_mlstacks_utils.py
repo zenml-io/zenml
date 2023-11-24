@@ -19,6 +19,7 @@ from zenml.utils.mlstacks_utils import (
     _construct_base_stack,
     _construct_components,
     _get_component_flavor,
+    _validate_extra_config,
     convert_click_params_to_mlstacks_primitives,
     get_stack_spec_file_path,
     stack_exists,
@@ -275,3 +276,15 @@ def test_click_params_to_mlstacks_conversion():
     assert isinstance(artifact_store, Component)
     assert artifact_store.component_flavor == "s3"
     assert artifact_store.name == "aws-artifact_store"
+
+
+def test_extra_config_validation():
+    """Tests that extra config validation checks for duplicate = characters."""
+    valid_test_config = "project_id=zenml-core"
+    assert _validate_extra_config(valid_test_config)
+
+    invalid_test_config = (
+        "bucket_name=my-new-bucket=2024",
+        "project_id=zenml-core",
+    )
+    assert not _validate_extra_config(invalid_test_config)
