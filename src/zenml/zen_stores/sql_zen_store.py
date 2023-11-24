@@ -996,7 +996,9 @@ class SqlZenStore(BaseZenStore):
         else:
             if self.alembic.db_is_empty():
                 # Case 1: the database is empty. We can just create the
-                # tables from scratch with alembic.
+                # tables from scratch with from SQLModel. After tables are
+                # created we put an alembic revision to latest and populate
+                # identity table with needed info.
                 logger.info("Creating database tables")
                 with self.engine.begin() as conn:
                     conn.run_callable(
