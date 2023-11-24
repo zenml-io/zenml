@@ -27,8 +27,8 @@ class LabelStudioIntegration(Integration):
 
     NAME = LABEL_STUDIO
     REQUIREMENTS = [
-        "label-studio>=1.6.0,<=1.7.3",
-        "label-studio-sdk>=0.0.17,<=0.0.24",
+        "label-studio>=1.6.0,<=1.9.1",
+        "label-studio-sdk>=0.0.17,<=0.0.32",
     ]
 
     @classmethod
