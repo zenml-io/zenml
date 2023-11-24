@@ -33,7 +33,6 @@ from zenml.zen_server.utils import server_config
 def test_encode_decode_works():
     """Test that encoding and decoding JWT tokens generally works."""
     user_id = uuid.uuid4()
-    permissions = ["read", "write"]
     device_id = uuid.uuid4()
     api_key_id = uuid.uuid4()
     pipeline_id = uuid.uuid4()
@@ -45,7 +44,6 @@ def test_encode_decode_works():
 
     token = JWTToken(
         user_id=user_id,
-        permissions=permissions,
         device_id=device_id,
         api_key_id=api_key_id,
         pipeline_id=pipeline_id,
@@ -57,7 +55,6 @@ def test_encode_decode_works():
     decoded_token = JWTToken.decode_token(encoded_token)
 
     assert decoded_token.user_id == user_id
-    assert set(decoded_token.permissions) == set(permissions)
     assert decoded_token.device_id == device_id
     assert decoded_token.api_key_id == api_key_id
     assert decoded_token.pipeline_id == pipeline_id
@@ -71,7 +68,6 @@ def test_token_expiration():
     """Test that tokens expire after the specified time."""
     token = JWTToken(
         user_id=uuid.uuid4(),
-        permissions=[],
     )
 
     expires = datetime.utcnow()
@@ -92,7 +88,6 @@ def test_token_wrong_signature():
 
     token = JWTToken(
         user_id=uuid.uuid4(),
-        permissions=[],
     )
     encoded_token = token.encode()
 
@@ -130,7 +125,6 @@ def _hack_token() -> Generator[Dict[str, Any], None, None]:
 
     token = JWTToken(
         user_id=uuid.uuid4(),
-        permissions=[],
     )
     encoded_token = token.encode()
 

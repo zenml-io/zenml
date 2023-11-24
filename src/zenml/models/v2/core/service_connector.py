@@ -23,11 +23,11 @@ from pydantic import Field, SecretStr, root_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import (
-    ShareableFilter,
-    ShareableRequest,
-    ShareableResponse,
-    ShareableResponseBody,
-    ShareableResponseMetadata,
+    WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.misc.service_connector_type import (
@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 # ------------------ Request Model ------------------
 
 
-class ServiceConnectorRequest(ShareableRequest):
+class ServiceConnectorRequest(WorkspaceScopedRequest):
     """Request model for service connectors."""
 
     name: str = Field(
@@ -247,7 +247,7 @@ class ServiceConnectorUpdate(ServiceConnectorRequest):
 # ------------------ Response Model ------------------
 
 
-class ServiceConnectorResponseBody(ShareableResponseBody):
+class ServiceConnectorResponseBody(WorkspaceScopedResponseBody):
     """Response body for service connectors."""
 
     description: str = Field(
@@ -287,7 +287,7 @@ class ServiceConnectorResponseBody(ShareableResponseBody):
     )
 
 
-class ServiceConnectorResponseMetadata(ShareableResponseMetadata):
+class ServiceConnectorResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for service connectors."""
 
     configuration: Dict[str, Any] = Field(
@@ -317,7 +317,7 @@ class ServiceConnectorResponseMetadata(ShareableResponseMetadata):
 
 
 class ServiceConnectorResponse(
-    ShareableResponse[
+    WorkspaceScopedResponse[
         ServiceConnectorResponseBody, ServiceConnectorResponseMetadata
     ]
 ):
@@ -601,18 +601,18 @@ class ServiceConnectorResponse(
 # ------------------ Filter Model ------------------
 
 
-class ServiceConnectorFilter(ShareableFilter):
+class ServiceConnectorFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of service connectors."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "resource_type",
         "labels_str",
         "labels",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableFilter.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
         "labels_str",
         "labels",
@@ -622,10 +622,6 @@ class ServiceConnectorFilter(ShareableFilter):
         description="The type to scope this query to.",
     )
 
-    is_shared: Optional[Union[bool, str]] = Field(
-        default=None,
-        description="If the service connector is shared or private",
-    )
     name: Optional[str] = Field(
         default=None,
         description="The name to filter by",

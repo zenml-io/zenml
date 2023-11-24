@@ -17,7 +17,6 @@ from datetime import datetime, timedelta
 from typing import (
     Any,
     Dict,
-    List,
     Optional,
     cast,
 )
@@ -43,12 +42,10 @@ class JWTToken(BaseModel):
             was issued.
         pipeline_id: The id of the pipeline for which the token was issued.
         schedule_id: The id of the schedule for which the token was issued.
-        permissions: The permissions scope of the authenticated user.
         claims: The original token claims.
     """
 
     user_id: UUID
-    permissions: List[str]
     device_id: Optional[UUID] = None
     api_key_id: Optional[UUID] = None
     pipeline_id: Optional[UUID] = None
@@ -145,15 +142,12 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
-        permissions: List[str] = claims.get("permissions", [])
-
         return JWTToken(
             user_id=user_id,
             device_id=device_id,
             api_key_id=api_key_id,
             pipeline_id=pipeline_id,
             schedule_id=schedule_id,
-            permissions=list(set(permissions)),
             claims=claims,
         )
 
@@ -173,7 +167,6 @@ class JWTToken(BaseModel):
 
         claims: Dict[str, Any] = dict(
             sub=str(self.user_id),
-            permissions=list(self.permissions),
         )
         claims["iss"] = config.get_jwt_token_issuer()
         claims["aud"] = config.get_jwt_token_audience()

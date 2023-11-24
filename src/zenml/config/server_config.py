@@ -106,6 +106,10 @@ class ServerConfiguration(BaseModel):
         external_server_id: The ID of the ZenML server to use with the
             `EXTERNAL` authentication scheme. If not specified, the regular
             ZenML server ID is used.
+        rbac_implementation_source: Source pointing to a class implementing
+            the RBAC interface defined by
+            `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
+            RBAC will not be enabled for this server.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -135,6 +139,8 @@ class ServerConfiguration(BaseModel):
     external_user_info_url: Optional[str] = None
     external_cookie_name: Optional[str] = None
     external_server_id: Optional[UUID] = None
+
+    rbac_implementation_source: Optional[str] = None
 
     _deployment_id: Optional[UUID] = None
 
@@ -196,6 +202,15 @@ class ServerConfiguration(BaseModel):
         )
 
         return self._deployment_id
+
+    @property
+    def rbac_enabled(self) -> bool:
+        """Whether RBAC is enabled on the server or not.
+
+        Returns:
+            Whether RBAC is enabled on the server or not.
+        """
+        return self.rbac_implementation_source is not None
 
     def get_jwt_token_issuer(self) -> str:
         """Get the JWT token issuer.
