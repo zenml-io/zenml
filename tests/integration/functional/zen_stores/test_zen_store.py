@@ -994,7 +994,9 @@ def test_list_service_accounts():
 
     with ServiceAccountContext() as service_account_one:
         accounts = zen_store.list_service_accounts(
-            ServiceAccountFilter()
+            # TODO: we use a large size to get all accounts in one page, but
+            #  the correct way to do this is to fetch all pages
+            ServiceAccountFilter(size=1000)
         ).items
         assert service_account_one.id in [account.id for account in accounts]
 
@@ -1014,7 +1016,9 @@ def test_list_service_accounts():
 
         with ServiceAccountContext() as service_account_two:
             accounts = zen_store.list_service_accounts(
-                ServiceAccountFilter()
+                # TODO: we use a large size to get all accounts in one page, but
+                #  the correct way to do this is to fetch all pages
+                ServiceAccountFilter(size=1000)
             ).items
             assert service_account_one.id in [
                 account.id for account in accounts
@@ -1046,6 +1050,7 @@ def test_list_service_accounts():
             accounts = zen_store.list_service_accounts(
                 ServiceAccountFilter(
                     active=True,
+                    size=1000,
                 )
             ).items
             assert service_account_one.id in [
@@ -1057,7 +1062,9 @@ def test_list_service_accounts():
 
             with UserContext() as user:
                 accounts = zen_store.list_service_accounts(
-                    ServiceAccountFilter()
+                    # TODO: we use a large size to get all accounts in one page,
+                    # but the correct way to do this is to fetch all pages
+                    ServiceAccountFilter(size=1000)
                 ).items
                 assert user.id not in [account.id for account in accounts]
 

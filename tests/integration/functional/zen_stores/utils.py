@@ -282,11 +282,12 @@ class ServiceAccountContext:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
             _ = Client().zen_store
-        if not self.existing_account and self.delete:
+        if self.existing_account or self.login and self.delete:
             self.store.delete_api_key(
                 self.created_service_account.id,
                 self.api_key.id,
             )
+        if not self.existing_account and self.delete:
             try:
                 self.store.delete_service_account(
                     self.created_service_account.id
