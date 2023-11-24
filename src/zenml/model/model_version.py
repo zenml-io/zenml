@@ -189,7 +189,7 @@ class ModelVersion(BaseModel):
         try:
             get_pipeline_context()
         except RuntimeError:
-            return
+            return None
 
         ea = ExternalArtifact(name=name, version=version)
         ea._set_model_version(self)
