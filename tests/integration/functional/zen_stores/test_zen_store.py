@@ -102,7 +102,6 @@ from zenml.models import (
     WorkspaceFilter,
     WorkspaceUpdate,
 )
-from zenml.models.model_models import ModelFilterModel
 from zenml.models.tag_models import (
     TagFilterModel,
     TagRequestModel,
@@ -3606,21 +3605,19 @@ def test_connector_validation():
 class TestModel:
     def test_latest_version_properly_fetched(self):
         """Test that latest version can be properly fetched."""
-        with ModelVersionContext() as model:
+        with ModelVersionContext() as created_model:
             zs = Client().zen_store
-            models = zs.list_models(ModelFilterModel())
-            assert models[0].latest_version is None
+            assert zs.get_model(created_model.id).latest_version is None
             for name in ["great one", "yet another one"]:
                 mv = zs.create_model_version(
                     ModelVersionRequestModel(
-                        user=model.user.id,
-                        workspace=model.workspace.id,
-                        model=model.id,
+                        user=created_model.user.id,
+                        workspace=created_model.workspace.id,
+                        model=created_model.id,
                         name=name,
                     )
                 )
-                models = zs.list_models(ModelFilterModel())
-                assert models[0].latest_version == mv.name
+                assert zs.get_model(created_model.id).latest_version == mv.name
                 time.sleep(1)  # thanks to MySQL again!
 
 

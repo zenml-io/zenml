@@ -3474,7 +3474,7 @@ class RestZenStore(BaseZenStore):
         # So these items will be parsed into their correct types like here
         page_of_items.items = [
             response_model.parse_obj(generic_item)  # type: ignore[misc]
-            for generic_item in page_of_items.items
+            for generic_item in body["items"]
         ]
         return page_of_items
 
