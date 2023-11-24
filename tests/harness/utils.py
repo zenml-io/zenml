@@ -184,10 +184,12 @@ def clean_workspace_session(
     clean_repo: bool = False,
 ) -> Generator[Client, None, None]:
     """Context manager to create, activate and use a separate ZenML workspace.
+
     Args:
         tmp_path_factory: A pytest fixture that provides a temporary directory.
         clean_repo: Whether to create and use a clean repository for the
             workspace.
+
     Yields:
         A ZenML client configured to use the workspace.
     """
