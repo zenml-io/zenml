@@ -31,6 +31,7 @@ from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.steps.utils import (
     OutputSignature,
     parse_return_type_annotations,
@@ -165,7 +166,9 @@ class EntrypointFunctionDefinition(NamedTuple):
 
         parameter = self.inputs[key]
 
-        if isinstance(value, (StepArtifact, ExternalArtifact)):
+        if isinstance(
+            value, (StepArtifact, ExternalArtifact, ArtifactResponse)
+        ):
             # If we were to do any type validation for artifacts here, we
             # would not be able to leverage pydantics type coercion (e.g.
             # providing an `int` artifact for a `float` input)

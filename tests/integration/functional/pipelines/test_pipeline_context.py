@@ -1,7 +1,14 @@
 import pytest
 import yaml
 
-from zenml import get_pipeline_context, get_step_context, pipeline, step
+from zenml import (
+    ModelVersion,
+    get_pipeline_context,
+    get_step_context,
+    pipeline,
+    step,
+)
+from zenml.client import Client
 
 
 @step
@@ -52,3 +59,45 @@ def test_pipeline_context_available_as_config_yaml(tmp_path):
     assert_pipeline_context_in_pipeline.with_options(
         config_path=str(config_path)
     )
+
+
+@step(enable_cache=False)
+def promoter_step(do_promote: bool) -> int:
+    if do_promote:
+        get_step_context().model_version.set_stage("production")
+    return 1
+
+
+@step(enable_cache=False)
+def asserter_step(i: int):
+    assert i == 1
+
+
+@pipeline(model_version=ModelVersion(name="foo"))
+def producer_pipe(do_promote: bool):
+    promoter_step(do_promote)
+
+
+@pipeline(model_version=ModelVersion(name="foo", version="production"))
+def consumer_pipe():
+    mv = get_pipeline_context().model_version
+    asserter_step(
+        mv.get_artifact(
+            "producer_pipe::promoter_step::output", as_external_artifact=True
+        )
+    )
+
+
+def test_that_argument_can_be_a_get_artifact_of_model_version_in_pipeline_context(
+    clean_client: "Client",
+):
+    producer_pipe(True)
+    consumer_pipe()
+
+
+def test_that_argument_as_get_artifact_of_model_version_in_pipeline_context_fails_if_not_found(
+    clean_client: "Client",
+):
+    producer_pipe(False)
+    with pytest.raises(RuntimeError):
+        consumer_pipe()
