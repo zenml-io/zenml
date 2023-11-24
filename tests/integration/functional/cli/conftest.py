@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 from uuid import uuid4
 
 import pytest
@@ -26,6 +26,9 @@ from zenml import pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.config.schedule import Schedule
 from zenml.model.model_version import ModelVersion
+
+if TYPE_CHECKING:
+    from zenml.client import Client
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -97,7 +100,7 @@ def pipeline():
 
 
 @pytest.fixture
-def clean_client_with_models(clean_client):
+def clean_client_with_models(clean_client: "Client"):
     """Fixture to get a clean workspace with an existing pipeline run in it."""
     pipeline.with_options(run_name=NAME)()
     return clean_client
