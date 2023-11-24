@@ -621,7 +621,6 @@ def test_reusing_pipeline_version(
     assert result == pipeline_model
 
 
-@pytest.mark.disable_auto_use
 def test_loading_legacy_pipeline_from_model(create_pipeline_model):
     """Tests loading and running a pipeline from a model."""
     with open("my_steps.py", "w") as f:
