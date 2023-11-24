@@ -282,11 +282,11 @@ class ServiceAccountContext:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
             _ = Client().zen_store
+        if not self.existing_account and self.delete:
             self.store.delete_api_key(
                 self.created_service_account.id,
                 self.api_key.id,
             )
-        if not self.existing_account and self.delete:
             try:
                 self.store.delete_service_account(
                     self.created_service_account.id
@@ -334,12 +334,14 @@ class StackContext:
         components: Dict[StackComponentType, List[uuid.UUID]],
         stack_name: str = "aria",
         user_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         self.stack_name = sample_name(stack_name)
         self.user_id = user_id
         self.components = components
         self.client = Client()
         self.store = self.client.zen_store
+        self.delete = delete
 
     def __enter__(self):
         new_stack = StackRequest(
@@ -351,11 +353,15 @@ class StackContext:
         self.created_stack = self.store.create_stack(new_stack)
         return self.created_stack
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         try:
             self.store.delete_stack(self.created_stack.id)
         except KeyError:
             pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            self.cleanup()
 
 
 class ComponentContext:
@@ -366,6 +372,7 @@ class ComponentContext:
         flavor: str,
         component_name: str = "aria",
         user_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         self.component_name = sample_name(component_name)
         self.flavor = flavor
@@ -374,6 +381,7 @@ class ComponentContext:
         self.user_id = user_id
         self.client = Client()
         self.store = self.client.zen_store
+        self.delete = delete
 
     def __enter__(self):
         new_component = ComponentRequest(
@@ -389,11 +397,15 @@ class ComponentContext:
         )
         return self.created_component
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         try:
             self.store.delete_stack_component(self.created_component.id)
         except KeyError:
             pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            self.cleanup()
 
 
 class WorkspaceContext:
@@ -507,12 +519,15 @@ class CodeRepositoryContext:
         self.repo = self.store.create_code_repository(request)
         return self.repo
 
+    def cleanup(self):
+        try:
+            self.store.delete_code_repository(self.repo.id)
+        except KeyError:
+            pass
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
-            try:
-                self.store.delete_code_repository(self.repo.id)
-            except KeyError:
-                pass
+            self.cleanup()
 
 
 class ServiceConnectorContext:
@@ -568,12 +583,15 @@ class ServiceConnectorContext:
         self.connector = self.store.create_service_connector(request)
         return self.connector
 
+    def cleanup(self):
+        try:
+            self.store.delete_service_connector(self.connector.id)
+        except KeyError:
+            pass
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
-            try:
-                self.store.delete_service_connector(self.connector.id)
-            except KeyError:
-                pass
+            self.cleanup()
 
 
 class ModelVersionContext:
@@ -583,6 +601,7 @@ class ModelVersionContext:
         create_artifacts: int = 0,
         create_prs: int = 0,
         user_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         client = Client()
         self.workspace = client.active_workspace.id
@@ -596,6 +615,7 @@ class ModelVersionContext:
         self.create_prs = create_prs
         self.prs = []
         self.deployments = []
+        self.delete = delete
 
     def __enter__(self):
         client = Client()
@@ -675,7 +695,7 @@ class ModelVersionContext:
             else:
                 return model
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         client = Client()
         try:
             client.delete_model(self.model)
@@ -687,6 +707,10 @@ class ModelVersionContext:
             client.zen_store.delete_run(run.id)
         for deployment in self.deployments:
             client.delete_deployment(str(deployment.id))
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            self.cleanup()
 
 
 class CatClawMarks(AuthenticationConfig):
