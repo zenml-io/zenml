@@ -2,7 +2,7 @@
 description: Taking your ZenML workflow to the next level.
 ---
 
-# 🐔 Advanced guide
+# 🍗 Advanced guide
 
 The aim of this section is to provide you with detailed explanations and documentation regarding specific cases, problems, and solutions frequently encountered in ML workflows.
 

@@ -35,7 +35,7 @@ such an example.
 Related concepts:
 
 * the Artifact Store is a type of Stack Component that needs to be registered as part of your
-  ZenML [Stack](/docs/book/user-guide/starter-guide/understand-stacks.md).
+  ZenML [Stack](/docs/book/user-guide/production-guide/understand-stacks.md).
 * the objects circulated through your pipelines are serialized and stored in the Artifact Store
   using [Materializers](/docs/book/user-guide/advanced-guide/artifact-management/handle-custom-data-types.md). Materializers implement the
   logic required to serialize and deserialize the artifact contents and to store them and retrieve their contents

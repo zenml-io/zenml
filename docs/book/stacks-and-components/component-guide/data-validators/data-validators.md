@@ -20,7 +20,7 @@ preventive or correcting actions.
 Related concepts:
 
 * the Data Validator is an optional type of Stack Component that needs to be
-registered as part of your ZenML [Stack](/docs/book/user-guide/starter-guide/understand-stacks.md).
+registered as part of your ZenML [Stack](/docs/book/user-guide/production-guide/understand-stacks.md).
 * Data Validators used in ZenML pipelines usually generate data profiles and
 data quality check reports that are versioned and stored in the 
 [Artifact Store](../artifact-stores/artifact-stores.md) and can be 

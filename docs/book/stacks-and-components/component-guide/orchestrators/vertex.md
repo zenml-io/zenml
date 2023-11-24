@@ -262,7 +262,7 @@ following is the sequence of events that happen when running a pipeline on Verte
   above [containerization](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md)).
 * The Vertex AI pipeline JSON file is copied to
   the [Artifact Store](../artifact-stores/artifact-stores.md) specified in
-  your [Stack](/docs/book/user-guide/starter-guide/understand-stacks.md)
+  your [Stack](/docs/book/user-guide/production-guide/understand-stacks.md)
 * Cloud Function is created that creates the Vertex Pipeline job when triggered.
 * A Cloud Scheduler job is created that triggers the Cloud Function on the defined schedule.
 

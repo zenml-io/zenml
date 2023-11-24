@@ -115,7 +115,7 @@ In order to benefit from the aforementioned core concepts to their fullest exten
 
 #### ZenML Server
 
-First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/starter-guide/switch-to-production.md), so that it can communicate with these stack components and run your pipelines. The server is also responsible for storing managing ZenML business entities like pipelines, steps, models etc.
+First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/production-guide/connect-deployed-zenml.md), so that it can communicate with these stack components and run your pipelines. The server is also responsible for storing managing ZenML business entities like pipelines, steps, models etc.
 
 ![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04\_architecture.png)
 
