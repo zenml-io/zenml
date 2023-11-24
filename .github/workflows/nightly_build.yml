@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # Run this workflow every day at midnight
-    - cron: '0 0 * * *'
+    - cron: '30 0 * * *'
 
 jobs:
     setup-and-test:
