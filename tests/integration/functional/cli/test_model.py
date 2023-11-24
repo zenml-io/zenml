@@ -25,7 +25,7 @@ from zenml.cli.cli import cli
 from zenml.client import Client
 
 
-def test_model_list(clean_workspace_with_models):
+def test_model_list(clean_client_with_models):
     """Test that zenml model list does not fail."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -34,7 +34,7 @@ def test_model_list(clean_workspace_with_models):
         assert result.exit_code == 0, result.stderr
 
 
-def test_model_create_short_names(clean_workspace_with_models):
+def test_model_create_short_names(clean_client_with_models):
     """Test that zenml model create does not fail with short names."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -81,7 +81,7 @@ def test_model_create_short_names(clean_workspace_with_models):
         assert {t.name for t in model.tags} == {"i", "j", "k"}
 
 
-def test_model_create_full_names(clean_workspace_with_models):
+def test_model_create_full_names(clean_client_with_models):
     """Test that zenml model create does not fail with full names."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -128,7 +128,7 @@ def test_model_create_full_names(clean_workspace_with_models):
         assert {t.name for t in model.tags} == {"i", "j", "k"}
 
 
-def test_model_create_only_required(clean_workspace_with_models):
+def test_model_create_only_required(clean_client_with_models):
     """Test that zenml model create does not fail."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -152,7 +152,7 @@ def test_model_create_only_required(clean_workspace_with_models):
         assert len(model.tags) == 0
 
 
-def test_model_update(clean_workspace_with_models):
+def test_model_update(clean_client_with_models):
     """Test that zenml model update does not fail."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -180,7 +180,7 @@ def test_model_update(clean_workspace_with_models):
         assert model.description == "bar"
 
 
-def test_model_create_without_required_fails(clean_workspace_with_models):
+def test_model_create_without_required_fails(clean_client_with_models):
     """Test that zenml model create fails."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -191,7 +191,7 @@ def test_model_create_without_required_fails(clean_workspace_with_models):
         assert result.exit_code != 0, result.stderr
 
 
-def test_model_delete_found(clean_workspace_with_models):
+def test_model_delete_found(clean_client_with_models):
     """Test that zenml model delete does not fail."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -209,7 +209,7 @@ def test_model_delete_found(clean_workspace_with_models):
         assert result.exit_code == 0, result.stderr
 
 
-def test_model_delete_not_found(clean_workspace_with_models):
+def test_model_delete_not_found(clean_client_with_models):
     """Test that zenml model delete fail."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -222,7 +222,7 @@ def test_model_delete_not_found(clean_workspace_with_models):
         assert result.exit_code != 0, result.stderr
 
 
-def test_model_version_list(clean_workspace_with_models):
+def test_model_version_list(clean_client_with_models):
     """Test that zenml model version list does not fail."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -236,7 +236,7 @@ def test_model_version_list(clean_workspace_with_models):
         assert result.exit_code == 0, result.stderr
 
 
-def test_model_version_list_fails_on_bad_model(clean_workspace_with_models):
+def test_model_version_list_fails_on_bad_model(clean_client_with_models):
     """Test that zenml model version list fails."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -250,7 +250,7 @@ def test_model_version_list_fails_on_bad_model(clean_workspace_with_models):
         assert result.exit_code != 0, result.stderr
 
 
-def test_model_version_delete_found(clean_workspace_with_models):
+def test_model_version_delete_found(clean_client_with_models):
     """Test that zenml model version delete does not fail."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -273,7 +273,7 @@ def test_model_version_delete_found(clean_workspace_with_models):
         assert result.exit_code == 0, result.stderr
 
 
-def test_model_version_delete_not_found(clean_workspace_with_models):
+def test_model_version_delete_not_found(clean_client_with_models):
     """Test that zenml model version delete fail."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -296,7 +296,7 @@ def test_model_version_delete_not_found(clean_workspace_with_models):
     "command",
     ("data_artifacts", "endpoint_artifacts", "model_artifacts", "runs"),
 )
-def test_model_version_links_list(command: str, clean_workspace_with_models):
+def test_model_version_links_list(command: str, clean_client_with_models):
     """Test that zenml model version artifacts list fails."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)
@@ -308,7 +308,7 @@ def test_model_version_links_list(command: str, clean_workspace_with_models):
         assert result.exit_code == 0, result.stderr
 
 
-def test_model_version_update(clean_workspace_with_models):
+def test_model_version_update(clean_client_with_models):
     """Test that zenml model version stage update pass."""
     with model_killer():
         runner = CliRunner(mix_stderr=False)

@@ -18,7 +18,7 @@ from click.testing import CliRunner
 from zenml.cli.cli import cli
 
 
-def test_artifact_list(clean_workspace_with_run):
+def test_artifact_list(clean_client_with_run):
     """Test that zenml artifact list does not fail."""
     runner = CliRunner()
     list_command = cli.commands["pipeline"].commands["list"]
@@ -26,16 +26,16 @@ def test_artifact_list(clean_workspace_with_run):
     assert result.exit_code == 0
 
 
-def test_artifact_delete(clean_workspace_with_run):
+def test_artifact_delete(clean_client_with_run):
     """Test that zenml artifact delete works for unused artifacts."""
-    existing_runs = clean_workspace_with_run.list_runs()
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
+    existing_runs = clean_client_with_run.list_runs()
+    existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_runs) == 1
     assert len(existing_artifacts) == 2
     run_name = existing_runs[0].name
-    clean_workspace_with_run.delete_pipeline_run(run_name)
-    existing_runs = clean_workspace_with_run.list_runs()
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
+    clean_client_with_run.delete_pipeline_run(run_name)
+    existing_runs = clean_client_with_run.list_runs()
+    existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_runs) == 0
     assert len(existing_artifacts) == 2
     artifact_id = existing_artifacts[0].id
@@ -43,44 +43,44 @@ def test_artifact_delete(clean_workspace_with_run):
     delete_command = cli.commands["artifact"].commands["delete"]
     result = runner.invoke(delete_command, [str(artifact_id), "-y"])
     assert result.exit_code == 0
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
+    existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_artifacts) == 1
 
 
 def test_artifact_delete_fails_if_artifact_still_used(
-    clean_workspace_with_run,
+    clean_client_with_run,
 ):
     """Test that zenml artifact delete fails if artifact is still used."""
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
+    existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_artifacts) == 2
     artifact_id = existing_artifacts[0].id
     runner = CliRunner()
     delete_command = cli.commands["artifact"].commands["delete"]
     result = runner.invoke(delete_command, [artifact_id, "-y"])
     assert result.exit_code == 1
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
+    existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_artifacts) == 2
 
 
-def test_artifact_prune(clean_workspace_with_run):
+def test_artifact_prune(clean_client_with_run):
     """Test that zenml artifact prune deletes unused artifacts."""
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
+    existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_artifacts) == 2
     runner = CliRunner()
     prune_command = cli.commands["artifact"].commands["prune"]
     result = runner.invoke(prune_command, ["-y"])
     assert result.exit_code == 0
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
+    existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_artifacts) == 2
-    existing_runs = clean_workspace_with_run.list_runs()
+    existing_runs = clean_client_with_run.list_runs()
     assert len(existing_runs) == 1
     run_name = existing_runs[0].name
-    clean_workspace_with_run.delete_pipeline_run(run_name)
-    existing_runs = clean_workspace_with_run.list_runs()
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
+    clean_client_with_run.delete_pipeline_run(run_name)
+    existing_runs = clean_client_with_run.list_runs()
+    existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_runs) == 0
     assert len(existing_artifacts) == 2
     result = runner.invoke(prune_command, ["-y"])
     assert result.exit_code == 0
-    existing_artifacts = clean_workspace_with_run.list_artifacts()
+    existing_artifacts = clean_client_with_run.list_artifacts()
     assert len(existing_artifacts) == 0

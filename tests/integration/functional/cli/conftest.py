@@ -44,26 +44,24 @@ def initialize_store():
 
 
 @pytest.fixture
-def clean_workspace_with_run(clean_workspace, connected_two_step_pipeline):
+def clean_client_with_run(clean_client, connected_two_step_pipeline):
     """Fixture to get a clean workspace with an existing pipeline run in it."""
     connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     ).run()
-    return clean_workspace
+    return clean_client
 
 
 @pytest.fixture
-def clean_workspace_with_scheduled_run(
-    clean_workspace, connected_two_step_pipeline
-):
+def clean_client_with_scheduled_run(clean_client, connected_two_step_pipeline):
     """Fixture to get a clean workspace with an existing scheduled run in it."""
     schedule = Schedule(cron_expression="*/5 * * * *")
     connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     ).run(schedule=schedule)
-    return clean_workspace
+    return clean_client
 
 
 PREFIX = "tests_integration_functional_cli_model_"
@@ -99,7 +97,7 @@ def pipeline():
 
 
 @pytest.fixture
-def clean_workspace_with_models(clean_workspace):
+def clean_client_with_models(clean_client):
     """Fixture to get a clean workspace with an existing pipeline run in it."""
     pipeline.with_options(run_name=NAME)()
-    return clean_workspace
+    return clean_client

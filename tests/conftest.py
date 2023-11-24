@@ -25,7 +25,6 @@ from tests.harness.environment import TestEnvironment
 from tests.harness.utils import (
     check_test_requirements,
     clean_default_client_session,
-    clean_workspace_session,
     environment_session,
 )
 from tests.venv_clone_utils import clone_virtualenv
@@ -147,40 +146,6 @@ def check_module_requirements(
         environment=env,
         client=client,
     )
-
-
-@pytest.fixture
-def clean_workspace(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[Client, None, None]:
-    """Fixture to create, activate and use a separate ZenML repository and
-    workspace for an individual test.
-
-    Yields:
-        A ZenML client configured to use the workspace.
-    """
-    with clean_workspace_session(
-        tmp_path_factory=tmp_path_factory,
-        clean_repo=True,
-    ) as client:
-        yield client
-
-
-@pytest.fixture(scope="module")
-def module_clean_workspace(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[Client, None, None]:
-    """Fixture to create, activate and use a separate ZenML repository and
-    workspace for an entire test module.
-
-    Yields:
-        A ZenML client configured to use the workspace.
-    """
-    with clean_workspace_session(
-        tmp_path_factory=tmp_path_factory,
-        clean_repo=True,
-    ) as client:
-        yield client
 
 
 @pytest.fixture

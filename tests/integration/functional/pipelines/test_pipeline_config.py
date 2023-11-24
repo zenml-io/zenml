@@ -19,6 +19,7 @@ import pytest
 import yaml
 
 from zenml import get_step_context, pipeline, step
+from zenml.client import Client
 from zenml.model.model_version import ModelVersion
 
 
@@ -46,7 +47,9 @@ def assert_extra_step():
     assert extra == {"a": 1}
 
 
-def test_pipeline_with_model_version_from_yaml(clean_workspace, tmp_path):
+def test_pipeline_with_model_version_from_yaml(
+    clean_client: "Client", tmp_path
+):
     """Test that the pipeline can be configured with a model version from a yaml file."""
     model_version = ModelVersion(
         name="foo",
@@ -77,7 +80,7 @@ def test_pipeline_with_model_version_from_yaml(clean_workspace, tmp_path):
 
 
 def test_pipeline_config_from_file_not_overridden_for_extra(
-    clean_workspace, tmp_path
+    clean_client: "Client", tmp_path
 ):
     """Test that the pipeline can be configured with an extra
     from a yaml file, but the values from yaml are not overridden.
@@ -103,7 +106,7 @@ def test_pipeline_config_from_file_not_overridden_for_extra(
 
 
 def test_pipeline_config_from_file_not_overridden_for_model_version(
-    clean_workspace, tmp_path
+    clean_client: "Client", tmp_path
 ):
     """Test that the pipeline can be configured with a model version
     from a yaml file, but the values from yaml are not overridden.
@@ -162,7 +165,7 @@ def test_pipeline_config_from_file_not_overridden_for_model_version(
 
 
 def test_pipeline_config_from_file_not_warns_on_new_value(
-    clean_workspace, tmp_path
+    clean_client: "Client", tmp_path
 ):
     """Test that the pipeline can be configured with an extra
     from a yaml file, but other values are modifiable without warnings.
