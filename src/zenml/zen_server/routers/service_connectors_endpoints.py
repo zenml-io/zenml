@@ -43,6 +43,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    dehydrate_response_model,
     get_allowed_resource_ids,
     has_permissions_for_model,
     is_owned_by_authenticated_user,
@@ -173,7 +174,7 @@ def get_service_connector(
         # Update the connector configuration with the secret.
         connector.configuration.update(secret.secret_values)
 
-    return connector
+    return dehydrate_response_model(connector)
 
 
 @router.put(
