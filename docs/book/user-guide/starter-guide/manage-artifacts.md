@@ -186,6 +186,9 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 If you want to tag the artifact versions of a step or pipeline that is executed
 repeatedly, you can use the `tags` property of `ArtifactConfig` to assign an arbitrary number of tags to the created artifacts:
 
+{% tabs %}
+{% tab title="Python SDK" %}
+
 ```python
 from zenml import step, ArtifactConfig
 
@@ -196,10 +199,9 @@ def training_data_loader() -> (
     ...
 ```
 
-This will assign tags "sklearn" and "pre-training" to all artifacts created by
-this step, which can later be used to filter and organize these artifacts.
-
-Or you can use the CLI to add tags:
+{% endtab %}
+{% tab title="CLI" %}
+You can use the `zenml artifacts` CLI to add tags:
 
 ```shell
 # Tag the artifact
@@ -208,6 +210,12 @@ zenml artifacts update iris_dataset -t sklearn
 # Tag the artiact version
 zenml artifacts versions update iris_dataset raw_2023 -t sklearn
 ```
+
+{% endtab %}
+{% endtabs %}
+
+This will assign tags "sklearn" and "pre-training" to all artifacts created by
+this step, which can later be used to filter and organize these artifacts.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
