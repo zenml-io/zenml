@@ -7153,6 +7153,17 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ModelVersionArtifactSchema)
+
+            # Handle artifact name
+            if model_version_artifact_link_filter_model.artifact_name:
+                query = query.where(
+                    ModelVersionArtifactSchema.artifact_id == ArtifactSchema.id
+                ).where(
+                    ArtifactSchema.name
+                    == model_version_artifact_link_filter_model.artifact_name
+                )
+
+            # Handle model artifact types
             if model_version_artifact_link_filter_model.only_data_artifacts:
                 query = query.where(
                     ModelVersionArtifactSchema.is_model_artifact
@@ -7172,13 +7183,6 @@ class SqlZenStore(BaseZenStore):
                     ModelVersionArtifactSchema.is_model_artifact
                 )
 
-            model_version_artifact_link_filter_model.only_data_artifacts = None
-            model_version_artifact_link_filter_model.only_endpoint_artifacts = (
-                None
-            )
-            model_version_artifact_link_filter_model.only_model_artifacts = (
-                None
-            )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -7286,10 +7290,20 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A page of all model version to pipeline run links.
         """
+        query = select(ModelVersionPipelineRunSchema)
+        # Handle pipeline run name
+        if model_version_pipeline_run_link_filter_model.pipeline_run_name:
+            query = query.where(
+                ModelVersionPipelineRunSchema.pipeline_run_id
+                == PipelineRunSchema.id
+            ).where(
+                PipelineRunSchema.name
+                == model_version_pipeline_run_link_filter_model.pipeline_run_name
+            )
         with Session(self.engine) as session:
             return self.filter_and_paginate(
                 session=session,
-                query=select(ModelVersionPipelineRunSchema),
+                query=query,
                 table=ModelVersionPipelineRunSchema,
                 filter_model=model_version_pipeline_run_link_filter_model,
             )

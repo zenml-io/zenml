@@ -101,9 +101,9 @@ pip install -r requirements.txt
 export SLACK_BOT_TOKEN=<your slack api token>
 export OPENAI_API_KEY=<your openai api key>
 
-# pull example
-zenml example pull generative_chat
-cd zenml_examples/generative_chat
+# clone the ZenML repository
+git clone https://github.com/zenml-io/zenml.git
+cd examples/generative_chat
 
 # Initialize ZenML repo
 zenml init
