@@ -442,42 +442,104 @@ def test_delete_user_with_resources_fails():
     """Tests deleting a user with resources fails."""
     zen_store = Client().zen_store
 
-    with UserContext(delete=False) as user:
-        with ComponentContext(
+    login = zen_store.type == StoreType.REST
+
+    with UserContext(delete=False, login=login) as user:
+        component_context = ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
             config={},
             user_id=user.id,
-        ) as orchestrator:
-            with ComponentContext(
-                c_type=StackComponentType.ARTIFACT_STORE,
-                flavor="local",
-                config={},
-                user_id=user.id,
-            ) as artifact_store:
-                components = {
-                    StackComponentType.ORCHESTRATOR: [orchestrator.id],
-                    StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-                }
-                with StackContext(components=components, user_id=user.id):
-                    with pytest.raises(IllegalOperationError):
-                        zen_store.delete_user(user.id)
-
-                with pytest.raises(IllegalOperationError):
-                    zen_store.delete_user(user.id)
-
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_user(user.id)
-
-        with SecretContext(user_id=user.id, delete=False):
-            # Secrets are deleted when the user is deleted
+            delete=False,
+        )
+        with component_context as orchestrator:
+            # We only use the context as a shortcut to create the resource
             pass
 
-        with CodeRepositoryContext(user_id=user.id):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_user(user.id)
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
 
-        with ServiceConnectorContext(
+    component_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        orchestrator_context = ComponentContext(
+            c_type=StackComponentType.ORCHESTRATOR,
+            flavor="local",
+            config={},
+            user_id=user.id,
+            delete=False,
+        )
+        artifact_store_context = ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE,
+            flavor="local",
+            config={},
+            user_id=user.id,
+            delete=False,
+        )
+
+        with orchestrator_context as orchestrator:
+            # We only use the context as a shortcut to create the resource
+            pass
+        with artifact_store_context as artifact_store:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+        components = {
+            StackComponentType.ORCHESTRATOR: [orchestrator.id],
+            StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+        }
+        stack_context = StackContext(
+            components=components, user_id=user.id, delete=False
+        )
+        with stack_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
+
+    stack_context.cleanup()
+    artifact_store_context.cleanup()
+    orchestrator_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        with SecretContext(user_id=user.id, delete=False):
+            pass
+
+    # Secrets are deleted when the user is deleted
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        code_repo_context = CodeRepositoryContext(
+            user_id=user.id, delete=False
+        )
+        with code_repo_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
+
+    code_repo_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        service_connector_context = ServiceConnectorContext(
             connector_type="cat'o'matic",
             auth_method="paw-print",
             resource_types=["cat"],
@@ -487,14 +549,37 @@ def test_delete_user_with_resources_fails():
                 "foods": "tuna",
             },
             user_id=user.id,
-        ):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_user(user.id)
+            delete=False,
+        )
+        with service_connector_context:
+            # We only use the context as a shortcut to create the resource
+            pass
 
-        with ModelVersionContext(create_version=True, user_id=user.id):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_user(user.id)
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
 
+    service_connector_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        model_version_context = ModelVersionContext(
+            create_version=True, user_id=user.id, delete=False
+        )
+        with model_version_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
+
+    model_version_context.cleanup()
+
+    # Can delete because owned resources have been removed
     with does_not_raise():
         zen_store.delete_user(user.id)
 
@@ -694,44 +779,104 @@ def test_delete_service_account_with_resources_fails():
     """Tests deleting a service account with resources fails."""
     zen_store = Client().zen_store
 
-    with ServiceAccountContext(delete=False) as service_account:
-        with ComponentContext(
+    login = zen_store.type == StoreType.REST
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        component_context = ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
             config={},
             user_id=service_account.id,
-        ) as orchestrator:
-            with ComponentContext(
-                c_type=StackComponentType.ARTIFACT_STORE,
-                flavor="local",
-                config={},
-                user_id=service_account.id,
-            ) as artifact_store:
-                components = {
-                    StackComponentType.ORCHESTRATOR: [orchestrator.id],
-                    StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-                }
-                with StackContext(
-                    components=components, user_id=service_account.id
-                ):
-                    with pytest.raises(IllegalOperationError):
-                        zen_store.delete_service_account(service_account.id)
-
-                with pytest.raises(IllegalOperationError):
-                    zen_store.delete_service_account(service_account.id)
-
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_service_account(service_account.id)
-
-        with SecretContext(user_id=service_account.id, delete=False):
-            # Secrets are deleted when the user is deleted
+            delete=False,
+        )
+        with component_context as orchestrator:
+            # We only use the context as a shortcut to create the resource
             pass
 
-        with CodeRepositoryContext(user_id=service_account.id):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_service_account(service_account.id)
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
 
-        with ServiceConnectorContext(
+    component_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        orchestrator_context = ComponentContext(
+            c_type=StackComponentType.ORCHESTRATOR,
+            flavor="local",
+            config={},
+            user_id=service_account.id,
+            delete=False,
+        )
+        artifact_store_context = ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE,
+            flavor="local",
+            config={},
+            user_id=service_account.id,
+            delete=False,
+        )
+
+        with orchestrator_context as orchestrator:
+            # We only use the context as a shortcut to create the resource
+            pass
+        with artifact_store_context as artifact_store:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+        components = {
+            StackComponentType.ORCHESTRATOR: [orchestrator.id],
+            StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+        }
+        stack_context = StackContext(
+            components=components, user_id=service_account.id, delete=False
+        )
+        with stack_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
+
+    stack_context.cleanup()
+    artifact_store_context.cleanup()
+    orchestrator_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        with SecretContext(user_id=service_account.id, delete=False):
+            pass
+
+    # Secrets are deleted when the service_account is deleted
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        code_repo_context = CodeRepositoryContext(
+            user_id=service_account.id, delete=False
+        )
+        with code_repo_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
+
+    code_repo_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        service_connector_context = ServiceConnectorContext(
             connector_type="cat'o'matic",
             auth_method="paw-print",
             resource_types=["cat"],
@@ -741,16 +886,37 @@ def test_delete_service_account_with_resources_fails():
                 "foods": "tuna",
             },
             user_id=service_account.id,
-        ):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_service_account(service_account.id)
+            delete=False,
+        )
+        with service_connector_context:
+            # We only use the context as a shortcut to create the resource
+            pass
 
-        with ModelVersionContext(
-            create_version=True, user_id=service_account.id
-        ):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_service_account(service_account.id)
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
 
+    service_connector_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        model_version_context = ModelVersionContext(
+            create_version=True, user_id=service_account.id, delete=False
+        )
+        with model_version_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
+
+    model_version_context.cleanup()
+
+    # Can delete because owned resources have been removed
     with does_not_raise():
         zen_store.delete_service_account(service_account.id)
 
