@@ -81,11 +81,7 @@ def producer_pipe(do_promote: bool):
 @pipeline(model_version=ModelVersion(name="foo", version="production"))
 def consumer_pipe():
     mv = get_pipeline_context().model_version
-    asserter_step(
-        mv.get_artifact(
-            "producer_pipe::promoter_step::output", as_external_artifact=True
-        )
-    )
+    asserter_step(mv.get_artifact("producer_pipe::promoter_step::output"))
 
 
 def test_that_argument_can_be_a_get_artifact_of_model_version_in_pipeline_context(
