@@ -56,11 +56,7 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunRequest,
-    PipelineUpdate,
     ResourceTypeModel,
-    RoleFilter,
-    RoleRequest,
-    RoleUpdate,
     SecretFilterModel,
     SecretRequestModel,
     ServiceAccountRequest,
@@ -70,9 +66,6 @@ from zenml.models import (
     ServiceConnectorUpdate,
     StackRequest,
     StepRunFilter,
-    TeamFilter,
-    TeamRequest,
-    TeamUpdate,
     UserFilter,
     UserRequest,
     UserUpdate,
@@ -193,10 +186,6 @@ class UserContext:
                 name=self.user_name, password=self.password, active=True
             )
             self.created_user = self.store.create_user(new_user)
-            self.client.create_user_role_assignment(
-                role_name_or_id="admin",
-                user_name_or_id=self.created_user.id,
-            )
         else:
             self.created_user = self.store.get_user(self.user_name)
 
@@ -259,10 +248,6 @@ class ServiceAccountContext:
             self.created_service_account = self.store.create_service_account(
                 new_account
             )
-            self.client.create_user_role_assignment(
-                role_name_or_id="admin",
-                user_name_or_id=self.created_service_account.id,
-            )
         else:
             self.created_service_account = self.store.get_service_account(
                 self.name
@@ -297,6 +282,7 @@ class ServiceAccountContext:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
             _ = Client().zen_store
+        if self.existing_account or self.login and self.delete:
             self.store.delete_api_key(
                 self.created_service_account.id,
                 self.api_key.id,
@@ -349,12 +335,14 @@ class StackContext:
         components: Dict[StackComponentType, List[uuid.UUID]],
         stack_name: str = "aria",
         user_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         self.stack_name = sample_name(stack_name)
         self.user_id = user_id
         self.components = components
         self.client = Client()
         self.store = self.client.zen_store
+        self.delete = delete
 
     def __enter__(self):
         new_stack = StackRequest(
@@ -366,11 +354,15 @@ class StackContext:
         self.created_stack = self.store.create_stack(new_stack)
         return self.created_stack
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         try:
             self.store.delete_stack(self.created_stack.id)
         except KeyError:
             pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            self.cleanup()
 
 
 class ComponentContext:
@@ -381,6 +373,7 @@ class ComponentContext:
         flavor: str,
         component_name: str = "aria",
         user_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         self.component_name = sample_name(component_name)
         self.flavor = flavor
@@ -389,6 +382,7 @@ class ComponentContext:
         self.user_id = user_id
         self.client = Client()
         self.store = self.client.zen_store
+        self.delete = delete
 
     def __enter__(self):
         new_component = ComponentRequest(
@@ -404,47 +398,15 @@ class ComponentContext:
         )
         return self.created_component
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         try:
             self.store.delete_stack_component(self.created_component.id)
         except KeyError:
             pass
 
-
-class TeamContext:
-    def __init__(self, team_name: str = "arias_fanclub"):
-        self.team_name = sample_name(team_name)
-        self.client = Client()
-        self.store = self.client.zen_store
-
-    def __enter__(self):
-        new_team = TeamRequest(name=self.team_name)
-        self.created_team = self.store.create_team(new_team)
-        return self.created_team
-
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        try:
-            self.store.delete_team(self.created_team.id)
-        except KeyError:
-            pass
-
-
-class RoleContext:
-    def __init__(self, role_name: str = "aria_tamer"):
-        self.role_name = sample_name(role_name)
-        self.client = Client()
-        self.store = self.client.zen_store
-
-    def __enter__(self):
-        new_role = RoleRequest(name=self.role_name, permissions=set())
-        self.created_role = self.store.create_role(new_role)
-        return self.created_role
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        try:
-            self.store.delete_role(self.created_role.id)
-        except KeyError:
-            pass
+        if self.delete:
+            self.cleanup()
 
 
 class WorkspaceContext:
@@ -558,12 +520,15 @@ class CodeRepositoryContext:
         self.repo = self.store.create_code_repository(request)
         return self.repo
 
+    def cleanup(self):
+        try:
+            self.store.delete_code_repository(self.repo.id)
+        except KeyError:
+            pass
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
-            try:
-                self.store.delete_code_repository(self.repo.id)
-            except KeyError:
-                pass
+            self.cleanup()
 
 
 class ServiceConnectorContext:
@@ -580,7 +545,6 @@ class ServiceConnectorContext:
         expiration_seconds: Optional[int] = None,
         user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
-        is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
         client: Optional[Client] = None,
         delete: bool = True,
@@ -596,7 +560,6 @@ class ServiceConnectorContext:
         self.expiration_seconds = expiration_seconds
         self.user_id = user_id
         self.workspace_id = workspace_id
-        self.is_shared = is_shared
         self.labels = labels
         self.client = client or Client()
         self.store = self.client.zen_store
@@ -613,7 +576,6 @@ class ServiceConnectorContext:
             secrets=self.secrets or {},
             expires_at=self.expires_at,
             expiration_seconds=self.expiration_seconds,
-            is_shared=self.is_shared,
             labels=self.labels or {},
             user=self.user_id or self.client.active_user.id,
             workspace=self.workspace_id or self.client.active_workspace.id,
@@ -622,12 +584,15 @@ class ServiceConnectorContext:
         self.connector = self.store.create_service_connector(request)
         return self.connector
 
+    def cleanup(self):
+        try:
+            self.store.delete_service_connector(self.connector.id)
+        except KeyError:
+            pass
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
-            try:
-                self.store.delete_service_connector(self.connector.id)
-            except KeyError:
-                pass
+            self.cleanup()
 
 
 class ModelVersionContext:
@@ -637,6 +602,7 @@ class ModelVersionContext:
         create_artifacts: int = 0,
         create_prs: int = 0,
         user_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         client = Client()
         self.workspace = client.active_workspace.id
@@ -650,6 +616,7 @@ class ModelVersionContext:
         self.create_prs = create_prs
         self.prs = []
         self.deployments = []
+        self.delete = delete
 
     def __enter__(self):
         client = Client()
@@ -729,7 +696,7 @@ class ModelVersionContext:
             else:
                 return model
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         client = Client()
         try:
             client.delete_model(self.model)
@@ -741,6 +708,10 @@ class ModelVersionContext:
             client.zen_store.delete_run(run.id)
         for deployment in self.deployments:
             client.delete_deployment(str(deployment.id))
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            self.cleanup()
 
 
 class CatClawMarks(AuthenticationConfig):
@@ -909,20 +880,6 @@ user_crud_test_config = CrudTestConfig(
     filter_model=UserFilter,
     entity_name="user",
 )
-role_crud_test_config = CrudTestConfig(
-    create_model=RoleRequest(
-        name=sample_name("sample_role"), permissions=set()
-    ),
-    update_model=RoleUpdate(name=sample_name("updated_sample_role")),
-    filter_model=RoleFilter,
-    entity_name="role",
-)
-team_crud_test_config = CrudTestConfig(
-    create_model=TeamRequest(name=sample_name("sample_team")),
-    update_model=TeamUpdate(name=sample_name("updated_sample_team")),
-    filter_model=TeamFilter,
-    entity_name="team",
-)
 flavor_crud_test_config = CrudTestConfig(
     create_model=FlavorRequest(
         name=sample_name("sample_flavor"),
@@ -930,6 +887,7 @@ flavor_crud_test_config = CrudTestConfig(
         integration="",
         source="",
         config_schema="",
+        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
     filter_model=FlavorFilter,
@@ -957,7 +915,8 @@ pipeline_crud_test_config = CrudTestConfig(
         version="1",
         version_hash="abc123",
     ),
-    update_model=PipelineUpdate(name=sample_name("updated_sample_pipeline")),
+    # Updating pipelines is not doing anything at the moment
+    # update_model=PipelineUpdate(name=sample_name("updated_sample_pipeline")),
     filter_model=PipelineFilter,
     entity_name="pipeline",
 )
@@ -1099,8 +1058,6 @@ model_crud_test_config = CrudTestConfig(
 list_of_entities = [
     workspace_crud_test_config,
     user_crud_test_config,
-    role_crud_test_config,
-    team_crud_test_config,
     flavor_crud_test_config,
     component_crud_test_config,
     pipeline_crud_test_config,

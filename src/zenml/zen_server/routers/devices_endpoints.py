@@ -24,7 +24,7 @@ from zenml.constants import (
     DEVICES,
     VERSION_1,
 )
-from zenml.enums import OAuthDeviceStatus, PermissionType
+from zenml.enums import OAuthDeviceStatus
 from zenml.models import (
     OAuthDeviceFilter,
     OAuthDeviceInternalUpdate,
@@ -60,9 +60,7 @@ def list_authorized_devices(
         make_dependable(OAuthDeviceFilter)
     ),
     hydrate: bool = False,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[OAuthDeviceResponse]:
     """Gets a page of OAuth2 authorized devices belonging to the current user.
 
@@ -92,9 +90,7 @@ def get_authorization_device(
     device_id: UUID,
     user_code: Optional[str] = None,
     hydrate: bool = True,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> OAuthDeviceResponse:
     """Gets a specific OAuth2 authorized device using its unique ID.
 
@@ -144,9 +140,7 @@ def get_authorization_device(
 def update_authorized_device(
     device_id: UUID,
     update: OAuthDeviceUpdate,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> OAuthDeviceResponse:
     """Updates a specific OAuth2 authorized device using its unique ID.
 
@@ -183,9 +177,7 @@ def update_authorized_device(
 def verify_authorized_device(
     device_id: UUID,
     request: OAuthDeviceVerificationRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> OAuthDeviceResponse:
     """Verifies a specific OAuth2 authorized device using its unique ID.
 
@@ -284,9 +276,7 @@ def verify_authorized_device(
 @handle_exceptions
 def delete_authorized_device(
     device_id: UUID,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific OAuth2 authorized device using its unique ID.
 

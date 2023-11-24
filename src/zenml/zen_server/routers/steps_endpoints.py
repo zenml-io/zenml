@@ -30,7 +30,7 @@ from zenml.constants import (
     STEPS,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, PermissionType
+from zenml.enums import ExecutionStatus
 from zenml.models import (
     Page,
     StepRunFilter,
@@ -40,6 +40,13 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    dehydrate_page,
+    dehydrate_response_model,
+    get_allowed_resource_ids,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -49,7 +56,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + STEPS,
     tags=["steps"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -64,7 +71,7 @@ def list_run_steps(
         make_dependable(StepRunFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[StepRunResponse]:
     """Get run steps according to query filters.
 
@@ -73,13 +80,23 @@ def list_run_steps(
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        auth_context: Authentication context.
 
     Returns:
         The run steps according to query filters.
     """
-    return zen_store().list_run_steps(
+    allowed_pipeline_run_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.PIPELINE_RUN
+    )
+    step_run_filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id,
+        pipeline_run_id=allowed_pipeline_run_ids,
+    )
+
+    page = zen_store().list_run_steps(
         step_run_filter_model=step_run_filter_model, hydrate=hydrate
     )
+    return dehydrate_page(page)
 
 
 @router.post(
@@ -90,7 +107,7 @@ def list_run_steps(
 @handle_exceptions
 def create_run_step(
     step: StepRunRequest,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> StepRunResponse:
     """Create a run step.
 
@@ -100,6 +117,9 @@ def create_run_step(
     Returns:
         The created run step.
     """
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.UPDATE)
+
     return zen_store().create_run_step(step_run=step)
 
 
@@ -112,7 +132,7 @@ def create_run_step(
 def get_step(
     step_id: UUID,
     hydrate: bool = True,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> StepRunResponse:
     """Get one specific step.
 
@@ -124,7 +144,11 @@ def get_step(
     Returns:
         The step.
     """
-    return zen_store().get_run_step(step_id, hydrate=hydrate)
+    step = zen_store().get_run_step(step_id, hydrate=hydrate)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    return dehydrate_response_model(step)
 
 
 @router.put(
@@ -136,7 +160,7 @@ def get_step(
 def update_step(
     step_id: UUID,
     step_model: StepRunUpdate,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> StepRunResponse:
     """Updates a step.
 
@@ -147,9 +171,14 @@ def update_step(
     Returns:
         The updated step model.
     """
-    return zen_store().update_run_step(
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.UPDATE)
+
+    updated_step = zen_store().update_run_step(
         step_run_id=step_id, step_run_update=step_model
     )
+    return dehydrate_response_model(updated_step)
 
 
 @router.get(
@@ -160,7 +189,7 @@ def update_step(
 @handle_exceptions
 def get_step_configuration(
     step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Dict[str, Any]:
     """Get the configuration of a specific step.
 
@@ -170,7 +199,11 @@ def get_step_configuration(
     Returns:
         The step configuration.
     """
-    return zen_store().get_run_step(step_id).config.dict()
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    return step.config.dict()
 
 
 @router.get(
@@ -181,7 +214,7 @@ def get_step_configuration(
 @handle_exceptions
 def get_step_status(
     step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ExecutionStatus:
     """Get the status of a specific step.
 
@@ -191,7 +224,11 @@ def get_step_status(
     Returns:
         The status of the step.
     """
-    return zen_store().get_run_step(step_id).status
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
+    return step.status
 
 
 @router.get(
@@ -202,7 +239,7 @@ def get_step_status(
 @handle_exceptions
 def get_step_logs(
     step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> str:
     """Get the logs of a specific step.
 
@@ -215,8 +252,12 @@ def get_step_logs(
     Raises:
         HTTPException: If no logs are available for this step.
     """
+    step = zen_store().get_run_step(step_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.READ)
+
     store = zen_store()
-    logs = store.get_run_step(step_id).logs
+    logs = step.logs
     if logs is None:
         raise HTTPException(
             status_code=404, detail="No logs available for this step"

@@ -24,11 +24,10 @@ from zenml.constants import (
     API,
     DEACTIVATE,
     EMAIL_ANALYTICS,
-    ROLES,
     USERS,
     VERSION_1,
 )
-from zenml.enums import AuthScheme, PermissionType
+from zenml.enums import AuthScheme
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -36,8 +35,6 @@ from zenml.models import (
     UserFilter,
     UserRequest,
     UserResponse,
-    UserRoleAssignmentFilter,
-    UserRoleAssignmentResponse,
     UserUpdate,
 )
 from zenml.zen_server.auth import (
@@ -46,6 +43,16 @@ from zenml.zen_server.auth import (
     authorize,
 )
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    dehydrate_page,
+    dehydrate_response_model,
+    get_allowed_resource_ids,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -85,7 +92,7 @@ current_user_router = APIRouter(
 def list_users(
     user_filter_model: UserFilter = Depends(make_dependable(UserFilter)),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[UserResponse]:
     """Returns a list of all users.
 
@@ -94,13 +101,24 @@ def list_users(
             pagination.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        auth_context: Authentication context.
 
     Returns:
         A list of all users.
     """
-    return zen_store().list_users(
+    allowed_ids = get_allowed_resource_ids(resource_type=ResourceType.USER)
+    if allowed_ids is not None:
+        # Make sure users can see themselves
+        allowed_ids.add(auth_context.user.id)
+
+    user_filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id, id=allowed_ids
+    )
+
+    page = zen_store().list_users(
         user_filter_model=user_filter_model, hydrate=hydrate
     )
+    return dehydrate_page(page)
 
 
 # When the auth scheme is set to EXTERNAL, users cannot be created via the
@@ -119,7 +137,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def create_user(
         user: UserRequest,
-        _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+        _: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Creates a user.
 
@@ -142,7 +160,12 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             token = user.generate_activation_token()
         else:
             user.active = True
-        new_user = zen_store().create_user(user)
+
+        new_user = verify_permissions_and_create_entity(
+            request_model=user,
+            resource_type=ResourceType.USER,
+            create_method=zen_store().create_user,
+        )
 
         # add back the original unhashed activation token, if generated, to
         # send it back to the client
@@ -160,7 +183,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 def get_user(
     user_name_or_id: Union[str, UUID],
     hydrate: bool = True,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(authorize),
 ) -> UserResponse:
     """Returns a specific user.
 
@@ -168,13 +191,18 @@ def get_user(
         user_name_or_id: Name or ID of the user.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        auth_context: Authentication context.
 
     Returns:
         A specific user.
     """
-    return zen_store().get_user(
+    user = zen_store().get_user(
         user_name_or_id=user_name_or_id, hydrate=hydrate
     )
+    if user.id != auth_context.user.id:
+        verify_permission_for_model(user, action=Action.READ)
+
+    return dehydrate_response_model(user)
 
 
 # When the auth scheme is set to EXTERNAL, users cannot be updated via the
@@ -194,23 +222,27 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     def update_user(
         user_name_or_id: Union[str, UUID],
         user_update: UserUpdate,
-        _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+        auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Updates a specific user.
 
         Args:
             user_name_or_id: Name or ID of the user.
             user_update: the user to use for the update.
+            auth_context: Authentication context.
 
         Returns:
             The updated user.
         """
         user = zen_store().get_user(user_name_or_id)
+        if user.id != auth_context.user.id:
+            verify_permission_for_model(user, action=Action.UPDATE)
 
-        return zen_store().update_user(
+        updated_user = zen_store().update_user(
             user_id=user.id,
             user_update=user_update,
         )
+        return dehydrate_response_model(updated_user)
 
     @activation_router.put(
         "/{user_name_or_id}" + ACTIVATE,
@@ -261,17 +293,20 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def deactivate_user(
         user_name_or_id: Union[str, UUID],
-        _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+        auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Deactivates a user and generates a new activation token for it.
 
         Args:
             user_name_or_id: Name or ID of the user.
+            auth_context: Authentication context.
 
         Returns:
             The generated activation token.
         """
         user = zen_store().get_user(user_name_or_id)
+        if user.id != auth_context.user.id:
+            verify_permission_for_model(user, action=Action.UPDATE)
 
         user_update = UserUpdate(
             name=user.name,
@@ -283,7 +318,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         )
         # add back the original unhashed activation token
         user.get_body().activation_token = token
-        return user
+        return dehydrate_response_model(user)
 
     @router.delete(
         "/{user_name_or_id}",
@@ -296,9 +331,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def delete_user(
         user_name_or_id: Union[str, UUID],
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.WRITE]
-        ),
+        auth_context: AuthContext = Security(authorize),
     ) -> None:
         """Deletes a specific user.
 
@@ -311,13 +344,16 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         """
         user = zen_store().get_user(user_name_or_id)
 
-        if auth_context.user.name == user.name:
+        if auth_context.user.id == user.id:
             raise IllegalOperationError(
                 "You cannot delete the user account currently used to authenticate "
                 "to the ZenML server. If you wish to delete this account, "
                 "please authenticate with another account or contact your ZenML "
                 "administrator."
             )
+        else:
+            verify_permission_for_model(user, action=Action.DELETE)
+
         zen_store().delete_user(user_name_or_id=user_name_or_id)
 
     @router.put(
@@ -333,9 +369,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     def email_opt_in_response(
         user_name_or_id: Union[str, UUID],
         user_response: UserUpdate,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.ME]
-        ),
+        auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Sets the response of the user to the email prompt.
 
@@ -367,43 +401,14 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                     source="zenml server",
                 )
 
-            return zen_store().update_user(
+            updated_user = zen_store().update_user(
                 user_id=user.id, user_update=user_update
             )
+            return dehydrate_response_model(updated_user)
         else:
             raise AuthorizationException(
-                "Users can not opt in on behalf of another " "user."
+                "Users can not opt in on behalf of another user."
             )
-
-
-@router.get(
-    "/{user_name_or_id}" + ROLES,
-    response_model=Page[UserRoleAssignmentResponse],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_role_assignments_for_user(
-    user_role_assignment_filter_model: UserRoleAssignmentFilter = Depends(
-        make_dependable(UserRoleAssignmentFilter)
-    ),
-    hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserRoleAssignmentResponse]:
-    """Returns a list of all roles that are assigned to a user.
-
-    Args:
-        user_role_assignment_filter_model: filter models for user role
-            assignments.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-
-    Returns:
-        A list of all roles that are assigned to a user.
-    """
-    return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model,
-        hydrate=hydrate,
-    )
 
 
 @current_user_router.get(
@@ -413,9 +418,7 @@ def list_role_assignments_for_user(
 )
 @handle_exceptions
 def get_current_user(
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> UserResponse:
     """Returns the model of the authenticated user.
 
@@ -425,7 +428,7 @@ def get_current_user(
     Returns:
         The model of the authenticated user.
     """
-    return auth_context.user
+    return dehydrate_response_model(auth_context.user)
 
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
@@ -444,9 +447,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def update_myself(
         user: UserUpdate,
-        auth_context: AuthContext = Security(
-            authorize, scopes=[PermissionType.ME]
-        ),
+        auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Updates a specific user.
 
@@ -457,6 +458,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         Returns:
             The updated user.
         """
-        return zen_store().update_user(
+        updated_user = zen_store().update_user(
             user_id=auth_context.user.id, user_update=user
         )
+        return dehydrate_response_model(updated_user)

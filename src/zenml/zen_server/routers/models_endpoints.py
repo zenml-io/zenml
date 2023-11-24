@@ -24,7 +24,6 @@ from zenml.constants import (
     MODELS,
     VERSION_1,
 )
-from zenml.enums import PermissionType
 from zenml.models import (
     ModelFilterModel,
     ModelResponseModel,
@@ -35,6 +34,17 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.utils import (
+    dehydrate_page,
+    get_allowed_resource_ids,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -48,7 +58,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + MODELS,
     tags=["models"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -62,7 +72,7 @@ def list_models(
     model_filter_model: ModelFilterModel = Depends(
         make_dependable(ModelFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[ModelResponseModel]:
     """Get models according to query filters.
 
@@ -74,8 +84,10 @@ def list_models(
     Returns:
         The models according to query filters.
     """
-    return zen_store().list_models(
-        model_filter_model=model_filter_model,
+    return verify_permissions_and_list_entities(
+        filter_model=model_filter_model,
+        resource_type=ResourceType.MODEL,
+        list_method=zen_store().list_models,
     )
 
 
@@ -87,7 +99,7 @@ def list_models(
 @handle_exceptions
 def get_model(
     model_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ModelResponseModel:
     """Get a model by name or ID.
 
@@ -97,7 +109,9 @@ def get_model(
     Returns:
         The model with the given name or ID.
     """
-    return zen_store().get_model(model_name_or_id)
+    return verify_permissions_and_get_entity(
+        id=model_name_or_id, get_method=zen_store().get_model
+    )
 
 
 @router.put(
@@ -109,7 +123,7 @@ def get_model(
 def update_model(
     model_id: UUID,
     model_update: ModelUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ModelResponseModel:
     """Updates a model.
 
@@ -120,9 +134,11 @@ def update_model(
     Returns:
         The updated model.
     """
-    return zen_store().update_model(
-        model_id=model_id,
-        model_update=model_update,
+    return verify_permissions_and_update_entity(
+        id=model_id,
+        update_model=model_update,
+        get_method=zen_store().get_model,
+        update_method=zen_store().update_model,
     )
 
 
@@ -133,14 +149,18 @@ def update_model(
 @handle_exceptions
 def delete_model(
     model_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Delete a model by name or ID.
 
     Args:
         model_name_or_id: The name or ID of the model to delete.
     """
-    zen_store().delete_model(model_name_or_id)
+    verify_permissions_and_delete_entity(
+        id=model_name_or_id,
+        get_method=zen_store().get_model,
+        delete_method=zen_store().delete_model,
+    )
 
 
 #################
@@ -159,7 +179,7 @@ def list_model_versions(
     model_version_filter_model: ModelVersionFilterModel = Depends(
         make_dependable(ModelVersionFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[ModelVersionResponseModel]:
     """Get model versions according to query filters.
 
@@ -169,11 +189,20 @@ def list_model_versions(
         model_name_or_id: The name or ID of the model to list in.
         model_version_filter_model: Filter model used for pagination, sorting,
             filtering
+        auth_context: The authentication context.
 
     Returns:
         The model versions according to query filters.
     """
-    return zen_store().list_model_versions(
+    allowed_model_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.MODEL
+    )
+    model_version_filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id, model_id=allowed_model_ids
+    )
+
+    model_versions = zen_store().list_model_versions(
         model_name_or_id=model_name_or_id,
         model_version_filter_model=model_version_filter_model,
     )
+    return dehydrate_page(model_versions)

@@ -152,7 +152,7 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         Raises:
             RuntimeError: If the deployment is not running.
         """
-        from zenml.zen_stores.base_zen_store import (
+        from zenml.constants import (
             DEFAULT_PASSWORD,
             DEFAULT_USERNAME,
         )

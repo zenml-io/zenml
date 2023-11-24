@@ -92,7 +92,9 @@ class FlavorSchema(NamedSchema, table=True):
         Returns:
             The updated `FlavorSchema`.
         """
-        for field, value in flavor_update.dict(exclude_unset=True).items():
+        for field, value in flavor_update.dict(
+            exclude_unset=True, exclude={"workspace", "user"}
+        ).items():
             if field == "config_schema":
                 setattr(self, field, json.dumps(value))
             else:

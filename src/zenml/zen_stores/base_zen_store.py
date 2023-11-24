@@ -32,41 +32,28 @@ from pydantic import BaseModel
 from requests import ConnectionError
 
 import zenml
-from zenml.analytics.utils import analytics_disabler
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
-    ENV_ZENML_DEFAULT_USER_NAME,
-    ENV_ZENML_DEFAULT_USER_PASSWORD,
+    DEFAULT_STACK_AND_COMPONENT_NAME,
+    DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     IS_DEBUG_ENV,
 )
 from zenml.enums import (
-    AuthScheme,
-    PermissionType,
     SecretsStoreType,
-    StackComponentType,
     StoreType,
 )
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
-    ComponentRequest,
-    Page,
-    RoleFilter,
-    RoleRequest,
-    RoleResponse,
     ServerDatabaseType,
     ServerModel,
     StackFilter,
-    StackRequest,
     StackResponse,
     UserFilter,
-    UserRequest,
     UserResponse,
-    UserRoleAssignmentRequest,
-    WorkspaceRequest,
     WorkspaceResponse,
 )
 from zenml.utils.proxy_utils import make_proxy_class
@@ -81,14 +68,6 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 
 logger = get_logger(__name__)
-
-DEFAULT_USERNAME = "default"
-DEFAULT_PASSWORD = ""
-DEFAULT_WORKSPACE_NAME = "default"
-DEFAULT_STACK_NAME = "default"
-DEFAULT_STACK_COMPONENT_NAME = "default"
-DEFAULT_ADMIN_ROLE = "admin"
-DEFAULT_GUEST_ROLE = "guest"
 
 
 @make_proxy_class(SecretsStoreInterface, "_secrets_store")
@@ -309,37 +288,6 @@ class BaseZenStore(
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
-        try:
-            default_workspace = self._default_workspace
-        except KeyError:
-            default_workspace = self._create_default_workspace()
-        try:
-            assert self._admin_role
-        except KeyError:
-            self._create_admin_role()
-        try:
-            assert self._guest_role
-        except KeyError:
-            self._create_guest_role()
-
-        config = ServerConfiguration.get_server_config()
-        # If the auth scheme is external, don't create the default user and
-        # stack
-        if config.auth_scheme != AuthScheme.EXTERNAL:
-            try:
-                default_user = self._default_user
-            except KeyError:
-                default_user = self._create_default_user()
-            try:
-                self._get_default_stack(
-                    workspace_name_or_id=default_workspace.id,
-                    user_name_or_id=default_user.id,
-                )
-            except KeyError:
-                self._create_default_stack(
-                    workspace_name_or_id=default_workspace.id,
-                    user_name_or_id=default_user.id,
-                )
 
     @property
     def url(self) -> str:
@@ -401,7 +349,7 @@ class BaseZenStore(
                     active_workspace_name_or_id
                 )
             except KeyError:
-                active_workspace = self._get_or_create_default_workspace()
+                active_workspace = self._get_default_workspace()
 
                 logger.warning(
                     f"The current {config_name} active workspace is no longer "
@@ -409,7 +357,7 @@ class BaseZenStore(
                     f"'{active_workspace.name}'."
                 )
         else:
-            active_workspace = self._get_or_create_default_workspace()
+            active_workspace = self._get_default_workspace()
 
             logger.info(
                 f"Setting the {config_name} active workspace "
@@ -429,8 +377,8 @@ class BaseZenStore(
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_or_create_default_stack(
-                    active_workspace
+                active_stack = self._get_default_stack(
+                    workspace_id=active_workspace.id
                 )
             else:
                 if active_stack.workspace.id != active_workspace.id:
@@ -439,28 +387,18 @@ class BaseZenStore(
                         "workspace. Resetting the active stack to default.",
                         config_name,
                     )
-                    active_stack = self._get_or_create_default_stack(
-                        active_workspace
+                    active_stack = self._get_default_stack(
+                        workspace_id=active_workspace.id
                     )
-                elif not active_stack.is_shared and (
-                    not active_stack.user
-                    or (active_stack.user.id != self.get_user().id)
-                ):
-                    logger.warning(
-                        "The current %s active stack is not shared and not "
-                        "owned by the active user. "
-                        "Resetting the active stack to default.",
-                        config_name,
-                    )
-                    active_stack = self._get_or_create_default_stack(
-                        active_workspace
-                    )
+
         else:
             logger.warning(
                 "Setting the %s active stack to default.",
                 config_name,
             )
-            active_stack = self._get_or_create_default_stack(active_workspace)
+            active_stack = self._get_default_stack(
+                workspace_id=active_workspace.id
+            )
 
         return active_workspace, active_stack
 
@@ -493,25 +431,61 @@ class BaseZenStore(
         """
         return self.get_store_info().is_local()
 
-    def _get_or_create_default_stack(
-        self, workspace: WorkspaceResponse
-    ) -> StackResponse:
-        try:
-            return self._get_default_stack(
-                workspace_name_or_id=workspace.id,
-                user_name_or_id=self.get_user().id,
-            )
-        except KeyError:
-            return self._create_default_stack(
-                workspace_name_or_id=workspace.id,
-                user_name_or_id=self.get_user().id,
-            )
+    # -----------------------------
+    # Default workspaces and stacks
+    # -----------------------------
 
-    def _get_or_create_default_workspace(self) -> WorkspaceResponse:
+    @property
+    def _default_workspace_name(self) -> str:
+        """Get the default workspace name.
+
+        Returns:
+            The default workspace name.
+        """
+        return os.getenv(
+            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
+        )
+
+    def _get_default_workspace(self) -> WorkspaceResponse:
+        """Get the default workspace.
+
+        Raises:
+            KeyError: If the default workspace doesn't exist.
+
+        Returns:
+            The default workspace.
+        """
         try:
-            return self._default_workspace
+            return self.get_workspace(self._default_workspace_name)
         except KeyError:
-            return self._create_default_workspace()
+            raise KeyError("Unable to find default workspace.")
+
+    def _get_default_stack(
+        self,
+        workspace_id: UUID,
+    ) -> StackResponse:
+        """Get the default stack for a user in a workspace.
+
+        Args:
+            workspace_id: ID of the workspace.
+
+        Returns:
+            The default stack in the workspace.
+
+        Raises:
+            KeyError: if the workspace or default stack doesn't exist.
+        """
+        default_stacks = self.list_stacks(
+            StackFilter(
+                workspace_id=workspace_id,
+                name=DEFAULT_STACK_AND_COMPONENT_NAME,
+            )
+        )
+        if default_stacks.total == 0:
+            raise KeyError(
+                f"No default stack found in workspace {workspace_id}."
+            )
+        return default_stacks.items[0]
 
     # --------------
     # Event Handlers
@@ -549,220 +523,6 @@ class BaseZenStore(
                     exc_info=True,
                 )
 
-    # ------
-    # Stacks
-    # ------
-
-    def _create_default_stack(
-        self,
-        workspace_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
-    ) -> StackResponse:
-        """Create the default stack components and stack.
-
-        The default stack contains a local orchestrator and a local artifact
-        store.
-
-        Args:
-            workspace_name_or_id: Name or ID of the workspace to which the stack
-                belongs.
-            user_name_or_id: The name or ID of the user that owns the stack.
-
-        Returns:
-            The model of the created default stack.
-        """
-        with analytics_disabler():
-            workspace = self.get_workspace(
-                workspace_name_or_id=workspace_name_or_id
-            )
-            user = self.get_user(user_name_or_id=user_name_or_id)
-
-            logger.info(
-                f"Creating default stack for user '{user.name}' in workspace "
-                f"{workspace.name}..."
-            )
-
-            # Register the default orchestrator
-            orchestrator = self.create_stack_component(
-                component=ComponentRequest(
-                    user=user.id,
-                    workspace=workspace.id,
-                    name=DEFAULT_STACK_COMPONENT_NAME,
-                    type=StackComponentType.ORCHESTRATOR,
-                    flavor="local",
-                    configuration={},
-                ),
-            )
-
-            # Register the default artifact store
-            artifact_store = self.create_stack_component(
-                component=ComponentRequest(
-                    user=user.id,
-                    workspace=workspace.id,
-                    name=DEFAULT_STACK_COMPONENT_NAME,
-                    type=StackComponentType.ARTIFACT_STORE,
-                    flavor="local",
-                    configuration={},
-                ),
-            )
-
-            components = {
-                c.type: [c.id] for c in [orchestrator, artifact_store]
-            }
-            # Register the default stack
-            stack = StackRequest(
-                name=DEFAULT_STACK_NAME,
-                components=components,
-                is_shared=False,
-                workspace=workspace.id,
-                user=user.id,
-            )
-            return self.create_stack(stack=stack)
-
-    def _get_default_stack(
-        self,
-        workspace_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
-    ) -> StackResponse:
-        """Get the default stack for a user in a workspace.
-
-        Args:
-            workspace_name_or_id: Name or ID of the workspace.
-            user_name_or_id: Name or ID of the user.
-
-        Returns:
-            The default stack in the workspace owned by the supplied user.
-
-        Raises:
-            KeyError: if the workspace or default stack doesn't exist.
-        """
-        default_stacks = self.list_stacks(
-            StackFilter(
-                workspace_id=workspace_name_or_id,
-                user_id=user_name_or_id,
-                name=DEFAULT_STACK_NAME,
-            )
-        )
-        if default_stacks.total == 0:
-            raise KeyError(
-                f"No default stack found for user {str(user_name_or_id)} in "
-                f"workspace {str(workspace_name_or_id)}"
-            )
-        return default_stacks.items[0]
-
-    # -----
-    # Roles
-    # -----
-    @property
-    def _admin_role(self) -> RoleResponse:
-        """Get the admin role.
-
-        Returns:
-            The default admin role.
-        """
-        return self.get_role(DEFAULT_ADMIN_ROLE)
-
-    def _create_admin_role(self) -> RoleResponse:
-        """Creates the admin role.
-
-        Returns:
-            The admin role
-        """
-        logger.info(f"Creating '{DEFAULT_ADMIN_ROLE}' role ...")
-        return self.create_role(
-            RoleRequest(
-                name=DEFAULT_ADMIN_ROLE,
-                permissions={
-                    PermissionType.READ,
-                    PermissionType.WRITE,
-                    PermissionType.ME,
-                },
-            )
-        )
-
-    @property
-    def _guest_role(self) -> RoleResponse:
-        """Get the guest role.
-
-        Returns:
-            The guest role.
-        """
-        return self.get_role(DEFAULT_GUEST_ROLE)
-
-    def _create_guest_role(self) -> RoleResponse:
-        """Creates the guest role.
-
-        Returns:
-            The guest role
-        """
-        logger.info(f"Creating '{DEFAULT_GUEST_ROLE}' role ...")
-        return self.create_role(
-            RoleRequest(
-                name=DEFAULT_GUEST_ROLE,
-                permissions={
-                    PermissionType.READ,
-                    PermissionType.ME,
-                },
-            )
-        )
-
-    # -----
-    # Users
-    # -----
-
-    @property
-    def _default_user_name(self) -> str:
-        """Get the default user name.
-
-        Returns:
-            The default user name.
-        """
-        return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
-
-    @property
-    def _default_user(self) -> UserResponse:
-        """Get the default user.
-
-        Returns:
-            The default user.
-
-        Raises:
-            KeyError: If the default user doesn't exist.
-        """
-        user_name = self._default_user_name
-        try:
-            return self.get_user(user_name)
-        except KeyError:
-            raise KeyError(f"The default user '{user_name}' is not configured")
-
-    def _create_default_user(self) -> UserResponse:
-        """Creates a default user with the admin role.
-
-        Returns:
-            The default user.
-        """
-        user_name = os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
-        user_password = os.getenv(
-            ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
-        )
-
-        logger.info(f"Creating default user '{user_name}' ...")
-        new_user = self.create_user(
-            UserRequest(
-                name=user_name,
-                active=True,
-                password=user_password,
-            )
-        )
-        self.create_user_role_assignment(
-            UserRoleAssignmentRequest(
-                role=self._admin_role.id,
-                user=new_user.id,
-                workspace=None,
-            )
-        )
-        return new_user
-
     def get_external_user(self, user_id: UUID) -> UserResponse:
         """Get a user by external ID.
 
@@ -779,62 +539,6 @@ class BaseZenStore(
         if users.total == 0:
             raise KeyError(f"User with external ID '{user_id}' not found.")
         return users.items[0]
-
-    # -----
-    # Roles
-    # -----
-
-    @property
-    def roles(self) -> Page[RoleResponse]:
-        """All existing roles.
-
-        Returns:
-            A list of all existing roles.
-        """
-        return self.list_roles(RoleFilter())
-
-    # --------
-    # Workspaces
-    # --------
-
-    @property
-    def _default_workspace_name(self) -> str:
-        """Get the default workspace name.
-
-        Returns:
-            The default workspace name.
-        """
-        return os.getenv(
-            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
-        )
-
-    @property
-    def _default_workspace(self) -> WorkspaceResponse:
-        """Get the default workspace.
-
-        Returns:
-            The default workspace.
-
-        Raises:
-            KeyError: if the default workspace doesn't exist.
-        """
-        workspace_name = self._default_workspace_name
-        try:
-            return self.get_workspace(workspace_name)
-        except KeyError:
-            raise KeyError(
-                f"The default workspace '{workspace_name}' is not configured"
-            )
-
-    def _create_default_workspace(self) -> WorkspaceResponse:
-        """Creates a default workspace.
-
-        Returns:
-            The default workspace.
-        """
-        workspace_name = self._default_workspace_name
-        logger.info(f"Creating default workspace '{workspace_name}' ...")
-        return self.create_workspace(WorkspaceRequest(name=workspace_name))
 
     class Config:
         """Pydantic configuration class."""

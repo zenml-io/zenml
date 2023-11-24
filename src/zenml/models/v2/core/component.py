@@ -30,12 +30,13 @@ from pydantic import BaseModel, Field, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
+from zenml.models.v2.base.internal import server_owned_request_model
 from zenml.models.v2.base.scoped import (
-    ShareableFilter,
-    ShareableRequest,
-    ShareableResponse,
-    ShareableResponseBody,
-    ShareableResponseMetadata,
+    WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.utils import secret_utils
@@ -92,7 +93,7 @@ class ComponentBase(BaseModel):
 # ------------------ Request Model ------------------
 
 
-class ComponentRequest(ComponentBase, ShareableRequest):
+class ComponentRequest(ComponentBase, WorkspaceScopedRequest):
     """Request model for components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
@@ -123,6 +124,13 @@ class ComponentRequest(ComponentBase, ShareableRequest):
         return name
 
 
+@server_owned_request_model
+class InternalComponentRequest(ComponentRequest):
+    """Internal component request model."""
+
+    pass
+
+
 # ------------------ Update Model ------------------
 
 
@@ -132,7 +140,7 @@ class ComponentUpdate(ComponentRequest):
 
 
 # ------------------ Response Model ------------------
-class ComponentResponseBody(ShareableResponseBody):
+class ComponentResponseBody(WorkspaceScopedResponseBody):
     """Response body for components."""
 
     type: StackComponentType = Field(
@@ -150,7 +158,7 @@ class ComponentResponseBody(ShareableResponseBody):
     )
 
 
-class ComponentResponseMetadata(ShareableResponseMetadata):
+class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for components."""
 
     configuration: Dict[str, Any] = Field(
@@ -176,7 +184,7 @@ class ComponentResponseMetadata(ShareableResponseMetadata):
 
 
 class ComponentResponse(
-    ShareableResponse[ComponentResponseBody, ComponentResponseMetadata]
+    WorkspaceScopedResponse[ComponentResponseBody, ComponentResponseMetadata]
 ):
     """Response model for components."""
 
@@ -283,7 +291,7 @@ class ComponentResponse(
 # ------------------ Filter Model ------------------
 
 
-class ComponentFilter(ShareableFilter):
+class ComponentFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all ComponentModels.
 
     The Component Model needs additional scoping. As such the `_scope_user`
@@ -293,11 +301,11 @@ class ComponentFilter(ShareableFilter):
     """
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableFilter.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
     scope_type: Optional[str] = Field(
@@ -305,9 +313,6 @@ class ComponentFilter(ShareableFilter):
         description="The type to scope this query to.",
     )
 
-    is_shared: Optional[Union[bool, str]] = Field(
-        default=None, description="If the stack is shared or private"
-    )
     name: Optional[str] = Field(
         default=None,
         description="Name of the stack component",

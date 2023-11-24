@@ -18,7 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
-from zenml.enums import PermissionType, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.models import (
     ComponentFilter,
     ComponentResponse,
@@ -27,6 +27,14 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission_for_model
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -36,13 +44,13 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + STACK_COMPONENTS,
     tags=["stack_components"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 types_router = APIRouter(
     prefix=API + VERSION_1 + COMPONENT_TYPES,
     tags=["stack_components"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -57,25 +65,24 @@ def list_stack_components(
         make_dependable(ComponentFilter)
     ),
     hydrate: bool = False,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> Page[ComponentResponse]:
     """Get a list of all stack components for a specific type.
 
     Args:
         component_filter_model: Filter model used for pagination, sorting,
-                                filtering.
+            filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
-        auth_context: Authentication Context.
 
     Returns:
         List of stack components for a specific type.
     """
-    component_filter_model.set_scope_user(user_id=auth_context.user.id)
-    return zen_store().list_stack_components(
-        component_filter_model=component_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=component_filter_model,
+        resource_type=ResourceType.STACK_COMPONENT,
+        list_method=zen_store().list_stack_components,
+        hydrate=hydrate,
     )
 
 
@@ -88,7 +95,7 @@ def list_stack_components(
 def get_stack_component(
     component_id: UUID,
     hydrate: bool = True,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ComponentResponse:
     """Returns the requested stack component.
 
@@ -100,7 +107,11 @@ def get_stack_component(
     Returns:
         The requested stack component.
     """
-    return zen_store().get_stack_component(component_id, hydrate=hydrate)
+    return verify_permissions_and_get_entity(
+        id=component_id,
+        get_method=zen_store().get_stack_component,
+        hydrate=hydrate,
+    )
 
 
 @router.put(
@@ -112,7 +123,7 @@ def get_stack_component(
 def update_stack_component(
     component_id: UUID,
     component_update: ComponentUpdate,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ComponentResponse:
     """Updates a stack component.
 
@@ -135,9 +146,18 @@ def update_stack_component(
             # We allow custom flavors to fail import on the server side.
             validate_custom_flavors=False,
         )
-    return zen_store().update_stack_component(
-        component_id=component_id,
-        component_update=component_update,
+
+    if component_update.connector:
+        service_connector = zen_store().get_service_connector(
+            component_update.connector
+        )
+        verify_permission_for_model(service_connector, action=Action.READ)
+
+    return verify_permissions_and_update_entity(
+        id=component_id,
+        update_model=component_update,
+        get_method=zen_store().get_stack_component,
+        update_method=zen_store().update_stack_component,
     )
 
 
@@ -148,14 +168,18 @@ def update_stack_component(
 @handle_exceptions
 def deregister_stack_component(
     component_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a stack component.
 
     Args:
         component_id: ID of the stack component.
     """
-    zen_store().delete_stack_component(component_id)
+    verify_permissions_and_delete_entity(
+        id=component_id,
+        get_method=zen_store().get_stack_component,
+        delete_method=zen_store().delete_stack_component,
+    )
 
 
 @types_router.get(
@@ -165,7 +189,7 @@ def deregister_stack_component(
 )
 @handle_exceptions
 def get_stack_component_types(
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize),
 ) -> List[str]:
     """Get a list of all stack component types.
 

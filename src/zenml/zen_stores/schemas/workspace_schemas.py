@@ -46,8 +46,6 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
-        TeamRoleAssignmentSchema,
-        UserRoleAssignmentSchema,
     )
 
 
@@ -58,14 +56,6 @@ class WorkspaceSchema(NamedSchema, table=True):
 
     description: str
 
-    user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    team_role_assignments: List["TeamRoleAssignmentSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "all, delete"},
-    )
     stacks: List["StackSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
