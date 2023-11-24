@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import sys
 from contextlib import ExitStack as does_not_raise
 from unittest.mock import ANY
 from uuid import uuid4
@@ -622,9 +621,8 @@ def test_reusing_pipeline_version(
     assert result == pipeline_model
 
 
-def test_loading_legacy_pipeline_from_model(
-    clean_client: "Client", create_pipeline_model
-):
+@pytest.mark.disable_auto_use
+def test_loading_legacy_pipeline_from_model(create_pipeline_model):
     """Tests loading and running a pipeline from a model."""
     with open("my_steps.py", "w") as f:
         f.write(
@@ -638,8 +636,6 @@ def test_loading_legacy_pipeline_from_model(
                 "  pass"
             )
         )
-    old_path = sys.path.copy()
-    sys.path.append(".")
 
     spec = PipelineSpec.parse_obj(
         {
@@ -763,8 +759,6 @@ def test_loading_legacy_pipeline_from_model(
 
     with pytest.raises(RuntimeError):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
-
-    sys.path = old_path
 
 
 # TODO: move to deserialization utils tests

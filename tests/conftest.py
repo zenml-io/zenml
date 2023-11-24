@@ -171,6 +171,7 @@ def clean_client(
 
 @pytest.fixture(scope="module")
 def module_clean_client(
+    request: pytest.FixtureRequest,
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
     """Fixture to get and use a clean local client with its own global
@@ -184,6 +185,8 @@ def module_clean_client(
     Yields:
         A clean ZenML client.
     """
+    if "disable_auto_use" in request.keywords:
+        yield
     with clean_default_client_session(
         tmp_path_factory=tmp_path_factory,
     ) as client:
