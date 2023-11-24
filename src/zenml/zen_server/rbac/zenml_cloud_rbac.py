@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 import requests
 from pydantic import BaseModel, validator
+from requests.adapters import HTTPAdapter, Retry
 
 from zenml.zen_server.rbac.models import Action, Resource
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
@@ -236,8 +237,8 @@ class ZenMLCloudRBAC(RBACInterface):
             response.raise_for_status()
         except requests.HTTPError as e:
             raise RuntimeError(
-                "Failed while trying to contact RBAC service."
-            ) from e
+                f"Failed while trying to contact RBAC service: {e}"
+            )
 
         return response
 
@@ -252,6 +253,9 @@ class ZenMLCloudRBAC(RBACInterface):
             self._session = requests.Session()
             token = self._fetch_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
+
+            retries = Retry(total=5, backoff_factor=0.1)
+            self._session.mount("https://", HTTPAdapter(max_retries=retries))
 
         return self._session
 
