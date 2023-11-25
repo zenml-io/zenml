@@ -31,7 +31,7 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.artifact import ArtifactResponse
+    from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.logs import (
         LogsRequest,
         LogsResponse,
@@ -141,11 +141,11 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
     """Response body for step runs."""
 
     status: ExecutionStatus = Field(title="The status of the step.")
-    inputs: Dict[str, "ArtifactResponse"] = Field(
+    inputs: Dict[str, "ArtifactVersionResponse"] = Field(
         title="The input artifacts of the step run.",
         default={},
     )
-    outputs: Dict[str, "ArtifactResponse"] = Field(
+    outputs: Dict[str, "ArtifactVersionResponse"] = Field(
         title="The output artifacts of the step run.",
         default={},
     )
@@ -237,7 +237,7 @@ class StepRunResponse(
 
     # Helper properties
     @property
-    def input(self) -> "ArtifactResponse":
+    def input(self) -> "ArtifactVersionResponse":
         """Returns the input artifact that was used to run this step.
 
         Returns:
@@ -256,7 +256,7 @@ class StepRunResponse(
         return next(iter(self.inputs.values()))
 
     @property
-    def output(self) -> "ArtifactResponse":
+    def output(self) -> "ArtifactVersionResponse":
         """Returns the output artifact that was written by this step.
 
         Returns:
@@ -285,7 +285,7 @@ class StepRunResponse(
         return self.get_body().status
 
     @property
-    def inputs(self) -> Dict[str, "ArtifactResponse"]:
+    def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
         """The `inputs` property.
 
         Returns:
@@ -294,7 +294,7 @@ class StepRunResponse(
         return self.get_body().inputs
 
     @property
-    def outputs(self) -> Dict[str, "ArtifactResponse"]:
+    def outputs(self) -> Dict[str, "ArtifactVersionResponse"]:
         """The `outputs` property.
 
         Returns:

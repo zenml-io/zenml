@@ -34,7 +34,7 @@ from zenml.logging import step_logging
 from zenml.logging.step_logging import StepLogsStorageContext
 from zenml.model.utils import link_artifact_config_to_model_version
 from zenml.models import (
-    ArtifactResponse,
+    ArtifactVersionResponse,
     LogsRequest,
     PipelineDeploymentResponse,
     PipelineRunRequest,
@@ -422,7 +422,7 @@ class StepLauncher:
                 link_artifact_config_to_model_version(
                     artifact_config=artifact_config_,
                     model_version=model_version_from_context,
-                    artifact_id=output_id,
+                    artifact_version_id=output_id,
                 )
 
     def _run_step(
@@ -521,7 +521,7 @@ class StepLauncher:
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,
         step_run_info: StepRunInfo,
-        input_artifacts: Dict[str, ArtifactResponse],
+        input_artifacts: Dict[str, ArtifactVersionResponse],
         output_artifact_uris: Dict[str, str],
     ) -> None:
         """Runs the current step without a step operator.

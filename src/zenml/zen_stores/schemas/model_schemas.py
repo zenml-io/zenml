@@ -31,7 +31,7 @@ from zenml.models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
 )
-from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -269,20 +269,22 @@ class ModelVersionSchema(NamedSchema, table=True):
         endpoint_artifact_ids: Dict[str, Dict[str, UUID]] = {}
         data_artifact_ids: Dict[str, Dict[str, UUID]] = {}
         for artifact_link in self.artifact_links:
-            if not artifact_link.artifact:
+            if not artifact_link.artifact_version:
                 continue
-            artifact = artifact_link.artifact
+            artifact_name = artifact_link.artifact_version.artifact.name
+            artifact_version = str(artifact_link.artifact_version.version)
+            artifact_version_id = artifact_link.artifact_version.id
             if artifact_link.is_model_artifact:
-                model_artifact_ids.setdefault(artifact.name, {}).update(
-                    {str(artifact.version): artifact.id}
+                model_artifact_ids.setdefault(artifact_name, {}).update(
+                    {str(artifact_version): artifact_version_id}
                 )
             elif artifact_link.is_endpoint_artifact:
-                endpoint_artifact_ids.setdefault(artifact.name, {}).update(
-                    {str(artifact.version): artifact.id}
+                endpoint_artifact_ids.setdefault(artifact_name, {}).update(
+                    {str(artifact_version): artifact_version_id}
                 )
             else:
-                data_artifact_ids.setdefault(artifact.name, {}).update(
-                    {str(artifact.version): artifact.id}
+                data_artifact_ids.setdefault(artifact_name, {}).update(
+                    {str(artifact_version): artifact_version_id}
                 )
 
         # Construct {name: id} dict for all linked pipeline runs
@@ -381,15 +383,15 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="artifact_links"
     )
-    artifact_id: UUID = build_foreign_key_field(
+    artifact_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ArtifactSchema.__tablename__,
-        source_column="artifact_id",
+        target=ArtifactVersionSchema.__tablename__,
+        source_column="artifact_version_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    artifact: "ArtifactSchema" = Relationship(
+    artifact_version: "ArtifactVersionSchema" = Relationship(
         back_populates="model_versions_artifacts_links"
     )
 
@@ -416,7 +418,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             user_id=model_version_artifact_request.user,
             model_id=model_version_artifact_request.model,
             model_version_id=model_version_artifact_request.model_version,
-            artifact_id=model_version_artifact_request.artifact,
+            artifact_version_id=model_version_artifact_request.artifact,
             is_model_artifact=model_version_artifact_request.is_model_artifact,
             is_endpoint_artifact=model_version_artifact_request.is_endpoint_artifact,
         )
@@ -442,7 +444,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             updated=self.updated,
             model=self.model_id,
             model_version=self.model_version_id,
-            artifact=self.artifact.to_model(),
+            artifact=self.artifact_version.to_model(),
             is_model_artifact=self.is_model_artifact,
             is_endpoint_artifact=self.is_endpoint_artifact,
         )

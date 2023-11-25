@@ -32,7 +32,7 @@ class ExternalArtifactConfiguration(BaseModel):
     name: Optional[str] = None
     version: Optional[str] = None
 
-    def get_artifact_id(self) -> UUID:
+    def get_artifact_version_id(self) -> UUID:
         """Get the artifact.
 
         Returns:
@@ -49,12 +49,14 @@ class ExternalArtifactConfiguration(BaseModel):
         client = Client()
 
         if self.id:
-            response = client.get_artifact(self.id)
+            response = client.get_artifact_version(self.id)
         elif self.name:
             if self.version:
-                response = client.get_artifact(self.name, version=self.version)
+                response = client.get_artifact_version(
+                    self.name, version=self.version
+                )
             else:
-                response = client.get_artifact(self.name)
+                response = client.get_artifact_version(self.name)
         else:
             raise RuntimeError(
                 "Either the ID or name of the artifact must be provided. "

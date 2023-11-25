@@ -27,7 +27,8 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactRequest,
-    ArtifactResponse,
+    ArtifactVersionRequest,
+    ArtifactVersionResponse,
     ArtifactVisualizationRequest,
     LoadedVisualization,
     PipelineRunResponse,
@@ -67,7 +68,7 @@ def save_artifact(
     materializer: Optional["MaterializerClassOrSource"] = None,
     uri: Optional[str] = None,
     manual_save: bool = True,
-) -> "ArtifactResponse":
+) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
 
     Args:
@@ -113,7 +114,7 @@ def save_artifact(
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
     if fileio.exists(uri):
-        other_artifacts = client.list_artifacts(uri=uri, size=1)
+        other_artifacts = client.list_artifact_versions(uri=uri, size=1)
         if other_artifacts and (other_artifact := other_artifacts[0]):
             raise RuntimeError(
                 f"Cannot save artifact {name} (version {version}) to URI "
@@ -166,8 +167,20 @@ def save_artifact(
                 f"Failed to extract metadata for output artifact '{name}': {e}"
             )
 
-    artifact = ArtifactRequest(
-        name=name,
+    # Get or create the artifact
+    try:
+        artifact = client.get_artifact(name)
+    except KeyError:
+        artifact = client.zen_store.create_artifact(
+            ArtifactRequest(
+                name=name,
+                has_custom_name=has_custom_name,
+            )
+        )
+
+    # Create the artifact version
+    artifact_version = ArtifactVersionRequest(
+        artifact_id=artifact.id,
         version=version,
         tags=tags,
         type=materializer_object.ASSOCIATED_ARTIFACT_TYPE,
@@ -180,10 +193,12 @@ def save_artifact(
         visualizations=visualizations,
         has_custom_name=has_custom_name,
     )
-    response = Client().zen_store.create_artifact(artifact=artifact)
+    response = Client().zen_store.create_artifact_version(
+        artifact_version=artifact_version
+    )
     if artifact_metadata:
         Client().create_run_metadata(
-            metadata=artifact_metadata, artifact_id=response.id
+            metadata=artifact_metadata, artifact_version_id=response.id
         )
 
     if manual_save:
@@ -215,7 +230,7 @@ def load_artifact(
     Returns:
         The loaded artifact.
     """
-    artifact = Client().get_artifact(name_or_id, version)
+    artifact = Client().get_artifact_version(name_or_id, version)
     try:
         step_run = get_step_context().step_run
         client = Client()
@@ -273,8 +288,10 @@ def log_artifact_metadata(
                 "inside a step with a single output."
             )
         client = Client()
-        artifact = client.get_artifact(artifact_name, artifact_version)
-        client.create_run_metadata(metadata=metadata, artifact_id=artifact.id)
+        artifact = client.get_artifact_version(artifact_name, artifact_version)
+        client.create_run_metadata(
+            metadata=metadata, artifact_version_id=artifact.id
+        )
 
     else:
         try:
@@ -291,7 +308,7 @@ def log_artifact_metadata(
 
 
 def load_artifact_visualization(
-    artifact: "ArtifactResponse",
+    artifact: "ArtifactVersionResponse",
     index: int = 0,
     zen_store: Optional["BaseZenStore"] = None,
     encode_image: bool = False,
@@ -348,7 +365,7 @@ def load_artifact_visualization(
     return LoadedVisualization(type=visualization.type, value=value)
 
 
-def load_artifact_from_response(artifact: "ArtifactResponse") -> Any:
+def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     """Load the given artifact into memory.
 
     Args:
@@ -385,7 +402,7 @@ def load_artifact_from_response(artifact: "ArtifactResponse") -> Any:
 
 
 def get_producer_step_of_artifact(
-    artifact: "ArtifactResponse",
+    artifact: "ArtifactVersionResponse",
 ) -> "StepRunResponse":
     """Get the step run that produced a given artifact.
 
@@ -408,7 +425,7 @@ def get_producer_step_of_artifact(
 
 def get_artifacts_of_pipeline_run(
     pipeline_run: "PipelineRunResponse", only_produced: bool = False
-) -> List["ArtifactResponse"]:
+) -> List["ArtifactVersionResponse"]:
     """Get all artifacts produced during a pipeline run.
 
     Args:
@@ -419,7 +436,7 @@ def get_artifacts_of_pipeline_run(
     Returns:
         A list of all artifacts produced during the pipeline run.
     """
-    artifacts: List["ArtifactResponse"] = []
+    artifacts: List["ArtifactVersionResponse"] = []
     for step in pipeline_run.steps.values():
         if not only_produced or step.status == ExecutionStatus.COMPLETED:
             artifacts.extend(step.outputs.values())
@@ -547,7 +564,7 @@ def _get_new_artifact_version(artifact_name: str) -> int:
     Returns:
         The next auto-incremented version.
     """
-    artifacts = Client().list_artifacts(
+    artifacts = Client().list_artifact_versions(
         name=artifact_name,
         sort_by="desc:version_number",
         size=1,
@@ -605,7 +622,7 @@ def _load_file_from_artifact_store(
 # --------------------
 
 
-def save_model_metadata(model_artifact: "ArtifactResponse") -> str:
+def save_model_metadata(model_artifact: "ArtifactVersionResponse") -> str:
     """Save a zenml model artifact metadata to a YAML file.
 
     This function is used to extract and save information from a zenml model

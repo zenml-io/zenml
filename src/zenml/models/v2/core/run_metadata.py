@@ -40,8 +40,8 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     step_run_id: Optional[UUID] = Field(
         title="The ID of the step run that this metadata belongs to."
     )
-    artifact_id: Optional[UUID] = Field(
-        title="The ID of the artifact that this metadata belongs to."
+    artifact_version_id: Optional[UUID] = Field(
+        title="The ID of the artifact version that this metadata belongs to."
     )
     stack_component_id: Optional[UUID] = Field(
         title="The ID of the stack component that this metadata belongs to."
@@ -87,7 +87,7 @@ class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
     step_run_id: Optional[UUID] = Field(
         title="The ID of the step run that this metadata belongs to."
     )
-    artifact_id: Optional[UUID] = Field(
+    artifact_version_id: Optional[UUID] = Field(
         title="The ID of the artifact that this metadata belongs to."
     )
     stack_component_id: Optional[UUID] = Field(
@@ -159,13 +159,13 @@ class RunMetadataResponse(
         return self.get_metadata().step_run_id
 
     @property
-    def artifact_id(self) -> Optional[UUID]:
-        """The `artifact_id` property.
+    def artifact_version_id(self) -> Optional[UUID]:
+        """The `artifact_version_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().artifact_id
+        return self.get_metadata().artifact_version_id
 
     @property
     def stack_component_id(self) -> Optional[UUID]:
@@ -185,7 +185,7 @@ class RunMetadataFilter(WorkspaceScopedFilter):
 
     pipeline_run_id: Optional[Union[str, UUID]] = None
     step_run_id: Optional[Union[str, UUID]] = None
-    artifact_id: Optional[Union[str, UUID]] = None
+    artifact_version_id: Optional[Union[str, UUID]] = None
     stack_component_id: Optional[Union[str, UUID]] = None
     key: Optional[str] = None
     type: Optional[Union[str, MetadataTypeEnum]] = None

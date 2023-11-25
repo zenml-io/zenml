@@ -31,7 +31,7 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.models import (
-        ArtifactResponse,
+        ArtifactVersionResponse,
         ModelResponseModel,
         ModelVersionResponseModel,
         PipelineRunResponse,
@@ -182,7 +182,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the artifact linked to this model version.
 
         Args:
@@ -201,7 +201,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the model artifact linked to this model version.
 
         Args:
@@ -220,7 +220,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the data artifact linked to this model version.
 
         Args:
@@ -239,7 +239,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the endpoint artifact linked to this model version.
 
         Args:

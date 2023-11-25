@@ -29,7 +29,7 @@ from zenml.lineage_graph.node.artifact_node import ArtifactNodeStatus
 
 if TYPE_CHECKING:
     from zenml.models import (
-        ArtifactResponse,
+        ArtifactVersionResponse,
         PipelineRunResponse,
         StepRunResponse,
     )
@@ -80,8 +80,8 @@ class LineageGraph(BaseModel):
         self.add_step_node(step, step_id)
 
         # Add nodes and edges for all output artifacts
-        for artifact_name, artifact in step.outputs.items():
-            artifact_id = ARTIFACT_PREFIX + str(artifact.id)
+        for artifact_name, artifact_version in step.outputs.items():
+            artifact_version_id = ARTIFACT_PREFIX + str(artifact_version.id)
             if step.status == ExecutionStatus.CACHED:
                 artifact_status = ArtifactNodeStatus.CACHED
             elif step.status == ExecutionStatus.COMPLETED:
@@ -89,18 +89,18 @@ class LineageGraph(BaseModel):
             else:
                 artifact_status = ArtifactNodeStatus.UNKNOWN
             self.add_artifact_node(
-                artifact=artifact,
-                id=artifact_id,
+                artifact=artifact_version,
+                id=artifact_version_id,
                 name=artifact_name,
                 step_id=str(step_id),
                 status=artifact_status,
             )
-            self.add_edge(step_id, artifact_id)
+            self.add_edge(step_id, artifact_version_id)
 
         # Add nodes and edges for all input artifacts
-        for artifact_name, artifact in step.inputs.items():
-            artifact_id = ARTIFACT_PREFIX + str(artifact.id)
-            self.add_edge(artifact_id, step_id)
+        for artifact_name, artifact_version in step.inputs.items():
+            artifact_version_id = ARTIFACT_PREFIX + str(artifact_version.id)
+            self.add_edge(artifact_version_id, step_id)
 
     def add_external_artifacts(self, run: "PipelineRunResponse") -> None:
         """Adds all external artifacts to the lineage graph.
@@ -110,14 +110,16 @@ class LineageGraph(BaseModel):
         """
         nodes_ids = {node.id for node in self.nodes}
         for step in run.steps.values():
-            for artifact_name, artifact in step.inputs.items():
-                artifact_id = ARTIFACT_PREFIX + str(artifact.id)
-                if artifact_id not in nodes_ids:
+            for artifact_name, artifact_version in step.inputs.items():
+                artifact_version_id = ARTIFACT_PREFIX + str(
+                    artifact_version.id
+                )
+                if artifact_version_id not in nodes_ids:
                     self.add_artifact_node(
-                        artifact=artifact,
-                        id=artifact_id,
+                        artifact=artifact_version,
+                        id=artifact_version_id,
                         name=artifact_name,
-                        step_id=str(artifact.producer_step_run_id),
+                        step_id=str(artifact_version.producer_step_run_id),
                         status=ArtifactNodeStatus.EXTERNAL,
                     )
 
@@ -195,7 +197,7 @@ class LineageGraph(BaseModel):
 
     def add_artifact_node(
         self,
-        artifact: "ArtifactResponse",
+        artifact: "ArtifactVersionResponse",
         id: str,
         name: str,
         step_id: str,

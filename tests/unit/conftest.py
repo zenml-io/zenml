@@ -34,10 +34,10 @@ from zenml.container_registries.base_container_registry import (
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
-    ArtifactRequest,
-    ArtifactResponse,
-    ArtifactResponseBody,
-    ArtifactResponseMetadata,
+    ArtifactVersionRequest,
+    ArtifactVersionResponse,
+    ArtifactVersionResponseBody,
+    ArtifactVersionResponseMetadata,
     CodeRepositoryResponse,
     CodeRepositoryResponseBody,
     CodeRepositoryResponseMetadata,
@@ -540,12 +540,12 @@ def sample_pipeline_run_request_model() -> PipelineRunRequest:
 @pytest.fixture
 def sample_artifact_model(
     sample_workspace_model, sample_user_model
-) -> ArtifactResponse:
+) -> ArtifactVersionResponse:
     """Return a sample artifact model for testing purposes."""
-    return ArtifactResponse(
+    return ArtifactVersionResponse(
         id=uuid4(),
         name="sample_artifact",
-        body=ArtifactResponseBody(
+        body=ArtifactVersionResponseBody(
             version=1,
             user=sample_user_model,
             created=datetime.now(),
@@ -553,7 +553,7 @@ def sample_artifact_model(
             uri="sample_uri",
             type=ArtifactType.DATA,
         ),
-        metadata=ArtifactResponseMetadata(
+        metadata=ArtifactVersionResponseMetadata(
             materializer="sample_module.sample_materializer",
             data_type="sample_module.sample_data_type",
             workspace=sample_workspace_model,
@@ -563,9 +563,9 @@ def sample_artifact_model(
 
 
 @pytest.fixture
-def sample_artifact_request_model() -> ArtifactRequest:
+def sample_artifact_request_model() -> ArtifactVersionRequest:
     """Return a sample artifact model for testing purposes."""
-    return ArtifactRequest(
+    return ArtifactVersionRequest(
         name="sample_artifact",
         version=1,
         uri="sample_uri",
@@ -589,7 +589,7 @@ def create_step_run(
         step_run_name: str = "step_run_name",
         step_name: str = "step_name",
         outputs: Optional[Dict[str, Any]] = None,
-        output_artifacts: Optional[Dict[str, ArtifactResponse]] = None,
+        output_artifacts: Optional[Dict[str, ArtifactVersionResponse]] = None,
         **kwargs: Any,
     ) -> StepRunResponse:
         spec = StepSpec.parse_obj(

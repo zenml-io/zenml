@@ -22,7 +22,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models import ArtifactFilter
+from zenml.models import ArtifactVersionFilter
 from zenml.utils.pagination_utils import depaginate
 from zenml.utils.uuid_utils import is_valid_uuid
 
@@ -34,7 +34,7 @@ def artifact() -> None:
     """List or delete artifacts."""
 
 
-@cli_utils.list_options(ArtifactFilter)
+@cli_utils.list_options(ArtifactVersionFilter)
 @artifact.command("list", help="List all artifacts.")
 def list_artifacts(**kwargs: Any) -> None:
     """List all artifacts.
@@ -42,7 +42,7 @@ def list_artifacts(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter artifacts.
     """
-    artifacts = Client().list_artifacts(**kwargs)
+    artifacts = Client().list_artifact_versions(**kwargs)
 
     if not artifacts:
         cli_utils.declare("No artifacts found.")
@@ -134,14 +134,16 @@ def delete_artifact(
         versions: List[Optional[str]] = [version]
         if not is_uuid and not version:
             artifact_models = depaginate(
-                partial(Client().list_artifacts, name=artifact_name_or_id)
+                partial(
+                    Client().list_artifact_versions, name=artifact_name_or_id
+                )
             )
             versions = [
                 str(artifact_model.version)
                 for artifact_model in artifact_models
             ]
         for version_ in versions:
-            Client().delete_artifact(
+            Client().delete_artifact_version(
                 name_id_or_prefix=artifact_name_or_id,
                 version=version_,
                 delete_metadata=not only_artifact,
@@ -194,7 +196,7 @@ def prune_artifacts(
     """
     client = Client()
     unused_artifacts = depaginate(
-        partial(client.list_artifacts, only_unused=True)
+        partial(client.list_artifact_versions, only_unused=True)
     )
 
     if not unused_artifacts:
@@ -212,7 +214,7 @@ def prune_artifacts(
 
     for unused_artifact in unused_artifacts:
         try:
-            Client().delete_artifact(
+            Client().delete_artifact_version(
                 name_id_or_prefix=unused_artifact.id,
                 delete_metadata=not only_artifact,
                 delete_from_artifact_store=not only_metadata,

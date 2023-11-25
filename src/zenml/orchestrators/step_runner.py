@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models import (
-        ArtifactResponse,
+        ArtifactVersionResponse,
         PipelineRunResponse,
         StepRunResponse,
     )
@@ -103,7 +103,7 @@ class StepRunner:
         self,
         pipeline_run: "PipelineRunResponse",
         step_run: "StepRunResponse",
-        input_artifacts: Dict[str, "ArtifactResponse"],
+        input_artifacts: Dict[str, "ArtifactVersionResponse"],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:
@@ -254,7 +254,7 @@ class StepRunner:
                             artifact_visualization_enabled=artifact_visualization_enabled,
                         )
                         link_step_artifacts_to_model(
-                            artifact_ids=output_artifact_ids
+                            artifact_version_ids=output_artifact_ids
                         )
                         self._link_pipeline_run_to_model_from_artifacts(
                             pipeline_run=pipeline_run,
@@ -312,7 +312,7 @@ class StepRunner:
         self,
         args: List[str],
         annotations: Dict[str, Any],
-        input_artifacts: Dict[str, "ArtifactResponse"],
+        input_artifacts: Dict[str, "ArtifactVersionResponse"],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -421,7 +421,7 @@ class StepRunner:
         return function_params
 
     def _load_input_artifact(
-        self, artifact: "ArtifactResponse", data_type: Type[Any]
+        self, artifact: "ArtifactVersionResponse", data_type: Type[Any]
     ) -> Any:
         """Loads an input artifact.
 
@@ -736,9 +736,11 @@ class StepRunner:
         # Add models from external artifacts
         for external_artifact in external_artifacts:
             try:
-                artifact_id = external_artifact.get_artifact_id()
+                artifact_version_id = (
+                    external_artifact.get_artifact_version_id()
+                )
                 links = client.list_model_version_artifact_links(
-                    artifact_id=artifact_id,
+                    artifact_version_id=artifact_version_id,
                 )
                 for link in links:
                     models.add((link.model, link.model_version))

@@ -74,8 +74,8 @@ from zenml.models import (
     APIKeyRequest,
     APIKeyRotateRequest,
     APIKeyUpdate,
-    ArtifactFilter,
-    ArtifactResponse,
+    ArtifactVersionFilter,
+    ArtifactVersionResponse,
     ComponentFilter,
     ComponentUpdate,
     ModelVersionArtifactFilterModel,
@@ -2557,16 +2557,20 @@ def test_list_unused_artifacts():
     client = Client()
     store = client.zen_store
 
-    num_artifacts_before = store.list_artifacts(ArtifactFilter()).total
-    num_unused_artifacts_before = store.list_artifacts(
-        ArtifactFilter(only_unused=True)
+    num_artifacts_before = store.list_artifact_versions(
+        ArtifactVersionFilter()
+    ).total
+    num_unused_artifacts_before = store.list_artifact_versions(
+        ArtifactVersionFilter(only_unused=True)
     ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifacts(ArtifactFilter())
+        artifacts = store.list_artifact_versions(ArtifactVersionFilter())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
-        artifacts = store.list_artifacts(ArtifactFilter(only_unused=True))
+        artifacts = store.list_artifact_versions(
+            ArtifactVersionFilter(only_unused=True)
+        )
         assert artifacts.total == num_unused_artifacts_before
 
 
@@ -2574,10 +2578,10 @@ def test_artifacts_are_not_deleted_with_run(clean_workspace):
     """Tests listing with `unused=True` only returns unused artifacts."""
     store = clean_workspace.zen_store
 
-    num_artifacts_before = store.list_artifacts(ArtifactFilter()).total
+    num_artifacts_before = store.list_artifacts(ArtifactVersionFilter()).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifacts(ArtifactFilter())
+        artifacts = store.list_artifacts(ArtifactVersionFilter())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
         # Cleanup
@@ -2585,7 +2589,7 @@ def test_artifacts_are_not_deleted_with_run(clean_workspace):
         for p in pipelines:
             store.delete_run(p.id)
 
-        artifacts = store.list_artifacts(ArtifactFilter())
+        artifacts = store.list_artifacts(ArtifactVersionFilter())
         assert artifacts.total == num_artifacts_before + num_runs * 2
 
 
@@ -4277,15 +4281,15 @@ class TestModelVersionArtifactLinks:
 
             assert isinstance(
                 mv.get_model_artifact(artifacts[1].name),
-                ArtifactResponse,
+                ArtifactVersionResponse,
             )
             assert isinstance(
                 mv.get_data_artifact(artifacts[0].name),
-                ArtifactResponse,
+                ArtifactVersionResponse,
             )
             assert isinstance(
                 mv.get_endpoint_artifact(artifacts[2].name),
-                ArtifactResponse,
+                ArtifactVersionResponse,
             )
             assert (
                 mv.model_artifacts[artifacts[1].name]["1"].id

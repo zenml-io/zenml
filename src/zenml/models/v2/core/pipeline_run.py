@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
     from sqlmodel import SQLModel
 
-    from zenml.models.v2.core.artifact import ArtifactResponse
+    from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_build import (
         PipelineBuildResponse,
@@ -203,7 +203,7 @@ class PipelineRunResponse(
 
     # Helper methods
     @property
-    def artifacts(self) -> List["ArtifactResponse"]:
+    def artifacts(self) -> List["ArtifactVersionResponse"]:
         """Get all artifacts that are outputs of steps of this pipeline run.
 
         Returns:
@@ -214,7 +214,7 @@ class PipelineRunResponse(
         return get_artifacts_of_pipeline_run(self)
 
     @property
-    def produced_artifacts(self) -> List["ArtifactResponse"]:
+    def produced_artifacts(self) -> List["ArtifactVersionResponse"]:
         """Get all artifacts produced during this pipeline run.
 
         Returns:

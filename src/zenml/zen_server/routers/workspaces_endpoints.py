@@ -886,8 +886,8 @@ def create_run_metadata(
         step_run = zen_store().get_run_step(run_metadata.step_run_id)
         verify_permission_for_model(step_run, action=Action.UPDATE)
 
-    if run_metadata.artifact_id:
-        artifact = zen_store().get_artifact(run_metadata.artifact_id)
+    if run_metadata.artifact_version_id:
+        artifact = zen_store().get_artifact(run_metadata.artifact_version_id)
         verify_permission_for_model(artifact, action=Action.UPDATE)
 
     verify_permission(

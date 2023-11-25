@@ -43,6 +43,7 @@ from zenml.constants import (
     API_KEY_ROTATE,
     API_KEYS,
     API_TOKEN,
+    ARTIFACT_VERSIONS,
     ARTIFACT_VISUALIZATIONS,
     ARTIFACTS,
     CODE_REFERENCES,
@@ -101,6 +102,10 @@ from zenml.models import (
     ArtifactRequest,
     ArtifactResponse,
     ArtifactUpdate,
+    ArtifactVersionFilter,
+    ArtifactVersionRequest,
+    ArtifactVersionResponse,
+    ArtifactVersionUpdate,
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseRequest,
@@ -643,13 +648,13 @@ class RestZenStore(BaseZenStore):
     # ----------------------------- Artifacts -----------------------------
 
     def create_artifact(self, artifact: ArtifactRequest) -> ArtifactResponse:
-        """Creates an artifact.
+        """Creates a new artifact.
 
         Args:
             artifact: The artifact to create.
 
         Returns:
-            The created artifact.
+            The newly created artifact.
         """
         return self._create_resource(
             resource=artifact,
@@ -678,25 +683,20 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_artifacts(
-        self,
-        artifact_filter_model: ArtifactFilter,
-        hydrate: bool = False,
+        self, filter_model: ArtifactFilter, hydrate: bool = False
     ) -> Page[ArtifactResponse]:
         """List all artifacts matching the given filter criteria.
 
         Args:
-            artifact_filter_model: All filter parameters including pagination
+            filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-
-        Returns:
-            A list of all artifacts matching the filter criteria.
         """
         return self._list_paginated_resources(
             route=ARTIFACTS,
             response_model=ArtifactResponse,
-            filter_model=artifact_filter_model,
+            filter_model=filter_model,
             params={"hydrate": hydrate},
         )
 
@@ -726,6 +726,103 @@ class RestZenStore(BaseZenStore):
             artifact_id: The ID of the artifact to delete.
         """
         self._delete_resource(resource_id=artifact_id, route=ARTIFACTS)
+
+    # -------------------- Artifact Versions --------------------
+
+    def create_artifact_version(
+        self, artifact_version: ArtifactVersionRequest
+    ) -> ArtifactVersionResponse:
+        """Creates an artifact version.
+
+        Args:
+            artifact_version: The artifact version to create.
+
+        Returns:
+            The created artifact version.
+        """
+        return self._create_resource(
+            resource=artifact_version,
+            response_model=ArtifactVersionResponse,
+            route=ARTIFACT_VERSIONS,
+        )
+
+    def get_artifact_version(
+        self, artifact_version_id: UUID, hydrate: bool = True
+    ) -> ArtifactVersionResponse:
+        """Gets an artifact.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The artifact version.
+        """
+        return self._get_resource(
+            resource_id=artifact_version_id,
+            route=ARTIFACT_VERSIONS,
+            response_model=ArtifactVersionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_artifact_versions(
+        self,
+        artifact_version_filter_model: ArtifactVersionFilter,
+        hydrate: bool = False,
+    ) -> Page[ArtifactVersionResponse]:
+        """List all artifact versions matching the given filter criteria.
+
+        Args:
+            artifact_version_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all artifact versions matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=ARTIFACT_VERSIONS,
+            response_model=ArtifactVersionResponse,
+            filter_model=artifact_version_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_artifact_version(
+        self,
+        artifact_version_id: UUID,
+        artifact_version_update: ArtifactVersionUpdate,
+    ) -> ArtifactVersionResponse:
+        """Updates an artifact.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to update.
+            artifact_version_update: The update to be applied to the artifact
+                version.
+
+        Returns:
+            The updated artifact version.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
+        """
+        return self._update_resource(
+            resource_id=artifact_version_id,
+            resource_update=artifact_version_update,
+            response_model=ArtifactVersionResponse,
+            route=ARTIFACT_VERSIONS,
+        )
+
+    def delete_artifact_version(self, artifact_version_id: UUID) -> None:
+        """Deletes an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to delete.
+        """
+        self._delete_resource(
+            resource_id=artifact_version_id, route=ARTIFACT_VERSIONS
+        )
 
     # ------------------------ Artifact Visualizations ------------------------
 

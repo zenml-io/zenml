@@ -101,12 +101,20 @@ from zenml.models.v2.core.api_key import (
     APIKeyRotateRequest,
 )
 from zenml.models.v2.core.artifact import (
-    ArtifactRequest,
     ArtifactFilter,
+    ArtifactRequest,
     ArtifactResponse,
     ArtifactResponseBody,
     ArtifactResponseMetadata,
     ArtifactUpdate,
+)
+from zenml.models.v2.core.artifact_version import (
+    ArtifactVersionRequest,
+    ArtifactVersionFilter,
+    ArtifactVersionResponse,
+    ArtifactVersionResponseBody,
+    ArtifactVersionResponseMetadata,
+    ArtifactVersionUpdate,
 )
 from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationRequest,
@@ -337,13 +345,13 @@ ModelVersionPipelineRunResponseModel.update_forward_refs(
 APIKeyResponseBody.update_forward_refs(
     ServiceAccountResponse=ServiceAccountResponse,
 )
-ArtifactRequest.update_forward_refs(
+ArtifactVersionRequest.update_forward_refs(
     ArtifactVisualizationRequest=ArtifactVisualizationRequest,
 )
-ArtifactResponseBody.update_forward_refs(
+ArtifactVersionResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
-ArtifactResponseMetadata.update_forward_refs(
+ArtifactVersionResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
     ArtifactVisualizationResponse=ArtifactVisualizationResponse,
     RunMetadataResponse=RunMetadataResponse,
@@ -449,7 +457,7 @@ StepRunRequest.update_forward_refs(
 )
 StepRunResponseBody.update_forward_refs(
     UserResponse=UserResponse,
-    ArtifactResponse=ArtifactResponse,
+    ArtifactVersionResponse=ArtifactVersionResponse,
 )
 StepRunResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
@@ -523,12 +531,18 @@ __all__ = [
     "APIKeyInternalResponse",
     "APIKeyInternalUpdate",
     "APIKeyRotateRequest",
-    "ArtifactRequest",
     "ArtifactFilter",
+    "ArtifactRequest",
     "ArtifactResponse",
     "ArtifactResponseBody",
     "ArtifactResponseMetadata",
     "ArtifactUpdate",
+    "ArtifactVersionRequest",
+    "ArtifactVersionFilter",
+    "ArtifactVersionResponse",
+    "ArtifactVersionResponseBody",
+    "ArtifactVersionResponseMetadata",
+    "ArtifactVersionUpdate",
     "ArtifactVisualizationRequest",
     "ArtifactVisualizationResponse",
     "ArtifactVisualizationResponseBody",

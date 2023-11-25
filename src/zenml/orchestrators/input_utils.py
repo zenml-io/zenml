@@ -23,13 +23,13 @@ from zenml.exceptions import InputResolutionError
 from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
-    from zenml.models import ArtifactResponse
+    from zenml.models import ArtifactVersionResponse
 
 
 def resolve_step_inputs(
     step: "Step",
     run_id: UUID,
-) -> Tuple[Dict[str, "ArtifactResponse"], List[UUID]]:
+) -> Tuple[Dict[str, "ArtifactVersionResponse"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
@@ -53,7 +53,7 @@ def resolve_step_inputs(
         for run_step in pagination_utils.depaginate(list_run_steps)
     }
 
-    input_artifacts: Dict[str, "ArtifactResponse"] = {}
+    input_artifacts: Dict[str, "ArtifactVersionResponse"] = {}
     for name, input_ in step.spec.inputs.items():
         try:
             step_run = current_run_steps[input_.step_name]
@@ -76,8 +76,10 @@ def resolve_step_inputs(
         name,
         external_artifact,
     ) in step.config.external_input_artifacts.items():
-        artifact_id = external_artifact.get_artifact_id()
-        input_artifacts[name] = Client().get_artifact(artifact_id)
+        artifact_version_id = external_artifact.get_artifact_version_id()
+        input_artifacts[name] = Client().get_artifact_version(
+            artifact_version_id
+        )
 
     parent_step_ids = [
         current_run_steps[upstream_step].id

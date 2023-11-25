@@ -31,8 +31,8 @@ from zenml.enums import (
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     APIKeyRequest,
-    ArtifactFilter,
-    ArtifactRequest,
+    ArtifactVersionFilter,
+    ArtifactVersionRequest,
     AuthenticationMethodModel,
     BaseFilter,
     CodeRepositoryFilter,
@@ -149,7 +149,7 @@ class PipelineRunContext:
                 pass
         for artifact in self.artifacts:
             try:
-                self.client.delete_artifact(artifact.id)
+                self.client.delete_artifact_version(artifact.id)
             except KeyError:
                 pass
 
@@ -642,8 +642,8 @@ class ModelVersionContext:
 
         for _ in range(self.create_artifacts):
             self.artifacts.append(
-                client.zen_store.create_artifact(
-                    ArtifactRequest(
+                client.zen_store.create_artifact_version(
+                    ArtifactVersionRequest(
                         name=sample_name("sample_artifact"),
                         version=1,
                         data_type="module.class",
@@ -703,7 +703,7 @@ class ModelVersionContext:
         except KeyError:
             pass
         for artifact in self.artifacts:
-            client.delete_artifact(artifact.id)
+            client.delete_artifact_version(artifact.id)
         for run in self.prs:
             client.zen_store.delete_run(run.id)
         for deployment in self.deployments:
@@ -936,7 +936,7 @@ pipeline_crud_test_config = CrudTestConfig(
 #     entity_name="run",
 # )
 artifact_crud_test_config = CrudTestConfig(
-    create_model=ArtifactRequest(
+    create_model=ArtifactVersionRequest(
         name=sample_name("sample_artifact"),
         version=1,
         data_type="module.class",
@@ -946,7 +946,7 @@ artifact_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    filter_model=ArtifactFilter,
+    filter_model=ArtifactVersionFilter,
     entity_name="artifact",
 )
 secret_crud_test_config = CrudTestConfig(

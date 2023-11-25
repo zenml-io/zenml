@@ -28,13 +28,13 @@ from zenml.artifacts.utils import (
 )
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.materializers.numpy_materializer import NUMPY_FILENAME
-from zenml.models import ArtifactResponse, Page
+from zenml.models import ArtifactVersionResponse, Page
 
 
 @pytest.fixture
 def model_artifact(mocker):
     return mocker.Mock(
-        spec=ArtifactResponse,
+        spec=ArtifactVersionResponse,
         id="123",
         created="2023-01-01T00:00:00Z",
         updated="2023-01-01T00:00:00Z",

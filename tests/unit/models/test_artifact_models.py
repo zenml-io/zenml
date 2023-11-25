@@ -20,7 +20,7 @@ from pydantic import ValidationError
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType
-from zenml.models import ArtifactRequest
+from zenml.models import ArtifactVersionRequest
 
 UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"
 
@@ -29,7 +29,7 @@ def test_artifact_request_model_fails_with_long_name():
     """Test that the artifact base model fails with long strings."""
     with pytest.raises(ValidationError):
         long_name = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        ArtifactRequest(
+        ArtifactVersionRequest(
             user=uuid.uuid4(),
             workspace=uuid.uuid4(),
             name=long_name,
@@ -45,7 +45,7 @@ def test_artifact_request_model_fails_with_long_uri():
     """Test that the artifact base model fails with long URIs."""
     long_uri = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
-        ArtifactRequest(
+        ArtifactVersionRequest(
             user=uuid.uuid4(),
             workspace=uuid.uuid4(),
             name="abc",
@@ -61,7 +61,7 @@ def test_artifact_request_model_works_with_long_materializer():
     """Test that the artifact base model works with long materializer strings."""
     with does_not_raise():
         long_materializer = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        ArtifactRequest(
+        ArtifactVersionRequest(
             user=uuid.uuid4(),
             workspace=uuid.uuid4(),
             name="abc",
@@ -77,7 +77,7 @@ def test_artifact_request_model_works_with_long_data_type():
     """Test that the artifact base model works with long data type strings."""
     with does_not_raise():
         long_data_type = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        ArtifactRequest(
+        ArtifactVersionRequest(
             user=uuid.uuid4(),
             workspace=uuid.uuid4(),
             name="abc",

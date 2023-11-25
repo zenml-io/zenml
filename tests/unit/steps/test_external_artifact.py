@@ -136,7 +136,7 @@ def test_get_artifact_by_value_before_upload_raises():
                 "zenml.client": MockZenmlClient,
             },
         ):
-            ea.get_artifact_id()
+            ea.get_artifact_version_id()
 
 
 def test_get_artifact_by_id():
@@ -152,7 +152,7 @@ def test_get_artifact_by_id():
             "zenml.client": MockZenmlClient,
         },
     ):
-        assert ea.get_artifact_id() == GLOBAL_ARTIFACT_ID
+        assert ea.get_artifact_version_id() == GLOBAL_ARTIFACT_ID
 
 
 def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
@@ -171,6 +171,6 @@ def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():
                     "zenml.client": MockZenmlClient,
                 },
             ):
-                ExternalArtifact(name="bar").get_artifact_id()
+                ExternalArtifact(name="bar").get_artifact_version_id()
         finally:
             MockZenmlClient.Client.ARTIFACT_STORE_ID = old_id
