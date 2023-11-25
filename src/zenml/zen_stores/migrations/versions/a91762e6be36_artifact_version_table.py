@@ -130,16 +130,13 @@ def upgrade() -> None:
     with op.batch_alter_table(
         "artifact_visualization", schema=None
     ) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "artifact_version_id",
-                sqlmodel.sql.sqltypes.GUID(),
-                nullable=False,
-            )
-        )
         batch_op.drop_constraint(
             "fk_artifact_visualization_artifact_id_artifact",
             type_="foreignkey",
+        )
+        batch_op.alter_column(
+            "artifact_id",
+            new_column_name="artifact_version_id",
         )
         batch_op.create_foreign_key(
             "fk_artifact_visualization_artifact_version_id_artifact_version",
@@ -148,21 +145,17 @@ def upgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
-        batch_op.drop_column("artifact_id")
 
     with op.batch_alter_table(
         "model_versions_artifacts", schema=None
     ) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "artifact_version_id",
-                sqlmodel.sql.sqltypes.GUID(),
-                nullable=False,
-            )
-        )
         batch_op.drop_constraint(
             "fk_model_versions_artifacts_artifact_id_artifact",
             type_="foreignkey",
+        )
+        batch_op.alter_column(
+            "artifact_id",
+            new_column_name="artifact_version_id",
         )
         batch_op.create_foreign_key(
             "fk_model_versions_artifacts_artifact_version_id_artifact_version",
@@ -171,18 +164,14 @@ def upgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
-        batch_op.drop_column("artifact_id")
 
     with op.batch_alter_table("run_metadata", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "artifact_version_id",
-                sqlmodel.sql.sqltypes.GUID(),
-                nullable=True,
-            )
-        )
         batch_op.drop_constraint(
             "fk_run_metadata_artifact_id_artifact", type_="foreignkey"
+        )
+        batch_op.alter_column(
+            "artifact_id",
+            new_column_name="artifact_version_id",
         )
         batch_op.create_foreign_key(
             "fk_run_metadata_artifact_version_id_artifact_version",
@@ -191,53 +180,36 @@ def upgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
-        batch_op.drop_column("artifact_id")
 
     with op.batch_alter_table(
         "step_run_input_artifact", schema=None
     ) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "artifact_version_id",
-                sqlmodel.sql.sqltypes.GUID(),
-                nullable=False,
-            )
-        )
         batch_op.drop_constraint(
             "fk_step_run_input_artifact_artifact_id_artifact",
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            "fk_step_run_input_artifact_artifact_version_id_artifact_version",
+            "fk_step_run_input_artifact_artifact_id_artifact_version",
             "artifact_version",
-            ["artifact_version_id"],
+            ["artifact_id"],
             ["id"],
             ondelete="CASCADE",
         )
-        batch_op.drop_column("artifact_id")
 
     with op.batch_alter_table(
         "step_run_output_artifact", schema=None
     ) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "artifact_version_id",
-                sqlmodel.sql.sqltypes.GUID(),
-                nullable=False,
-            )
-        )
         batch_op.drop_constraint(
             "fk_step_run_output_artifact_artifact_id_artifact",
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            "fk_step_run_output_artifact_artifact_version_id_artifact_version",
+            "fk_step_run_output_artifact_artifact_id_artifact_version",
             "artifact_version",
-            ["artifact_version_id"],
+            ["artifact_id"],
             ["id"],
             ondelete="CASCADE",
         )
-        batch_op.drop_column("artifact_id")
 
 
 def downgrade() -> None:

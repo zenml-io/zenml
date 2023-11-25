@@ -1637,12 +1637,12 @@ class SqlZenStore(BaseZenStore):
             if artifact_version_filter_model.only_unused:
                 query = query.where(
                     ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunOutputArtifactSchema.artifact_version_id)
+                        select(StepRunOutputArtifactSchema.artifact_id)
                     )
                 )
                 query = query.where(
                     ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunInputArtifactSchema.artifact_version_id)
+                        select(StepRunInputArtifactSchema.artifact_id)
                     )
                 )
             return self.filter_and_paginate(
@@ -5182,8 +5182,7 @@ class SqlZenStore(BaseZenStore):
             select(StepRunInputArtifactSchema)
             .where(StepRunInputArtifactSchema.step_id == run_step_id)
             .where(
-                StepRunInputArtifactSchema.artifact_version_id
-                == artifact_version_id
+                StepRunInputArtifactSchema.artifact_id == artifact_version_id
             )
             .where(StepRunInputArtifactSchema.name == name)
         ).first()
@@ -5193,7 +5192,7 @@ class SqlZenStore(BaseZenStore):
         # Save the input assignment in the database.
         assignment = StepRunInputArtifactSchema(
             step_id=run_step_id,
-            artifact_version_id=artifact_version_id,
+            artifact_id=artifact_version_id,
             name=name,
             type=input_type,
         )
@@ -5246,8 +5245,7 @@ class SqlZenStore(BaseZenStore):
             select(StepRunOutputArtifactSchema)
             .where(StepRunOutputArtifactSchema.step_id == step_run_id)
             .where(
-                StepRunOutputArtifactSchema.artifact_version_id
-                == artifact_version_id
+                StepRunOutputArtifactSchema.artifact_id == artifact_version_id
             )
         ).first()
         if assignment is not None:
@@ -5256,7 +5254,7 @@ class SqlZenStore(BaseZenStore):
         # Save the output assignment in the database.
         assignment = StepRunOutputArtifactSchema(
             step_id=step_run_id,
-            artifact_version_id=artifact_version_id,
+            artifact_id=artifact_version_id,
             name=name,
             type=output_type,
         )
