@@ -21,10 +21,7 @@ from zenml.cli.utils import (
     temporary_active_stack,
 )
 from zenml.client import Client
-from zenml.enums import PermissionType
 from zenml.models import (
-    RoleResponse,
-    TeamResponse,
     UserResponse,
     WorkspaceResponse,
 )
@@ -55,24 +52,21 @@ def sample_name(prefix: str = "aria") -> str:
 def create_sample_user(
     prefix: Optional[str] = None,
     password: Optional[str] = None,
-    initial_role: Optional[str] = None,
 ) -> UserResponse:
     """Function to create a sample user."""
     return Client().create_user(
         name=sample_name(prefix),
         password=password if password is not None else random_str(16),
-        initial_role=initial_role,
     )
 
 
 @contextmanager
 def create_sample_user_and_login(
     prefix: Optional[str] = None,
-    initial_role: Optional[str] = None,
 ) -> Generator[Tuple[UserResponse, Client], None, None]:
     """Context manager to create a sample user and login with it."""
     password = random_str(16)
-    user = create_sample_user(prefix, password, initial_role)
+    user = create_sample_user(prefix, password)
 
     deployment = TestHarness().active_deployment
     with deployment.connect(
@@ -80,26 +74,6 @@ def create_sample_user_and_login(
         custom_password=password,
     ) as client:
         yield user, client
-
-
-# ----- #
-# TEAMS #
-# ----- #
-team_create_command = cli.commands["team"].commands["create"]
-team_update_command = cli.commands["team"].commands["update"]
-team_list_command = cli.commands["team"].commands["list"]
-team_describe_command = cli.commands["team"].commands["describe"]
-team_delete_command = cli.commands["team"].commands["delete"]
-
-
-def sample_team_name() -> str:
-    """Function to get random team name."""
-    return f"felines_{random_str(4)}"
-
-
-def create_sample_team() -> TeamResponse:
-    """Fixture to get a clean global configuration and repository for an individual test."""
-    return Client().create_team(name=sample_team_name())
 
 
 def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> (
@@ -116,25 +90,13 @@ def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> (
     assert name == "axl"
 
 
-def sample_role_name() -> str:
-    """Function to get random role name."""
-    return f"cat_feeder_{random_str(4)}"
-
-
-def create_sample_role() -> RoleResponse:
-    """Fixture to get a global configuration with a  role."""
-    return Client().create_role(
-        name=sample_role_name(), permissions_list=[PermissionType.READ]
-    )
-
-
 def sample_workspace_name() -> str:
     """Function to get random workspace name."""
     return f"cat_prj_{random_str(4)}"
 
 
 def create_sample_workspace() -> WorkspaceResponse:
-    """Fixture to get a global configuration with a  role."""
+    """Fixture to get a workspace."""
     return Client().create_workspace(
         name=sample_workspace_name(),
         description="This workspace aims to ensure world domination for all "

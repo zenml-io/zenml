@@ -208,7 +208,7 @@ class PipelineRunResponse(
         Returns:
             All output artifacts of this pipeline run (including cached ones).
         """
-        from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
+        from zenml.artifacts.utils import get_artifacts_of_pipeline_run
 
         return get_artifacts_of_pipeline_run(self)
 
@@ -219,7 +219,7 @@ class PipelineRunResponse(
         Returns:
             A list of all artifacts produced during this pipeline run.
         """
-        from zenml.utils.artifact_utils import get_artifacts_of_pipeline_run
+        from zenml.artifacts.utils import get_artifacts_of_pipeline_run
 
         return get_artifacts_of_pipeline_run(self, only_produced=True)
 
@@ -352,6 +352,9 @@ class PipelineRunFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
+        "build_id",
+        "schedule_id",
+        "stack_id",
     ]
     name: Optional[str] = Field(
         default=None,

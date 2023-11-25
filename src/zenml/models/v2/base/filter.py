@@ -22,6 +22,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -45,13 +46,15 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
-    from sqlmodel.sql.expression import Select, SelectOfScalar
 
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 logger = get_logger(__name__)
+
+
+AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 
 class Filter(BaseModel, ABC):
@@ -289,6 +292,10 @@ class BaseFilter(BaseModel):
         default=None, description="Updated"
     )
 
+    _rbac_configuration: Optional[
+        Tuple[UUID, Dict[str, Optional[Set[UUID]]]]
+    ] = None
+
     @validator("sort_by", pre=True)
     def validate_sort_by(cls, v: str) -> str:
         """Validate that the sort_column is a valid column with a valid operand.
@@ -379,6 +386,65 @@ class BaseFilter(BaseModel):
             operator = SorterOps(split_value[0])
 
         return column, operator
+
+    def configure_rbac(
+        self,
+        authenticated_user_id: UUID,
+        **column_allowed_ids: Optional[Set[UUID]],
+    ) -> None:
+        """Configure RBAC allowed column values.
+
+        Args:
+            authenticated_user_id: ID of the authenticated user. All entities
+                owned by this user will be included.
+            column_allowed_ids: Set of IDs per column to limit the query to.
+                If given, the remaining filters will be applied to entities
+                within this set only. If `None`, the remaining filters will
+                applied to all entries in the table.
+        """
+        self._rbac_configuration = (authenticated_user_id, column_allowed_ids)
+
+    def generate_rbac_filter(
+        self,
+        table: Type["AnySchema"],
+    ) -> Optional["BooleanClauseList[Any]"]:
+        """Generates an optional RBAC filter.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            The RBAC filter.
+        """
+        from sqlmodel import or_
+
+        if not self._rbac_configuration:
+            return None
+
+        expressions = []
+
+        for column_name, allowed_ids in self._rbac_configuration[1].items():
+            if allowed_ids is not None:
+                expression = getattr(table, column_name).in_(allowed_ids)
+                expressions.append(expression)
+
+        if expressions and hasattr(table, "user_id"):
+            # If `expressions` is not empty, we do not have full access to all
+            # rows of the table. In this case, we also include rows which the
+            # user owns.
+
+            # Unowned entities are considered server-owned and can be seen
+            # by anyone
+            expressions.append(getattr(table, "user_id").is_(None))
+            # The authenticated user owns this entity
+            expressions.append(
+                getattr(table, "user_id") == self._rbac_configuration[0]
+            )
+
+        if expressions:
+            return or_(*expressions)
+        else:
+            return None
 
     @classmethod
     def _generate_filter_list(cls, values: Dict[str, Any]) -> List[Filter]:
@@ -732,9 +798,9 @@ class BaseFilter(BaseModel):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Applies the filter to a query.
 
         Args:
@@ -744,9 +810,21 @@ class BaseFilter(BaseModel):
         Returns:
             The query with filter applied.
         """
+        rbac_filter = self.generate_rbac_filter(table=table)
+
+        if rbac_filter is not None:
+            query = query.where(rbac_filter)
+
         filters = self.generate_filter(table=table)
 
         if filters is not None:
             query = query.where(filters)
 
         return query
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # all attributes with leading underscore are private and therefore
+        # are mutable and not included in serialization
+        underscore_attrs_are_private = True

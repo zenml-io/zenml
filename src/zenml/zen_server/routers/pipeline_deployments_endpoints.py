@@ -17,7 +17,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import (
     Page,
     PipelineDeploymentFilter,
@@ -25,6 +24,12 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -34,7 +39,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINE_DEPLOYMENTS,
     tags=["deployments"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -49,7 +54,7 @@ def list_deployments(
         make_dependable(PipelineDeploymentFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineDeploymentResponse]:
     """Gets a list of deployment.
 
@@ -62,8 +67,11 @@ def list_deployments(
     Returns:
         List of deployment objects.
     """
-    return zen_store().list_deployments(
-        deployment_filter_model=deployment_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=deployment_filter_model,
+        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+        list_method=zen_store().list_deployments,
+        hydrate=hydrate,
     )
 
 
@@ -76,7 +84,7 @@ def list_deployments(
 def get_deployment(
     deployment_id: UUID,
     hydrate: bool = True,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> PipelineDeploymentResponse:
     """Gets a specific deployment using its unique id.
 
@@ -88,8 +96,10 @@ def get_deployment(
     Returns:
         A specific deployment object.
     """
-    return zen_store().get_deployment(
-        deployment_id=deployment_id, hydrate=hydrate
+    return verify_permissions_and_get_entity(
+        id=deployment_id,
+        get_method=zen_store().get_deployment,
+        hydrate=hydrate,
     )
 
 
@@ -100,11 +110,15 @@ def get_deployment(
 @handle_exceptions
 def delete_deployment(
     deployment_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific deployment.
 
     Args:
         deployment_id: ID of the deployment to delete.
     """
-    zen_store().delete_deployment(deployment_id=deployment_id)
+    verify_permissions_and_delete_entity(
+        id=deployment_id,
+        get_method=zen_store().get_deployment,
+        delete_method=zen_store().delete_deployment,
+    )

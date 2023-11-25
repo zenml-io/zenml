@@ -25,7 +25,7 @@ from zenml.models import (
     StackResponseMetadata,
     StackUpdate,
 )
-from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -66,7 +66,7 @@ class StackCompositionSchema(SQLModel, table=True):
     )
 
 
-class StackSchema(ShareableSchema, table=True):
+class StackSchema(NamedSchema, table=True):
     """SQL Model for stacks."""
 
     __tablename__ = "stack"
@@ -115,16 +115,11 @@ class StackSchema(ShareableSchema, table=True):
         Returns:
             The updated StackSchema.
         """
-        for field, value in stack_update.dict(exclude_unset=True).items():
+        for field, value in stack_update.dict(
+            exclude_unset=True, exclude={"workspace", "user"}
+        ).items():
             if field == "components":
                 self.components = components
-
-            elif field == "user":
-                assert self.user_id == value
-
-            elif field == "workspace":
-                assert self.workspace_id == value
-
             else:
                 setattr(self, field, value)
 
@@ -143,7 +138,6 @@ class StackSchema(ShareableSchema, table=True):
         """
         body = StackResponseBody(
             user=self.user.to_model() if self.user else None,
-            is_shared=self.is_shared,
             created=self.created,
             updated=self.updated,
         )

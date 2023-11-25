@@ -16,12 +16,13 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType
 from zenml.logger import get_logger
+from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -50,8 +51,16 @@ class ArtifactRequest(WorkspaceScopedRequest):
     """Request model for artifacts."""
 
     name: str = Field(
-        title="Name of the output in the parent step.",
+        title="Name of the artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    version: Union[str, int] = Field(
+        title="Version of the artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    has_custom_name: bool = Field(
+        title="Whether the name is custom (True) or auto-generated (False).",
+        default=False,
     )
     type: ArtifactType = Field(title="Type of the artifact.")
     artifact_store_id: Optional[UUID] = Field(
@@ -67,6 +76,11 @@ class ArtifactRequest(WorkspaceScopedRequest):
     data_type: Source = Field(
         title="Data type of the artifact.",
     )
+    tags: Optional[List[str]] = Field(
+        title="Tags of the artifact.",
+        description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
+        default=None,
+    )
     visualizations: Optional[List["ArtifactVisualizationRequest"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
@@ -76,7 +90,14 @@ class ArtifactRequest(WorkspaceScopedRequest):
 
 # ------------------ Update Model ------------------
 
-# There is no update model for artifacts.
+
+class ArtifactUpdate(BaseModel):
+    """Artifact update model."""
+
+    name: Optional[str] = None
+    add_tags: Optional[List[str]] = None
+    remove_tags: Optional[List[str]] = None
+
 
 # ------------------ Response Model ------------------
 
@@ -84,6 +105,10 @@ class ArtifactRequest(WorkspaceScopedRequest):
 class ArtifactResponseBody(WorkspaceScopedResponseBody):
     """Response body for artifacts."""
 
+    version: Union[str, int] = Field(
+        title="Version of the artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     uri: str = Field(
         title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
     )
@@ -101,6 +126,9 @@ class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
         title="ID of the step run that produced this artifact.",
         default=None,
     )
+    tags: List[TagResponseModel] = Field(
+        title="Tags associated with the model",
+    )
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
     )
@@ -112,6 +140,10 @@ class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
     )
     data_type: Source = Field(
         title="Data type of the artifact.",
+    )
+    has_custom_name: bool = Field(
+        title="Whether the name is custom (True) or auto-generated (False).",
+        default=False,
     )
 
     _convert_source = convert_source_validator("materializer", "data_type")
@@ -138,6 +170,16 @@ class ArtifactResponse(
         return Client().zen_store.get_artifact(self.id)
 
     # Body and metadata properties
+
+    @property
+    def version(self) -> Union[str, int]:
+        """The `version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().version
+
     @property
     def uri(self) -> str:
         """The `uri` property.
@@ -173,6 +215,15 @@ class ArtifactResponse(
             the value of the property.
         """
         return self.get_metadata().producer_step_run_id
+
+    @property
+    def tags(self) -> List[TagResponseModel]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().tags
 
     @property
     def visualizations(
@@ -212,6 +263,15 @@ class ArtifactResponse(
         """
         return self.get_metadata().data_type
 
+    @property
+    def has_custom_name(self) -> bool:
+        """The `has_custom_name` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().has_custom_name
+
     # Helper methods
     @property
     def step(self) -> "StepRunResponse":
@@ -220,7 +280,7 @@ class ArtifactResponse(
         Returns:
             The step that produced this artifact.
         """
-        from zenml.utils.artifact_utils import get_producer_step_of_artifact
+        from zenml.artifacts.utils import get_producer_step_of_artifact
 
         return get_producer_step_of_artifact(self)
 
@@ -241,9 +301,9 @@ class ArtifactResponse(
         Returns:
             The materialized data.
         """
-        from zenml.utils.artifact_utils import load_artifact
+        from zenml.artifacts.utils import load_artifact_from_response
 
-        return load_artifact(self)
+        return load_artifact_from_response(self)
 
     def read(self) -> Any:
         """(Deprecated) Materializes (loads) the data stored in this artifact.
@@ -285,6 +345,14 @@ class ArtifactFilter(WorkspaceScopedFilter):
     name: Optional[str] = Field(
         default=None,
         description="Name of the artifact",
+    )
+    version: Optional[str] = Field(
+        default=None,
+        description="Version of the artifact",
+    )
+    version_number: Optional[Union[int, str]] = Field(
+        default=None,
+        description="Version of the artifact if it is an integer",
     )
     uri: Optional[str] = Field(
         default=None,

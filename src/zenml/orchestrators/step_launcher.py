@@ -32,6 +32,7 @@ from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.logging.step_logging import StepLogsStorageContext
+from zenml.model.utils import link_artifact_config_to_model_version
 from zenml.models import (
     ArtifactResponse,
     LogsRequest,
@@ -57,7 +58,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.model import ModelVersion
+    from zenml.model.model_version import ModelVersion
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -327,7 +328,6 @@ class StepLauncher:
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
             run_id=step_run.pipeline_run_id,
-            model_version=model_version,
         )
         input_artifact_ids = {
             input_name: artifact.id
@@ -391,7 +391,7 @@ class StepLauncher:
             model_version_from_context: The model version of the current step.
             step_run: The step to run.
         """
-        from zenml.model.artifact_config import DataArtifactConfig
+        from zenml.artifacts.artifact_config import ArtifactConfig
         from zenml.steps.base_step import BaseStep
         from zenml.steps.utils import parse_return_type_annotations
 
@@ -399,41 +399,24 @@ class StepLauncher:
         output_annotations = parse_return_type_annotations(
             step_instance.entrypoint
         )
-        for output_name_, output_ in step_run.outputs.items():
+        for output_name_, output_id in step_run.outputs.items():
             if output_name_ in output_annotations:
                 annotation = output_annotations.get(output_name_, None)
                 if annotation and annotation.artifact_config is not None:
                     artifact_config_ = annotation.artifact_config.copy()
                 else:
-                    artifact_config_ = DataArtifactConfig(
-                        artifact_name=output_name_
+                    artifact_config_ = ArtifactConfig(name=output_name_)
+                    logger.info(
+                        f"Linking artifact `{artifact_config_.name}` to "
+                        f"model `{artifact_config_.model_name}` version "
+                        f"`{artifact_config_.model_version}` implicitly."
                     )
 
-                if artifact_config_.model_name is None:
-                    model_version = model_version_from_context
-                else:
-                    from zenml.model.model_version import ModelVersion
-
-                    model_version = ModelVersion(
-                        name=artifact_config_.model_name,
-                        version=artifact_config_.model_version,
-                    )
-                if model_version:
-                    model_version._get_or_create_model_version()
-
-                    artifact_config_._pipeline_name = (
-                        self._deployment.pipeline_configuration.name
-                    )
-                    artifact_config_._step_name = self._step_name
-                    logger.debug(
-                        f"Linking artifact `{artifact_config_.artifact_name}` "
-                        f"to model `{model_version.name}` version "
-                        f"`{model_version.version}`."
-                    )
-                    artifact_config_.link_to_model(
-                        artifact_uuid=output_,
-                        model_version=model_version,
-                    )
+                link_artifact_config_to_model_version(
+                    artifact_config=artifact_config_,
+                    model_version=model_version_from_context,
+                    artifact_id=output_id,
+                )
 
     def _run_step(
         self,

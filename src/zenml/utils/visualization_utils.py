@@ -18,9 +18,9 @@ from typing import TYPE_CHECKING, Optional
 
 from IPython.core.display import HTML, Image, Markdown, display
 
+from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import VisualizationType
 from zenml.environment import Environment
-from zenml.utils.artifact_utils import load_artifact_visualization
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponse

@@ -17,8 +17,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
+from zenml.artifacts.utils import load_artifact_visualization
 from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
-from zenml.enums import PermissionType
 from zenml.models import (
     ArtifactFilter,
     ArtifactRequest,
@@ -26,9 +26,17 @@ from zenml.models import (
     LoadedVisualization,
     Page,
 )
-from zenml.utils.artifact_utils import load_artifact_visualization
+from zenml.models.v2.core.artifact import ArtifactUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -38,7 +46,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + ARTIFACTS,
     tags=["artifacts"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -53,7 +61,7 @@ def list_artifacts(
         make_dependable(ArtifactFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[ArtifactResponse]:
     """Get artifacts according to query filters.
 
@@ -66,8 +74,11 @@ def list_artifacts(
     Returns:
         The artifacts according to query filters.
     """
-    return zen_store().list_artifacts(
-        artifact_filter_model=artifact_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=artifact_filter_model,
+        resource_type=ResourceType.ARTIFACT,
+        list_method=zen_store().list_artifacts,
+        hydrate=hydrate,
     )
 
 
@@ -79,7 +90,7 @@ def list_artifacts(
 @handle_exceptions
 def create_artifact(
     artifact: ArtifactRequest,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> ArtifactResponse:
     """Create a new artifact.
 
@@ -89,7 +100,11 @@ def create_artifact(
     Returns:
         The created artifact.
     """
-    return zen_store().create_artifact(artifact)
+    return verify_permissions_and_create_entity(
+        request_model=artifact,
+        resource_type=ResourceType.ARTIFACT,
+        create_method=zen_store().create_artifact,
+    )
 
 
 @router.get(
@@ -101,7 +116,7 @@ def create_artifact(
 def get_artifact(
     artifact_id: UUID,
     hydrate: bool = True,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> ArtifactResponse:
     """Get an artifact by ID.
 
@@ -113,7 +128,37 @@ def get_artifact(
     Returns:
         The artifact with the given ID.
     """
-    return zen_store().get_artifact(artifact_id, hydrate=hydrate)
+    return verify_permissions_and_get_entity(
+        id=artifact_id, get_method=zen_store().get_artifact, hydrate=hydrate
+    )
+
+
+@router.put(
+    "/{artifact_id}",
+    response_model=ArtifactResponse,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_artifact(
+    artifact_id: UUID,
+    artifact_update: ArtifactUpdate,
+    _: AuthContext = Security(authorize),
+) -> ArtifactResponse:
+    """Update an artifact by ID.
+
+    Args:
+        artifact_id: The ID of the artifact to update.
+        artifact_update: The update to apply to the artifact.
+
+    Returns:
+        The updated artifact.
+    """
+    return verify_permissions_and_update_entity(
+        id=artifact_id,
+        update_model=artifact_update,
+        get_method=zen_store().get_artifact,
+        update_method=zen_store().update_artifact,
+    )
 
 
 @router.delete(
@@ -123,14 +168,18 @@ def get_artifact(
 @handle_exceptions
 def delete_artifact(
     artifact_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Delete an artifact by ID.
 
     Args:
         artifact_id: The ID of the artifact to delete.
     """
-    zen_store().delete_artifact(artifact_id)
+    verify_permissions_and_delete_entity(
+        id=artifact_id,
+        get_method=zen_store().get_artifact,
+        delete_method=zen_store().delete_artifact,
+    )
 
 
 @router.get(
@@ -142,7 +191,7 @@ def delete_artifact(
 def get_artifact_visualization(
     artifact_id: UUID,
     index: int = 0,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> LoadedVisualization:
     """Get the visualization of an artifact.
 
@@ -154,7 +203,9 @@ def get_artifact_visualization(
         The visualization of the artifact.
     """
     store = zen_store()
-    artifact = store.get_artifact(artifact_id)
+    artifact = verify_permissions_and_get_entity(
+        id=artifact_id, get_method=store.get_artifact
+    )
     return load_artifact_visualization(
         artifact=artifact, index=index, zen_store=store, encode_image=True
     )
