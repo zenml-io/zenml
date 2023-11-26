@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 """Weights & Biases experiment tracker flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from pydantic import validator
 
