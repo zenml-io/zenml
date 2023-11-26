@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-
+WandbSettingsType = wandb.Settings
 WANDB_API_KEY = "WANDB_API_KEY"
 
 
@@ -132,7 +132,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         self,
         run_name: str,
         tags: List[str],
-        settings: Union["wandb.Settings", Dict[str, Any], None] = None,
+        settings: Union[WandbSettingsType, Dict[str, Any], None] = None,
     ) -> None:
         """Initializes a wandb run.
 
