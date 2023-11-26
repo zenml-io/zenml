@@ -34,7 +34,7 @@ if TYPE_CHECKING:
         WandbExperimentTracker,
     )
 else:
-    WandbSettingsType = Any
+    WandbSettingsType = TypeVar("WandbSettingsType", bound=Any)
 
 
 class WandbExperimentTrackerSettings(BaseSettings):
