@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 DEFAULT_MODEL_NAME = "model"
 DEFAULT_LOCAL_MODEL_DIR = "/mnt/models"
 
-Array_Like = Union[np.ndarray, List[Any], str, bytes, Dict[str, Any]]
+Array_Like = Union[np.ndarray[Any], List[Any], str, bytes, Dict[str, Any]]
 
 
 class ZenMLCustomModel:

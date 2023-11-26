@@ -44,7 +44,8 @@ class WandbExperimentTrackerSettings(BaseSettings):
 
     run_name: Optional[str] = None
     tags: List[str] = []
-    settings: Dict[str, Any] = {}
+    # Use a string literal for the wandb.Settings type
+    settings: Union[Dict[str, Any], "wandb.Settings"] = {}
 
     @validator("settings", pre=True)
     def _convert_settings(
