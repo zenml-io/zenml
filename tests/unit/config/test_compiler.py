@@ -27,7 +27,8 @@ from zenml.steps import step
 
 
 def test_compiling_pipeline_with_invalid_run_name_fails(
-    empty_pipeline, local_stack  # noqa: F811
+    empty_pipeline,
+    local_stack,  # noqa: F811
 ):
     """Tests that compiling a pipeline with an invalid run name fails."""
     pipeline_instance = empty_pipeline
