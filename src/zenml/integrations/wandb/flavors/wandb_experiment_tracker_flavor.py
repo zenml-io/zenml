@@ -20,7 +20,6 @@ from typing import (
     List,
     Optional,
     Type,
-    TypeVar,
     Union,
     cast,
 )
@@ -36,15 +35,11 @@ from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    import wandb
-
-    WandbSettingsType = wandb.Settings
+    from wandb import Settings
 
     from zenml.integrations.wandb.experiment_trackers import (
         WandbExperimentTracker,
     )
-else:
-    WandbSettingsType = TypeVar("WandbSettingsType", bound=Any)
 
 
 class WandbExperimentTrackerSettings(BaseSettings):
@@ -58,11 +53,11 @@ class WandbExperimentTrackerSettings(BaseSettings):
 
     run_name: Optional[str] = None
     tags: List[str] = []
-    settings: Union[Dict[str, Any], WandbSettingsType] = {}
+    settings: Union[Dict[str, Any], Settings] = {}
 
     @validator("settings", pre=True)
     def _convert_settings(
-        cls, value: Union[Dict[str, Any], WandbSettingsType]
+        cls, value: Union[Dict[str, Any], Settings]
     ) -> Dict[str, Any]:
         """Converts settings to a dictionary.
 

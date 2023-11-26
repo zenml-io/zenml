@@ -30,13 +30,14 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import Uri
 
 if TYPE_CHECKING:
+    from wandb import Settings
+
     from zenml.config.step_run_info import StepRunInfo
     from zenml.metadata.metadata_types import MetadataType
 
 
 logger = get_logger(__name__)
 
-WandbSettingsType = wandb.Settings
 WANDB_API_KEY = "WANDB_API_KEY"
 
 
@@ -132,7 +133,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         self,
         run_name: str,
         tags: List[str],
-        settings: Union[WandbSettingsType, Dict[str, Any], None] = None,
+        settings: Union[Settings, Dict[str, Any], None] = None,
     ) -> None:
         """Initializes a wandb run.
 
