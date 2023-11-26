@@ -28,9 +28,13 @@ from zenml.utils.secret_utils import SecretField
 if TYPE_CHECKING:
     import wandb
 
+    WandbSettingsType = wandb.Settings
+
     from zenml.integrations.wandb.experiment_trackers import (
         WandbExperimentTracker,
     )
+else:
+    WandbSettingsType = Any
 
 
 class WandbExperimentTrackerSettings(BaseSettings):
@@ -44,12 +48,11 @@ class WandbExperimentTrackerSettings(BaseSettings):
 
     run_name: Optional[str] = None
     tags: List[str] = []
-    # Use a string literal for the wandb.Settings type
-    settings: Union[Dict[str, Any], "wandb.Settings"] = {}
+    settings: Union[Dict[str, Any], WandbSettingsType] = {}
 
     @validator("settings", pre=True)
     def _convert_settings(
-        cls, value: Union[Dict[str, Any], "wandb.Settings"]
+        cls, value: Union[Dict[str, Any], WandbSettingsType]
     ) -> Dict[str, Any]:
         """Converts settings to a dictionary.
 
