@@ -43,7 +43,8 @@ from zenml.zen_server.utils import rbac, server_config
 
 AnyOldResponseModel = TypeVar("AnyOldResponseModel", bound=BaseResponseModel)
 AnyNewResponseModel = TypeVar(
-    "AnyNewResponseModel", bound=BaseResponse  # type: ignore[type-arg]
+    "AnyNewResponseModel",
+    bound=BaseResponse,  # type: ignore[type-arg]
 )
 AnyResponseModel = TypeVar(
     "AnyResponseModel",
