@@ -8,7 +8,6 @@ on:
       - '*'
 
 jobs:
-
   setup-and-test:
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -36,6 +35,21 @@ jobs:
 
       - name: Check for broken dependencies
         run: pip check
+
+  db-migration-testing:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.9"
+
+    - name: Test migrations across versions
+      run: bash scripts/test-migrations.sh
 
   publish-python-package:
     needs: [setup-and-test, mlstacks-compatibility-check]
