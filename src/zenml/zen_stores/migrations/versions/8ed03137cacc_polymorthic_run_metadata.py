@@ -1,7 +1,7 @@
 """polymorthic run_metadata [8ed03137cacc].
 
 Revision ID: 8ed03137cacc
-Revises: 14d687c8fa1c
+Revises: 389046140cad
 Create Date: 2023-11-17 16:19:34.281692
 
 """
@@ -12,7 +12,7 @@ from sqlmodel import Session
 
 # revision identifiers, used by Alembic.
 revision = "8ed03137cacc"
-down_revision = "14d687c8fa1c"
+down_revision = "389046140cad"
 branch_labels = None
 depends_on = None
 
