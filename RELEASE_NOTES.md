@@ -1,4 +1,61 @@
 <!-- markdown-link-check-disable -->
+# 0.50.0
+
+In this release, we introduce key updates aimed at improving user experience and security.
+The `ModelConfig` object has been renamed to `ModelVersion` for a more intuitive interface,
+while Role-Based Access Control (RBAC) is now in place to secure server endpoints. Additionally,
+the release features enhancements such as optimized model hydration for better performance,
+alongside a range of bug fixes and contributions from both new and returning community members.
+
+## Breaking Change
+- We have renamed the `ModelConfig` object to `ModelVersion` with other related changes to the model control plane,
+  the goal of this is to bring a simplified user-interface experience, so once ModelVersion is configured in
+  @pipeline or @step it will travel into all other user-facing places: step context, client, etc. by @avishniakov in [#2044](https://github.com/zenml-io/zenml/pull/2044)
+- introducing RBAC for server endpoints, ensuring users have appropriate permissions for actions on resources.
+  Additionally, it improves data handling by dehydrating response models to redact inaccessible information, while
+  service accounts retain full permissions due to current database constraints. by @schustmi in [#1999](https://github.com/zenml-io/zenml/pull/1999)
+
+## Enhancements
+- Optimizing model hydration by @bcdurak in [#1971](https://github.com/zenml-io/zenml/pull/1971)
+- Improve alembic migration safety by @fa9r in [#2073](https://github.com/zenml-io/zenml/pull/2073)
+- Model Link Filtering by Artifact / Run Name by @fa9r in [#2074](https://github.com/zenml-io/zenml/pull/2074)
+
+## Bug Fixes
+- Fix tag<>resource ID generator to fix the issue of manipulating migrated tags properly [#2056](https://github.com/zenml-io/zenml/pull/2056)
+- Fixes for `k3d` deployments via `mlstacks` using the ZenML CLI wrapper [#2059](https://github.com/zenml-io/zenml/pull/2059)
+- Fix some filter options for pipeline runs by @schustmi [#2078](https://github.com/zenml-io/zenml/pull/2078)
+- Fix Label Studio image annotation example by @strickvl [#2010](https://github.com/zenml-io/zenml/pull/2010)
+- Alembic migration fix for databases with scheduled pipelines with 2+ runs by @bcdurak [#2072](https://github.com/zenml-io/zenml/pull/2072)
+- Model version endpoint fixes by @schustmi in [#2060](https://github.com/zenml-io/zenml/pull/2060)
+
+## ZenML Helm Chart Changes
+- Make helm chart more robust to accidental secret deletions by @stefannica in [#2053](https://github.com/zenml-io/zenml/pull/2053)
+- Separate helm hook resources from regular resources by @stefannica in [#2055](https://github.com/zenml-io/zenml/pull/2055)
+
+## Other Changes
+* Connectors docs small fixes by @strickvl in https://github.com/zenml-io/zenml/pull/2050
+* Feature/configurable service account for seldon predictor service by @Johnyz21 in https://github.com/zenml-io/zenml/pull/1725
+* Adding NLP Template Example by @safoinme in https://github.com/zenml-io/zenml/pull/2051
+* Fix CI by @fa9r in https://github.com/zenml-io/zenml/pull/2069
+* Depaginate step runs to allow running pipelines with arbitrary step count by @schustmi in https://github.com/zenml-io/zenml/pull/2068
+* Remove user name from orchestrator run name by @schustmi in https://github.com/zenml-io/zenml/pull/2067
+* Artifacts Tab by @fa9r in https://github.com/zenml-io/zenml/pull/1943
+* Add warnings/updates to Huggingface Spaces deployment docs by @strickvl in https://github.com/zenml-io/zenml/pull/2052
+* Nightly builds by @strickvl in https://github.com/zenml-io/zenml/pull/2031
+* Allow for custom disk size and type when using VertexAI Step Operator by @strickvl in https://github.com/zenml-io/zenml/pull/2054
+* Set nightly builds to run at half-past the hour by @strickvl in https://github.com/zenml-io/zenml/pull/2077
+* Set DCP template tag by @avishniakov in https://github.com/zenml-io/zenml/pull/2076
+* Add missing dehydration in get_service_connector endpoint by @schustmi in https://github.com/zenml-io/zenml/pull/2080
+* Replace `black` with `ruff format` / bump `mypy` by @strickvl in https://github.com/zenml-io/zenml/pull/2082
+* ModelVersion in pipeline context to pass in steps by @avishniakov in https://github.com/zenml-io/zenml/pull/2079
+* Pin `bcrypt` by @strickvl in https://github.com/zenml-io/zenml/pull/2083
+
+## New Contributors
+* @Johnyz21 made their first contribution in https://github.com/zenml-io/zenml/pull/1725
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.47.0...0.50.0
+
+
 # 0.47.0
 This release fixes a bug that was introduced in 0.46.1 where the default user 
 was made inaccessible and was inadvertently duplicated. This release rescues 
@@ -103,7 +160,7 @@ server-side component config validation.
 ## New Contributors
 * @znegrin made their first contribution in https://github.com/zenml-io/zenml/pull/1986
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.5...test
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.45.5...0.45.6
 
 
 # 0.45.5
@@ -306,7 +363,7 @@ enabled MFA.
 ## New Contributors
 * @iraadit made their first contribution in https://github.com/zenml-io/zenml/pull/1821
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.44.2...tes
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.44.2...0.44.3
 
 
 # 0.44.2
