@@ -34,6 +34,9 @@ from zenml.container_registries.base_container_registry import (
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
+    ArtifactResponse,
+    ArtifactResponseBody,
+    ArtifactResponseMetadata,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionResponseBody,
@@ -538,14 +541,31 @@ def sample_pipeline_run_request_model() -> PipelineRunRequest:
 
 
 @pytest.fixture
-def sample_artifact_model(
-    sample_workspace_model, sample_user_model
-) -> ArtifactVersionResponse:
+def sample_artifact_model() -> ArtifactResponse:
     """Return a sample artifact model for testing purposes."""
-    return ArtifactVersionResponse(
+    return ArtifactResponse(
         id=uuid4(),
         name="sample_artifact",
+        body=ArtifactResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+        ),
+        metadata=ArtifactResponseMetadata(
+            has_custom_name=True,
+            tags=[],
+        ),
+    )
+
+
+@pytest.fixture
+def sample_artifact_version_model(
+    sample_workspace_model, sample_user_model, sample_artifact_model
+) -> ArtifactVersionResponse:
+    """Return a sample artifact version model for testing purposes."""
+    return ArtifactVersionResponse(
+        id=uuid4(),
         body=ArtifactVersionResponseBody(
+            artifact=sample_artifact_model,
             version=1,
             user=sample_user_model,
             created=datetime.now(),

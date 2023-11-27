@@ -171,7 +171,7 @@ def test__load_artifact(numpy_file_uri):
     assert isinstance(artifact, np.ndarray)
 
 
-def test__get_new_artifact_version(mocker, sample_artifact_model):
+def test__get_new_artifact_version(mocker, sample_artifact_version_model):
     """Unit test for the `_get_new_artifact_version` function."""
     # If no artifact exists, "1" should be returned
     mocker.patch(
@@ -184,7 +184,7 @@ def test__get_new_artifact_version(mocker, sample_artifact_model):
             items=[],
         ),
     )
-    assert _get_new_artifact_version(sample_artifact_model.name) == 1
+    assert _get_new_artifact_version(sample_artifact_version_model.name) == 1
 
     # If an artifact exists, the next version should be returned
     mocker.patch(
@@ -194,10 +194,10 @@ def test__get_new_artifact_version(mocker, sample_artifact_model):
             max_size=1,
             total_pages=1,
             total=1,
-            items=[sample_artifact_model],
+            items=[sample_artifact_version_model],
         ),
     )
     assert (
-        _get_new_artifact_version(sample_artifact_model.name)
-        == int(sample_artifact_model.version) + 1
+        _get_new_artifact_version(sample_artifact_version_model.name)
+        == int(sample_artifact_version_model.version) + 1
     )

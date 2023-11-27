@@ -27,7 +27,7 @@ class MockZenmlClient:
     class Client:
         ARTIFACT_STORE_ID: ClassVar[int] = 42
 
-        class MockArtifactResponse:
+        class MockArtifactVersionResponse:
             def __init__(self, name, id=GLOBAL_ARTIFACT_VERSION_ID):
                 self.artifact_store_id = 42
                 self.name = name
@@ -37,8 +37,8 @@ class MockZenmlClient:
             def __init__(self):
                 self.name = "foo"
                 self.artifact_versions = [
-                    MockZenmlClient.Client.MockArtifactResponse("foo"),
-                    MockZenmlClient.Client.MockArtifactResponse("bar"),
+                    MockZenmlClient.Client.MockArtifactVersionResponse("foo"),
+                    MockZenmlClient.Client.MockArtifactVersionResponse("bar"),
                 ]
 
         class MockPipelineResponse:
@@ -52,13 +52,15 @@ class MockZenmlClient:
             self.active_stack.artifact_store.id = self.ARTIFACT_STORE_ID
             self.active_stack.artifact_store.path = "foo"
 
-        def get_artifact(self, *args, **kwargs):
+        def get_artifact_version(self, *args, **kwargs):
             if len(args):
-                return MockZenmlClient.Client.MockArtifactResponse(
+                return MockZenmlClient.Client.MockArtifactVersionResponse(
                     "foo", args[0]
                 )
             else:
-                return MockZenmlClient.Client.MockArtifactResponse("foo")
+                return MockZenmlClient.Client.MockArtifactVersionResponse(
+                    "foo"
+                )
 
         def get_pipeline(self, *args, **kwargs):
             return MockZenmlClient.Client.MockPipelineResponse()
@@ -110,13 +112,13 @@ def test_external_artifact_init(
         )
 
 
-def test_upload_by_value(sample_artifact_model, mocker):
+def test_upload_by_value(sample_artifact_version_model, mocker):
     """Tests that `upload_by_value` works as expected for `value`."""
     ea = ExternalArtifact(value=1)
     assert ea.id is None
     mocker.patch(
         "zenml.artifacts.utils.save_artifact",
-        return_value=sample_artifact_model,
+        return_value=sample_artifact_version_model,
     )
     ea.upload_by_value()
     assert ea.id is not None

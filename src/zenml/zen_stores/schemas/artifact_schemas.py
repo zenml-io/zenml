@@ -198,8 +198,12 @@ class ArtifactVersionSchema(BaseSchema, table=True):
 
     # Relationships
     artifact: "ArtifactSchema" = Relationship(back_populates="versions")
-    user: Optional["UserSchema"] = Relationship(back_populates="artifacts")
-    workspace: "WorkspaceSchema" = Relationship(back_populates="artifacts")
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="artifact_versions"
+    )
+    workspace: "WorkspaceSchema" = Relationship(
+        back_populates="artifact_versions"
+    )
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},

@@ -148,7 +148,7 @@ def test_running_a_failing_step(
 
 
 def test_loading_unmaterialized_input_artifact(
-    local_stack, sample_artifact_model
+    local_stack, sample_artifact_version_model
 ):
     """Tests that having an input of type `UnmaterializedArtifact` does not
     materialize the artifact but instead returns the response model."""
@@ -164,7 +164,7 @@ def test_loading_unmaterialized_input_artifact(
         }
     )
     runner = StepRunner(step=step, stack=local_stack)
-    artifact_response = sample_artifact_model
+    artifact_response = sample_artifact_version_model
 
     artifact = runner._load_input_artifact(
         artifact=artifact_response, data_type=UnmaterializedArtifact
