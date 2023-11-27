@@ -881,16 +881,18 @@ def create_run_metadata(
         )
 
     if run_metadata.resource_type == MetadataResourceTypes.PIPELINE_RUN:
-        resource = zen_store().get_run(run_metadata.resource_id)
+        run = zen_store().get_run(run_metadata.resource_id)
+        verify_permission_for_model(run, action=Action.UPDATE)
     elif run_metadata.resource_type == MetadataResourceTypes.STEP_RUN:
-        resource = zen_store().get_run_step(run_metadata.resource_id)
+        step = zen_store().get_run_step(run_metadata.resource_id)
+        verify_permission_for_model(step, action=Action.UPDATE)
     elif run_metadata == MetadataResourceTypes.ARTIFACT:
-        resource = zen_store().get_artifact(run_metadata.resource_id)
+        artifact = zen_store().get_artifact(run_metadata.resource_id)
+        verify_permission_for_model(artifact, action=Action.UPDATE)
     else:
         raise RuntimeError(
             f"Unknown resource type: {run_metadata.resource_type}"
         )
-    verify_permission_for_model(resource, action=Action.UPDATE)
 
     verify_permission(
         resource_type=ResourceType.RUN_METADATA, action=Action.CREATE
