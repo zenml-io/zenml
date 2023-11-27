@@ -23,7 +23,7 @@ from typing_extensions import Annotated
 
 from zenml import get_step_context, step
 from zenml.logger import get_logger
-from zenml.model import ModelVersion
+from zenml.model.model_version import ModelVersion
 
 logger = get_logger(__name__)
 
@@ -75,12 +75,8 @@ def compute_performance_metrics_on_current_data(
     else:
         # Get predictors
         predictors = {
-            latest_version_number: latest_version.get_model_artifact(
-                "model"
-            ).load(),
-            current_version_number: current_version.get_model_artifact(
-                "model"
-            ).load(),
+            latest_version_number: latest_version.load_artifact("model"),
+            current_version_number: current_version.load_artifact("model"),
         }
 
         metrics = {}

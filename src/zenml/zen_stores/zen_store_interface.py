@@ -25,6 +25,7 @@ from zenml.models import (
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
+    ArtifactUpdate,
     ArtifactVisualizationResponse,
     CodeReferenceResponse,
     CodeRepositoryFilter,
@@ -72,10 +73,6 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RoleFilter,
-    RoleRequest,
-    RoleResponse,
-    RoleUpdate,
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
@@ -106,19 +103,9 @@ from zenml.models import (
     TagRequestModel,
     TagResponseModel,
     TagUpdateModel,
-    TeamFilter,
-    TeamRequest,
-    TeamResponse,
-    TeamRoleAssignmentFilter,
-    TeamRoleAssignmentRequest,
-    TeamRoleAssignmentResponse,
-    TeamUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
-    UserRoleAssignmentFilter,
-    UserRoleAssignmentRequest,
-    UserRoleAssignmentResponse,
     UserUpdate,
     WorkspaceFilter,
     WorkspaceRequest,
@@ -390,6 +377,23 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all artifacts matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_artifact(
+        self, artifact_id: UUID, artifact_update: ArtifactUpdate
+    ) -> ArtifactResponse:
+        """Updates an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to update.
+            artifact_update: The update to be applied to the artifact.
+
+        Returns:
+            The updated artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
         """
 
     @abstractmethod
@@ -1095,79 +1099,6 @@ class ZenStoreInterface(ABC):
             created or not.
         """
 
-    # -------------------- Roles --------------------
-    @abstractmethod
-    def create_role(self, role: RoleRequest) -> RoleResponse:
-        """Creates a new role.
-
-        Args:
-            role: The role model to create.
-
-        Returns:
-            The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
-        """
-
-    @abstractmethod
-    def get_role(
-        self, role_name_or_id: Union[str, UUID], hydrate: bool = True
-    ) -> RoleResponse:
-        """Get a role by its unique ID.
-
-        Args:
-            role_name_or_id: The name or the ID of the role to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The role with the given ID.
-
-        Raises:
-            KeyError: if the role doesn't exist.
-        """
-
-    @abstractmethod
-    def list_roles(self, role_filter_model: RoleFilter) -> Page[RoleResponse]:
-        """List all roles matching the given filter criteria.
-
-        Args:
-            role_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all roles matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_role(
-        self, role_id: UUID, role_update: RoleUpdate
-    ) -> RoleResponse:
-        """Update an existing role.
-
-        Args:
-            role_id: The ID of the role to be updated.
-            role_update: The update to be applied to the role.
-
-        Returns:
-            The updated role.
-
-        Raises:
-            KeyError: if the role does not exist.
-        """
-
-    @abstractmethod
-    def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given ID exists.
-        """
-
     # -------------------- Run metadata --------------------
 
     @abstractmethod
@@ -1565,7 +1496,6 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_service_connector_resources(
         self,
-        user_name_or_id: Union[str, UUID],
         workspace_name_or_id: Union[str, UUID],
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
@@ -1574,7 +1504,6 @@ class ZenStoreInterface(ABC):
         """List resources that can be accessed by service connectors.
 
         Args:
-            user_name_or_id: The name or ID of the user to scope to.
             workspace_name_or_id: The name or ID of the workspace to scope to.
             connector_type: The type of service connector to scope to.
             resource_type: The type of resource to scope to.
@@ -1771,126 +1700,6 @@ class ZenStoreInterface(ABC):
             KeyError: if the step run doesn't exist.
         """
 
-    # -------------------- Team --------------------
-    @abstractmethod
-    def create_team(self, team: TeamRequest) -> TeamResponse:
-        """Creates a new team.
-
-        Args:
-            team: The team model to create.
-
-        Returns:
-            The newly created team.
-        """
-
-    @abstractmethod
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponse:
-        """Gets a specific team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to get.
-
-        Returns:
-            The requested team.
-
-        Raises:
-            KeyError: If no team with the given name or ID exists.
-        """
-
-    @abstractmethod
-    def list_teams(self, team_filter_model: TeamFilter) -> Page[TeamResponse]:
-        """List all teams matching the given filter criteria.
-
-        Args:
-            team_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all teams matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_team(
-        self, team_id: UUID, team_update: TeamUpdate
-    ) -> TeamResponse:
-        """Update an existing team.
-
-        Args:
-            team_id: The ID of the team to be updated.
-            team_update: The update to be applied to the team.
-
-        Returns:
-            The updated team.
-
-        Raises:
-            KeyError: if the team does not exist.
-        """
-
-    @abstractmethod
-    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
-        """
-
-    # -------------------- Team Role Assignment --------------------
-    @abstractmethod
-    def create_team_role_assignment(
-        self, team_role_assignment: TeamRoleAssignmentRequest
-    ) -> TeamRoleAssignmentResponse:
-        """Creates a new team role assignment.
-
-        Args:
-            team_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-        """
-
-    @abstractmethod
-    def get_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponse:
-        """Gets a specific role assignment.
-
-        Args:
-            team_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The requested role assignment.
-
-        Raises:
-            KeyError: If no role assignment with the given ID exists.
-        """
-
-    @abstractmethod
-    def delete_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            team_role_assignment_id: The ID of the specific role assignment
-        """
-
-    @abstractmethod
-    def list_team_role_assignments(
-        self, team_role_assignment_filter_model: TeamRoleAssignmentFilter
-    ) -> Page[TeamRoleAssignmentResponse]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            team_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-
     # -------------------- Users --------------------
 
     @abstractmethod
@@ -1973,60 +1782,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no user with the given ID exists.
-        """
-
-    # -------------------- User Role Assignment --------------------
-    @abstractmethod
-    def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequest
-    ) -> UserRoleAssignmentResponse:
-        """Creates a new role assignment.
-
-        Args:
-            user_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-        """
-
-    @abstractmethod
-    def get_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponse:
-        """Gets a specific role assignment.
-
-        Args:
-            user_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The requested role assignment.
-
-        Raises:
-            KeyError: If no role assignment with the given ID exists.
-        """
-
-    @abstractmethod
-    def delete_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            user_role_assignment_id: The ID of the specific role assignment
-        """
-
-    @abstractmethod
-    def list_user_role_assignments(
-        self, user_role_assignment_filter_model: UserRoleAssignmentFilter
-    ) -> Page[UserRoleAssignmentResponse]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            user_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
         """
 
     # -------------------- Workspaces --------------------
@@ -2296,15 +2051,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_model_version_artifact_links(
         self,
-        model_version_id: UUID,
         model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get all model version to artifact links by filter.
 
         Args:
-            model_version_id: ID of the model version containing the link.
-            model_version_artifact_link_filter_model: All filter parameters including pagination
-                params.
+            model_version_artifact_link_filter_model: All filter parameters
+                including pagination params.
 
         Returns:
             A page of all model version to artifact links.
@@ -2348,15 +2101,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_model_version_pipeline_run_links(
         self,
-        model_version_id: UUID,
         model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_version_id: name or ID of the model version containing the link.
-            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
-                params.
+            model_version_pipeline_run_link_filter_model: All filter parameters
+                including pagination params.
 
         Returns:
             A page of all model version to pipeline run links.

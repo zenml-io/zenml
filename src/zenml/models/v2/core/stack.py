@@ -21,12 +21,13 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
+from zenml.models.v2.base.internal import server_owned_request_model
 from zenml.models.v2.base.scoped import (
-    ShareableFilter,
-    ShareableRequest,
-    ShareableResponse,
-    ShareableResponseBody,
-    ShareableResponseMetadata,
+    WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.component import ComponentResponse
@@ -34,7 +35,7 @@ from zenml.models.v2.core.component import ComponentResponse
 # ------------------ Request Model ------------------
 
 
-class StackRequest(ShareableRequest):
+class StackRequest(WorkspaceScopedRequest):
     """Request model for stacks."""
 
     name: str = Field(
@@ -70,6 +71,13 @@ class StackRequest(ShareableRequest):
         )
 
 
+@server_owned_request_model
+class InternalStackRequest(StackRequest):
+    """Internal stack request model."""
+
+    pass
+
+
 # ------------------ Update Model ------------------
 
 
@@ -81,11 +89,11 @@ class StackUpdate(StackRequest):
 # ------------------ Response Model ------------------
 
 
-class StackResponseBody(ShareableResponseBody):
+class StackResponseBody(WorkspaceScopedResponseBody):
     """Response body for stacks."""
 
 
-class StackResponseMetadata(ShareableResponseMetadata):
+class StackResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for stacks."""
 
     components: Dict[StackComponentType, List[ComponentResponse]] = Field(
@@ -104,7 +112,7 @@ class StackResponseMetadata(ShareableResponseMetadata):
 
 
 class StackResponse(
-    ShareableResponse[StackResponseBody, StackResponseMetadata]
+    WorkspaceScopedResponse[StackResponseBody, StackResponseMetadata]
 ):
     """Response model for stacks."""
 
@@ -207,7 +215,7 @@ class StackResponse(
 # ------------------ Filter Model ------------------
 
 
-class StackFilter(ShareableFilter):
+class StackFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all StackModels.
 
     The Stack Model needs additional scoping. As such the `_scope_user` field
@@ -220,13 +228,10 @@ class StackFilter(ShareableFilter):
     #  rather than a field in the db, hence it needs to be handled
     #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "component_id",  # This is a relationship, not a field
     ]
 
-    is_shared: Optional[Union[bool, str]] = Field(
-        default=None, description="If the stack is shared or private"
-    )
     name: Optional[str] = Field(
         default=None,
         description="Name of the stack",

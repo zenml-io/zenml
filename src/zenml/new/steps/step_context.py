@@ -28,10 +28,10 @@ from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
+    from zenml.artifacts.artifact_config import ArtifactConfig
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.model.artifact_config import DataArtifactConfig
     from zenml.model.model_version import ModelVersion
     from zenml.models import (
         PipelineResponse,
@@ -93,7 +93,7 @@ class StepContext(metaclass=SingletonMetaClass):
         step_run: "StepRunResponse",
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
-        output_artifact_configs: Mapping[str, Optional["DataArtifactConfig"]],
+        output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
         step_run_info: "StepRunInfo",
         cache_enabled: bool,
     ) -> None:
@@ -400,28 +400,30 @@ class StepContext(metaclass=SingletonMetaClass):
         Returns:
             Metadata for the given output.
         """
-        return self._get_output(output_name).metadata or {}
+        return self._get_output(output_name).run_metadata or {}
 
     def add_output_metadata(
-        self, output_name: Optional[str] = None, **metadata: "MetadataType"
+        self,
+        metadata: Dict[str, "MetadataType"],
+        output_name: Optional[str] = None,
     ) -> None:
         """Adds metadata for a given step output.
 
         Args:
+            metadata: The metadata to add.
             output_name: Optional name of the output for which to add the
                 metadata. If no name is given and the step only has a single
                 output, the metadata of this output will be added. If the
                 step has multiple outputs, an exception will be raised.
-            **metadata: The metadata to add.
         """
         output = self._get_output(output_name)
-        if not output.metadata:
-            output.metadata = {}
-        output.metadata.update(**metadata)
+        if not output.run_metadata:
+            output.run_metadata = {}
+        output.run_metadata.update(**metadata)
 
     def _set_artifact_config(
         self,
-        artifact_config: "DataArtifactConfig",
+        artifact_config: "ArtifactConfig",
         output_name: Optional[str] = None,
     ) -> None:
         """Adds artifact config for a given step output.
@@ -451,14 +453,14 @@ class StepContextOutput:
 
     materializer_classes: Sequence[Type["BaseMaterializer"]]
     artifact_uri: str
-    metadata: Optional[Dict[str, "MetadataType"]] = None
-    artifact_config: Optional["DataArtifactConfig"]
+    run_metadata: Optional[Dict[str, "MetadataType"]] = None
+    artifact_config: Optional["ArtifactConfig"]
 
     def __init__(
         self,
         materializer_classes: Sequence[Type["BaseMaterializer"]],
         artifact_uri: str,
-        artifact_config: Optional["DataArtifactConfig"],
+        artifact_config: Optional["ArtifactConfig"],
     ):
         """Initialize the step output.
 

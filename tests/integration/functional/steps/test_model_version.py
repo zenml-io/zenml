@@ -21,10 +21,11 @@ from tests.integration.functional.utils import model_killer
 from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
+from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.enums import ModelStages
-from zenml.model import DataArtifactConfig, ModelVersion, link_output_to_model
+from zenml.model.model_version import ModelVersion
 
 
 @step
@@ -204,9 +205,7 @@ def test_create_new_version_only_in_pipeline():
 
 
 @step
-def _this_step_produces_output() -> (
-    Annotated[int, "data", DataArtifactConfig(overwrite=False)]
-):
+def _this_step_produces_output() -> Annotated[int, "data"]:
     return 1
 
 
@@ -214,8 +213,7 @@ def _this_step_produces_output() -> (
 def _this_step_tries_to_recover(run_number: int):
     mv = get_step_context().model_version._get_or_create_model_version()
     assert (
-        len(mv.data_artifact_ids["bar::_this_step_produces_output::data"])
-        == run_number
+        len(mv.data_artifact_ids["data"]) == run_number
     ), "expected AssertionError"
 
     raise Exception("make pipeline fail")
@@ -269,13 +267,9 @@ def test_recovery_of_steps(model_version: ModelVersion):
             model_name_or_id="foo",
             model_version_name_or_number_or_id=model_version.version,
         )
-        mv = client.zen_store.get_model_version(mv.id)
         assert mv.name == model_version.version
         assert len(mv.data_artifact_ids) == 1
-        assert (
-            len(mv.data_artifact_ids["bar::_this_step_produces_output::data"])
-            == 3
-        )
+        assert len(mv.data_artifact_ids["data"]) == 3
 
 
 @step(model_version=ModelVersion(name="foo"))
@@ -407,7 +401,6 @@ def test_pipeline_run_link_attached_from_pipeline_context(pipeline):
             model_name_or_id="foo",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
-        mv = client.zen_store.get_model_version(mv.id)
 
         assert len(mv.pipeline_run_ids) == 2
         assert {run_name for run_name in mv.pipeline_run_ids} == {
@@ -461,7 +454,6 @@ def test_pipeline_run_link_attached_from_step_context(pipeline):
             model_name_or_id="foo",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
-        mv = client.zen_store.get_model_version(mv.id)
 
         assert len(mv.pipeline_run_ids) == 2
         assert {run_name for run_name in mv.pipeline_run_ids} == {
@@ -476,19 +468,19 @@ def _this_step_has_model_version_on_artifact_level() -> (
         Annotated[
             int,
             "declarative_link",
-            DataArtifactConfig(
+            ArtifactConfig(
                 model_name="declarative", model_version=ModelStages.LATEST
             ),
         ],
-        Annotated[int, "functional_link"],
+        Annotated[
+            int,
+            "functional_link",
+            ArtifactConfig(
+                model_name="functional", model_version=ModelStages.LATEST
+            ),
+        ],
     ]
 ):
-    link_output_to_model(
-        DataArtifactConfig(
-            model_name="functional", model_version=ModelStages.LATEST
-        ),
-        output_name="functional_link",
-    )
     return 1, 2
 
 
@@ -593,7 +585,6 @@ def test_pipeline_run_link_attached_from_mixed_context(pipeline, model_names):
                 model_name_or_id=model.id,
                 model_version_name_or_number_or_id=ModelStages.LATEST,
             )
-            mv = client.zen_store.get_model_version(mv.id)
 
             assert len(mv.pipeline_run_ids) == 2
             assert {run_name for run_name in mv.pipeline_run_ids} == {
@@ -608,7 +599,13 @@ def _consumer_step(a: int, b: int):
 
 
 @step(model_version=ModelVersion(name="step"))
-def _producer_step() -> Tuple[int, int, int]:
+def _producer_step() -> (
+    Tuple[
+        Annotated[int, "output_0"],
+        Annotated[int, "output_1"],
+        Annotated[int, "output_2"],
+    ]
+):
     return 1, 2, 3
 
 
@@ -616,17 +613,13 @@ def _producer_step() -> Tuple[int, int, int]:
 def _consumer_pipeline_with_step_context():
     _consumer_step.with_options(
         model_version=ModelVersion(name="step", version=ModelStages.LATEST)
-    )(ExternalArtifact(model_artifact_name="output_0"), 1)
+    )(ExternalArtifact(name="output_0"), 1)
 
 
 @pipeline
 def _consumer_pipeline_with_artifact_context():
     _consumer_step(
-        ExternalArtifact(
-            model_artifact_name="output_1",
-            model_name="step",
-            model_version=ModelStages.LATEST,
-        ),
+        ExternalArtifact(name="output_1"),
         2,
     )
 
@@ -634,7 +627,7 @@ def _consumer_pipeline_with_artifact_context():
 @pipeline(model_version=ModelVersion(name="step", version=ModelStages.LATEST))
 def _consumer_pipeline_with_pipeline_context():
     _consumer_step(
-        ExternalArtifact(model_artifact_name="output_2"),
+        ExternalArtifact(name="output_2"),
         3,
     )
 
@@ -669,7 +662,6 @@ def test_that_consumption_also_registers_run_in_model_version():
             model_name_or_id="step",
             model_version_name_or_number_or_id=ModelStages.LATEST,
         )
-        mv = client.zen_store.get_model_version(mv.id)
 
         assert len(mv.pipeline_run_ids) == 4
         assert {run_name for run_name in mv.pipeline_run_ids} == {

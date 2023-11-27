@@ -35,16 +35,13 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
-    from sqlmodel.sql.expression import Select, SelectOfScalar
 
     from zenml.models.v2.base.filter import AnySchema
-    from zenml.models.v2.core.role import RoleResponse
-    from zenml.models.v2.core.team import TeamResponse
 
 # ------------------ Request Model ------------------
 
@@ -255,21 +252,14 @@ class UserResponseMetadata(BaseResponseMetadata):
         title="The external user ID associated with the account. Only relevant "
         "for user accounts.",
     )
-    roles: Optional[List["RoleResponse"]] = Field(
-        default=None, title="The list of roles for this user."
-    )
-    teams: Optional[List["TeamResponse"]] = Field(
-        default=None, title="The list of teams for this user."
-    )
 
 
 class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
     """Response model for user and service accounts.
 
     This returns the activation_token that is required for the
-    user-invitation-flow of the frontend. This also optionally includes the
-    team the user is a part of. The email is returned optionally as well
-    for use by the analytics on the client-side.
+    user-invitation-flow of the frontend. The email is returned optionally as
+    well for use by the analytics on the client-side.
     """
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -368,24 +358,6 @@ class UserResponse(BaseResponse[UserResponseBody, UserResponseMetadata]):
         """
         return self.get_metadata().external_user_id
 
-    @property
-    def roles(self) -> Optional[List["RoleResponse"]]:
-        """The `roles` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().roles
-
-    @property
-    def teams(self) -> Optional[List["TeamResponse"]]:
-        """The `teams` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().teams
-
     # Helper methods
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -432,9 +404,9 @@ class UserFilter(BaseFilter):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Override to filter out service accounts from the query.
 
         Args:

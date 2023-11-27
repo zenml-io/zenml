@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Model implementation to support Model Control Plane feature."""
 
-import re
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -41,14 +40,13 @@ from zenml.models.base_models import (
 )
 from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.tag_models import TagResponseModel
+from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import WorkspaceScopedFilter
+from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
-    from sqlmodel.sql.expression import Select, SelectOfScalar
-
     from zenml.model.model_version import ModelVersion
-    from zenml.models.v2.core.artifact import ArtifactResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -62,14 +60,17 @@ class ModelVersionBaseModel(BaseModel):
     name: Optional[str] = Field(
         description="The name of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
     description: Optional[str] = Field(
         description="The description of the model version",
         max_length=TEXT_FIELD_MAX_LENGTH,
+        default=None,
     )
     stage: Optional[str] = Field(
         description="The stage of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
     )
 
 
@@ -95,9 +96,9 @@ class ModelScopedFilterModel(WorkspaceScopedFilter):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Applies the filter to a query.
 
         Args:
@@ -111,57 +112,6 @@ class ModelScopedFilterModel(WorkspaceScopedFilter):
 
         if self._model_id:
             query = query.where(getattr(table, "model_id") == self._model_id)
-
-        return query
-
-
-class ModelVersionScopedFilterModel(ModelScopedFilterModel):
-    """Base filter model inside Model Version Scope."""
-
-    _model_version_id: UUID = PrivateAttr(None)
-
-    def set_scope_model_version(
-        self, model_version_name_or_id: Union[str, UUID]
-    ) -> None:
-        """Set the model version to scope this response.
-
-        Args:
-            model_version_name_or_id: The model version to scope this response to.
-        """
-        try:
-            model_version_id = UUID(str(model_version_name_or_id))
-        except ValueError:
-            from zenml.client import Client
-
-            model_version_id = (
-                Client()
-                .get_model_version(
-                    model_name_or_id=self._model_id,
-                    model_version_name_or_number_or_id=model_version_name_or_id,
-                )
-                .id
-            )
-        self._model_version_id = model_version_id
-
-    def apply_filter(
-        self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
-        table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        query = super().apply_filter(query=query, table=table)
-
-        query = query.where(
-            getattr(table, "model_version_id") == self._model_version_id
-        )
 
         return query
 
@@ -315,8 +265,6 @@ class ModelVersionResponseModel(
         collection: Dict[str, Dict[str, UUID]],
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the artifact linked to this model version given type.
 
@@ -324,107 +272,95 @@ class ModelVersionResponseModel(
             collection: The collection to search in (one of self.model_artifact_ids, self.data_artifact_ids, self.endpoint_artifact_ids)
             name: The name of the artifact to retrieve.
             version: The version of the artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated the artifact.
-            step_name: The name of the step-generated the artifact.
 
         Returns:
             Specific version of an artifact from collection or None
-
-        Raises:
-            RuntimeError: If more than one artifact found by given keys
         """
         from zenml.client import Client
 
         client = Client()
 
-        search_pattern = re.compile(
-            (pipeline_name or r"(.*)")
-            + r"::"
-            + (step_name or r"(.*)")
-            + r"::"
-            + name
-        )
-        names = []
-        for key in collection:
-            if search_pattern.match(key):
-                names.append(key)
-        if len(names) > 1:
-            raise RuntimeError(
-                f"Found more than one artifact linked to this model version using "
-                f"filter: pipeline_name `{pipeline_name}`, step_name `{step_name}`, name `{name}`.\n"
-                + str(names)
-            )
-        if len(names) == 0:
+        if name not in collection:
             return None
-        name = names[0]
         if version is None:
             version = max(collection[name].keys())
         return client.get_artifact(collection[name][version])
+
+    def get_artifact(
+        self,
+        name: str,
+        version: Optional[str] = None,
+    ) -> Optional["ArtifactResponse"]:
+        """Get the artifact linked to this model version.
+
+        Args:
+            name: The name of the artifact to retrieve.
+            version: The version of the artifact to retrieve (None for latest/non-versioned)
+
+        Returns:
+            Specific version of an artifact or None
+        """
+        all_artifact_ids = {
+            **self.model_artifact_ids,
+            **self.data_artifact_ids,
+            **self.endpoint_artifact_ids,
+        }
+        return self._get_linked_object(all_artifact_ids, name, version)
 
     def get_model_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the model artifact linked to this model version.
 
         Args:
             name: The name of the model artifact to retrieve.
             version: The version of the model artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated the model artifact.
-            step_name: The name of the step-generated the model artifact.
 
         Returns:
             Specific version of the model artifact or None
         """
-        return self._get_linked_object(
-            self.model_artifact_ids, name, version, pipeline_name, step_name
-        )
+        return self._get_linked_object(self.model_artifact_ids, name, version)
 
     def get_data_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the data artifact linked to this model version.
 
         Args:
             name: The name of the data artifact to retrieve.
             version: The version of the data artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the data artifact.
-            step_name: The name of the step generated the data artifact.
 
         Returns:
             Specific version of the data artifact or None
         """
         return self._get_linked_object(
-            self.data_artifact_ids, name, version, pipeline_name, step_name
+            self.data_artifact_ids,
+            name,
+            version,
         )
 
     def get_endpoint_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
     ) -> Optional["ArtifactResponse"]:
         """Get the endpoint artifact linked to this model version.
 
         Args:
             name: The name of the endpoint artifact to retrieve.
             version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the endpoint artifact.
-            step_name: The name of the step generated the endpoint artifact.
 
         Returns:
             Specific version of the endpoint artifact or None
         """
         return self._get_linked_object(
-            self.endpoint_artifact_ids, name, version, pipeline_name, step_name
+            self.endpoint_artifact_ids,
+            name,
+            version,
         )
 
     def get_pipeline_run(self, name: str) -> "PipelineRunResponse":
@@ -442,16 +378,13 @@ class ModelVersionResponseModel(
 
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False
-    ) -> "ModelVersion":
+    ) -> None:
         """Sets this Model Version to a desired stage.
 
         Args:
             stage: the target stage for model version.
             force: whether to force archiving of current model version in
                 target stage or raise.
-
-        Returns:
-            Updated Model Version object.
 
         Raises:
             ValueError: if model_stage is not valid.
@@ -462,7 +395,7 @@ class ModelVersionResponseModel(
         if stage not in [stage.value for stage in ModelStages]:
             raise ValueError(f"`{stage}` is not a valid model stage.")
 
-        return Client().update_model_version(
+        Client().update_model_version(
             model_name_or_id=self.model.id,
             version_name_or_id=self.id,
             stage=stage,
@@ -527,19 +460,6 @@ class ModelVersionUpdateModel(BaseModel):
 class ModelVersionArtifactBaseModel(BaseModel):
     """Model version links with artifact base model."""
 
-    name: Optional[str] = Field(
-        description="The name of the artifact inside model version.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    pipeline_name: Optional[str] = Field(
-        description="The name of the pipeline creating this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    step_name: Optional[str] = Field(
-        description="The name of the step creating this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    artifact: UUID
     model: UUID
     model_version: UUID
     is_model_artifact: bool = False
@@ -562,50 +482,61 @@ class ModelVersionArtifactRequestModel(
 ):
     """Model version link with artifact request model."""
 
-    overwrite: bool = False
+    artifact: UUID
 
 
 class ModelVersionArtifactResponseModel(
     ModelVersionArtifactBaseModel, WorkspaceScopedResponseModel
 ):
-    """Model version link with artifact response model.
+    """Model version link with artifact response model."""
 
-    link_version: The version of the link (always 1 for not versioned links).
-    """
-
-    link_version: int
+    artifact: ArtifactResponse
 
 
-class ModelVersionArtifactFilterModel(ModelVersionScopedFilterModel):
+class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
 
-    name: Optional[str] = Field(
-        description="The name of the artifact inside model version.",
-    )
-    pipeline_name: Optional[str] = Field(
-        description="The name of the pipeline creating this artifact.",
-    )
-    step_name: Optional[str] = Field(
-        description="The name of the step creating this artifact.",
-    )
+    # Artifact name and type are not DB fields and need to be handled separately
+    FILTER_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "artifact_name",
+        "only_data_artifacts",
+        "only_model_artifacts",
+        "only_endpoint_artifacts",
+    ]
+
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
     )
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
     )
+    model_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by model ID"
+    )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by model version ID"
+    )
+    artifact_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by artifact ID"
+    )
+    artifact_name: Optional[str] = Field(
+        default=None,
+        description="Name of the artifact",
+    )
     only_data_artifacts: Optional[bool] = False
     only_model_artifacts: Optional[bool] = False
     only_endpoint_artifacts: Optional[bool] = False
 
     CLI_EXCLUDE_FIELDS = [
-        *ModelVersionScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "only_data_artifacts",
         "only_model_artifacts",
         "only_endpoint_artifacts",
+        "model_id",
+        "model_version_id",
         "user_id",
         "workspace_id",
-        "scope_workspace",
         "updated",
         "id",
     ]
@@ -614,11 +545,6 @@ class ModelVersionArtifactFilterModel(ModelVersionScopedFilterModel):
 class ModelVersionPipelineRunBaseModel(BaseModel):
     """Model version links with pipeline run base model."""
 
-    name: Optional[str] = Field(
-        description="The name of the pipeline run inside model version.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    pipeline_run: UUID
     model: UUID
     model_version: UUID
 
@@ -628,15 +554,25 @@ class ModelVersionPipelineRunRequestModel(
 ):
     """Model version link with pipeline run request model."""
 
+    pipeline_run: UUID
+
 
 class ModelVersionPipelineRunResponseModel(
     ModelVersionPipelineRunBaseModel, WorkspaceScopedResponseModel
 ):
     """Model version link with pipeline run response model."""
 
+    pipeline_run: PipelineRunResponse
 
-class ModelVersionPipelineRunFilterModel(ModelVersionScopedFilterModel):
+
+class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
+
+    # Pipeline run name is not a DB field and needs to be handled separately
+    FILTER_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "pipeline_run_name",
+    ]
 
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
@@ -644,6 +580,29 @@ class ModelVersionPipelineRunFilterModel(ModelVersionScopedFilterModel):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The user of the Model Version"
     )
+    model_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by model ID"
+    )
+    model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by model version ID"
+    )
+    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Filter by pipeline run ID"
+    )
+    pipeline_run_name: Optional[str] = Field(
+        default=None,
+        description="Name of the pipeline run",
+    )
+
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        "model_id",
+        "model_version_id",
+        "user_id",
+        "workspace_id",
+        "updated",
+        "id",
+    ]
 
 
 class ModelRequestModel(
@@ -721,12 +680,12 @@ class ModelFilterModel(WorkspaceScopedFilter):
 class ModelUpdateModel(BaseModel):
     """Model update model."""
 
-    license: Optional[str]
-    description: Optional[str]
-    audience: Optional[str]
-    use_cases: Optional[str]
-    limitations: Optional[str]
-    trade_offs: Optional[str]
-    ethics: Optional[str]
-    add_tags: Optional[List[str]]
-    remove_tags: Optional[List[str]]
+    license: Optional[str] = None
+    description: Optional[str] = None
+    audience: Optional[str] = None
+    use_cases: Optional[str] = None
+    limitations: Optional[str] = None
+    trade_offs: Optional[str] = None
+    ethics: Optional[str] = None
+    add_tags: Optional[List[str]] = None
+    remove_tags: Optional[List[str]] = None

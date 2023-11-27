@@ -70,7 +70,7 @@ if TYPE_CHECKING:
         StepConfiguration,
         StepConfigurationUpdate,
     )
-    from zenml.model import ModelVersion
+    from zenml.model.model_version import ModelVersion
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
