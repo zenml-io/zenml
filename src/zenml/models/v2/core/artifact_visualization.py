@@ -92,7 +92,7 @@ class ArtifactVisualizationResponse(
 
     @property
     def artifact_version_id(self) -> UUID:
-        """The `artifact_id` property.
+        """The `artifact_version_id` property.
 
         Returns:
             the value of the property.

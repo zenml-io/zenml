@@ -2678,7 +2678,8 @@ class Client(metaclass=ClientMetaClass):
             materializer: The materializer of the artifact to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
-            only_unused: Only return artifacts that are not used in any runs.
+            only_unused: Only return artifact versions that are not used in
+                any pipeline runs.
 
         Returns:
             A list of artifact versions.
@@ -2766,12 +2767,14 @@ class Client(metaclass=ClientMetaClass):
             partial(self.list_artifact_versions, only_unused=True)
         ):
             raise ValueError(
-                "The metadata of artifacts that are used in runs cannot be "
-                "deleted. Please delete all runs that use this artifact "
-                "first."
+                "The metadata of artifact versions that are used in runs "
+                "cannot be deleted. Please delete all runs that use this "
+                "artifact first."
             )
         self.zen_store.delete_artifact_version(artifact_version.id)
-        logger.info(f"Deleted metadata of artifact '{artifact_version.uri}'.")
+        logger.info(
+            f"Deleted metadata of artifact version '{artifact_version.uri}'."
+        )
 
     def _delete_artifact_from_artifact_store(
         self, artifact_version: ArtifactVersionResponse
@@ -2833,10 +2836,10 @@ class Client(metaclass=ClientMetaClass):
             metadata: The metadata to create as a dictionary of key-value pairs.
             pipeline_run_id: The ID of the pipeline run during which the
                 metadata was produced. If provided, `step_run_id` and
-                `artifact_id` must be None.
+                `artifact_version_id` must be None.
             step_run_id: The ID of the step run during which the metadata was
-                produced. If provided, `pipeline_run_id` and `artifact_id` must
-                be None.
+                produced. If provided, `pipeline_run_id` and
+                `artifact_version_id` must be None.
             artifact_version_id: The ID of the artifact version for which the
                 metadata was produced. If provided, `pipeline_run_id` and
                 `step_run_id` must be None.
@@ -2848,7 +2851,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             ValueError: If not exactly one of either `pipeline_run_id`,
-                `step_run_id`, or `artifact_id` is provided.
+                `step_run_id`, or `artifact_version_id` is provided.
         """
         from zenml.metadata.metadata_types import get_metadata_type
 
@@ -2856,7 +2859,7 @@ class Client(metaclass=ClientMetaClass):
             raise ValueError(
                 "Cannot create run metadata without linking it to any entity. "
                 "Please provide either a `pipeline_run_id`, `step_run_id`, or "
-                "`artifact_id`."
+                "`artifact_version_id`."
             )
         if (
             (pipeline_run_id and step_run_id)
@@ -2866,7 +2869,7 @@ class Client(metaclass=ClientMetaClass):
             raise ValueError(
                 "Cannot create run metadata linked to multiple entities. "
                 "Please provide only a `pipeline_run_id` or only a "
-                "`step_run_id` or only an `artifact_id`."
+                "`step_run_id` or only an `artifact_version_id`."
             )
 
         values: Dict[str, "MetadataType"] = {}

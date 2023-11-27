@@ -88,7 +88,7 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    artifacts: List["ArtifactVersionSchema"] = Relationship(
+    artifact_versions: List["ArtifactVersionSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

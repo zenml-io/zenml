@@ -207,7 +207,7 @@ def save_artifact(
             client.zen_store.update_run_step(
                 step_run_id=step_run.id,
                 step_run_update=StepRunUpdate(
-                    saved_artifacts={name: response.id}
+                    saved_artifact_versions={name: response.id}
                 ),
             )
         except RuntimeError:
@@ -237,7 +237,7 @@ def load_artifact(
         client.zen_store.update_run_step(
             step_run_id=step_run.id,
             step_run_update=StepRunUpdate(
-                loaded_artifacts={artifact.name: artifact.id}
+                loaded_artifact_versions={artifact.name: artifact.id}
             ),
         )
     except RuntimeError:
@@ -252,8 +252,8 @@ def log_artifact_metadata(
 ) -> None:
     """Log artifact metadata.
 
-    This function can be used to log metadata for either existing artifacts or
-    artifacts that are newly created in the same step.
+    This function can be used to log metadata for either existing artifact
+    versions or artifact versions that are newly created in the same step.
 
     Args:
         metadata: The metadata to log.
@@ -423,24 +423,24 @@ def get_producer_step_of_artifact(
     return Client().get_run_step(artifact.producer_step_run_id)
 
 
-def get_artifacts_of_pipeline_run(
+def get_artifacts_versions_of_pipeline_run(
     pipeline_run: "PipelineRunResponse", only_produced: bool = False
 ) -> List["ArtifactVersionResponse"]:
-    """Get all artifacts produced during a pipeline run.
+    """Get all artifact versions produced during a pipeline run.
 
     Args:
         pipeline_run: The pipeline run.
-        only_produced: If only artifacts produced by the pipeline run should be
-            returned or also cached artifacts.
+        only_produced: If only artifact versions produced by the pipeline run
+            should be returned or also cached artifact versions.
 
     Returns:
-        A list of all artifacts produced during the pipeline run.
+        A list of all artifact versions produced during the pipeline run.
     """
-    artifacts: List["ArtifactVersionResponse"] = []
+    artifact_versions: List["ArtifactVersionResponse"] = []
     for step in pipeline_run.steps.values():
         if not only_produced or step.status == ExecutionStatus.COMPLETED:
-            artifacts.extend(step.outputs.values())
-    return artifacts
+            artifact_versions.extend(step.outputs.values())
+    return artifact_versions
 
 
 # -------------------------
@@ -564,7 +564,7 @@ def _get_new_artifact_version(artifact_name: str) -> int:
     Returns:
         The next auto-incremented version.
     """
-    artifacts = Client().list_artifact_versions(
+    artifact_versions = Client().list_artifact_versions(
         name=artifact_name,
         sort_by="desc:version_number",
         size=1,
@@ -572,7 +572,7 @@ def _get_new_artifact_version(artifact_name: str) -> int:
 
     # If a numbered version exists, increment it
     try:
-        return int(artifacts[0].version) + 1
+        return int(artifact_versions[0].version) + 1
 
     # If no numbered versions exist yet, start at 1
     except (IndexError, ValueError):

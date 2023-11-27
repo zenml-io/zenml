@@ -310,8 +310,8 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
-    # We keep the name artifact_id instead of artifact_version_id here to avoid
-    # having to drop and recreate the primary key constraint.
+    # Note: We keep the name artifact_id instead of artifact_version_id here to
+    # avoid having to drop and recreate the primary key constraint.
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target="artifact_version",
@@ -346,8 +346,8 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
-    # We keep the name artifact_id instead of artifact_version_id here to avoid
-    # having to drop and recreate the primary key constraint.
+    # Note: we keep the name artifact_id instead of artifact_version_id here to
+    # avoid having to drop and recreate the primary key constraint.
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target="artifact_version",

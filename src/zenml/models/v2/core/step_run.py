@@ -92,11 +92,11 @@ class StepRunRequest(WorkspaceScopedRequest):
         default_factory=list,
     )
     inputs: Dict[str, UUID] = Field(
-        title="The IDs of the input artifacts of the step run.",
+        title="The IDs of the input artifact versions of the step run.",
         default={},
     )
     outputs: Dict[str, UUID] = Field(
-        title="The IDs of the output artifacts of the step run.",
+        title="The IDs of the output artifact versions of the step run.",
         default={},
     )
     logs: Optional["LogsRequest"] = Field(
@@ -115,15 +115,15 @@ class StepRunUpdate(BaseModel):
     """Update model for step runs."""
 
     outputs: Dict[str, UUID] = Field(
-        title="The IDs of the output artifacts of the step run.",
+        title="The IDs of the output artifact versions of the step run.",
         default={},
     )
-    saved_artifacts: Dict[str, UUID] = Field(
-        title="The IDs of artifacts that were saved by this step run.",
+    saved_artifact_versions: Dict[str, UUID] = Field(
+        title="The IDs of artifact versions that were saved by this step run.",
         default={},
     )
-    loaded_artifacts: Dict[str, UUID] = Field(
-        title="The IDs of artifacts that were loaded by this step run.",
+    loaded_artifact_versions: Dict[str, UUID] = Field(
+        title="The IDs of artifact versions that were loaded by this step run.",
         default={},
     )
     status: Optional[ExecutionStatus] = Field(
@@ -142,11 +142,11 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
 
     status: ExecutionStatus = Field(title="The status of the step.")
     inputs: Dict[str, "ArtifactVersionResponse"] = Field(
-        title="The input artifacts of the step run.",
+        title="The input artifact versions of the step run.",
         default={},
     )
     outputs: Dict[str, "ArtifactVersionResponse"] = Field(
-        title="The output artifacts of the step run.",
+        title="The output artifact versions of the step run.",
         default={},
     )
 

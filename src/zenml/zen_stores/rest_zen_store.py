@@ -692,6 +692,9 @@ class RestZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+
+        Returns:
+            A list of all artifacts matching the filter criteria.
         """
         return self._list_paginated_resources(
             route=ARTIFACTS,
@@ -803,9 +806,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated artifact version.
-
-        Raises:
-            KeyError: if the artifact version doesn't exist.
         """
         return self._update_resource(
             resource_id=artifact_version_id,

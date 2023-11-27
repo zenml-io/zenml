@@ -530,7 +530,7 @@ class StepLauncher:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
             step_run_info: Additional information needed to run the step.
-            input_artifacts: The input artifacts of the current step.
+            input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
         runner = StepRunner(step=self._step, stack=self._stack)

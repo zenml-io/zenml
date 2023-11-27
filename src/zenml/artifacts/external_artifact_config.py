@@ -72,7 +72,8 @@ class ExternalArtifactConfiguration(BaseModel):
                 "referenced by an external artifact is not stored in the "
                 "artifact store of the active stack. This will lead to "
                 "issues loading the artifact. Please make sure to only "
-                "reference artifacts stored in your active artifact store."
+                "reference artifact versions stored in your active artifact "
+                "store."
             )
 
         self.id = response.id

@@ -203,26 +203,30 @@ class PipelineRunResponse(
 
     # Helper methods
     @property
-    def artifacts(self) -> List["ArtifactVersionResponse"]:
-        """Get all artifacts that are outputs of steps of this pipeline run.
+    def artifact_versions(self) -> List["ArtifactVersionResponse"]:
+        """Get all artifact versions that are outputs of steps of this run.
 
         Returns:
-            All output artifacts of this pipeline run (including cached ones).
+            All output artifact versions of this run (including cached ones).
         """
-        from zenml.artifacts.utils import get_artifacts_of_pipeline_run
+        from zenml.artifacts.utils import (
+            get_artifacts_versions_of_pipeline_run,
+        )
 
-        return get_artifacts_of_pipeline_run(self)
+        return get_artifacts_versions_of_pipeline_run(self)
 
     @property
-    def produced_artifacts(self) -> List["ArtifactVersionResponse"]:
-        """Get all artifacts produced during this pipeline run.
+    def produced_artifact_versions(self) -> List["ArtifactVersionResponse"]:
+        """Get all artifact versions produced during this pipeline run.
 
         Returns:
-            A list of all artifacts produced during this pipeline run.
+            A list of all artifact versions produced during this pipeline run.
         """
-        from zenml.artifacts.utils import get_artifacts_of_pipeline_run
+        from zenml.artifacts.utils import (
+            get_artifacts_versions_of_pipeline_run,
+        )
 
-        return get_artifacts_of_pipeline_run(self, only_produced=True)
+        return get_artifacts_versions_of_pipeline_run(self, only_produced=True)
 
     # Body and metadata properties
     @property

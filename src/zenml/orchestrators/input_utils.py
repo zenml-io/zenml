@@ -41,8 +41,8 @@ def resolve_step_inputs(
             step or output.
 
     Returns:
-        The IDs of the input artifacts and the IDs of parent steps of the
-        current step.
+        The IDs of the input artifact versions and the IDs of parent steps of
+            the current step.
     """
     list_run_steps = functools.partial(
         Client().list_run_steps, pipeline_run_id=run_id

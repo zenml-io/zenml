@@ -175,7 +175,7 @@ def test__get_new_artifact_version(mocker, sample_artifact_model):
     """Unit test for the `_get_new_artifact_version` function."""
     # If no artifact exists, "1" should be returned
     mocker.patch(
-        "zenml.client.Client.list_artifacts",
+        "zenml.client.Client.list_artifact_versions",
         return_value=Page(
             index=1,
             max_size=1,
@@ -188,7 +188,7 @@ def test__get_new_artifact_version(mocker, sample_artifact_model):
 
     # If an artifact exists, the next version should be returned
     mocker.patch(
-        "zenml.client.Client.list_artifacts",
+        "zenml.client.Client.list_artifact_versions",
         return_value=Page(
             index=1,
             max_size=1,

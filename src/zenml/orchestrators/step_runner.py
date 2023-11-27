@@ -112,7 +112,7 @@ class StepRunner:
         Args:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
-            input_artifacts: The input artifacts of the step.
+            input_artifacts: The input artifact versions of the step.
             output_artifact_uris: The URIs of the output artifacts of the step.
             step_run_info: The step run info.
 
@@ -319,7 +319,7 @@ class StepRunner:
         Args:
             args: The arguments of the step entrypoint function.
             annotations: The annotations of the step entrypoint function.
-            input_artifacts: The input artifacts of the step.
+            input_artifacts: The input artifact versions of the step.
 
         Returns:
             The parsed inputs for the step entrypoint function.

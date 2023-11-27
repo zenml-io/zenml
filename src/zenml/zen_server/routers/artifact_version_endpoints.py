@@ -63,7 +63,7 @@ def list_artifact_versions(
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ArtifactVersionResponse]:
-    """Get artifacts versions according to query filters.
+    """Get artifact versions according to query filters.
 
     Args:
         artifact_version_filter_model: Filter model used for pagination,

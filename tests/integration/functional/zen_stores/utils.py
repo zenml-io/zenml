@@ -125,20 +125,20 @@ class PipelineRunContext:
                 enable_step_logs=self.enable_step_logs,
             )
 
-        # persist which runs, steps and artifacts were produced, in case
-        #  the test ends up deleting some or all of these, this allows for a
-        #  thorough cleanup nonetheless
+        # persist which runs, steps and artifact versions were produced.
+        # In case the test ends up deleting some or all of these, this allows
+        # for a thorough cleanup nonetheless
         self.runs = self.store.list_runs(
             PipelineRunFilter(name=f"startswith:{self.pipeline_name}")
         ).items
         self.steps = []
-        self.artifacts = []
+        self.artifact_versions = []
         for run in self.runs:
             self.steps += self.store.list_run_steps(
                 StepRunFilter(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
-                self.artifacts += [a for a in s.outputs.values()]
+                self.artifact_versions += [a for a in s.outputs.values()]
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -147,9 +147,9 @@ class PipelineRunContext:
                 self.client.delete_pipeline_run(run.id)
             except KeyError:
                 pass
-        for artifact in self.artifacts:
+        for artifact_version in self.artifact_versions:
             try:
-                self.client.delete_artifact_version(artifact.id)
+                self.client.delete_artifact_version(artifact_version.id)
             except KeyError:
                 pass
 
@@ -612,7 +612,7 @@ class ModelVersionContext:
 
         self.create_version = create_version
         self.create_artifacts = create_artifacts
-        self.artifacts = []
+        self.artifact_versions = []
         self.create_prs = create_prs
         self.prs = []
         self.deployments = []
@@ -641,7 +641,7 @@ class ModelVersionContext:
                 )
 
         for _ in range(self.create_artifacts):
-            self.artifacts.append(
+            self.artifact_versions.append(
                 client.zen_store.create_artifact_version(
                     ArtifactVersionRequest(
                         name=sample_name("sample_artifact"),
@@ -683,14 +683,14 @@ class ModelVersionContext:
             )
         if self.create_version:
             if self.create_artifacts:
-                return mv, self.artifacts
+                return mv, self.artifact_versions
             if self.create_prs:
                 return mv, self.prs
             else:
                 return mv
         else:
             if self.create_artifacts:
-                return model, self.artifacts
+                return model, self.artifact_versions
             if self.create_prs:
                 return model, self.prs
             else:
@@ -702,7 +702,7 @@ class ModelVersionContext:
             client.delete_model(self.model)
         except KeyError:
             pass
-        for artifact in self.artifacts:
+        for artifact in self.artifact_versions:
             client.delete_artifact_version(artifact.id)
         for run in self.prs:
             client.zen_store.delete_run(run.id)

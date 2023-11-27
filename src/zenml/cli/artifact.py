@@ -165,18 +165,21 @@ def delete_artifact(
             )
 
 
-@artifact.command("prune", help="Delete all unused artifacts.")
+@artifact.command("prune", help="Delete all unused artifact versions.")
 @click.option(
     "--only-artifact",
     "-a",
     is_flag=True,
-    help="Only delete the artifact itself but not its metadata.",
+    help=(
+        "Only delete the physical artifact from the artifact store but not "
+        "its metadata."
+    ),
 )
 @click.option(
     "--only-metadata",
     "-m",
     is_flag=True,
-    help="Only delete metadata and not the actual artifact.",
+    help="Only delete metadata and not the physical artifact.",
 )
 @click.option(
     "--yes",
@@ -187,32 +190,34 @@ def delete_artifact(
 def prune_artifacts(
     only_artifact: bool = False, only_metadata: bool = False, yes: bool = False
 ) -> None:
-    """Delete all unused artifacts.
+    """Delete all unused artifact versions.
 
     Args:
-        only_artifact: If set, only delete the artifact but not its metadata.
-        only_metadata: If set, only delete metadata and not the actual artifact.
+        only_artifact: If set, only delete the physical artifacts but not the
+            metadata.
+        only_metadata: If set, only delete metadata and not the physical
+            artifacts.
         yes: If set, don't ask for confirmation.
     """
     client = Client()
-    unused_artifacts = depaginate(
+    unused_artifact_versions = depaginate(
         partial(client.list_artifact_versions, only_unused=True)
     )
 
-    if not unused_artifacts:
-        cli_utils.declare("No unused artifacts found.")
+    if not unused_artifact_versions:
+        cli_utils.declare("No unused artifact versions found.")
         return
 
     if not yes:
         confirmation = cli_utils.confirmation(
-            f"Found {len(unused_artifacts)} unused artifacts. Do you want to "
-            f"delete them?"
+            f"Found {len(unused_artifact_versions)} unused artifact versions. "
+            f"Do you want to delete them?"
         )
         if not confirmation:
             cli_utils.declare("Artifact deletion canceled.")
             return
 
-    for unused_artifact in unused_artifacts:
+    for unused_artifact in unused_artifact_versions:
         try:
             Client().delete_artifact_version(
                 name_id_or_prefix=unused_artifact.id,
@@ -221,4 +226,4 @@ def prune_artifacts(
             )
         except Exception as e:
             cli_utils.error(str(e))
-    cli_utils.declare("All unused artifacts deleted.")
+    cli_utils.declare("All unused artifact versions deleted.")

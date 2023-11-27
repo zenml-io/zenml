@@ -418,7 +418,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             user_id=model_version_artifact_request.user,
             model_id=model_version_artifact_request.model,
             model_version_id=model_version_artifact_request.model_version,
-            artifact_version_id=model_version_artifact_request.artifact,
+            artifact_version_id=model_version_artifact_request.artifact_version,
             is_model_artifact=model_version_artifact_request.is_model_artifact,
             is_endpoint_artifact=model_version_artifact_request.is_endpoint_artifact,
         )
@@ -444,7 +444,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             updated=self.updated,
             model=self.model_id,
             model_version=self.model_version_id,
-            artifact=self.artifact_version.to_model(),
+            artifact_version=self.artifact_version.to_model(),
             is_model_artifact=self.is_model_artifact,
             is_endpoint_artifact=self.is_endpoint_artifact,
         )

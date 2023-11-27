@@ -486,7 +486,7 @@ class ModelVersionArtifactRequestModel(
 ):
     """Model version link with artifact request model."""
 
-    artifact: UUID
+    artifact_version: UUID
 
 
 class ModelVersionArtifactResponseModel(
@@ -494,7 +494,7 @@ class ModelVersionArtifactResponseModel(
 ):
     """Model version link with artifact response model."""
 
-    artifact: ArtifactVersionResponse
+    artifact_version: ArtifactVersionResponse
 
 
 class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):

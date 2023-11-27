@@ -20,7 +20,7 @@ import pytest
 
 from zenml.artifacts.external_artifact import ExternalArtifact
 
-GLOBAL_ARTIFACT_ID = uuid4()
+GLOBAL_ARTIFACT_VERSION_ID = uuid4()
 
 
 class MockZenmlClient:
@@ -28,7 +28,7 @@ class MockZenmlClient:
         ARTIFACT_STORE_ID: ClassVar[int] = 42
 
         class MockArtifactResponse:
-            def __init__(self, name, id=GLOBAL_ARTIFACT_ID):
+            def __init__(self, name, id=GLOBAL_ARTIFACT_VERSION_ID):
                 self.artifact_store_id = 42
                 self.name = name
                 self.id = id
@@ -36,7 +36,7 @@ class MockZenmlClient:
         class MockPipelineRunResponse:
             def __init__(self):
                 self.name = "foo"
-                self.artifacts = [
+                self.artifact_versions = [
                     MockZenmlClient.Client.MockArtifactResponse("foo"),
                     MockZenmlClient.Client.MockArtifactResponse("bar"),
                 ]
@@ -141,7 +141,7 @@ def test_get_artifact_by_value_before_upload_raises():
 
 def test_get_artifact_by_id():
     """Tests that `get_artifact` works as expected for `id`."""
-    ea = ExternalArtifact(id=GLOBAL_ARTIFACT_ID)
+    ea = ExternalArtifact(id=GLOBAL_ARTIFACT_VERSION_ID)
     assert ea.value is None
     assert ea.name is None
     assert ea.id is not None
@@ -152,7 +152,7 @@ def test_get_artifact_by_id():
             "zenml.client": MockZenmlClient,
         },
     ):
-        assert ea.get_artifact_version_id() == GLOBAL_ARTIFACT_ID
+        assert ea.get_artifact_version_id() == GLOBAL_ARTIFACT_VERSION_ID
 
 
 def test_get_artifact_by_pipeline_and_artifact_other_artifact_store():

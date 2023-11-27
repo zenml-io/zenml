@@ -106,7 +106,7 @@ def link_artifact_config_to_model_version(
         request = ModelVersionArtifactRequestModel(
             user=client.active_user.id,
             workspace=client.active_workspace.id,
-            artifact=artifact_version_id,
+            artifact_version=artifact_version_id,
             model=model_version_response.model.id,
             model_version=model_version_response.id,
             is_model_artifact=artifact_config.is_model_artifact,

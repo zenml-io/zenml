@@ -5055,7 +5055,7 @@ class SqlZenStore(BaseZenStore):
             for (
                 artifact_name,
                 artifact_version_id,
-            ) in step_run_update.saved_artifacts.items():
+            ) in step_run_update.saved_artifact_versions.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_run_id,
                     artifact_version_id=artifact_version_id,
@@ -5068,7 +5068,7 @@ class SqlZenStore(BaseZenStore):
             for (
                 artifact_name,
                 artifact_version_id,
-            ) in step_run_update.loaded_artifacts.items():
+            ) in step_run_update.loaded_artifact_versions.items():
                 self._set_run_step_input_artifact(
                     run_step_id=step_run_id,
                     artifact_version_id=artifact_version_id,
@@ -6516,7 +6516,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(
                     ModelVersionArtifactSchema.artifact_version_id
-                    == model_version_artifact_link.artifact,
+                    == model_version_artifact_link.artifact_version,
                 )
             ).first()
             if existing_model_version_artifact_link is not None:

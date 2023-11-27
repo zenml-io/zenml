@@ -49,7 +49,7 @@ logger = get_logger(__name__)
 
 
 class ArtifactVersionRequest(WorkspaceScopedRequest):
-    """Request model for artifacts versions."""
+    """Request model for artifact versions."""
 
     artifact_id: UUID = Field(
         title="ID of the artifact to which this version belongs.",

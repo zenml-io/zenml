@@ -2557,40 +2557,47 @@ def test_list_unused_artifacts():
     client = Client()
     store = client.zen_store
 
-    num_artifacts_before = store.list_artifact_versions(
+    num_artifact_versions_before = store.list_artifact_versions(
         ArtifactVersionFilter()
     ).total
-    num_unused_artifacts_before = store.list_artifact_versions(
+    num_unused_artifact_versions_before = store.list_artifact_versions(
         ArtifactVersionFilter(only_unused=True)
     ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifact_versions(ArtifactVersionFilter())
-        assert artifacts.total == num_artifacts_before + num_runs * 2
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter()
+        )
+        assert (
+            artifact_versions.total
+            == num_artifact_versions_before + num_runs * 2
+        )
 
-        artifacts = store.list_artifact_versions(
+        artifact_versions = store.list_artifact_versions(
             ArtifactVersionFilter(only_unused=True)
         )
-        assert artifacts.total == num_unused_artifacts_before
+        assert artifact_versions.total == num_unused_artifact_versions_before
 
 
 def test_artifacts_are_not_deleted_with_run(clean_workspace):
     """Tests listing with `unused=True` only returns unused artifacts."""
     store = clean_workspace.zen_store
 
-    num_artifacts_before = store.list_artifacts(ArtifactVersionFilter()).total
+    num_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter()
+    ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifacts(ArtifactVersionFilter())
-        assert artifacts.total == num_artifacts_before + num_runs * 2
+        artifacts = store.list_artifact_versions(ArtifactVersionFilter())
+        assert artifacts.total == num_artifact_versions_before + num_runs * 2
 
         # Cleanup
         pipelines = store.list_runs(PipelineRunFilter()).items
         for p in pipelines:
             store.delete_run(p.id)
 
-        artifacts = store.list_artifacts(ArtifactVersionFilter())
-        assert artifacts.total == num_artifacts_before + num_runs * 2
+        artifacts = store.list_artifact_versions(ArtifactVersionFilter())
+        assert artifacts.total == num_artifact_versions_before + num_runs * 2
 
 
 # .---------.
@@ -4073,7 +4080,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
 
@@ -4089,20 +4096,20 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
-            assert al1.artifact.id == artifacts[0].id
+            assert al1.artifact_version.id == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[1].id,
+                    artifact_version=artifacts[1].id,
                 )
             )
-            assert al2.artifact.id == artifacts[1].id
+            assert al2.artifact_version.id == artifacts[1].id
 
     def test_link_create_duplicated_by_id(self):
         """Assert that creating a link with the same artifact returns the same link."""
@@ -4117,7 +4124,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
 
@@ -4127,7 +4134,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
 
@@ -4147,7 +4154,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
             zs.create_model_version_artifact_link(
@@ -4156,7 +4163,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[1].id,
+                    artifact_version=artifacts[1].id,
                 )
             )
 
@@ -4179,7 +4186,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
             zs.delete_model_version_artifact_link(
@@ -4236,7 +4243,7 @@ class TestModelVersionArtifactLinks:
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
                         model_version=model_version.id,
-                        artifact=artifact.id,
+                        artifact_version=artifact.id,
                         is_model_artifact=mo,
                         is_endpoint_artifact=dep,
                     )
