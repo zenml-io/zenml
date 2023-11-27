@@ -76,11 +76,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
-    ShareableRequest,
-    ShareableFilter,
-    ShareableResponse,
-    ShareableResponseBody,
-    ShareableResponseMetadata,
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -111,6 +106,7 @@ from zenml.models.v2.core.artifact import (
     ArtifactResponse,
     ArtifactResponseBody,
     ArtifactResponseMetadata,
+    ArtifactUpdate,
 )
 from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationRequest,
@@ -197,14 +193,6 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
 )
-from zenml.models.v2.core.role import (
-    RoleRequest,
-    RoleUpdate,
-    RoleFilter,
-    RoleResponse,
-    RoleResponseBody,
-    RoleResponseMetadata,
-)
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
     RunMetadataFilter,
@@ -252,21 +240,6 @@ from zenml.models.v2.core.step_run import (
     StepRunResponseBody,
     StepRunResponseMetadata,
 )
-from zenml.models.v2.core.team import (
-    TeamRequest,
-    TeamUpdate,
-    TeamFilter,
-    TeamResponse,
-    TeamResponseBody,
-    TeamResponseMetadata,
-)
-from zenml.models.v2.core.team_role import (
-    TeamRoleAssignmentRequest,
-    TeamRoleAssignmentFilter,
-    TeamRoleAssignmentResponse,
-    TeamRoleAssignmentResponseBody,
-    TeamRoleAssignmentResponseMetadata,
-)
 from zenml.models.v2.core.user import (
     UserRequest,
     UserUpdate,
@@ -274,13 +247,6 @@ from zenml.models.v2.core.user import (
     UserResponse,
     UserResponseBody,
     UserResponseMetadata,
-)
-from zenml.models.v2.core.user_role import (
-    UserRoleAssignmentRequest,
-    UserRoleAssignmentFilter,
-    UserRoleAssignmentResponse,
-    UserRoleAssignmentResponseBody,
-    UserRoleAssignmentResponseMetadata,
 )
 from zenml.models.v2.core.workspace import (
     WorkspaceRequest,
@@ -463,10 +429,6 @@ ScheduleResponseBody.update_forward_refs(
 ScheduleResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
-ServiceAccountResponseMetadata.update_forward_refs(
-    TeamResponse=TeamResponse,
-    RoleResponse=RoleResponse,
-)
 ServiceConnectorResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
@@ -494,23 +456,7 @@ StepRunResponseMetadata.update_forward_refs(
     LogsResponse=LogsResponse,
     RunMetadataResponse=RunMetadataResponse,
 )
-TeamResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-TeamRoleAssignmentResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    TeamResponse=TeamResponse,
-    RoleResponse=RoleResponse,
-)
-UserRoleAssignmentResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    UserResponse=UserResponse,
-    RoleResponse=RoleResponse,
-)
-UserResponseMetadata.update_forward_refs(
-    RoleResponse=RoleResponse,
-    TeamResponse=TeamResponse,
-)
+
 __all__ = [
     # V1
     "BaseRequestModel",
@@ -560,11 +506,6 @@ __all__ = [
     "WorkspaceScopedResponse",
     "WorkspaceScopedResponseBody",
     "WorkspaceScopedResponseMetadata",
-    "ShareableRequest",
-    "ShareableFilter",
-    "ShareableResponse",
-    "ShareableResponseBody",
-    "ShareableResponseMetadata",
     "BaseFilter",
     "StrFilter",
     "BoolFilter",
@@ -587,6 +528,7 @@ __all__ = [
     "ArtifactResponse",
     "ArtifactResponseBody",
     "ArtifactResponseMetadata",
+    "ArtifactUpdate",
     "ArtifactVisualizationRequest",
     "ArtifactVisualizationResponse",
     "ArtifactVisualizationResponseBody",
@@ -650,12 +592,6 @@ __all__ = [
     "PipelineRunResponse",
     "PipelineRunResponseBody",
     "PipelineRunResponseMetadata",
-    "RoleRequest",
-    "RoleUpdate",
-    "RoleFilter",
-    "RoleResponse",
-    "RoleResponseBody",
-    "RoleResponseMetadata",
     "RunMetadataRequest",
     "RunMetadataFilter",
     "RunMetadataResponse",
@@ -691,28 +627,12 @@ __all__ = [
     "StepRunResponse",
     "StepRunResponseBody",
     "StepRunResponseMetadata",
-    "TeamRequest",
-    "TeamUpdate",
-    "TeamFilter",
-    "TeamResponse",
-    "TeamResponseBody",
-    "TeamResponseMetadata",
-    "TeamRoleAssignmentRequest",
-    "TeamRoleAssignmentFilter",
-    "TeamRoleAssignmentResponse",
-    "TeamRoleAssignmentResponseBody",
-    "TeamRoleAssignmentResponseMetadata",
     "UserRequest",
     "UserUpdate",
     "UserFilter",
     "UserResponse",
     "UserResponseBody",
     "UserResponseMetadata",
-    "UserRoleAssignmentRequest",
-    "UserRoleAssignmentFilter",
-    "UserRoleAssignmentResponse",
-    "UserRoleAssignmentResponseBody",
-    "UserRoleAssignmentResponseMetadata",
     "WorkspaceRequest",
     "WorkspaceUpdate",
     "WorkspaceFilter",

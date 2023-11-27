@@ -112,7 +112,6 @@ class FlavorRegistry:
             for flavor in self.builtin_flavors:
                 flavor_request_model = flavor().to_model(
                     integration="built-in",
-                    scoped_by_workspace=False,
                     is_custom=False,
                 )
                 existing_flavor = store.list_flavors(
@@ -146,7 +145,6 @@ class FlavorRegistry:
                     for flavor in integrated_flavors:
                         flavor_request_model = flavor().to_model(
                             integration=name,
-                            scoped_by_workspace=False,
                             is_custom=False,
                         )
                         existing_flavor = store.list_flavors(

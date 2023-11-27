@@ -370,9 +370,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         # Build entrypoint command and args for the orchestrator pod.
         # This will internally also build the command/args for all step pods.
-        command = (
-            KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_command()
-        )
+        command = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_command()
         args = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
             run_name=orchestrator_run_name,
             deployment_id=deployment.id,

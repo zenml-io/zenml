@@ -28,7 +28,7 @@ from zenml.models import (
     ComponentResponseMetadata,
     ComponentUpdate,
 )
-from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.service_connector_schemas import (
     ServiceConnectorSchema,
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ScheduleSchema
 
 
-class StackComponentSchema(ShareableSchema, table=True):
+class StackComponentSchema(NamedSchema, table=True):
     """SQL Model for stack components."""
 
     __tablename__ = "stack_component"
@@ -152,7 +152,6 @@ class StackComponentSchema(ShareableSchema, table=True):
             type=self.type,
             flavor=self.flavor,
             user=self.user.to_model() if self.user else None,
-            is_shared=self.is_shared,
             created=self.created,
             updated=self.updated,
         )

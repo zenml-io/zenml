@@ -23,7 +23,12 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    StepRunInputArtifactType,
+    StepRunOutputArtifactType,
+)
 from zenml.models import (
     StepRunRequest,
     StepRunResponse,
@@ -299,6 +304,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str = Field(nullable=False, primary_key=True)
+    type: StepRunInputArtifactType
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(
@@ -332,6 +338,7 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str
+    type: StepRunOutputArtifactType
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(

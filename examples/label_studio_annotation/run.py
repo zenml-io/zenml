@@ -14,22 +14,6 @@
 
 import click
 from pipelines import inference_pipeline, training_pipeline
-from steps.convert_annotations_step import convert_annotations
-from steps.deployment_triggers import deployment_trigger
-from steps.get_labeled_data import get_labeled_data_step
-from steps.get_or_create_dataset import get_or_create_the_dataset
-from steps.load_image_data_step import LoadImageDataParameters, load_image_data
-from steps.model_deployers import model_deployer
-from steps.prediction_steps import (
-    PredictionServiceLoaderParameters,
-    prediction_service_loader,
-    predictor,
-)
-from steps.pytorch_trainer import (
-    PytorchModelTrainerParameters,
-    pytorch_model_trainer,
-)
-from steps.sync_new_data_to_label_studio import data_sync
 
 
 @click.command()
@@ -54,30 +38,9 @@ from steps.sync_new_data_to_label_studio import data_sync
 def main(pipeline, rerun):
     """Simple CLI interface for annotation example."""
     if pipeline == "train":
-        training_pipeline(
-            get_or_create_dataset=get_or_create_the_dataset,
-            get_labeled_data=get_labeled_data_step,
-            convert_annotations=convert_annotations(),
-            model_trainer=pytorch_model_trainer(
-                PytorchModelTrainerParameters()
-            ),
-            deployment_trigger=deployment_trigger(),
-            model_deployer=model_deployer,
-        ).run()
+        training_pipeline()
     elif pipeline == "inference":
-        inference_pipeline(
-            get_or_create_dataset=get_or_create_the_dataset,
-            inference_data_loader=load_image_data(
-                params=LoadImageDataParameters(
-                    dir_name="batch_2" if rerun else "batch_1"
-                )
-            ),
-            prediction_service_loader=prediction_service_loader(
-                PredictionServiceLoaderParameters()
-            ),
-            predictor=predictor(),
-            data_syncer=data_sync,
-        ).run()
+        inference_pipeline(rerun=rerun)
 
 
 if __name__ == "__main__":

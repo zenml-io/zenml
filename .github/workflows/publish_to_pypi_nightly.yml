@@ -1,0 +1,62 @@
+name: Publish Nightly PyPI package
+
+on:
+  workflow_call:
+
+jobs:
+  publish_to_pypi:
+    name: Publish Nightly Python 🐍 package 📦 to PyPI
+    runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: 'develop'
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Set nightly version
+        run: |
+            # Extract the current version
+            CURRENT_VERSION=$(poetry version -s)
+
+            # Get the current date in the format of YYYY-MM-DD
+            DATE=$(date +"%Y-%m-%d")
+
+            # Combine the current version with the date to form
+            # the new version string
+            NIGHTLY_VERSION="${CURRENT_VERSION}-${DATE}"
+
+            # Set the nightly version
+            echo "NIGHTLY_VERSION=$NIGHTLY_VERSION" >> $GITHUB_ENV
+
+      - name: Modify pyproject.toml for nightly release
+        run: |
+              # Change the package name to `zenml-nightly`
+              sed -i 's/name = "zenml"/name = "zenml-nightly"/' pyproject.toml
+
+              # Update the version to the nightly version
+              poetry version $NIGHTLY_VERSION
+
+      - name: Include latest dashboard
+        run: bash scripts/install-dashboard.sh
+
+      - name: publish
+        env:
+          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: bash scripts/publish.sh
+

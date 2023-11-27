@@ -12,25 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from steps.get_or_create_dataset import get_or_create_the_dataset
+from steps.load_image_data_step import load_image_data
+from steps.prediction_steps import (
+    prediction_service_loader,
+    predictor,
+)
+from steps.sync_new_data_to_label_studio import data_sync
 
+from zenml import pipeline
 from zenml.logger import get_logger
-from zenml.pipelines import pipeline
 
 logger = get_logger(__name__)
 
 
 @pipeline
-def inference_pipeline(
-    get_or_create_dataset,
-    inference_data_loader,
-    prediction_service_loader,
-    predictor,
-    data_syncer,
-):
-    dataset_name = get_or_create_dataset()
-    new_images, new_images_uri = inference_data_loader()
+def inference_pipeline(rerun: bool = False):
+    dataset_name = get_or_create_the_dataset()
+    new_images, new_images_uri = load_image_data(
+        dir_name="batch_2" if rerun else "batch_1"
+    )
     model_deployment_service = prediction_service_loader()
     preds = predictor(model_deployment_service, new_images)
-    data_syncer(
-        uri=new_images_uri, dataset_name=dataset_name, predictions=preds
-    )
+    data_sync(uri=new_images_uri, dataset_name=dataset_name, predictions=preds)
