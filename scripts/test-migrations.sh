@@ -44,7 +44,8 @@ do
     # Install the specific version
     pip3 install -U pip setuptools wheel
     pip3 install "zenml[templates,server]==$VERSION"
-    pip3 install "sqlmodel==0.0.8"
+    # handles unpinned sqlmodel dependency in older versions
+    pip3 install "sqlmodel==0.0.8" importlib_metadata
 
 
     # Run the tests for this version
