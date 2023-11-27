@@ -68,7 +68,7 @@ class ExternalArtifactConfiguration(BaseModel):
                     raise RuntimeError(
                         f"Failed to pull artifact `{self.name}` from the Model "
                         f"Version (name=`{self._model_version.name}`, version="
-                        f"`{self._model_version.version}`), Please, validate the "
+                        f"`{self._model_version.version}`). Please validate the "
                         "input and try again."
                     )
                 response = response_
