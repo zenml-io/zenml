@@ -60,6 +60,7 @@ source ".venv-current-branch/bin/activate"
 
 pip3 install -U pip setuptools wheel
 pip install -e ".[templates,server]"
+pip3 install importlib_metadata
 
 run_tests_for_version current_branch
 
