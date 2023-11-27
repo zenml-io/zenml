@@ -48,7 +48,15 @@ do
     pip3 install -U pip setuptools wheel
     pip3 install "zenml[templates,server]==$VERSION"
     # handles unpinned sqlmodel dependency in older versions
-    pip3 install "sqlmodel==0.0.8" importlib_metadata
+    pip3 install "sqlmodel==0.0.8"
+
+    # Get the major and minor version of Python
+    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+
+    # Check if the Python version is 3.9 and VERSION is 0.47.0
+    if [[ "$PYTHON_VERSION" == "3.9" && "$VERSION" == "0.47.0" ]]; then
+        pip3 install importlib_metadata
+    fi
 
     # Run the tests for this version
     run_tests_for_version $VERSION
