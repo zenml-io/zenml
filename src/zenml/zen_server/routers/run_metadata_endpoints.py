@@ -80,7 +80,7 @@ def list_run_metadata(
 def get_run_metadata(
     run_metadata_id: UUID,
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> RunMetadataResponse:
     """Get run metadata by ID.
 
