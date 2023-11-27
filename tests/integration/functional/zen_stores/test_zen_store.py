@@ -2579,9 +2579,9 @@ def test_list_unused_artifacts():
         assert artifact_versions.total == num_unused_artifact_versions_before
 
 
-def test_artifacts_are_not_deleted_with_run(clean_workspace):
+def test_artifacts_are_not_deleted_with_run(clean_client):
     """Tests listing with `unused=True` only returns unused artifacts."""
-    store = clean_workspace.zen_store
+    store = clean_client.zen_store
 
     num_artifact_versions_before = store.list_artifact_versions(
         ArtifactVersionFilter()

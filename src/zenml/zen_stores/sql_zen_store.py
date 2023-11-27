@@ -1580,7 +1580,7 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=artifact_version.tags,
                     resource_id=artifact_version_schema.id,
-                    resource_type=TaggableResourceTypes.ARTIFACT,
+                    resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
                 )
 
             session.commit()

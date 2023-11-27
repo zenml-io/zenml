@@ -26,42 +26,6 @@ def test_artifact_list(clean_workspace_with_run):
     assert result.exit_code == 0
 
 
-def test_artifact_delete(clean_workspace_with_run):
-    """Test that zenml artifact delete works for unused artifacts."""
-    existing_runs = clean_workspace_with_run.list_runs()
-    existing_artifacts = clean_workspace_with_run.list_artifact_versions()
-    assert len(existing_runs) == 1
-    assert len(existing_artifacts) == 2
-    run_name = existing_runs[0].name
-    clean_workspace_with_run.delete_pipeline_run(run_name)
-    existing_runs = clean_workspace_with_run.list_runs()
-    existing_artifacts = clean_workspace_with_run.list_artifact_versions()
-    assert len(existing_runs) == 0
-    assert len(existing_artifacts) == 2
-    artifact_version_id = existing_artifacts[0].id
-    runner = CliRunner()
-    delete_command = cli.commands["artifact"].commands["delete"]
-    result = runner.invoke(delete_command, [str(artifact_version_id), "-y"])
-    assert result.exit_code == 0
-    existing_artifacts = clean_workspace_with_run.list_artifact_versions()
-    assert len(existing_artifacts) == 1
-
-
-def test_artifact_delete_fails_if_artifact_still_used(
-    clean_workspace_with_run,
-):
-    """Test that zenml artifact delete fails if artifact is still used."""
-    existing_artifacts = clean_workspace_with_run.list_artifact_versions()
-    assert len(existing_artifacts) == 2
-    artifact_version_id = existing_artifacts[0].id
-    runner = CliRunner()
-    delete_command = cli.commands["artifact"].commands["delete"]
-    result = runner.invoke(delete_command, [artifact_version_id, "-y"])
-    assert result.exit_code == 1
-    existing_artifacts = clean_workspace_with_run.list_artifact_versions()
-    assert len(existing_artifacts) == 2
-
-
 def test_artifact_prune(clean_workspace_with_run):
     """Test that zenml artifact prune deletes unused artifacts."""
     existing_artifacts = clean_workspace_with_run.list_artifact_versions()

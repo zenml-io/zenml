@@ -138,6 +138,9 @@ def upgrade() -> None:
             "artifact_id",
             new_column_name="artifact_version_id",
         )
+    with op.batch_alter_table(
+        "artifact_visualization", schema=None
+    ) as batch_op:
         batch_op.create_foreign_key(
             "fk_artifact_visualization_artifact_version_id_artifact_version",
             "artifact_version",
@@ -157,6 +160,9 @@ def upgrade() -> None:
             "artifact_id",
             new_column_name="artifact_version_id",
         )
+    with op.batch_alter_table(
+        "model_versions_artifacts", schema=None
+    ) as batch_op:
         batch_op.create_foreign_key(
             "fk_model_versions_artifacts_artifact_version_id_artifact_version",
             "artifact_version",
@@ -173,6 +179,7 @@ def upgrade() -> None:
             "artifact_id",
             new_column_name="artifact_version_id",
         )
+    with op.batch_alter_table("run_metadata", schema=None) as batch_op:
         batch_op.create_foreign_key(
             "fk_run_metadata_artifact_version_id_artifact_version",
             "artifact_version",
