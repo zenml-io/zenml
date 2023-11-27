@@ -31,7 +31,8 @@ from zenml.enums import (
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     APIKeyRequest,
-    ArtifactVersionFilter,
+    ArtifactFilter,
+    ArtifactRequest,
     ArtifactVersionRequest,
     AuthenticationMethodModel,
     BaseFilter,
@@ -150,6 +151,14 @@ class PipelineRunContext:
         for artifact_version in self.artifact_versions:
             try:
                 self.client.delete_artifact_version(artifact_version.id)
+            except KeyError:
+                pass
+            try:
+                artifact = self.client.get_artifact(
+                    artifact_version.artifact.id
+                )
+                if not artifact.versions:
+                    self.client.delete_artifact(artifact.id)
             except KeyError:
                 pass
 
@@ -612,6 +621,7 @@ class ModelVersionContext:
 
         self.create_version = create_version
         self.create_artifacts = create_artifacts
+        self.artifacts = []
         self.artifact_versions = []
         self.create_prs = create_prs
         self.prs = []
@@ -641,20 +651,27 @@ class ModelVersionContext:
                 )
 
         for _ in range(self.create_artifacts):
-            self.artifact_versions.append(
-                client.zen_store.create_artifact_version(
-                    ArtifactVersionRequest(
-                        name=sample_name("sample_artifact"),
-                        version=1,
-                        data_type="module.class",
-                        materializer="module.class",
-                        type=ArtifactType.DATA,
-                        uri="",
-                        user=user.id,
-                        workspace=ws.id,
-                    )
+            artifact = client.zen_store.create_artifact(
+                ArtifactRequest(
+                    name=sample_name("sample_artifact"),
+                    has_custom_name=True,
                 )
             )
+            client.get_artifact(artifact.id)
+            self.artifacts.append(artifact)
+            artifact_version = client.zen_store.create_artifact_version(
+                ArtifactVersionRequest(
+                    artifact_id=artifact.id,
+                    version=1,
+                    data_type="module.class",
+                    materializer="module.class",
+                    type=ArtifactType.DATA,
+                    uri="",
+                    user=user.id,
+                    workspace=ws.id,
+                )
+            )
+            self.artifact_versions.append(artifact_version)
         for _ in range(self.create_prs):
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
@@ -702,8 +719,10 @@ class ModelVersionContext:
             client.delete_model(self.model)
         except KeyError:
             pass
-        for artifact in self.artifact_versions:
-            client.delete_artifact_version(artifact.id)
+        for artifact_version in self.artifact_versions:
+            client.delete_artifact_version(artifact_version.id)
+        for artifact in self.artifacts:
+            client.delete_artifact(artifact.id)
         for run in self.prs:
             client.zen_store.delete_run(run.id)
         for deployment in self.deployments:
@@ -936,17 +955,11 @@ pipeline_crud_test_config = CrudTestConfig(
 #     entity_name="run",
 # )
 artifact_crud_test_config = CrudTestConfig(
-    create_model=ArtifactVersionRequest(
+    create_model=ArtifactRequest(
         name=sample_name("sample_artifact"),
-        version=1,
-        data_type="module.class",
-        materializer="module.class",
-        type=ArtifactType.DATA,
-        uri="",
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
+        has_custom_name=True,
     ),
-    filter_model=ArtifactVersionFilter,
+    filter_model=ArtifactFilter,
     entity_name="artifact",
 )
 secret_crud_test_config = CrudTestConfig(
