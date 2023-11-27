@@ -240,7 +240,8 @@ MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 # orchestrator constants
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
 PIPELINE_API_TOKEN_EXPIRES_MINUTES = handle_int_env_var(
-    ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES, default=60 * 24  # 24 hours
+    ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES,
+    default=60 * 24,  # 24 hours
 )
 
 # Secret constants

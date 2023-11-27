@@ -24,7 +24,8 @@ from zenml.models.v2.base.base import BaseResponse
 from zenml.models.v2.base.filter import BaseFilter
 
 B = TypeVar(
-    "B", bound=Union[BaseResponse, BaseResponseModel]  # type: ignore[type-arg]
+    "B",
+    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
 )
 
 
