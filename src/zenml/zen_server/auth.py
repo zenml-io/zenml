@@ -15,13 +15,7 @@
 
 from contextvars import ContextVar
 from datetime import datetime
-from typing import (
-    Callable,
-    List,
-    Optional,
-    Set,
-    Union,
-)
+from typing import Callable, Optional, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -31,7 +25,6 @@ from fastapi.security import (
     HTTPBasic,
     HTTPBasicCredentials,
     OAuth2PasswordBearer,
-    SecurityScopes,
 )
 from pydantic import BaseModel
 from starlette.requests import Request
@@ -39,11 +32,12 @@ from starlette.requests import Request
 from zenml.analytics.context import AnalyticsContext
 from zenml.constants import (
     API,
+    DEFAULT_USERNAME,
     EXTERNAL_AUTHENTICATOR_TIMEOUT,
     LOGIN,
     VERSION_1,
 )
-from zenml.enums import AuthScheme, OAuthDeviceStatus, PermissionType
+from zenml.enums import AuthScheme, OAuthDeviceStatus
 from zenml.exceptions import AuthorizationException, OAuthError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -56,12 +50,10 @@ from zenml.models import (
     UserAuthModel,
     UserRequest,
     UserResponse,
-    UserRoleAssignmentRequest,
     UserUpdate,
 )
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import server_config, zen_store
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
 
@@ -102,24 +94,6 @@ class AuthContext(BaseModel):
     encoded_access_token: Optional[str] = None
     device: Optional[OAuthDeviceInternalResponse] = None
     api_key: Optional[APIKeyInternalResponse] = None
-
-    @property
-    def permissions(self) -> Set[PermissionType]:
-        """Returns the permissions of the user.
-
-        Returns:
-            The permissions of the user.
-        """
-        if self.user.roles:
-            # Merge permissions from all roles
-            permissions: List[PermissionType] = []
-            for role in self.user.roles:
-                permissions.extend(role.permissions)
-
-            # Remove duplicates
-            return set(permissions)
-
-        return set()
 
 
 def _fetch_and_verify_api_key(
@@ -639,15 +613,6 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
             )
             context.alias(user_id=user.id, previous_id=external_user.id)
 
-        # Create a new user role assignment for the new user
-        store.create_user_role_assignment(
-            UserRoleAssignmentRequest(
-                role=store._admin_role.id,
-                user=user.id,
-                workspace=None,
-            )
-        )
-
     return AuthContext(user=user)
 
 
@@ -686,13 +651,11 @@ def authenticate_api_key(
 
 
 def http_authentication(
-    security_scopes: SecurityScopes,
     credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
 ) -> AuthContext:
     """Authenticates any request to the ZenML Server with basic HTTP authentication.
 
     Args:
-        security_scopes: Security scope will be ignored for http_auth
         credentials: HTTP basic auth credentials passed to the request.
 
     Returns:
@@ -739,22 +702,15 @@ class CookieOAuth2TokenBearer(OAuth2PasswordBearer):
 
 
 def oauth2_authentication(
-    security_scopes: SecurityScopes,
     token: str = Depends(
         CookieOAuth2TokenBearer(
             tokenUrl=server_config().root_url_path + API + VERSION_1 + LOGIN,
-            scopes={
-                "read": "Read permissions on all entities",
-                "write": "Write permissions on all entities",
-                "me": "Editing permissions to own user",
-            },
         )
     ),
 ) -> AuthContext:
     """Authenticates any request to the ZenML server with OAuth2 JWT tokens.
 
     Args:
-        security_scopes: Security scope for this token
         token: The JWT bearer token to be authenticated.
 
     Returns:
@@ -763,39 +719,20 @@ def oauth2_authentication(
     Raises:
         HTTPException: If the JWT token could not be authorized.
     """
-    if security_scopes.scopes:
-        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
-    else:
-        authenticate_value = "Bearer"
-
     try:
         auth_context = authenticate_credentials(access_token=token)
     except AuthorizationException as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
-            headers={"WWW-Authenticate": authenticate_value},
+            headers={"WWW-Authenticate": "Bearer"},
         )
-
-    for scope in security_scopes.scopes:
-        if (
-            auth_context.access_token
-            and scope not in auth_context.access_token.permissions
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions",
-                headers={"WWW-Authenticate": authenticate_value},
-            )
 
     return auth_context
 
 
-def no_authentication(security_scopes: SecurityScopes) -> AuthContext:
+def no_authentication() -> AuthContext:
     """Doesn't authenticate requests to the ZenML server.
-
-    Args:
-        security_scopes: Security scope will be ignored for http_auth
 
     Returns:
         The authentication context reflecting the default user.

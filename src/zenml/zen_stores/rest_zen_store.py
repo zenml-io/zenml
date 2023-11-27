@@ -64,7 +64,6 @@ from zenml.constants import (
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
-    ROLES,
     RUN_METADATA,
     RUNS,
     SCHEDULES,
@@ -78,9 +77,6 @@ from zenml.constants import (
     STACKS,
     STEPS,
     TAGS,
-    TEAM_ROLE_ASSIGNMENTS,
-    TEAMS,
-    USER_ROLE_ASSIGNMENTS,
     USERS,
     VERSION_1,
     WORKSPACES,
@@ -157,10 +153,6 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
-    RoleFilter,
-    RoleRequest,
-    RoleResponse,
-    RoleUpdate,
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
@@ -191,19 +183,9 @@ from zenml.models import (
     TagRequestModel,
     TagResponseModel,
     TagUpdateModel,
-    TeamFilter,
-    TeamRequest,
-    TeamResponse,
-    TeamRoleAssignmentFilter,
-    TeamRoleAssignmentRequest,
-    TeamRoleAssignmentResponse,
-    TeamUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
-    UserRoleAssignmentFilter,
-    UserRoleAssignmentRequest,
-    UserRoleAssignmentResponse,
     UserUpdate,
     WorkspaceFilter,
     WorkspaceRequest,
@@ -468,10 +450,6 @@ class RestZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
     _api_token: Optional[str] = None
     _session: Optional[requests.Session] = None
-
-    def _initialize_database(self) -> None:
-        """Initialize the database."""
-        # don't do anything for a REST store
 
     # ====================================
     # ZenML Store interface implementation
@@ -1446,96 +1424,6 @@ class RestZenStore(BaseZenStore):
             response_model=PipelineRunResponse,
         )
 
-    # ----------------------------- Roles -----------------------------
-
-    def create_role(self, role: RoleRequest) -> RoleResponse:
-        """Creates a new role.
-
-        Args:
-            role: The role model to create.
-
-        Returns:
-            The newly created role.
-        """
-        return self._create_resource(
-            resource=role,
-            route=ROLES,
-            response_model=RoleResponse,
-        )
-
-    def get_role(
-        self, role_name_or_id: Union[str, UUID], hydrate: bool = True
-    ) -> RoleResponse:
-        """Gets a specific role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The requested role.
-        """
-        return self._get_resource(
-            resource_id=role_name_or_id,
-            route=ROLES,
-            response_model=RoleResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_roles(
-        self,
-        role_filter_model: RoleFilter,
-        hydrate: bool = False,
-    ) -> Page[RoleResponse]:
-        """List all roles matching the given filter criteria.
-
-        Args:
-            role_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all roles matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=ROLES,
-            response_model=RoleResponse,
-            filter_model=role_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_role(
-        self, role_id: UUID, role_update: RoleUpdate
-    ) -> RoleResponse:
-        """Update an existing role.
-
-        Args:
-            role_id: The ID of the role to be updated.
-            role_update: The update to be applied to the role.
-
-        Returns:
-            The updated role.
-        """
-        return self._update_resource(
-            resource_id=role_id,
-            resource_update=role_update,
-            route=ROLES,
-            response_model=RoleResponse,
-        )
-
-    def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to delete.
-        """
-        self._delete_resource(
-            resource_id=role_name_or_id,
-            route=ROLES,
-        )
-
     # ----------------------------- Run Metadata -----------------------------
 
     def create_run_metadata(
@@ -2056,7 +1944,6 @@ class RestZenStore(BaseZenStore):
 
     def list_service_connector_resources(
         self,
-        user_name_or_id: Union[str, UUID],
         workspace_name_or_id: Union[str, UUID],
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
@@ -2065,7 +1952,6 @@ class RestZenStore(BaseZenStore):
         """List resources that can be accessed by service connectors.
 
         Args:
-            user_name_or_id: The name or ID of the user to scope to.
             workspace_name_or_id: The name or ID of the workspace to scope to.
             connector_type: The type of service connector to scope to.
             resource_type: The type of resource to scope to.
@@ -2406,171 +2292,6 @@ class RestZenStore(BaseZenStore):
             route=STEPS,
         )
 
-    # ----------------------------- Teams -----------------------------
-
-    def create_team(self, team: TeamRequest) -> TeamResponse:
-        """Creates a new team.
-
-        Args:
-            team: The team model to create.
-
-        Returns:
-            The newly created team.
-        """
-        return self._create_resource(
-            resource=team,
-            route=TEAMS,
-            response_model=TeamResponse,
-        )
-
-    def get_team(
-        self, team_name_or_id: Union[str, UUID], hydrate: bool = True
-    ) -> TeamResponse:
-        """Gets a specific team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The requested team.
-        """
-        return self._get_resource(
-            resource_id=team_name_or_id,
-            route=TEAMS,
-            response_model=TeamResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_teams(
-        self,
-        team_filter_model: TeamFilter,
-        hydrate: bool = False,
-    ) -> Page[TeamResponse]:
-        """List all teams matching the given filter criteria.
-
-        Args:
-            team_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all teams matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=TEAMS,
-            response_model=TeamResponse,
-            filter_model=team_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_team(
-        self, team_id: UUID, team_update: TeamUpdate
-    ) -> TeamResponse:
-        """Update an existing team.
-
-        Args:
-            team_id: The ID of the team to be updated.
-            team_update: The update to be applied to the team.
-
-        Returns:
-            The updated team.
-        """
-        return self._update_resource(
-            resource_id=team_id,
-            resource_update=team_update,
-            route=TEAMS,
-            response_model=TeamResponse,
-        )
-
-    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to delete.
-        """
-        self._delete_resource(
-            resource_id=team_name_or_id,
-            route=TEAMS,
-        )
-
-    # -------------------------- Team role assignments -------------------------
-
-    def create_team_role_assignment(
-        self, team_role_assignment: TeamRoleAssignmentRequest
-    ) -> TeamRoleAssignmentResponse:
-        """Creates a new team role assignment.
-
-        Args:
-            team_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-        """
-        return self._create_resource(
-            resource=team_role_assignment,
-            route=TEAM_ROLE_ASSIGNMENTS,
-            response_model=TeamRoleAssignmentResponse,
-        )
-
-    def get_team_role_assignment(
-        self, team_role_assignment_id: UUID, hydrate: bool = True
-    ) -> TeamRoleAssignmentResponse:
-        """Gets a specific role assignment.
-
-        Args:
-            team_role_assignment_id: ID of the role assignment to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The requested role assignment.
-        """
-        return self._get_resource(
-            resource_id=team_role_assignment_id,
-            route=TEAM_ROLE_ASSIGNMENTS,
-            response_model=TeamRoleAssignmentResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_team_role_assignments(
-        self,
-        team_role_assignment_filter_model: TeamRoleAssignmentFilter,
-        hydrate: bool = False,
-    ) -> Page[TeamRoleAssignmentResponse]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            team_role_assignment_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=TEAM_ROLE_ASSIGNMENTS,
-            response_model=TeamRoleAssignmentResponse,
-            filter_model=team_role_assignment_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def delete_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            team_role_assignment_id: The ID of the specific role assignment
-        """
-        self._delete_resource(
-            resource_id=team_role_assignment_id,
-            route=TEAM_ROLE_ASSIGNMENTS,
-        )
-
     # ----------------------------- Users -----------------------------
 
     def create_user(self, user: UserRequest) -> UserResponse:
@@ -2584,7 +2305,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=user,
-            route=USERS + "?assign_default_role=False",
+            route=USERS,
             response_model=UserResponse,
         )
 
@@ -2672,80 +2393,6 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=user_name_or_id,
             route=USERS,
-        )
-
-    # ------------------------- User role assignments -------------------------
-    def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequest
-    ) -> UserRoleAssignmentResponse:
-        """Creates a new role assignment.
-
-        Args:
-            user_role_assignment: The role assignment to create.
-
-        Returns:
-            The newly created workspace.
-        """
-        return self._create_resource(
-            resource=user_role_assignment,
-            route=USER_ROLE_ASSIGNMENTS,
-            response_model=UserRoleAssignmentResponse,
-        )
-
-    def get_user_role_assignment(
-        self, user_role_assignment_id: UUID, hydrate: bool = True
-    ) -> UserRoleAssignmentResponse:
-        """Get an existing role assignment by name or ID.
-
-        Args:
-            user_role_assignment_id: Name or ID of the role assignment to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The requested workspace.
-        """
-        return self._get_resource(
-            resource_id=user_role_assignment_id,
-            route=USER_ROLE_ASSIGNMENTS,
-            response_model=UserRoleAssignmentResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_user_role_assignments(
-        self,
-        user_role_assignment_filter_model: UserRoleAssignmentFilter,
-        hydrate: bool = False,
-    ) -> Page[UserRoleAssignmentResponse]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            user_role_assignment_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=USER_ROLE_ASSIGNMENTS,
-            response_model=UserRoleAssignmentResponse,
-            filter_model=user_role_assignment_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def delete_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            user_role_assignment_id: The ID of the specific role assignment
-        """
-        self._delete_resource(
-            resource_id=user_role_assignment_id,
-            route=USER_ROLE_ASSIGNMENTS,
         )
 
     # ----------------------------- Workspaces -----------------------------
@@ -3827,7 +3474,7 @@ class RestZenStore(BaseZenStore):
         # So these items will be parsed into their correct types like here
         page_of_items.items = [
             response_model.parse_obj(generic_item)  # type: ignore[misc]
-            for generic_item in page_of_items.items
+            for generic_item in body["items"]
         ]
         return page_of_items
 

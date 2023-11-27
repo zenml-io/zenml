@@ -27,7 +27,6 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Set,
     Tuple,
     Type,
     TypeVar,
@@ -57,7 +56,6 @@ from zenml.enums import (
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
-    PermissionType,
     SecretScope,
     SorterOps,
     StackComponentType,
@@ -118,10 +116,6 @@ from zenml.models import (
     PipelineResponse,
     PipelineRunFilter,
     PipelineRunResponse,
-    RoleFilter,
-    RoleRequest,
-    RoleResponse,
-    RoleUpdate,
     RunMetadataFilter,
     RunMetadataRequest,
     RunMetadataResponse,
@@ -151,19 +145,9 @@ from zenml.models import (
     TagRequestModel,
     TagResponseModel,
     TagUpdateModel,
-    TeamFilter,
-    TeamRequest,
-    TeamResponse,
-    TeamRoleAssignmentFilter,
-    TeamRoleAssignmentRequest,
-    TeamRoleAssignmentResponse,
-    TeamUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
-    UserRoleAssignmentFilter,
-    UserRoleAssignmentRequest,
-    UserRoleAssignmentResponse,
     UserUpdate,
     WorkspaceFilter,
     WorkspaceRequest,
@@ -661,14 +645,12 @@ class Client(metaclass=ClientMetaClass):
     def create_user(
         self,
         name: str,
-        initial_role: Optional[str] = None,
         password: Optional[str] = None,
     ) -> UserResponse:
         """Create a new user.
 
         Args:
             name: The name of the user.
-            initial_role: Optionally, an initial role to assign to the user.
             password: The password of the user. If not provided, the user will
                 be created with empty password.
 
@@ -680,13 +662,6 @@ class Client(metaclass=ClientMetaClass):
             password != "" if self.zen_store.type != StoreType.REST else True
         )
         created_user = self.zen_store.create_user(user=user)
-
-        if initial_role:
-            self.create_user_role_assignment(
-                role_name_or_id=initial_role,
-                user_name_or_id=created_user.id,
-                workspace_name_or_id=None,
-            )
 
         return created_user
 
@@ -827,526 +802,6 @@ class Client(metaclass=ClientMetaClass):
             self._active_user = self.zen_store.get_user(include_private=True)
         return self._active_user
 
-    # --------------------------------- Teams ----------------------------------
-
-    def create_team(
-        self, name: str, users: Optional[List[str]] = None
-    ) -> TeamResponse:
-        """Create a team.
-
-        Args:
-            name: Name of the team.
-            users: Users to add to the team.
-
-        Returns:
-            The created team.
-        """
-        user_list: List[UUID] = []
-        if users:
-            user_list.extend(
-                self.get_user(name_id_or_prefix=user_name_or_id).id
-                for user_name_or_id in users
-            )
-
-        team = TeamRequest(name=name, users=user_list)
-
-        return self.zen_store.create_team(team=team)
-
-    def get_team(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-    ) -> TeamResponse:
-        """Gets a team.
-
-        Args:
-            name_id_or_prefix: The name or ID of the team.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-
-        Returns:
-            The team
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_team,
-            list_method=self.list_teams,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
-
-    def list_teams(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-    ) -> Page[TeamResponse]:
-        """List all teams.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of teams to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            name: Use the team name for filtering
-
-        Returns:
-            The Team
-        """
-        return self.zen_store.list_teams(
-            TeamFilter(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                name=name,
-            )
-        )
-
-    def update_team(
-        self,
-        name_id_or_prefix: str,
-        new_name: Optional[str] = None,
-        remove_users: Optional[List[str]] = None,
-        add_users: Optional[List[str]] = None,
-    ) -> TeamResponse:
-        """Update a team.
-
-        Args:
-            name_id_or_prefix: The name or ID of the team to update.
-            new_name: The new name of the team.
-            remove_users: The users to remove from the team.
-            add_users: The users to add to the team.
-
-        Returns:
-            The updated team.
-
-        Raises:
-            RuntimeError: If the same user is in both `remove_users` and
-                `add_users`.
-        """
-        team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
-
-        team_update = TeamUpdate(name=new_name or team.name)
-        if remove_users is not None and add_users is not None:
-            if union_add_rm := set(remove_users) & set(add_users):
-                raise RuntimeError(
-                    f"The `remove_user` and `add_user` "
-                    f"options both contain the same value(s): "
-                    f"`{union_add_rm}`. Please rerun command and make sure "
-                    f"that the same user does not show up for "
-                    f"`remove_user` and `add_user`."
-                )
-
-        # Only if permissions are being added or removed will they need to be
-        #  set for the update model
-        team_users = (
-            [u.id for u in team.users] if remove_users or add_users else []
-        )
-        if remove_users:
-            for rm_p in remove_users:
-                user = self.get_user(rm_p)
-                try:
-                    team_users.remove(user.id)
-                except KeyError:
-                    logger.warning(
-                        f"Role {remove_users} was already not "
-                        f"part of the '{team.name}' Team."
-                    )
-        if add_users:
-            team_users.extend(self.get_user(add_u).id for add_u in add_users)
-        if team_users:
-            team_update.users = team_users
-
-        return self.zen_store.update_team(
-            team_id=team.id, team_update=team_update
-        )
-
-    def delete_team(self, name_id_or_prefix: str) -> None:
-        """Delete a team.
-
-        Args:
-            name_id_or_prefix: The name or ID of the team to delete.
-        """
-        team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
-        self.zen_store.delete_team(team_name_or_id=team.id)
-
-    # ---------------------------------- Roles ---------------------------------
-
-    def create_role(
-        self, name: str, permissions_list: List[str]
-    ) -> RoleResponse:
-        """Creates a role.
-
-        Args:
-            name: The name for the new role.
-            permissions_list: The permissions to attach to this role.
-
-        Returns:
-            The newly created role.
-        """
-        permissions: Set[PermissionType] = {
-            PermissionType(permission)
-            for permission in permissions_list
-            if permission in PermissionType.values()
-        }
-        new_role = RoleRequest(name=name, permissions=permissions)
-        return self.zen_store.create_role(new_role)
-
-    def get_role(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-    ) -> RoleResponse:
-        """Gets a role.
-
-        Args:
-            name_id_or_prefix: The name or ID of the role.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-
-        Returns:
-            The fetched role.
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_role,
-            list_method=self.list_roles,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
-
-    def list_roles(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-    ) -> Page[RoleResponse]:
-        """List all roles.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: The logical operator to use between column filters
-            id: Use the id of roles to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            name: Use the role name for filtering
-
-        Returns:
-            The Role
-        """
-        return self.zen_store.list_roles(
-            RoleFilter(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                name=name,
-            )
-        )
-
-    def update_role(
-        self,
-        name_id_or_prefix: str,
-        new_name: Optional[str] = None,
-        remove_permission: Optional[List[str]] = None,
-        add_permission: Optional[List[str]] = None,
-    ) -> RoleResponse:
-        """Updates a role.
-
-        Args:
-            name_id_or_prefix: The name or ID of the role.
-            new_name: The new name for the role
-            remove_permission: Permissions to remove from this role.
-            add_permission: Permissions to add to this role.
-
-        Returns:
-            The updated role.
-
-        Raises:
-            RuntimeError: If the same permission is in both the
-                `remove_permission` and `add_permission` lists.
-        """
-        role = self.get_role(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
-        )
-
-        role_update = RoleUpdate(name=new_name or role.name)  # type: ignore[call-arg]
-
-        if remove_permission is not None and add_permission is not None:
-            if union_add_rm := set(remove_permission) & set(add_permission):
-                raise RuntimeError(
-                    f"The `remove_permission` and `add_permission` "
-                    f"options both contain the same value(s): "
-                    f"`{union_add_rm}`. Please rerun command and make sure "
-                    f"that the same role does not show up for "
-                    f"`remove_permission` and `add_permission`."
-                )
-
-        # Only if permissions are being added or removed will they need to be
-        #  set for the update model
-        if remove_permission or add_permission:
-            role_permissions = role.permissions
-
-            if remove_permission:
-                for rm_p in remove_permission:
-                    if rm_p in PermissionType:
-                        try:
-                            role_permissions.remove(PermissionType(rm_p))
-                        except KeyError:
-                            logger.warning(
-                                f"Role {remove_permission} was already not "
-                                f"part of the {role} Role."
-                            )
-            if add_permission:
-                for add_p in add_permission:
-                    if add_p in PermissionType.values():
-                        # Set won't throw an error if the item was already in it
-                        role_permissions.add(PermissionType(add_p))
-
-            if role_permissions is not None:
-                role_update.permissions = set(role_permissions)
-
-        return Client().zen_store.update_role(
-            role_id=role.id, role_update=role_update
-        )
-
-    def delete_role(self, name_id_or_prefix: str) -> None:
-        """Deletes a role.
-
-        Args:
-            name_id_or_prefix: The name or ID of the role.
-        """
-        role = self.get_role(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
-        )
-        self.zen_store.delete_role(role_name_or_id=role.id)
-
-    # ------------------------- User Role Assignments --------------------------
-
-    def create_user_role_assignment(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
-        workspace_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> UserRoleAssignmentResponse:
-        """Create a role assignment.
-
-        Args:
-            role_name_or_id: Name or ID of the role to assign.
-            user_name_or_id: Name or ID of the user or team to assign
-                the role to.
-            workspace_name_or_id: workspace scope within which to assign the role.
-
-        Returns:
-            The newly created role assignment.
-        """
-        role = self.get_role(name_id_or_prefix=role_name_or_id)
-        workspace = None
-        if workspace_name_or_id:
-            workspace = self.get_workspace(
-                name_id_or_prefix=workspace_name_or_id
-            )
-        user = self.get_user(name_id_or_prefix=user_name_or_id)
-        role_assignment = UserRoleAssignmentRequest(
-            role=role.id,
-            user=user.id,
-            workspace=workspace,
-        )
-        return self.zen_store.create_user_role_assignment(
-            user_role_assignment=role_assignment
-        )
-
-    def get_user_role_assignment(
-        self, role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponse:
-        """Get a role assignment.
-
-        Args:
-            role_assignment_id: The id of the role assignments
-
-        Returns:
-            The role assignment.
-        """
-        return self.zen_store.get_user_role_assignment(
-            user_role_assignment_id=role_assignment_id
-        )
-
-    def list_user_role_assignment(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
-        role_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[UserRoleAssignmentResponse]:
-        """List all user role assignments.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of the user role assignment to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
-            role_id: The id of the role to filter by.
-
-        Returns:
-            The Team
-        """
-        return self.zen_store.list_user_role_assignments(
-            UserRoleAssignmentFilter(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                workspace_id=workspace_id,
-                user_id=user_id,
-                role_id=role_id,
-            )
-        )
-
-    def delete_user_role_assignment(self, role_assignment_id: UUID) -> None:
-        """Delete a role assignment.
-
-        Args:
-            role_assignment_id: The id of the role assignments
-
-        """
-        self.zen_store.delete_user_role_assignment(role_assignment_id)
-
-    # ------------------------- Team Role Assignments --------------------------
-
-    def get_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponse:
-        """Get a role assignment.
-
-        Args:
-            team_role_assignment_id: The id of the role assignments
-
-        Returns:
-            The role assignment.
-        """
-        return self.zen_store.get_team_role_assignment(
-            team_role_assignment_id=team_role_assignment_id
-        )
-
-    def create_team_role_assignment(
-        self,
-        role_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-        workspace_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> TeamRoleAssignmentResponse:
-        """Create a role assignment.
-
-        Args:
-            role_name_or_id: Name or ID of the role to assign.
-            team_name_or_id: Name or ID of the team to assign
-                the role to.
-            workspace_name_or_id: workspace scope within which to assign the role.
-
-        Returns:
-            The newly created role assignment.
-        """
-        role = self.get_role(name_id_or_prefix=role_name_or_id)
-        workspace = None
-        if workspace_name_or_id:
-            workspace = self.get_workspace(
-                name_id_or_prefix=workspace_name_or_id
-            )
-        team = self.get_team(name_id_or_prefix=team_name_or_id)
-        role_assignment = TeamRoleAssignmentRequest(
-            role=role.id,
-            team=team.id,
-            workspace=workspace,
-        )
-        return self.zen_store.create_team_role_assignment(
-            team_role_assignment=role_assignment
-        )
-
-    def list_team_role_assignment(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
-        team_id: Optional[Union[str, UUID]] = None,
-        role_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[TeamRoleAssignmentResponse]:
-        """List all team role assignments.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of the team role assignment to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            workspace_id: The id of the workspace to filter by.
-            team_id: The id of the team to filter by.
-            role_id: The id of the role to filter by.
-
-        Returns:
-            The Team
-        """
-        return self.zen_store.list_team_role_assignments(
-            TeamRoleAssignmentFilter(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                workspace_id=workspace_id,
-                team_id=team_id,
-                role_id=role_id,
-            )
-        )
-
-    def delete_team_role_assignment(self, role_assignment_id: UUID) -> None:
-        """Delete a role assignment.
-
-        Args:
-            role_assignment_id: The id of the role assignments
-
-        """
-        self.zen_store.delete_team_role_assignment(role_assignment_id)
-
     # -------------------------------- Workspaces ------------------------------
 
     def create_workspace(
@@ -1406,13 +861,13 @@ class Client(metaclass=ClientMetaClass):
             page: The page of items
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
-            id: Use the id of teams to filter by.
+            id: Use the workspace ID to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            name: Use the team name for filtering
+            name: Use the workspace name for filtering
 
         Returns:
-            The Team
+            Page of workspaces
         """
         return self.zen_store.list_workspaces(
             WorkspaceFilter(
@@ -1492,7 +947,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
             return self.get_workspace(workspace_id)
 
-        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
+        from zenml.constants import DEFAULT_WORKSPACE_NAME
 
         # If running in a ZenML server environment, the active workspace is
         # not relevant
@@ -1526,7 +981,6 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         components: Mapping[StackComponentType, Union[str, UUID]],
-        is_shared: bool = False,
         stack_spec_file: Optional[str] = None,
     ) -> StackResponse:
         """Registers a stack and its components.
@@ -1534,15 +988,10 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name: The name of the stack to register.
             components: dictionary which maps component types to component names
-            is_shared: boolean to decide whether the stack is shared
             stack_spec_file: path to the stack spec file
 
         Returns:
             The model of the registered stack.
-
-        Raises:
-            ValueError: If the stack contains private components and is
-                attempted to be registered as shared.
         """
         stack_components = {}
 
@@ -1558,22 +1007,9 @@ class Client(metaclass=ClientMetaClass):
             )
             stack_components[c_type] = [component.id]
 
-            # Raise an error if private components are used in a shared stack.
-            if is_shared and not component.is_shared:
-                raise ValueError(
-                    f"You attempted to include the private {c_type} "
-                    f"'{component.name}' in a shared stack. This is not "
-                    f"supported. You can either share the {c_type} with the "
-                    f"following command:\n"
-                    f"`zenml {c_type.replace('_', '-')} share`{component.id}`\n"
-                    f"or create the stack privately and then share it and all "
-                    f"of its components using:\n`zenml stack share {name} -r`"
-                )
-
         stack = StackRequest(
             name=name,
             components=stack_components,
-            is_shared=is_shared,
             stack_spec_path=stack_spec_file,
             workspace=self.active_workspace.id,
             user=self.active_user.id,
@@ -1618,7 +1054,6 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
-        is_shared: Optional[bool] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
@@ -1640,7 +1075,6 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
             name: The name of the stack to filter by.
-            is_shared: The shared status of the stack to filter by.
 
         Returns:
             A page of stacks.
@@ -1654,7 +1088,6 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             component_id=component_id,
             name=name,
-            is_shared=is_shared,
             description=description,
             id=id,
             created=created,
@@ -1667,7 +1100,6 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
         stack_spec_file: Optional[str] = None,
         description: Optional[str] = None,
         component_updates: Optional[
@@ -1679,7 +1111,6 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix of the stack to update.
             name: the new name of the stack.
-            is_shared: the new shared status of the stack.
             stack_spec_file: path to the stack spec file
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
@@ -1689,8 +1120,6 @@ class Client(metaclass=ClientMetaClass):
             The model of the updated stack.
 
         Raises:
-            ValueError: If the stack contains private components and is
-                attempted to be shared.
             EntityExistsError: If the stack name is already taken.
         """
         # First, get the stack
@@ -1705,41 +1134,14 @@ class Client(metaclass=ClientMetaClass):
             stack_spec_path=stack_spec_file,
         )
 
-        shared_status = is_shared or stack.is_shared
-
         if name:
-            if self.list_stacks(name=name, is_shared=shared_status):
+            if self.list_stacks(name=name):
                 raise EntityExistsError(
                     "There are already existing stacks with the name "
                     f"'{name}'."
                 )
 
             update_model.name = name
-
-        if is_shared:
-            current_name = update_model.name or stack.name
-            if self.list_stacks(name=current_name, is_shared=True):
-                raise EntityExistsError(
-                    "There are already existing shared stacks with the name "
-                    f"'{current_name}'."
-                )
-
-            for component_type, components in stack.components.items():
-                for c in components:
-                    if not c.is_shared:
-                        raise ValueError(
-                            f"A Stack can only be shared when all its "
-                            f"components are also shared. Component "
-                            f"'{component_type}:{c.name}' is not shared. Set "
-                            f"the {component_type} to shared like this and "
-                            f"then try re-sharing your stack:\n"
-                            f"`zenml {component_type.replace('_', '-')} "
-                            f"share {c.id}`\nAlternatively, you can rerun "
-                            f"your command with `-r` to recursively "
-                            f"share all components within the stack."
-                        )
-
-            update_model.is_shared = is_shared
 
         if description:
             update_model.description = description
@@ -1757,22 +1159,6 @@ class Client(metaclass=ClientMetaClass):
                         )
                         for component_id in component_id_list
                     ]
-
-            # If the stack is shared, ensure all new components are also shared
-            if shared_status:
-                for component_list in components_dict.values():
-                    for component in component_list:
-                        if not component.is_shared:
-                            raise ValueError(
-                                "Private components cannot be added to a "
-                                "shared stack. Component "
-                                f"'{component.type}:{component.name}' is not "
-                                "shared. Set the component to shared like "
-                                "this and then try adding it to your stack "
-                                "again:\n"
-                                f"`zenml {component.type.replace('_', '-')} "
-                                f"share {component.id}`."
-                            )
 
             update_model.components = {
                 c_type: [c.id for c in c_list]
@@ -2075,7 +1461,6 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
-        is_shared: Optional[bool] = None,
         name: Optional[str] = None,
         flavor: Optional[str] = None,
         type: Optional[str] = None,
@@ -2099,7 +1484,6 @@ class Client(metaclass=ClientMetaClass):
             user_id: The id of the user to filter by.
             connector_id: The id of the connector to filter by.
             name: The name of the component to filter by.
-            is_shared: The shared status of the component to filter by.
 
         Returns:
             A page of stack components.
@@ -2113,7 +1497,6 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             connector_id=connector_id,
             name=name,
-            is_shared=is_shared,
             flavor=flavor,
             type=type,
             id=id,
@@ -2134,7 +1517,6 @@ class Client(metaclass=ClientMetaClass):
         configuration: Dict[str, str],
         component_spec_path: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
-        is_shared: bool = False,
     ) -> "ComponentResponse":
         """Registers a stack component.
 
@@ -2145,7 +1527,6 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
-            is_shared: Whether the stack component is shared or not.
 
         Returns:
             The model of the registered component.
@@ -2173,7 +1554,6 @@ class Client(metaclass=ClientMetaClass):
             flavor=flavor,
             component_spec_path=component_spec_path,
             configuration=configuration,
-            is_shared=is_shared,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
             labels=labels,
@@ -2192,7 +1572,6 @@ class Client(metaclass=ClientMetaClass):
         component_spec_path: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
-        is_shared: Optional[bool] = None,
         disconnect: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
         connector_resource_id: Optional[str] = None,
@@ -2207,7 +1586,6 @@ class Client(metaclass=ClientMetaClass):
             component_spec_path: The new path to the stack spec file.
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
-            is_shared: The new shared status of the stack component.
             disconnect: Whether to disconnect the stack component from its
                 service connector.
             connector_id: The new connector id of the stack component.
@@ -2234,32 +1612,16 @@ class Client(metaclass=ClientMetaClass):
         )
 
         if name is not None:
-            shared_status = is_shared or component.is_shared
-
             existing_components = self.list_stack_components(
                 name=name,
-                is_shared=shared_status,
                 type=component_type,
             )
             if existing_components.total > 0:
                 raise EntityExistsError(
-                    f"There are already existing "
-                    f"{'shared' if shared_status else 'unshared'} components "
-                    f"with the name '{name}'."
+                    f"There are already existing components with the "
+                    f"name '{name}'."
                 )
             update_model.name = name
-
-        if is_shared is not None:
-            current_name = update_model.name or component.name
-            existing_components = self.list_stack_components(
-                name=current_name, is_shared=is_shared, type=component_type
-            )
-            if any(e.id != component.id for e in existing_components.items):
-                raise EntityExistsError(
-                    f"There are already existing shared components with "
-                    f"the name '{current_name}'"
-                )
-            update_model.is_shared = is_shared
 
         if configuration is not None:
             existing_configuration = component.configuration
@@ -4079,7 +3441,6 @@ class Client(metaclass=ClientMetaClass):
         description: str = "",
         expiration_seconds: Optional[int] = None,
         expires_at: Optional[datetime] = None,
-        is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
         auto_configure: bool = False,
         verify: bool = True,
@@ -4108,7 +3469,6 @@ class Client(metaclass=ClientMetaClass):
             expiration_seconds: The expiration time of the service connector.
             expires_at: The expiration time of the service connector
                 credentials.
-            is_shared: Whether the service connector is shared or not.
             labels: The labels of the service connector.
             auto_configure: Whether to automatically configure the service
                 connector from the local environment.
@@ -4182,7 +3542,6 @@ class Client(metaclass=ClientMetaClass):
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 description=description or "",
-                is_shared=is_shared,
                 labels=labels,
             )
 
@@ -4227,7 +3586,6 @@ class Client(metaclass=ClientMetaClass):
                 auth_method=auth_method,
                 expiration_seconds=expiration_seconds,
                 expires_at=expires_at,
-                is_shared=is_shared,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 labels=labels or {},
@@ -4362,7 +3720,6 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
-        is_shared: Optional[bool] = None,
         name: Optional[str] = None,
         connector_type: Optional[str] = None,
         auth_method: Optional[str] = None,
@@ -4392,7 +3749,6 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             name: The name of the service connector to filter by.
-            is_shared: The shared status of the service connector to filter by.
             labels: The labels of the service connector to filter by.
             secret_id: Filter by the id of the secret that is referenced by the
                 service connector.
@@ -4408,7 +3764,6 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
             name=name,
-            is_shared=is_shared,
             connector_type=connector_type,
             auth_method=auth_method,
             resource_type=resource_type,
@@ -4434,7 +3789,6 @@ class Client(metaclass=ClientMetaClass):
         resource_id: Optional[str] = None,
         description: Optional[str] = None,
         expiration_seconds: Optional[int] = None,
-        is_shared: Optional[bool] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         verify: bool = True,
         list_resources: bool = True,
@@ -4478,7 +3832,6 @@ class Client(metaclass=ClientMetaClass):
             description: The description of the service connector.
             expiration_seconds: The expiration time of the service connector.
                 If set to 0, the existing expiration time will be removed.
-            is_shared: Whether the service connector is shared or not.
             labels: The service connector to update or remove. If a label value
                 is set to None, the label will be removed.
             verify: Whether to verify that the service connector configuration
@@ -4542,9 +3895,6 @@ class Client(metaclass=ClientMetaClass):
             description=description or connector_model.description,
             auth_method=auth_method or connector_model.auth_method,
             expiration_seconds=expiration_seconds,
-            is_shared=is_shared
-            if is_shared is not None
-            else connector_model.is_shared,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
@@ -4867,7 +4217,6 @@ class Client(metaclass=ClientMetaClass):
             connectors have access to.
         """
         return self.zen_store.list_service_connector_resources(
-            user_name_or_id=self.active_user.id,
             workspace_name_or_id=self.active_workspace.id,
             connector_type=connector_type,
             resource_type=resource_type,
@@ -5735,15 +5084,12 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         description: str = "",
-        initial_role: Optional[str] = None,
     ) -> ServiceAccountResponse:
         """Create a new service account.
 
         Args:
             name: The name of the service account.
             description: The description of the service account.
-            initial_role: Optionally, an initial role to assign to the service
-                account.
 
         Returns:
             The created service account.
@@ -5754,13 +5100,6 @@ class Client(metaclass=ClientMetaClass):
         created_service_account = self.zen_store.create_service_account(
             service_account=service_account
         )
-
-        if initial_role:
-            self.create_user_role_assignment(
-                role_name_or_id=initial_role,
-                user_name_or_id=created_service_account.id,
-                workspace_name_or_id=None,
-            )
 
         return created_service_account
 

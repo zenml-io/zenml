@@ -33,7 +33,6 @@ from zenml.models import (
     UserUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -57,8 +56,6 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
-        TeamSchema,
-        UserRoleAssignmentSchema,
     )
 
 
@@ -78,12 +75,6 @@ class UserSchema(NamedSchema, table=True):
     email_opted_in: Optional[bool] = Field(nullable=True)
     external_user_id: Optional[UUID] = Field(nullable=True)
 
-    teams: List["TeamSchema"] = Relationship(
-        back_populates="users", link_model=TeamAssignmentSchema
-    )
-    assigned_roles: List["UserRoleAssignmentSchema"] = Relationship(
-        back_populates="user", sa_relationship_kwargs={"cascade": "delete"}
-    )
     stacks: List["StackSchema"] = Relationship(back_populates="user")
     components: List["StackComponentSchema"] = Relationship(
         back_populates="user",
@@ -241,8 +232,6 @@ class UserSchema(NamedSchema, table=True):
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
                 external_user_id=self.external_user_id,
-                roles=[ra.role.to_model() for ra in self.assigned_roles],
-                teams=[t.to_model() for t in self.teams],
             )
 
         return UserResponse(
@@ -274,8 +263,6 @@ class UserSchema(NamedSchema, table=True):
         metadata = None
         if hydrate:
             metadata = ServiceAccountResponseMetadata(
-                teams=[t.to_model() for t in self.teams],
-                roles=[ra.role.to_model() for ra in self.assigned_roles],
                 description=self.description or "",
             )
 
