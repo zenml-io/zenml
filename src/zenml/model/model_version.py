@@ -30,6 +30,7 @@ from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
+    from zenml import ExternalArtifact
     from zenml.models import (
         ArtifactVersionResponse,
         ModelResponseModel,
@@ -167,10 +168,11 @@ class ModelVersion(BaseModel):
                 the given name and version.
         """
         from zenml.artifacts.utils import load_artifact
+        from zenml.models import ArtifactResponse
 
         artifact = self.get_artifact(name=name, version=version)
 
-        if not artifact:
+        if not isinstance(artifact, ArtifactResponse):
             raise ValueError(
                 f"Version {self.version} of model {self.name} does not have "
                 f"an artifact with name {name} and version {version}."
@@ -178,11 +180,27 @@ class ModelVersion(BaseModel):
 
         return load_artifact(artifact.id, str(artifact.version))
 
+    def _try_get_as_external_artifact(
+        self,
+        name: str,
+        version: Optional[str] = None,
+    ) -> Optional["ExternalArtifact"]:
+        from zenml import ExternalArtifact, get_pipeline_context
+
+        try:
+            get_pipeline_context()
+        except RuntimeError:
+            return None
+
+        ea = ExternalArtifact(name=name, version=version)
+        ea._set_model_version(self)
+        return ea
+
     def get_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactVersionResponse"]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the artifact linked to this model version.
 
         Args:
@@ -190,8 +208,11 @@ class ModelVersion(BaseModel):
             version: The version of the artifact to retrieve (None for latest/non-versioned)
 
         Returns:
-            Specific version of the artifact or None
+            Inside pipeline context: ExternalArtifact object as a lazy loader
+            Outside of pipeline context: Specific version of the artifact or None
         """
+        if response := self._try_get_as_external_artifact(name, version):
+            return response
         return self._get_or_create_model_version().get_artifact(
             name=name,
             version=version,
@@ -201,7 +222,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactVersionResponse"]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the model artifact linked to this model version.
 
         Args:
@@ -209,8 +230,11 @@ class ModelVersion(BaseModel):
             version: The version of the model artifact to retrieve (None for latest/non-versioned)
 
         Returns:
-            Specific version of the model artifact or None
+            Inside pipeline context: ExternalArtifact object as a lazy loader
+            Outside of pipeline context: Specific version of the model artifact or None
         """
+        if response := self._try_get_as_external_artifact(name, version):
+            return response
         return self._get_or_create_model_version().get_model_artifact(
             name=name,
             version=version,
@@ -220,7 +244,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactVersionResponse"]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the data artifact linked to this model version.
 
         Args:
@@ -228,8 +252,11 @@ class ModelVersion(BaseModel):
             version: The version of the data artifact to retrieve (None for latest/non-versioned)
 
         Returns:
-            Specific version of the data artifact or None
+            Inside pipeline context: ExternalArtifact object as a lazy loader
+            Outside of pipeline context: Specific version of the data artifact or None
         """
+        if response := self._try_get_as_external_artifact(name, version):
+            return response
         return self._get_or_create_model_version().get_data_artifact(
             name=name,
             version=version,
@@ -239,7 +266,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactVersionResponse"]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the endpoint artifact linked to this model version.
 
         Args:
@@ -247,8 +274,11 @@ class ModelVersion(BaseModel):
             version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
 
         Returns:
-            Specific version of the endpoint artifact or None
+            Inside pipeline context: ExternalArtifact object as a lazy loader
+            Outside of pipeline context: Specific version of the endpoint artifact or None
         """
+        if response := self._try_get_as_external_artifact(name, version):
+            return response
         return self._get_or_create_model_version().get_endpoint_artifact(
             name=name,
             version=version,

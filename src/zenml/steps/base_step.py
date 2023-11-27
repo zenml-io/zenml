@@ -1144,9 +1144,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for (
             name,
             field,
-        ) in (
-            self.entrypoint_definition.legacy_params.annotation.__fields__.items()
-        ):
+        ) in self.entrypoint_definition.legacy_params.annotation.__fields__.items():
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
                 values[name] = self.configuration.parameters[name]

@@ -357,6 +357,9 @@ class PipelineRunFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
+        "build_id",
+        "schedule_id",
+        "stack_id",
     ]
     name: Optional[str] = Field(
         default=None,

@@ -5283,7 +5283,9 @@ class SqlZenStore(BaseZenStore):
         resource_attrs = [
             attr
             for attr in UserSchema.__sqlmodel_relationships__.keys()
-            if not attr.startswith("_") and attr not in
+            if not attr.startswith("_")
+            and attr
+            not in
             # These are not resources owned by the user or  are resources that
             # are deleted automatically when the user is deleted. Secrets in
             # particular are left out because they are automatically deleted
@@ -6560,15 +6562,11 @@ class SqlZenStore(BaseZenStore):
             # Handle model artifact types
             if model_version_artifact_link_filter_model.only_data_artifacts:
                 query = query.where(
-                    ModelVersionArtifactSchema.is_model_artifact
-                    == False  # noqa: E712
+                    ModelVersionArtifactSchema.is_model_artifact == False  # noqa: E712
                 ).where(
-                    ModelVersionArtifactSchema.is_endpoint_artifact
-                    == False  # noqa: E712
+                    ModelVersionArtifactSchema.is_endpoint_artifact == False  # noqa: E712
                 )
-            elif (
-                model_version_artifact_link_filter_model.only_endpoint_artifacts
-            ):
+            elif model_version_artifact_link_filter_model.only_endpoint_artifacts:
                 query = query.where(
                     ModelVersionArtifactSchema.is_endpoint_artifact
                 )
