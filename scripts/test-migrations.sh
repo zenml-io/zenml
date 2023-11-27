@@ -34,7 +34,7 @@ do
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    pip3 install -U pip
+    pip3 install -U pip setuptools wheel
     pip3 install "zenml[templates]==$VERSION"
 
     # Run the tests for this version
