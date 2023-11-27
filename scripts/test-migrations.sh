@@ -4,6 +4,7 @@ function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
 
+    echo "===== Testing version $VERSION ====="
     # Initialize zenml with the appropriate template
     # hardcoded to 0.43.0 since this is the latest template-starter repo
     # release tag
@@ -15,7 +16,10 @@ function run_tests_for_version() {
     export ZENML_ANALYTICS_OPT_IN=false
     export ZENML_DEBUG=true
 
+    echo "===== Installing sklearn integration ====="
     zenml integration install sklearn -y
+
+    echo "===== Running starter template pipeline ====="
     python3 run.py
     # Add additional CLI tests here
     zenml version
@@ -25,6 +29,7 @@ function run_tests_for_version() {
 
     cd ..
     rm -rf test_starter template-starter
+    echo "===== Finished testing version $VERSION ====="
 }
 
 # List of versions to test
@@ -39,7 +44,7 @@ do
 
     # Install the specific version
     pip3 install -U pip setuptools wheel
-    pip3 install "zenml[templates]==$VERSION"
+    pip3 install "zenml[templates,server]==$VERSION"
     pip3 install "sqlmodel==0.0.8"
 
 
