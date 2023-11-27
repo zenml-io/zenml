@@ -24,7 +24,7 @@ function run_tests_for_version() {
     zenml version
 
     # Confirm DB works and is accessible
-    zenml pipeline runs list >> dump.txt && echo "Success listing pipeline runs on $VERSION"
+    zenml pipeline runs list
 
     cd ..
     rm -rf test_starter template-starter
