@@ -26,7 +26,6 @@ from pipelines import (
     e2e_use_case_training,
 )
 
-from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -211,18 +210,6 @@ def main(
     ] = f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     e2e_use_case_batch_inference.with_options(**pipeline_args)(
         **run_args_inference
-    )
-
-    artifact = ExternalArtifact(
-        model_artifact_name="predictions",
-        model_name="e2e_use_case",
-        model_version="staging",
-        model_artifact_version=None,  # can be skipped - using latest artifact link
-    )
-    logger.info(
-        "Batch inference pipeline finished successfully! "
-        "You can find predictions in Artifact Store using ID: "
-        f"`{str(artifact.get_artifact_id())}`."
     )
 
 

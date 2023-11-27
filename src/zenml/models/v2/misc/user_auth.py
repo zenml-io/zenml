@@ -15,7 +15,7 @@
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from pydantic import Field, SecretStr
@@ -25,8 +25,6 @@ from zenml.models.v2.base.base import BaseZenModel
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
-
-    from zenml.models.v2.core.team import TeamResponse
 
 
 class UserAuthModel(BaseZenModel):
@@ -51,9 +49,6 @@ class UserAuthModel(BaseZenModel):
 
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     password: Optional[SecretStr] = Field(default=None, exclude=True)
-    teams: Optional[List["TeamResponse"]] = Field(
-        default=None, title="The list of teams for this user."
-    )
     name: str = Field(
         title="The unique username for the account.",
         max_length=STR_FIELD_MAX_LENGTH,

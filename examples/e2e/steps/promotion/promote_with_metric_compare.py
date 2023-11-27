@@ -19,7 +19,7 @@ from utils import promote_in_model_registry
 
 from zenml import get_step_context, step
 from zenml.logger import get_logger
-from zenml.model import ModelVersion
+from zenml.model.model_version import ModelVersion
 
 logger = get_logger(__name__)
 

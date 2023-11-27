@@ -24,8 +24,7 @@ from steps import (
     notify_on_success,
 )
 
-from zenml import pipeline
-from zenml.artifacts.external_artifact import ExternalArtifact
+from zenml import ExternalArtifact, pipeline
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import evidently_report_step
 from zenml.logger import get_logger
@@ -46,24 +45,16 @@ def e2e_use_case_batch_inference():
     # of one step as the input of the next step.
     ########## ETL stage  ##########
     df_inference, target, _ = data_loader(
-        random_state=ExternalArtifact(
-            model_artifact_pipeline_name="e2e_use_case_training",
-            model_artifact_name="random_state",
-        ),
-        is_inference=True,
+        random_state=ExternalArtifact(name="random_state"), is_inference=True
     )
     df_inference = inference_data_preprocessor(
         dataset_inf=df_inference,
-        preprocess_pipeline=ExternalArtifact(
-            model_artifact_name="preprocess_pipeline",
-        ),
+        preprocess_pipeline=ExternalArtifact(name="preprocess_pipeline"),
         target=target,
     )
     ########## DataQuality stage  ##########
     report, _ = evidently_report_step(
-        reference_dataset=ExternalArtifact(
-            model_artifact_name="dataset_trn",
-        ),
+        reference_dataset=ExternalArtifact(name="dataset_trn"),
         comparison_dataset=df_inference,
         ignored_cols=["target"],
         metrics=[

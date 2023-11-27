@@ -191,7 +191,7 @@ def up(
     assert gc.store is not None
 
     if not blocking:
-        from zenml.zen_stores.base_zen_store import (
+        from zenml.constants import (
             DEFAULT_PASSWORD,
             DEFAULT_USERNAME,
         )
@@ -781,12 +781,10 @@ def connect(
     store_config = store_config_class.parse_obj(store_dict)
     try:
         GlobalConfiguration().set_store(store_config)
-    except IllegalOperationError as e:
+    except IllegalOperationError:
         cli_utils.warning(
             f"User '{username}' does not have sufficient permissions to "
-            f"to access the server at '{url}'. Please ask the server "
-            f"administrator to assign a role with permissions to your "
-            f"username: {str(e)}"
+            f"access the server at '{url}'."
         )
 
     if workspace:

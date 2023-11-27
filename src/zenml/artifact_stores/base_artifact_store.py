@@ -186,6 +186,18 @@ class BaseArtifactStore(StackComponent):
         """
         return self.config.path
 
+    @property
+    def custom_cache_key(self) -> Optional[bytes]:
+        """Custom cache key.
+
+        Any artifact store can override this property in case they need
+        additional control over the caching behavior.
+
+        Returns:
+            Custom cache key.
+        """
+        return None
+
     # --- User interface ---
     @abstractmethod
     def open(self, name: PathType, mode: str = "r") -> Any:

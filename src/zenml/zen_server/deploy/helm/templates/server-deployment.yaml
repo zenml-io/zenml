@@ -137,6 +137,10 @@ spec:
             - name: ZENML_SERVER_ROOT_URL_PATH
               value: {{ .Values.zenml.rootUrlPath | quote }}
             {{- end }}
+            {{- if .Values.zenml.auth.rbacImplementationSource }}
+            - name: ZENML_SERVER_RBAC_IMPLEMENTATION_SOURCE
+              value: {{ .Values.zenml.auth.rbacImplementationSource | quote }}
+            {{- end }}
             - name: ZENML_DEFAULT_PROJECT_NAME
               value: {{ .Values.zenml.defaultProject | quote }}
             - name: ZENML_DEFAULT_USER_NAME
