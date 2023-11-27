@@ -12,7 +12,6 @@ function run_tests_for_version() {
     copier copy template-starter/ test_starter --trust --defaults
     cd test_starter
 
-    rm -rf ~/.config/zenml
     export ZENML_ANALYTICS_OPT_IN=false
     export ZENML_DEBUG=true
 
