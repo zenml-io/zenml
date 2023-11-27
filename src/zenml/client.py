@@ -79,8 +79,10 @@ from zenml.models import (
     APIKeyUpdate,
     ArtifactFilter,
     ArtifactResponse,
+    ArtifactUpdate,
     ArtifactVersionFilter,
     ArtifactVersionResponse,
+    ArtifactVersionUpdate,
     BaseResponse,
     BaseResponseModel,
     CodeRepositoryFilter,
@@ -2613,6 +2615,47 @@ class Client(metaclass=ClientMetaClass):
         )
         return self.zen_store.list_artifacts(artifact_filter_model)
 
+    def update_artifact(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        new_name: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> ArtifactResponse:
+        """Update an artifact.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the artifact to update.
+            new_name: The new name of the artifact.
+            add_tags: Tags to add to the artifact.
+            remove_tags: Tags to remove from the artifact.
+
+        Returns:
+            The updated artifact.
+        """
+        artifact = self.get_artifact(name_id_or_prefix=name_id_or_prefix)
+        artifact_update = ArtifactUpdate(
+            name=new_name,
+            add_tags=add_tags,
+            remove_tags=remove_tags,
+        )
+        return self.zen_store.update_artifact(
+            artifact_id=artifact.id, artifact_update=artifact_update
+        )
+
+    def delete_artifact(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete an artifact.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the artifact to delete.
+        """
+        artifact = self.get_artifact(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_artifact(artifact_id=artifact.id)
+        logger.info(f"Deleted artifact '{artifact.name}'.")
+
     # --------------------------- Artifact Versions ---------------------------
 
     def get_artifact_version(
@@ -2620,12 +2663,14 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
     ) -> ArtifactVersionResponse:
-        """Get an artifact version by name, id or prefix.
+        """Get an artifact version by ID or artifact name.
 
         Args:
-            name_id_or_prefix: The name, ID or prefix of the artifact to get.
-            version: The version of the artifact to get. If not specified, the
-                latest version is returned.
+            name_id_or_prefix: Either the ID of the artifact version or the
+                name of the artifact.
+            version: The version of the artifact to get. Only used if
+                `name_id_or_prefix` is the name of the artifact. If not
+                specified, the latest version is returned.
 
         Returns:
             The artifact version.
@@ -2646,6 +2691,7 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
+        artifact_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         version: Optional[Union[str, int]] = None,
         version_number: Optional[int] = None,
@@ -2665,10 +2711,11 @@ class Client(metaclass=ClientMetaClass):
             page: The page of items
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
-            id: Use the id of runs to filter by.
+            id: Use the id of artifact version to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            name: The name of the run to filter by.
+            artifact_id: The id of the artifact to filter by.
+            name: The name of the artifact to filter by.
             version: The version of the artifact to filter by.
             version_number: The version number of the artifact to filter by.
             artifact_store_id: The id of the artifact store to filter by.
@@ -2719,6 +2766,38 @@ class Client(metaclass=ClientMetaClass):
         )
         return self.zen_store.list_artifact_versions(
             artifact_version_filter_model
+        )
+
+    def update_artifact_version(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> ArtifactVersionResponse:
+        """Update an artifact version.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the artifact to update.
+            version: The version of the artifact to update. Only used if
+                `name_id_or_prefix` is the name of the artifact. If not
+                specified, the latest version is updated.
+            add_tags: Tags to add to the artifact version.
+            remove_tags: Tags to remove from the artifact version.
+
+        Returns:
+            The updated artifact version.
+        """
+        artifact_version = self.get_artifact_version(
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+        )
+        artifact_version_update = ArtifactVersionUpdate(
+            add_tags=add_tags, remove_tags=remove_tags
+        )
+        return self.zen_store.update_artifact_version(
+            artifact_version_id=artifact_version.id,
+            artifact_version_update=artifact_version_update,
         )
 
     def delete_artifact_version(
@@ -2773,7 +2852,8 @@ class Client(metaclass=ClientMetaClass):
             )
         self.zen_store.delete_artifact_version(artifact_version.id)
         logger.info(
-            f"Deleted metadata of artifact version '{artifact_version.uri}'."
+            f"Deleted version '{artifact_version.version}' of artifact "
+            f"'{artifact_version.artifact.name}'."
         )
 
     def _delete_artifact_from_artifact_store(
@@ -5060,7 +5140,7 @@ class Client(metaclass=ClientMetaClass):
         exact_name_matches = list_method(
             size=1,
             sort_by="desc:created",
-            name=f"equals:{name_id_or_prefix}",
+            name=name_id_or_prefix,
             version=version,
         )
 

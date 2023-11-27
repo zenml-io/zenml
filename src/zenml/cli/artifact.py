@@ -22,27 +22,26 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models import ArtifactVersionFilter
+from zenml.models import ArtifactFilter, ArtifactVersionFilter
 from zenml.utils.pagination_utils import depaginate
-from zenml.utils.uuid_utils import is_valid_uuid
 
 logger = get_logger(__name__)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def artifact() -> None:
-    """List or delete artifacts."""
+    """Commands for interacting with artifacts."""
 
 
-@cli_utils.list_options(ArtifactVersionFilter)
+@cli_utils.list_options(ArtifactFilter)
 @artifact.command("list", help="List all artifacts.")
 def list_artifacts(**kwargs: Any) -> None:
     """List all artifacts.
 
     Args:
-        **kwargs: Keyword arguments to filter artifacts.
+        **kwargs: Keyword arguments to filter artifacts by.
     """
-    artifacts = Client().list_artifact_versions(**kwargs)
+    artifacts = Client().list_artifacts(**kwargs)
 
     if not artifacts:
         cli_utils.declare("No artifacts found.")
@@ -50,6 +49,80 @@ def list_artifacts(**kwargs: Any) -> None:
 
     cli_utils.print_pydantic_models(
         artifacts,
+        exclude_columns=["created", "updated", "has_custom_name"],
+    )
+
+
+@artifact.command("update", help="Update an artifact.")
+@click.argument("artifact_name_or_id")
+@click.option(
+    "--name",
+    "-n",
+    type=str,
+    help="New name of the artifact.",
+)
+@click.option(
+    "--tag",
+    "-t",
+    type=str,
+    multiple=True,
+    help="Tags to add to the artifact.",
+)
+@click.option(
+    "--remove-tag",
+    "-r",
+    type=str,
+    multiple=True,
+    help="Tags to remove from the artifact.",
+)
+def update_artifact(
+    artifact_name_or_id: str,
+    name: Optional[str] = None,
+    tag: Optional[List[str]] = None,
+    remove_tag: Optional[List[str]] = None,
+) -> None:
+    """Update an artifact by ID or name.
+
+    Args:
+        artifact_name_or_id: Name or ID of the artifact to update.
+        name: New name of the artifact.
+        tag: New tags of the artifact.
+        remove_tag: Tags to remove from the artifact.
+    """
+    try:
+        artifact = Client().update_artifact(
+            name_id_or_prefix=artifact_name_or_id,
+            new_name=name,
+            add_tags=tag,
+            remove_tags=remove_tag,
+        )
+    except (KeyError, ValueError) as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Artifact '{artifact.id}' updated.")
+
+
+@artifact.group()
+def version() -> None:
+    """Commands for interacting with artifact versions."""
+
+
+@cli_utils.list_options(ArtifactVersionFilter)
+@version.command("list", help="List all artifact versions.")
+def list_artifact_versions(**kwargs: Any) -> None:
+    """List all artifact versions.
+
+    Args:
+        **kwargs: Keyword arguments to filter artifact versions by.
+    """
+    artifact_versions = Client().list_artifact_versions(**kwargs)
+
+    if not artifact_versions:
+        cli_utils.declare("No artifact versions found.")
+        return
+
+    cli_utils.print_pydantic_models(
+        artifact_versions,
         exclude_columns=[
             "created",
             "updated",
@@ -58,128 +131,85 @@ def list_artifacts(**kwargs: Any) -> None:
             "producer_step_run_id",
             "run_metadata",
             "artifact_store_id",
+            "visualizations",
         ],
     )
 
 
-@artifact.command("delete", help="Delete an artifact.")
-@click.argument("artifact_name_or_id")
+@version.command("update", help="Update an artifact version.")
+@click.argument("name_id_or_prefix")
 @click.option(
     "--version",
     "-v",
-    default=None,
     type=str,
-    help="Version of the artifact to delete.",
+    help=(
+        "The version of the artifact to get. Only used if "
+        "`name_id_or_prefix` is the name of the artifact. If not specified, "
+        "the latest version is returned."
+    ),
 )
 @click.option(
-    "--only-artifact",
-    "-a",
-    is_flag=True,
-    help="Only delete the artifact itself but not its metadata.",
+    "--tag",
+    "-t",
+    type=str,
+    multiple=True,
+    help="Tags to add to the artifact version.",
 )
 @click.option(
-    "--only-metadata",
-    "-m",
-    is_flag=True,
-    help="Only delete metadata and not the actual artifact.",
+    "--remove-tag",
+    "-r",
+    type=str,
+    multiple=True,
+    help="Tags to remove from the artifact version.",
 )
-@click.option(
-    "--yes",
-    "-y",
-    is_flag=True,
-    help="Don't ask for confirmation.",
-)
-def delete_artifact(
-    artifact_name_or_id: str,
+def update_artifact_version(
+    name_id_or_prefix: str,
     version: Optional[str] = None,
-    only_artifact: bool = False,
-    only_metadata: bool = False,
-    yes: bool = False,
+    tag: Optional[List[str]] = None,
+    remove_tag: Optional[List[str]] = None,
 ) -> None:
-    """Delete an artifact by ID or name.
-
-    If an artifact name without a version is provided, all artifact versions
-    with that name will be deleted.
+    """Update an artifact version by ID or artifact name.
 
     Args:
-        artifact_name_or_id: Name or ID of the artifact to delete.
-        version: Version of the artifact to delete.
-        only_artifact: If set, only delete the artifact but not its metadata.
-        only_metadata: If set, only delete metadata and not the actual artifact.
-        yes: If set, don't ask for confirmation.
+        name_id_or_prefix: Either the ID of the artifact version or the name of
+            the artifact.
+        version: The version of the artifact to get. Only used if
+            `name_id_or_prefix` is the name of the artifact. If not specified,
+            the latest version is returned.
+        tag: Tags to add to the artifact version.
+        remove_tag: Tags to remove from the artifact version.
     """
-    is_uuid = is_valid_uuid(artifact_name_or_id)
-
-    if not yes:
-        if is_uuid:
-            confirmation = cli_utils.confirmation(
-                f"Are you sure you want to delete artifact "
-                f"'{artifact_name_or_id}'?"
-            )
-        elif version:
-            confirmation = cli_utils.confirmation(
-                f"Are you sure you want to delete version '{version}' of "
-                f"artifact '{artifact_name_or_id}'?"
-            )
-        else:
-            confirmation = cli_utils.confirmation(
-                f"Are you sure you want to delete all versions of artifact "
-                f"'{artifact_name_or_id}'?"
-            )
-        if not confirmation:
-            cli_utils.declare("Artifact deletion canceled.")
-            return
-
     try:
-        versions: List[Optional[str]] = [version]
-        if not is_uuid and not version:
-            artifact_models = depaginate(
-                partial(
-                    Client().list_artifact_versions, name=artifact_name_or_id
-                )
-            )
-            versions = [
-                str(artifact_model.version)
-                for artifact_model in artifact_models
-            ]
-        for version_ in versions:
-            Client().delete_artifact_version(
-                name_id_or_prefix=artifact_name_or_id,
-                version=version_,
-                delete_metadata=not only_artifact,
-                delete_from_artifact_store=not only_metadata,
-            )
+        artifact_version = Client().update_artifact_version(
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+            add_tags=tag,
+            remove_tags=remove_tag,
+        )
     except (KeyError, ValueError) as e:
+        raise e
         cli_utils.error(str(e))
     else:
-        if is_uuid:
-            cli_utils.declare(f"Artifact '{artifact_name_or_id}' deleted.")
-        elif version:
-            cli_utils.declare(
-                f"Version '{version}' of artifact '{artifact_name_or_id}' "
-                f"deleted."
-            )
-        else:
-            cli_utils.declare(
-                f"All versions of artifact '{artifact_name_or_id}' deleted."
-            )
+        cli_utils.declare(f"Artifact version '{artifact_version.id}' updated.")
 
 
-@artifact.command("prune", help="Delete all unused artifact versions.")
+@artifact.command(
+    "prune", help="Delete all unused artifacts and artifact versions."
+)
 @click.option(
     "--only-artifact",
     "-a",
     is_flag=True,
     help=(
-        "Only delete the physical artifact from the artifact store but not "
-        "its metadata."
+        "Only delete the physical artifacts from the artifact store but not "
+        "their metadata."
     ),
 )
 @click.option(
     "--only-metadata",
     "-m",
     is_flag=True,
-    help="Only delete metadata and not the physical artifact.",
+    help="Only delete metadata and not the physical artifacts.",
 )
 @click.option(
     "--yes",
@@ -190,7 +220,7 @@ def delete_artifact(
 def prune_artifacts(
     only_artifact: bool = False, only_metadata: bool = False, yes: bool = False
 ) -> None:
-    """Delete all unused artifact versions.
+    """Delete all unused artifacts and artifact versions.
 
     Args:
         only_artifact: If set, only delete the physical artifacts but not the
@@ -217,13 +247,17 @@ def prune_artifacts(
             cli_utils.declare("Artifact deletion canceled.")
             return
 
-    for unused_artifact in unused_artifact_versions:
+    for unused_artifact_version in unused_artifact_versions:
         try:
             Client().delete_artifact_version(
-                name_id_or_prefix=unused_artifact.id,
+                name_id_or_prefix=unused_artifact_version.id,
                 delete_metadata=not only_artifact,
                 delete_from_artifact_store=not only_metadata,
             )
+            unused_artifact = unused_artifact_version.artifact
+            if not unused_artifact.versions and not only_artifact:
+                Client().delete_artifact(unused_artifact.id)
+
         except Exception as e:
             cli_utils.error(str(e))
-    cli_utils.declare("All unused artifact versions deleted.")
+    cli_utils.declare("All unused artifacts and artifact versions deleted.")

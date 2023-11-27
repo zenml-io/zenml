@@ -350,6 +350,10 @@ class ArtifactVersionFilter(WorkspaceScopedFilter):
         default=None,
         description="ID of the artifact to which this version belongs.",
     )
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the artifact to which this version belongs.",
+    )
     version: Optional[str] = Field(
         default=None,
         description="Version of the artifact",
