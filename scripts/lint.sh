@@ -16,7 +16,7 @@ ruff $TESTS_EXAMPLES --extend-ignore D
 # autoflake replacement: checks for unused imports and variables
 ruff $SRC --select F401,F841 --exclude "__init__.py" --isolated
 
-black $SRC  --check
+ruff format $SRC  --check
 
 # check type annotations
 mypy $SRC_NO_TESTS

@@ -294,4 +294,4 @@ class ZenMLCloudRBAC(RBACInterface):
         if not access_token or not isinstance(access_token, str):
             raise RuntimeError("Could not fetch auth token from auth0.")
 
-        return access_token
+        return str(access_token)
