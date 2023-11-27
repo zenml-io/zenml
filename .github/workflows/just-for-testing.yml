@@ -20,11 +20,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      - name: Setup environment
-        uses: ./.github/actions/setup_environment
-        with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-          python-version: '3.9'
-          os: ubuntu-latest
+      # - name: Setup environment
+      #   uses: ./.github/actions/setup_environment
+      #   with:
+      #     cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+      #     python-version: '3.9'
+      #     os: ubuntu-latest
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh
