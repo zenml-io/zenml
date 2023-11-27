@@ -47,7 +47,6 @@ do
     # handles unpinned sqlmodel dependency in older versions
     pip3 install "sqlmodel==0.0.8" importlib_metadata
 
-
     # Run the tests for this version
     run_tests_for_version $VERSION
 
@@ -59,8 +58,8 @@ set -e
 python3 -m venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
 
-pip3 install -U pip
-pip install -e ".[templates]"
+pip3 install -U pip setuptools wheel
+pip install -e ".[templates,server]"
 
 run_tests_for_version current_branch
 
