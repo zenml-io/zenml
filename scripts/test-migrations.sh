@@ -10,6 +10,10 @@ function run_tests_for_version() {
     git clone -b "release/0.43.0" https://github.com/zenml-io/template-starter
     copier copy template-starter/ test_starter --trust --defaults
     cd test_starter
+    
+    rm -rf ~/.config/zenml
+    export ZENML_ANALYTICS_OPT_IN=false
+    export ZENML_DEBUG=true
 
     zenml integration install sklearn -y
     python3 run.py
@@ -36,6 +40,7 @@ do
     # Install the specific version
     pip3 install -U pip setuptools wheel
     pip3 install "zenml[templates]==$VERSION"
+
 
     # Run the tests for this version
     run_tests_for_version $VERSION
