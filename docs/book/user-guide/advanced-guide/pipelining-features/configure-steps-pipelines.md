@@ -83,7 +83,7 @@ If you want to make sure you get all the benefits of type annotating your steps,
 
 ### Step output names
 
-By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](../../starter-guide/fetch-runs-after-execution.md).
+By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](broken-reference).
 
 If you want to use custom output names for your steps, use the `Annotated` type annotation:
 
@@ -105,11 +105,7 @@ def divide(a: int, b: int) -> Tuple[
 ```
 
 {% hint style="info" %}
-If you do not give your outputs custom names, the created artifacts will be
-named `{pipeline_name}::{step_name}::output` or 
-`{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the
-[documentation on artifact versioning and configuration](./artifact-versioning.md)
-for more information.
+If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the [documentation on artifact versioning and configuration](artifact-versioning.md) for more information.
 {% endhint %}
 
 ## Configure steps/pipelines
@@ -119,9 +115,7 @@ for more information.
 When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
 
 {% hint style="info" %}
-In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters.
-If you want to pass other non-JSON-serializable objects such as NumPy arrays
-to your steps, use [External Artifacts](../artifact-management/artifact-saving-loading.md#external-artifacts) instead.
+In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters. If you want to pass other non-JSON-serializable objects such as NumPy arrays to your steps, use [External Artifacts](../artifact-management/artifact-saving-loading.md#external-artifacts) instead.
 {% endhint %}
 
 ```python
@@ -152,7 +146,7 @@ When an artifact is used as a step function input, the step will only be cached 
 
 ### Using a custom step invocation ID
 
-When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](../../starter-guide/fetch-runs-after-execution.md#steps) about the invocation after the pipeline has finished running.
+When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](broken-reference) about the invocation after the pipeline has finished running.
 
 ```python
 from zenml import pipeline, step
@@ -227,24 +221,23 @@ def my_step() -> None:
 
 You can display the logs in the dashboard as follows:
 
-![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml_step_logs.png)
+![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml\_step\_logs.png)
 
 If you do not want to store the logs in your artifact store, you can:
 
-1. Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
-   
+1.  Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
+
     ```python
     from zenml import pipeline, step
-    
+
     @step(enable_step_logs=False)  # disables logging for this step
     def my_step() -> None:
         ...
-    
+
     @pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
     def my_pipeline():
         ...
     ```
-
 2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE`. This environmental variable takes precedence over the parameters mentioned above.
 
 ## Settings in ZenML
@@ -494,7 +487,7 @@ An example of this is if I want to tag a pipeline, I can do the following:
 ...
 ```
 
-This tag is now associated and tracked with all pipeline runs, and can be [fetched later](../../starter-guide/fetch-runs-after-execution.md):
+This tag is now associated and tracked with all pipeline runs, and can be [fetched later](broken-reference):
 
 ```python
 from zenml.client import Client

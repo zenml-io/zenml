@@ -152,7 +152,7 @@
   * [AWS Service Connector](stacks-and-components/auth-management/aws-service-connector.md)
   * [GCP Service Connector](stacks-and-components/auth-management/gcp-service-connector.md)
   * [Azure Service Connector](stacks-and-components/auth-management/azure-service-connector.md)
-* [🚀 Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
+* [⚒ Stack deployment](stacks-and-components/stack-deployment/stack-deployment.md)
   * [Set up a minimal GCP stack](stacks-and-components/stack-deployment/cloud-stacks/minimal-gcp-stack.md)
   * [Deploy a stack component](stacks-and-components/stack-deployment/deploy-a-stack-component.md)
   * [Deploy a stack using mlstacks](stacks-and-components/stack-deployment/deploy-a-stack-using-mlstacks.md)

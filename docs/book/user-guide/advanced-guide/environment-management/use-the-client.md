@@ -36,7 +36,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 
 #### Pipelines, Runs, Artifacts
 
-* **Pipelines**: The [pipeline versions](../../starter-guide/version-pipelines.md) that were implicitly tracked when running ZenML pipelines.
+* **Pipelines**: The [pipeline versions](broken-reference) that were implicitly tracked when running ZenML pipelines.
 * **Pipeline Runs**: Information about all pipeline runs that were executed on your ZenML instance.
 * **Step Runs**: The steps of all pipeline runs. Mainly useful for directly fetching a specific step of a run by its ID.
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.
@@ -45,7 +45,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](connect-your-git-repository.md) for more information.
 
 {% hint style="info" %}
-Checkout the [documentation on fetching runs](../../starter-guide/fetch-runs-after-execution.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
+Checkout the [documentation on fetching runs](broken-reference) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
 
 #### Stacks, Infrastructure, Authentication

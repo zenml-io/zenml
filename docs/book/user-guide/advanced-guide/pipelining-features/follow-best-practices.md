@@ -34,12 +34,11 @@ Until now, you probably have kept all your code in one single file. In productio
 └── run.py
 ```
 
-Check out how to initialize your project from a template following best practices in the [Project templates](./using-project-templates.md#generating-project-from-a-project-template) section.
+Check out how to initialize your project from a template following best practices in the [Project templates](using-project-templates.md#generating-project-from-a-project-template) section.
 
 #### Steps
 
 Keep your steps in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.
-
 
 #### Logging
 
@@ -78,7 +77,7 @@ Containerized orchestrators and step operators load your complete project files 
 
 #### Dockerfile (optional)
 
-By default, ZenML uses the official[ zenml docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own Dockerfile to overwrite this behavior. Learn more [here](../advanced-guide/environment-management/containerize-your-pipeline.md).
+By default, ZenML uses the official[ zenml docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own Dockerfile to overwrite this behavior. Learn more [here](../environment-management/containerize-your-pipeline.md).
 
 #### Notebooks
 
@@ -98,5 +97,4 @@ All of your import paths should be relative to the source's root.
 
 Putting your pipeline runners in the root of the repository ensures that all imports that are defined relative to the project root resolve for the pipeline runner. In case there is no `.zen` defined this also defines the implicit source's root.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

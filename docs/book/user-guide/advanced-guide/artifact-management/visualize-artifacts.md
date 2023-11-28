@@ -6,11 +6,11 @@ description: Configuring ZenML to display data visualizations in the dashboard.
 
 ZenML automatically saves visualizations of many common data types and allows you to view these visualizations in the ZenML dashboard:
 
-![ZenML Artifact Visualizations](../../../.gitbook/assets/artifact_visualization_dashboard.png)
+![ZenML Artifact Visualizations](<../../../.gitbook/assets/artifact\_visualization\_dashboard (4).png>)
 
-Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the [artifact.visualize() method](../../starter-guide/fetch-runs-after-execution.md#artifact-visualizations):
+Alternatively, any of these visualizations can also be displayed in Jupyter notebooks using the [artifact.visualize() method](broken-reference):
 
-![output.visualize() Output](../../../.gitbook/assets/artifact_visualization_evidently.png)
+![output.visualize() Output](<../../../.gitbook/assets/artifact\_visualization\_evidently (1).png>)
 
 Currently, the following visualization types are supported:
 
@@ -23,11 +23,9 @@ Currently, the following visualization types are supported:
 
 There are two ways how you can add custom visualizations to the dashboard:
 
-* If you are already handling HTML, Markdown, or CSV data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](#visualization-via-special-return-types) inside your step.
-* If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](#visualization-via-materializers).
-* If you want to create any other custom visualizations, you can 
-[create a custom return type class with corresponding materializer](#visualization-via-custom-return-type-and-materializer)
-and build and return this custom return type from one of your steps.
+* If you are already handling HTML, Markdown, or CSV data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](visualize-artifacts.md#visualization-via-special-return-types) inside your step.
+* If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](visualize-artifacts.md#visualization-via-materializers).
+* If you want to create any other custom visualizations, you can [create a custom return type class with corresponding materializer](visualize-artifacts.md#visualization-via-custom-return-type-and-materializer) and build and return this custom return type from one of your steps.
 
 ### Visualization via Special Return Types
 
@@ -50,7 +48,7 @@ def my_step() -> CSVString:
 
 This would create the following visualization in the dashboard:
 
-![CSV Visualization Example](../../../.gitbook/assets/artifact_visualization_csv.png)
+![CSV Visualization Example](../../../.gitbook/assets/artifact\_visualization\_csv.png)
 
 ### Visualization via Materializers
 
@@ -58,37 +56,26 @@ If you want to automatically extract visualizations for all artifacts of a certa
 
 ### Visualization via Custom Return Type and Materializer
 
-By combining the ideas behind the above two visualization approaches, you can
-visualize virtually anything you want inside your ZenML dashboard in three
-simple steps:
+By combining the ideas behind the above two visualization approaches, you can visualize virtually anything you want inside your ZenML dashboard in three simple steps:
 
 1. Create a **custom class** that will hold the data that you want to visualize.
-2. [Build a custom **materializer**](handle-custom-data-types.md#custom-materializers)
-for this custom class with the visualization logic implemented in the 
-`save_visualizations()` method.
+2. [Build a custom **materializer**](handle-custom-data-types.md#custom-materializers) for this custom class with the visualization logic implemented in the `save_visualizations()` method.
 3. Return your custom class from any of your ZenML steps.
 
 #### Example: Facets Data Skew Visualization
 
-As an example, have a look at the models, materializers, and steps of the
-[Facets Integration](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-facets), 
-which can be used to visualize the data skew between multiple Pandas DataFrames:
+As an example, have a look at the models, materializers, and steps of the [Facets Integration](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-facets), which can be used to visualize the data skew between multiple Pandas DataFrames:
 
 ![Facets Visualization](../../../.gitbook/assets/facets-visualization.png)
 
-**1. Custom Class**
-The [FacetsComparison](https://sdkdocs.zenml.io/0.42.0/integration_code_docs/integrations-facets/#zenml.integrations.facets.models.FacetsComparison)
-is the custom class that holds the data required for the visualization.
+**1. Custom Class** The [FacetsComparison](https://sdkdocs.zenml.io/0.42.0/integration\_code\_docs/integrations-facets/#zenml.integrations.facets.models.FacetsComparison) is the custom class that holds the data required for the visualization.
 
 ```python
 class FacetsComparison(BaseModel):
     datasets: List[Dict[str, Union[str, pd.DataFrame]]]
 ```
 
-**2. Materializer**
-The [FacetsMaterializer](https://sdkdocs.zenml.io/0.42.0/integration_code_docs/integrations-facets/#zenml.integrations.facets.materializers.facets_materializer.FacetsMaterializer)
-is a custom materializer that only handles this custom class and contains the
-corresponding visualization logic.
+**2. Materializer** The [FacetsMaterializer](https://sdkdocs.zenml.io/0.42.0/integration\_code\_docs/integrations-facets/#zenml.integrations.facets.materializers.facets\_materializer.FacetsMaterializer) is a custom materializer that only handles this custom class and contains the corresponding visualization logic.
 
 ```python
 class FacetsMaterializer(BaseMaterializer):
@@ -106,11 +93,7 @@ class FacetsMaterializer(BaseMaterializer):
         return {visualization_path: VisualizationType.HTML}
 ```
 
-**3. Step**
-There are three different steps in the `facets` integration that can be used to
-create `FacetsComparison`s for different sets of inputs. E.g., the
-`facets_visualization_step` below takes two DataFrames as inputs and builds
-a `FacetsComparison` object out of them:
+**3. Step** There are three different steps in the `facets` integration that can be used to create `FacetsComparison`s for different sets of inputs. E.g., the `facets_visualization_step` below takes two DataFrames as inputs and builds a `FacetsComparison` object out of them:
 
 ```python
 @step
@@ -126,15 +109,11 @@ def facets_visualization_step(
 ```
 
 {% hint style="info" %}
-This is what happens now under the hood when you add the 
-`facets_visualization_step` into your pipeline:
+This is what happens now under the hood when you add the `facets_visualization_step` into your pipeline:
+
 1. The step creates and returns a `FacetsComparison`.
-2. When the step finishes, ZenML will search for a materializer class that can
-handle this type, finds the `FacetsMaterializer`, and calls the 
-`save_visualizations()` method which creates the visualization and saves it into
-your artifact store as an HTML file.
-3. When you open your dashboard and click on the artifact inside the run DAG,
-the visualization HTML file is loaded from the artifact store and displayed.
+2. When the step finishes, ZenML will search for a materializer class that can handle this type, finds the `FacetsMaterializer`, and calls the `save_visualizations()` method which creates the visualization and saves it into your artifact store as an HTML file.
+3. When you open your dashboard and click on the artifact inside the run DAG, the visualization HTML file is loaded from the artifact store and displayed.
 {% endhint %}
 
 ## Disabling Visualizations
@@ -157,5 +136,4 @@ def my_pipeline():
 
 If all visualizations of a certain pipeline run are not showing up in the dashboard, it might be that your ZenML server does not have the required dependencies or permissions to access that artifact store. See the [custom artifact store docs page](../../../stacks-and-components/component-guide/artifact-stores/custom.md#enabling-artifact-visualizations-with-custom-artifact-stores) for more information.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
