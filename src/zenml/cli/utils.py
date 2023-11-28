@@ -106,7 +106,8 @@ MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
 T = TypeVar(
-    "T", bound=Union[BaseResponse, BaseResponseModel]  # type: ignore[type-arg]
+    "T",
+    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
 )
 
 
