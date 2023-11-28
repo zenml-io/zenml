@@ -132,9 +132,11 @@ def training_pipeline(gamma: float = 0.002):
 
 ### Using the ModelVersion object
 
-When configured at the pipeline or step level, the model version will be available through the `StepContext` or `PipelineContext`
+Once a `ModelVersion` is fetched within a step, there are numerous use-cases. For example, one can associate metadata like metrics to the model version or its associated artifacts.
 
 ```python
+# TBD
+
 from zenml import get_step_context, step 
 
 @step
@@ -153,7 +155,7 @@ def svc_trainer(
     ...
 ```
 
-### Using the stages of a Model
+## Using the stages of a model
 
 A models versions can exist in various stages. These are meant to signify their lifecycle state:
 
@@ -208,7 +210,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-### Associating different types of artifacts with a Model
+## Associating different types of artifacts with a model
 
 A ZenML model supports linking three types of artifacts:
 
