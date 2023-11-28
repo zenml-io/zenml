@@ -168,7 +168,7 @@ ZenML automatically saves visualizations for many common data types, allowing yo
 
 When you ran your `training_pipeline` above, you will see some visualizations already created for your artifacts. Explore them in the dashboard!
 
-See the [Artifact Visualization Docs Page](../advanced-guide/artifact-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
+See the [Artifact Visualization Docs Page](../advanced-guide/data-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
 
 ## Passing external data into ZenML
 
@@ -189,7 +189,7 @@ def training_pipeline():
     trainer(data=ExternalArtifact(np.array([1, 2, 3])))
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/artifact-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
 
 ## Assign tags to your artifacts
 
@@ -227,7 +227,7 @@ zenml artifacts versions update iris_dataset raw_2023 -t sklearn
 This will assign tags "sklearn" and "pre-training" to all artifacts created by
 this step, which can later be used to filter and organize these artifacts.
 
-To learn more about artifacts, please refer to the [Advanced section on artifact management](../advanced-guide/artifact-management/).
+To learn more about artifacts, please refer to the [Advanced section on artifact management](../advanced-guide/data-management/).
 For now, let's keep going on understanding major ZenML concepts!
 
 <!-- For scarf -->

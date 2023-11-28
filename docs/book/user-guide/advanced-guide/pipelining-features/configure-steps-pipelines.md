@@ -21,7 +21,7 @@ def my_function():
 Your functions will work as ZenML steps even if you don't provide any type annotations for their inputs and outputs. However, adding type annotations to your step functions gives you lots of additional benefits:
 
 * **Type validation of your step inputs**: ZenML makes sure that your step functions receive an object of the correct type from the upstream steps in your pipeline.
-* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](../../../getting-started/core-concepts.md#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](../artifact-management/handle-custom-data-types.md).
+* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](../../../getting-started/core-concepts.md#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](../data-management/handle-custom-data-types.md).
 
 ```python
 from typing import Tuple
@@ -115,7 +115,7 @@ If you do not give your outputs custom names, the created artifacts will be name
 When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
 
 {% hint style="info" %}
-In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters. If you want to pass other non-JSON-serializable objects such as NumPy arrays to your steps, use [External Artifacts](../artifact-management/artifact-saving-loading.md#external-artifacts) instead.
+In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters. If you want to pass other non-JSON-serializable objects such as NumPy arrays to your steps, use [External Artifacts](../data-management/artifact-saving-loading.md#external-artifacts) instead.
 {% endhint %}
 
 ```python

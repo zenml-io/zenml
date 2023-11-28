@@ -179,7 +179,7 @@ def training_pipeline():
     trainer(data=ExternalArtifact(np.array([1, 2, 3])))
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/artifact-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
 
 ## Assign tags to your artifacts
 

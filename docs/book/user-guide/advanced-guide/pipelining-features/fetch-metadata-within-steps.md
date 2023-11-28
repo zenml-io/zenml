@@ -23,7 +23,7 @@ def my_step():
 
 Furthermore, you can also use the `StepContext` to find out where the outputs
 of your current step will be stored and which 
-[Materializer](../artifact-management/handle-custom-data-types.md) class will be used to save them:
+[Materializer](../data-management/handle-custom-data-types.md) class will be used to save them:
 
 ```python
 @step
