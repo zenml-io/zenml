@@ -65,6 +65,8 @@ if __name__ == "__main__":
 
 The above will estabilish a **link between all artifacts that pass through this ZenML pipeline and this model**. You will be able to see all associated artifacts and pipeline runs all within one view.
 
+You can see all versions of a model, and associated artifacts:
+
 {% tabs %}
 {% tab title="OSS (CLI)" %}
 
@@ -85,7 +87,7 @@ The following commands can be used to list the various artifacts associated with
 
 The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
 
-<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt=""><figcaption><p>ZenML Model Versions List.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model Versions List.</p></figcaption></figure>
 
 {% endtab %}
 {% endtabs %}
@@ -128,9 +130,30 @@ def training_pipeline(gamma: float = 0.002):
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
 
+### Using the ModelVersion object
 
+When configured at the pipeline or step level, the model version will be available through the `StepContext` or `PipelineContext`
 
-### Using the Stages of a Model
+```python
+from zenml import get_step_context, step 
+
+@step
+def svc_trainer(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
+) -> Tuple[
+    Annotated[ClassifierMixin, "trained_model"],
+    Annotated[float, "training_acc"],
+]:
+    # This will return the model version specified in the 
+    # @pipeline decorator. In this case, the production version of 
+    # the `iris_classifier` will be returned in this case.
+    model_version = get_step_context().model_version
+    ...
+```
+
+### Using the stages of a Model
 
 A models versions can exist in various stages. These are meant to signify their lifecycle state:
 
