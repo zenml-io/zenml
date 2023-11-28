@@ -950,7 +950,9 @@ def is_placeholder_request(run_request) -> bool:
 
 
 def test_running_pipeline_creates_and_uses_placeholder_run(
-    mocker, clean_client, empty_pipeline  # noqa: F811
+    mocker,
+    clean_client,
+    empty_pipeline,  # noqa: F811
 ):
     """Tests that running a pipeline creates a placeholder run and later
     replaces it with the actual run."""
@@ -993,7 +995,9 @@ def test_running_pipeline_creates_and_uses_placeholder_run(
 
 
 def test_rerunning_deloyment_does_not_fail(
-    mocker, clean_client, empty_pipeline  # noqa: F811
+    mocker,
+    clean_client,
+    empty_pipeline,  # noqa: F811
 ):
     """Tests that a deployment can be re-run without issues."""
     mock_create_run = mocker.patch.object(
@@ -1033,7 +1037,9 @@ def test_rerunning_deloyment_does_not_fail(
 
 
 def test_failure_during_initialization_deletes_placeholder_run(
-    clean_client, empty_pipeline, mocker  # noqa: F811
+    clean_client,
+    empty_pipeline,
+    mocker,  # noqa: F811
 ):
     """Tests that when a pipeline run fails during initialization, the
     placeholder run that was created for it is deleted."""
@@ -1065,7 +1071,9 @@ def test_failure_during_initialization_deletes_placeholder_run(
 
 
 def test_running_scheduled_pipeline_does_not_create_placeholder_run(
-    mocker, clean_client, empty_pipeline  # noqa: F811
+    mocker,
+    clean_client,
+    empty_pipeline,  # noqa: F811
 ):
     """Tests that running a scheduled pipeline does not create a placeholder run
     in the database."""

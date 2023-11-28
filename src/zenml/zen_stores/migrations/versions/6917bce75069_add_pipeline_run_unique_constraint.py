@@ -1,7 +1,7 @@
 """Add pipeline run unique constraint [6917bce75069].
 
 Revision ID: 6917bce75069
-Revises: 389046140cad
+Revises: 0.50.0
 Create Date: 2023-11-15 16:07:24.343126
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "6917bce75069"
-down_revision = "389046140cad"
+down_revision = "0.50.0"
 branch_labels = None
 depends_on = None
 
