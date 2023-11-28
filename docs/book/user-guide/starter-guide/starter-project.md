@@ -1,6 +1,6 @@
 ---
-description: Put your knowledge together in one starter guide.
+description: Put your new knowledge in action with a simple project
 ---
 
-# A Basic ZenML project
+# A starter project
 

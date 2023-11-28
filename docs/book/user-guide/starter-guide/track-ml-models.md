@@ -214,7 +214,8 @@ One way of achieving this is to fetch the model directly in your step:
 ```python
 from zenml import step, get_step_context
 
-@step
+# IMPORTANT: Cache needs to be disabled to avoid unexpected behavior
+@step(enable_cache=False)
 def predict(
     data: pd.DataFrame,
 ) -> Annotated[pd.Series, "predictions"]:
@@ -249,7 +250,6 @@ def predict(
     return predictions
 
 @pipeline(
-    enable_cache=False,
     model_config=ModelVersion(
         name="iris_classifier",
         # Using the production stage
