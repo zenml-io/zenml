@@ -35,7 +35,7 @@
     * [Hyperparameter tuning](user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
     * [Follow best practices](user-guide/advanced-guide/pipelining-features/follow-best-practices.md)
     * [Project templates](user-guide/advanced-guide/pipelining-features/using-project-templates.md)
-  * [Artifact management](user-guide/advanced-guide/data-management/data-management.md)
+  * [Data management](user-guide/advanced-guide/data-management/data-management.md)
     * [Artifact versioning and configuration](user-guide/advanced-guide/data-management/artifact-versioning.md)
     * [Artifact saving and loading](user-guide/advanced-guide/data-management/artifact-saving-loading.md)
     * [Handle custom data types](user-guide/advanced-guide/data-management/handle-custom-data-types.md)
