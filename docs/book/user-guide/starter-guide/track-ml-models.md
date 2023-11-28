@@ -57,7 +57,7 @@ if __name__ == "__main__":
     training_pipeline()
 ```
 
-The above will estabilish a link between all artifacts that pass through this ZenML pipeline and this model. You will be able to see all associated artifacts and pipeline runs all within one view.
+The above will estabilish a **link between all artifacts that pass through this ZenML pipeline and this model**. You will be able to see all associated artifacts and pipeline runs all within one view.
 
 {% tabs %}
 {% tab title="OSS (CLI)" %}
