@@ -1386,7 +1386,14 @@ def _get_deployment_params_interactively(
     "-o",
     required=False,
     type=click.Choice(
-        ["kubernetes", "kubeflow", "tekton", "sagemaker", "vertex"]
+        [
+            "kubernetes",
+            "kubeflow",
+            "tekton",
+            "sagemaker",
+            "skypilot",
+            "vertex",
+        ]
     ),
     help="The flavor of orchestrator to use. "
     "If not specified, the default orchestrator will be used.",
