@@ -1,5 +1,5 @@
 ---
-description: Exploring the ZenML Model Control Plane
+description: Creating a full picture of a ML model using the Model Control Plane
 ---
 
 # Keeping track of ML models in ZenML
@@ -27,27 +27,33 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-## Configuring a Model and Model Version
+## Utilizing a Model and its Model Versions
 
-The easiest way to use a ZenML model is to pass a model version object as part of a pipeline run. This can be done easily:
+The easiest way to use a ZenML model is to pass a model version object as part of a pipeline run. This can be done easily at a pipeline or a step level
 
 ```python
 from zenml import pipeline
 from zenml.model import ModelVersion
 
-@pipeline(
-    model_version=ModelVersion(
-        # The name uniquely identifies this model
-        name="iris_classifier",
-        # The version specifies the version
-        # If None or an unseen version is specified, it will be created
-        # Otherwise, a version will be fetched.
-        version=None, 
-        # Some other properties may be specified
-        license="Apache 2.0",
-        description="A classification model for the iris dataset.",
-    ),
+model_version = ModelVersion(
+    # The name uniquely identifies this model
+    name="iris_classifier",
+    # The version specifies the version
+    # If None or an unseen version is specified, it will be created
+    # Otherwise, a version will be fetched.
+    version=None, 
+    # Some other properties may be specified
+    license="Apache 2.0",
+    description="A classification model for the iris dataset.",
 )
+
+# The step configuration will take precendece over the pipeline
+@step(model_version=model_version)
+def svc_trainer(...) -> ...:
+    ...
+
+# This configures it for all steps within the pipeline
+@pipeline(model_version=model_version)
 def training_pipeline(gamma: float = 0.002):
     # Now this pipeline will have the `iris_classifier` model active.
     X_train, X_test, y_train, y_test = training_data_loader()
@@ -84,19 +90,12 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-### Associating different types of artifacts with a Model
+### Fetching the model version
 
-A ZenML model supports linking three types of artifacts:
-
-* `Data artifacts`: These is the default artifacts. If nothing is specified, all artifacts are grouped under this category.
-* `Model artifacts`: If there is a physical model artifact like a pickle file or a model neural network weights file, it should be grouped in this category.
-* `Deployment artifacts`: These artifacts are to do with artifacts related to the endpoints and deployments of the models.
-
-In order to tell ZenML which artifact belongs to which type, one must pass in additional configuration to your artifacts:
+When configured at the pipeline or step level, the model version will be available through the `StepContext` or `PipelineContext`
 
 ```python
-from zenml import get_step_context, step
-from zenml.model import DataArtifactConfig, ModelArtifactConfig
+from zenml import get_step_context, get_pipeline_context, step, pipeline
 
 @step
 def svc_trainer(
@@ -104,13 +103,32 @@ def svc_trainer(
     y_train: pd.Series,
     gamma: float = 0.001,
 ) -> Tuple[
-    # This third argument marks this as a Model Artifact
-    Annotated[ClassifierMixin, "trained_model", ModelArtifactConfig()],
-    # This third argument marks this as a Data Artifact
-    Annotated[float, "training_acc", DataArtifactConfig()],
+    Annotated[ClassifierMixin, "trained_model"],
+    Annotated[float, "training_acc"],
 ]:
+    # This will return the model version specified in the 
+    # @pipeline decorator. In this case, the production version of 
+    # the `iris_classifier` will be returned in this case.
+    model_version = get_step_context().model_version
     ...
+
+@pipeline(
+    model_version=ModelVersion(
+        # The name uniquely identifies this model
+        name="iris_classifier",
+        # Pass the stage you want to get the right model
+        version="production", 
+    ),
+)
+def training_pipeline(gamma: float = 0.002):
+    # Now this pipeline will have the production `iris_classifier` model active.
+    model_version = get_pipeline_context().model_version
+
+    X_train, X_test, y_train, y_test = training_data_loader()
+    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
+
+
 
 ### Using the Stages of a Model
 
@@ -118,6 +136,7 @@ A models versions can exist in various stages. These are meant to signify their 
 
 * `staging`: This version is staged for production.
 * `production`: This version is running in a production setting.
+* `latest`: The latest version of the model.
 * `archived`: This is archived and no longer relevant. This stage occurs when a model moves out of any other stage.
 
 {% tabs %}
@@ -128,6 +147,7 @@ from zenml.model import ModelVersion
 # Get latest model version
 model_version = ModelVersion(
     name="iris_classifier",
+    version="latest"
 )
 
 # Get a model from a version
@@ -165,12 +185,19 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-### Using a Model Version within a step
+### Associating different types of artifacts with a Model
 
-In this case, the model version will be available to all steps directly through the `StepContext`:
+A ZenML model supports linking three types of artifacts:
+
+* `Data artifacts`: These is the default artifacts. If nothing is specified, all artifacts are grouped under this category.
+* `Model artifacts`: If there is a physical model artifact like a pickle file or a model neural network weights file, it should be grouped in this category.
+* `Deployment artifacts`: These artifacts are to do with artifacts related to the endpoints and deployments of the models.
+
+In order to tell ZenML which artifact belongs to which type, one must pass in additional configuration to your artifacts:
 
 ```python
 from zenml import get_step_context, step
+from zenml.model import DataArtifactConfig, ModelArtifactConfig
 
 @step
 def svc_trainer(
@@ -178,27 +205,12 @@ def svc_trainer(
     y_train: pd.Series,
     gamma: float = 0.001,
 ) -> Tuple[
-    Annotated[ClassifierMixin, "trained_model"],
-    Annotated[float, "training_acc"],
+    # This third argument marks this as a Model Artifact
+    Annotated[ClassifierMixin, "trained_model", ModelArtifactConfig()],
+    # This third argument marks this as a Data Artifact
+    Annotated[float, "training_acc", DataArtifactConfig()],
 ]:
-    # This will return the model version specified in the 
-    # @pipeline decorator. In this case, the production version of 
-    # the `iris_classifier` will be returned in this case.
-    model_version = get_step_context().model_version
     ...
-
-@pipeline(
-    model_version=ModelVersion(
-        # The name uniquely identifies this model
-        name="iris_classifier",
-        # Pass the stage you want to get the right model
-        version="production", 
-    ),
-)
-def training_pipeline(gamma: float = 0.002):
-    # Now this pipeline will have the production `iris_classifier` model active.
-    X_train, X_test, y_train, y_test = training_data_loader()
-    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
 
 ## Facilitating Artifacts Exchange Between Pipelines Using MCP
