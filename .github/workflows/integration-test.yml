@@ -137,7 +137,7 @@ jobs:
 
     steps:
       - name: Maximize space for Docker
-        uses: easimon/maximize-build-space@6682ea52824c1af7f96a887981b60c3ae86ca3ad
+        uses: easimon/maximize-build-space@v8
         with:
           root-reserve-mb: 20000
           swap-size-mb: 1024
