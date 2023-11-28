@@ -5,9 +5,7 @@ description: Different variations of the ZenML Cloud architecture depending on y
 # Cloud Architecture
 
 {% hint style="info" %}
-ZenML Cloud is currently in the beta phase. We are offering users the opportunity to host a managed ZenML instance and to gain early access to the exciting new features mentioned above. Beta users will receive priority access to the enhanced functionalities and dedicated support to ensure a smooth onboarding experience. 
-
-[Let us know on Slack](https://zenml.io/slack) if you would like to see other deployment scenarios with ZenML Cloud.
+If you would like to evaluate ZenML Cloud, please [book a demo](https://zenml.io/book-a-demo) and we can help you decide what scenario suits you best!
 {% endhint %}
 
 Machine learning often involves data that is sensitive and thus data security is a fundamental requirement. The ZenML Cloud is flexible enough to meet your security requirements, from easy installations to completely airgapped deployments.
@@ -16,15 +14,15 @@ The ZenML Cloud consists of the following moving pieces:
 
 * **ZenML Cloud API**: This is a centralized MLOps control plane that includes a managed ZenML dashboard and a special ZenML server optimized for production MLOps workloads.
 
-* **MLflow Tracking Server**: This is an optional add-on with ZenML Cloud that features a MLflow tracking server that may also include artifact storage or be configured to connect to a customer artifact storage solution (e.g. an AWS S3 bucket or a GCS bucket).
+* **Single Sign-On (SSO)**: The ZenML Cloud API is integrated with [Auth0](https://auth0.com/) as an SSO provider to manage user authentication and authorization. Users can log in to the ZenML Cloud dashboard using their social media accounts or their corporate credentials.
+
+* **Secrets Store**: All secrets and credentials required to access customer infrastructure services are stored in a secure secrets store. The ZenML Cloud API has access to these secrets and uses them to access customer infrastructure services on behalf of the ZenML Cloud. The secrets store can be hosted either by the ZenML Cloud or by the customer.
+
+* **ML Metadata Store**: This is where all ZenML metadata is stored, including ML metadata such as tracking and versioning information about pipelines and models.
 
 * **ZenML Cloud Agent**: This service is optionally deployed customer-side, and interacts with customer MLOps stack components on behalf of the remote ZenML Cloud control plane.
 
-The above three interact with other MLOps stack components, secrets, and data in varying scenarios described below.
-
-{% hint style="info" %}
-In this phase, the scenarios below are experimental and subject to change. For now, **Scenario 1** is used by default when you [sign up for ZenML Cloud](https://cloud.zenml.io). For other scenarios, [contact us on Slack](https://zenml.io/slack).
-{% endhint %}
+The above five interact with other MLOps stack components, secrets, and data in varying scenarios described below.
 
 ## Scenario 1: Full SaaS
 
