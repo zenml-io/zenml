@@ -13,21 +13,21 @@
 #  permissions and limitations under the License.
 
 
-from zenml.pipelines import pipeline
+from steps.convert_annotations_step import convert_annotations
+from steps.get_or_create_dataset import get_or_create_the_dataset
+from steps.pytorch_trainer import (
+    pytorch_model_trainer,
+)
+
+from zenml import pipeline
+from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
+    get_labeled_data,
+)
 
 
 @pipeline(enable_cache=False)
-def training_pipeline(
-    get_or_create_dataset,
-    get_labeled_data,
-    convert_annotations,
-    model_trainer,
-    deployment_trigger,
-    model_deployer,
-):
-    dataset_name = get_or_create_dataset()
+def training_pipeline():
+    dataset_name = get_or_create_the_dataset()
     labeled_data = get_labeled_data(dataset_name)
     training_images, training_annotations = convert_annotations(labeled_data)
-    model = model_trainer(training_images, training_annotations)
-    deployment_decision = deployment_trigger()
-    model_deployer(deployment_decision, model)
+    pytorch_model_trainer(training_images, training_annotations)

@@ -18,7 +18,6 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import (
     Page,
     PipelineFilter,
@@ -29,6 +28,13 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -38,7 +44,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINES,
     tags=["pipelines"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -53,7 +59,7 @@ def list_pipelines(
         make_dependable(PipelineFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineResponse]:
     """Gets a list of pipelines.
 
@@ -66,8 +72,11 @@ def list_pipelines(
     Returns:
         List of pipeline objects.
     """
-    return zen_store().list_pipelines(
-        pipeline_filter_model=pipeline_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=pipeline_filter_model,
+        resource_type=ResourceType.PIPELINE,
+        list_method=zen_store().list_pipelines,
+        hydrate=hydrate,
     )
 
 
@@ -80,7 +89,7 @@ def list_pipelines(
 def get_pipeline(
     pipeline_id: UUID,
     hydrate: bool = True,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> PipelineResponse:
     """Gets a specific pipeline using its unique id.
 
@@ -92,7 +101,9 @@ def get_pipeline(
     Returns:
         A specific pipeline object.
     """
-    return zen_store().get_pipeline(pipeline_id=pipeline_id, hydrate=hydrate)
+    return verify_permissions_and_get_entity(
+        id=pipeline_id, get_method=zen_store().get_pipeline, hydrate=hydrate
+    )
 
 
 @router.put(
@@ -104,7 +115,7 @@ def get_pipeline(
 def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: PipelineUpdate,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> PipelineResponse:
     """Updates the attribute on a specific pipeline using its unique id.
 
@@ -115,8 +126,11 @@ def update_pipeline(
     Returns:
         The updated pipeline object.
     """
-    return zen_store().update_pipeline(
-        pipeline_id=pipeline_id, pipeline_update=pipeline_update
+    return verify_permissions_and_update_entity(
+        id=pipeline_id,
+        update_model=pipeline_update,
+        get_method=zen_store().get_pipeline,
+        update_method=zen_store().update_pipeline,
     )
 
 
@@ -127,14 +141,18 @@ def update_pipeline(
 @handle_exceptions
 def delete_pipeline(
     pipeline_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific pipeline.
 
     Args:
         pipeline_id: ID of the pipeline to delete.
     """
-    zen_store().delete_pipeline(pipeline_id=pipeline_id)
+    verify_permissions_and_delete_entity(
+        id=pipeline_id,
+        get_method=zen_store().get_pipeline,
+        delete_method=zen_store().delete_pipeline,
+    )
 
 
 @router.get(
@@ -148,7 +166,7 @@ def list_pipeline_runs(
         make_dependable(PipelineRunFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
 
@@ -172,7 +190,7 @@ def list_pipeline_runs(
 @handle_exceptions
 def get_pipeline_spec(
     pipeline_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> PipelineSpec:
     """Gets the spec of a specific pipeline using its unique id.
 
@@ -182,4 +200,7 @@ def get_pipeline_spec(
     Returns:
         The spec of the pipeline.
     """
-    return zen_store().get_pipeline(pipeline_id).spec
+    pipeline = verify_permissions_and_get_entity(
+        id=pipeline_id, get_method=zen_store().get_pipeline
+    )
+    return pipeline.spec

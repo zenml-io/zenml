@@ -166,14 +166,5 @@ class PipelineSchema(NamedSchema, table=True):
         Returns:
             The updated `PipelineSchema`.
         """
-        if pipeline_update.name:
-            self.name = pipeline_update.name
-
-        if pipeline_update.docstring:
-            self.docstring = pipeline_update.docstring
-
-        if pipeline_update.spec:
-            self.spec = pipeline_update.spec.json(sort_keys=True)
-
         self.updated = datetime.utcnow()
         return self

@@ -23,12 +23,10 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
 from pydantic import Field
-from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.models.v2.base.base import (
     BaseRequest,
@@ -36,7 +34,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.user import UserResponse
@@ -44,7 +42,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-
 
 # ---------------------- Request Models ----------------------
 
@@ -86,32 +83,6 @@ class WorkspaceScopedRequest(UserScopedRequest):
         """
         metadata = super().get_analytics_metadata()
         metadata["workspace_id"] = self.workspace
-        return metadata
-
-
-class ShareableRequest(WorkspaceScopedRequest):
-    """Base shareable workspace-scoped domain model.
-
-    Used as a base class for all domain models that are workspace-scoped and are
-    shareable.
-    """
-
-    is_shared: bool = Field(
-        default=False,
-        title=(
-            "Flag describing if this resource is shared with other users in "
-            "the same workspace."
-        ),
-    )
-
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for workspace scoped models.
-
-        Returns:
-            The analytics metadata.
-        """
-        metadata = super().get_analytics_metadata()
-        metadata["is_shared"] = self.is_shared
         return metadata
 
 
@@ -192,9 +163,9 @@ class UserScopedFilter(BaseFilter):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Applies the filter to a query.
 
         Args:
@@ -284,9 +255,9 @@ class WorkspaceScopedFilter(BaseFilter):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Applies the filter to a query.
 
         Args:
@@ -304,112 +275,6 @@ class WorkspaceScopedFilter(BaseFilter):
             scope_filter = or_(
                 getattr(table, "workspace_id") == self.scope_workspace,
                 getattr(table, "workspace_id").is_(None),
-            )
-            query = query.where(scope_filter)
-
-        return query
-
-
-# Shareable models
-class ShareableResponseBody(WorkspaceScopedResponseBody):
-    """Base shareable workspace-scoped body."""
-
-    is_shared: bool = Field(
-        title=(
-            "Flag describing if this resource is shared with other users in "
-            "the same workspace."
-        ),
-    )
-
-
-class ShareableResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Base shareable workspace-scoped metadata."""
-
-
-ShareableBody = TypeVar("ShareableBody", bound=ShareableResponseBody)
-ShareableMetadata = TypeVar(
-    "ShareableMetadata", bound=ShareableResponseMetadata
-)
-
-
-class ShareableResponse(
-    WorkspaceScopedResponse[ShareableBody, ShareableMetadata],
-    Generic[ShareableBody, ShareableMetadata],
-):
-    """Base shareable workspace-scoped domain model.
-
-    Used as a base class for all domain models that are workspace-scoped and are
-    shareable.
-    """
-
-    # Analytics
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for workspace scoped models.
-
-        Returns:
-            The analytics metadata.
-        """
-        metadata = super().get_analytics_metadata()
-        metadata["is_shared"] = self.is_shared
-        return metadata
-
-    # Body and metadata properties
-    @property
-    def is_shared(self) -> bool:
-        """The is_shared property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().is_shared
-
-
-class ShareableFilter(WorkspaceScopedFilter):
-    """Model for workspace and user scoped shareable entities."""
-
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "scope_user",
-    ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
-        "scope_user",
-    ]
-    scope_user: Optional[UUID] = Field(
-        default=None,
-        description="The user to scope this query to.",
-    )
-
-    def set_scope_user(self, user_id: UUID) -> None:
-        """Set the user that is performing the filtering to scope the response.
-
-        Args:
-            user_id: The user ID to scope the response to.
-        """
-        self.scope_user = user_id
-
-    def apply_filter(
-        self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
-        table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        from sqlmodel import or_
-
-        query = super().apply_filter(query=query, table=table)
-
-        if self.scope_user:
-            scope_filter = or_(
-                getattr(table, "user_id") == self.scope_user,
-                getattr(table, "is_shared").is_(True),
             )
             query = query.where(scope_filter)
 

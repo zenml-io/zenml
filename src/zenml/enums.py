@@ -30,6 +30,20 @@ class ArtifactType(StrEnum):
     BASE = "BaseArtifact"
 
 
+class StepRunInputArtifactType(StrEnum):
+    """All possible types of a step run input artifact."""
+
+    DEFAULT = "default"  # input argument that is the output of a previous step
+    MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
+
+
+class StepRunOutputArtifactType(StrEnum):
+    """All possible types of a step run output artifact."""
+
+    DEFAULT = "default"  # output of the current step
+    MANUAL = "manual"  # manually saved via `zenml.save_artifact()`
+
+
 class VisualizationType(StrEnum):
     """All currently available visualization types."""
 
@@ -184,17 +198,6 @@ class AnalyticsEventSource(StrEnum):
     ZENML_SERVER = "zenml server"
 
 
-class PermissionType(StrEnum):
-    """All permission types."""
-
-    # ANY CHANGES TO THIS ENUM WILL NEED TO BE DONE TOGETHER WITH A DB MIGRATION
-    WRITE = "write"  # allows the user to create, update, delete everything
-    READ = "read"  # allows the user to read everything
-    ME = (
-        "me"  # allows the user to self administrate (change name, password...)
-    )
-
-
 class AuthScheme(StrEnum):
     """The authentication scheme."""
 
@@ -314,6 +317,7 @@ class ColorVariants(StrEnum):
 class TaggableResourceTypes(StrEnum):
     """All possible resource types for tagging."""
 
+    ARTIFACT = "artifact"
     MODEL = "model"
 
 

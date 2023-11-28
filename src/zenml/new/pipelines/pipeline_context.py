@@ -107,3 +107,4 @@ class PipelineContext:
         self.enable_step_logs = pipeline_configuration.enable_step_logs
         self.settings = pipeline_configuration.settings
         self.extra = pipeline_configuration.extra
+        self.model_version = pipeline_configuration.model_version

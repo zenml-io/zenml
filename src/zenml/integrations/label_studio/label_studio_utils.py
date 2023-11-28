@@ -41,58 +41,30 @@ def clean_url(url: str) -> str:
 def convert_pred_filenames_to_task_ids(
     preds: List[Dict[str, Any]],
     tasks: List[Dict[str, Any]],
-    filename_reference: str,
-    storage_type: str,
 ) -> List[Dict[str, Any]]:
     """Converts a list of predictions from local file references to task id.
 
     Args:
         preds: List of predictions.
         tasks: List of tasks.
-        filename_reference: Name of the file reference in the predictions.
-        storage_type: Storage type of the predictions.
 
     Returns:
         List of predictions using task ids as reference.
     """
+    preds = [
+        {
+            "filename": quote(pred["filename"]).split("//")[1],
+            "result": pred["result"],
+        }
+        for pred in preds
+    ]
     filename_id_mapping = {
-        clean_url(task["data"][filename_reference]): task["id"]
-        for task in tasks
+        clean_url(task["storage_filename"]): task["id"] for task in tasks
     }
-
-    # GCS and S3 URL encodes filenames containing spaces, requiring this
-    # separate encoding step
-    if storage_type == "gcs":
-        # we remove the scheme from the URL to match the pred to the Label
-        # Studio task
-        preds = [
-            {
-                "filename": quote(pred["filename"]).split("//")[1],
-                "result": pred["result"],
-            }
-            for pred in preds
-        ]
-    elif storage_type == "s3":
-        # S3 URLs are of the form s3://bucket-name/path/to/file so we need to
-        # make sure we only encode the path so we can match the pred to the
-        # Label Studio task
-        preds = [
-            {
-                "filename": "/".join(
-                    quote(pred["filename"]).split("//")[1].split("/")[1:]
-                ),
-                "result": pred["result"],
-            }
-            for pred in preds
-        ]
-
     return [
         {
             "task": int(
-                filename_id_mapping[
-                    urlparse(pred["filename"]).netloc
-                    + urlparse(pred["filename"]).path
-                ]
+                filename_id_mapping["/".join(pred["filename"].split("/")[1:])]
             ),
             "result": pred["result"],
         }

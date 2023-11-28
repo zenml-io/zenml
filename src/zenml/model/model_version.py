@@ -30,6 +30,7 @@ from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
+    from zenml import ExternalArtifact
     from zenml.models import (
         ArtifactResponse,
         ModelResponseModel,
@@ -59,15 +60,15 @@ class ModelVersion(BaseModel):
     """
 
     name: str
-    license: Optional[str]
-    description: Optional[str]
-    audience: Optional[str]
-    use_cases: Optional[str]
-    limitations: Optional[str]
-    trade_offs: Optional[str]
-    ethics: Optional[str]
-    tags: Optional[List[str]]
-    version: Optional[Union[ModelStages, int, str]]
+    license: Optional[str] = None
+    description: Optional[str] = None
+    audience: Optional[str] = None
+    use_cases: Optional[str] = None
+    limitations: Optional[str] = None
+    trade_offs: Optional[str] = None
+    ethics: Optional[str] = None
+    tags: Optional[List[str]] = None
+    version: Optional[Union[ModelStages, int, str]] = None
     save_models_to_registry: bool = True
 
     suppress_class_validation_warnings: bool = False
@@ -152,79 +153,135 @@ class ModelVersion(BaseModel):
             )
         return None
 
+    def load_artifact(self, name: str, version: Optional[str] = None) -> Any:
+        """Load artifact from the Model Control Plane.
+
+        Args:
+            name: Name of the artifact to load.
+            version: Version of the artifact to load.
+
+        Returns:
+            The loaded artifact.
+
+        Raises:
+            ValueError: if the model version is not linked to any artifact with
+                the given name and version.
+        """
+        from zenml.artifacts.utils import load_artifact
+        from zenml.models import ArtifactResponse
+
+        artifact = self.get_artifact(name=name, version=version)
+
+        if not isinstance(artifact, ArtifactResponse):
+            raise ValueError(
+                f"Version {self.version} of model {self.name} does not have "
+                f"an artifact with name {name} and version {version}."
+            )
+
+        return load_artifact(artifact.id, str(artifact.version))
+
+    def _try_get_as_external_artifact(
+        self,
+        name: str,
+        version: Optional[str] = None,
+    ) -> Optional["ExternalArtifact"]:
+        from zenml import ExternalArtifact, get_pipeline_context
+
+        try:
+            get_pipeline_context()
+        except RuntimeError:
+            return None
+
+        ea = ExternalArtifact(name=name, version=version)
+        ea._set_model_version(self)
+        return ea
+
+    def get_artifact(
+        self,
+        name: str,
+        version: Optional[str] = None,
+    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
+        """Get the artifact linked to this model version.
+
+        Args:
+            name: The name of the artifact to retrieve.
+            version: The version of the artifact to retrieve (None for latest/non-versioned)
+
+        Returns:
+            Inside pipeline context: ExternalArtifact object as a lazy loader
+            Outside of pipeline context: Specific version of the artifact or None
+        """
+        if response := self._try_get_as_external_artifact(name, version):
+            return response
+        return self._get_or_create_model_version().get_artifact(
+            name=name,
+            version=version,
+        )
+
     def get_model_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
         """Get the model artifact linked to this model version.
 
         Args:
             name: The name of the model artifact to retrieve.
             version: The version of the model artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline-generated the model artifact.
-            step_name: The name of the step-generated the model artifact.
 
         Returns:
-            Specific version of the model artifact or None
+            Inside pipeline context: ExternalArtifact object as a lazy loader
+            Outside of pipeline context: Specific version of the model artifact or None
         """
+        if response := self._try_get_as_external_artifact(name, version):
+            return response
         return self._get_or_create_model_version().get_model_artifact(
             name=name,
             version=version,
-            pipeline_name=pipeline_name,
-            step_name=step_name,
         )
 
     def get_data_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
         """Get the data artifact linked to this model version.
 
         Args:
             name: The name of the data artifact to retrieve.
             version: The version of the data artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the data artifact.
-            step_name: The name of the step generated the data artifact.
 
         Returns:
-            Specific version of the data artifact or None
+            Inside pipeline context: ExternalArtifact object as a lazy loader
+            Outside of pipeline context: Specific version of the data artifact or None
         """
+        if response := self._try_get_as_external_artifact(name, version):
+            return response
         return self._get_or_create_model_version().get_data_artifact(
             name=name,
             version=version,
-            pipeline_name=pipeline_name,
-            step_name=step_name,
         )
 
     def get_endpoint_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        step_name: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
         """Get the endpoint artifact linked to this model version.
 
         Args:
             name: The name of the endpoint artifact to retrieve.
             version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
-            pipeline_name: The name of the pipeline generated the endpoint artifact.
-            step_name: The name of the step generated the endpoint artifact.
 
         Returns:
-            Specific version of the endpoint artifact or None
+            Inside pipeline context: ExternalArtifact object as a lazy loader
+            Outside of pipeline context: Specific version of the endpoint artifact or None
         """
+        if response := self._try_get_as_external_artifact(name, version):
+            return response
         return self._get_or_create_model_version().get_endpoint_artifact(
             name=name,
             version=version,
-            pipeline_name=pipeline_name,
-            step_name=step_name,
         )
 
     def get_pipeline_run(self, name: str) -> "PipelineRunResponse":
@@ -240,19 +297,14 @@ class ModelVersion(BaseModel):
 
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False
-    ) -> "ModelVersion":
+    ) -> None:
         """Sets this Model Version to a desired stage.
 
         Args:
             stage: the target stage for model version.
             force: whether to force archiving of current model version in target stage or raise.
-
-        Returns:
-            Updated Model Version object.
         """
-        return self._get_or_create_model_version().set_stage(
-            stage=stage, force=force
-        )
+        self._get_or_create_model_version().set_stage(stage=stage, force=force)
 
     #########################
     #   Internal methods    #
@@ -370,7 +422,7 @@ class ModelVersion(BaseModel):
         from zenml.client import Client
 
         zenml_client = Client()
-        mv = zenml_client._get_model_version(
+        mv = zenml_client.get_model_version(
             model_name_or_id=self.name,
             model_version_name_or_number_or_id=self.version,
         )

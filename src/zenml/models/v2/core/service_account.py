@@ -24,15 +24,11 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
-    from sqlmodel.sql.expression import Select, SelectOfScalar
-
     from zenml.models.v2.base.filter import AnySchema
-    from zenml.models.v2.core.role import RoleResponse
-    from zenml.models.v2.core.team import TeamResponse
     from zenml.models.v2.core.user import UserResponse
 
 
@@ -84,12 +80,6 @@ class ServiceAccountResponseBody(BaseResponseBody):
 class ServiceAccountResponseMetadata(BaseResponseMetadata):
     """Response metadata for service accounts."""
 
-    teams: Optional[List["TeamResponse"]] = Field(
-        default=None, title="The list of teams for this service account."
-    )
-    roles: Optional[List["RoleResponse"]] = Field(
-        default=None, title="The list of roles for this service account."
-    )
     description: str = Field(
         default="",
         title="A description of the service account.",
@@ -148,8 +138,6 @@ class ServiceAccountResponse(
                 email_opted_in=False,
             ),
             metadata=UserResponseMetadata(
-                teams=self.teams,
-                roles=self.roles,
                 description=self.description,
             ),
         )
@@ -163,24 +151,6 @@ class ServiceAccountResponse(
             the value of the property.
         """
         return self.get_body().active
-
-    @property
-    def teams(self) -> Optional[List["TeamResponse"]]:
-        """The `teams` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().teams
-
-    @property
-    def roles(self) -> Optional[List["RoleResponse"]]:
-        """The `roles` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().roles
 
     @property
     def description(self) -> str:
@@ -211,9 +181,9 @@ class ServiceAccountFilter(BaseFilter):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Override to filter out user accounts from the query.
 
         Args:

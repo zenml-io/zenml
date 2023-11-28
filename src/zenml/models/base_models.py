@@ -13,7 +13,14 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field, SecretStr
@@ -74,6 +81,8 @@ class BaseResponseModel(BaseZenModel):
     updated: datetime = Field(
         title="Time when this resource was last updated."
     )
+
+    missing_permissions: bool = False
 
     def __hash__(self) -> int:
         """Implementation of hash magic method.
@@ -151,31 +160,6 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
         return metadata
 
 
-class ShareableResponseModel(WorkspaceScopedResponseModel):
-    """Base shareable workspace-scoped domain model.
-
-    Used as a base class for all domain models that are workspace-scoped and are
-    shareable.
-    """
-
-    is_shared: bool = Field(
-        title=(
-            "Flag describing if this resource is shared with other users in "
-            "the same workspace."
-        ),
-    )
-
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for workspace scoped models.
-
-        Returns:
-            The analytics metadata.
-        """
-        metadata = super().get_analytics_metadata()
-        metadata["is_shared"] = self.is_shared
-        return metadata
-
-
 # -------------- #
 # REQUEST MODELS #
 # -------------- #
@@ -225,32 +209,6 @@ class WorkspaceScopedRequestModel(UserScopedRequestModel):
         """
         metadata = super().get_analytics_metadata()
         metadata["workspace_id"] = self.workspace
-        return metadata
-
-
-class ShareableRequestModel(WorkspaceScopedRequestModel):
-    """Base shareable workspace-scoped domain model.
-
-    Used as a base class for all domain models that are workspace-scoped and are
-    shareable.
-    """
-
-    is_shared: bool = Field(
-        default=False,
-        title=(
-            "Flag describing if this resource is shared with other users in "
-            "the same workspace."
-        ),
-    )
-
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for workspace scoped models.
-
-        Returns:
-            The analytics metadata.
-        """
-        metadata = super().get_analytics_metadata()
-        metadata["is_shared"] = self.is_shared
         return metadata
 
 

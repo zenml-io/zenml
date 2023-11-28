@@ -49,7 +49,8 @@ class SparkModelMaterializer(BaseMaterializer):
         return model_type.load(path)  # type: ignore[no-any-return]
 
     def save(
-        self, model: Union[Transformer, Estimator, Model]  # type: ignore[type-arg]
+        self,
+        model: Union[Transformer, Estimator, Model],  # type: ignore[type-arg]
     ) -> None:
         """Writes a spark model.
 
