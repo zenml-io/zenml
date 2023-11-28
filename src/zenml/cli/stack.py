@@ -1391,8 +1391,8 @@ def _get_deployment_params_interactively(
             "kubeflow",
             "tekton",
             "sagemaker",
-            "vertex",
             "skypilot",
+            "vertex",
         ]
     ),
     help="The flavor of orchestrator to use. "
