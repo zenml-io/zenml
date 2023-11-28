@@ -36,12 +36,9 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    TEAM_ROLE_ASSIGNMENTS,
-    USER_ROLE_ASSIGNMENTS,
     VERSION_1,
     WORKSPACES,
 )
-from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     CodeRepositoryFilter,
@@ -84,10 +81,6 @@ from zenml.models import (
     StackFilter,
     StackRequest,
     StackResponse,
-    TeamRoleAssignmentFilter,
-    TeamRoleAssignmentResponse,
-    UserRoleAssignmentFilter,
-    UserRoleAssignmentResponse,
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
@@ -95,6 +88,20 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    get_allowed_resource_ids,
+    verify_permission,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -119,7 +126,7 @@ def list_workspaces(
         make_dependable(WorkspaceFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[WorkspaceResponse]:
     """Lists all workspaces in the organization.
 
@@ -132,20 +139,22 @@ def list_workspaces(
     Returns:
         A list of workspaces.
     """
-    return zen_store().list_workspaces(
-        workspace_filter_model=workspace_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=workspace_filter_model,
+        resource_type=ResourceType.WORKSPACE,
+        list_method=zen_store().list_workspaces,
+        hydrate=hydrate,
     )
 
 
 @router.post(
     WORKSPACES,
-    response_model=WorkspaceResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_workspace(
     workspace: WorkspaceRequest,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> WorkspaceResponse:
     """Creates a workspace based on the requestBody.
 
@@ -157,7 +166,11 @@ def create_workspace(
     Returns:
         The created workspace.
     """
-    return zen_store().create_workspace(workspace=workspace)
+    return verify_permissions_and_create_entity(
+        request_model=workspace,
+        resource_type=ResourceType.WORKSPACE,
+        create_method=zen_store().create_workspace,
+    )
 
 
 @router.get(
@@ -169,7 +182,7 @@ def create_workspace(
 def get_workspace(
     workspace_name_or_id: Union[str, UUID],
     hydrate: bool = True,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> WorkspaceResponse:
     """Get a workspace for given name.
 
@@ -183,21 +196,22 @@ def get_workspace(
     Returns:
         The requested workspace.
     """
-    return zen_store().get_workspace(
-        workspace_name_or_id=workspace_name_or_id, hydrate=hydrate
+    return verify_permissions_and_get_entity(
+        id=workspace_name_or_id,
+        get_method=zen_store().get_workspace,
+        hydrate=hydrate,
     )
 
 
 @router.put(
     WORKSPACES + "/{workspace_name_or_id}",
-    response_model=WorkspaceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_workspace(
     workspace_name_or_id: UUID,
     workspace_update: WorkspaceUpdate,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> WorkspaceResponse:
     """Get a workspace for given name.
 
@@ -210,9 +224,11 @@ def update_workspace(
     Returns:
         The updated workspace.
     """
-    return zen_store().update_workspace(
-        workspace_id=workspace_name_or_id,
-        workspace_update=workspace_update,
+    return verify_permissions_and_update_entity(
+        id=workspace_name_or_id,
+        update_model=workspace_update,
+        get_method=zen_store().get_workspace,
+        update_method=zen_store().update_workspace,
     )
 
 
@@ -223,81 +239,17 @@ def update_workspace(
 @handle_exceptions
 def delete_workspace(
     workspace_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a workspace.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
     """
-    zen_store().delete_workspace(workspace_name_or_id=workspace_name_or_id)
-
-
-@router.get(
-    WORKSPACES + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
-    response_model=Page[UserRoleAssignmentResponse],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_user_role_assignments_for_workspace(
-    workspace_name_or_id: Union[str, UUID],
-    user_role_assignment_filter_model: UserRoleAssignmentFilter = Depends(
-        make_dependable(UserRoleAssignmentFilter)
-    ),
-    hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserRoleAssignmentResponse]:
-    """Returns a list of all roles that are assigned to a team.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        user_role_assignment_filter_model: Filter model used for pagination,
-            sorting, filtering.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-
-    Returns:
-        A list of all roles that are assigned to a team.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-    user_role_assignment_filter_model.workspace_id = workspace.id
-    return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model,
-        hydrate=hydrate,
-    )
-
-
-@router.get(
-    WORKSPACES + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
-    response_model=Page[TeamRoleAssignmentResponse],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_team_role_assignments_for_workspace(
-    workspace_name_or_id: Union[str, UUID],
-    team_role_assignment_filter_model: TeamRoleAssignmentFilter = Depends(
-        make_dependable(TeamRoleAssignmentFilter)
-    ),
-    hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[TeamRoleAssignmentResponse]:
-    """Returns a list of all roles that are assigned to a team.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        team_role_assignment_filter_model: Filter model used for pagination,
-            sorting, filtering.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-
-    Returns:
-        A list of all roles that are assigned to a team.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-    team_role_assignment_filter_model.workspace_id = workspace.id
-    return zen_store().list_team_role_assignments(
-        team_role_assignment_filter_model=team_role_assignment_filter_model,
-        hydrate=hydrate,
+    verify_permissions_and_delete_entity(
+        id=workspace_name_or_id,
+        get_method=zen_store().get_workspace,
+        delete_method=zen_store().delete_workspace,
     )
 
 
@@ -311,9 +263,7 @@ def list_workspace_stacks(
     workspace_name_or_id: Union[str, UUID],
     stack_filter_model: StackFilter = Depends(make_dependable(StackFilter)),
     hydrate: bool = False,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> Page[StackResponse]:
     """Get stacks that are part of a specific workspace for the user.
 
@@ -325,16 +275,18 @@ def list_workspace_stacks(
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
-        auth_context: Authentication Context.
 
     Returns:
         All stacks part of the specified workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     stack_filter_model.set_scope_workspace(workspace.id)
-    stack_filter_model.set_scope_user(user_id=auth_context.user.id)
-    return zen_store().list_stacks(
-        stack_filter_model=stack_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=stack_filter_model,
+        resource_type=ResourceType.STACK,
+        list_method=zen_store().list_stacks,
+        hydrate=hydrate,
     )
 
 
@@ -347,23 +299,20 @@ def list_workspace_stacks(
 def create_stack(
     workspace_name_or_id: Union[str, UUID],
     stack: StackRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> StackResponse:
     """Creates a stack for a particular workspace.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         stack: Stack to register.
-        auth_context: The authentication context.
 
     Returns:
         The created stack.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the stack
-            does not match the current workspace or authenticated user.
+        IllegalOperationError: If the workspace specified in the stack
+            does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -373,13 +322,21 @@ def create_stack(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if stack.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating stacks for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_stack(stack=stack)
+    if stack.components:
+        components = [
+            zen_store().get_stack_component(id)
+            for ids in stack.components.values()
+            for id in ids
+        ]
+
+        batch_verify_permissions_for_models(components, action=Action.READ)
+
+    return verify_permissions_and_create_entity(
+        request_model=stack,
+        resource_type=ResourceType.STACK,
+        create_method=zen_store().create_stack,
+    )
 
 
 @router.get(
@@ -394,9 +351,7 @@ def list_workspace_stack_components(
         make_dependable(ComponentFilter)
     ),
     hydrate: bool = False,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> Page[ComponentResponse]:
     """List stack components that are part of a specific workspace.
 
@@ -408,16 +363,18 @@ def list_workspace_stack_components(
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
-        auth_context: Authentication Context.
 
     Returns:
         All stack components part of the specified workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     component_filter_model.set_scope_workspace(workspace.id)
-    component_filter_model.set_scope_user(user_id=auth_context.user.id)
-    return zen_store().list_stack_components(
-        component_filter_model=component_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=component_filter_model,
+        resource_type=ResourceType.STACK_COMPONENT,
+        list_method=zen_store().list_stack_components,
+        hydrate=hydrate,
     )
 
 
@@ -430,24 +387,20 @@ def list_workspace_stack_components(
 def create_stack_component(
     workspace_name_or_id: Union[str, UUID],
     component: ComponentRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> ComponentResponse:
     """Creates a stack component.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         component: Stack component to register.
-        auth_context: Authentication context.
 
     Returns:
         The created stack component.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the stack
-            component does not match the current workspace or authenticated
-            user.
+        IllegalOperationError: If the workspace specified in the stack
+            component does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -457,11 +410,12 @@ def create_stack_component(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if component.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating components for a user other than yourself "
-            "is not supported."
+
+    if component.connector:
+        service_connector = zen_store().get_service_connector(
+            component.connector
         )
+        verify_permission_for_model(service_connector, action=Action.READ)
 
     from zenml.stack.utils import validate_stack_component_config
 
@@ -474,7 +428,11 @@ def create_stack_component(
         validate_custom_flavors=False,
     )
 
-    return zen_store().create_stack_component(component=component)
+    return verify_permissions_and_create_entity(
+        request_model=component,
+        resource_type=ResourceType.STACK_COMPONENT,
+        create_method=zen_store().create_stack_component,
+    )
 
 
 @router.get(
@@ -489,7 +447,7 @@ def list_workspace_pipelines(
         make_dependable(PipelineFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineResponse]:
     """Gets pipelines defined for a specific workspace.
 
@@ -507,8 +465,12 @@ def list_workspace_pipelines(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     pipeline_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_pipelines(
-        pipeline_filter_model=pipeline_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=pipeline_filter_model,
+        resource_type=ResourceType.PIPELINE,
+        list_method=zen_store().list_pipelines,
+        hydrate=hydrate,
     )
 
 
@@ -521,16 +483,13 @@ def list_workspace_pipelines(
 def create_pipeline(
     workspace_name_or_id: Union[str, UUID],
     pipeline: PipelineRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> PipelineResponse:
     """Creates a pipeline.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         pipeline: Pipeline to create.
-        auth_context: Authentication context.
 
     Returns:
         The created pipeline.
@@ -547,13 +506,12 @@ def create_pipeline(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if pipeline.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating pipelines for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_pipeline(pipeline=pipeline)
+    return verify_permissions_and_create_entity(
+        request_model=pipeline,
+        resource_type=ResourceType.PIPELINE,
+        create_method=zen_store().create_pipeline,
+    )
 
 
 @router.get(
@@ -568,7 +526,7 @@ def list_workspace_builds(
         make_dependable(PipelineBuildFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineBuildResponse]:
     """Gets builds defined for a specific workspace.
 
@@ -586,8 +544,12 @@ def list_workspace_builds(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     build_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_builds(
-        build_filter_model=build_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=build_filter_model,
+        resource_type=ResourceType.PIPELINE_BUILD,
+        list_method=zen_store().list_builds,
+        hydrate=hydrate,
     )
 
 
@@ -600,9 +562,7 @@ def list_workspace_builds(
 def create_build(
     workspace_name_or_id: Union[str, UUID],
     build: PipelineBuildRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> PipelineBuildResponse:
     """Creates a build.
 
@@ -615,8 +575,8 @@ def create_build(
         The created build.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the build
-            does not match the current workspace or authenticated user.
+        IllegalOperationError: If the workspace specified in the build
+            does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -626,13 +586,12 @@ def create_build(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if build.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating builds for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_build(build=build)
+    return verify_permissions_and_create_entity(
+        request_model=build,
+        resource_type=ResourceType.PIPELINE_BUILD,
+        create_method=zen_store().create_build,
+    )
 
 
 @router.get(
@@ -647,7 +606,7 @@ def list_workspace_deployments(
         make_dependable(PipelineDeploymentFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineDeploymentResponse]:
     """Gets deployments defined for a specific workspace.
 
@@ -665,8 +624,12 @@ def list_workspace_deployments(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     deployment_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_deployments(
-        deployment_filter_model=deployment_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=deployment_filter_model,
+        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+        list_method=zen_store().list_deployments,
+        hydrate=hydrate,
     )
 
 
@@ -679,9 +642,7 @@ def list_workspace_deployments(
 def create_deployment(
     workspace_name_or_id: Union[str, UUID],
     deployment: PipelineDeploymentRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> PipelineDeploymentResponse:
     """Creates a deployment.
 
@@ -694,9 +655,8 @@ def create_deployment(
         The created deployment.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            deployment does not match the current workspace or authenticated
-            user.
+        IllegalOperationError: If the workspace specified in the
+            deployment does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -706,13 +666,12 @@ def create_deployment(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if deployment.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating deployments for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_deployment(deployment=deployment)
+    return verify_permissions_and_create_entity(
+        request_model=deployment,
+        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+        create_method=zen_store().create_deployment,
+    )
 
 
 @router.get(
@@ -727,7 +686,7 @@ def list_runs(
         make_dependable(PipelineRunFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[PipelineRunResponse]:
     """Get pipeline runs according to query filters.
 
@@ -743,8 +702,12 @@ def list_runs(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     runs_filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_runs(
-        runs_filter_model=runs_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=runs_filter_model,
+        resource_type=ResourceType.PIPELINE_RUN,
+        list_method=zen_store().list_runs,
+        hydrate=hydrate,
     )
 
 
@@ -757,9 +720,7 @@ def list_runs(
 def create_schedule(
     workspace_name_or_id: Union[str, UUID],
     schedule: ScheduleRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> ScheduleResponse:
     """Creates a schedule.
 
@@ -800,27 +761,20 @@ def create_schedule(
 def create_pipeline_run(
     workspace_name_or_id: Union[str, UUID],
     pipeline_run: PipelineRunRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
-    get_if_exists: bool = False,
+    _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Creates a pipeline run.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         pipeline_run: Pipeline run to create.
-        auth_context: Authentication context.
-        get_if_exists: If a similar pipeline run already exists, return it
-            instead of raising an error.
 
     Returns:
         The created pipeline run.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            pipeline run does not match the current workspace or authenticated
-            user.
+        IllegalOperationError: If the workspace specified in the
+            pipeline run does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -830,15 +784,12 @@ def create_pipeline_run(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if pipeline_run.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating pipeline runs for a user other than yourself "
-            "is not supported."
-        )
 
-    if get_if_exists:
-        return zen_store().get_or_create_run(pipeline_run=pipeline_run)[0]
-    return zen_store().create_run(pipeline_run=pipeline_run)
+    return verify_permissions_and_create_entity(
+        request_model=pipeline_run,
+        resource_type=ResourceType.PIPELINE_RUN,
+        create_method=zen_store().create_run,
+    )
 
 
 @router.post(
@@ -850,9 +801,7 @@ def create_pipeline_run(
 def get_or_create_pipeline_run(
     workspace_name_or_id: Union[str, UUID],
     pipeline_run: PipelineRunRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> Tuple[PipelineRunResponse, bool]:
     """Get or create a pipeline run.
 
@@ -882,6 +831,10 @@ def get_or_create_pipeline_run(
             "Creating pipeline runs for a user other than yourself "
             "is not supported."
         )
+
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
+    )
     return zen_store().get_or_create_run(pipeline_run=pipeline_run)
 
 
@@ -894,9 +847,7 @@ def get_or_create_pipeline_run(
 def create_run_metadata(
     workspace_name_or_id: Union[str, UUID],
     run_metadata: RunMetadataRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> List[RunMetadataResponse]:
     """Creates run metadata.
 
@@ -927,7 +878,23 @@ def create_run_metadata(
             "is not supported."
         )
 
-    return zen_store().create_run_metadata(run_metadata=run_metadata)
+    if run_metadata.pipeline_run_id:
+        run = zen_store().get_run(run_metadata.pipeline_run_id)
+        verify_permission_for_model(run, action=Action.UPDATE)
+
+    if run_metadata.step_run_id:
+        step_run = zen_store().get_run_step(run_metadata.step_run_id)
+        verify_permission_for_model(step_run, action=Action.UPDATE)
+
+    if run_metadata.artifact_id:
+        artifact = zen_store().get_artifact(run_metadata.artifact_id)
+        verify_permission_for_model(artifact, action=Action.UPDATE)
+
+    verify_permission(
+        resource_type=ResourceType.RUN_METADATA, action=Action.CREATE
+    )
+
+    return zen_store().create_run_metadata(run_metadata)
 
 
 @router.post(
@@ -939,23 +906,20 @@ def create_run_metadata(
 def create_secret(
     workspace_name_or_id: Union[str, UUID],
     secret: SecretRequestModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> SecretResponseModel:
     """Creates a secret.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         secret: Secret to create.
-        auth_context: Authentication context.
 
     Returns:
         The created secret.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            secret does not match the current workspace or authenticated user.
+        IllegalOperationError: If the workspace specified in the
+            secret does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -965,12 +929,12 @@ def create_secret(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if secret.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating secrets for a user other than yourself "
-            "is not supported."
-        )
-    return zen_store().create_secret(secret=secret)
+
+    return verify_permissions_and_create_entity(
+        request_model=secret,
+        resource_type=ResourceType.SECRET,
+        create_method=zen_store().create_secret,
+    )
 
 
 @router.get(
@@ -985,7 +949,7 @@ def list_workspace_code_repositories(
         make_dependable(CodeRepositoryFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[CodeRepositoryResponse]:
     """Gets code repositories defined for a specific workspace.
 
@@ -1003,8 +967,12 @@ def list_workspace_code_repositories(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     filter_model.set_scope_workspace(workspace.id)
-    return zen_store().list_code_repositories(
-        filter_model=filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=filter_model,
+        resource_type=ResourceType.CODE_REPOSITORY,
+        list_method=zen_store().list_code_repositories,
+        hydrate=hydrate,
     )
 
 
@@ -1017,16 +985,13 @@ def list_workspace_code_repositories(
 def create_code_repository(
     workspace_name_or_id: Union[str, UUID],
     code_repository: CodeRepositoryRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> CodeRepositoryResponse:
     """Creates a code repository.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         code_repository: Code repository to create.
-        auth_context: Authentication context.
 
     Returns:
         The created code repository.
@@ -1044,13 +1009,12 @@ def create_code_repository(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if code_repository.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating code repositories for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_code_repository(code_repository=code_repository)
+    return verify_permissions_and_create_entity(
+        request_model=code_repository,
+        resource_type=ResourceType.CODE_REPOSITORY,
+        create_method=zen_store().create_code_repository,
+    )
 
 
 @router.get(
@@ -1061,7 +1025,7 @@ def create_code_repository(
 @handle_exceptions
 def get_workspace_statistics(
     workspace_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(authorize),
 ) -> Dict[str, int]:
     """Gets statistics of a workspace.
 
@@ -1069,19 +1033,47 @@ def get_workspace_statistics(
 
     Args:
         workspace_name_or_id: Name or ID of the workspace to get statistics for.
+        auth_context: Authentication context.
 
     Returns:
         All pipelines within the workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    return {
-        "stacks": zen_store().count_stacks(workspace_id=workspace.id),
-        "components": zen_store().count_stack_components(
-            workspace_id=workspace.id
+    user_id = auth_context.user.id
+    component_filter = ComponentFilter(workspace_id=workspace.id)
+    component_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(
+            resource_type=ResourceType.STACK_COMPONENT
         ),
-        "pipelines": zen_store().count_pipelines(workspace_id=workspace.id),
-        "runs": zen_store().count_runs(workspace_id=workspace.id),
+    )
+
+    stack_filter = StackFilter(workspace_id=workspace.id)
+    stack_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.STACK),
+    )
+
+    run_filter = PipelineRunFilter(workspace_id=workspace.id)
+    run_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE_RUN),
+    )
+
+    pipeline_filter = PipelineFilter(workspace_id=workspace.id)
+    pipeline_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE),
+    )
+
+    return {
+        "stacks": zen_store().count_stacks(filter_model=stack_filter),
+        "components": zen_store().count_stack_components(
+            filter_model=component_filter
+        ),
+        "pipelines": zen_store().count_pipelines(filter_model=pipeline_filter),
+        "runs": zen_store().count_runs(filter_model=run_filter),
     }
 
 
@@ -1097,9 +1089,7 @@ def list_workspace_service_connectors(
         make_dependable(ServiceConnectorFilter)
     ),
     hydrate: bool = False,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> Page[ServiceConnectorResponse]:
     """List service connectors that are part of a specific workspace.
 
@@ -1111,16 +1101,18 @@ def list_workspace_service_connectors(
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
-        auth_context: Authentication Context
 
     Returns:
         All service connectors part of the specified workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
     connector_filter_model.set_scope_workspace(workspace.id)
-    connector_filter_model.set_scope_user(user_id=auth_context.user.id)
-    return zen_store().list_service_connectors(
-        filter_model=connector_filter_model, hydrate=hydrate
+
+    return verify_permissions_and_list_entities(
+        filter_model=connector_filter_model,
+        resource_type=ResourceType.SERVICE_CONNECTOR,
+        list_method=zen_store().list_service_connectors,
+        hydrate=hydrate,
     )
 
 
@@ -1133,16 +1125,13 @@ def list_workspace_service_connectors(
 def create_service_connector(
     workspace_name_or_id: Union[str, UUID],
     connector: ServiceConnectorRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> ServiceConnectorResponse:
     """Creates a service connector.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         connector: Service connector to register.
-        auth_context: Authentication context.
 
     Returns:
         The created service connector.
@@ -1160,13 +1149,12 @@ def create_service_connector(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if connector.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating connectors for a user other than yourself "
-            "is not supported."
-        )
 
-    return zen_store().create_service_connector(service_connector=connector)
+    return verify_permissions_and_create_entity(
+        request_model=connector,
+        resource_type=ResourceType.SERVICE_CONNECTOR,
+        create_method=zen_store().create_service_connector,
+    )
 
 
 @router.get(
@@ -1183,9 +1171,7 @@ def list_service_connector_resources(
     connector_type: Optional[str] = None,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> List[ServiceConnectorResourcesModel]:
     """List resources that can be accessed by service connectors.
 
@@ -1200,12 +1186,27 @@ def list_service_connector_resources(
         The matching list of resources that available service
         connectors have access to.
     """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    filter_model = ServiceConnectorFilter(
+        connector_type=connector_type,
+        resource_type=resource_type,
+    )
+    filter_model.set_scope_workspace(workspace.id)
+
+    allowed_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.SERVICE_CONNECTOR
+    )
+    filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id, id=allowed_ids
+    )
+
     return zen_store().list_service_connector_resources(
-        user_name_or_id=auth_context.user.id,
         workspace_name_or_id=workspace_name_or_id,
         connector_type=connector_type,
         resource_type=resource_type,
         resource_id=resource_id,
+        filter_model=filter_model,
     )
 
 
@@ -1218,16 +1219,13 @@ def list_service_connector_resources(
 def create_model(
     workspace_name_or_id: Union[str, UUID],
     model: ModelRequestModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> ModelResponseModel:
     """Create a new model.
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         model: The model to create.
-        auth_context: Authentication context.
 
     Returns:
         The created model.
@@ -1245,12 +1243,12 @@ def create_model(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if model.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating models for a user other than yourself "
-            "is not supported."
-        )
-    return zen_store().create_model(model)
+
+    return verify_permissions_and_create_entity(
+        request_model=model,
+        resource_type=ResourceType.MODEL,
+        create_method=zen_store().create_model,
+    )
 
 
 @router.post(
@@ -1267,9 +1265,7 @@ def create_model_version(
     workspace_name_or_id: Union[str, UUID],
     model_name_or_id: Union[str, UUID],
     model_version: ModelVersionRequestModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> ModelVersionResponseModel:
     """Create a new model version.
 
@@ -1283,9 +1279,8 @@ def create_model_version(
         The created model version.
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            model version does not match the current workspace or authenticated
-            user.
+        IllegalOperationError: If the workspace specified in the
+            model version does not match the current workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -1295,13 +1290,12 @@ def create_model_version(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    if model_version.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating models for a user other than yourself "
-            "is not supported."
-        )
-    mv = zen_store().create_model_version(model_version)
-    return mv
+
+    return verify_permissions_and_create_entity(
+        request_model=model_version,
+        resource_type=ResourceType.MODEL_VERSION,
+        create_method=zen_store().create_model_version,
+    )
 
 
 @router.post(
@@ -1318,9 +1312,7 @@ def create_model_version_artifact_link(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
     model_version_artifact_link: ModelVersionArtifactRequestModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> ModelVersionArtifactResponseModel:
     """Create a new model version to artifact link.
 
@@ -1357,6 +1349,10 @@ def create_model_version_artifact_link(
             "Creating model to artifact links for a user other than yourself "
             "is not supported."
         )
+
+    model_version = zen_store().get_model_version(model_version_id)
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
     mv = zen_store().create_model_version_artifact_link(
         model_version_artifact_link
     )
@@ -1377,9 +1373,7 @@ def create_model_version_pipeline_run_link(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
     model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> ModelVersionPipelineRunResponseModel:
     """Create a new model version to pipeline run link.
 
@@ -1419,6 +1413,10 @@ def create_model_version_pipeline_run_link(
             "Creating models for a user other than yourself "
             "is not supported."
         )
+
+    model_version = zen_store().get_model_version(model_version_id)
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
     mv = zen_store().create_model_version_pipeline_run_link(
         model_version_pipeline_run_link
     )

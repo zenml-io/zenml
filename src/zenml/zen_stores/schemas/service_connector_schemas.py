@@ -29,7 +29,7 @@ from zenml.models import (
     ServiceConnectorResponseMetadata,
     ServiceConnectorUpdate,
 )
-from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 
 
-class ServiceConnectorSchema(ShareableSchema, table=True):
+class ServiceConnectorSchema(NamedSchema, table=True):
     """SQL Model for service connectors."""
 
     __tablename__ = "service_connector"
@@ -146,7 +146,6 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         return cls(
             workspace_id=connector_request.workspace,
             user_id=connector_request.user,
-            is_shared=connector_request.is_shared,
             name=connector_request.name,
             description=connector_request.description,
             connector_type=connector_request.type,
@@ -241,7 +240,6 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         """
         body = ServiceConnectorResponseBody(
             user=self.user.to_model() if self.user else None,
-            is_shared=self.is_shared,
             created=self.created,
             updated=self.updated,
             description=self.description,

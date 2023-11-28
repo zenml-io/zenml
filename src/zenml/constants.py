@@ -138,6 +138,11 @@ CONFIG_FILE_NAME = "config.yaml"
 # Default store directory subpath:
 DEFAULT_STORE_DIRECTORY_NAME = "default_zen_store"
 
+DEFAULT_USERNAME = "default"
+DEFAULT_PASSWORD = ""
+DEFAULT_WORKSPACE_NAME = "default"
+DEFAULT_STACK_AND_COMPONENT_NAME = "default"
+
 # Secrets Manager
 ZENML_SCHEMA_NAME = "zenml_schema_name"
 LOCAL_SECRETS_FILENAME = "secrets.yaml"
@@ -181,12 +186,8 @@ STACK_COMPONENTS = "/components"
 STATISTICS = "/statistics"
 USERS = "/users"
 CURRENT_USER = "/current-user"
-TEAMS = "/teams"
 WORKSPACES = "/workspaces"
-ROLES = "/roles"
 FLAVORS = "/flavors"
-USER_ROLE_ASSIGNMENTS = "/role_assignments"
-TEAM_ROLE_ASSIGNMENTS = "/team_role_assignments"
 LOGIN = "/login"
 LOGOUT = "/logout"
 PIPELINES = "/pipelines"
@@ -239,7 +240,8 @@ MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 # orchestrator constants
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
 PIPELINE_API_TOKEN_EXPIRES_MINUTES = handle_int_env_var(
-    ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES, default=60 * 24  # 24 hours
+    ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES,
+    default=60 * 24,  # 24 hours
 )
 
 # Secret constants

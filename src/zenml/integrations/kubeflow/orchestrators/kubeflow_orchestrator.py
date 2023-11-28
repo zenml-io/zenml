@@ -399,7 +399,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 pass
             else:
                 # Run KFP containers in the context of the local UID/GID
-                # to ensure that the artifact and metadata stores can be shared
+                # to ensure that the local stores can be shared
                 # with the local pipeline runs.
                 container_op.container.security_context = (
                     k8s_client.V1SecurityContext(
