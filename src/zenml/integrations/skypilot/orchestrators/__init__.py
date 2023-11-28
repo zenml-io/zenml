@@ -25,10 +25,15 @@ from zenml.integrations.skypilot.orchestrators.skypilot_gcp_vm_orchestrator impo
 from zenml.integrations.skypilot.orchestrators.skypilot_azure_vm_orchestrator import (  # noqa
     SkypilotAzureOrchestrator,
 )
+from zenml.integrations.skypilot.orchestrators.skypilot_orchestrator_entrypoint_configuration import (  # noqa  
+    SkypilotOrchestratorEntrypointConfiguration,
+)
+
 
 __all__ = [
     "SkypilotBaseOrchestrator",
     "SkypilotAWSOrchestrator",
     "SkypilotGCPOrchestrator",
     "SkypilotAzureOrchestrator",
+    "SkypilotOrchestratorEntrypointConfiguration",
 ]
