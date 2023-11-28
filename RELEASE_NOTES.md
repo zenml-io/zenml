@@ -2,9 +2,8 @@
 # 0.50.0
 
 In this release, we introduce key updates aimed at improving user experience and security.
-The `ModelConfig` object has been renamed to `ModelVersion` for a more intuitive interface,
-while Role-Based Access Control (RBAC) is now in place to secure server endpoints. Additionally,
-the release features enhancements such as optimized model hydration for better performance,
+The `ModelConfig` object has been renamed to `ModelVersion` for a more intuitive interface.
+Additionally, the release features enhancements such as optimized model hydration for better performance,
 alongside a range of bug fixes and contributions from both new and returning community members.
 
 ## Breaking Change
