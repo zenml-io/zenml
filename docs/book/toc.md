@@ -8,14 +8,14 @@
 
 ## User Guide
 
-* [🐣 Starter guide](user-guide/starter-guide/starter-guide.md)
+* [🐣Starter guide](user-guide/starter-guide/starter-guide.md)
   * [Create an ML pipeline](user-guide/starter-guide/create-an-ml-pipeline.md)
   * [Cache previous executions](user-guide/starter-guide/cache-previous-executions.md)
   * [Manage artifacts](user-guide/starter-guide/manage-artifacts.md)
   * [Track ML models](user-guide/starter-guide/track-ml-models.md)
   * [Fetch runs after execution](user-guide/starter-guide/fetch-runs-after-execution.md)
   * [A starter project](user-guide/starter-guide/starter-project.md)
-* [🐔 Production guide](user-guide/production-guide/production-guide.md)
+* [🐔Production guide](user-guide/production-guide/production-guide.md)
   * [Connect to a deployed ZenML](user-guide/production-guide/connect-deployed-zenml.md)
   * [Understand stacks](user-guide/production-guide/understand-stacks.md)
   * [Deploy a cloud stack](user-guide/production-guide/cloud-stack.md)
@@ -23,7 +23,7 @@
   * [Scale to the cloud](user-guide/production-guide/scale-to-cloud.md)
   * [Configure your pipeline](user-guide/production-guide/configure-pipeline.md)
   * [An end-to-end example](user-guide/production-guide/end-to-end.md)
-* [🍗 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
+* [🍗Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
     * [Version pipelines](user-guide/advanced-guide/pipelining-features/version-pipelines.md)
     * [Configure steps/pipelines](user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md)
