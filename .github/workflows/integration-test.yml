@@ -144,6 +144,7 @@ jobs:
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
+          build-mount-path: /var/lib/docker/tmp
         if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
       - name: Reload Docker
