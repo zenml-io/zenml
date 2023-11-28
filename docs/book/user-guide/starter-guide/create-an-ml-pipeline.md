@@ -43,7 +43,8 @@ def simple_ml_pipeline():
     train_model(dataset)
 
 if __name__ == "__main__":
-    simple_ml_pipeline()
+    run = simple_ml_pipeline()
+    # You can now use the `run` object to see steps, outputs, etc.
 ```
 
 {% hint style="info" %}

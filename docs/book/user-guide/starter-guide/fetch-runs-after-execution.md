@@ -24,7 +24,7 @@ Let us investigate how to traverse this hierarchy level-by-level:
 
 ## Pipelines
 
-### Access Pipeline From Class 
+### Access Pipeline From Class
 
 After you have run a pipeline at least once, you can access all the information
 associated with this pipeline through the corresponding
