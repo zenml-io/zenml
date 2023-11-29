@@ -215,7 +215,11 @@ client.get_artifact("iris_predictions").load()
 ```
 {% endhint %}
 
-### Consuming External Artifacts within a Pipeline
+## Passing artifacts to a downstream pipeline
+
+You don't always want to start your pipeline with a step that produces an artifact. Often times, you want to consume artifacts in other ways.
+
+### Consuming external artifacts within a pipeline
 
 Using the `load_artifact` method is a good way to load (materialize) an object into memory. However, what if you do not want to load the artifact, but just pass it into a pipeline step? This can be achieved with a concept called "External Artifacts".
 
@@ -244,7 +248,7 @@ if __name__ == "__main__":
 
 Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
 
-### Consuming artifacts directly into a pipeline
+### Consuming artifacts produced by other pipelines
 
 `ExternalArtifact` can also be used to consume any version of a ZenML artifact into a downstream pipeline:
 
