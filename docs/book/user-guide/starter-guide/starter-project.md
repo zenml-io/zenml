@@ -17,7 +17,7 @@ We will now put this into action with a simple starter project.
 Start with a fresh virtual environment with no dependencies. Then let's install our dependencies:
 
 ```bash
-pip install zenml[templates,server] notebook
+pip install "zenml[templates,server]" notebook
 zenml integration install sklearn -y
 ```
 
