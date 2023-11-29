@@ -10,7 +10,7 @@ Whenever you run a ZenML pipeline, all output data of your steps are automatical
 
 ![Walkthrough of ZenML Data Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/dcp_walkthrough.gif)
 
-## Artifacts produced by ZenML pipelines
+## Managing artifacts produced by ZenML pipelines
 
 A majority of artifacts tracked by the ZenML framework will inevitably be produced by ZenML pipelines. It is quite common to want to be able to configure these artifacts as you develop your pipelines:
 
@@ -174,7 +174,7 @@ When you ran your `training_pipeline` above, you will see some visualizations al
 
 See the [Artifact Visualization Docs Page](../advanced-guide/data-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
 
-## Creating artifacts without ZenML pipelines
+## Managing artifacts **not** produced by ZenML pipelines
 
 Sometimes, artifacts can be produced completely outside of ZenML. A good example of this the predictions produced by a deployed model.
 
