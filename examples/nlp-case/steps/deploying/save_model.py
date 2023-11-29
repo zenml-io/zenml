@@ -43,7 +43,7 @@ def save_model_to_deploy():
         f" Loading latest version of the model for stage {pipeline_extra['target_env']}..."
     )
     # Get latest saved model version in target environment
-    latest_version = get_step_context().model_version._get_model_version()
+    latest_version = get_step_context().model_version
 
     # Load model and tokenizer from Model Control Plane
     model = latest_version.load_artifact(name="model")
