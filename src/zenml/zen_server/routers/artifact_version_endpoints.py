@@ -83,7 +83,7 @@ def list_artifact_versions(
     )
     artifact_version_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id,
-        model_id=allowed_artifact_ids,
+        artifact_id=allowed_artifact_ids,
     )
     artifact_versions = zen_store().list_artifact_versions(
         artifact_version_filter_model=artifact_version_filter_model,
