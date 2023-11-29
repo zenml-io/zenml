@@ -1,7 +1,7 @@
 """Artifact Version Table [a91762e6be36].
 
 Revision ID: a91762e6be36
-Revises: 389046140cad
+Revises: 0.50.0
 Create Date: 2023-11-25 11:01:09.217299
 
 """
@@ -14,7 +14,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a91762e6be36"
-down_revision = "389046140cad"
+down_revision = "0.50.0"
 branch_labels = None
 depends_on = None
 
