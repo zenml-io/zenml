@@ -83,7 +83,7 @@ def import_data_from_api(...):
 
 The code above turns caching off for this step only.
 
-### Full Code Example
+## Code Example
 
 This section combines all the code from this section into one simple script that you can use to see caching easily:
 
@@ -119,9 +119,9 @@ def training_data_loader() -> Tuple[
 
 @step
 def svc_trainer(
-        X_train: pd.DataFrame,
-        y_train: pd.Series,
-        gamma: float = 0.001,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
 ) -> Tuple[
     Annotated[ClassifierMixin, "trained_model"],
     Annotated[float, "training_acc"],

@@ -236,32 +236,7 @@ output.visualize()
 If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml up` and clicking on the respective artifact in the pipeline run DAG instead. Checkout the [artifact visualization page](../advanced-guide/data-management/visualize-artifacts.md) to learn more about how to build and view artifact visualizations in ZenML!
 {% endhint %}
 
-## Code Example
-
-Putting it all together, this is how we can load the model trained by the `svc_trainer` step of our example pipeline from the previous sections:
-
-```python
-from zenml.client import Client
-
-pipeline = Client().get_pipeline("first_pipeline")
-last_run = pipeline.last_run
-trainer_step = last_run.steps["svc_trainer"]
-model = trainer_step.output.load()
-```
-
-or alternatively:
-
-```python
-@pipeline
-def first_pipeline(...):
-    ...
-
-last_run = first_pipeline.model.last_run
-trainer_step = last_run.steps["svc_trainer"]
-model = trainer_step.output.load()
-```
-
-## Fetching Runs in Runs
+## Fetching information during run execution
 
 While most of this document has been focused on fetching objects after a pipeline run has been completed, the same logic can also be used within the context of a running pipeline.
 
@@ -288,5 +263,86 @@ def my_step():
 {% hint style="info" %}
 As shown in the example, we can get additional information about the current run using the `StepContext`, which is explained in more detail in the [advanced docs](../advanced-guide/pipelining-features/fetch-metadata-within-steps.md).
 {% endhint %}
+
+## Code Example
+
+This section combines all the code from this section into one simple script that you can use to see the concepts discussed above:
+
+<details>
+
+<summary>Code Example of this Section</summary>
+
+Putting it all together, this is how we can load the model trained by the `svc_trainer` step of our example pipeline from the previous sections:
+
+```python
+from typing_extensions import Tuple, Annotated
+import pandas as pd
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+
+from zenml import pipeline, step
+from zenml.client import Client
+
+
+@step
+def training_data_loader() -> Tuple[
+    Annotated[pd.DataFrame, "X_train"],
+    Annotated[pd.DataFrame, "X_test"],
+    Annotated[pd.Series, "y_train"],
+    Annotated[pd.Series, "y_test"],
+]:
+    """Load the iris dataset as tuple of Pandas DataFrame / Series."""
+    iris = load_iris(as_frame=True)
+    X_train, X_test, y_train, y_test = train_test_split(
+        iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
+    )
+    return X_train, X_test, y_train, y_test
+
+
+@step
+def svc_trainer(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
+) -> Tuple[
+    Annotated[ClassifierMixin, "trained_model"],
+    Annotated[float, "training_acc"],
+]:
+    """Train a sklearn SVC classifier and log to MLflow."""
+    model = SVC(gamma=gamma)
+    model.fit(X_train.to_numpy(), y_train.to_numpy())
+    train_acc = model.score(X_train.to_numpy(), y_train.to_numpy())
+    print(f"Train accuracy: {train_acc}")
+    return model, train_acc
+
+
+@pipeline
+def training_pipeline(gamma: float = 0.002):
+    X_train, X_test, y_train, y_test = training_data_loader()
+    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
+
+
+if __name__ == "__main__":
+    # You can run the pipeline and get the run object directly
+    last_run = training_pipeline()
+    print(last_run.id)
+
+    # You can also use the class directly with the `model` object
+    last_run = training_pipeline.model.last_run
+    print(last_run.id)
+
+    # OR you can fetch it after execution is finished:
+    pipeline = Client().get_pipeline("training_pipeline")
+    last_run = pipeline.last_run
+    print(last_run.id)
+
+    # You can now fetch the model
+    trainer_step = last_run.steps["svc_trainer"]
+    model = trainer_step.outputs["trained_model"].load()
+```
+
+</details>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

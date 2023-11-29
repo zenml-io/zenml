@@ -79,7 +79,7 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 ```
 {% endcode %}
 
-## Explore the dashboard
+### Explore the dashboard
 
 Once the pipeline has executed, use the `zenml up` command to view the results in the ZenML Dashboard:
 
@@ -92,6 +92,14 @@ The dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/).
 For further insights, explore the logging and artifact information associated with each step, which can reveal details about the data and intermediate results.
 
 If you have closed the browser tab with the ZenML dashboard, you can always reopen it by running `zenml show` in your terminal.
+
+## Understanding steps and artifacts
+
+When you ran the pipeline, each individual function that ran is shown in the DAG visualization as a `step` and is marked with the function name. Steps are connected with `artifacts`, which are simply the objects that are returned by these functions and input into downstream functions. This simple logic let's us breakdown our entire machine learning code into a sequence of tasks that pass data between each other.
+
+The artifacts produced by your steps are automatically stored and versioned by ZenML. The code that produced these artifacts is also automatically tracked. The parameters and all other configuration is also automatically captured.
+
+So you can see, by simply structuring your code within some functions and adding some decorators, we are one step closer to having a more tracked and reproducible codebase!
 
 ## Expanding to a Full Machine Learning Workflow
 
@@ -288,7 +296,7 @@ training_pipeline = training_pipeline.with_options(
 training_pipeline()
 ```
 
-### Full Code Example
+## Full Code Example
 
 This section combines all the code from this section into one simple script that you can use to run easily:
 
