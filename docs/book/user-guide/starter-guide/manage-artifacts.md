@@ -204,7 +204,7 @@ You can also load any artifact stored within ZenML using the `load_artifact` met
 load_artifact("iris_predictions")
 ```
 
-### Consuming External Artifacts
+### Consuming External Artifacts within a Pipeline
 
 Using the `load_artifact` method is a good way to load (materialize) an object into memory. However, what if you do not want to load the artifact, but just pass it into a pipeline step? This can be achieved with a concept called "External Artifacts".
 
