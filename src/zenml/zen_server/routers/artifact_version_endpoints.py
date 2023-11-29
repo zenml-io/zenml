@@ -33,10 +33,13 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
-    verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.utils import (
+    dehydrate_page,
+    get_allowed_resource_ids,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -61,7 +64,7 @@ def list_artifact_versions(
         make_dependable(ArtifactVersionFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> Page[ArtifactVersionResponse]:
     """Get artifact versions according to query filters.
 
@@ -70,16 +73,23 @@ def list_artifact_versions(
             sorting, filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        auth_context: The authentication context.
 
     Returns:
         The artifact versions according to query filters.
     """
-    return verify_permissions_and_list_entities(
-        filter_model=artifact_version_filter_model,
-        resource_type=ResourceType.ARTIFACT,
-        list_method=zen_store().list_artifact_versions,
+    allowed_artifact_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.ARTIFACT
+    )
+    artifact_version_filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id,
+        model_id=allowed_artifact_ids,
+    )
+    artifact_versions = zen_store().list_artifact_versions(
+        artifact_version_filter_model=artifact_version_filter_model,
         hydrate=hydrate,
     )
+    return dehydrate_page(artifact_versions)
 
 
 @artifact_version_router.post(
@@ -102,7 +112,7 @@ def create_artifact_version(
     """
     return verify_permissions_and_create_entity(
         request_model=artifact_version,
-        resource_type=ResourceType.ARTIFACT,
+        resource_type=ResourceType.ARTIFACT_VERSION,
         create_method=zen_store().create_artifact_version,
     )
 
