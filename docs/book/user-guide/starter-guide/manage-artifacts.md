@@ -275,7 +275,6 @@ if __name__ == "__main__":
     printing_pipeline()
 ```
 
-
 ## Assign tags to your artifacts
 
 If you want to tag the artifact versions of a step or pipeline that is executed
