@@ -115,6 +115,14 @@ last_run = pipeline_model.last_run  # OR: pipeline_model.runs[0]
 If your most recent runs have failed, and you want to find the last run that has succeeded, you can use the `last_successful_run` property instead.
 {% endhint %}
 
+### Get Last Run From Pipeline
+
+Calling a pipeline to run it automatically returns the last run:
+
+```
+last_run = training_pipeline()
+```
+
 ### Get Run via Client
 
 If you already know the exact run that you want to fetch (e.g., from looking at the dashboard), you can use the [`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.get\_pipeline\_run) method to fetch the run directly without having to query the pipeline first:
