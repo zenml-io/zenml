@@ -1703,7 +1703,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_artifact_version)
             session.commit()
             session.refresh(existing_artifact_version)
-            return existing_artifact_version.to_model()
+            return existing_artifact_version.to_model(hydrate=True)
 
     def delete_artifact_version(self, artifact_version_id: UUID) -> None:
         """Deletes an artifact version.
