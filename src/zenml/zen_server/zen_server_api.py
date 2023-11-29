@@ -31,6 +31,7 @@ from zenml.constants import API, HEALTH
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
+    artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
     code_repositories_endpoints,
@@ -217,6 +218,7 @@ app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
+app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)

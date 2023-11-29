@@ -168,11 +168,11 @@ class ModelVersion(BaseModel):
                 the given name and version.
         """
         from zenml.artifacts.utils import load_artifact
-        from zenml.models import ArtifactResponse
+        from zenml.models import ArtifactVersionResponse
 
         artifact = self.get_artifact(name=name, version=version)
 
-        if not isinstance(artifact, ArtifactResponse):
+        if not isinstance(artifact, ArtifactVersionResponse):
             raise ValueError(
                 f"Version {self.version} of model {self.name} does not have "
                 f"an artifact with name {name} and version {version}."
