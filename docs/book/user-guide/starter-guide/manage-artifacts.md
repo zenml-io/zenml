@@ -4,7 +4,7 @@ description: Understand and adjust how ZenML versions your data.
 
 # Data management with ZenML
 
-Until now, we have been focusing on step and pipeline code and configuration. Now, we will shift our attention to another pillar of any ML system: *data*.
+Until now, we have been focusing on step and pipeline code and configuration. Now, we will shift our attention to another pillar of any MLOps system: *data*.
 
 Whenever you run a ZenML pipeline, all output data of your steps are automatically versioned as artifacts into your artifact store and subsequent steps automatically load them in again. Each artifact that ZenML saves in your artifact store is assigned a name and is versioned automatically.
 
@@ -72,7 +72,7 @@ For more advanced configuration of your artifacts, users must use the `ArtifactC
 
 ZenML automatically versions all created artifacts using auto-incremented
 numbering. I.e., if you have defined a step creating an artifact named
-"my_custom_artifact" as shown above, the first execution of the step will
+`iris_dataset` as shown above, the first execution of the step will
 create an artifact with this name and version "1", the second execution will
 create version "2" and so on.
 
@@ -229,6 +229,107 @@ this step, which can later be used to filter and organize these artifacts.
 
 To learn more about artifacts, please refer to the [Advanced section on artifact management](../advanced-guide/data-management/).
 For now, let's keep going on understanding major ZenML concepts!
+
+## Code Example
+
+This section combines all the code from this section into one simple script that you can use easily:
+
+<details>
+
+<summary>Code Example of this Section</summary>
+
+
+```python
+from typing import Optional, Tuple
+from typing_extensions import Annotated
+
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.datasets import load_digits
+from sklearn.svm import SVC
+import zenml
+from zenml import ArtifactConfig, ExternalArtifact, pipeline, step
+
+
+@step
+def versioned_data_loader_step() -> (
+    Annotated[
+        Tuple[np.ndarray, np.ndarray],
+        ArtifactConfig(
+            name="my_dataset",
+            tags=["digits", "computer vision", "classification"],
+        ),
+    ]
+):
+    """Loads the digits dataset as a tuple of flattened numpy arrays."""
+    digits = load_digits()
+    return (digits.images.reshape((len(digits.images), -1)), digits.target)
+
+
+@step
+def model_finetuner_step(
+    model: ClassifierMixin, dataset: Tuple[np.ndarray, np.ndarray]
+) -> Annotated[
+    ClassifierMixin, ArtifactConfig(name="my_model", tags=["SVC", "trained"])
+]:
+    """Finetunes a given model on a given dataset."""
+    model.fit(dataset[0], dataset[1])
+    return model
+
+
+@pipeline
+def model_finetuning_pipeline(
+    dataset_version: Optional[str] = None,
+    model_version: Optional[str] = None,
+):
+    # Either load a previous version of "my_dataset" or create a new one
+    if dataset_version:
+        dataset = ExternalArtifact(name="my_dataset", version=dataset_version)
+    else:
+        dataset = versioned_data_loader_step()
+
+    # Load the model to finetune
+    # If no version is specified, the latest version of "my_model" is used
+    model = ExternalArtifact(name="my_model", version=model_version)
+
+    # Finetune the model
+    # This automatically creates a new version of "my_model"
+    model_finetuner_step(model=model, dataset=dataset)
+
+
+def main():
+    # Save an untrained model as first version of "my_model"
+    untrained_model = SVC(gamma=0.001)
+    zenml.save_artifact(
+        untrained_model, name="my_model", version="1", tags=["SVC", "untrained"]
+    )
+
+    # Create a first version of "my_dataset" and train the model on it
+    model_finetuning_pipeline()
+
+    # Finetune the latest model on an older version of the dataset
+    model_finetuning_pipeline(dataset_version="1")
+
+    # Run inference with the latest model on an older version of the dataset
+    latest_trained_model = zenml.load_artifact("my_model")
+    old_dataset = zenml.load_artifact("my_dataset", version="1")
+    latest_trained_model.predict(old_dataset[0])
+
+if __name__ == "__main__":
+    main()
+```
+
+This would create the following pipeline run DAGs:
+
+#### Run 1:
+
+<figure><img src="../../.gitbook/assets/artifact_management_1.png" alt=""><figcaption><p>Create a first version of my_dataset</p></figcaption></figure>
+
+#### Run 2:
+
+<figure><img src="../../.gitbook/assets/artifact_management_2.png" alt=""><figcaption><p>Uses a second version of my_dataset</p></figcaption></figure>
+
+</details>
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
