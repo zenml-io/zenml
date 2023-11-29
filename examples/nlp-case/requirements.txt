@@ -1,0 +1,4 @@
+torchvision
+accelerate
+gradio
+zenml[server]==0.50.0
