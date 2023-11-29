@@ -137,14 +137,14 @@ jobs:
 
     steps:
       - name: Maximize space for Docker
-        uses: easimon/maximize-build-space@master
+        uses: easimon/maximize-build-space@v8
         with:
           root-reserve-mb: 20000
           swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
-          build-mount-path: /var/lib/docker
+          build-mount-path: /var/lib/docker/
         if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
       - name: Reload Docker
