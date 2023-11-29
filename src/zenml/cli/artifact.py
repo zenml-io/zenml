@@ -224,7 +224,7 @@ def update_artifact_version(
     is_flag=True,
     help=(
         "Only delete metadata and not the actual artifact object stored in "
-        "the artifact store.",
+        "the artifact store."
     ),
 )
 @click.option(
