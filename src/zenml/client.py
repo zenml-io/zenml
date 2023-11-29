@@ -2810,7 +2810,7 @@ class Client(metaclass=ClientMetaClass):
         """Delete an artifact version.
 
         By default, this will delete only the metadata of the artifact from the
-        database, not the physical artifact in the artifact store.
+        database, not the actual object stored in the artifact store.
 
         Args:
             name_id_or_prefix: The ID or name or prefix of the artifact to
@@ -2818,7 +2818,7 @@ class Client(metaclass=ClientMetaClass):
             version: The version of the artifact to delete.
             delete_metadata: If True, delete the metadata of the artifact
                 version from the database.
-            delete_from_artifact_store: If True, delete the physical artifact
+            delete_from_artifact_store: If True, delete the artifact object
                 itself from the artifact store.
         """
         artifact_version = self.get_artifact_version(
@@ -2859,7 +2859,7 @@ class Client(metaclass=ClientMetaClass):
     def _delete_artifact_from_artifact_store(
         self, artifact_version: ArtifactVersionResponse
     ) -> None:
-        """Delete a physical artifact from the artifact store.
+        """Delete an artifact object from the artifact store.
 
         Args:
             artifact_version: The artifact version to delete.

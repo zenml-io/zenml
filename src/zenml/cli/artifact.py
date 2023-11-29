@@ -83,6 +83,11 @@ def update_artifact(
 ) -> None:
     """Update an artifact by ID or name.
 
+    Usage example:
+    ```
+    zenml artifact update <NAME> -n <NEW_NAME> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
+    ```
+
     Args:
         artifact_name_or_id: Name or ID of the artifact to update.
         name: New name of the artifact.
@@ -170,6 +175,11 @@ def update_artifact_version(
 ) -> None:
     """Update an artifact version by ID or artifact name.
 
+    Usage example:
+    ```
+    zenml artifact version update <NAME> -v <VERSION> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
+    ```
+
     Args:
         name_id_or_prefix: Either the ID of the artifact version or the name of
             the artifact.
@@ -204,15 +214,18 @@ def update_artifact_version(
     "-a",
     is_flag=True,
     help=(
-        "Only delete the physical artifacts from the artifact store but keep "
-        "the metadata."
+        "Only delete the actual artifact object from the artifact store but "
+        "keep the metadata."
     ),
 )
 @click.option(
     "--only-metadata",
     "-m",
     is_flag=True,
-    help="Only delete metadata and not the physical artifacts.",
+    help=(
+        "Only delete metadata and not the actual artifact object stored in "
+        "the artifact store.",
+    ),
 )
 @click.option(
     "--yes",
@@ -230,10 +243,10 @@ def prune_artifacts(
     any used artifact versions.
 
     Args:
-        only_artifact: If set, only delete the physical artifacts but not the
-            metadata.
-        only_metadata: If set, only delete metadata and not the physical
-            artifacts.
+        only_artifact: If set, only delete the actual artifact object from the
+            artifact store but keep the metadata.
+        only_metadata: If set, only delete metadata and not the actual artifact
+            objects stored in the artifact store.
         yes: If set, don't ask for confirmation.
     """
     client = Client()
