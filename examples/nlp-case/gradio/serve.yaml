@@ -1,0 +1,29 @@
+# Task name (optional), used for display purposes.
+name: ZenML NLP project}
+
+resources:
+  cloud: aws  # The cloud to use (optional).
+
+  # The region to use (optional). Auto-failover will be disabled
+  # if this is specified.
+  region: us-east-1
+
+  # The instance type to use (optional).
+  instance_type: t3.large
+# Working directory (optional), synced to ~/sky_workdir on the remote cluster
+# each time launch or exec is run with the yaml file.
+#
+# Commands in "setup" and "run" will be executed under it.
+#
+# If a .gitignore file (or a .git/info/exclude file) exists in the working
+# directory, files and directories listed in it will be excluded from syncing.
+workdir: ./gradio
+
+setup: |
+  echo "Begin setup."
+  pip install -r requirements.txt
+  echo "Setup complete."
+
+run: |
+  echo 'Starting gradio app...'
+  python app.py
