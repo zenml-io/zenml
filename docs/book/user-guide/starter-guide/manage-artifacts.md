@@ -204,6 +204,18 @@ You can also load any artifact stored within ZenML using the `load_artifact` met
 load_artifact("iris_predictions")
 ```
 
+{% hint style="info" %}
+`load_artifact` is simply short-hand for the following Client call:
+
+```python
+from zenml.client import Client
+
+client = Client()
+client.get_artifact("iris_predictions").load()
+```
+
+{% endhint %}
+
 ### Consuming External Artifacts within a Pipeline
 
 Using the `load_artifact` method is a good way to load (materialize) an object into memory. However, what if you do not want to load the artifact, but just pass it into a pipeline step? This can be achieved with a concept called "External Artifacts".
