@@ -310,6 +310,6 @@ if __name__ == "__main__":
 
 Ultimately, both approaches are fine. Users should decide which one to use based on their own preference.
 
-## A Practical Example of using the Model Control Plane
 
-A fully worked out practical example of using the Model Control Plane is [available here](https://github.com/zenml-io/zenml-plugins/tree/main/model_control_plane) for further reading!
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
