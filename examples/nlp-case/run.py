@@ -104,7 +104,7 @@ Examples:
     "--training-pipeline",
     is_flag=True,
     default=True,
-    help="Whether to run the pipeline that traines the model to staging.",
+    help="Whether to run the pipeline that train the model to staging.",
 )
 @click.option(
     "--promoting-pipeline",
