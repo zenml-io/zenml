@@ -60,7 +60,7 @@ def upgrade() -> None:
     for name, has_custom_name in unique_artifact_names.items():
         conn.execute(
             artifacts.insert().values(
-                id=uuid4(),
+                id=uuid4().hex,
                 created=datetime.utcnow(),
                 updated=datetime.utcnow(),
                 name=name,
