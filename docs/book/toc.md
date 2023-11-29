@@ -11,7 +11,7 @@
 * [🐣 Starter guide](user-guide/starter-guide/starter-guide.md)
   * [Create an ML pipeline](user-guide/starter-guide/create-an-ml-pipeline.md)
   * [Cache previous executions](user-guide/starter-guide/cache-previous-executions.md)
-  * [Using the ZenML Client](user-guide/starter-guide/fetch-runs-after-execution.md)
+  * [Fetching runs](user-guide/starter-guide/fetch-runs-after-execution.md)
   * [Manage artifacts](user-guide/starter-guide/manage-artifacts.md)
   * [Track ML models](user-guide/starter-guide/track-ml-models.md)
   * [A starter project](user-guide/starter-guide/starter-project.md)
