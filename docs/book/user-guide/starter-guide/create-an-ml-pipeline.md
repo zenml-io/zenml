@@ -10,6 +10,8 @@ In this quest for production-ready ML models, workflows can quickly become compl
 
 Leveraging ZenML, you can create and manage robust, scalable machine learning (ML) pipelines. Whether for data preparation, model training, or deploying predictions, ZenML standardizes and streamlines the process, ensuring reproducibility and efficiency.
 
+<figure><img src="../../.gitbook/assets/pipeline_showcase.png" alt=""><figcaption><p>ZenML pipelines are simple Python code</p></figcaption></figure>
+
 ## Start with a simple ML pipeline
 
 Let's jump into an example that demonstrates how a simple pipeline can be set up in ZenML, featuring actual ML components to give you a better sense of its application.
