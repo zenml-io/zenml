@@ -71,9 +71,9 @@ def upgrade() -> None:
     # Set artifact_id column in artifact_version
     conn.execute(
         artifact_versions.update().values(
-            artifact_id=sa.select([artifacts.c.id]).where(
-                artifacts.c.name == artifact_versions.c.name
-            )
+            artifact_id=sa.select([artifacts.c.id])
+            .where(artifacts.c.name == artifact_versions.c.name)
+            .scalar_subquery()
         )
     )
 
