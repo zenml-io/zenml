@@ -30,7 +30,7 @@ def upgrade() -> None:
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
-        sa.Column("name", sa.VARCHAR(), nullable=False),
+        sa.Column("name", sa.VARCHAR(length=255), nullable=False),
         sa.Column("has_custom_name", sa.Boolean(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -43,7 +43,7 @@ def upgrade() -> None:
             )
         )
 
-    # Find all unqiue artifact names and create a new artifact entry for each
+    # Find all unique artifact names and create a new artifact entry for each
     conn = op.get_bind()
     meta = sa.MetaData(bind=op.get_bind())
     meta.reflect(only=("artifact", "artifact_version"))
@@ -79,7 +79,11 @@ def upgrade() -> None:
 
     # Make foreign key column non-nullable and create constraint
     with op.batch_alter_table("artifact_version", schema=None) as batch_op:
-        batch_op.alter_column("artifact_id", nullable=False)
+        batch_op.alter_column(
+            "artifact_id",
+            nullable=False,
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+        )
         batch_op.create_foreign_key(
             "fk_artifact_version_artifact_id_artifact",
             "artifact",
@@ -104,6 +108,7 @@ def upgrade() -> None:
         batch_op.drop_constraint(
             "fk_artifact_workspace_id_workspace", type_="foreignkey"
         )
+    with op.batch_alter_table("artifact_version", schema=None) as batch_op:
         batch_op.create_foreign_key(
             "fk_artifact_version_artifact_store_id_stack_component",
             "stack_component",
@@ -137,6 +142,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             "artifact_id",
             new_column_name="artifact_version_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
         )
     with op.batch_alter_table(
         "artifact_visualization", schema=None
@@ -159,6 +165,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             "artifact_id",
             new_column_name="artifact_version_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
         )
     with op.batch_alter_table(
         "model_versions_artifacts", schema=None
@@ -178,6 +185,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             "artifact_id",
             new_column_name="artifact_version_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
         )
     with op.batch_alter_table("run_metadata", schema=None) as batch_op:
         batch_op.create_foreign_key(
