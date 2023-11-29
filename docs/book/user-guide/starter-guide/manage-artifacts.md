@@ -213,7 +213,6 @@ from zenml.client import Client
 client = Client()
 client.get_artifact("iris_predictions").load()
 ```
-
 {% endhint %}
 
 ### Consuming External Artifacts within a Pipeline
