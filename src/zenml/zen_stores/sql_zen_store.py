@@ -2966,7 +2966,7 @@ class SqlZenStore(BaseZenStore):
             The created pipeline run.
 
         Raises:
-            EntityExistsError: If an run with the same name already exists.
+            EntityExistsError: If a run with the same name already exists.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with same name already exists.
