@@ -6,7 +6,9 @@ description: Begin your MLOps journey with ZenML.
 
 Whether you are a MLOps Engineer building an internal ML platform or a Data Scientist who is a ZenML-powered MLOps platform, it all starts with learning the basics. The starter guide will walk you through the basics of the ZenML framework.
 
-We will touch on topics like:
+<figure><img src="../../.gitbook/assets/abstractions_showcase.png" alt=""><figcaption><p>MLOps is complex. Let ZenML handle the complexity.</p></figcaption></figure>
+
+In this guide, we will touch on topics like:
 
 - Creating your first ML pipeline
 - Understanding caching between pipeline steps
