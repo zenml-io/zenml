@@ -980,8 +980,8 @@ version can only be deleted if the run that produced it and all runs that used
 it as an input have been deleted. Similarly, an artifact can only be deleted if
 all its versions can be deleted.
 
-To automatically delete all artifacts and artifact versions that are no longer 
-linked to any pipeline runs, use:
+To delete all artifacts and artifact versions that are no longer linked to any 
+pipeline runs, use:
 
 ```bash
 zenml artifact prune

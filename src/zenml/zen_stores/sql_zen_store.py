@@ -1658,7 +1658,7 @@ class SqlZenStore(BaseZenStore):
         artifact_version_id: UUID,
         artifact_version_update: ArtifactVersionUpdate,
     ) -> ArtifactVersionResponse:
-        """Updates an artifact.
+        """Updates an artifact version.
 
         Args:
             artifact_version_id: The ID of the artifact version to update.

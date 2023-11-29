@@ -433,7 +433,7 @@ class StepRunResponse(
 
 
 class StepRunFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all Artifacts."""
+    """Model to enable advanced filtering of step runs."""
 
     name: Optional[str] = Field(
         default=None,

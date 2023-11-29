@@ -336,7 +336,7 @@ class ArtifactVersionResponse(
 
 
 class ArtifactVersionFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all Artifacts."""
+    """Model to enable advanced filtering of artifact versions."""
 
     # `name` and `only_unused` refer to properties related to other entities
     #  rather than a field in the db, hence they needs to be handled

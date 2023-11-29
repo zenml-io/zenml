@@ -133,6 +133,6 @@ class ArtifactResponse(
 
 
 class ArtifactFilter(BaseFilter):
-    """Model to enable advanced filtering of all Artifacts."""
+    """Model to enable advanced filtering of artifacts."""
 
     name: Optional[str]

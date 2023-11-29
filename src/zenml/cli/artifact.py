@@ -193,15 +193,19 @@ def update_artifact_version(
 
 
 @artifact.command(
-    "prune", help="Delete all unused artifacts and artifact versions."
+    "prune",
+    help=(
+        "Delete all unused artifacts and artifact versions that are no longer "
+        "referenced by any pipeline runs."
+    ),
 )
 @click.option(
     "--only-artifact",
     "-a",
     is_flag=True,
     help=(
-        "Only delete the physical artifacts from the artifact store but not "
-        "their metadata."
+        "Only delete the physical artifacts from the artifact store but keep "
+        "the metadata."
     ),
 )
 @click.option(
@@ -220,6 +224,10 @@ def prune_artifacts(
     only_artifact: bool = False, only_metadata: bool = False, yes: bool = False
 ) -> None:
     """Delete all unused artifacts and artifact versions.
+
+    Unused artifact versions are those that are no longer referenced by any
+    pipeline runs. Similarly, unused artifacts are those that no longer have
+    any used artifact versions.
 
     Args:
         only_artifact: If set, only delete the physical artifacts but not the
