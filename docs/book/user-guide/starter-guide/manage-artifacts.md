@@ -10,7 +10,11 @@ Whenever you run a ZenML pipeline, all output data of your steps are automatical
 
 ![Walkthrough of ZenML Data Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/dcp_walkthrough.gif)
 
-## Giving names to your artifacts
+## Artifacts produced by ZenML pipelines
+
+A majority of artifacts tracked by the ZenML framework will inevitably be produced by ZenML pipelines. It is quite common to want to be able to configure these artifacts as you develop your pipelines:
+
+### Giving names to your artifacts
 
 You can use the `Annotated` object to give your outputs unique names:
 
@@ -68,7 +72,7 @@ important artifacts that you would like to explore visually.
 
 For more advanced configuration of your artifacts, users must use the `ArtifactConfig` class, to modify the name, version, and other properties of the artifacts.
 
-## Assign custom artifact versions
+### Assign custom artifact versions
 
 ZenML automatically versions all created artifacts using auto-incremented
 numbering. I.e., if you have defined a step creating an artifact named
@@ -123,7 +127,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-## Consuming a versioned artifact into a pipeline
+### Consuming a versioned artifact into a pipeline
 
 Often times, there is a need to consume an artifact downstream after producing it in an upstream pipeline or step. Using `External Artifacts`, you can pass existing artifacts from other pipeline runs into your steps. Search can be performed in one of the following ways:
 
@@ -160,7 +164,7 @@ if __name__ == "__main__":
 Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
 {% endhint %}
 
-## Visualizing Artifacts
+### Visualizing Artifacts
 
 ![Visualizing artifacts](../../.gitbook/assets/intro_dashboard_details.png)
 
@@ -170,23 +174,65 @@ When you ran your `training_pipeline` above, you will see some visualizations al
 
 See the [Artifact Visualization Docs Page](../advanced-guide/data-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
 
-## Passing external data into ZenML
+## Creating artifacts without ZenML pipelines
 
-It is sometimes relevant to consume data that is not produced by ZenML upstream. For example, let's say you have a snowflake query that produces a dataframe, or a CSV file that you need to read.
+Sometimes, artifacts can be produced completely outside of ZenML. A good example of this the predictions produced by a deployed model.
 
-External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
+```python
+# A model is deployed, running in a FastAPI container
+# Let's use the ZenML client to fetch the latest model and make predictions
+
+from zenml.client import Client
+from zenml import save_artifact
+
+# In this case, we are fetching the model directly from the latest run
+last_run = Client().get_pipeline("training_pipeline").last_run
+model = last_run.steps["svc_trainer"].outputs["trained_model"].load()
+
+# Lets make a prediction
+prediction = model.predict([[1, 1, 1, 1]])
+
+# We now store this prediction in ZenML as an artifact
+# This will create a new artifact version
+save_artifact(prediction, name="iris_predictions")
+```
+
+You can also load any artifact stored within ZenML using the `load_artifact` method:
+
+```python
+# Loads the latest version
+load_artifact("iris_predictions")
+```
+
+### Consuming External Artifacts
+
+Using the `load_artifact` method is a good way to load (materialize) an object into memory. However, what if you do not want to load the artifact, but just pass it into a pipeline step? This can be achieved with a concept called "External Artifacts".
+
+For example, let's say you have a snowflake query that produces a dataframe, or a CSV file that you need to read. External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
 
 ```python
 import numpy as np
 from zenml import ExternalArtifact, pipeline, step
 
 @step
-def trainer(data: np.ndarray) -> ...:
-    ...
+def print_data(data: np.ndarray):
+    print(data)
 
 @pipeline
-def training_pipeline():
-    trainer(data=ExternalArtifact(np.array([1, 2, 3])))
+def printing_pipeline():
+    # Load data from an earlier produced artifact
+    # You can specify name or version
+    data = ExternalArtifact(name="iris_predictions")
+
+    # One can also pass data directly into the ExternalArtifact
+    # to create a new artifact on the fly
+    data = ExternalArtifact(value=np.array([0]))
+
+    print_data(data=data)
+
+
+if __name__ == "__main__":
+    printing_pipeline()
 ```
 
 Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
