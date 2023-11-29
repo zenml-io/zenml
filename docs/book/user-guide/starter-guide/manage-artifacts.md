@@ -231,10 +231,6 @@ def print_data(data: np.ndarray):
 
 @pipeline
 def printing_pipeline():
-    # Load data from an earlier produced artifact
-    # You can specify name or version
-    data = ExternalArtifact(name="iris_predictions")
-
     # One can also pass data directly into the ExternalArtifact
     # to create a new artifact on the fly
     data = ExternalArtifact(value=np.array([0]))
@@ -247,6 +243,34 @@ if __name__ == "__main__":
 ```
 
 Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
+
+### Consuming artifacts directly into a pipeline
+
+`ExternalArtifact` can also be used to consume any version of a ZenML artifact into a downstream pipeline:
+
+```python
+import numpy as np
+from zenml import ExternalArtifact, pipeline, step
+
+@step
+def print_data(data: np.ndarray):
+    print(data)
+
+@pipeline
+def printing_pipeline():
+    # Load data from an earlier produced artifact (uses latest version)
+    data = ExternalArtifact(name="iris_predictions")
+
+    # You can specify which version to load
+    data = ExternalArtifact(name="iris_predictions", version="1")
+
+    print_data(data=data)
+
+
+if __name__ == "__main__":
+    printing_pipeline()
+```
+
 
 ## Assign tags to your artifacts
 
