@@ -38,12 +38,10 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import StackSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ScheduleSchema
+    from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
+    from zenml.zen_stores.schemas.stack_schemas import StackSchema
 
 
 class StackComponentSchema(NamedSchema, table=True):
