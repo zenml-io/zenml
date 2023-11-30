@@ -33,7 +33,12 @@ def apply_pod_settings(
         container_op: The container to which to apply the settings.
         settings: The settings to apply.
     """
-    from kubernetes.client.models import V1Affinity, V1Toleration
+    from kubernetes.client.models import (
+        V1Affinity,
+        V1Toleration,
+        V1Volume,
+        V1VolumeMount,
+    )
 
     for key, value in settings.node_selectors.items():
         container_op.add_node_selector_constraint(label_name=key, value=value)
@@ -53,6 +58,21 @@ def apply_pod_settings(
             toleration_dict, "V1Toleration"
         )
         container_op.add_toleration(toleration)
+
+    if settings.volumes:
+        for v in settings.volumes:
+            volume: (
+                V1Volume
+            ) = serialization_utils.deserialize_kubernetes_model(v, "V1Volume")
+            container_op.add_volume(volume)
+
+    if settings.volume_mounts:
+        volume_mount: (
+            V1VolumeMount
+        ) = serialization_utils.deserialize_kubernetes_model(
+            settings.volume_mounts, "V1VolumeMount"
+        )
+        container_op.container.add_volume_mount(volume_mount)
 
     resource_requests = settings.resources.get("requests") or {}
     for name, value in resource_requests.items():

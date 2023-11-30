@@ -50,12 +50,12 @@ class KubernetesPodSettings(BaseSettings):
     resources: Dict[str, Dict[str, str]] = {}
     annotations: Dict[str, str] = {}
     volumes: List[Dict[str, Any]] = []
-    volume_mounts: Dict[str, Any] = []
+    volume_mounts: Dict[str, Any] = {}
     host_ipc: bool = False
 
     @validator("volumes", pre=True)
     def _convert_volumes(
-        cls, value: Union[List[Dict[str, Any]], "V1Volume"]
+        cls, value: List[Union[Dict[str, Any], "V1Volume"]]
     ) -> List[Dict[str, Any]]:
         """Converts Kubernetes volumes to dicts.
 
