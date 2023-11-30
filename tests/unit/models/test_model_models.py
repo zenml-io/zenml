@@ -19,10 +19,7 @@ from uuid import uuid4
 import pytest
 
 from tests.unit.steps.test_external_artifact import MockZenmlClient
-from zenml.models.model_models import (
-    ModelResponseModel,
-    ModelVersionResponseModel,
-)
+from zenml.models import ModelResponse, ModelVersionResponse
 
 ARTIFACT_VERSION_IDS = [uuid4(), uuid4()]
 
@@ -86,7 +83,7 @@ def test_getters(
             "zenml.client": MockZenmlClient,
         },
     ):
-        model = ModelResponseModel(
+        model = ModelResponse(
             id=uuid4(),
             name="model",
             workspace=sample_workspace_model,
@@ -94,7 +91,7 @@ def test_getters(
             updated=datetime.now(),
             tags=[],
         )
-        mv = ModelVersionResponseModel(
+        mv = ModelVersionResponse(
             name="foo",
             model=model,
             number=-1,
