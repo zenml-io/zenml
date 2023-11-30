@@ -146,7 +146,7 @@ class RunMetadataResponse(
 
     @property
     def resource_type(self) -> MetadataResourceTypes:
-        """The `step_run_id` property.
+        """The `resource_type` property.
 
         Returns:
             the value of the property.
