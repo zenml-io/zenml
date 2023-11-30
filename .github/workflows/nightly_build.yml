@@ -32,5 +32,5 @@ jobs:
         needs: wait-for-package-release
         uses: ./.github/workflows/publish_docker_image.yml
         with:
-          - config_file: release-cloudbuild-nightly.yaml
+          config_file: release-cloudbuild-nightly.yaml
         secrets: inherit

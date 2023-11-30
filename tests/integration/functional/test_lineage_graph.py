@@ -83,7 +83,7 @@ def test_generate_run_nodes_and_edges(
             clean_client.create_run_metadata(
                 metadata={"aria_loves_alex": True},
                 resource_id=output_artifact.id,
-                resource_type=MetadataResourceTypes.ARTIFACT,
+                resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
             )
 
     # Get the run again so all the metadata is loaded
@@ -187,8 +187,8 @@ def external_artifact_loader_step(a: int) -> int:
 
 
 @pipeline
-def second_pipeline(artifact_id: UUID):
-    external_artifact_loader_step(a=ExternalArtifact(id=artifact_id))
+def second_pipeline(artifact_version_id: UUID):
+    external_artifact_loader_step(a=ExternalArtifact(id=artifact_version_id))
 
 
 def test_add_external_artifacts(clean_client: "Client"):
@@ -213,11 +213,13 @@ def test_add_external_artifacts(clean_client: "Client"):
     _validate_graph(graph, run_)
 
     # Check that the external artifact is a node in the graph
-    artifact_ids_of_run = {artifact.id for artifact in run_.artifacts}
+    artifact_version_ids_of_run = {
+        artifact_version.id for artifact_version in run_.artifact_versions
+    }
     external_artifact_node_id = None
     for node in graph.nodes:
         if node.type == "artifact":
-            if node.data.execution_id not in artifact_ids_of_run:
+            if node.data.execution_id not in artifact_version_ids_of_run:
                 external_artifact_node_id = node.id
     assert external_artifact_node_id
 
@@ -341,20 +343,20 @@ def _validate_graph(
 
         # Check that each step node is connected to all of its output nodes
         for output_artifact in step_.outputs.values():
-            artifact_id = ARTIFACT_PREFIX + str(output_artifact.id)
-            assert artifact_id in node_id_to_model_mapping
-            edge_id = step_id + "_" + artifact_id
+            artifact_version_id = ARTIFACT_PREFIX + str(output_artifact.id)
+            assert artifact_version_id in node_id_to_model_mapping
+            edge_id = step_id + "_" + artifact_version_id
             assert edge_id in edge_id_to_model_mapping
             edge = edge_id_to_model_mapping[edge_id]
             assert edge.source == step_id
-            assert edge.target == artifact_id
+            assert edge.target == artifact_version_id
 
         # Check that each step node is connected to all of its input nodes
         for input_artifact in step_.inputs.values():
-            artifact_id = ARTIFACT_PREFIX + str(input_artifact.id)
-            assert artifact_id in node_id_to_model_mapping
-            edge_id = artifact_id + "_" + step_id
+            artifact_version_id = ARTIFACT_PREFIX + str(input_artifact.id)
+            assert artifact_version_id in node_id_to_model_mapping
+            edge_id = artifact_version_id + "_" + step_id
             assert edge_id in edge_id_to_model_mapping
             edge = edge_id_to_model_mapping[edge_id]
-            assert edge.source == artifact_id
+            assert edge.source == artifact_version_id
             assert edge.target == step_id

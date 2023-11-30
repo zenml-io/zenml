@@ -318,6 +318,7 @@ class TaggableResourceTypes(StrEnum):
     """All possible resource types for tagging."""
 
     ARTIFACT = "artifact"
+    ARTIFACT_VERSION = "artifact_version"
     MODEL = "model"
 
 
@@ -334,4 +335,4 @@ class MetadataResourceTypes(StrEnum):
 
     PIPELINE_RUN = "pipeline_run"
     STEP_RUN = "step_run"
-    ARTIFACT = "artifact"
+    ARTIFACT_VERSION = "artifact_version"

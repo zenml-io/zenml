@@ -548,7 +548,7 @@ def _print_artifacts_links_generic(
 
     cli_utils.print_pydantic_models(
         links,
-        columns=["artifact", "created"],
+        columns=["artifact_version", "created"],
     )
 
 

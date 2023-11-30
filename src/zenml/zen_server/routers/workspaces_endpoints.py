@@ -886,9 +886,11 @@ def create_run_metadata(
     elif run_metadata.resource_type == MetadataResourceTypes.STEP_RUN:
         step = zen_store().get_run_step(run_metadata.resource_id)
         verify_permission_for_model(step, action=Action.UPDATE)
-    elif run_metadata == MetadataResourceTypes.ARTIFACT:
-        artifact = zen_store().get_artifact(run_metadata.resource_id)
-        verify_permission_for_model(artifact, action=Action.UPDATE)
+    elif run_metadata == MetadataResourceTypes.ARTIFACT_VERSION:
+        artifact_version = zen_store().get_artifact_version(
+            run_metadata.resource_id
+        )
+        verify_permission_for_model(artifact_version, action=Action.UPDATE)
     else:
         raise RuntimeError(
             f"Unknown resource type: {run_metadata.resource_type}"

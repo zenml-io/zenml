@@ -110,9 +110,9 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         title="The metadata related to this resource."
     )
 
-    _response_update_strategy: ResponseUpdateStrategy = (
-        ResponseUpdateStrategy.ALLOW
-    )
+    _response_update_strategy: (
+        ResponseUpdateStrategy
+    ) = ResponseUpdateStrategy.ALLOW
     _warn_on_response_updates: bool = True
 
     def get_hydrated_version(self) -> "BaseResponse[AnyBody, AnyMetadata]":

@@ -37,13 +37,17 @@ def test_pipeline_run_artifacts(
 
     # Non-cached run created two artifacts, one per step
     pipeline_instance.run()
-    assert len(pipeline_instance.model.last_run.artifacts) == 2
-    assert len(pipeline_instance.model.last_run.produced_artifacts) == 2
+    assert len(pipeline_instance.model.last_run.artifact_versions) == 2
+    assert (
+        len(pipeline_instance.model.last_run.produced_artifact_versions) == 2
+    )
 
     # Cached run did not produce any artifacts
     pipeline_instance.run()
-    assert len(pipeline_instance.model.last_run.artifacts) == 2
-    assert len(pipeline_instance.model.last_run.produced_artifacts) == 0
+    assert len(pipeline_instance.model.last_run.artifact_versions) == 2
+    assert (
+        len(pipeline_instance.model.last_run.produced_artifact_versions) == 0
+    )
 
 
 def test_pipeline_run_has_client_and_orchestrator_environment(

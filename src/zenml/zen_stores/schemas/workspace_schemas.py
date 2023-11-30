@@ -28,7 +28,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
-        ArtifactSchema,
+        ArtifactVersionSchema,
         CodeRepositorySchema,
         FlavorSchema,
         ModelSchema,
@@ -88,7 +88,7 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    artifacts: List["ArtifactSchema"] = Relationship(
+    artifact_versions: List["ArtifactVersionSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

@@ -33,7 +33,10 @@ from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+    from zenml.zen_stores.schemas.artifact_schemas import (
+        ArtifactSchema,
+        ArtifactVersionSchema,
+    )
     from zenml.zen_stores.schemas.model_schemas import ModelSchema
 
 
@@ -123,14 +126,21 @@ class TagResourceSchema(BaseSchema, table=True):
         back_populates="tags",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
-            overlaps="tags,model",
+            overlaps="tags,model,artifact_version",
+        ),
+    )
+    artifact_version: List["ArtifactVersionSchema"] = Relationship(
+        back_populates="tags",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT_VERSION.value}', foreign(TagResourceSchema.resource_id)==ArtifactVersionSchema.id)",
+            overlaps="tags,model,artifact",
         ),
     )
     model: List["ModelSchema"] = Relationship(
         back_populates="tags",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
-            overlaps="tags,artifact",
+            overlaps="tags,artifact,artifact_version",
         ),
     )
 

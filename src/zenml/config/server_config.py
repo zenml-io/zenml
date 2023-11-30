@@ -124,13 +124,13 @@ class ServerConfiguration(BaseModel):
     auth_cookie_name: Optional[str] = None
     auth_cookie_domain: Optional[str] = None
     cors_allow_origins: Optional[List[str]] = None
-    max_failed_device_auth_attempts: int = (
-        DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
-    )
+    max_failed_device_auth_attempts: (
+        int
+    ) = DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
     device_auth_timeout: int = DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT
-    device_auth_polling_interval: int = (
-        DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
-    )
+    device_auth_polling_interval: (
+        int
+    ) = DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
     dashboard_url: Optional[str] = None
     device_expiration_minutes: Optional[int] = None
     trusted_device_expiration_minutes: Optional[int] = None

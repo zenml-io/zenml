@@ -665,29 +665,33 @@ def test_create_run_metadata_for_step_run_and_component(
 
 def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
     """Test creating run metadata linked to an artifact."""
-    artifact = clean_client_with_run.list_artifacts()[0]
+    artifact_version = clean_client_with_run.list_artifact_versions()[0]
     existing_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=artifact.id, resource_type=MetadataResourceTypes.ARTIFACT
+        resource_id=artifact_version.id,
+        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
     )
 
     # Assert that the created metadata is correct
     new_metadata = clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
-        resource_id=artifact.id,
-        resource_type=MetadataResourceTypes.ARTIFACT,
+        resource_id=artifact_version.id,
+        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
     )
     assert isinstance(new_metadata, list)
     assert len(new_metadata) == 1
     assert new_metadata[0].key == "axel"
     assert new_metadata[0].value == "is awesome"
     assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].resource_id == artifact.id
-    assert new_metadata[0].resource_type == MetadataResourceTypes.ARTIFACT
+    assert new_metadata[0].resource_id == artifact_version.id
+    assert (
+        new_metadata[0].resource_type == MetadataResourceTypes.ARTIFACT_VERSION
+    )
     assert new_metadata[0].stack_component_id is None
 
     # Assert new metadata is linked to the artifact
     registered_metadata = clean_client_with_run.list_run_metadata(
-        resource_id=artifact.id, resource_type=MetadataResourceTypes.ARTIFACT
+        resource_id=artifact_version.id,
+        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
     )
     assert len(registered_metadata) == len(existing_metadata) + 1
 

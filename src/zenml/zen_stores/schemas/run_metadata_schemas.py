@@ -28,7 +28,7 @@ from zenml.models import (
     RunMetadataResponseBody,
     RunMetadataResponseMetadata,
 )
-from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -49,20 +49,20 @@ class RunMetadataSchema(BaseSchema, table=True):
         back_populates="run_metadata",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataSchema.resource_id)==PipelineRunSchema.id)",
-            overlaps="run_metadata,step_run,artifact",
+            overlaps="run_metadata,step_run,artifact_version",
         ),
     )
     step_run: List["StepRunSchema"] = Relationship(
         back_populates="run_metadata",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
-            overlaps="run_metadata,pipeline_run,artifact",
+            overlaps="run_metadata,pipeline_run,artifact_version",
         ),
     )
-    artifact: List["ArtifactSchema"] = Relationship(
+    artifact_version: List["ArtifactVersionSchema"] = Relationship(
         back_populates="run_metadata",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT.value}', foreign(RunMetadataSchema.resource_id)==ArtifactSchema.id)",
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ArtifactVersionSchema.id)",
             overlaps="run_metadata,pipeline_run,step_run",
         ),
     )
