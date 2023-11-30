@@ -318,6 +318,7 @@ class TaggableResourceTypes(StrEnum):
     """All possible resource types for tagging."""
 
     ARTIFACT = "artifact"
+    ARTIFACT_VERSION = "artifact_version"
     MODEL = "model"
 
 

@@ -32,7 +32,7 @@ from zenml.logger import get_logger
 if TYPE_CHECKING:
     from zenml import ExternalArtifact
     from zenml.models import (
-        ArtifactResponse,
+        ArtifactVersionResponse,
         ModelResponseModel,
         ModelVersionResponseModel,
         PipelineRunResponse,
@@ -168,11 +168,11 @@ class ModelVersion(BaseModel):
                 the given name and version.
         """
         from zenml.artifacts.utils import load_artifact
-        from zenml.models import ArtifactResponse
+        from zenml.models import ArtifactVersionResponse
 
         artifact = self.get_artifact(name=name, version=version)
 
-        if not isinstance(artifact, ArtifactResponse):
+        if not isinstance(artifact, ArtifactVersionResponse):
             raise ValueError(
                 f"Version {self.version} of model {self.name} does not have "
                 f"an artifact with name {name} and version {version}."
@@ -200,7 +200,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the artifact linked to this model version.
 
         Args:
@@ -222,7 +222,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the model artifact linked to this model version.
 
         Args:
@@ -244,7 +244,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the data artifact linked to this model version.
 
         Args:
@@ -266,7 +266,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the endpoint artifact linked to this model version.
 
         Args:

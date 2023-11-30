@@ -56,7 +56,8 @@ Using an `ExternalArtifact` with input data for your step automatically disables
 
 _To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../pipelining-features/using-project-templates.md#advanced-guide)_._
 
-In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch\_inference.py), you can find an example using the `ExternalArtifact` concept to share Artifacts produced by a training pipeline inside a batch inference pipeline.
+In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py), you can find an example using the `ExternalArtifact` concept to
+share artifacts produced by a training pipeline inside a batch inference pipeline.
 
 On the ETL stage pipeline, developers can pass a `sklearn.Pipeline` fitted during training for feature preprocessing and apply it to transform inference input features. With this, we ensure that the exact same feature preprocessor used during training will be used during inference.
 

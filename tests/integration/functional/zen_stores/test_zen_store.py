@@ -74,8 +74,8 @@ from zenml.models import (
     APIKeyRequest,
     APIKeyRotateRequest,
     APIKeyUpdate,
-    ArtifactFilter,
-    ArtifactResponse,
+    ArtifactVersionFilter,
+    ArtifactVersionResponse,
     ComponentFilter,
     ComponentUpdate,
     ModelVersionArtifactFilterModel,
@@ -132,31 +132,20 @@ def client() -> Client:
 )
 def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     """Tests the basic crud operations for a given entity."""
-    client = Client()
-
-    # Create the entity
-    create_model = crud_test_config.create_model
-    if hasattr(create_model, "user"):
-        create_model.user = client.active_user.id
-    if hasattr(create_model, "workspace"):
-        create_model.workspace = client.active_workspace.id
-    if hasattr(create_model, "stack"):
-        create_model.stack = client.active_stack_model.id
-
     # Test the creation
-    created_entity = crud_test_config.create_method(create_model)
+    created_entity = crud_test_config.create()
 
     # Test that the create method returns a hydrated model, if applicable
     if hasattr(created_entity, "metadata"):
         assert created_entity.metadata is not None
 
-    # Filter by id to verify the entity was actually created
+    # Test the list method
     entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
     )
     assert entities_list.total == 1
-
     entity = entities_list.items[0]
+    assert entity == created_entity
 
     # Test that the list method returns a non-hydrated model, if applicable
     if hasattr(entity, "metadata"):
@@ -164,7 +153,6 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 
         # Try to hydrate the entity
         entity.get_metadata()
-
         assert entity.metadata is not None
 
         # Test that the list method has a `hydrate` argument
@@ -173,57 +161,39 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
             hydrate=True,
         )
         assert entities_list.total == 1
-
         entity = entities_list.items[0]
-
         assert entity.metadata is not None
 
-    if hasattr(created_entity, "name"):
-        # Filter by name to verify the entity was actually created
+    # Test filtering by name if applicable
+    if "name" in created_entity.__fields__:
         entities_list = crud_test_config.list_method(
-            crud_test_config.filter_model(name=create_model.name)
+            crud_test_config.filter_model(name=created_entity.name)
         )
         assert entities_list.total == 1
-
         entity = entities_list.items[0]
-
-        # Test that the list method returns a non-hydrated model, if applicable
-        if hasattr(entity, "metadata"):
-            assert entity.metadata is None
-
-            # Try to hydrate the entity
-            entity.get_metadata()
-
-            assert entity.metadata is not None
+        assert entity == created_entity
 
     # Test the get method
-    with does_not_raise():
-        returned_entity_by_id = crud_test_config.get_method(created_entity.id)
-    assert returned_entity_by_id == created_entity
+    entity = crud_test_config.get_method(created_entity.id)
+    assert entity == created_entity
 
     # Test that the get method returns a hydrated model, if applicable
-    if hasattr(returned_entity_by_id, "metadata"):
-        assert returned_entity_by_id.metadata is not None
+    if hasattr(entity, "metadata"):
+        assert entity.metadata is not None
 
         # Test that the get method has a `hydrate` argument
-        returned_entity_by_id = crud_test_config.get_method(
+        unhydrated_entity = crud_test_config.get_method(
             created_entity.id, hydrate=False
         )
-
-        assert returned_entity_by_id.metadata is None
+        assert unhydrated_entity.metadata is None
 
         # Try to hydrate the entity
-        returned_entity_by_id.get_metadata()
+        unhydrated_entity.get_metadata()
+        assert unhydrated_entity.metadata is not None
 
-        assert returned_entity_by_id.metadata is not None
-
+    # Test the update method if applicable
     if crud_test_config.update_model:
-        # Update the created entity
-        update_model = crud_test_config.update_model
-        with does_not_raise():
-            updated_entity = crud_test_config.update_method(
-                created_entity.id, update_model
-            )
+        updated_entity = crud_test_config.update()
         # Ids should remain the same
         assert updated_entity.id == created_entity.id
         # Something in the Model should have changed
@@ -233,17 +203,17 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         if hasattr(updated_entity, "metadata"):
             assert updated_entity.metadata is not None
 
-    # Cleanup
-    with does_not_raise():
-        crud_test_config.delete_method(created_entity.id)
-    # Filter by id to verify the entity was actually deleted
+    # Test the delete method
+    crud_test_config.delete()
     with pytest.raises(KeyError):
         crud_test_config.get_method(created_entity.id)
-    # Filter by id to verify the entity was actually deleted
     entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
     )
     assert entities_list.total == 0
+
+    # Cleanup
+    crud_test_config.cleanup()
 
 
 @pytest.mark.parametrize(
@@ -253,31 +223,19 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 )
 def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
-    if crud_test_config.entity_name in {"artifact", "build", "deployment"}:
-        pytest.skip(
-            f"Duplicates of {crud_test_config.entity_name} are allowed."
-        )
+    entity_name = crud_test_config.entity_name
+    if entity_name in {"build", "deployment"}:
+        pytest.skip(f"Duplicates of {entity_name} are allowed.")
 
-    client = Client()
-    # Create the entity
-    create_model = crud_test_config.create_model
-    if hasattr(create_model, "user"):
-        create_model.user = client.active_user.id
-    if hasattr(create_model, "workspace"):
-        create_model.workspace = client.active_workspace.id
     # First creation is successful
-    created_entity = crud_test_config.create_method(
-        crud_test_config.create_model
-    )
+    crud_test_config.create()
+
     # Second one fails
     with pytest.raises(EntityExistsError):
-        crud_test_config.create_method(crud_test_config.create_model)
+        crud_test_config.create()
+
     # Cleanup
-    with does_not_raise():
-        crud_test_config.delete_method(created_entity.id)
-    # Filter by id to verify the entity was actually deleted
-    with pytest.raises(KeyError):
-        crud_test_config.get_method(created_entity.id)
+    crud_test_config.cleanup()
 
 
 @pytest.mark.parametrize(
@@ -2557,36 +2515,47 @@ def test_list_unused_artifacts():
     client = Client()
     store = client.zen_store
 
-    num_artifacts_before = store.list_artifacts(ArtifactFilter()).total
-    num_unused_artifacts_before = store.list_artifacts(
-        ArtifactFilter(only_unused=True)
+    num_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter()
+    ).total
+    num_unused_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter(only_unused=True)
     ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifacts(ArtifactFilter())
-        assert artifacts.total == num_artifacts_before + num_runs * 2
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter()
+        )
+        assert (
+            artifact_versions.total
+            == num_artifact_versions_before + num_runs * 2
+        )
 
-        artifacts = store.list_artifacts(ArtifactFilter(only_unused=True))
-        assert artifacts.total == num_unused_artifacts_before
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter(only_unused=True)
+        )
+        assert artifact_versions.total == num_unused_artifact_versions_before
 
 
-def test_artifacts_are_not_deleted_with_run(clean_workspace):
+def test_artifacts_are_not_deleted_with_run(clean_client):
     """Tests listing with `unused=True` only returns unused artifacts."""
-    store = clean_workspace.zen_store
+    store = clean_client.zen_store
 
-    num_artifacts_before = store.list_artifacts(ArtifactFilter()).total
+    num_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter()
+    ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifacts(ArtifactFilter())
-        assert artifacts.total == num_artifacts_before + num_runs * 2
+        artifacts = store.list_artifact_versions(ArtifactVersionFilter())
+        assert artifacts.total == num_artifact_versions_before + num_runs * 2
 
         # Cleanup
         pipelines = store.list_runs(PipelineRunFilter()).items
         for p in pipelines:
             store.delete_run(p.id)
 
-        artifacts = store.list_artifacts(ArtifactFilter())
-        assert artifacts.total == num_artifacts_before + num_runs * 2
+        artifacts = store.list_artifact_versions(ArtifactVersionFilter())
+        assert artifacts.total == num_artifact_versions_before + num_runs * 2
 
 
 # .---------.
@@ -4069,7 +4038,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
 
@@ -4085,20 +4054,20 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
-            assert al1.artifact.id == artifacts[0].id
+            assert al1.artifact_version.id == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[1].id,
+                    artifact_version=artifacts[1].id,
                 )
             )
-            assert al2.artifact.id == artifacts[1].id
+            assert al2.artifact_version.id == artifacts[1].id
 
     def test_link_create_duplicated_by_id(self):
         """Assert that creating a link with the same artifact returns the same link."""
@@ -4113,7 +4082,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
 
@@ -4123,7 +4092,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
 
@@ -4143,7 +4112,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
             zs.create_model_version_artifact_link(
@@ -4152,7 +4121,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[1].id,
+                    artifact_version=artifacts[1].id,
                 )
             )
 
@@ -4175,7 +4144,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
             zs.delete_model_version_artifact_link(
@@ -4232,7 +4201,7 @@ class TestModelVersionArtifactLinks:
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
                         model_version=model_version.id,
-                        artifact=artifact.id,
+                        artifact_version=artifact.id,
                         is_model_artifact=mo,
                         is_endpoint_artifact=dep,
                     )
@@ -4277,15 +4246,15 @@ class TestModelVersionArtifactLinks:
 
             assert isinstance(
                 mv.get_model_artifact(artifacts[1].name),
-                ArtifactResponse,
+                ArtifactVersionResponse,
             )
             assert isinstance(
                 mv.get_data_artifact(artifacts[0].name),
-                ArtifactResponse,
+                ArtifactVersionResponse,
             )
             assert isinstance(
                 mv.get_endpoint_artifact(artifacts[2].name),
-                ArtifactResponse,
+                ArtifactVersionResponse,
             )
             assert (
                 mv.model_artifacts[artifacts[1].name]["1"].id
