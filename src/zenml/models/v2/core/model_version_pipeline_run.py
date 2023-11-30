@@ -13,16 +13,20 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from pydantic import Field
 from typing import TYPE_CHECKING, Optional, Union
 from uuid import UUID
+
+from pydantic import Field
 
 from zenml.models.v2.base.base import (
     BaseResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.scoped import WorkspaceScopedRequest, WorkspaceScopedFilter
+from zenml.models.v2.base.scoped import (
+    WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
+)
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
