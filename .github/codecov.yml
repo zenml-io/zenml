@@ -1,5 +1,6 @@
 codecov:
-  branch: main
+  branch: develop
+  bot: "codecov-io"
 
 comment: false          # don't comment on PRs
 github_checks: false
@@ -8,7 +9,8 @@ coverage:
   status:
     project:
       default:
-        threshold: 1%   # allow coverage to drop by 1% before failing the PR
+        target: auto
+        threshold: 0%   # allow coverage to drop by 1% before failing the PR
 
     patch: off
 
