@@ -82,6 +82,7 @@ from zenml.models import (
     APIKeyRotateRequest,
     APIKeyUpdate,
     ArtifactVersionFilter,
+    ArtifactVersionRequest,
     ArtifactVersionResponse,
     ComponentFilter,
     ComponentUpdate,
@@ -4680,11 +4681,18 @@ class TestRunMetadata:
         )
 
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
-            resource = client.zen_store.create_artifact(
+            artifact = client.zen_store.create_artifact(
                 ArtifactRequest(
+                    name=sample_name("foo"),
+                    has_custom_name=True,
+                )
+            )
+            resource = client.zen_store.create_artifact_version(
+                ArtifactVersionRequest(
+                    artifact_id=artifact.id,
                     user=client.active_user.id,
                     workspace=client.active_workspace.id,
-                    name=sample_name("foo"),
+                    version="1",
                     type=ArtifactType.DATA,
                     uri=sample_name("foo"),
                     materializer=Source(
@@ -4771,7 +4779,8 @@ class TestRunMetadata:
         assert rm.type == MetadataTypeEnum.STRING
 
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
-            client.zen_store.delete_artifact(resource.id)
+            client.zen_store.delete_artifact_version(resource.id)
+            client.zen_store.delete_artifact(artifact.id)
         elif (
             type_ == MetadataResourceTypes.PIPELINE_RUN
             or type_ == MetadataResourceTypes.STEP_RUN
