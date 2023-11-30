@@ -42,7 +42,7 @@ def _rename_duplicate_entities(
     for id, name, user_id in connection.execute(query).fetchall():
         if user_id is None:
             # Generate a random user id
-            user_id = str(uuid4()).replace("-", "")
+            user_id = uuid4().hex
 
         if name in names:
             for suffix_length in range(4, len(user_id)):
@@ -78,7 +78,7 @@ def _rename_duplicate_components(table: sa.Table) -> None:
     for id, type_, name, user_id in connection.execute(query).fetchall():
         if user_id is None:
             # Generate a random user id
-            user_id = str(uuid4()).replace("-", "")
+            user_id = uuid4().hex
 
         names = names_per_type[type_]
         if name in names:
