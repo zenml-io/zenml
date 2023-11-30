@@ -125,13 +125,17 @@ def test_log_artifact_metadata_existing(clean_client):
         artifact_version="1",
     )
 
-    artifact_1 = clean_client.get_artifact("meaning_of_life", version="1")
+    artifact_1 = clean_client.get_artifact_version(
+        "meaning_of_life", version="1"
+    )
     assert "description" in artifact_1.run_metadata
     assert artifact_1.run_metadata["description"].value == "Aria is great!"
     assert "description_3" in artifact_1.run_metadata
     assert artifact_1.run_metadata["description_3"].value == "Axl is great!"
 
-    artifact_2 = clean_client.get_artifact("meaning_of_life", version="43")
+    artifact_2 = clean_client.get_artifact_version(
+        "meaning_of_life", version="43"
+    )
     assert "description_2" in artifact_2.run_metadata
     assert artifact_2.run_metadata["description_2"].value == "Blupus is great!"
 

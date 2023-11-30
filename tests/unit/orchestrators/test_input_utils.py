@@ -22,12 +22,14 @@ from zenml.models import Page
 from zenml.orchestrators import input_utils
 
 
-def test_input_resolution(mocker, sample_artifact_model, create_step_run):
+def test_input_resolution(
+    mocker, sample_artifact_version_model, create_step_run
+):
     """Tests that input resolution works if the correct models exist in the
     zen store."""
     step_run = create_step_run(
         step_run_name="upstream_step",
-        output_artifacts={"output_name": sample_artifact_model},
+        output_artifacts={"output_name": sample_artifact_version_model},
     )
 
     mocker.patch(
@@ -55,7 +57,7 @@ def test_input_resolution(mocker, sample_artifact_model, create_step_run):
     input_artifacts, parent_ids = input_utils.resolve_step_inputs(
         step=step, run_id=uuid4()
     )
-    assert input_artifacts == {"input_name": sample_artifact_model}
+    assert input_artifacts == {"input_name": sample_artifact_version_model}
     assert parent_ids == [step_run.id]
 
 
@@ -121,12 +123,12 @@ def test_input_resolution_with_missing_artifact(mocker, create_step_run):
 
 
 def test_input_resolution_fetches_all_run_steps(
-    mocker, sample_artifact_model, create_step_run
+    mocker, sample_artifact_version_model, create_step_run
 ):
     """Tests that input resolution fetches all step runs of the pipeline run."""
     step_run = create_step_run(
         step_run_name="upstream_step",
-        output_artifacts={"output_name": sample_artifact_model},
+        output_artifacts={"output_name": sample_artifact_version_model},
     )
     second_step_run = create_step_run(
         step_run_name="other_step",

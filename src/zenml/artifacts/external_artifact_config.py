@@ -41,7 +41,7 @@ class ExternalArtifactConfiguration(BaseModel):
     def _set_model_version(self, model_version: "ModelVersion") -> None:
         self._model_version = model_version
 
-    def get_artifact_id(self) -> UUID:
+    def get_artifact_version_id(self) -> UUID:
         """Get the artifact.
 
         Returns:
@@ -58,10 +58,12 @@ class ExternalArtifactConfiguration(BaseModel):
         client = Client()
 
         if self.id:
-            response = client.get_artifact(self.id)
+            response = client.get_artifact_version(self.id)
         elif self.name:
             if self.version:
-                response = client.get_artifact(self.name, version=self.version)
+                response = client.get_artifact_version(
+                    self.name, version=self.version
+                )
             elif self._model_version:
                 response_ = self._model_version.get_artifact(self.name)
                 if not isinstance(response_, ArtifactResponse):
@@ -73,7 +75,7 @@ class ExternalArtifactConfiguration(BaseModel):
                     )
                 response = response_
             else:
-                response = client.get_artifact(self.name)
+                response = client.get_artifact_version(self.name)
         else:
             raise RuntimeError(
                 "Either the ID or name of the artifact must be provided. "
@@ -89,7 +91,8 @@ class ExternalArtifactConfiguration(BaseModel):
                 "referenced by an external artifact is not stored in the "
                 "artifact store of the active stack. This will lead to "
                 "issues loading the artifact. Please make sure to only "
-                "reference artifacts stored in your active artifact store."
+                "reference artifact versions stored in your active artifact "
+                "store."
             )
 
         self.id = response.id

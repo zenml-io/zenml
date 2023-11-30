@@ -50,7 +50,7 @@ class ArtifactVisualizationResponseBody(BaseResponseBody):
 class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
     """Response metadata model for artifact visualizations."""
 
-    artifact_id: UUID
+    artifact_version_id: UUID
 
 
 class ArtifactVisualizationResponse(
@@ -91,13 +91,13 @@ class ArtifactVisualizationResponse(
         return self.get_body().uri
 
     @property
-    def artifact_id(self) -> UUID:
-        """The `artifact_id` property.
+    def artifact_version_id(self) -> UUID:
+        """The `artifact_version_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().artifact_id
+        return self.get_metadata().artifact_version_id
 
 
 # ------------------ Filter Model ------------------

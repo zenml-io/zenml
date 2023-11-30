@@ -12,6 +12,7 @@
 #  permissions and limitations under the License.
 import logging
 import uuid
+from copy import deepcopy
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
@@ -33,6 +34,10 @@ from zenml.models import (
     APIKeyRequest,
     ArtifactFilter,
     ArtifactRequest,
+    ArtifactUpdate,
+    ArtifactVersionFilter,
+    ArtifactVersionRequest,
+    ArtifactVersionUpdate,
     AuthenticationMethodModel,
     BaseFilter,
     CodeRepositoryFilter,
@@ -125,20 +130,20 @@ class PipelineRunContext:
                 enable_step_logs=self.enable_step_logs,
             )
 
-        # persist which runs, steps and artifacts were produced, in case
-        #  the test ends up deleting some or all of these, this allows for a
-        #  thorough cleanup nonetheless
+        # persist which runs, steps and artifact versions were produced.
+        # In case the test ends up deleting some or all of these, this allows
+        # for a thorough cleanup nonetheless
         self.runs = self.store.list_runs(
             PipelineRunFilter(name=f"startswith:{self.pipeline_name}")
         ).items
         self.steps = []
-        self.artifacts = []
+        self.artifact_versions = []
         for run in self.runs:
             self.steps += self.store.list_run_steps(
                 StepRunFilter(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
-                self.artifacts += [a for a in s.outputs.values()]
+                self.artifact_versions += [a for a in s.outputs.values()]
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -147,9 +152,17 @@ class PipelineRunContext:
                 self.client.delete_pipeline_run(run.id)
             except KeyError:
                 pass
-        for artifact in self.artifacts:
+        for artifact_version in self.artifact_versions:
             try:
-                self.client.delete_artifact(artifact.id)
+                self.client.delete_artifact_version(artifact_version.id)
+            except KeyError:
+                pass
+            try:
+                artifact = self.client.get_artifact(
+                    artifact_version.artifact.id
+                )
+                if not artifact.versions:
+                    self.client.delete_artifact(artifact.id)
             except KeyError:
                 pass
 
@@ -613,6 +626,7 @@ class ModelVersionContext:
         self.create_version = create_version
         self.create_artifacts = create_artifacts
         self.artifacts = []
+        self.artifact_versions = []
         self.create_prs = create_prs
         self.prs = []
         self.deployments = []
@@ -641,20 +655,27 @@ class ModelVersionContext:
                 )
 
         for _ in range(self.create_artifacts):
-            self.artifacts.append(
-                client.zen_store.create_artifact(
-                    ArtifactRequest(
-                        name=sample_name("sample_artifact"),
-                        version=1,
-                        data_type="module.class",
-                        materializer="module.class",
-                        type=ArtifactType.DATA,
-                        uri="",
-                        user=user.id,
-                        workspace=ws.id,
-                    )
+            artifact = client.zen_store.create_artifact(
+                ArtifactRequest(
+                    name=sample_name("sample_artifact"),
+                    has_custom_name=True,
                 )
             )
+            client.get_artifact(artifact.id)
+            self.artifacts.append(artifact)
+            artifact_version = client.zen_store.create_artifact_version(
+                ArtifactVersionRequest(
+                    artifact_id=artifact.id,
+                    version=1,
+                    data_type="module.class",
+                    materializer="module.class",
+                    type=ArtifactType.DATA,
+                    uri="",
+                    user=user.id,
+                    workspace=ws.id,
+                )
+            )
+            self.artifact_versions.append(artifact_version)
         for _ in range(self.create_prs):
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
@@ -683,14 +704,14 @@ class ModelVersionContext:
             )
         if self.create_version:
             if self.create_artifacts:
-                return mv, self.artifacts
+                return mv, self.artifact_versions
             if self.create_prs:
                 return mv, self.prs
             else:
                 return mv
         else:
             if self.create_artifacts:
-                return model, self.artifacts
+                return model, self.artifact_versions
             if self.create_prs:
                 return model, self.prs
             else:
@@ -702,6 +723,8 @@ class ModelVersionContext:
             client.delete_model(self.model)
         except KeyError:
             pass
+        for artifact_version in self.artifact_versions:
+            client.delete_artifact_version(artifact_version.id)
         for artifact in self.artifacts:
             client.delete_artifact(artifact.id)
         for run in self.prs:
@@ -828,11 +851,27 @@ class CrudTestConfig:
         filter_model: Type[BaseFilter],
         entity_name: str,
         update_model: Optional["BaseModel"] = None,
+        conditional_entities: Optional[Dict[str, "CrudTestConfig"]] = None,
     ):
+        """Initializes a CrudTestConfig.
+
+        Args:
+            create_model: Model to use for creating the entity.
+            update_model: Model to use for updating the entity.
+            filter_model: Model to use for filtering entities.
+            entity_name: Name of the entity.
+            conditional_entity_names: Names of entities that need to exist
+                before the entity under test can be created.
+            conditional_entities: Other entities that need to exist before the
+                entity under test can be created. Expected to be a mapping from
+                field in the `create_model` to corresponding `CrudTestConfig`.
+        """
         self.create_model = create_model
         self.update_model = update_model
         self.filter_model = filter_model
         self.entity_name = entity_name
+        self.conditional_entities = conditional_entities or {}
+        self.id: Optional[uuid.UUID] = None
 
     @property
     def list_method(
@@ -866,6 +905,63 @@ class CrudTestConfig:
     ) -> Callable[[uuid.UUID, BaseModel], AnyResponseModel]:
         store = Client().zen_store
         return getattr(store, f"update_{self.entity_name}")
+
+    def create(self) -> AnyResponseModel:
+        """Creates the entity."""
+        create_model = self.create_model
+
+        # Set active user, workspace, and stack if applicable
+        client = Client()
+        if hasattr(create_model, "user"):
+            create_model.user = client.active_user.id
+        if hasattr(create_model, "workspace"):
+            create_model.workspace = client.active_workspace.id
+        if hasattr(create_model, "stack"):
+            create_model.stack = client.active_stack_model.id
+
+        # create other required entities if applicable
+        for (
+            field_name,
+            conditional_entity,
+        ) in self.conditional_entities.items():
+            setattr(create_model, field_name, conditional_entity.create().id)
+
+        # Create the entity itself
+        response = self.create_method(create_model)
+        self.id = response.id
+        return response
+
+    def list(self) -> Page[AnyResponseModel]:
+        """Lists all entities."""
+        return self.list_method(self.filter_model())
+
+    def get(self) -> AnyResponseModel:
+        """Gets the entity if it was already created."""
+        if not self.id:
+            raise ValueError("Entity not created yet.")
+        return self.get_method(self.id)
+
+    def update(self) -> AnyResponseModel:
+        """Updates the entity if it was already created."""
+        if not self.id:
+            raise ValueError("Entity not created yet.")
+        if not self.update_model:
+            raise NotImplementedError("This entity cannot be updated.")
+        return self.update_method(self.id, self.update_model)
+
+    def delete(self) -> None:
+        """Deletes the entity if it was already created."""
+        if not self.id:
+            raise ValueError("Entity not created yet.")
+        self.delete_method(self.id)
+        self.id = None
+
+    def cleanup(self) -> None:
+        """Deletes all entities that were created, including itself."""
+        if self.id:
+            self.delete()
+        for conditional_entity in self.conditional_entities.values():
+            conditional_entity.cleanup()
 
 
 workspace_crud_test_config = CrudTestConfig(
@@ -936,8 +1032,21 @@ pipeline_crud_test_config = CrudTestConfig(
 #     entity_name="run",
 # )
 artifact_crud_test_config = CrudTestConfig(
+    entity_name="artifact",
     create_model=ArtifactRequest(
         name=sample_name("sample_artifact"),
+        has_custom_name=True,
+    ),
+    filter_model=ArtifactFilter,
+    update_model=ArtifactUpdate(
+        name=sample_name("sample_artifact"),
+        add_tags=["tag1", "tag2"],
+    ),
+)
+artifact_version_crud_test_config = CrudTestConfig(
+    entity_name="artifact_version",
+    create_model=ArtifactVersionRequest(
+        artifact_id=uuid.uuid4(),  # will be overridden in create()
         version=1,
         data_type="module.class",
         materializer="module.class",
@@ -946,8 +1055,9 @@ artifact_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    filter_model=ArtifactFilter,
-    entity_name="artifact",
+    filter_model=ArtifactVersionFilter,
+    update_model=ArtifactVersionUpdate(add_tags=["tag1", "tag2"]),
+    conditional_entities={"artifact_id": deepcopy(artifact_crud_test_config)},
 )
 secret_crud_test_config = CrudTestConfig(
     create_model=SecretRequestModel(
@@ -1064,6 +1174,7 @@ list_of_entities = [
     # step_run_crud_test_config,
     # pipeline_run_crud_test_config,
     artifact_crud_test_config,
+    artifact_version_crud_test_config,
     secret_crud_test_config,
     build_crud_test_config,
     deployment_crud_test_config,

@@ -11,22 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Endpoint definitions for steps (and artifacts) of pipeline runs."""
+"""Endpoint definitions for artifacts."""
 
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.artifacts.utils import load_artifact_visualization
-from zenml.constants import API, ARTIFACTS, VERSION_1, VISUALIZE
+from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.models import (
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
-    LoadedVisualization,
+    ArtifactUpdate,
     Page,
 )
-from zenml.models.v2.core.artifact import ArtifactUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -43,14 +41,14 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-router = APIRouter(
+artifact_router = APIRouter(
     prefix=API + VERSION_1 + ARTIFACTS,
     tags=["artifacts"],
     responses={401: error_response, 403: error_response},
 )
 
 
-@router.get(
+@artifact_router.get(
     "",
     response_model=Page[ArtifactResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -82,7 +80,7 @@ def list_artifacts(
     )
 
 
-@router.post(
+@artifact_router.post(
     "",
     response_model=ArtifactResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
@@ -107,7 +105,7 @@ def create_artifact(
     )
 
 
-@router.get(
+@artifact_router.get(
     "/{artifact_id}",
     response_model=ArtifactResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -129,11 +127,13 @@ def get_artifact(
         The artifact with the given ID.
     """
     return verify_permissions_and_get_entity(
-        id=artifact_id, get_method=zen_store().get_artifact, hydrate=hydrate
+        id=artifact_id,
+        get_method=zen_store().get_artifact,
+        hydrate=hydrate,
     )
 
 
-@router.put(
+@artifact_router.put(
     "/{artifact_id}",
     response_model=ArtifactResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -161,7 +161,7 @@ def update_artifact(
     )
 
 
-@router.delete(
+@artifact_router.delete(
     "/{artifact_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -179,33 +179,4 @@ def delete_artifact(
         id=artifact_id,
         get_method=zen_store().get_artifact,
         delete_method=zen_store().delete_artifact,
-    )
-
-
-@router.get(
-    "/{artifact_id}" + VISUALIZE,
-    response_model=LoadedVisualization,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_artifact_visualization(
-    artifact_id: UUID,
-    index: int = 0,
-    _: AuthContext = Security(authorize),
-) -> LoadedVisualization:
-    """Get the visualization of an artifact.
-
-    Args:
-        artifact_id: ID of the artifact for which to get the visualization.
-        index: Index of the visualization to get (if there are multiple).
-
-    Returns:
-        The visualization of the artifact.
-    """
-    store = zen_store()
-    artifact = verify_permissions_and_get_entity(
-        id=artifact_id, get_method=store.get_artifact
-    )
-    return load_artifact_visualization(
-        artifact=artifact, index=index, zen_store=store, encode_image=True
     )
