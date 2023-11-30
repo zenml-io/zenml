@@ -1,7 +1,7 @@
 """polymorthic run_metadata [8ed03137cacc].
 
 Revision ID: 8ed03137cacc
-Revises: 389046140cad
+Revises: a91762e6be36
 Create Date: 2023-11-17 16:19:34.281692
 
 """
@@ -12,7 +12,7 @@ from sqlmodel import Session
 
 # revision identifiers, used by Alembic.
 revision = "8ed03137cacc"
-down_revision = "389046140cad"
+down_revision = "a91762e6be36"
 branch_labels = None
 depends_on = None
 
@@ -34,7 +34,8 @@ def upgrade() -> None:
             "fk_run_metadata_step_run_id_step_run", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_run_metadata_artifact_id_artifact", type_="foreignkey"
+            "fk_run_metadata_artifact_version_id_artifact_version",
+            type_="foreignkey",
         )
         batch_op.drop_constraint(
             "fk_run_metadata_pipeline_run_id_pipeline_run", type_="foreignkey"
@@ -62,9 +63,9 @@ def upgrade() -> None:
         stmt = sa.text(
             """
             UPDATE run_metadata
-            SET resource_id = artifact_id,
-                resource_type = 'artifact'
-            WHERE artifact_id IS NOT NULL
+            SET resource_id = artifact_version_id,
+                resource_type = 'artifact_version'
+            WHERE artifact_version_id IS NOT NULL
             """
         )
         session.execute(stmt)
@@ -84,7 +85,7 @@ def upgrade() -> None:
             nullable=False,
         )
         batch_op.drop_column("step_run_id")
-        batch_op.drop_column("artifact_id")
+        batch_op.drop_column("artifact_version_id")
         batch_op.drop_column("pipeline_run_id")
 
     # ### end Alembic commands ###
@@ -98,7 +99,7 @@ def downgrade() -> None:
             sa.Column("pipeline_run_id", sa.CHAR(length=32), nullable=True)
         )
         batch_op.add_column(
-            sa.Column("artifact_id", sa.CHAR(length=32), nullable=True)
+            sa.Column("artifact_version_id", sa.CHAR(length=32), nullable=True)
         )
         batch_op.add_column(
             sa.Column("step_run_id", sa.CHAR(length=32), nullable=True)
@@ -111,9 +112,9 @@ def downgrade() -> None:
             ondelete="CASCADE",
         )
         batch_op.create_foreign_key(
-            "fk_run_metadata_artifact_id_artifact",
-            "artifact",
-            ["artifact_id"],
+            "fk_run_metadata_artifact_version_id_artifact_version",
+            "artifact_version",
+            ["artifact_version_id"],
             ["id"],
             ondelete="CASCADE",
         )
@@ -145,8 +146,8 @@ def downgrade() -> None:
         stmt = sa.text(
             """
             UPDATE run_metadata
-            SET artifact_id = resource_id
-            WHERE resource_type = 'artifact'
+            SET artifact_version_id = resource_id
+            WHERE resource_type = 'artifact_version'
             """
         )
         session.execute(stmt)
