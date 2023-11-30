@@ -25,6 +25,8 @@ if TYPE_CHECKING:
         V1Affinity,
         V1ResourceRequirements,
         V1Toleration,
+        V1Volume,
+        V1VolumeMount,
     )
 
 
@@ -37,6 +39,9 @@ class KubernetesPodSettings(BaseSettings):
         tolerations: Tolerations to apply to the pod.
         resources: Resource requests and limits for the pod.
         annotations: Annotations to apply to the pod metadata.
+        volumes: Volumes to mount in the pod.
+        volume_mounts: Volume mounts to apply to the pod containers.
+        host_ipc: Whether to enable host IPC for the pod.
     """
 
     node_selectors: Dict[str, str] = {}
@@ -44,6 +49,53 @@ class KubernetesPodSettings(BaseSettings):
     tolerations: List[Dict[str, Any]] = []
     resources: Dict[str, Dict[str, str]] = {}
     annotations: Dict[str, str] = {}
+    volumes: List[Dict[str, Any]] = []
+    volume_mounts: Dict[str, Any] = []
+    host_ipc: bool = False
+
+    @validator("volumes", pre=True)
+    def _convert_volumes(
+        cls, value: Union[List[Dict[str, Any]], "V1Volume"]
+    ) -> List[Dict[str, Any]]:
+        """Converts Kubernetes volumes to dicts.
+
+        Args:
+            value: The volumes list.
+
+        Returns:
+            The converted volumes.
+        """
+        from kubernetes.client.models import V1Volume
+
+        result = []
+        for element in value:
+            if isinstance(element, V1Volume):
+                result.append(
+                    serialization_utils.serialize_kubernetes_model(element)
+                )
+            else:
+                result.append(element)
+
+        return result
+
+    @validator("volume_mounts", pre=True)
+    def _convert_volume_mounts(
+        cls, value: Union[Dict[str, Any], "V1VolumeMount"]
+    ) -> Dict[str, Any]:
+        """Converts Kubernetes volume mounts to dicts.
+
+        Args:
+            value: The volume mounts list.
+
+        Returns:
+            The converted volume mounts.
+        """
+        from kubernetes.client.models import V1VolumeMount
+
+        if isinstance(value, V1VolumeMount):
+            return serialization_utils.serialize_kubernetes_model(value)
+        else:
+            return value
 
     @validator("affinity", pre=True)
     def _convert_affinity(

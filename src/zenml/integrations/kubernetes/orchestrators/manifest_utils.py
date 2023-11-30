@@ -196,6 +196,14 @@ def add_pod_settings(
     for container in pod_spec.containers:
         assert isinstance(container, k8s_client.V1Container)
         container._resources = settings.resources
+        if settings.volume_mounts:
+            container.volume_mounts = settings.volume_mounts
+
+    if settings.volumes:
+        pod_spec.volumes = settings.volumes
+
+    if settings.host_ipc:
+        pod_spec.host_ipc = settings.host_ipc
 
 
 def build_cron_job_manifest(
