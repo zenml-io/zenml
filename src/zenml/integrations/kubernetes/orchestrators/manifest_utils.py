@@ -197,10 +197,16 @@ def add_pod_settings(
         assert isinstance(container, k8s_client.V1Container)
         container._resources = settings.resources
         if settings.volume_mounts:
-            container.volume_mounts = settings.volume_mounts
+            if container.volume_mounts:
+                container.volume_mounts.extend(settings.volume_mounts)
+            else:
+                container.volume_mounts = settings.volume_mounts
 
     if settings.volumes:
-        pod_spec.volumes = settings.volumes
+        if pod_spec.volumes:
+            pod_spec.volumes.extend(settings.volumes)
+        else:
+            pod_spec.volumes = settings.volumes
 
     if settings.host_ipc:
         pod_spec.host_ipc = settings.host_ipc
