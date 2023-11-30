@@ -15,4 +15,4 @@ coverage:
     patch: off
 
     # do not run coverage on changes
-    changes: off
+    changes: false
