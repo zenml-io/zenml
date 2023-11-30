@@ -19,9 +19,8 @@
 from typing import Optional
 
 from typing_extensions import Annotated
-from utils import get_model_registry_version
 
-from zenml import get_step_context, step
+from zenml import ArtifactConfig, get_step_context, step
 from zenml.client import Client
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
@@ -30,7 +29,6 @@ from zenml.integrations.mlflow.steps.mlflow_deployer import (
     mlflow_model_registry_deployer_step,
 )
 from zenml.logger import get_logger
-from zenml.model import DeploymentArtifactConfig
 
 logger = get_logger(__name__)
 
@@ -39,8 +37,7 @@ logger = get_logger(__name__)
 def deployment_deploy() -> (
     Annotated[
         Optional[MLFlowDeploymentService],
-        "mlflow_deployment",
-        DeploymentArtifactConfig(),
+        ArtifactConfig(name="mlflow_deployment", is_endpoint_artifact=True),
     ]
 ):
     """Predictions step.
@@ -63,12 +60,14 @@ def deployment_deploy() -> (
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     if Client().active_stack.orchestrator.flavor == "local":
-        model_version = get_step_context().model_config._get_model_version()
+        model_version = get_step_context().model_version
 
         # deploy predictor service
         deployment_service = mlflow_model_registry_deployer_step.entrypoint(
-            registry_model_name=model_version.model.name,
-            registry_model_version=get_model_registry_version(model_version),
+            registry_model_name=model_version.name,
+            registry_model_version=model_version.get_model_artifact("model")
+            .run_metadata["model_registry_version"]
+            .value,
             replace_existing=True,
         )
     else:

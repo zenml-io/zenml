@@ -24,10 +24,7 @@ from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.logger import get_logger
-from zenml.models import (
-    APIKeyFilterModel,
-    ServiceAccountFilterModel,
-)
+from zenml.models import APIKeyFilter, ServiceAccountFilter
 
 logger = get_logger(__name__)
 
@@ -113,21 +110,11 @@ def service_account() -> None:
     help=("Configure the local client to use the generated API key."),
     is_flag=True,
 )
-@click.option(
-    "--role",
-    "-r",
-    "initial_role",
-    help="Give the service account an initial role.",
-    required=False,
-    type=str,
-    default="admin",
-)
 def create_service_account(
     service_account_name: str,
     description: str = "",
     create_api_key: bool = True,
     set_api_key: bool = False,
-    initial_role: str = "admin",
 ) -> None:
     """Create a new service account.
 
@@ -136,14 +123,12 @@ def create_service_account(
         description: The API key description.
         create_api_key: Create an API key for the service account.
         set_api_key: Configure the local client to use the generated API key.
-        initial_role: Give the service account an initial role
     """
     client = Client()
     try:
         service_account = client.create_service_account(
             name=service_account_name,
             description=description,
-            initial_role=initial_role,
         )
 
         cli_utils.declare(f"Created service account '{service_account.name}'.")
@@ -182,7 +167,7 @@ def describe_service_account(service_account_name_or_id: str) -> None:
 
 
 @service_account.command("list")
-@list_options(ServiceAccountFilterModel)
+@list_options(ServiceAccountFilter)
 @click.pass_context
 def list_service_accounts(ctx: click.Context, **kwargs: Any) -> None:
     """List all users.
@@ -196,7 +181,7 @@ def list_service_accounts(ctx: click.Context, **kwargs: Any) -> None:
         service_accounts = client.list_service_accounts(**kwargs)
         if not service_accounts:
             cli_utils.declare(
-                "No  service accounts found for the given filters."
+                "No service accounts found for the given filters."
             )
             return
 
@@ -370,7 +355,7 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
 
 
 @api_key.command("list", help="List all API keys.")
-@list_options(APIKeyFilterModel)
+@list_options(APIKeyFilter)
 @click.pass_obj
 def list_api_keys(service_account_name_or_id: str, **kwargs: Any) -> None:
     """List all API keys.

@@ -44,7 +44,7 @@ The execution environments do not need to be built each time a pipeline is run -
 
 ## Image Builder Environment
 
-By default, execution environments are created locally in the [client environment](environment-management.md#client-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](../../../stacks-and-components/component-guide/image-builders/image-builders.md), a special [stack component](../../starter-guide/understand-stacks.md), allowing users to build and push docker images in a different specialized _image builder environment_.
+By default, execution environments are created locally in the [client environment](environment-management.md#client-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](../../../stacks-and-components/component-guide/image-builders/image-builders.md), a special [stack component](../../production-guide/understand-stacks.md), allowing users to build and push docker images in a different specialized _image builder environment_.
 
 Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](../../../stacks-and-components/component-guide/image-builders/local.md) to retain consistency across all builds. In this case, the image builder environment is the same as the client environment.
 

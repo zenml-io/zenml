@@ -22,11 +22,13 @@ from uuid import UUID
 from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
-from zenml.models.component_models import (
-    ComponentResponseModel,
-    ComponentUpdateModel,
+from zenml.models import (
+    ComponentResponse,
+    ComponentResponseBody,
+    ComponentResponseMetadata,
+    ComponentUpdate,
 )
-from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.service_connector_schemas import (
     ServiceConnectorSchema,
@@ -44,7 +46,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ScheduleSchema
 
 
-class StackComponentSchema(ShareableSchema, table=True):
+class StackComponentSchema(NamedSchema, table=True):
     """SQL Model for stack components."""
 
     __tablename__ = "stack_component"
@@ -106,12 +108,12 @@ class StackComponentSchema(ShareableSchema, table=True):
     connector_resource_id: Optional[str]
 
     def update(
-        self, component_update: ComponentUpdateModel
+        self, component_update: "ComponentUpdate"
     ) -> "StackComponentSchema":
-        """Updates a `StackSchema` from a `ComponentUpdateModel`.
+        """Updates a `StackComponentSchema` from a `ComponentUpdate`.
 
         Args:
-            component_update: The `ComponentUpdateModel` to update from.
+            component_update: The `ComponentUpdate` to update from.
 
         Returns:
             The updated `StackComponentSchema`.
@@ -135,29 +137,43 @@ class StackComponentSchema(ShareableSchema, table=True):
 
     def to_model(
         self,
-    ) -> "ComponentResponseModel":
-        """Creates a `ComponentModel` from an instance of a `StackSchema`.
+        hydrate: bool = False,
+    ) -> "ComponentResponse":
+        """Creates a `ComponentModel` from an instance of a `StackComponentSchema`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             A `ComponentModel`
         """
-        return ComponentResponseModel(
-            id=self.id,
-            name=self.name,
+        body = ComponentResponseBody(
             type=self.type,
             flavor=self.flavor,
-            user=self.user.to_model(True) if self.user else None,
-            workspace=self.workspace.to_model(),
-            connector=self.connector.to_model() if self.connector else None,
-            connector_resource_id=self.connector_resource_id,
-            is_shared=self.is_shared,
-            configuration=json.loads(
-                base64.b64decode(self.configuration).decode()
-            ),
-            labels=json.loads(base64.b64decode(self.labels).decode())
-            if self.labels
-            else None,
-            component_spec_path=self.component_spec_path,
+            user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
+        )
+        metadata = None
+        if hydrate:
+            metadata = ComponentResponseMetadata(
+                workspace=self.workspace.to_model(),
+                configuration=json.loads(
+                    base64.b64decode(self.configuration).decode()
+                ),
+                labels=json.loads(base64.b64decode(self.labels).decode())
+                if self.labels
+                else None,
+                component_spec_path=self.component_spec_path,
+                connector_resource_id=self.connector_resource_id,
+                connector=self.connector.to_model()
+                if self.connector
+                else None,
+            )
+        return ComponentResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
         )

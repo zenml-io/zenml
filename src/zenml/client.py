@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
+
 import json
 import os
 from abc import ABCMeta
@@ -26,7 +27,6 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Set,
     Tuple,
     Type,
     TypeVar,
@@ -48,6 +48,7 @@ from zenml.constants import (
     PAGE_SIZE_DEFAULT,
     PAGINATION_STARTING_PAGE,
     REPOSITORY_DIRECTORY_NAME,
+    TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
 )
 from zenml.enums import (
@@ -55,8 +56,8 @@ from zenml.enums import (
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
-    PermissionType,
     SecretScope,
+    SorterOps,
     StackComponentType,
     StoreType,
 )
@@ -71,85 +72,30 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    APIKeyFilterModel,
-    APIKeyRequestModel,
-    APIKeyResponseModel,
-    APIKeyRotateRequestModel,
-    APIKeyUpdateModel,
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentResponseModel,
-    ComponentUpdateModel,
-    FlavorFilterModel,
-    FlavorRequestModel,
-    FlavorResponseModel,
-    OAuthDeviceFilterModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
-    PipelineBuildFilterModel,
-    PipelineBuildResponseModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentResponseModel,
-    PipelineFilterModel,
-    PipelineResponseModel,
-    PipelineRunFilterModel,
-    PipelineRunResponseModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
-    RunMetadataRequestModel,
-    RunMetadataResponseModel,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
-    ServiceAccountFilterModel,
-    ServiceAccountRequestModel,
-    ServiceAccountResponseModel,
-    ServiceAccountUpdateModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
-    ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
-    ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
-    StackFilterModel,
-    StackRequestModel,
-    StackResponseModel,
-    StackUpdateModel,
-    StepRunFilterModel,
-    StepRunResponseModel,
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-    TeamUpdateModel,
-    UserFilterModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
-)
-from zenml.models.artifact_models import (
-    ArtifactFilterModel,
-    ArtifactResponseModel,
-)
-from zenml.models.base_models import BaseResponseModel
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
-from zenml.models.model_models import (
+    APIKeyFilter,
+    APIKeyRequest,
+    APIKeyResponse,
+    APIKeyRotateRequest,
+    APIKeyUpdate,
+    ArtifactFilter,
+    ArtifactResponse,
+    ArtifactUpdate,
+    ArtifactVersionFilter,
+    ArtifactVersionResponse,
+    ArtifactVersionUpdate,
+    BaseResponse,
+    BaseResponseModel,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
     ModelFilterModel,
     ModelRequestModel,
     ModelResponseModel,
@@ -162,16 +108,60 @@ from zenml.models.model_models import (
     ModelVersionRequestModel,
     ModelVersionResponseModel,
     ModelVersionUpdateModel,
-)
-from zenml.models.page_model import Page
-from zenml.models.run_metadata_models import RunMetadataFilterModel
-from zenml.models.schedule_model import (
-    ScheduleFilterModel,
-    ScheduleResponseModel,
+    OAuthDeviceFilter,
+    OAuthDeviceResponse,
+    OAuthDeviceUpdate,
+    Page,
+    PipelineBuildFilter,
+    PipelineBuildResponse,
+    PipelineDeploymentFilter,
+    PipelineDeploymentResponse,
+    PipelineFilter,
+    PipelineResponse,
+    PipelineRunFilter,
+    PipelineRunResponse,
+    RunMetadataFilter,
+    RunMetadataRequest,
+    RunMetadataResponse,
+    ScheduleFilter,
+    ScheduleResponse,
+    SecretFilterModel,
+    SecretRequestModel,
+    SecretResponseModel,
+    SecretUpdateModel,
+    ServiceAccountFilter,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountUpdate,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
+    ServiceConnectorResourcesModel,
+    ServiceConnectorResponse,
+    ServiceConnectorTypeModel,
+    ServiceConnectorUpdate,
+    StackFilter,
+    StackRequest,
+    StackResponse,
+    StackUpdate,
+    StepRunFilter,
+    StepRunResponse,
+    TagFilterModel,
+    TagRequestModel,
+    TagResponseModel,
+    TagUpdateModel,
+    UserFilter,
+    UserRequest,
+    UserResponse,
+    UserUpdate,
+    WorkspaceFilter,
+    WorkspaceRequest,
+    WorkspaceResponse,
+    WorkspaceUpdate,
 )
 from zenml.utils import io_utils, source_utils
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
+from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
@@ -180,18 +170,22 @@ if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
-AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
+
+AnyResponse = TypeVar(
+    "AnyResponse",
+    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
+)
 
 
 class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
-    _active_workspace: Optional["WorkspaceResponseModel"] = None
+    _active_workspace: Optional["WorkspaceResponse"] = None
     active_workspace_id: Optional[UUID] = None
     active_stack_id: Optional[UUID] = None
 
     @property
-    def active_workspace(self) -> WorkspaceResponseModel:
+    def active_workspace(self) -> "WorkspaceResponse":
         """Get the active workspace for the local client.
 
         Returns:
@@ -209,9 +203,7 @@ class ClientConfiguration(FileSyncModel):
                 "workspace."
             )
 
-    def set_active_workspace(
-        self, workspace: "WorkspaceResponseModel"
-    ) -> None:
+    def set_active_workspace(self, workspace: "WorkspaceResponse") -> None:
         """Set the workspace for the local client.
 
         Args:
@@ -220,7 +212,7 @@ class ClientConfiguration(FileSyncModel):
         self._active_workspace = workspace
         self.active_workspace_id = workspace.id
 
-    def set_active_stack(self, stack: "StackResponseModel") -> None:
+    def set_active_stack(self, stack: "StackResponse") -> None:
         """Set the stack for the local client.
 
         Args:
@@ -297,7 +289,7 @@ class Client(metaclass=ClientMetaClass):
     as their components.
     """
 
-    _active_user: Optional[UserResponseModel] = None
+    _active_user: Optional["UserResponse"] = None
 
     def __init__(
         self,
@@ -629,7 +621,7 @@ class Client(metaclass=ClientMetaClass):
 
     def set_active_workspace(
         self, workspace_name_or_id: Union[str, UUID]
-    ) -> "WorkspaceResponseModel":
+    ) -> "WorkspaceResponse":
         """Set the workspace for the local client.
 
         Args:
@@ -652,50 +644,28 @@ class Client(metaclass=ClientMetaClass):
             GlobalConfiguration().set_active_workspace(workspace)
         return workspace
 
-    # ---- #
-    # USER #
-    # ---- #
-
-    @property
-    def active_user(self) -> "UserResponseModel":
-        """Get the user that is currently in use.
-
-        Returns:
-            The active user.
-        """
-        if self._active_user is None:
-            self._active_user = self.zen_store.get_user(include_private=True)
-        return self._active_user
+    # ---------------------------------- Users ---------------------------------
 
     def create_user(
         self,
         name: str,
-        initial_role: Optional[str] = None,
         password: Optional[str] = None,
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Create a new user.
 
         Args:
             name: The name of the user.
-            initial_role: Optionally, an initial role to assign to the user.
             password: The password of the user. If not provided, the user will
                 be created with empty password.
 
         Returns:
             The model of the created user.
         """
-        user = UserRequestModel(name=name, password=password or None)
+        user = UserRequest(name=name, password=password or None)
         user.active = (
             password != "" if self.zen_store.type != StoreType.REST else True
         )
         created_user = self.zen_store.create_user(user=user)
-
-        if initial_role:
-            self.create_user_role_assignment(
-                role_name_or_id=initial_role,
-                user_name_or_id=created_user.id,
-                workspace_name_or_id=None,
-            )
 
         return created_user
 
@@ -703,7 +673,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Gets a user.
 
         Args:
@@ -735,7 +705,7 @@ class Client(metaclass=ClientMetaClass):
         email: Optional[str] = None,
         active: Optional[bool] = None,
         email_opted_in: Optional[bool] = None,
-    ) -> Page[UserResponseModel]:
+    ) -> Page[UserResponse]:
         """List all users.
 
         Args:
@@ -757,7 +727,7 @@ class Client(metaclass=ClientMetaClass):
             The User
         """
         return self.zen_store.list_users(
-            UserFilterModel(
+            UserFilter(
                 sort_by=sort_by,
                 page=page,
                 size=size,
@@ -774,15 +744,6 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-    def delete_user(self, name_id_or_prefix: str) -> None:
-        """Delete a user.
-
-        Args:
-            name_id_or_prefix: The name or ID of the user to delete.
-        """
-        user = self.get_user(name_id_or_prefix, allow_name_prefix_match=False)
-        self.zen_store.delete_user(user_name_or_id=user.name)
-
     def update_user(
         self,
         name_id_or_prefix: Union[str, UUID],
@@ -791,7 +752,7 @@ class Client(metaclass=ClientMetaClass):
         updated_email: Optional[str] = None,
         updated_email_opt_in: Optional[bool] = None,
         updated_hub_token: Optional[str] = None,
-    ) -> UserResponseModel:
+    ) -> UserResponse:
         """Update a user.
 
         Args:
@@ -808,7 +769,7 @@ class Client(metaclass=ClientMetaClass):
         user = self.get_user(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        user_update = UserUpdateModel(name=updated_name or user.name)
+        user_update = UserUpdate(name=updated_name or user.name)
         if updated_full_name:
             user_update.full_name = updated_full_name
         if updated_email is not None:
@@ -825,999 +786,49 @@ class Client(metaclass=ClientMetaClass):
             user_id=user.id, user_update=user_update
         )
 
-    # --------------- #
-    # SERVICE ACCOUNT #
-    # --------------- #
-
-    def create_service_account(
-        self,
-        name: str,
-        description: str = "",
-        initial_role: Optional[str] = None,
-    ) -> ServiceAccountResponseModel:
-        """Create a new service account.
+    def delete_user(self, name_id_or_prefix: str) -> None:
+        """Delete a user.
 
         Args:
-            name: The name of the service account.
-            description: The description of the service account.
-            initial_role: Optionally, an initial role to assign to the service
-                account.
-
-        Returns:
-            The created service account.
+            name_id_or_prefix: The name or ID of the user to delete.
         """
-        service_account = ServiceAccountRequestModel(
-            name=name, description=description, active=True
-        )
-        created_service_account = self.zen_store.create_service_account(
-            service_account=service_account
-        )
-
-        if initial_role:
-            self.create_user_role_assignment(
-                role_name_or_id=initial_role,
-                user_name_or_id=created_service_account.id,
-                workspace_name_or_id=None,
-            )
-
-        return created_service_account
-
-    def get_service_account(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-    ) -> ServiceAccountResponseModel:
-        """Gets a service account.
-
-        Args:
-            name_id_or_prefix: The name or ID of the service account.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-
-        Returns:
-            The ServiceAccount
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_service_account,
-            list_method=self.list_service_accounts,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
-
-    def list_service_accounts(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        active: Optional[bool] = None,
-    ) -> Page[ServiceAccountResponseModel]:
-        """List all service accounts.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of stacks to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            name: Use the service account name for filtering
-            description: Use the service account description for filtering
-            active: Use the service account active status for filtering
-
-        Returns:
-            The list of service accounts matching the filter description.
-        """
-        return self.zen_store.list_service_accounts(
-            ServiceAccountFilterModel(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                name=name,
-                description=description,
-                active=active,
-            )
-        )
-
-    def update_service_account(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        updated_name: Optional[str] = None,
-        description: Optional[str] = None,
-        active: Optional[bool] = None,
-    ) -> ServiceAccountResponseModel:
-        """Update a service account.
-
-        Args:
-            name_id_or_prefix: The name or ID of the service account to update.
-            updated_name: The new name of the service account.
-            description: The new description of the service account.
-            active: The new active status of the service account.
-
-        Returns:
-            The updated service account.
-        """
-        service_account = self.get_service_account(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
-        )
-        service_account_update = ServiceAccountUpdateModel(
-            name=updated_name,
-            description=description,
-            active=active,
-        )
-
-        return self.zen_store.update_service_account(
-            service_account_name_or_id=service_account.id,
-            service_account_update=service_account_update,
-        )
-
-    def delete_service_account(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-    ) -> None:
-        """Delete a service account.
-
-        Args:
-            name_id_or_prefix: The name or ID of the service account to delete.
-        """
-        service_account = self.get_service_account(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
-        )
-        self.zen_store.delete_service_account(
-            service_account_name_or_id=service_account.id
-        )
-
-    # .----------.
-    # | API KEYS |
-    # '----------'
-
-    def create_api_key(
-        self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        name: str,
-        description: str = "",
-        set_key: bool = False,
-    ) -> APIKeyResponseModel:
-        """Create a new API key and optionally set it as the active API key.
-
-        Args:
-            service_account_name_id_or_prefix: The name, ID or prefix of the
-                service account to create the API key for.
-            name: Name of the API key.
-            description: The description of the API key.
-            set_key: Whether to set the created API key as the active API key.
-
-        Returns:
-            The created API key.
-        """
-        service_account = self.get_service_account(
-            name_id_or_prefix=service_account_name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-        request = APIKeyRequestModel(
-            name=name,
-            description=description,
-        )
-        api_key = self.zen_store.create_api_key(
-            service_account_id=service_account.id, api_key=request
-        )
-        assert api_key.key is not None
-
-        if set_key:
-            self.set_api_key(key=api_key.key)
-
-        return api_key
-
-    def set_api_key(self, key: str) -> None:
-        """Configure the client with an API key.
-
-        Args:
-            key: The API key to use.
-
-        Raises:
-            NotImplementedError: If the client is not connected to a ZenML
-                server.
-        """
-        from zenml.zen_stores.rest_zen_store import RestZenStore
-
-        zen_store = self.zen_store
-        if not zen_store.TYPE == StoreType.REST:
-            raise NotImplementedError(
-                "API key configuration is only supported if connected to a "
-                "ZenML server."
-            )
-        assert isinstance(zen_store, RestZenStore)
-        zen_store.set_api_key(api_key=key)
-
-    def list_api_keys(
-        self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        active: Optional[bool] = None,
-        last_login: Optional[Union[datetime, str]] = None,
-        last_rotated: Optional[Union[datetime, str]] = None,
-    ) -> Page[APIKeyResponseModel]:
-        """List all API keys.
-
-        Args:
-            service_account_name_id_or_prefix: The name, ID or prefix of the
-                service account to list the API keys for.
-            sort_by: The column to sort by.
-            page: The page of items.
-            size: The maximum size of all pages.
-            logical_operator: Which logical operator to use [and, or].
-            id: Use the id of the API key to filter by.
-            created: Use to filter by time of creation.
-            updated: Use the last updated date for filtering.
-            name: The name of the API key to filter by.
-            description: The description of the API key to filter by.
-            active: Whether the API key is active or not.
-            last_login: The last time the API key was used.
-            last_rotated: The last time the API key was rotated.
-
-        Returns:
-            A page of API keys matching the filter description.
-        """
-        service_account = self.get_service_account(
-            name_id_or_prefix=service_account_name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-        filter_model = APIKeyFilterModel(
-            sort_by=sort_by,
-            page=page,
-            size=size,
-            logical_operator=logical_operator,
-            id=id,
-            created=created,
-            updated=updated,
-            name=name,
-            description=description,
-            active=active,
-            last_login=last_login,
-            last_rotated=last_rotated,
-        )
-        return self.zen_store.list_api_keys(
-            service_account_id=service_account.id, filter_model=filter_model
-        )
-
-    def get_api_key(
-        self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-    ) -> APIKeyResponseModel:
-        """Get an API key by name, id or prefix.
-
-        Args:
-            service_account_name_id_or_prefix: The name, ID or prefix of the
-                service account to get the API key for.
-            name_id_or_prefix: The name, ID or ID prefix of the API key.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-
-        Returns:
-            The API key.
-        """
-        service_account = self.get_service_account(
-            name_id_or_prefix=service_account_name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-
-        def get_api_key_method(api_key_name_or_id: str) -> APIKeyResponseModel:
-            return self.zen_store.get_api_key(
-                service_account_id=service_account.id,
-                api_key_name_or_id=api_key_name_or_id,
-            )
-
-        def list_api_keys_method(
-            **filter_args: Any,
-        ) -> Page[APIKeyResponseModel]:
-            return self.list_api_keys(
-                service_account_name_id_or_prefix=service_account.id,
-                **filter_args,
-            )
-
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=get_api_key_method,
-            list_method=list_api_keys_method,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
-
-    def update_api_key(
-        self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        name_id_or_prefix: Union[UUID, str],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        active: Optional[bool] = None,
-    ) -> APIKeyResponseModel:
-        """Update an API key.
-
-        Args:
-            service_account_name_id_or_prefix: The name, ID or prefix of the
-                service account to update the API key for.
-            name_id_or_prefix: Name, ID or prefix of the API key to update.
-            name: New name of the API key.
-            description: New description of the API key.
-            active: Whether the API key is active or not.
-
-        Returns:
-            The updated API key.
-        """
-        api_key = self.get_api_key(
-            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-        update = APIKeyUpdateModel(
-            name=name, description=description, active=active
-        )
-        return self.zen_store.update_api_key(
-            service_account_id=api_key.service_account.id,
-            api_key_name_or_id=api_key.id,
-            api_key_update=update,
-        )
-
-    def rotate_api_key(
-        self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        name_id_or_prefix: Union[UUID, str],
-        retain_period_minutes: int = 0,
-        set_key: bool = False,
-    ) -> APIKeyResponseModel:
-        """Rotate an API key.
-
-        Args:
-            service_account_name_id_or_prefix: The name, ID or prefix of the
-                service account to rotate the API key for.
-            name_id_or_prefix: Name, ID or prefix of the API key to update.
-            retain_period_minutes: The number of minutes to retain the old API
-                key for. If set to 0, the old API key will be invalidated.
-            set_key: Whether to set the rotated API key as the active API key.
-
-        Returns:
-            The updated API key.
-        """
-        api_key = self.get_api_key(
-            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-        rotate_request = APIKeyRotateRequestModel(
-            retain_period_minutes=retain_period_minutes
-        )
-        new_key = self.zen_store.rotate_api_key(
-            service_account_id=api_key.service_account.id,
-            api_key_name_or_id=api_key.id,
-            rotate_request=rotate_request,
-        )
-        assert new_key.key is not None
-        if set_key:
-            self.set_api_key(key=new_key.key)
-
-        return new_key
-
-    def delete_api_key(
-        self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        name_id_or_prefix: Union[str, UUID],
-    ) -> None:
-        """Delete an API key.
-
-        Args:
-            service_account_name_id_or_prefix: The name, ID or prefix of the
-                service account to delete the API key for.
-            name_id_or_prefix: The name, ID or prefix of the API key.
-        """
-        api_key = self.get_api_key(
-            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-        self.zen_store.delete_api_key(
-            service_account_id=api_key.service_account.id,
-            api_key_name_or_id=api_key.id,
-        )
-
-    # ---- #
-    # TEAM #
-    # ---- #
-
-    def get_team(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-    ) -> TeamResponseModel:
-        """Gets a team.
-
-        Args:
-            name_id_or_prefix: The name or ID of the team.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-
-        Returns:
-            The Team
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_team,
-            list_method=self.list_teams,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
-
-    def list_teams(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-    ) -> Page[TeamResponseModel]:
-        """List all teams.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of teams to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            name: Use the team name for filtering
-
-        Returns:
-            The Team
-        """
-        return self.zen_store.list_teams(
-            TeamFilterModel(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                name=name,
-            )
-        )
-
-    def create_team(
-        self, name: str, users: Optional[List[str]] = None
-    ) -> TeamResponseModel:
-        """Create a team.
-
-        Args:
-            name: Name of the team.
-            users: Users to add to the team.
-
-        Returns:
-            The created team.
-        """
-        user_list: List[UUID] = []
-        if users:
-            user_list.extend(
-                self.get_user(name_id_or_prefix=user_name_or_id).id
-                for user_name_or_id in users
-            )
-
-        team = TeamRequestModel(name=name, users=user_list)
-
-        return self.zen_store.create_team(team=team)
-
-    def delete_team(self, name_id_or_prefix: str) -> None:
-        """Delete a team.
-
-        Args:
-            name_id_or_prefix: The name or ID of the team to delete.
-        """
-        team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
-        self.zen_store.delete_team(team_name_or_id=team.id)
-
-    def update_team(
-        self,
-        name_id_or_prefix: str,
-        new_name: Optional[str] = None,
-        remove_users: Optional[List[str]] = None,
-        add_users: Optional[List[str]] = None,
-    ) -> TeamResponseModel:
-        """Update a team.
-
-        Args:
-            name_id_or_prefix: The name or ID of the team to update.
-            new_name: The new name of the team.
-            remove_users: The users to remove from the team.
-            add_users: The users to add to the team.
-
-        Returns:
-            The updated team.
-
-        Raises:
-            RuntimeError: If the same user is in both `remove_users` and
-                `add_users`.
-        """
-        team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
-
-        team_update = TeamUpdateModel(name=new_name or team.name)
-        if remove_users is not None and add_users is not None:
-            if union_add_rm := set(remove_users) & set(add_users):
-                raise RuntimeError(
-                    f"The `remove_user` and `add_user` "
-                    f"options both contain the same value(s): "
-                    f"`{union_add_rm}`. Please rerun command and make sure "
-                    f"that the same user does not show up for "
-                    f"`remove_user` and `add_user`."
-                )
-
-        # Only if permissions are being added or removed will they need to be
-        #  set for the update model
-        team_users = (
-            [u.id for u in team.users] if remove_users or add_users else []
-        )
-        if remove_users:
-            for rm_p in remove_users:
-                user = self.get_user(rm_p)
-                try:
-                    team_users.remove(user.id)
-                except KeyError:
-                    logger.warning(
-                        f"Role {remove_users} was already not "
-                        f"part of the '{team.name}' Team."
-                    )
-        if add_users:
-            team_users.extend(self.get_user(add_u).id for add_u in add_users)
-        if team_users:
-            team_update.users = team_users
-
-        return self.zen_store.update_team(
-            team_id=team.id, team_update=team_update
-        )
-
-    # ----- #
-    # ROLES #
-    # ----- #
-
-    def get_role(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-    ) -> RoleResponseModel:
-        """Gets a role.
-
-        Args:
-            name_id_or_prefix: The name or ID of the role.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-
-        Returns:
-            The fetched role.
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_role,
-            list_method=self.list_roles,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
-
-    def list_roles(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-    ) -> Page[RoleResponseModel]:
-        """List all roles.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: The logical operator to use between column filters
-            id: Use the id of roles to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            name: Use the role name for filtering
-
-        Returns:
-            The Role
-        """
-        return self.zen_store.list_roles(
-            RoleFilterModel(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                name=name,
-            )
-        )
-
-    def create_role(
-        self, name: str, permissions_list: List[str]
-    ) -> RoleResponseModel:
-        """Creates a role.
-
-        Args:
-            name: The name for the new role.
-            permissions_list: The permissions to attach to this role.
-
-        Returns:
-            The newly created role.
-        """
-        permissions: Set[PermissionType] = {
-            PermissionType(permission)
-            for permission in permissions_list
-            if permission in PermissionType.values()
-        }
-        new_role = RoleRequestModel(name=name, permissions=permissions)
-        return self.zen_store.create_role(new_role)
-
-    def update_role(
-        self,
-        name_id_or_prefix: str,
-        new_name: Optional[str] = None,
-        remove_permission: Optional[List[str]] = None,
-        add_permission: Optional[List[str]] = None,
-    ) -> RoleResponseModel:
-        """Updates a role.
-
-        Args:
-            name_id_or_prefix: The name or ID of the role.
-            new_name: The new name for the role
-            remove_permission: Permissions to remove from this role.
-            add_permission: Permissions to add to this role.
-
-        Returns:
-            The updated role.
-
-        Raises:
-            RuntimeError: If the same permission is in both the
-                `remove_permission` and `add_permission` lists.
-        """
-        role = self.get_role(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
-        )
-
-        role_update = RoleUpdateModel(name=new_name or role.name)  # type: ignore[call-arg]
-
-        if remove_permission is not None and add_permission is not None:
-            if union_add_rm := set(remove_permission) & set(add_permission):
-                raise RuntimeError(
-                    f"The `remove_permission` and `add_permission` "
-                    f"options both contain the same value(s): "
-                    f"`{union_add_rm}`. Please rerun command and make sure "
-                    f"that the same role does not show up for "
-                    f"`remove_permission` and `add_permission`."
-                )
-
-        # Only if permissions are being added or removed will they need to be
-        #  set for the update model
-        if remove_permission or add_permission:
-            role_permissions = role.permissions
-
-            if remove_permission:
-                for rm_p in remove_permission:
-                    if rm_p in PermissionType:
-                        try:
-                            role_permissions.remove(PermissionType(rm_p))
-                        except KeyError:
-                            logger.warning(
-                                f"Role {remove_permission} was already not "
-                                f"part of the {role} Role."
-                            )
-            if add_permission:
-                for add_p in add_permission:
-                    if add_p in PermissionType.values():
-                        # Set won't throw an error if the item was already in it
-                        role_permissions.add(PermissionType(add_p))
-
-            if role_permissions is not None:
-                role_update.permissions = set(role_permissions)
-
-        return Client().zen_store.update_role(
-            role_id=role.id, role_update=role_update
-        )
-
-    def delete_role(self, name_id_or_prefix: str) -> None:
-        """Deletes a role.
-
-        Args:
-            name_id_or_prefix: The name or ID of the role.
-        """
-        role = self.get_role(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
-        )
-        self.zen_store.delete_role(role_name_or_id=role.id)
-
-    # --------------------- #
-    # USER ROLE ASSIGNMENTS #
-    # --------------------- #
-
-    def get_user_role_assignment(
-        self, role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponseModel:
-        """Get a role assignment.
-
-        Args:
-            role_assignment_id: The id of the role assignments
-
-        Returns:
-            The role assignment.
-        """
-        return self.zen_store.get_user_role_assignment(
-            user_role_assignment_id=role_assignment_id
-        )
-
-    def create_user_role_assignment(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
-        workspace_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> UserRoleAssignmentResponseModel:
-        """Create a role assignment.
-
-        Args:
-            role_name_or_id: Name or ID of the role to assign.
-            user_name_or_id: Name or ID of the user or team to assign
-                the role to.
-            workspace_name_or_id: workspace scope within which to assign the role.
-
-        Returns:
-            The newly created role assignment.
-        """
-        role = self.get_role(name_id_or_prefix=role_name_or_id)
-        workspace = None
-        if workspace_name_or_id:
-            workspace = self.get_workspace(
-                name_id_or_prefix=workspace_name_or_id
-            )
-        user = self.get_user(name_id_or_prefix=user_name_or_id)
-        role_assignment = UserRoleAssignmentRequestModel(
-            role=role.id,
-            user=user.id,
-            workspace=workspace,
-        )
-        return self.zen_store.create_user_role_assignment(
-            user_role_assignment=role_assignment
-        )
-
-    def delete_user_role_assignment(self, role_assignment_id: UUID) -> None:
-        """Delete a role assignment.
-
-        Args:
-            role_assignment_id: The id of the role assignments
-
-        """
-        self.zen_store.delete_user_role_assignment(role_assignment_id)
-
-    def list_user_role_assignment(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
-        role_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[UserRoleAssignmentResponseModel]:
-        """List all user role assignments.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of the user role assignment to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
-            role_id: The id of the role to filter by.
-
-        Returns:
-            The Team
-        """
-        return self.zen_store.list_user_role_assignments(
-            UserRoleAssignmentFilterModel(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                workspace_id=workspace_id,
-                user_id=user_id,
-                role_id=role_id,
-            )
-        )
-
-    # --------------------- #
-    # TEAM ROLE ASSIGNMENTS #
-    # --------------------- #
-
-    def get_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponseModel:
-        """Get a role assignment.
-
-        Args:
-            team_role_assignment_id: The id of the role assignments
-
-        Returns:
-            The role assignment.
-        """
-        return self.zen_store.get_team_role_assignment(
-            team_role_assignment_id=team_role_assignment_id
-        )
-
-    def create_team_role_assignment(
-        self,
-        role_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-        workspace_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> TeamRoleAssignmentResponseModel:
-        """Create a role assignment.
-
-        Args:
-            role_name_or_id: Name or ID of the role to assign.
-            team_name_or_id: Name or ID of the team to assign
-                the role to.
-            workspace_name_or_id: workspace scope within which to assign the role.
-
-        Returns:
-            The newly created role assignment.
-        """
-        role = self.get_role(name_id_or_prefix=role_name_or_id)
-        workspace = None
-        if workspace_name_or_id:
-            workspace = self.get_workspace(
-                name_id_or_prefix=workspace_name_or_id
-            )
-        team = self.get_team(name_id_or_prefix=team_name_or_id)
-        role_assignment = TeamRoleAssignmentRequestModel(
-            role=role.id,
-            team=team.id,
-            workspace=workspace,
-        )
-        return self.zen_store.create_team_role_assignment(
-            team_role_assignment=role_assignment
-        )
-
-    def delete_team_role_assignment(self, role_assignment_id: UUID) -> None:
-        """Delete a role assignment.
-
-        Args:
-            role_assignment_id: The id of the role assignments
-
-        """
-        self.zen_store.delete_team_role_assignment(role_assignment_id)
-
-    def list_team_role_assignment(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
-        team_id: Optional[Union[str, UUID]] = None,
-        role_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[TeamRoleAssignmentResponseModel]:
-        """List all team role assignments.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of the team role assignment to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            workspace_id: The id of the workspace to filter by.
-            team_id: The id of the team to filter by.
-            role_id: The id of the role to filter by.
-
-        Returns:
-            The Team
-        """
-        return self.zen_store.list_team_role_assignments(
-            TeamRoleAssignmentFilterModel(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                workspace_id=workspace_id,
-                team_id=team_id,
-                role_id=role_id,
-            )
-        )
-
-    # --------- #
-    # WORKSPACE #
-    # --------- #
+        user = self.get_user(name_id_or_prefix, allow_name_prefix_match=False)
+        self.zen_store.delete_user(user_name_or_id=user.name)
 
     @property
-    def active_workspace(self) -> "WorkspaceResponseModel":
-        """Get the currently active workspace of the local client.
-
-        If no active workspace is configured locally for the client, the
-        active workspace in the global configuration is used instead.
+    def active_user(self) -> "UserResponse":
+        """Get the user that is currently in use.
 
         Returns:
-            The active workspace.
-
-        Raises:
-            RuntimeError: If the active workspace is not set.
+            The active user.
         """
-        if ENV_ZENML_ACTIVE_WORKSPACE_ID in os.environ:
-            workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
-            return self.get_workspace(workspace_id)
+        if self._active_user is None:
+            self._active_user = self.zen_store.get_user(include_private=True)
+        return self._active_user
 
-        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
+    # -------------------------------- Workspaces ------------------------------
 
-        # If running in a ZenML server environment, the active workspace is
-        # not relevant
-        if ENV_ZENML_SERVER in os.environ:
-            return self.get_workspace(DEFAULT_WORKSPACE_NAME)
+    def create_workspace(
+        self, name: str, description: str
+    ) -> WorkspaceResponse:
+        """Create a new workspace.
 
-        workspace = (
-            self._config.active_workspace if self._config else None
-        ) or GlobalConfiguration().get_active_workspace()
-        if not workspace:
-            raise RuntimeError(
-                "No active workspace is configured. Run "
-                "`zenml workspace set WORKSPACE_NAME` to set the active "
-                "workspace."
-            )
+        Args:
+            name: Name of the workspace.
+            description: Description of the workspace.
 
-        if workspace.name != DEFAULT_WORKSPACE_NAME:
-            logger.warning(
-                f"You are running with a non-default workspace "
-                f"'{workspace.name}'. Any stacks, components, "
-                f"pipelines and pipeline runs produced in this "
-                f"workspace will currently not be accessible through "
-                f"the dashboard. However, this will be possible "
-                f"in the near future."
-            )
-        return workspace
+        Returns:
+            The created workspace.
+        """
+        return self.zen_store.create_workspace(
+            WorkspaceRequest(name=name, description=description)
+        )
 
     def get_workspace(
         self,
         name_id_or_prefix: Optional[Union[UUID, str]],
         allow_name_prefix_match: bool = True,
-    ) -> WorkspaceResponseModel:
+    ) -> WorkspaceResponse:
         """Gets a workspace.
 
         Args:
@@ -1846,7 +857,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-    ) -> Page[WorkspaceResponseModel]:
+    ) -> Page[WorkspaceResponse]:
         """List all workspaces.
 
         Args:
@@ -1854,16 +865,16 @@ class Client(metaclass=ClientMetaClass):
             page: The page of items
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
-            id: Use the id of teams to filter by.
+            id: Use the workspace ID to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            name: Use the team name for filtering
+            name: Use the workspace name for filtering
 
         Returns:
-            The Team
+            Page of workspaces
         """
         return self.zen_store.list_workspaces(
-            WorkspaceFilterModel(
+            WorkspaceFilter(
                 sort_by=sort_by,
                 page=page,
                 size=size,
@@ -1875,28 +886,12 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-    def create_workspace(
-        self, name: str, description: str
-    ) -> "WorkspaceResponseModel":
-        """Create a new workspace.
-
-        Args:
-            name: Name of the workspace.
-            description: Description of the workspace.
-
-        Returns:
-            The created workspace.
-        """
-        return self.zen_store.create_workspace(
-            WorkspaceRequestModel(name=name, description=description)
-        )
-
     def update_workspace(
         self,
         name_id_or_prefix: Optional[Union[UUID, str]],
         new_name: Optional[str] = None,
         new_description: Optional[str] = None,
-    ) -> "WorkspaceResponseModel":
+    ) -> WorkspaceResponse:
         """Update a workspace.
 
         Args:
@@ -1910,9 +905,7 @@ class Client(metaclass=ClientMetaClass):
         workspace = self.get_workspace(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        workspace_update = WorkspaceUpdateModel(
-            name=new_name or workspace.name
-        )
+        workspace_update = WorkspaceUpdate(name=new_name or workspace.name)
         if new_description:
             workspace_update.description = new_description
         return self.zen_store.update_workspace(
@@ -1941,58 +934,100 @@ class Client(metaclass=ClientMetaClass):
             )
         self.zen_store.delete_workspace(workspace_name_or_id=workspace.id)
 
-    # ------ #
-    # STACKS #
-    # ------ #
     @property
-    def active_stack_model(self) -> "StackResponseModel":
-        """The model of the active stack for this client.
+    def active_workspace(self) -> WorkspaceResponse:
+        """Get the currently active workspace of the local client.
 
-        If no active stack is configured locally for the client, the active
-        stack in the global configuration is used instead.
+        If no active workspace is configured locally for the client, the
+        active workspace in the global configuration is used instead.
 
         Returns:
-            The model of the active stack for this client.
+            The active workspace.
 
         Raises:
-            RuntimeError: If the active stack is not set.
+            RuntimeError: If the active workspace is not set.
         """
-        stack: Optional["StackResponseModel"] = None
+        if ENV_ZENML_ACTIVE_WORKSPACE_ID in os.environ:
+            workspace_id = os.environ[ENV_ZENML_ACTIVE_WORKSPACE_ID]
+            return self.get_workspace(workspace_id)
 
-        if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
-            stack_id = os.environ[ENV_ZENML_ACTIVE_STACK_ID]
-            return self.get_stack(stack_id)
+        from zenml.constants import DEFAULT_WORKSPACE_NAME
 
-        if self._config:
-            stack = self.get_stack(self._config.active_stack_id)
+        # If running in a ZenML server environment, the active workspace is
+        # not relevant
+        if ENV_ZENML_SERVER in os.environ:
+            return self.get_workspace(DEFAULT_WORKSPACE_NAME)
 
-        if not stack:
-            stack = self.get_stack(GlobalConfiguration().get_active_stack_id())
-
-        if not stack:
+        workspace = (
+            self._config.active_workspace if self._config else None
+        ) or GlobalConfiguration().get_active_workspace()
+        if not workspace:
             raise RuntimeError(
-                "No active stack is configured. Run "
-                "`zenml stack set STACK_NAME` to set the active stack."
+                "No active workspace is configured. Run "
+                "`zenml workspace set WORKSPACE_NAME` to set the active "
+                "workspace."
             )
 
-        return stack
+        if workspace.name != DEFAULT_WORKSPACE_NAME:
+            logger.warning(
+                f"You are running with a non-default workspace "
+                f"'{workspace.name}'. Any stacks, components, "
+                f"pipelines and pipeline runs produced in this "
+                f"workspace will currently not be accessible through "
+                f"the dashboard. However, this will be possible "
+                f"in the near future."
+            )
+        return workspace
 
-    @property
-    def active_stack(self) -> "Stack":
-        """The active stack for this client.
+    # --------------------------------- Stacks ---------------------------------
+
+    def create_stack(
+        self,
+        name: str,
+        components: Mapping[StackComponentType, Union[str, UUID]],
+        stack_spec_file: Optional[str] = None,
+    ) -> StackResponse:
+        """Registers a stack and its components.
+
+        Args:
+            name: The name of the stack to register.
+            components: dictionary which maps component types to component names
+            stack_spec_file: path to the stack spec file
 
         Returns:
-            The active stack for this client.
+            The model of the registered stack.
         """
-        from zenml.stack.stack import Stack
+        stack_components = {}
 
-        return Stack.from_model(self.active_stack_model)
+        for c_type, c_identifier in components.items():
+            # Skip non-existent components.
+            if not c_identifier:
+                continue
+
+            # Get the component.
+            component = self.get_stack_component(
+                name_id_or_prefix=c_identifier,
+                component_type=c_type,
+            )
+            stack_components[c_type] = [component.id]
+
+        stack = StackRequest(
+            name=name,
+            components=stack_components,
+            stack_spec_path=stack_spec_file,
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
+        )
+
+        self._validate_stack_configuration(stack=stack)
+
+        return self.zen_store.create_stack(stack=stack)
 
     def get_stack(
         self,
         name_id_or_prefix: Optional[Union[UUID, str]] = None,
         allow_name_prefix_match: bool = True,
-    ) -> "StackResponseModel":
+    ) -> StackResponse:
         """Get a stack by name, ID or prefix.
 
         If no name, ID or prefix is provided, the active stack is returned.
@@ -2014,84 +1049,72 @@ class Client(metaclass=ClientMetaClass):
         else:
             return self.active_stack_model
 
-    def create_stack(
+    def list_stacks(
         self,
-        name: str,
-        components: Mapping[StackComponentType, Union[str, UUID]],
-        is_shared: bool = False,
-        stack_spec_file: Optional[str] = None,
-    ) -> "StackResponseModel":
-        """Registers a stack and its components.
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        component_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[StackResponse]:
+        """Lists all stacks.
 
         Args:
-            name: The name of the stack to register.
-            components: dictionary which maps component types to component names
-            is_shared: boolean to decide whether the stack is shared
-            stack_spec_file: path to the stack spec file
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            description: Use the stack description for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            component_id: The id of the component to filter by.
+            name: The name of the stack to filter by.
 
         Returns:
-            The model of the registered stack.
-
-        Raises:
-            ValueError: If the stack contains private components and is
-                attempted to be registered as shared.
+            A page of stacks.
         """
-        stack_components = {}
-
-        for c_type, c_identifier in components.items():
-            # Skip non-existent components.
-            if not c_identifier:
-                continue
-
-            # Get the component.
-            component = self.get_stack_component(
-                name_id_or_prefix=c_identifier,
-                component_type=c_type,
-            )
-            stack_components[c_type] = [component.id]
-
-            # Raise an error if private components are used in a shared stack.
-            if is_shared and not component.is_shared:
-                raise ValueError(
-                    f"You attempted to include the private {c_type} "
-                    f"'{component.name}' in a shared stack. This is not "
-                    f"supported. You can either share the {c_type} with the "
-                    f"following command:\n"
-                    f"`zenml {c_type.replace('_', '-')} share`{component.id}`\n"
-                    f"or create the stack privately and then share it and all "
-                    f"of its components using:\n`zenml stack share {name} -r`"
-                )
-
-        stack = StackRequestModel(
+        stack_filter_model = StackFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            component_id=component_id,
             name=name,
-            components=stack_components,
-            is_shared=is_shared,
-            stack_spec_path=stack_spec_file,
-            workspace=self.active_workspace.id,
-            user=self.active_user.id,
+            description=description,
+            id=id,
+            created=created,
+            updated=updated,
         )
-
-        self._validate_stack_configuration(stack=stack)
-
-        return self.zen_store.create_stack(stack=stack)
+        stack_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_stacks(stack_filter_model)
 
     def update_stack(
         self,
         name_id_or_prefix: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
         stack_spec_file: Optional[str] = None,
         description: Optional[str] = None,
         component_updates: Optional[
             Dict[StackComponentType, List[Union[UUID, str]]]
         ] = None,
-    ) -> "StackResponseModel":
+    ) -> StackResponse:
         """Updates a stack and its components.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the stack to update.
             name: the new name of the stack.
-            is_shared: the new shared status of the stack.
             stack_spec_file: path to the stack spec file
             description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
@@ -2101,8 +1124,6 @@ class Client(metaclass=ClientMetaClass):
             The model of the updated stack.
 
         Raises:
-            ValueError: If the stack contains private components and is
-                attempted to be shared.
             EntityExistsError: If the stack name is already taken.
         """
         # First, get the stack
@@ -2111,47 +1132,20 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create the update model
-        update_model = StackUpdateModel(  # type: ignore[call-arg]
+        update_model = StackUpdate(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             stack_spec_path=stack_spec_file,
         )
 
-        shared_status = is_shared or stack.is_shared
-
         if name:
-            if self.list_stacks(name=name, is_shared=shared_status):
+            if self.list_stacks(name=name):
                 raise EntityExistsError(
                     "There are already existing stacks with the name "
                     f"'{name}'."
                 )
 
             update_model.name = name
-
-        if is_shared:
-            current_name = update_model.name or stack.name
-            if self.list_stacks(name=current_name, is_shared=True):
-                raise EntityExistsError(
-                    "There are already existing shared stacks with the name "
-                    f"'{current_name}'."
-                )
-
-            for component_type, components in stack.components.items():
-                for c in components:
-                    if not c.is_shared:
-                        raise ValueError(
-                            f"A Stack can only be shared when all its "
-                            f"components are also shared. Component "
-                            f"'{component_type}:{c.name}' is not shared. Set "
-                            f"the {component_type} to shared like this and "
-                            f"then try re-sharing your stack:\n"
-                            f"`zenml {component_type.replace('_', '-')} "
-                            f"share {c.id}`\nAlternatively, you can rerun "
-                            f"your command with `-r` to recursively "
-                            f"share all components within the stack."
-                        )
-
-            update_model.is_shared = is_shared
 
         if description:
             update_model.description = description
@@ -2169,22 +1163,6 @@ class Client(metaclass=ClientMetaClass):
                         )
                         for component_id in component_id_list
                     ]
-
-            # If the stack is shared, ensure all new components are also shared
-            if shared_status:
-                for component_list in components_dict.values():
-                    for component in component_list:
-                        if not component.is_shared:
-                            raise ValueError(
-                                "Private components cannot be added to a "
-                                "shared stack. Component "
-                                f"'{component.type}:{component.name}' is not "
-                                "shared. Set the component to shared like "
-                                "this and then try adding it to your stack "
-                                "again:\n"
-                                f"`zenml {component.type.replace('_', '-')} "
-                                f"share {component.id}`."
-                            )
 
             update_model.components = {
                 c_type: [c.id for c in c_list]
@@ -2264,59 +1242,49 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_stack(stack_id=stack.id)
         logger.info("Deregistered stack with name '%s'.", stack.name)
 
-    def list_stacks(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        is_shared: Optional[bool] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
-        component_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[StackResponseModel]:
-        """Lists all stacks.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of stacks to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            description: Use the stack description for filtering
-            workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
-            component_id: The id of the component to filter by.
-            name: The name of the stack to filter by.
-            is_shared: The shared status of the stack to filter by.
+    @property
+    def active_stack(self) -> "Stack":
+        """The active stack for this client.
 
         Returns:
-            A page of stacks.
+            The active stack for this client.
         """
-        stack_filter_model = StackFilterModel(
-            page=page,
-            size=size,
-            sort_by=sort_by,
-            logical_operator=logical_operator,
-            workspace_id=workspace_id,
-            user_id=user_id,
-            component_id=component_id,
-            name=name,
-            is_shared=is_shared,
-            description=description,
-            id=id,
-            created=created,
-            updated=updated,
-        )
-        stack_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_stacks(stack_filter_model)
+        from zenml.stack.stack import Stack
+
+        return Stack.from_model(self.active_stack_model)
+
+    @property
+    def active_stack_model(self) -> StackResponse:
+        """The model of the active stack for this client.
+
+        If no active stack is configured locally for the client, the active
+        stack in the global configuration is used instead.
+
+        Returns:
+            The model of the active stack for this client.
+
+        Raises:
+            RuntimeError: If the active stack is not set.
+        """
+        stack: Optional[StackResponse] = None
+
+        if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
+            stack_id = os.environ[ENV_ZENML_ACTIVE_STACK_ID]
+            return self.get_stack(stack_id)
+
+        if self._config:
+            stack = self.get_stack(self._config.active_stack_id)
+
+        if not stack:
+            stack = self.get_stack(GlobalConfiguration().get_active_stack_id())
+
+        if not stack:
+            raise RuntimeError(
+                "No active stack is configured. Run "
+                "`zenml stack set STACK_NAME` to set the active stack."
+            )
+
+        return stack
 
     def activate_stack(
         self, stack_name_id_or_prefix: Union[str, UUID]
@@ -2346,9 +1314,7 @@ class Client(metaclass=ClientMetaClass):
             # a local configuration
             GlobalConfiguration().set_active_stack(stack=stack)
 
-    def _validate_stack_configuration(
-        self, stack: "StackRequestModel"
-    ) -> None:
+    def _validate_stack_configuration(self, stack: StackRequest) -> None:
         """Validates the configuration of a stack.
 
         Args:
@@ -2422,15 +1388,14 @@ class Client(metaclass=ClientMetaClass):
                 "an Orchestrator."
             )
 
-    # .------------.
-    # | COMPONENTS |
-    # '------------'
+    # -------------------------------- Components ------------------------------
+
     def get_stack_component(
         self,
         component_type: StackComponentType,
         name_id_or_prefix: Optional[Union[str, UUID]] = None,
         allow_name_prefix_match: bool = True,
-    ) -> "ComponentResponseModel":
+    ) -> ComponentResponse:
         """Fetches a registered stack component.
 
         If the name_id_or_prefix is provided, it will try to fetch the component
@@ -2464,7 +1429,7 @@ class Client(metaclass=ClientMetaClass):
         # Else, try to fetch the component with an explicit type filter
         def type_scoped_list_method(
             **kwargs: Any,
-        ) -> Page[ComponentResponseModel]:
+        ) -> Page[ComponentResponse]:
             """Call `zen_store.list_stack_components` with type scoping.
 
             Args:
@@ -2473,7 +1438,7 @@ class Client(metaclass=ClientMetaClass):
             Returns:
                 The type-scoped list of components.
             """
-            component_filter_model = ComponentFilterModel(**kwargs)
+            component_filter_model = ComponentFilter(**kwargs)
             component_filter_model.set_scope_type(
                 component_type=component_type
             )
@@ -2500,14 +1465,13 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
-        is_shared: Optional[bool] = None,
         name: Optional[str] = None,
         flavor: Optional[str] = None,
         type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         connector_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[ComponentResponseModel]:
+    ) -> Page[ComponentResponse]:
         """Lists all registered stack components.
 
         Args:
@@ -2524,12 +1488,11 @@ class Client(metaclass=ClientMetaClass):
             user_id: The id of the user to filter by.
             connector_id: The id of the connector to filter by.
             name: The name of the component to filter by.
-            is_shared: The shared status of the component to filter by.
 
         Returns:
             A page of stack components.
         """
-        component_filter_model = ComponentFilterModel(
+        component_filter_model = ComponentFilter(
             page=page,
             size=size,
             sort_by=sort_by,
@@ -2538,7 +1501,6 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             connector_id=connector_id,
             name=name,
-            is_shared=is_shared,
             flavor=flavor,
             type=type,
             id=id,
@@ -2559,8 +1521,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Dict[str, str],
         component_spec_path: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
-        is_shared: bool = False,
-    ) -> "ComponentResponseModel":
+    ) -> "ComponentResponse":
         """Registers a stack component.
 
         Args:
@@ -2570,7 +1531,6 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
             labels: The labels of the stack component.
-            is_shared: Whether the stack component is shared or not.
 
         Returns:
             The model of the registered component.
@@ -2592,13 +1552,12 @@ class Client(metaclass=ClientMetaClass):
         assert validated_config is not None
         warn_if_config_server_mismatch(validated_config)
 
-        create_component_model = ComponentRequestModel(
+        create_component_model = ComponentRequest(
             name=name,
             type=component_type,
             flavor=flavor,
             component_spec_path=component_spec_path,
             configuration=configuration,
-            is_shared=is_shared,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
             labels=labels,
@@ -2617,11 +1576,10 @@ class Client(metaclass=ClientMetaClass):
         component_spec_path: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
         labels: Optional[Dict[str, Any]] = None,
-        is_shared: Optional[bool] = None,
         disconnect: Optional[bool] = None,
         connector_id: Optional[UUID] = None,
         connector_resource_id: Optional[str] = None,
-    ) -> "ComponentResponseModel":
+    ) -> ComponentResponse:
         """Updates a stack component.
 
         Args:
@@ -2632,7 +1590,6 @@ class Client(metaclass=ClientMetaClass):
             component_spec_path: The new path to the stack spec file.
             configuration: The new configuration of the stack component.
             labels: The new labels of the stack component.
-            is_shared: The new shared status of the stack component.
             disconnect: Whether to disconnect the stack component from its
                 service connector.
             connector_id: The new connector id of the stack component.
@@ -2652,39 +1609,23 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdateModel(  # type: ignore[call-arg]
+        update_model = ComponentUpdate(  # type: ignore[call-arg]
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             component_spec_path=component_spec_path,
         )
 
         if name is not None:
-            shared_status = is_shared or component.is_shared
-
             existing_components = self.list_stack_components(
                 name=name,
-                is_shared=shared_status,
                 type=component_type,
             )
             if existing_components.total > 0:
                 raise EntityExistsError(
-                    f"There are already existing "
-                    f"{'shared' if shared_status else 'unshared'} components "
-                    f"with the name '{name}'."
+                    f"There are already existing components with the "
+                    f"name '{name}'."
                 )
             update_model.name = name
-
-        if is_shared is not None:
-            current_name = update_model.name or component.name
-            existing_components = self.list_stack_components(
-                name=current_name, is_shared=is_shared, type=component_type
-            )
-            if any(e.id != component.id for e in existing_components.items):
-                raise EntityExistsError(
-                    f"There are already existing shared components with "
-                    f"the name '{current_name}'"
-                )
-            update_model.is_shared = is_shared
 
         if configuration is not None:
             existing_configuration = component.configuration
@@ -2770,15 +1711,13 @@ class Client(metaclass=ClientMetaClass):
             component.name,
         )
 
-    # .---------.
-    # | FLAVORS |
-    # '---------'
+    # --------------------------------- Flavors --------------------------------
 
     def create_flavor(
         self,
         source: str,
         component_type: StackComponentType,
-    ) -> "FlavorResponseModel":
+    ) -> FlavorResponse:
         """Creates a new flavor.
 
         Args:
@@ -2805,7 +1744,7 @@ class Client(metaclass=ClientMetaClass):
                 "configuration class' docstring."
             )
 
-        create_flavor_request = FlavorRequestModel(
+        create_flavor_request = FlavorRequest(
             source=source,
             type=flavor.type,
             name=flavor.name,
@@ -2821,7 +1760,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: str,
         allow_name_prefix_match: bool = True,
-    ) -> "FlavorResponseModel":
+    ) -> FlavorResponse:
         """Get a stack component flavor.
 
         Args:
@@ -2839,20 +1778,6 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=allow_name_prefix_match,
         )
 
-    def delete_flavor(self, name_id_or_prefix: str) -> None:
-        """Deletes a flavor.
-
-        Args:
-            name_id_or_prefix: The name, id or prefix of the id for the
-                flavor to delete.
-        """
-        flavor = self.get_flavor(
-            name_id_or_prefix, allow_name_prefix_match=False
-        )
-        self.zen_store.delete_flavor(flavor_id=flavor.id)
-
-        logger.info(f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.")
-
     def list_flavors(
         self,
         sort_by: str = "created",
@@ -2866,7 +1791,7 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         integration: Optional[str] = None,
         user_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[FlavorResponseModel]:
+    ) -> Page[FlavorResponse]:
         """Fetches all the flavor models.
 
         Args:
@@ -2885,7 +1810,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of all the flavor models.
         """
-        flavor_filter_model = FlavorFilterModel(
+        flavor_filter_model = FlavorFilter(
             page=page,
             size=size,
             sort_by=sort_by,
@@ -2903,9 +1828,23 @@ class Client(metaclass=ClientMetaClass):
             flavor_filter_model=flavor_filter_model
         )
 
+    def delete_flavor(self, name_id_or_prefix: str) -> None:
+        """Deletes a flavor.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the id for the
+                flavor to delete.
+        """
+        flavor = self.get_flavor(
+            name_id_or_prefix, allow_name_prefix_match=False
+        )
+        self.zen_store.delete_flavor(flavor_id=flavor.id)
+
+        logger.info(f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.")
+
     def get_flavors_by_type(
         self, component_type: "StackComponentType"
-    ) -> Page[FlavorResponseModel]:
+    ) -> Page[FlavorResponse]:
         """Fetches the list of flavor for a stack component type.
 
         Args:
@@ -2922,7 +1861,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_flavor_by_name_and_type(
         self, name: str, component_type: "StackComponentType"
-    ) -> "FlavorResponseModel":
+    ) -> FlavorResponse:
         """Fetches a registered flavor.
 
         Args:
@@ -2957,9 +1896,7 @@ class Client(metaclass=ClientMetaClass):
 
         return flavors[0]
 
-    # -------------
-    # - PIPELINES -
-    # -------------
+    # ------------------------------- Pipelines --------------------------------
 
     def list_pipelines(
         self,
@@ -2976,7 +1913,7 @@ class Client(metaclass=ClientMetaClass):
         docstring: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[PipelineResponseModel]:
+    ) -> Page[PipelineResponse]:
         """List all pipelines.
 
         Args:
@@ -2997,7 +1934,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page with Pipeline fitting the filter description
         """
-        pipeline_filter_model = PipelineFilterModel(
+        pipeline_filter_model = PipelineFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3021,7 +1958,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
-    ) -> PipelineResponseModel:
+    ) -> PipelineResponse:
         """Get a pipeline by name, id or prefix.
 
         Args:
@@ -3031,64 +1968,13 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The pipeline.
-
-        Raises:
-            KeyError: If no pipelines were found for the given ID/name and
-                version.
-            ZenKeyError: If multiple pipelines match the ID prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
-
-        if is_valid_uuid(name_id_or_prefix):
-            if version:
-                logger.warning(
-                    "You specified both an ID as well as a version of the "
-                    "pipeline. Ignoring the version and fetching the "
-                    "pipeline by ID."
-                )
-            if not isinstance(name_id_or_prefix, UUID):
-                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
-
-            return self.zen_store.get_pipeline(name_id_or_prefix)
-
-        assert not isinstance(name_id_or_prefix, UUID)
-        exact_name_matches = self.list_pipelines(
-            size=1,
-            sort_by="desc:created",
-            name=f"equals:{name_id_or_prefix}",
+        return self._get_entity_version_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_pipeline,
+            list_method=self.list_pipelines,
+            name_id_or_prefix=name_id_or_prefix,
             version=version,
         )
-
-        if len(exact_name_matches) == 1:
-            # If the name matches exactly, use the explicitly specified version
-            # or fallback to the latest if not given
-            return exact_name_matches.items[0]
-
-        partial_id_matches = self.list_pipelines(
-            id=f"startswith:{name_id_or_prefix}"
-        )
-        if partial_id_matches.total == 1:
-            if version:
-                logger.warning(
-                    "You specified both an ID as well as a version of the "
-                    "pipeline. Ignoring the version and fetching the "
-                    "pipeline by ID."
-                )
-            return partial_id_matches[0]
-        elif partial_id_matches.total == 0:
-            raise KeyError(
-                f"No pipelines found for name, ID or prefix "
-                f"{name_id_or_prefix}."
-            )
-        else:
-            raise ZenKeyError(
-                f"{partial_id_matches.total} pipelines have been found that "
-                "have an id prefix that matches the provided string "
-                f"'{name_id_or_prefix}':\n"
-                f"{partial_id_matches.items}.\n"
-                f"Please provide more characters to uniquely identify "
-                f"only one of the pipelines."
-            )
 
     def delete_pipeline(
         self,
@@ -3107,76 +1993,11 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
-    # ----------
-    # - BUILDS -
-    # ----------
+    # -------------------------------- Builds ----------------------------------
 
-    def list_builds(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        is_local: Optional[bool] = None,
-        contains_code: Optional[bool] = None,
-        zenml_version: Optional[str] = None,
-        python_version: Optional[str] = None,
-        checksum: Optional[str] = None,
-    ) -> Page[PipelineBuildResponseModel]:
-        """List all builds.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of build to filter by.
-            created: Use to filter by time of creation
-            updated: Use the last updated date for filtering
-            workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
-            pipeline_id: The id of the pipeline to filter by.
-            stack_id: The id of the stack to filter by.
-            is_local: Use to filter local builds.
-            contains_code: Use to filter builds that contain code.
-            zenml_version: The version of ZenML to filter by.
-            python_version: The Python version to filter by.
-            checksum: The build checksum to filter by.
-
-        Returns:
-            A page with builds fitting the filter description
-        """
-        build_filter_model = PipelineBuildFilterModel(
-            sort_by=sort_by,
-            page=page,
-            size=size,
-            logical_operator=logical_operator,
-            id=id,
-            created=created,
-            updated=updated,
-            workspace_id=workspace_id,
-            user_id=user_id,
-            pipeline_id=pipeline_id,
-            stack_id=stack_id,
-            is_local=is_local,
-            contains_code=contains_code,
-            zenml_version=zenml_version,
-            python_version=python_version,
-            checksum=checksum,
-        )
-        build_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_builds(
-            build_filter_model=build_filter_model
-        )
-
-    def get_build(self, id_or_prefix: str) -> PipelineBuildResponseModel:
+    def get_build(
+        self, id_or_prefix: Union[str, UUID]
+    ) -> PipelineBuildResponse:
         """Get a build by id or prefix.
 
         Args:
@@ -3194,7 +2015,10 @@ class Client(metaclass=ClientMetaClass):
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            return self.zen_store.get_build(UUID(id_or_prefix))
+            if not isinstance(id_or_prefix, UUID):
+                id_or_prefix = UUID(id_or_prefix, version=4)
+
+            return self.zen_store.get_build(id_or_prefix)
 
         entity = self.list_builds(
             id=f"startswith:{id_or_prefix}",
@@ -3220,20 +2044,7 @@ class Client(metaclass=ClientMetaClass):
             f"only one of the builds."
         )
 
-    def delete_build(self, id_or_prefix: str) -> None:
-        """Delete a build.
-
-        Args:
-            id_or_prefix: The id or id prefix of the build.
-        """
-        build = self.get_build(id_or_prefix=id_or_prefix)
-        self.zen_store.delete_build(build_id=build.id)
-
-    # ---------------
-    # - DEPLOYMENTS -
-    # ---------------
-
-    def list_deployments(
+    def list_builds(
         self,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
@@ -3246,9 +2057,13 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[PipelineDeploymentResponseModel]:
-        """List all deployments.
+        is_local: Optional[bool] = None,
+        contains_code: Optional[bool] = None,
+        zenml_version: Optional[str] = None,
+        python_version: Optional[str] = None,
+        checksum: Optional[str] = None,
+    ) -> Page[PipelineBuildResponse]:
+        """List all builds.
 
         Args:
             sort_by: The column to sort by
@@ -3262,12 +2077,16 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
-            build_id: The id of the build to filter by.
+            is_local: Use to filter local builds.
+            contains_code: Use to filter builds that contain code.
+            zenml_version: The version of ZenML to filter by.
+            python_version: The Python version to filter by.
+            checksum: The build checksum to filter by.
 
         Returns:
-            A page with deployments fitting the filter description
+            A page with builds fitting the filter description
         """
-        deployment_filter_model = PipelineDeploymentFilterModel(
+        build_filter_model = PipelineBuildFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3279,16 +2098,29 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
-            build_id=build_id,
+            is_local=is_local,
+            contains_code=contains_code,
+            zenml_version=zenml_version,
+            python_version=python_version,
+            checksum=checksum,
         )
-        deployment_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_deployments(
-            deployment_filter_model=deployment_filter_model
+        build_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_builds(
+            build_filter_model=build_filter_model
         )
 
-    def get_deployment(
-        self, id_or_prefix: str
-    ) -> PipelineDeploymentResponseModel:
+    def delete_build(self, id_or_prefix: str) -> None:
+        """Delete a build.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+        """
+        build = self.get_build(id_or_prefix=id_or_prefix)
+        self.zen_store.delete_build(build_id=build.id)
+
+    # ------------------------------ Deployments -------------------------------
+
+    def get_deployment(self, id_or_prefix: str) -> PipelineDeploymentResponse:
         """Get a deployment by id or prefix.
 
         Args:
@@ -3332,6 +2164,59 @@ class Client(metaclass=ClientMetaClass):
             f"only one of the deployments."
         )
 
+    def list_deployments(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        build_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[PipelineDeploymentResponse]:
+        """List all deployments.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of build to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            stack_id: The id of the stack to filter by.
+            build_id: The id of the build to filter by.
+
+        Returns:
+            A page with deployments fitting the filter description
+        """
+        deployment_filter_model = PipelineDeploymentFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
+            build_id=build_id,
+        )
+        deployment_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_deployments(
+            deployment_filter_model=deployment_filter_model
+        )
+
     def delete_deployment(self, id_or_prefix: str) -> None:
         """Delete a deployment.
 
@@ -3341,9 +2226,28 @@ class Client(metaclass=ClientMetaClass):
         deployment = self.get_deployment(id_or_prefix=id_or_prefix)
         self.zen_store.delete_deployment(deployment_id=deployment.id)
 
-    # -------------
-    # - SCHEDULES -
-    # -------------
+    # ------------------------------- Schedules --------------------------------
+
+    def get_schedule(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> ScheduleResponse:
+        """Get a schedule by name, id or prefix.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the schedule.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The schedule.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_schedule,
+            list_method=self.list_schedules,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
 
     def list_schedules(
         self,
@@ -3365,7 +2269,7 @@ class Client(metaclass=ClientMetaClass):
         end_time: Optional[Union[datetime, str]] = None,
         interval_second: Optional[int] = None,
         catchup: Optional[Union[str, bool]] = None,
-    ) -> Page[ScheduleResponseModel]:
+    ) -> Page[ScheduleResponse]:
         """List schedules.
 
         Args:
@@ -3391,7 +2295,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of schedules.
         """
-        schedule_filter_model = ScheduleFilterModel(
+        schedule_filter_model = ScheduleFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3416,27 +2320,6 @@ class Client(metaclass=ClientMetaClass):
             schedule_filter_model=schedule_filter_model
         )
 
-    def get_schedule(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-    ) -> ScheduleResponseModel:
-        """Get a schedule by name, id or prefix.
-
-        Args:
-            name_id_or_prefix: The name, id or prefix of the schedule.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-
-        Returns:
-            The schedule.
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_schedule,
-            list_method=self.list_schedules,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
-
     def delete_schedule(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Delete a schedule.
 
@@ -3454,9 +2337,28 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_schedule(schedule_id=schedule.id)
 
-    # -----------------
-    # - PIPELINE RUNS -
-    # -----------------
+    # ----------------------------- Pipeline runs ------------------------------
+
+    def get_pipeline_run(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> PipelineRunResponse:
+        """Gets a pipeline run by name, ID, or prefix.
+
+        Args:
+            name_id_or_prefix: Name, ID, or prefix of the pipeline run.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The pipeline run.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_run,
+            list_method=self.list_pipeline_runs,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
 
     def list_pipeline_runs(
         self,
@@ -3482,7 +2384,7 @@ class Client(metaclass=ClientMetaClass):
         end_time: Optional[Union[datetime, str]] = None,
         num_steps: Optional[Union[int, str]] = None,
         unlisted: Optional[bool] = None,
-    ) -> Page[PipelineRunResponseModel]:
+    ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
         Args:
@@ -3512,7 +2414,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page with Pipeline Runs fitting the filter description
         """
-        runs_filter_model = PipelineRunFilterModel(
+        runs_filter_model = PipelineRunFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3539,7 +2441,7 @@ class Client(metaclass=ClientMetaClass):
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(runs_filter_model=runs_filter_model)
 
-    def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponseModel]:
+    def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponse]:
         """(Deprecated) List all pipeline runs.
 
         Args:
@@ -3553,27 +2455,6 @@ class Client(metaclass=ClientMetaClass):
             "future release. Please use `Client.list_pipeline_runs()` instead."
         )
         return self.list_pipeline_runs(**kwargs)
-
-    def get_pipeline_run(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-    ) -> PipelineRunResponseModel:
-        """Gets a pipeline run by name, ID, or prefix.
-
-        Args:
-            name_id_or_prefix: Name, ID, or prefix of the pipeline run.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-
-        Returns:
-            The pipeline run.
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_run,
-            list_method=self.list_pipeline_runs,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
 
     def delete_pipeline_run(
         self,
@@ -3589,9 +2470,18 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_run(run_id=run.id)
 
-    # -------------
-    # - STEP RUNS -
-    # -------------
+    # -------------------------------- Step run --------------------------------
+
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponse:
+        """Get a step run by ID.
+
+        Args:
+            step_run_id: The ID of the step run to get.
+
+        Returns:
+            The step run.
+        """
+        return self.zen_store.get_run_step(step_run_id)
 
     def list_run_steps(
         self,
@@ -3614,7 +2504,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         num_outputs: Optional[Union[int, str]] = None,
-    ) -> Page[StepRunResponseModel]:
+    ) -> Page[StepRunResponse]:
         """List all pipelines.
 
         Args:
@@ -3641,7 +2531,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page with Pipeline fitting the filter description
         """
-        step_run_filter_model = StepRunFilterModel(
+        step_run_filter_model = StepRunFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3667,20 +2557,25 @@ class Client(metaclass=ClientMetaClass):
             step_run_filter_model=step_run_filter_model
         )
 
-    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
-        """Get a step run by ID.
+    # ------------------------------- Artifacts -------------------------------
+
+    def get_artifact(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> ArtifactResponse:
+        """Get an artifact by name, id or prefix.
 
         Args:
-            step_run_id: The ID of the step run to get.
+            name_id_or_prefix: The name, ID or prefix of the artifact to get.
 
         Returns:
-            The step run.
+            The artifact.
         """
-        return self.zen_store.get_run_step(step_run_id)
-
-    # -------------
-    # - Artifacts -
-    # -------------
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_artifact,
+            list_method=self.list_artifacts,
+            name_id_or_prefix=name_id_or_prefix,
+        )
 
     def list_artifacts(
         self,
@@ -3692,39 +2587,23 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        artifact_store_id: Optional[Union[str, UUID]] = None,
-        type: Optional[ArtifactType] = None,
-        data_type: Optional[str] = None,
-        uri: Optional[str] = None,
-        materializer: Optional[str] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
-        only_unused: Optional[bool] = False,
-    ) -> Page[ArtifactResponseModel]:
-        """Get all artifacts.
+    ) -> Page[ArtifactResponse]:
+        """Get a list of artifacts.
 
         Args:
             sort_by: The column to sort by
             page: The page of items
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
-            id: Use the id of runs to filter by.
+            id: Use the id of artifact to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            name: The name of the run to filter by.
-            artifact_store_id: The id of the artifact store to filter by.
-            type: The type of the artifact to filter by.
-            data_type: The data type of the artifact to filter by.
-            uri: The uri of the artifact to filter by.
-            materializer: The materializer of the artifact to filter by.
-            workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
-            only_unused: Only return artifacts that are not used in any runs.
+            name: The name of the artifact to filter by.
 
         Returns:
             A list of artifacts.
         """
-        artifact_filter_model = ArtifactFilterModel(
+        artifact_filter_model = ArtifactFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3733,6 +2612,146 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+        )
+        return self.zen_store.list_artifacts(artifact_filter_model)
+
+    def update_artifact(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        new_name: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> ArtifactResponse:
+        """Update an artifact.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the artifact to update.
+            new_name: The new name of the artifact.
+            add_tags: Tags to add to the artifact.
+            remove_tags: Tags to remove from the artifact.
+
+        Returns:
+            The updated artifact.
+        """
+        artifact = self.get_artifact(name_id_or_prefix=name_id_or_prefix)
+        artifact_update = ArtifactUpdate(
+            name=new_name,
+            add_tags=add_tags,
+            remove_tags=remove_tags,
+        )
+        return self.zen_store.update_artifact(
+            artifact_id=artifact.id, artifact_update=artifact_update
+        )
+
+    def delete_artifact(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete an artifact.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the artifact to delete.
+        """
+        artifact = self.get_artifact(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_artifact(artifact_id=artifact.id)
+        logger.info(f"Deleted artifact '{artifact.name}'.")
+
+    # --------------------------- Artifact Versions ---------------------------
+
+    def get_artifact_version(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+    ) -> ArtifactVersionResponse:
+        """Get an artifact version by ID or artifact name.
+
+        Args:
+            name_id_or_prefix: Either the ID of the artifact version or the
+                name of the artifact.
+            version: The version of the artifact to get. Only used if
+                `name_id_or_prefix` is the name of the artifact. If not
+                specified, the latest version is returned.
+
+        Returns:
+            The artifact version.
+        """
+        return self._get_entity_version_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_artifact_version,
+            list_method=self.list_artifact_versions,
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+        )
+
+    def list_artifact_versions(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        artifact_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
+        version: Optional[Union[str, int]] = None,
+        version_number: Optional[int] = None,
+        artifact_store_id: Optional[Union[str, UUID]] = None,
+        type: Optional[ArtifactType] = None,
+        data_type: Optional[str] = None,
+        uri: Optional[str] = None,
+        materializer: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        only_unused: Optional[bool] = False,
+    ) -> Page[ArtifactVersionResponse]:
+        """Get a list of artifact versions.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of artifact version to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            artifact_id: The id of the artifact to filter by.
+            name: The name of the artifact to filter by.
+            version: The version of the artifact to filter by.
+            version_number: The version number of the artifact to filter by.
+            artifact_store_id: The id of the artifact store to filter by.
+            type: The type of the artifact to filter by.
+            data_type: The data type of the artifact to filter by.
+            uri: The uri of the artifact to filter by.
+            materializer: The materializer of the artifact to filter by.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            only_unused: Only return artifact versions that are not used in
+                any pipeline runs.
+
+        Returns:
+            A list of artifact versions.
+        """
+        artifact_id = None
+        if name:
+            try:
+                artifact = self.get_artifact(name_id_or_prefix=name)
+                artifact_id = artifact.id
+            except KeyError:
+                return Page(
+                    items=[], index=1, total=0, total_pages=1, max_size=size
+                )
+
+        artifact_version_filter_model = ArtifactVersionFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            artifact_id=artifact_id,
+            version=str(version) if version else None,
+            version_number=version_number,
             artifact_store_id=artifact_store_id,
             type=type,
             data_type=data_type,
@@ -3742,51 +2761,108 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             only_unused=only_unused,
         )
-        artifact_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_artifacts(artifact_filter_model)
+        artifact_version_filter_model.set_scope_workspace(
+            self.active_workspace.id
+        )
+        return self.zen_store.list_artifact_versions(
+            artifact_version_filter_model
+        )
 
-    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
-        """Get an artifact by ID.
+    def update_artifact_version(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> ArtifactVersionResponse:
+        """Update an artifact version.
 
         Args:
-            artifact_id: The ID of the artifact to get.
+            name_id_or_prefix: The name, ID or prefix of the artifact to update.
+            version: The version of the artifact to update. Only used if
+                `name_id_or_prefix` is the name of the artifact. If not
+                specified, the latest version is updated.
+            add_tags: Tags to add to the artifact version.
+            remove_tags: Tags to remove from the artifact version.
 
         Returns:
-            The artifact.
+            The updated artifact version.
         """
-        return self.zen_store.get_artifact(artifact_id)
+        artifact_version = self.get_artifact_version(
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+        )
+        artifact_version_update = ArtifactVersionUpdate(
+            add_tags=add_tags, remove_tags=remove_tags
+        )
+        return self.zen_store.update_artifact_version(
+            artifact_version_id=artifact_version.id,
+            artifact_version_update=artifact_version_update,
+        )
 
-    def delete_artifact(
+    def delete_artifact_version(
         self,
-        artifact_id: UUID,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
     ) -> None:
-        """Delete an artifact.
+        """Delete an artifact version.
 
         By default, this will delete only the metadata of the artifact from the
-        database, not the artifact itself.
+        database, not the actual object stored in the artifact store.
 
         Args:
-            artifact_id: The ID of the artifact to delete.
-            delete_metadata: If True, delete the metadata of the artifact from
-                the database.
-            delete_from_artifact_store: If True, delete the artifact itself from
-                the artifact store.
+            name_id_or_prefix: The ID or name or prefix of the artifact to
+                delete.
+            version: The version of the artifact to delete.
+            delete_metadata: If True, delete the metadata of the artifact
+                version from the database.
+            delete_from_artifact_store: If True, delete the artifact object
+                itself from the artifact store.
         """
-        artifact = self.get_artifact(artifact_id=artifact_id)
+        artifact_version = self.get_artifact_version(
+            name_id_or_prefix=name_id_or_prefix, version=version
+        )
         if delete_from_artifact_store:
-            self._delete_artifact_from_artifact_store(artifact=artifact)
+            self._delete_artifact_from_artifact_store(
+                artifact_version=artifact_version
+            )
         if delete_metadata:
-            self._delete_artifact_metadata(artifact=artifact)
+            self._delete_artifact_version(artifact_version=artifact_version)
+
+    def _delete_artifact_version(
+        self, artifact_version: ArtifactVersionResponse
+    ) -> None:
+        """Delete the metadata of an artifact version from the database.
+
+        Args:
+            artifact_version: The artifact version to delete.
+
+        Raises:
+            ValueError: If the artifact version is still used in any runs.
+        """
+        if artifact_version not in depaginate(
+            partial(self.list_artifact_versions, only_unused=True)
+        ):
+            raise ValueError(
+                "The metadata of artifact versions that are used in runs "
+                "cannot be deleted. Please delete all runs that use this "
+                "artifact first."
+            )
+        self.zen_store.delete_artifact_version(artifact_version.id)
+        logger.info(
+            f"Deleted version '{artifact_version.version}' of artifact "
+            f"'{artifact_version.artifact.name}'."
+        )
 
     def _delete_artifact_from_artifact_store(
-        self, artifact: ArtifactResponseModel
+        self, artifact_version: ArtifactVersionResponse
     ) -> None:
-        """Delete an artifact from the artifact store.
+        """Delete an artifact object from the artifact store.
 
         Args:
-            artifact: The artifact to delete.
+            artifact_version: The artifact version to delete.
 
         Raises:
             Exception: If the artifact store is inaccessible.
@@ -3794,23 +2870,24 @@ class Client(metaclass=ClientMetaClass):
         from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.stack.stack_component import StackComponent
 
-        if not artifact.artifact_store_id:
+        if not artifact_version.artifact_store_id:
             logger.warning(
-                f"Artifact '{artifact.uri}' does not have an artifact store "
-                "associated with it. Skipping deletion from artifact store."
+                f"Artifact '{artifact_version.uri}' does not have an artifact "
+                "store associated with it. Skipping deletion from artifact "
+                "store."
             )
             return
         try:
             artifact_store_model = self.get_stack_component(
                 component_type=StackComponentType.ARTIFACT_STORE,
-                name_id_or_prefix=artifact.artifact_store_id,
+                name_id_or_prefix=artifact_version.artifact_store_id,
             )
             artifact_store = StackComponent.from_model(artifact_store_model)
             assert isinstance(artifact_store, BaseArtifactStore)
-            artifact_store.rmtree(artifact.uri)
+            artifact_store.rmtree(artifact_version.uri)
         except Exception as e:
             logger.error(
-                f"Failed to delete artifact '{artifact.uri}' from the "
+                f"Failed to delete artifact '{artifact_version.uri}' from the "
                 "artifact store. This might happen if your local client "
                 "does not have access to the artifact store or does not "
                 "have the required integrations installed. Full error: "
@@ -3819,56 +2896,33 @@ class Client(metaclass=ClientMetaClass):
             raise e
         else:
             logger.info(
-                f"Deleted artifact '{artifact.uri}' from the artifact store."
+                f"Deleted artifact '{artifact_version.uri}' from the artifact "
+                "store."
             )
 
-    def _delete_artifact_metadata(
-        self, artifact: ArtifactResponseModel
-    ) -> None:
-        """Delete the metadata of an artifact from the database.
-
-        Args:
-            artifact: The artifact to delete.
-
-        Raises:
-            ValueError: If the artifact is still used in any runs.
-        """
-        if artifact not in depaginate(
-            partial(self.list_artifacts, only_unused=True)
-        ):
-            raise ValueError(
-                "The metadata of artifacts that are used in runs cannot be "
-                "deleted. Please delete all runs that use this artifact "
-                "first."
-            )
-        self.zen_store.delete_artifact(artifact.id)
-        logger.info(f"Deleted metadata of artifact '{artifact.uri}'.")
-
-    # ----------------
-    # - Run Metadata -
-    # ----------------
+    # ------------------------------ Run Metadata ------------------------------
 
     def create_run_metadata(
         self,
         metadata: Dict[str, "MetadataType"],
         pipeline_run_id: Optional[UUID] = None,
         step_run_id: Optional[UUID] = None,
-        artifact_id: Optional[UUID] = None,
+        artifact_version_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
-    ) -> List[RunMetadataResponseModel]:
+    ) -> List[RunMetadataResponse]:
         """Create run metadata.
 
         Args:
             metadata: The metadata to create as a dictionary of key-value pairs.
             pipeline_run_id: The ID of the pipeline run during which the
                 metadata was produced. If provided, `step_run_id` and
-                `artifact_id` must be None.
+                `artifact_version_id` must be None.
             step_run_id: The ID of the step run during which the metadata was
-                produced. If provided, `pipeline_run_id` and `artifact_id` must
-                be None.
-            artifact_id: The ID of the artifact for which the metadata was
-                produced. If provided, `pipeline_run_id` and `step_run_id` must
-                be None.
+                produced. If provided, `pipeline_run_id` and
+                `artifact_version_id` must be None.
+            artifact_version_id: The ID of the artifact version for which the
+                metadata was produced. If provided, `pipeline_run_id` and
+                `step_run_id` must be None.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
 
@@ -3877,25 +2931,25 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             ValueError: If not exactly one of either `pipeline_run_id`,
-                `step_run_id`, or `artifact_id` is provided.
+                `step_run_id`, or `artifact_version_id` is provided.
         """
         from zenml.metadata.metadata_types import get_metadata_type
 
-        if not (pipeline_run_id or step_run_id or artifact_id):
+        if not (pipeline_run_id or step_run_id or artifact_version_id):
             raise ValueError(
                 "Cannot create run metadata without linking it to any entity. "
                 "Please provide either a `pipeline_run_id`, `step_run_id`, or "
-                "`artifact_id`."
+                "`artifact_version_id`."
             )
         if (
             (pipeline_run_id and step_run_id)
-            or (pipeline_run_id and artifact_id)
-            or (step_run_id and artifact_id)
+            or (pipeline_run_id and artifact_version_id)
+            or (step_run_id and artifact_version_id)
         ):
             raise ValueError(
                 "Cannot create run metadata linked to multiple entities. "
                 "Please provide only a `pipeline_run_id` or only a "
-                "`step_run_id` or only an `artifact_id`."
+                "`step_run_id` or only an `artifact_version_id`."
             )
 
         values: Dict[str, "MetadataType"] = {}
@@ -3920,12 +2974,12 @@ class Client(metaclass=ClientMetaClass):
             values[key] = value
             types[key] = metadata_type
 
-        run_metadata = RunMetadataRequestModel(
+        run_metadata = RunMetadataRequest(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
             pipeline_run_id=pipeline_run_id,
             step_run_id=step_run_id,
-            artifact_id=artifact_id,
+            artifact_version_id=artifact_version_id,
             stack_component_id=stack_component_id,
             values=values,
             types=types,
@@ -3945,12 +2999,12 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
         step_run_id: Optional[UUID] = None,
-        artifact_id: Optional[UUID] = None,
+        artifact_version_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
         key: Optional[str] = None,
         value: Optional["MetadataType"] = None,
         type: Optional[str] = None,
-    ) -> Page[RunMetadataResponseModel]:
+    ) -> Page[RunMetadataResponse]:
         """List run metadata.
 
         Args:
@@ -3965,7 +3019,8 @@ class Client(metaclass=ClientMetaClass):
             user_id: The ID of the user that created the metadata.
             pipeline_run_id: The ID of the pipeline run the metadata belongs to.
             step_run_id: The ID of the step run the metadata belongs to.
-            artifact_id: The ID of the artifact the metadata belongs to.
+            artifact_version_id: The ID of the artifact version the metadata
+                belongs to.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
             key: The key of the metadata.
@@ -3975,7 +3030,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The run metadata.
         """
-        metadata_filter_model = RunMetadataFilterModel(
+        metadata_filter_model = RunMetadataFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -3987,7 +3042,7 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             pipeline_run_id=pipeline_run_id,
             step_run_id=step_run_id,
-            artifact_id=artifact_id,
+            artifact_version_id=artifact_version_id,
             stack_component_id=stack_component_id,
             key=key,
             value=value,
@@ -3996,16 +3051,14 @@ class Client(metaclass=ClientMetaClass):
         metadata_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_metadata(metadata_filter_model)
 
-    # .---------.
-    # | SECRETS |
-    # '---------'
+    # -------------------------------- Secrets ---------------------------------
 
     def create_secret(
         self,
         name: str,
         values: Dict[str, str],
         scope: SecretScope = SecretScope.WORKSPACE,
-    ) -> "SecretResponseModel":
+    ) -> SecretResponseModel:
         """Creates a new secret.
 
         Args:
@@ -4041,7 +3094,7 @@ class Client(metaclass=ClientMetaClass):
         scope: Optional[SecretScope] = None,
         allow_partial_name_match: bool = True,
         allow_partial_id_match: bool = True,
-    ) -> "SecretResponseModel":
+    ) -> SecretResponseModel:
         """Get a secret.
 
         Get a secret identified by a name, ID or prefix of the name or ID and
@@ -4158,55 +3211,6 @@ class Client(metaclass=ClientMetaClass):
 
         raise KeyError(msg)
 
-    def get_secret_by_name_and_scope(
-        self, name: str, scope: Optional[SecretScope] = None
-    ) -> "SecretResponseModel":
-        """Fetches a registered secret with a given name and optional scope.
-
-        This is a version of get_secret that restricts the search to a given
-        name and an optional scope, without doing any prefix or UUID matching.
-
-        If no scope is provided, the search will be done first in the user
-        scope, then in the workspace scope.
-
-        Args:
-            name: The name of the secret to get.
-            scope: The scope of the secret to get.
-
-        Returns:
-            The registered secret.
-
-        Raises:
-            KeyError: If no secret exists for the given name in the given scope.
-        """
-        logger.debug(
-            f"Fetching the secret with name '{name}' and scope '{scope}'."
-        )
-
-        # Scopes to search in order of priority
-        search_scopes = (
-            [SecretScope.USER, SecretScope.WORKSPACE]
-            if scope is None
-            else [scope]
-        )
-
-        for search_scope in search_scopes:
-            secrets = self.list_secrets(
-                logical_operator=LogicalOperators.AND,
-                name=f"equals:{name}",
-                scope=search_scope,
-            )
-
-            if len(secrets.items) >= 1:
-                # Need to fetch the secret again to get the secret values
-                return self.zen_store.get_secret(secret_id=secrets.items[0].id)
-
-        msg = f"No secret with name '{name}' was found"
-        if scope is not None:
-            msg += f" in scope '{scope.value}'"
-
-        raise KeyError(msg)
-
     def list_secrets(
         self,
         sort_by: str = "created",
@@ -4269,27 +3273,6 @@ class Client(metaclass=ClientMetaClass):
                 "centralized secrets management is not supported or explicitly "
                 "disabled in the target ZenML deployment."
             )
-
-    def list_secrets_in_scope(
-        self,
-        scope: SecretScope,
-    ) -> Page[SecretResponseModel]:
-        """Fetches the list of secret in a given scope.
-
-        The returned secrets do not contain the secret values. To get the
-        secret values, use `get_secret` individually for each secret.
-
-        Args:
-            scope: The secrets scope to search for.
-
-        Returns:
-            The list of secrets in the given scope without the secret values.
-        """
-        logger.debug(f"Fetching the secrets in scope {scope.value}.")
-
-        return self.list_secrets(
-            scope=scope,
-        )
 
     def update_secret(
         self,
@@ -4378,9 +3361,77 @@ class Client(metaclass=ClientMetaClass):
 
         self.zen_store.delete_secret(secret_id=secret.id)
 
-    # .-------------------.
-    # | CODE REPOSITORIES |
-    # '-------------------'
+    def get_secret_by_name_and_scope(
+        self, name: str, scope: Optional[SecretScope] = None
+    ) -> SecretResponseModel:
+        """Fetches a registered secret with a given name and optional scope.
+
+        This is a version of get_secret that restricts the search to a given
+        name and an optional scope, without doing any prefix or UUID matching.
+
+        If no scope is provided, the search will be done first in the user
+        scope, then in the workspace scope.
+
+        Args:
+            name: The name of the secret to get.
+            scope: The scope of the secret to get.
+
+        Returns:
+            The registered secret.
+
+        Raises:
+            KeyError: If no secret exists for the given name in the given scope.
+        """
+        logger.debug(
+            f"Fetching the secret with name '{name}' and scope '{scope}'."
+        )
+
+        # Scopes to search in order of priority
+        search_scopes = (
+            [SecretScope.USER, SecretScope.WORKSPACE]
+            if scope is None
+            else [scope]
+        )
+
+        for search_scope in search_scopes:
+            secrets = self.list_secrets(
+                logical_operator=LogicalOperators.AND,
+                name=f"equals:{name}",
+                scope=search_scope,
+            )
+
+            if len(secrets.items) >= 1:
+                # Need to fetch the secret again to get the secret values
+                return self.zen_store.get_secret(secret_id=secrets.items[0].id)
+
+        msg = f"No secret with name '{name}' was found"
+        if scope is not None:
+            msg += f" in scope '{scope.value}'"
+
+        raise KeyError(msg)
+
+    def list_secrets_in_scope(
+        self,
+        scope: SecretScope,
+    ) -> Page[SecretResponseModel]:
+        """Fetches the list of secret in a given scope.
+
+        The returned secrets do not contain the secret values. To get the
+        secret values, use `get_secret` individually for each secret.
+
+        Args:
+            scope: The secrets scope to search for.
+
+        Returns:
+            The list of secrets in the given scope without the secret values.
+        """
+        logger.debug(f"Fetching the secrets in scope {scope.value}.")
+
+        return self.list_secrets(
+            scope=scope,
+        )
+
+    # --------------------------- Code repositories ---------------------------
 
     def create_code_repository(
         self,
@@ -4389,7 +3440,7 @@ class Client(metaclass=ClientMetaClass):
         source: Source,
         description: Optional[str] = None,
         logo_url: Optional[str] = None,
-    ) -> CodeRepositoryResponseModel:
+    ) -> CodeRepositoryResponse:
         """Create a new code repository.
 
         Args:
@@ -4420,7 +3471,7 @@ class Client(metaclass=ClientMetaClass):
                 "Failed to validate code repository config."
             ) from e
 
-        repo_request = CodeRepositoryRequestModel(
+        repo_request = CodeRepositoryRequest(
             user=self.active_user.id,
             workspace=self.active_workspace.id,
             name=name,
@@ -4431,6 +3482,27 @@ class Client(metaclass=ClientMetaClass):
         )
         return self.zen_store.create_code_repository(
             code_repository=repo_request
+        )
+
+    def get_code_repository(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> CodeRepositoryResponse:
+        """Get a code repository by name, id or prefix.
+
+        Args:
+            name_id_or_prefix: The name, ID or ID prefix of the code repository.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The code repository.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_code_repository,
+            list_method=self.list_code_repositories,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def list_code_repositories(
@@ -4445,7 +3517,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[CodeRepositoryResponseModel]:
+    ) -> Page[CodeRepositoryResponse]:
         """List all code repositories.
 
         Args:
@@ -4463,7 +3535,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page of code repositories matching the filter description.
         """
-        filter_model = CodeRepositoryFilterModel(
+        filter_model = CodeRepositoryFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -4478,34 +3550,13 @@ class Client(metaclass=ClientMetaClass):
         filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_code_repositories(filter_model=filter_model)
 
-    def get_code_repository(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-    ) -> CodeRepositoryResponseModel:
-        """Get a code repository by name, id or prefix.
-
-        Args:
-            name_id_or_prefix: The name, ID or ID prefix of the code repository.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-
-        Returns:
-            The code repository.
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_code_repository,
-            list_method=self.list_code_repositories,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
-
     def update_code_repository(
         self,
         name_id_or_prefix: Union[UUID, str],
         name: Optional[str] = None,
         description: Optional[str] = None,
         logo_url: Optional[str] = None,
-    ) -> CodeRepositoryResponseModel:
+    ) -> CodeRepositoryResponse:
         """Update a code repository.
 
         Args:
@@ -4521,7 +3572,7 @@ class Client(metaclass=ClientMetaClass):
         repo = self.get_code_repository(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        update = CodeRepositoryUpdateModel(  # type: ignore[call-arg]
+        update = CodeRepositoryUpdate(  # type: ignore[call-arg]
             name=name, description=description, logo_url=logo_url
         )
         return self.zen_store.update_code_repository(
@@ -4542,141 +3593,7 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_code_repository(code_repository_id=repo.id)
 
-    # .--------------------.
-    # | SERVICE CONNECTORS |
-    # '--------------------'
-
-    def get_service_connector(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-        load_secrets: bool = False,
-    ) -> "ServiceConnectorResponseModel":
-        """Fetches a registered service connector.
-
-        Args:
-            name_id_or_prefix: The id of the service connector to fetch.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-            load_secrets: If True, load the secrets for the service connector.
-
-        Returns:
-            The registered service connector.
-        """
-
-        def scoped_list_method(
-            **kwargs: Any,
-        ) -> Page[ServiceConnectorResponseModel]:
-            """Call `zen_store.list_service_connectors` with workspace scoping.
-
-            Args:
-                **kwargs: Keyword arguments to pass to
-                    `ServiceConnectorFilterModel`.
-
-            Returns:
-                The list of service connectors.
-            """
-            filter_model = ServiceConnectorFilterModel(**kwargs)
-            filter_model.set_scope_workspace(self.active_workspace.id)
-            return self.zen_store.list_service_connectors(
-                filter_model=filter_model,
-            )
-
-        connector = self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_service_connector,
-            list_method=scoped_list_method,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-        )
-
-        if load_secrets and connector.secret_id:
-            client = Client()
-            try:
-                secret = client.get_secret(
-                    name_id_or_prefix=connector.secret_id,
-                    allow_partial_id_match=False,
-                    allow_partial_name_match=False,
-                )
-            except KeyError as err:
-                logger.error(
-                    "Unable to retrieve secret values associated with "
-                    f"service connector '{connector.name}': {err}"
-                )
-            else:
-                # Add secret values to connector configuration
-                connector.secrets.update(secret.values)
-
-        return connector
-
-    def list_service_connectors(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        is_shared: Optional[bool] = None,
-        name: Optional[str] = None,
-        connector_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
-        labels: Optional[Dict[str, Optional[str]]] = None,
-        secret_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[ServiceConnectorResponseModel]:
-        """Lists all registered service connectors.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: The id of the service connector to filter by.
-            created: Filter service connectors by time of creation
-            updated: Use the last updated date for filtering
-            connector_type: Use the service connector type for filtering
-            auth_method: Use the service connector auth method for filtering
-            resource_type: Filter service connectors by the resource type that
-                they can give access to.
-            resource_id: Filter service connectors by the resource id that
-                they can give access to.
-            workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
-            name: The name of the service connector to filter by.
-            is_shared: The shared status of the service connector to filter by.
-            labels: The labels of the service connector to filter by.
-            secret_id: Filter by the id of the secret that is referenced by the
-                service connector.
-
-        Returns:
-            A page of service connectors.
-        """
-        connector_filter_model = ServiceConnectorFilterModel(
-            page=page,
-            size=size,
-            sort_by=sort_by,
-            logical_operator=logical_operator,
-            workspace_id=workspace_id or self.active_workspace.id,
-            user_id=user_id,
-            name=name,
-            is_shared=is_shared,
-            connector_type=connector_type,
-            auth_method=auth_method,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            id=id,
-            created=created,
-            updated=updated,
-            labels=labels,
-            secret_id=secret_id,
-        )
-        connector_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_service_connectors(
-            filter_model=connector_filter_model
-        )
+    # --------------------------- Service Connectors ---------------------------
 
     def create_service_connector(
         self,
@@ -4689,7 +3606,6 @@ class Client(metaclass=ClientMetaClass):
         description: str = "",
         expiration_seconds: Optional[int] = None,
         expires_at: Optional[datetime] = None,
-        is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
         auto_configure: bool = False,
         verify: bool = True,
@@ -4698,8 +3614,8 @@ class Client(metaclass=ClientMetaClass):
     ) -> Tuple[
         Optional[
             Union[
-                "ServiceConnectorResponseModel",
-                "ServiceConnectorRequestModel",
+                ServiceConnectorResponse,
+                ServiceConnectorRequest,
             ]
         ],
         Optional[ServiceConnectorResourcesModel],
@@ -4718,7 +3634,6 @@ class Client(metaclass=ClientMetaClass):
             expiration_seconds: The expiration time of the service connector.
             expires_at: The expiration time of the service connector
                 credentials.
-            is_shared: Whether the service connector is shared or not.
             labels: The labels of the service connector.
             auto_configure: Whether to automatically configure the service
                 connector from the local environment.
@@ -4792,7 +3707,6 @@ class Client(metaclass=ClientMetaClass):
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 description=description or "",
-                is_shared=is_shared,
                 labels=labels,
             )
 
@@ -4830,14 +3744,13 @@ class Client(metaclass=ClientMetaClass):
                         f"{list(connector.auth_method_dict.keys())}."
                     )
 
-            connector_request = ServiceConnectorRequestModel(
+            connector_request = ServiceConnectorRequest(
                 name=name,
                 connector_type=connector_type,
                 description=description,
                 auth_method=auth_method,
                 expiration_seconds=expiration_seconds,
                 expires_at=expires_at,
-                is_shared=is_shared,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 labels=labels or {},
@@ -4902,6 +3815,135 @@ class Client(metaclass=ClientMetaClass):
 
         return connector_response, connector_resources
 
+    def get_service_connector(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+        load_secrets: bool = False,
+    ) -> ServiceConnectorResponse:
+        """Fetches a registered service connector.
+
+        Args:
+            name_id_or_prefix: The id of the service connector to fetch.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            load_secrets: If True, load the secrets for the service connector.
+
+        Returns:
+            The registered service connector.
+        """
+
+        def scoped_list_method(
+            **kwargs: Any,
+        ) -> Page[ServiceConnectorResponse]:
+            """Call `zen_store.list_service_connectors` with workspace scoping.
+
+            Args:
+                **kwargs: Keyword arguments to pass to
+                    `ServiceConnectorFilterModel`.
+
+            Returns:
+                The list of service connectors.
+            """
+            filter_model = ServiceConnectorFilter(**kwargs)
+            filter_model.set_scope_workspace(self.active_workspace.id)
+            return self.zen_store.list_service_connectors(
+                filter_model=filter_model,
+            )
+
+        connector = self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_service_connector,
+            list_method=scoped_list_method,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+        if load_secrets and connector.secret_id:
+            client = Client()
+            try:
+                secret = client.get_secret(
+                    name_id_or_prefix=connector.secret_id,
+                    allow_partial_id_match=False,
+                    allow_partial_name_match=False,
+                )
+            except KeyError as err:
+                logger.error(
+                    "Unable to retrieve secret values associated with "
+                    f"service connector '{connector.name}': {err}"
+                )
+            else:
+                # Add secret values to connector configuration
+                connector.secrets.update(secret.values)
+
+        return connector
+
+    def list_service_connectors(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        connector_type: Optional[str] = None,
+        auth_method: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        labels: Optional[Dict[str, Optional[str]]] = None,
+        secret_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[ServiceConnectorResponse]:
+        """Lists all registered service connectors.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: The id of the service connector to filter by.
+            created: Filter service connectors by time of creation
+            updated: Use the last updated date for filtering
+            connector_type: Use the service connector type for filtering
+            auth_method: Use the service connector auth method for filtering
+            resource_type: Filter service connectors by the resource type that
+                they can give access to.
+            resource_id: Filter service connectors by the resource id that
+                they can give access to.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The id of the user to filter by.
+            name: The name of the service connector to filter by.
+            labels: The labels of the service connector to filter by.
+            secret_id: Filter by the id of the secret that is referenced by the
+                service connector.
+
+        Returns:
+            A page of service connectors.
+        """
+        connector_filter_model = ServiceConnectorFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id or self.active_workspace.id,
+            user_id=user_id,
+            name=name,
+            connector_type=connector_type,
+            auth_method=auth_method,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            id=id,
+            created=created,
+            updated=updated,
+            labels=labels,
+            secret_id=secret_id,
+        )
+        connector_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_service_connectors(
+            filter_model=connector_filter_model
+        )
+
     def update_service_connector(
         self,
         name_id_or_prefix: Union[UUID, str],
@@ -4912,7 +3954,6 @@ class Client(metaclass=ClientMetaClass):
         resource_id: Optional[str] = None,
         description: Optional[str] = None,
         expiration_seconds: Optional[int] = None,
-        is_shared: Optional[bool] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         verify: bool = True,
         list_resources: bool = True,
@@ -4920,8 +3961,8 @@ class Client(metaclass=ClientMetaClass):
     ) -> Tuple[
         Optional[
             Union[
-                "ServiceConnectorResponseModel",
-                "ServiceConnectorUpdateModel",
+                ServiceConnectorResponse,
+                ServiceConnectorUpdate,
             ]
         ],
         Optional[ServiceConnectorResourcesModel],
@@ -4956,7 +3997,6 @@ class Client(metaclass=ClientMetaClass):
             description: The description of the service connector.
             expiration_seconds: The expiration time of the service connector.
                 If set to 0, the existing expiration time will be removed.
-            is_shared: Whether the service connector is shared or not.
             labels: The service connector to update or remove. If a label value
                 is set to None, the label will be removed.
             verify: Whether to verify that the service connector configuration
@@ -5014,15 +4054,12 @@ class Client(metaclass=ClientMetaClass):
         elif expiration_seconds is None:
             expiration_seconds = connector_model.expiration_seconds
 
-        connector_update = ServiceConnectorUpdateModel(
+        connector_update = ServiceConnectorUpdate(
             name=name or connector_model.name,
             connector_type=connector.connector_type,
             description=description or connector_model.description,
             auth_method=auth_method or connector_model.auth_method,
             expiration_seconds=expiration_seconds,
-            is_shared=is_shared
-            if is_shared is not None
-            else connector_model.is_shared,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
@@ -5345,7 +4382,6 @@ class Client(metaclass=ClientMetaClass):
             connectors have access to.
         """
         return self.zen_store.list_service_connector_resources(
-            user_name_or_id=self.active_user.id,
             workspace_name_or_id=self.active_workspace.id,
             connector_type=connector_type,
             resource_type=resource_type,
@@ -5394,16 +4430,49 @@ class Client(metaclass=ClientMetaClass):
     # Model
     #########
 
-    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+    def create_model(
+        self,
+        name: str,
+        license: Optional[str] = None,
+        description: Optional[str] = None,
+        audience: Optional[str] = None,
+        use_cases: Optional[str] = None,
+        limitations: Optional[str] = None,
+        trade_offs: Optional[str] = None,
+        ethics: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+    ) -> ModelResponseModel:
         """Creates a new model in Model Control Plane.
 
         Args:
-            model: the Model to be created.
+            name: The name of the model.
+            license: The license under which the model is created.
+            description: The description of the model.
+            audience: The target audience of the model.
+            use_cases: The use cases of the model.
+            limitations: The known limitations of the model.
+            trade_offs: The tradeoffs of the model.
+            ethics: The ethical implications of the model.
+            tags: Tags associated with the model.
 
         Returns:
             The newly created model.
         """
-        return self.zen_store.create_model(model=model)
+        return self.zen_store.create_model(
+            model=ModelRequestModel(
+                name=name,
+                license=license,
+                description=description,
+                audience=audience,
+                use_cases=use_cases,
+                limitations=limitations,
+                trade_offs=trade_offs,
+                ethics=ethics,
+                tags=tags,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+            )
+        )
 
     def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
         """Deletes a model from Model Control Plane.
@@ -5415,20 +4484,49 @@ class Client(metaclass=ClientMetaClass):
 
     def update_model(
         self,
-        model_id: UUID,
-        model_update: ModelUpdateModel,
+        model_name_or_id: Union[str, UUID],
+        license: Optional[str] = None,
+        description: Optional[str] = None,
+        audience: Optional[str] = None,
+        use_cases: Optional[str] = None,
+        limitations: Optional[str] = None,
+        trade_offs: Optional[str] = None,
+        ethics: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
     ) -> ModelResponseModel:
         """Updates an existing model in Model Control Plane.
 
         Args:
-            model_id: UUID of the model to be updated.
-            model_update: the Model to be updated.
+            model_name_or_id: name or id of the model to be deleted.
+            license: The license under which the model is created.
+            description: The description of the model.
+            audience: The target audience of the model.
+            use_cases: The use cases of the model.
+            limitations: The known limitations of the model.
+            trade_offs: The tradeoffs of the model.
+            ethics: The ethical implications of the model.
+            add_tags: Tags to add to the model.
+            remove_tags: Tags to remove from to the model.
 
         Returns:
             The updated model.
         """
+        if not is_valid_uuid(model_name_or_id):
+            model_name_or_id = self.zen_store.get_model(model_name_or_id).id
         return self.zen_store.update_model(
-            model_id=model_id, model_update=model_update
+            model_id=model_name_or_id,  # type: ignore [arg-type]
+            model_update=ModelUpdateModel(
+                license=license,
+                description=description,
+                audience=audience,
+                use_cases=use_cases,
+                limitations=limitations,
+                trade_offs=trade_offs,
+                ethics=ethics,
+                add_tags=add_tags,
+                remove_tags=remove_tags,
+            ),
         )
 
     def get_model(
@@ -5446,59 +4544,90 @@ class Client(metaclass=ClientMetaClass):
 
     def list_models(
         self,
-        model_filter_model: ModelFilterModel,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
     ) -> Page[ModelResponseModel]:
         """Get models by filter from Model Control Plane.
 
         Args:
-            model_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the model to filter by.
 
         Returns:
-            A page of all models.
+            A page object with all models.
         """
-        return self.zen_store.list_models(
-            model_filter_model=model_filter_model
+        filter = ModelFilterModel(
+            name=name,
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            created=created,
+            updated=updated,
         )
+
+        return self.zen_store.list_models(model_filter_model=filter)
 
     #################
     # Model Versions
     #################
 
     def create_model_version(
-        self, model_version: ModelVersionRequestModel
+        self,
+        model_name_or_id: Union[str, UUID],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> ModelVersionResponseModel:
         """Creates a new model version in Model Control Plane.
 
         Args:
-            model_version: the Model Version to be created.
+            model_name_or_id: the name or id of the model to create model version in.
+            name: the name of the Model Version to be created.
+            description: the description of the Model Version to be created.
 
         Returns:
             The newly created model version.
         """
-        return self.zen_store.create_model_version(model_version=model_version)
+        if not is_valid_uuid(model_name_or_id):
+            model_name_or_id = self.get_model(model_name_or_id).id
+        return self.zen_store.create_model_version(
+            model_version=ModelVersionRequestModel(
+                name=name,
+                description=description,
+                user=self.active_user.id,
+                workspace=self.active_workspace.id,
+                model=model_name_or_id,
+            )
+        )
 
     def delete_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
     ) -> None:
         """Deletes a model version from Model Control Plane.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be deleted.
+            model_version_id: Id of the model version to be deleted.
         """
         self.zen_store.delete_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_id=model_version_name_or_id,
+            model_version_id=model_version_id,
         )
 
     def get_model_version(
         self,
         model_name_or_id: Union[str, UUID],
         model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
+            Union[str, int, ModelStages, UUID]
         ] = None,
     ) -> ModelVersionResponseModel:
         """Get an existing model version from Model Control Plane.
@@ -5510,28 +4639,116 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The model version of interest.
+
+        Raises:
+            RuntimeError: In case method inputs don't adhere to restrictions.
+            KeyError: In case no model version with the identifiers exists.
         """
-        return self.zen_store.get_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id
-            or ModelStages.LATEST,
-        )
+        if model_version_name_or_number_or_id is None:
+            model_version_name_or_number_or_id = ModelStages.LATEST
+
+        if isinstance(model_version_name_or_number_or_id, UUID):
+            return self.zen_store.get_model_version(
+                model_version_id=model_version_name_or_number_or_id
+            )
+        elif isinstance(model_version_name_or_number_or_id, int):
+            model_versions = self.zen_store.list_model_versions(
+                model_name_or_id=model_name_or_id,
+                model_version_filter_model=ModelVersionFilterModel(
+                    number=model_version_name_or_number_or_id,
+                ),
+            ).items
+        elif isinstance(model_version_name_or_number_or_id, str):
+            if model_version_name_or_number_or_id == ModelStages.LATEST:
+                model_versions = self.zen_store.list_model_versions(
+                    model_name_or_id=model_name_or_id,
+                    model_version_filter_model=ModelVersionFilterModel(
+                        sort_by=f"{SorterOps.DESCENDING}:number"
+                    ),
+                ).items
+
+                if len(model_versions) > 0:
+                    model_versions = [model_versions[0]]
+                else:
+                    model_versions = []
+            elif model_version_name_or_number_or_id in ModelStages.values():
+                model_versions = self.zen_store.list_model_versions(
+                    model_name_or_id=model_name_or_id,
+                    model_version_filter_model=ModelVersionFilterModel(
+                        stage=model_version_name_or_number_or_id
+                    ),
+                ).items
+            else:
+                model_versions = self.zen_store.list_model_versions(
+                    model_name_or_id=model_name_or_id,
+                    model_version_filter_model=ModelVersionFilterModel(
+                        name=model_version_name_or_number_or_id
+                    ),
+                ).items
+        else:
+            raise RuntimeError(
+                f"The model version identifier "
+                f"`{model_version_name_or_number_or_id}` is not"
+                f"of the correct type."
+            )
+
+        if len(model_versions) == 1:
+            return model_versions[0]
+        elif len(model_versions) == 0:
+            raise KeyError(
+                f"No model version found for model "
+                f"`{model_name_or_id}` with version identifier "
+                f"`{model_version_name_or_number_or_id}`."
+            )
+        else:
+            raise RuntimeError(
+                f"The model version identifier "
+                f"`{model_version_name_or_number_or_id}` is not"
+                f"unique for model `{model_name_or_id}`."
+            )
 
     def list_model_versions(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_filter_model: ModelVersionFilterModel,
-    ) -> Page[ModelVersionResponseModel]:
+        model_name_or_id: Optional[Union[str, UUID]] = None,
+        sort_by: str = "number",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        number: Optional[int] = None,
+        stage: Optional[Union[str, ModelStages]] = None,
+    ) -> Page["ModelVersionResponseModel"]:
         """Get model versions by filter from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model containing the model version.
-            model_version_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: name or id of the model version.
+            number: number of the model version.
+            stage: stage of the model version.
 
         Returns:
-            A page of all model versions.
+            A page object with all model versions.
         """
+        model_version_filter_model = ModelVersionFilterModel(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            created=created,
+            updated=updated,
+            name=name,
+            number=number,
+            stage=stage,
+        )
+
         return self.zen_store.list_model_versions(
             model_name_or_id=model_name_or_id,
             model_version_filter_model=model_version_filter_model,
@@ -5539,21 +4756,40 @@ class Client(metaclass=ClientMetaClass):
 
     def update_model_version(
         self,
-        model_version_id: UUID,
-        model_version_update_model: ModelVersionUpdateModel,
+        model_name_or_id: Union[str, UUID],
+        version_name_or_id: Union[str, UUID],
+        stage: Optional[Union[str, ModelStages]] = None,
+        force: bool = False,
+        name: Optional[str] = None,
     ) -> ModelVersionResponseModel:
         """Get all model versions by filter.
 
         Args:
-            model_version_id: The ID of model version to be updated.
-            model_version_update_model: The model version to be updated.
+            model_name_or_id: The name or ID of the model containing model version.
+            version_name_or_id: The name or ID of model version to be updated.
+            stage: Target model version stage to be set.
+            force: Whether existing model version in target stage should be
+                silently archived or an error should be raised.
+            name: Target model version name to be set.
 
         Returns:
             An updated model version.
         """
+        if not is_valid_uuid(model_name_or_id):
+            model_name_or_id = self.get_model(model_name_or_id).id
+        if not is_valid_uuid(version_name_or_id):
+            version_name_or_id = self.get_model_version(
+                model_name_or_id, version_name_or_id
+            ).id
+
         return self.zen_store.update_model_version(
-            model_version_id=model_version_id,
-            model_version_update_model=model_version_update_model,
+            model_version_id=version_name_or_id,  # type: ignore [arg-type]
+            model_version_update_model=ModelVersionUpdateModel(
+                model=model_name_or_id,
+                stage=stage,
+                force=force,
+                name=name,
+            ),
         )
 
     #################################################
@@ -5564,29 +4800,62 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_artifact_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[UUID, str]] = None,
+        user_id: Optional[Union[UUID, str]] = None,
+        model_id: Optional[Union[UUID, str]] = None,
+        model_version_id: Optional[Union[UUID, str]] = None,
+        artifact_version_id: Optional[Union[UUID, str]] = None,
+        artifact_name: Optional[str] = None,
+        only_data_artifacts: Optional[bool] = None,
+        only_model_artifacts: Optional[bool] = None,
+        only_endpoint_artifacts: Optional[bool] = None,
     ) -> Page[ModelVersionArtifactResponseModel]:
         """Get model version to artifact links by filter in Model Control Plane.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-            model_version_artifact_link_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: Use the workspace id for filtering
+            user_id: Use the user id for filtering
+            model_id: Use the model id for filtering
+            model_version_id: Use the model version id for filtering
+            artifact_version_id: Use the artifact id for filtering
+            artifact_name: Use the artifact name for filtering
+            only_data_artifacts: Use to filter by data artifacts
+            only_model_artifacts: Use to filter by model artifacts
+            only_endpoint_artifacts: Use to filter by endpoint artifacts
 
         Returns:
             A page of all model version to artifact links.
         """
-        mv = self.zen_store.get_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        )
         return self.zen_store.list_model_version_artifact_links(
-            model_name_or_id=mv.model.id,
-            model_version_name_or_id=mv.id,
-            model_version_artifact_link_filter_model=model_version_artifact_link_filter_model,
+            ModelVersionArtifactFilterModel(
+                sort_by=sort_by,
+                logical_operator=logical_operator,
+                page=page,
+                size=size,
+                created=created,
+                updated=updated,
+                workspace_id=workspace_id,
+                user_id=user_id,
+                model_id=model_id,
+                model_version_id=model_version_id,
+                artifact_version_id=artifact_version_id,
+                artifact_name=artifact_name,
+                only_data_artifacts=only_data_artifacts,
+                only_model_artifacts=only_model_artifacts,
+                only_endpoint_artifacts=only_endpoint_artifacts,
+            )
         )
 
     #################################################
@@ -5597,34 +4866,56 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_version_pipeline_run_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-        model_version_name_or_number_or_id: Union[str, int, UUID, ModelStages],
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[UUID, str]] = None,
+        user_id: Optional[Union[UUID, str]] = None,
+        model_id: Optional[Union[UUID, str]] = None,
+        model_version_id: Optional[Union[UUID, str]] = None,
+        pipeline_run_id: Optional[Union[UUID, str]] = None,
+        pipeline_run_name: Optional[str] = None,
     ) -> Page[ModelVersionPipelineRunResponseModel]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: Use the workspace id for filtering
+            user_id: Use the user id for filtering
+            model_id: Use the model id for filtering
+            model_version_id: Use the model version id for filtering
+            pipeline_run_id: Use the pipeline run id for filtering
+            pipeline_run_name: Use the pipeline run name for filtering
 
         Returns:
             A page of all model version to pipeline run links.
         """
-        mv = self.zen_store.get_model_version(
-            model_name_or_id=model_name_or_id,
-            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-        )
         return self.zen_store.list_model_version_pipeline_run_links(
-            model_name_or_id=mv.model.id,
-            model_version_name_or_id=mv.id,
-            model_version_pipeline_run_link_filter_model=model_version_pipeline_run_link_filter_model,
+            ModelVersionPipelineRunFilterModel(
+                sort_by=sort_by,
+                logical_operator=logical_operator,
+                page=page,
+                size=size,
+                created=created,
+                updated=updated,
+                workspace_id=workspace_id,
+                user_id=user_id,
+                model_id=model_id,
+                model_version_id=model_version_id,
+                pipeline_run_id=pipeline_run_id,
+                pipeline_run_name=pipeline_run_name,
+            )
         )
 
-    # .--------------------.
-    # | AUTHORIZED_DEVICES |
-    # '--------------------'
+    # --------------------------- Authorized Devices ---------------------------
 
     def list_authorized_devices(
         self,
@@ -5641,7 +4932,7 @@ class Client(metaclass=ClientMetaClass):
         trusted_device: Union[bool, str, None] = None,
         failed_auth_attempts: Union[int, str, None] = None,
         last_login: Optional[Union[datetime, str, None]] = None,
-    ) -> Page[OAuthDeviceResponseModel]:
+    ) -> Page[OAuthDeviceResponse]:
         """List all authorized devices.
 
         Args:
@@ -5662,7 +4953,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page of authorized devices matching the filter.
         """
-        filter_model = OAuthDeviceFilterModel(
+        filter_model = OAuthDeviceFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -5685,7 +4976,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         id_or_prefix: Union[UUID, str],
         allow_id_prefix_match: bool = True,
-    ) -> OAuthDeviceResponseModel:
+    ) -> OAuthDeviceResponse:
         """Get an authorized device by id or prefix.
 
         Args:
@@ -5721,7 +5012,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         id_or_prefix: Union[UUID, str],
         locked: Optional[bool] = None,
-    ) -> OAuthDeviceResponseModel:
+    ) -> OAuthDeviceResponse:
         """Update an authorized device.
 
         Args:
@@ -5736,7 +5027,7 @@ class Client(metaclass=ClientMetaClass):
         )
         return self.zen_store.update_authorized_device(
             device_id=device.id,
-            update=OAuthDeviceUpdateModel(
+            update=OAuthDeviceUpdate(
                 locked=locked,
             ),
         )
@@ -5760,11 +5051,11 @@ class Client(metaclass=ClientMetaClass):
 
     @staticmethod
     def _get_entity_by_id_or_name_or_prefix(
-        get_method: Callable[..., AnyResponseModel],
-        list_method: Callable[..., Page[AnyResponseModel]],
+        get_method: Callable[..., AnyResponse],
+        list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
-    ) -> "AnyResponseModel":
+    ) -> AnyResponse:
         """Fetches an entity using the id, name, or partial id/name.
 
         Args:
@@ -5782,6 +5073,8 @@ class Client(metaclass=ClientMetaClass):
                 or id prefix.
         """
         from zenml.utils.uuid_utils import is_valid_uuid
+
+        entity_label = get_method.__name__.replace("get_", "") + "s"
 
         # First interpret as full UUID
         if is_valid_uuid(name_id_or_prefix):
@@ -5805,7 +5098,6 @@ class Client(metaclass=ClientMetaClass):
             )
 
         # If more than one entity with the same name is found, raise an error.
-        entity_label = get_method.__name__.replace("get_", "") + "s"
         formatted_entity_items = [
             f"- {item.name}: (id: {item.id})\n"
             if hasattr(item, "name")
@@ -5822,12 +5114,72 @@ class Client(metaclass=ClientMetaClass):
         )
 
     @staticmethod
+    def _get_entity_version_by_id_or_name_or_prefix(
+        get_method: Callable[..., AnyResponse],
+        list_method: Callable[..., Page[AnyResponse]],
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str],
+    ) -> "AnyResponse":
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        entity_label = get_method.__name__.replace("get_", "") + "s"
+
+        if is_valid_uuid(name_id_or_prefix):
+            if version:
+                logger.warning(
+                    "You specified both an ID as well as a version of the "
+                    f"{entity_label}. Ignoring the version and fetching the "
+                    f"{entity_label} by ID."
+                )
+            if not isinstance(name_id_or_prefix, UUID):
+                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
+
+            return get_method(name_id_or_prefix)
+
+        assert not isinstance(name_id_or_prefix, UUID)
+        exact_name_matches = list_method(
+            size=1,
+            sort_by="desc:created",
+            name=name_id_or_prefix,
+            version=version,
+        )
+
+        if len(exact_name_matches) == 1:
+            # If the name matches exactly, use the explicitly specified version
+            # or fallback to the latest if not given
+            return exact_name_matches.items[0]
+
+        partial_id_matches = list_method(id=f"startswith:{name_id_or_prefix}")
+        if partial_id_matches.total == 1:
+            if version:
+                logger.warning(
+                    "You specified both a partial ID as well as a version of "
+                    f"the {entity_label}. Ignoring the version and fetching "
+                    f"the {entity_label} by partial ID."
+                )
+            return partial_id_matches[0]
+        elif partial_id_matches.total == 0:
+            raise KeyError(
+                f"No {entity_label} found for name, ID or prefix "
+                f"{name_id_or_prefix}."
+            )
+        else:
+            raise ZenKeyError(
+                f"{partial_id_matches.total} {entity_label} have been found "
+                "that have an id prefix that matches the provided string "
+                f"'{name_id_or_prefix}':\n"
+                f"{partial_id_matches.items}.\n"
+                f"Please provide more characters to uniquely identify "
+                f"only one of the {entity_label}s."
+            )
+
+    @staticmethod
     def _get_entity_by_prefix(
-        get_method: Callable[..., AnyResponseModel],
-        list_method: Callable[..., Page[AnyResponseModel]],
+        get_method: Callable[..., AnyResponse],
+        list_method: Callable[..., Page[AnyResponse]],
         partial_id_or_name: str,
         allow_name_prefix_match: bool,
-    ) -> "AnyResponseModel":
+    ) -> AnyResponse:
         """Fetches an entity using a partial ID or name.
 
         Args:
@@ -5890,3 +5242,470 @@ class Client(metaclass=ClientMetaClass):
             f"Please provide more characters to uniquely identify "
             f"only one of the {entity_label}s."
         )
+
+    # ---------------------------- Service Accounts ----------------------------
+
+    def create_service_account(
+        self,
+        name: str,
+        description: str = "",
+    ) -> ServiceAccountResponse:
+        """Create a new service account.
+
+        Args:
+            name: The name of the service account.
+            description: The description of the service account.
+
+        Returns:
+            The created service account.
+        """
+        service_account = ServiceAccountRequest(
+            name=name, description=description, active=True
+        )
+        created_service_account = self.zen_store.create_service_account(
+            service_account=service_account
+        )
+
+        return created_service_account
+
+    def get_service_account(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> ServiceAccountResponse:
+        """Gets a service account.
+
+        Args:
+            name_id_or_prefix: The name or ID of the service account.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The ServiceAccount
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_service_account,
+            list_method=self.list_service_accounts,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+    def list_service_accounts(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> Page[ServiceAccountResponse]:
+        """List all service accounts.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the service account name for filtering
+            description: Use the service account description for filtering
+            active: Use the service account active status for filtering
+
+        Returns:
+            The list of service accounts matching the filter description.
+        """
+        return self.zen_store.list_service_accounts(
+            ServiceAccountFilter(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                description=description,
+                active=active,
+            )
+        )
+
+    def update_service_account(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        updated_name: Optional[str] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> ServiceAccountResponse:
+        """Update a service account.
+
+        Args:
+            name_id_or_prefix: The name or ID of the service account to update.
+            updated_name: The new name of the service account.
+            description: The new description of the service account.
+            active: The new active status of the service account.
+
+        Returns:
+            The updated service account.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        service_account_update = ServiceAccountUpdate(
+            name=updated_name,
+            description=description,
+            active=active,
+        )
+
+        return self.zen_store.update_service_account(
+            service_account_name_or_id=service_account.id,
+            service_account_update=service_account_update,
+        )
+
+    def delete_service_account(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
+
+        Args:
+            name_id_or_prefix: The name or ID of the service account to delete.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        self.zen_store.delete_service_account(
+            service_account_name_or_id=service_account.id
+        )
+
+    # -------------------------------- API Keys --------------------------------
+
+    def create_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name: str,
+        description: str = "",
+        set_key: bool = False,
+    ) -> APIKeyResponse:
+        """Create a new API key and optionally set it as the active API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to create the API key for.
+            name: Name of the API key.
+            description: The description of the API key.
+            set_key: Whether to set the created API key as the active API key.
+
+        Returns:
+            The created API key.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=service_account_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        request = APIKeyRequest(
+            name=name,
+            description=description,
+        )
+        api_key = self.zen_store.create_api_key(
+            service_account_id=service_account.id, api_key=request
+        )
+        assert api_key.key is not None
+
+        if set_key:
+            self.set_api_key(key=api_key.key)
+
+        return api_key
+
+    def set_api_key(self, key: str) -> None:
+        """Configure the client with an API key.
+
+        Args:
+            key: The API key to use.
+
+        Raises:
+            NotImplementedError: If the client is not connected to a ZenML
+                server.
+        """
+        from zenml.zen_stores.rest_zen_store import RestZenStore
+
+        zen_store = self.zen_store
+        if not zen_store.TYPE == StoreType.REST:
+            raise NotImplementedError(
+                "API key configuration is only supported if connected to a "
+                "ZenML server."
+            )
+        assert isinstance(zen_store, RestZenStore)
+        zen_store.set_api_key(api_key=key)
+
+    def list_api_keys(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+        last_login: Optional[Union[datetime, str]] = None,
+        last_rotated: Optional[Union[datetime, str]] = None,
+    ) -> Page[APIKeyResponse]:
+        """List all API keys.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to list the API keys for.
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of the API key to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            name: The name of the API key to filter by.
+            description: The description of the API key to filter by.
+            active: Whether the API key is active or not.
+            last_login: The last time the API key was used.
+            last_rotated: The last time the API key was rotated.
+
+        Returns:
+            A page of API keys matching the filter description.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=service_account_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        filter_model = APIKeyFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            description=description,
+            active=active,
+            last_login=last_login,
+            last_rotated=last_rotated,
+        )
+        return self.zen_store.list_api_keys(
+            service_account_id=service_account.id, filter_model=filter_model
+        )
+
+    def get_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+    ) -> APIKeyResponse:
+        """Get an API key by name, id or prefix.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to get the API key for.
+            name_id_or_prefix: The name, ID or ID prefix of the API key.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+
+        Returns:
+            The API key.
+        """
+        service_account = self.get_service_account(
+            name_id_or_prefix=service_account_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+
+        def get_api_key_method(api_key_name_or_id: str) -> APIKeyResponse:
+            return self.zen_store.get_api_key(
+                service_account_id=service_account.id,
+                api_key_name_or_id=api_key_name_or_id,
+            )
+
+        def list_api_keys_method(
+            **filter_args: Any,
+        ) -> Page[APIKeyResponse]:
+            return self.list_api_keys(
+                service_account_name_id_or_prefix=service_account.id,
+                **filter_args,
+            )
+
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=get_api_key_method,
+            list_method=list_api_keys_method,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+
+    def update_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> APIKeyResponse:
+        """Update an API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to update the API key for.
+            name_id_or_prefix: Name, ID or prefix of the API key to update.
+            name: New name of the API key.
+            description: New description of the API key.
+            active: Whether the API key is active or not.
+
+        Returns:
+            The updated API key.
+        """
+        api_key = self.get_api_key(
+            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        update = APIKeyUpdate(
+            name=name, description=description, active=active
+        )
+        return self.zen_store.update_api_key(
+            service_account_id=api_key.service_account.id,
+            api_key_name_or_id=api_key.id,
+            api_key_update=update,
+        )
+
+    def rotate_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[UUID, str],
+        retain_period_minutes: int = 0,
+        set_key: bool = False,
+    ) -> APIKeyResponse:
+        """Rotate an API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to rotate the API key for.
+            name_id_or_prefix: Name, ID or prefix of the API key to update.
+            retain_period_minutes: The number of minutes to retain the old API
+                key for. If set to 0, the old API key will be invalidated.
+            set_key: Whether to set the rotated API key as the active API key.
+
+        Returns:
+            The updated API key.
+        """
+        api_key = self.get_api_key(
+            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        rotate_request = APIKeyRotateRequest(
+            retain_period_minutes=retain_period_minutes
+        )
+        new_key = self.zen_store.rotate_api_key(
+            service_account_id=api_key.service_account.id,
+            api_key_name_or_id=api_key.id,
+            rotate_request=rotate_request,
+        )
+        assert new_key.key is not None
+        if set_key:
+            self.set_api_key(key=new_key.key)
+
+        return new_key
+
+    def delete_api_key(
+        self,
+        service_account_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete an API key.
+
+        Args:
+            service_account_name_id_or_prefix: The name, ID or prefix of the
+                service account to delete the API key for.
+            name_id_or_prefix: The name, ID or prefix of the API key.
+        """
+        api_key = self.get_api_key(
+            service_account_name_id_or_prefix=service_account_name_id_or_prefix,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        self.zen_store.delete_api_key(
+            service_account_id=api_key.service_account.id,
+            api_key_name_or_id=api_key.id,
+        )
+
+    #############################################
+    # Tags
+    #
+    # Note: tag<>resource are not exposed and
+    # can be accessed via relevant resources
+    #############################################
+
+    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+        """Creates a new tag.
+
+        Args:
+            tag: the Tag to be created.
+
+        Returns:
+            The newly created tag.
+        """
+        return self.zen_store.create_tag(tag=tag)
+
+    def delete_tag(self, tag_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be deleted.
+        """
+        self.zen_store.delete_tag(tag_name_or_id=tag_name_or_id)
+
+    def update_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        tag_update_model: TagUpdateModel,
+    ) -> TagResponseModel:
+        """Updates an existing tag.
+
+        Args:
+            tag_name_or_id: name or UUID of the tag to be updated.
+            tag_update_model: the tag to be updated.
+
+        Returns:
+            The updated tag.
+        """
+        return self.zen_store.update_tag(
+            tag_name_or_id=tag_name_or_id, tag_update_model=tag_update_model
+        )
+
+    def get_tag(self, tag_name_or_id: Union[str, UUID]) -> TagResponseModel:
+        """Get an existing tag.
+
+        Args:
+            tag_name_or_id: name or id of the model to be retrieved.
+
+        Returns:
+            The tag of interest.
+        """
+        return self.zen_store.get_tag(tag_name_or_id=tag_name_or_id)
+
+    def list_tags(
+        self,
+        tag_filter_model: TagFilterModel,
+    ) -> Page[TagResponseModel]:
+        """Get tags by filter.
+
+        Args:
+            tag_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all tags.
+        """
+        return self.zen_store.list_tags(tag_filter_model=tag_filter_model)

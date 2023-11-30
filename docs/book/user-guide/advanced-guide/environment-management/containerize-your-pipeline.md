@@ -14,11 +14,11 @@ There are three ways to control this containerization process:
 
 ## Define where an image is built
 
-[Image builders](../../../stacks-and-components/component-guide/image-builders/image-builders.md) determine how and where an image is built. Learn more [here](../environment-management/environment-management.md#image-builder-environment).
+[Image builders](../../../stacks-and-components/component-guide/image-builders/image-builders.md) determine how and where an image is built. Learn more [here](environment-management.md#image-builder-environment).
 
 ## Reuse Docker image builds from previous runs
 
-ZenML automatically [builds and pushes Docker images](../environment-management/environment-management.md#execution-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
+ZenML automatically [builds and pushes Docker images](environment-management.md#execution-environments) when running a pipeline on a stack requiring Docker images. To run this build step separately without running the pipeline, call:
 
 ```python
 my_pipeline.build(...)
@@ -62,7 +62,7 @@ To avoid this, disconnect your code from the build by [connecting a git reposito
 
 ## Customize the Docker building
 
-When a [pipeline is run with a remote orchestrator](../../starter-guide/create-an-ml-pipeline.md) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](../environment-management/environment-management.md#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
+When a [pipeline is run with a remote orchestrator](broken-reference) a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated at runtime. It is then used to build the docker image using the [image builder](environment-management.md#image-builder-environment) component of your stack. The Dockerfile consists of the following steps:
 
 * **Starts from a parent image** that has **ZenML installed**. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](containerize-your-pipeline.md#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies. If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](containerize-your-pipeline.md#installing-additional-pip-dependencies-or-apt-packages).
@@ -75,15 +75,16 @@ For a full list of configuration options, check out [our API Docs](https://sdkdo
 
 ### How to configure Docker builds for your pipelines
 
-Customizing the Docker builds for your pipelines and steps is done using the `DockerSettings` class
-which you can import like this:
+Customizing the Docker builds for your pipelines and steps is done using the `DockerSettings` class which you can import like this:
 
 ```python
 from zenml.config import DockerSettings
 ```
 
 There are many ways in which you can supply these settings:
+
 * Configuring them on a pipeline applies the settings to all steps of that pipeline:
+
 ```python
 docker_settings = DockerSettings()
 
@@ -95,8 +96,9 @@ my_pipeline = my_pipeline.with_options(
     settings={"docker": docker_settings}
 )
 ```
-* Configuring them on a step gives you more fine-grained control and enables you
-to build separate specialized Docker images for different steps of your pipelines:
+
+* Configuring them on a step gives you more fine-grained control and enables you to build separate specialized Docker images for different steps of your pipelines:
+
 ```python
 docker_settings = DockerSettings()
 
@@ -108,11 +110,10 @@ my_step = my_step.with_options(
     settings={"docker": docker_settings}
 )
 ```
-* Using a YAML configuration file as described
-[here](../pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml).
 
-Check out [this page](../pipelining-features/configure-steps-pipelines.md#hierarchy-and-precedence) for more information
-on the hierarchy and precedence of the various ways in which you can supply the settings.
+* Using a YAML configuration file as described [here](../pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml).
+
+Check out [this page](../pipelining-features/configure-steps-pipelines.md#hierarchy-and-precedence) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
 
 ### Handling source files
 
@@ -305,5 +306,4 @@ def my_pipeline(...):
     ...
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

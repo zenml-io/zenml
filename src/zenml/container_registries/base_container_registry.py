@@ -20,7 +20,7 @@ from pydantic import validator
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.enums import StackComponentType
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.models import ServiceConnectorRequirements
 from zenml.secret.schemas import BasicAuthSecretSchema
 from zenml.stack.authentication_mixin import (
     AuthenticationConfigMixin,
@@ -57,9 +57,6 @@ class BaseContainerRegistryConfig(AuthenticationConfigMixin):
     @property
     def is_local(self) -> bool:
         """Checks if this stack component is running locally.
-
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
 
         Returns:
             True if this config is for a local component, False otherwise.

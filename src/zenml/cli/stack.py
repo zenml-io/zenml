@@ -15,7 +15,7 @@
 import getpass
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 import click
@@ -48,12 +48,10 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import (
     IllegalOperationError,
     ProvisioningError,
-    StackExistsError,
 )
 from zenml.io.fileio import rmtree
 from zenml.logger import get_logger
-from zenml.models import StackFilterModel
-from zenml.models.stack_models import StackResponseModel
+from zenml.models import StackFilter
 from zenml.utils.dashboard_utils import get_stack_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.mlstacks_utils import (
@@ -66,6 +64,9 @@ from zenml.utils.mlstacks_utils import (
     verify_spec_and_tf_files_exist,
 )
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.models import StackResponse
 
 logger = get_logger(__name__)
 
@@ -196,13 +197,6 @@ def stack() -> None:
     help="Immediately set this stack as active.",
     type=click.BOOL,
 )
-@click.option(
-    "--share",
-    "share",
-    is_flag=True,
-    help="Use this flag to share this stack with other users.",
-    type=click.BOOL,
-)
 def register_stack(
     stack_name: str,
     artifact_store: str,
@@ -219,7 +213,6 @@ def register_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     set_stack: bool = False,
-    share: bool = False,
 ) -> None:
     """Register a stack.
 
@@ -239,7 +232,6 @@ def register_stack(
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         set_stack: Immediately set this stack as active.
-        share: Share the stack with other users.
     """
     with console.status(f"Registering stack '{stack_name}'...\n"):
         client = Client()
@@ -276,15 +268,10 @@ def register_stack(
                 StackComponentType.CONTAINER_REGISTRY
             ] = container_registry
 
-        # click<8.0.0 gives flags a default of None
-        if share is None:
-            share = False
-
         try:
             created_stack = client.create_stack(
                 name=stack_name,
                 components=components,
-                is_shared=share,
             )
         except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
@@ -500,52 +487,6 @@ def update_stack(
 
 
 @stack.command(
-    "share",
-    context_settings=dict(ignore_unknown_options=True),
-    help="Share a stack and all its components.",
-)
-@click.argument("stack_name_or_id", type=str, required=False)
-@click.option(
-    "--recursive",
-    "-r",
-    "recursive",
-    is_flag=True,
-    help="Recursively also share all stack components if they are private.",
-)
-def share_stack(
-    stack_name_or_id: Optional[str], recursive: bool = False
-) -> None:
-    """Share a stack with your team.
-
-    Args:
-        stack_name_or_id: Name or id of the stack to share.
-        recursive: Recursively also share all components
-    """
-    client = Client()
-
-    with console.status("Sharing the stack...\n"):
-        try:
-            if recursive:
-                stack_to_update = client.get_stack(
-                    name_id_or_prefix=stack_name_or_id
-                )
-                for c_type, components in stack_to_update.components.items():
-                    for component in components:
-                        client.update_stack_component(
-                            name_id_or_prefix=component.id,
-                            component_type=c_type,
-                            is_shared=True,
-                        )
-            updated_stack = client.update_stack(
-                name_id_or_prefix=stack_name_or_id,
-                is_shared=True,
-            )
-        except (KeyError, IllegalOperationError, StackExistsError) as err:
-            cli_utils.error(str(err))
-        cli_utils.declare(f"Stack `{updated_stack.name}` successfully shared!")
-
-
-@stack.command(
     "remove-component",
     context_settings=dict(ignore_unknown_options=True),
     help="Remove stack components from a stack.",
@@ -753,7 +694,7 @@ def rename_stack(
 
 
 @stack.command("list")
-@list_options(StackFilterModel)
+@list_options(StackFilter)
 @click.pass_context
 def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
     """List all stacks that fulfill the filter requirements.
@@ -805,7 +746,7 @@ def describe_stack(
 
     with console.status("Describing the stack...\n"):
         try:
-            stack_: StackResponseModel = client.get_stack(
+            stack_: "StackResponse" = client.get_stack(
                 name_id_or_prefix=stack_name_or_id
             )
         except KeyError as err:
@@ -1131,7 +1072,7 @@ def import_stack(
         component_ids[component_type] = component_id
 
     imported_stack = Client().create_stack(
-        name=stack_name, components=component_ids, is_shared=False
+        name=stack_name, components=component_ids
     )
 
     print_model_url(get_stack_url(imported_stack))
@@ -1140,22 +1081,12 @@ def import_stack(
 @stack.command("copy", help="Copy a stack to a new stack name.")
 @click.argument("source_stack_name_or_id", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
-@click.option(
-    "--share",
-    "share",
-    is_flag=True,
-    help="Use this flag to share this stack with other users.",
-    type=click.BOOL,
-)
-def copy_stack(
-    source_stack_name_or_id: str, target_stack: str, share: bool = False
-) -> None:
+def copy_stack(source_stack_name_or_id: str, target_stack: str) -> None:
     """Copy a stack.
 
     Args:
         source_stack_name_or_id: The name or id of the stack to copy.
         target_stack: Name of the copied stack.
-        share: Share the stack with other users.
     """
     client = Client()
 
@@ -1176,7 +1107,6 @@ def copy_stack(
         copied_stack = client.create_stack(
             name=target_stack,
             components=component_mapping,
-            is_shared=share,
         )
 
     print_model_url(get_stack_url(copied_stack))
@@ -1456,7 +1386,14 @@ def _get_deployment_params_interactively(
     "-o",
     required=False,
     type=click.Choice(
-        ["kubernetes", "kubeflow", "tekton", "sagemaker", "vertex"]
+        [
+            "kubernetes",
+            "kubeflow",
+            "tekton",
+            "sagemaker",
+            "skypilot",
+            "vertex",
+        ]
     ),
     help="The flavor of orchestrator to use. "
     "If not specified, the default orchestrator will be used.",

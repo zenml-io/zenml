@@ -196,7 +196,7 @@ The AWS Service Connector is part of the AWS ZenML integration. You can either
 install the entire integration or use a pypi extra to install it independently
 of the integration:
 
-* `pip install zenml[connectors-aws]` installs only prerequisites for the AWS
+* `pip install "zenml[connectors-aws]"` installs only prerequisites for the AWS
 Service Connector Type
 * `zenml integration install aws` installs the entire AWS ZenML integration
 

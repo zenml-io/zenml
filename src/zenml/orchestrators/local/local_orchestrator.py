@@ -28,9 +28,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 
@@ -46,7 +44,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
@@ -116,9 +114,6 @@ class LocalOrchestratorConfig(BaseOrchestratorConfig):
     @property
     def is_local(self) -> bool:
         """Checks if this stack component is running locally.
-
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
 
         Returns:
             True if this config is for a local component, False otherwise.

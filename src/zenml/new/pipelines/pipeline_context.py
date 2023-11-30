@@ -40,7 +40,8 @@ def get_pipeline_context() -> "PipelineContext":
             raise RuntimeError("No active pipeline found.")
         else:
             raise RuntimeError(
-                "Inside a step use `from zenml import get_step_context` instead."
+                "Inside a step use `from zenml import get_step_context` "
+                "instead."
             )
 
     return PipelineContext(
@@ -49,7 +50,7 @@ def get_pipeline_context() -> "PipelineContext":
 
 
 class PipelineContext:
-    """Provides pipeline configuration during its' composition.
+    """Provides pipeline configuration during it's composition.
 
     Usage example:
 
@@ -92,7 +93,8 @@ class PipelineContext:
         """Initialize the context of the currently composing pipeline.
 
         Args:
-            pipeline_configuration: The configuration of the pipeline derived from Pipeline class.
+            pipeline_configuration: The configuration of the pipeline derived
+                from Pipeline class.
         """
         self.name = pipeline_configuration.name
         self.enable_cache = pipeline_configuration.enable_cache
@@ -105,3 +107,4 @@ class PipelineContext:
         self.enable_step_logs = pipeline_configuration.enable_step_logs
         self.settings = pipeline_configuration.settings
         self.extra = pipeline_configuration.extra
+        self.model_version = pipeline_configuration.model_version

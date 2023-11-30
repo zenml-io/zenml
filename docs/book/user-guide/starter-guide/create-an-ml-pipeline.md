@@ -1,10 +1,111 @@
 ---
-description: Learning how to configure pipelines and their steps.
+description: Start with the basics of steps and pipelines.
 ---
 
-# Create an ML pipeline
+# Developing ML pipelines
 
-In this section, we build out the first ML pipeline. For this, let's get the imports out of the way first:
+Imagine you have your first machine learning models trained, and perhaps even deployed in some ad-hoc manner. This is typically where you would start thinking about MLOps, and how to standardize your process so you and your team can quickly get models out the door without much overhead.
+
+In this quest for production-ready ML models, workflows can quickly become complex. Decoupling and standardizing stages such as data ingestion, preprocessing, and model evaluation allows for more manageable, reusable, and scalable processes. ZenML pipelines facilitate this by enabling each stage—represented as **Steps**—to be modularly developed and then integrated smoothly into an end-to-end **Pipeline**.
+
+Leveraging ZenML, you can create and manage robust, scalable machine learning (ML) pipelines. Whether for data preparation, model training, or deploying predictions, ZenML standardizes and streamlines the process, ensuring reproducibility and efficiency.
+
+<figure><img src="../../.gitbook/assets/pipeline_showcase.png" alt=""><figcaption><p>ZenML pipelines are simple Python code</p></figcaption></figure>
+
+## Start with a simple ML pipeline
+
+Let's jump into an example that demonstrates how a simple pipeline can be set up in ZenML, featuring actual ML components to give you a better sense of its application.
+
+```python
+from zenml import pipeline, step
+
+@step
+def load_data() -> dict:
+    """Simulates loading of training data and labels"""
+
+    training_data = [[1, 2], [3, 4], [5, 6]]
+    labels = [0, 1, 0]
+    
+    return {'features': training_data, 'labels': labels}
+
+@step
+def train_model(data: dict) -> None:
+    """
+    A mock 'training' process that also demonstrates using the input data.
+    In a real-world scenario, this would be replaced with actual model fitting logic.
+    """
+    total_features = sum(map(sum, data['features']))
+    total_labels = sum(data['labels'])
+    
+    print(f"Trained model using {len(data['features'])} data points. "
+          f"Feature sum is {total_features}, label sum is {total_labels}")
+
+@pipeline
+def simple_ml_pipeline():
+    """Define a pipeline that connects the steps"""
+    dataset = load_data()
+    train_model(dataset)
+
+if __name__ == "__main__":
+    run = simple_ml_pipeline()
+    # You can now use the `run` object to see steps, outputs, etc.
+```
+
+{% hint style="info" %}
+* **`@step`** is a decorator that converts its function into a step that can be used within a pipeline
+* **`@pipeline`** defines a function as a pipeline and within this function, the steps are called and their outputs are routed
+{% endhint %}
+
+Copy this code into a file `run.py` and run it.
+
+{% code overflow="wrap" %}
+```bash
+$ python run.py
+
+Initiating a new run for the pipeline: simple_ml_pipeline.
+Registered new version: (version 2).
+Executing a new run.
+Using user: hamza@zenml.io
+Using stack: default
+  orchestrator: default
+  artifact_store: default
+Step load_data has started.
+Step load_data has finished in 0.385s.
+Step train_model has started.
+Trained model using 3 data points. Feature sum is 21, label sum is 1
+Step train_model has finished in 0.265s.
+Run simple_ml_pipeline-2023_11_23-10_51_59_657489 has finished in 1.612s.
+Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see your pipeline!
+```
+{% endcode %}
+
+### Explore the dashboard
+
+Once the pipeline has executed, use the `zenml up` command to view the results in the ZenML Dashboard:
+
+<figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
+
+The dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG visualization to understand the flow of data and to ensure all steps completed successfully.
+
+<figure><img src="../../.gitbook/assets/DAGofRun.png" alt=""><figcaption><p>Diagram view of the run, with the runtime attributes of step 2.</p></figcaption></figure>
+
+For further insights, explore the logging and artifact information associated with each step, which can reveal details about the data and intermediate results.
+
+If you have closed the browser tab with the ZenML dashboard, you can always reopen it by running `zenml show` in your terminal.
+
+## Understanding steps and artifacts
+
+When you ran the pipeline, each individual function that ran is shown in the DAG visualization as a `step` and is marked with the function name. Steps are connected with `artifacts`, which are simply the objects that are returned by these functions and input into downstream functions. This simple logic let's us breakdown our entire machine learning code into a sequence of tasks that pass data between each other.
+
+The artifacts produced by your steps are automatically stored and versioned by ZenML. The code that produced these artifacts is also automatically tracked. The parameters and all other configuration is also automatically captured.
+
+So you can see, by simply structuring your code within some functions and adding some decorators, we are one step closer to having a more tracked and reproducible codebase!
+
+## Expanding to a Full Machine Learning Workflow
+
+With the fundamentals in hand, let’s escalate our simple pipeline to a complete ML workflow. For this task, we will use the well-known Iris dataset to train a Support Vector Classifier (SVC).
+
+Let's start with the imports.
 
 ```python
 from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
@@ -22,7 +123,7 @@ Make sure to install the requirements as well:
 
 ```bash
 pip install matplotlib
-zenml integration install sklearn
+zenml integration install sklearn -y
 ```
 
 In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version directly.
@@ -31,10 +132,9 @@ In this case, ZenML has an integration with `sklearn` so you can use the ZenML C
 The `zenml integration install sklearn` command is simply doing a `pip install sklearn<1.3` behind the scenes. If something goes wrong, one can always use `zenml integration requirements sklearn` to see which requirements are compatible and install using pip (or any other tool) directly.
 {% endhint %}
 
+### Define a data loader with multiple outputs
 
-## Steps with multiple outputs
-
-Sometimes a step will have multiple outputs. To define such a step, use a `Tuple` type annotation.
+A typical start of a ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation.
 Additionally, you can use the `Annotated` annotation to assign
 [custom output names](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names).
 Here we load an open-source dataset and split it into a train and a test dataset.
@@ -44,6 +144,8 @@ import logging
 
 @step
 def training_data_loader() -> Tuple[
+    # Notice we use a Tuple and Annotated to return 
+    # multiple, named outputs
     Annotated[pd.DataFrame, "X_train"],
     Annotated[pd.DataFrame, "X_test"],
     Annotated[pd.Series, "y_train"],
@@ -57,23 +159,22 @@ def training_data_loader() -> Tuple[
         iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
     )
     return X_train, X_test, y_train, y_test
-
 ```
 
 {% hint style="info" %}
 ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
 {% endhint %}
 
-## Parametrizing a step
+### Create a parameterized training step
 
 Here we are creating a training step for a support vector machine classifier with `sklearn`. As we might want to adjust the hyperparameter `gamma` later on, we define it as an input value to the step as well.
 
 ```python
-@step(enable_cache=False)
+@step
 def svc_trainer(
-        X_train: pd.DataFrame,
-        y_train: pd.Series,
-        gamma: float = 0.001,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
 ) -> Tuple[
     Annotated[ClassifierMixin, "trained_model"],
     Annotated[float, "training_acc"],
@@ -101,13 +202,13 @@ Next, we will combine our two steps into a pipeline and run it. As you can see, 
 
 ```python
 @pipeline
-def first_pipeline(gamma: float = 0.002):
+def training_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = training_data_loader()
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 
 
 if __name__ == "__main__":
-    first_pipeline(gamma=0.0015)
+    training_pipeline(gamma=0.0015)
 ```
 
 {% hint style="info" %}
@@ -115,38 +216,72 @@ Best Practice: Always nest the actual execution of the pipeline inside an `if __
 
 ```python
 if __name__ == "__main__":
-    first_pipeline()
+    training_pipeline()
 ```
 {% endhint %}
 
 Running `python run.py` should look somewhat like this in the terminal:
 
-<pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `first_pipeline`.
+<pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `training_pipeline`.
 </strong>.
 .
 .
-Pipeline run `first_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
+Pipeline run `training_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
 
 In the dashboard, you should now be able to see this new run, along with its runtime configuration and a visualization of the training data.
 
 <figure><img src="../../.gitbook/assets/RunWithVisualization.png" alt=""><figcaption><p>Run created by the code in this section along with a visualization of the ground-truth distribution.</p></figcaption></figure>
 
-## Give each pipeline run a name
+### Configure with a yaml file
+
+Instead of configuring your pipeline runs in code, you can also do so from a YAML file. This is best when we do not want to make unnecessary changes to the code (in production this is usually the case).
+
+To do this, simply reference the file like this:
+
+```python
+# Configure the pipeline
+training_pipeline = training_pipeline.with_options(
+    config_path='/local/path/to/config.yaml'
+)
+# Run the pipeline
+training_pipeline()
+```
+
+A simple version of such a YAML file could be:
+
+```yaml
+steps:
+  svc_trainer:
+    parameters:
+      gamma: 0.01
+```
+
+Please note that this would take precendence over any parameters passed in code.
+
+If you are unsure how to format this config file, you can generate a template config file from a pipeline.
+
+```python
+training_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
+```
+
+Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml) for advanced configuration options.
+
+### Give each pipeline run a name
 
 In the output logs of a pipeline run you will see the name of the run:
 
 ```bash
-Pipeline run first_pipeline-2023_05_24-12_41_04_576473 has finished in 3.742s.
+Pipeline run training_pipeline-2023_05_24-12_41_04_576473 has finished in 3.742s.
 ```
 
 This name is automatically generated based on the current date and time. To change the name for a run, pass `run_name` as a parameter to the `with_options()` method:
 
 ```python
-first_pipeline = first_pipeline.with_options(
+training_pipeline = training_pipeline.with_options(
     run_name="custom_pipeline_run_name"
 )
-first_pipeline()
+training_pipeline()
 ```
 
 Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
@@ -155,49 +290,15 @@ Pipeline run names must be unique, so if you plan to run your pipelines multiple
 * `{{time}}` will resolve to the current time, e.g. `11_07_09_326492`
 
 ```python
-first_pipeline = first_pipeline.with_options(
+training_pipeline = training_pipeline.with_options(
     run_name="custom_pipeline_run_name_{{date}}_{{time}}"
 )
-first_pipeline()
+training_pipeline()
 ```
 
-## Configure with a yaml file
+## Full Code Example
 
-Instead of configuring your pipeline runs in code, you can also do so from a 
-yaml file. To do so, simply reference the file like this:
-
-```python
-first_pipeline = first_pipeline.with_options(
-    config_path='/local/path/to/config.yaml'
-)
-first_pipeline()
-```
-
-A simple version of such a YAML file could be:
-
-```yaml
-steps:
-  svc_trainer:
-    enable_cache: False
-    parameters:
-      gamma: 0.01
-```
-
-Please note that this would take precendence over any parameters passed in code.
-
-If you are unsure how to format this config file, you can generate a template
-config file from a pipeline.
-
-```python
-first_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
-```
-
-Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml)
-for more details.
-
-## Code Example
-
-The following example shows caching in action with the code example from the previous section.
+This section combines all the code from this section into one simple script that you can use to run easily:
 
 <details>
 
@@ -229,11 +330,11 @@ def training_data_loader() -> Tuple[
     return X_train, X_test, y_train, y_test
 
 
-@step(enable_cache=False)
+@step
 def svc_trainer(
-        X_train: pd.DataFrame,
-        y_train: pd.Series,
-        gamma: float = 0.001,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
 ) -> Tuple[
     Annotated[ClassifierMixin, "trained_model"],
     Annotated[float, "training_acc"],
@@ -247,19 +348,13 @@ def svc_trainer(
 
 
 @pipeline
-def first_pipeline(gamma: float = 0.002):
+def training_pipeline(gamma: float = 0.002):
     X_train, X_test, y_train, y_test = training_data_loader()
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 
 
 if __name__ == "__main__":
-    first_pipeline()
-
-    # Step one will use cache, step two will rerun due to caching
-    # being disabled on the @step decorator. Even if caching was
-    # enabled though, ZenML would detect a different value for the
-    # `gamma` input of the second step and disable caching
-    first_pipeline(gamma=0.0001)
+    training_pipeline()
 ```
 
 </details>

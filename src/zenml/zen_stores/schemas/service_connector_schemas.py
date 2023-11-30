@@ -23,11 +23,13 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
-    ServiceConnectorRequestModel,
-    ServiceConnectorResponseModel,
-    ServiceConnectorUpdateModel,
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+    ServiceConnectorResponseBody,
+    ServiceConnectorResponseMetadata,
+    ServiceConnectorUpdate,
 )
-from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -36,7 +38,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 
 
-class ServiceConnectorSchema(ShareableSchema, table=True):
+class ServiceConnectorSchema(NamedSchema, table=True):
     """SQL Model for service connectors."""
 
     __tablename__ = "service_connector"
@@ -127,13 +129,13 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
     @classmethod
     def from_request(
         cls,
-        connector_request: ServiceConnectorRequestModel,
+        connector_request: ServiceConnectorRequest,
         secret_id: Optional[UUID] = None,
     ) -> "ServiceConnectorSchema":
-        """Create a `ServiceConnectorSchema` from a `ServiceConnectorRequestModel`.
+        """Create a `ServiceConnectorSchema` from a `ServiceConnectorRequest`.
 
         Args:
-            connector_request: The `ServiceConnectorRequestModel` from which to
+            connector_request: The `ServiceConnectorRequest` from which to
                 create the schema.
             secret_id: The ID of the secret to use for this connector.
 
@@ -144,7 +146,6 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         return cls(
             workspace_id=connector_request.workspace,
             user_id=connector_request.user,
-            is_shared=connector_request.is_shared,
             name=connector_request.name,
             description=connector_request.description,
             connector_type=connector_request.type,
@@ -171,13 +172,13 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
 
     def update(
         self,
-        connector_update: ServiceConnectorUpdateModel,
+        connector_update: ServiceConnectorUpdate,
         secret_id: Optional[UUID] = None,
     ) -> "ServiceConnectorSchema":
-        """Updates a `ServiceConnectorSchema` from a `ServiceConnectorUpdateModel`.
+        """Updates a `ServiceConnectorSchema` from a `ServiceConnectorUpdate`.
 
         Args:
-            connector_update: The `ServiceConnectorUpdateModel` to update from.
+            connector_update: The `ServiceConnectorUpdate` to update from.
             secret_id: The ID of the secret to use for this connector.
 
         Returns:
@@ -227,35 +228,44 @@ class ServiceConnectorSchema(ShareableSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(
-        self,
-    ) -> "ServiceConnectorResponseModel":
-        """Creates a `ServiceConnectorModel` from an instance of a `ServiceConnectorSchema`.
+    def to_model(self, hydrate: bool = False) -> "ServiceConnectorResponse":
+        """Creates a `ServiceConnector` from a `ServiceConnectorSchema`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             A `ServiceConnectorModel`
         """
-        return ServiceConnectorResponseModel(
-            id=self.id,
-            name=self.name,
-            description=self.description,
-            user=self.user.to_model(True) if self.user else None,
-            workspace=self.workspace.to_model(),
-            is_shared=self.is_shared,
+        body = ServiceConnectorResponseBody(
+            user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
+            description=self.description,
             connector_type=self.connector_type,
             auth_method=self.auth_method,
             resource_types=self.resource_types_list,
             resource_id=self.resource_id,
             supports_instances=self.supports_instances,
-            configuration=json.loads(
-                base64.b64decode(self.configuration).decode()
-            )
-            if self.configuration
-            else {},
-            secret_id=self.secret_id,
             expires_at=self.expires_at,
-            expiration_seconds=self.expiration_seconds,
-            labels=self.labels_dict,
+        )
+        metadata = None
+        if hydrate:
+            metadata = ServiceConnectorResponseMetadata(
+                workspace=self.workspace.to_model(),
+                configuration=json.loads(
+                    base64.b64decode(self.configuration).decode()
+                )
+                if self.configuration
+                else {},
+                secret_id=self.secret_id,
+                expiration_seconds=self.expiration_seconds,
+                labels=self.labels_dict,
+            )
+        return ServiceConnectorResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
         )

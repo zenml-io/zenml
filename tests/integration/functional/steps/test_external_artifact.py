@@ -13,23 +13,23 @@
 #  permissions and limitations under the License.
 
 
-import pytest
-from tests.integration.functional.utils import model_killer
+from typing import Any, Optional
+from uuid import UUID
+
 from typing_extensions import Annotated
 
 from zenml import pipeline, step
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
-from zenml.enums import ModelStages
-from zenml.model import ArtifactConfig, ModelConfig
+
+ARTIFACT_NAME = "predictions"
+PIPELINE_NAME = "bar"
 
 
 @step
-def producer(
-    run_number: int,
-) -> Annotated[int, "predictions", ArtifactConfig(overwrite=False)]:
-    """Step producing versioned output and linking it to a model."""
-    return run_number
+def producer(return_value: int) -> Annotated[int, ARTIFACT_NAME]:
+    """Step producing versioned output."""
+    return return_value
 
 
 @step
@@ -38,167 +38,76 @@ def consumer(external_artifact: int, expected_value: int):
     assert external_artifact == expected_value
 
 
-@pipeline(
-    name="bar",
-    enable_cache=False,
-)
-def producer_pipeline(run_count: int):
-    producer(run_count)
+@pipeline(name=PIPELINE_NAME, enable_cache=False)
+def producer_pipeline(return_value: int):
+    producer(return_value)
 
 
-@pipeline(
-    name="bar",
-    enable_cache=False,
-    model_config=ModelConfig(name="foo", version=ModelStages.LATEST),
-)
+@pipeline(name="something_else", enable_cache=False)
+def producer_pipeline_2(return_value: int):
+    producer(return_value)
+
+
+@pipeline(enable_cache=False)
 def consumer_pipeline(
-    model_artifact_version: int,
-    model_artifact_pipeline_name: str = None,
-    model_artifact_step_name: str = None,
+    expected_value: int,
+    value: Optional[Any] = None,
+    id: Optional[UUID] = None,
+    name: Optional[str] = None,
+    version: Optional[str] = None,
 ):
     consumer(
         ExternalArtifact(
-            model_artifact_name="predictions",
-            model_artifact_version=model_artifact_version,
-            model_artifact_pipeline_name=model_artifact_pipeline_name,
-            model_artifact_step_name=model_artifact_step_name,
+            value=value,
+            id=id,
+            name=name,
+            version=version,
         ),
-        model_artifact_version,
+        expected_value=expected_value,
     )
 
 
-@pipeline(name="bar", enable_cache=False)
-def consumer_pipeline_with_external_artifact_from_another_model(
-    model_artifact_version: int,
-    model_artifact_pipeline_name: str = None,
-    model_artifact_step_name: str = None,
-):
-    consumer(
-        ExternalArtifact(
-            model_name="foo",
-            model_version=1,
-            model_artifact_name="predictions",
-            model_artifact_version=model_artifact_version,
-            model_artifact_pipeline_name=model_artifact_pipeline_name,
-            model_artifact_step_name=model_artifact_step_name,
-        ),
-        model_artifact_version,
+def test_external_artifact_by_value(clean_client: Client):
+    """Test passing external artifact by value."""
+    consumer_pipeline(value=42, expected_value=42)
+
+
+def test_external_artifact_by_id(clean_client: Client):
+    """Test passing external artifact by ID."""
+    producer_pipeline(return_value=42)
+    artifact_version_id = (
+        producer_pipeline.model.last_successful_run.artifact_versions[0].id
+    )
+    consumer_pipeline(id=artifact_version_id, expected_value=42)
+
+
+def test_external_artifact_by_name_only(clean_client: Client):
+    """Test passing external artifact by name only."""
+    producer_pipeline(return_value=42)
+    producer_pipeline(return_value=43)
+
+    # Latest artifact should have value 43
+    consumer_pipeline(
+        name=ARTIFACT_NAME,
+        expected_value=43,
     )
 
 
-@pipeline(
-    name="bar",
-    enable_cache=False,
-    model_config=ModelConfig(name="foo"),
-)
-def two_step_producer_pipeline():
-    producer(1)
-    producer(1)
+def test_external_artifact_by_name_and_version(clean_client: Client):
+    """Test passing external artifact by name and version."""
+    producer_pipeline(return_value=42)
+    producer_pipeline(return_value=43)
 
+    # First artifact with value 42 should be version 1
+    consumer_pipeline(
+        name=ARTIFACT_NAME,
+        version=1,
+        expected_value=42,
+    )
 
-@pytest.mark.parametrize(
-    "consumer_pipeline",
-    [
-        consumer_pipeline,
-        consumer_pipeline_with_external_artifact_from_another_model,
-    ],
-    ids=["model context given", "no model context"],
-)
-def test_exchange_of_model_artifacts_between_pipelines(consumer_pipeline):
-    """Test that ExternalArtifact helps to exchange data from Model between pipelines."""
-    with model_killer():
-        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(1)
-        producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version=ModelStages.LATEST)
-        )(
-            2
-        )  # add to latest version
-        consumer_pipeline(1)
-        consumer_pipeline(2)
-
-
-def test_external_artifact_fails_on_name_collision_without_pipeline_and_step():
-    """Test that ExternalArtifact will raise in case there is a naming collision not
-    resolved with given arguments (here only name and version).
-
-    Two step producer pipeline produces two artifacts with the same name, but from different steps.
-    """
-    with model_killer():
-        two_step_producer_pipeline()
-        with pytest.raises(
-            RuntimeError,
-            match="Found more than one artifact linked to this model version",
-        ):
-            consumer_pipeline(1)
-
-
-def test_external_artifact_fails_on_name_collision_without_step():
-    """Test that ExternalArtifact will raise in case there is a naming collision not
-    resolved with given arguments (here only name, version and pipeline).
-
-    Two step producer pipeline produces two artifacts with the same name, but from different steps.
-    """
-    with model_killer():
-        two_step_producer_pipeline()
-        with pytest.raises(
-            RuntimeError,
-            match="Found more than one artifact linked to this model version",
-        ):
-            consumer_pipeline(1, model_artifact_pipeline_name="bar")
-
-
-def test_external_artifact_pass_on_name_collision_with_pipeline_and_step():
-    """Test that ExternalArtifact will resolve collision smoothly by full set of arguments.
-
-    Two step producer pipeline produces two artifacts with the same name, but from different steps.
-    """
-    with model_killer():
-        two_step_producer_pipeline()
-        consumer_pipeline(
-            1,
-            model_artifact_pipeline_name="bar",
-            model_artifact_step_name="producer",
-        )
-
-
-def test_exchange_of_model_artifacts_between_pipelines_by_model_version_number():
-    """Test that ExternalArtifact helps to exchange data from Model between pipelines using model version number."""
-    with model_killer():
-        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(1)
-        producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version=ModelStages.LATEST)
-        )(
-            2
-        )  # add to latest version
-        consumer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version=1)
-        )(1)
-        consumer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version=1)
-        )(2)
-
-
-@pytest.mark.parametrize(
-    "model_version_name,expected",
-    [[1, 42], ["1", 42], ["foo", 23]],
-    ids=[
-        "By model version number",
-        "By model version number as string",
-        "By model version name",
-    ],
-)
-def test_direct_consumption(model_version_name, expected):
-    """Test that ExternalArtifact can fetch data by full config with model version name/number combinations."""
-    with model_killer():
-        producer_pipeline.with_options(model_config=ModelConfig(name="foo"))(
-            42
-        )
-        producer_pipeline.with_options(
-            model_config=ModelConfig(name="foo", version="foo")
-        )(23)
-        artifact_id = ExternalArtifact(
-            model_name="foo",
-            model_version=model_version_name,
-            model_artifact_name="predictions",
-        ).get_artifact_id()
-        assert Client().get_artifact(artifact_id).load() == expected
+    # Second artifact with value 43 should be version 2
+    consumer_pipeline(
+        name=ARTIFACT_NAME,
+        version=2,
+        expected_value=43,
+    )

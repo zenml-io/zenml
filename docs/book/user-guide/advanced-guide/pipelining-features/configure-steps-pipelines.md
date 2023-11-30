@@ -21,7 +21,7 @@ def my_function():
 Your functions will work as ZenML steps even if you don't provide any type annotations for their inputs and outputs. However, adding type annotations to your step functions gives you lots of additional benefits:
 
 * **Type validation of your step inputs**: ZenML makes sure that your step functions receive an object of the correct type from the upstream steps in your pipeline.
-* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](../../../getting-started/core-concepts.md#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](../artifact-management/handle-custom-data-types.md).
+* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](../../../getting-started/core-concepts.md#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](../data-management/handle-custom-data-types.md).
 
 ```python
 from typing import Tuple
@@ -83,7 +83,7 @@ If you want to make sure you get all the benefits of type annotating your steps,
 
 ### Step output names
 
-By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](../../starter-guide/fetch-runs-after-execution.md).
+By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](broken-reference).
 
 If you want to use custom output names for your steps, use the `Annotated` type annotation:
 
@@ -104,6 +104,10 @@ def divide(a: int, b: int) -> Tuple[
     return a // b, a % b
 ```
 
+{% hint style="info" %}
+If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the [documentation on artifact versioning and configuration](artifact-versioning.md) for more information.
+{% endhint %}
+
 ## Configure steps/pipelines
 
 ### Parameters for your steps
@@ -111,7 +115,7 @@ def divide(a: int, b: int) -> Tuple[
 When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
 
 {% hint style="info" %}
-In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters.
+In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters. If you want to pass other non-JSON-serializable objects such as NumPy arrays to your steps, use [External Artifacts](../data-management/artifact-saving-loading.md#external-artifacts) instead.
 {% endhint %}
 
 ```python
@@ -140,97 +144,9 @@ When an input is passed as a parameter, the step will only be cached if all para
 
 When an artifact is used as a step function input, the step will only be cached if all the artifacts are exactly the same as for previous executions of the step. This means that if any of the upstream steps that produce the input artifacts for a step were not cached, the step itself will always be executed.
 
-### Pass any kind of data to your steps
-
-**External artifacts** can be used to pass values to steps that are neither JSON serializable nor produced by an upstream step.
-
-```python
-import numpy as np
-from zenml import pipeline, step
-from zenml.artifacts.external_artifact import ExternalArtifact
-
-@step
-def trainer(data: np.ndarray) -> ...:
-    ...
-
-@pipeline
-def my_pipeline():
-    trainer(data=ExternalArtifact(np.array([1, 2, 3])))
-
-    # This would not work, as only JSON serializable values
-    # or artifacts can be passed as a step input:
-    # trainer(data=np.array([1, 2, 3]))
-```
-
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../artifact-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
-
-{% hint style="info" %}
-Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
-{% endhint %}
-
-You can also use an `ExternalArtifact` to pass an artifact stored in the ZenML database. Search can be performed using the UUID of an artifact:
-
-```python
-from uuid import UUID
-
-artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
-```
-
-Another way to search would be by a combination of a pipeline name where the artifact was generated and the artifact name itself. If you search by pipeline/artifact name pair the search will happen using the last successful run of the pipeline:
-
-```python
-artifact = ExternalArtifact(pipeline_name="training_pipeline", artifact_name="model")
-```
-
-<details>
-
-<summary>See it in action with the E2E example</summary>
-
-*To setup the local environment used below, follow the recommendations from the
-[Project templates](../../starter-guide/using-project-templates.md#advanced-guide).*
-
-In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py), you can find an example using the `ExternalArtifact` concept to
-share Artifacts produced by a training pipeline inside a batch inference pipeline.
-
-On the ETL stage pipeline, developers can pass a `sklearn.Pipeline` fitted during training for feature preprocessing and apply it to transform inference input features.
-With this, we ensure that the exact same feature preprocessor used during training will be used during inference.
-
-```python
-    ########## ETL stage  ##########
-    df_inference, target = data_loader(is_inference=True)
-    df_inference = inference_data_preprocessor(
-        dataset_inf=df_inference,
-        preprocess_pipeline=ExternalArtifact(
-            pipeline_name=MetaConfig.pipeline_name_training,
-            artifact_name="preprocess_pipeline",
-        ),
-        target=target,
-    )
-```
-
-On the DataQuality stage pipeline, developers can pass `pd.DataFrame` used as a training dataset to be used as a reference dataset versus the current inference one to apply Evidently and get DataQuality report back.
-With this, we ensure that the exact same training dataset used during the training phase will be used to compare with the inference dataset here.
-
-```python
-    ########## DataQuality stage  ##########
-    report, _ = evidently_report_step(
-        reference_dataset=ExternalArtifact(
-            pipeline_name=MetaConfig.pipeline_name_training,
-            artifact_name="dataset_trn",
-        ),
-        comparison_dataset=df_inference,
-        ignored_cols=["target"],
-        metrics=[
-            EvidentlyMetricConfig.metric("DataQualityPreset"),
-        ],
-    )
-```
-
-</details>
-
 ### Using a custom step invocation ID
 
-When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](../../starter-guide/fetch-runs-after-execution.md#steps) about the invocation after the pipeline has finished running.
+When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](broken-reference) about the invocation after the pipeline has finished running.
 
 ```python
 from zenml import pipeline, step
@@ -305,24 +221,23 @@ def my_step() -> None:
 
 You can display the logs in the dashboard as follows:
 
-![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml_step_logs.png)
+![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml\_step\_logs.png)
 
 If you do not want to store the logs in your artifact store, you can:
 
-1. Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
-   
+1.  Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
+
     ```python
     from zenml import pipeline, step
-    
+
     @step(enable_step_logs=False)  # disables logging for this step
     def my_step() -> None:
         ...
-    
+
     @pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
     def my_pipeline():
         ...
     ```
-
 2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE`. This environmental variable takes precedence over the parameters mentioned above.
 
 ## Settings in ZenML
@@ -572,7 +487,7 @@ An example of this is if I want to tag a pipeline, I can do the following:
 ...
 ```
 
-This tag is now associated and tracked with all pipeline runs, and can be [fetched later](../../starter-guide/fetch-runs-after-execution.md):
+This tag is now associated and tracked with all pipeline runs, and can be [fetched later](broken-reference):
 
 ```python
 from zenml.client import Client

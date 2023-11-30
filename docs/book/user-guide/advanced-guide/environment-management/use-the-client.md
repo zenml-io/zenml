@@ -7,7 +7,7 @@ description: Interacting with your ZenML instance through the ZenML Client.
 Pipelines, runs, stacks, and many other ZenML resources are stored and versioned in a database within your ZenML instance behind the scenes. The ZenML `Client` allows you to fetch, update, or even create any of these resources programmatically in Python.
 
 {% hint style="info" %}
-In all other programming languages and environments, you can interact with ZenML resources through the REST API endpoints of your ZenML server instead. Checkout the `/docs/` page of your server for an overview of all available endpoints, e.g., [https://demoserver.zenml.io/docs](https://demoserver.zenml.io/docs)
+In all other programming languages and environments, you can interact with ZenML resources through the REST API endpoints of your ZenML server instead. Checkout the `/docs/` page of your server for an overview of all available endpoints.
 {% endhint %}
 
 ### Usage Example
@@ -36,7 +36,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 
 #### Pipelines, Runs, Artifacts
 
-* **Pipelines**: The [pipeline versions](../../starter-guide/version-pipelines.md) that were implicitly tracked when running ZenML pipelines.
+* **Pipelines**: The [pipeline versions](broken-reference) that were implicitly tracked when running ZenML pipelines.
 * **Pipeline Runs**: Information about all pipeline runs that were executed on your ZenML instance.
 * **Step Runs**: The steps of all pipeline runs. Mainly useful for directly fetching a specific step of a run by its ID.
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.
@@ -45,7 +45,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](connect-your-git-repository.md) for more information.
 
 {% hint style="info" %}
-Checkout the [documentation on fetching runs](../../starter-guide/fetch-runs-after-execution.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
+Checkout the [documentation on fetching runs](broken-reference) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
 
 #### Stacks, Infrastructure, Authentication

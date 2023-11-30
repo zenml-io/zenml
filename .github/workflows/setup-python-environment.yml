@@ -21,6 +21,11 @@ on:
         type: string
         required: false
         default: 'yes'
+      git-ref:
+        description: 'Git branch or ref'
+        type: string
+        required: false
+        default: ''
 
   workflow_dispatch:
     inputs:
@@ -53,6 +58,11 @@ on:
           - 'before-tests'
         required: false
         default: 'no'
+      git-ref:
+        description: 'Git branch or ref'
+        type: string
+        required: false
+        default: ''
 
 jobs:
   setup-and-test:
@@ -75,6 +85,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.git-ref || github.ref }}
 
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -152,6 +164,8 @@ jobs:
         if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
 
       - name: Check for alembic branch divergence
+        env:
+          ZENML_DEBUG: 0
         run: |
           bash scripts/check-alembic-branches.sh
 

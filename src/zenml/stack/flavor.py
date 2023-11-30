@@ -18,10 +18,11 @@ from typing import Any, Dict, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import (
-    FlavorRequestModel,
-    FlavorResponseModel,
+    FlavorRequest,
+    FlavorResponse,
     ServiceConnectorRequirements,
 )
+from zenml.models.v2.core.flavor import InternalFlavorRequest
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils import source_utils
 
@@ -120,7 +121,7 @@ class Flavor:
         return None
 
     @classmethod
-    def from_model(cls, flavor_model: FlavorResponseModel) -> "Flavor":
+    def from_model(cls, flavor_model: FlavorResponse) -> "Flavor":
         """Loads a flavor from a model.
 
         Args:
@@ -135,15 +136,12 @@ class Flavor:
     def to_model(
         self,
         integration: Optional[str] = None,
-        scoped_by_workspace: bool = True,
         is_custom: bool = True,
-    ) -> FlavorRequestModel:
+    ) -> FlavorRequest:
         """Converts a flavor to a model.
 
         Args:
             integration: The integration to use for the model.
-            scoped_by_workspace: Whether this flavor should live in the scope
-                of the active workspace
             is_custom: Whether the flavor is a custom flavor. Custom flavors
                 are then scoped by user and workspace
 
@@ -169,7 +167,8 @@ class Flavor:
             if connector_requirements
             else None
         )
-        model = FlavorRequestModel(
+        model_class = FlavorRequest if is_custom else InternalFlavorRequest
+        model = model_class(
             user=client.active_user.id if is_custom else None,
             workspace=client.active_workspace.id if is_custom else None,
             name=self.name,

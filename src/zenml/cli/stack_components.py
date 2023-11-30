@@ -48,7 +48,10 @@ from zenml.constants import ALPHA_MESSAGE, STACK_RECIPE_MODULAR_RECIPES
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
-from zenml.models import ComponentFilterModel, ServiceConnectorResourcesModel
+from zenml.models import (
+    ComponentFilter,
+    ServiceConnectorResourcesModel,
+)
 from zenml.utils import source_utils
 from zenml.utils.dashboard_utils import get_component_url
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
@@ -164,7 +167,7 @@ def generate_stack_component_list_command(
         A function that can be used as a `click` command.
     """
 
-    @list_options(ComponentFilterModel)
+    @list_options(ComponentFilter)
     @click.pass_context
     def list_stack_components_command(
         ctx: click.Context, **kwargs: Any
@@ -199,7 +202,7 @@ def generate_stack_component_list_command(
 
 def generate_stack_component_register_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, bool, List[str]], None]:
+) -> Callable[[str, str, List[str]], None]:
     """Generates a `register` command for the specific stack component type.
 
     Args:
@@ -231,20 +234,6 @@ def generate_stack_component_register_command(
         multiple=True,
     )
     @click.option(
-        "--share",
-        "share",
-        is_flag=True,
-        help="Use this flag to share this stack component with other users.",
-        type=click.BOOL,
-    )
-    @click.option(
-        "--connector",
-        "-c",
-        "connector",
-        help="Use this flag to connect this stack component to a service connector.",
-        type=str,
-    )
-    @click.option(
         "--connector",
         "-c",
         "connector",
@@ -265,7 +254,6 @@ def generate_stack_component_register_command(
     def register_stack_component_command(
         name: str,
         flavor: str,
-        share: bool,
         args: List[str],
         labels: Optional[List[str]] = None,
         connector: Optional[str] = None,
@@ -276,7 +264,6 @@ def generate_stack_component_register_command(
         Args:
             name: Name of the component to register.
             flavor: Flavor of the component to register.
-            share: Share the stack with other users.
             args: Additional arguments to pass to the component.
             labels: Labels to be associated with the component.
             connector: Name of the service connector to connect the component to.
@@ -296,10 +283,6 @@ def generate_stack_component_register_command(
 
         parsed_labels = cli_utils.get_parsed_labels(labels)
 
-        # click<8.0.0 gives flags a default of None
-        if share is None:
-            share = False
-
         if connector:
             try:
                 client.get_service_connector(connector)
@@ -316,7 +299,6 @@ def generate_stack_component_register_command(
                 component_type=component_type,
                 configuration=parsed_args,
                 labels=parsed_labels,
-                is_shared=share,
             )
 
             cli_utils.declare(
@@ -412,57 +394,6 @@ def generate_stack_component_update_command(
             print_model_url(get_component_url(updated_component))
 
     return update_stack_component_command
-
-
-def generate_stack_component_share_command(
-    component_type: StackComponentType,
-) -> Callable[[str], None]:
-    """Generates an `share` command for the specific stack component type.
-
-    Args:
-        component_type: Type of the component to generate the command for.
-
-    Returns:
-        A function that can be used as a `click` command.
-    """
-    display_name = _component_display_name(component_type)
-
-    @click.argument(
-        "name_id_or_prefix",
-        type=str,
-        required=False,
-    )
-    def share_stack_component_command(
-        name_id_or_prefix: str,
-    ) -> None:
-        """Shares a stack component.
-
-        Args:
-            name_id_or_prefix: The name or id of the stack component to update.
-        """
-        if component_type == StackComponentType.SECRETS_MANAGER:
-            warn_deprecated_secrets_manager()
-
-        client = Client()
-
-        with console.status(
-            f"Updating {display_name} '{name_id_or_prefix}'...\n"
-        ):
-            try:
-                client.update_stack_component(
-                    name_id_or_prefix=name_id_or_prefix,
-                    component_type=component_type,
-                    is_shared=True,
-                )
-            except (KeyError, IllegalOperationError) as err:
-                cli_utils.error(str(err))
-
-            cli_utils.declare(
-                f"Successfully shared {display_name} "
-                f"`{name_id_or_prefix}`."
-            )
-
-    return share_stack_component_command
 
 
 def generate_stack_component_remove_attribute_command(
@@ -676,7 +607,6 @@ def generate_stack_component_copy_command(
                 component_type=component_to_copy.type,
                 configuration=component_to_copy.configuration,
                 labels=component_to_copy.labels,
-                is_shared=component_to_copy.is_shared,
                 component_spec_path=component_to_copy.component_spec_path,
             )
             print_model_url(get_component_url(copied_component))
@@ -1220,7 +1150,8 @@ def generate_stack_component_deploy_command(
         "-x",
         "extra_config",
         multiple=True,
-        help="Extra configurations as key=value pairs. This option can be used multiple times.",
+        help="Extra configurations as key=value pairs. This option can be "
+        "used multiple times.",
     )
     @click.option(
         "--tags",
@@ -1282,8 +1213,8 @@ def generate_stack_component_deploy_command(
                     f"{', '.join(ALLOWED_FLAVORS[component_type.value])}."
                 )
 
-            # for cases like artifact store, secrets manager and container registry
-            # the flavor is the same as the cloud
+            # for cases like artifact store, secrets manager and container
+            # registry the flavor is the same as the cloud
             if flavor in {"s3", "sagemaker", "aws"} and provider != "aws":
                 cli_utils.error(
                     f"Flavor '{flavor}' is not supported for "
@@ -1344,8 +1275,9 @@ def generate_stack_component_deploy_command(
                 stack, components
             ):
                 cli_utils.error(
-                    "The specified stack and component flavors are not compatible "
-                    "with the provider or with one another. Please try again."
+                    "The specified stack and component flavors are not "
+                    "compatible with the provider or with one another. "
+                    "Please try again."
                 )
 
             stack_dict, component_dicts = convert_mlstacks_primitives_to_dicts(
@@ -1861,15 +1793,6 @@ def register_single_stack_component_cli_commands(
         help=f"Update a registered {singular_display_name}.",
     )(update_command)
 
-    # zenml stack-component share
-    share_command = generate_stack_component_share_command(component_type)
-    context_settings = {"ignore_unknown_options": True}
-    command_group.command(
-        "share",
-        context_settings=context_settings,
-        help=f"Share a registered {singular_display_name}.",
-    )(share_command)
-
     # zenml stack-component remove-attribute
     remove_attribute_command = (
         generate_stack_component_remove_attribute_command(component_type)
@@ -2162,9 +2085,9 @@ def connect_stack_component_with_service_connector(
             cli_utils.error(
                 f"The connector with ID {connector_id} does not match the "
                 f"component's `{name_id_or_prefix}` of type `{component_type}`"
-                f" connector requirements: {msg}. Please pick a connector that is"
-                "compatible with the component flavor and try again, or use "
-                "the interactive mode to select a compatible connector."
+                f" connector requirements: {msg}. Please pick a connector that "
+                f"is compatible with the component flavor and try again, or "
+                f"use the interactive mode to select a compatible connector."
             )
 
         if not resource_id:

@@ -23,28 +23,28 @@ from tests.integration.functional.cli.conftest import NAME, PREFIX
 from tests.integration.functional.utils import model_killer
 from zenml.cli.cli import cli
 from zenml.client import Client
-from zenml.models import ModelRequestModel, ModelVersionRequestModel
 
 
 def test_model_list(clean_workspace_with_models):
     """Test that zenml model list does not fail."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         list_command = cli.commands["model"].commands["list"]
         result = runner.invoke(list_command)
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
 
 
 def test_model_create_short_names(clean_workspace_with_models):
     """Test that zenml model create does not fail with short names."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         create_command = cli.commands["model"].commands["register"]
+        model_name = PREFIX + str(uuid4())
         result = runner.invoke(
             create_command,
             args=[
                 "-n",
-                PREFIX + str(uuid4()),
+                model_name,
                 "-l",
                 "a",
                 "-d",
@@ -67,20 +67,32 @@ def test_model_create_short_names(clean_workspace_with_models):
                 "k",
             ],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
+
+        model = Client().get_model(model_name)
+        assert model.name == model_name
+        assert model.license == "a"
+        assert model.description == "b"
+        assert model.audience == "c"
+        assert model.use_cases == "d"
+        assert model.trade_offs == "f"
+        assert model.ethics == "g"
+        assert model.limitations == "e"
+        assert {t.name for t in model.tags} == {"i", "j", "k"}
 
 
 def test_model_create_full_names(clean_workspace_with_models):
     """Test that zenml model create does not fail with full names."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         create_command = cli.commands["model"].commands["register"]
+        model_name = PREFIX + str(uuid4())
         result = runner.invoke(
             create_command,
             args=[
                 "--name",
-                PREFIX + str(uuid4()),
-                "--limitations",
+                model_name,
+                "--license",
                 "a",
                 "--description",
                 "b",
@@ -102,48 +114,87 @@ def test_model_create_full_names(clean_workspace_with_models):
                 "k",
             ],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
+
+        model = Client().get_model(model_name)
+        assert model.name == model_name
+        assert model.license == "a"
+        assert model.description == "b"
+        assert model.audience == "c"
+        assert model.use_cases == "d"
+        assert model.trade_offs == "f"
+        assert model.ethics == "g"
+        assert model.limitations == "e"
+        assert {t.name for t in model.tags} == {"i", "j", "k"}
 
 
 def test_model_create_only_required(clean_workspace_with_models):
     """Test that zenml model create does not fail."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         create_command = cli.commands["model"].commands["register"]
+        model_name = PREFIX + str(uuid4())
         result = runner.invoke(
             create_command,
-            args=["--name", PREFIX + str(uuid4())],
+            args=["--name", model_name],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
+
+        model = Client().get_model(model_name)
+        assert model.name == model_name
+        assert model.license is None
+        assert model.description is None
+        assert model.audience is None
+        assert model.use_cases is None
+        assert model.trade_offs is None
+        assert model.ethics is None
+        assert model.limitations is None
+        assert len(model.tags) == 0
 
 
 def test_model_update(clean_workspace_with_models):
     """Test that zenml model update does not fail."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         update_command = cli.commands["model"].commands["update"]
         result = runner.invoke(
             update_command,
-            args=[NAME, "--tradeoffs", "foo"],
+            args=[NAME, "--tradeoffs", "foo", "-t", "a"],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
+
+        model = Client().get_model(NAME)
+        assert model.trade_offs == "foo"
+        assert {t.name for t in model.tags} == {"a"}
+        assert model.description is None
+
+        result = runner.invoke(
+            update_command,
+            args=[NAME, "-d", "bar", "-r", "a", "-t", "b"],
+        )
+        assert result.exit_code == 0, result.stderr
+
+        model = Client().get_model(NAME)
+        assert model.trade_offs == "foo"
+        assert {t.name for t in model.tags} == {"b"}
+        assert model.description == "bar"
 
 
 def test_model_create_without_required_fails(clean_workspace_with_models):
     """Test that zenml model create fails."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         create_command = cli.commands["model"].commands["register"]
         result = runner.invoke(
             create_command,
         )
-        assert result.exit_code != 0
+        assert result.exit_code != 0, result.stderr
 
 
 def test_model_delete_found(clean_workspace_with_models):
     """Test that zenml model delete does not fail."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         name = PREFIX + str(uuid4())
         create_command = cli.commands["model"].commands["register"]
         runner.invoke(
@@ -155,26 +206,26 @@ def test_model_delete_found(clean_workspace_with_models):
             delete_command,
             args=[name, "-y"],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
 
 
 def test_model_delete_not_found(clean_workspace_with_models):
     """Test that zenml model delete fail."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         name = PREFIX + str(uuid4())
         delete_command = cli.commands["model"].commands["delete"]
         result = runner.invoke(
             delete_command,
             args=[name],
         )
-        assert result.exit_code != 0
+        assert result.exit_code != 0, result.stderr
 
 
 def test_model_version_list(clean_workspace_with_models):
     """Test that zenml model version list does not fail."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         list_command = (
             cli.commands["model"].commands["version"].commands["list"]
         )
@@ -182,13 +233,13 @@ def test_model_version_list(clean_workspace_with_models):
             list_command,
             args=[NAME],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
 
 
 def test_model_version_list_fails_on_bad_model(clean_workspace_with_models):
     """Test that zenml model version list fails."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         list_command = (
             cli.commands["model"].commands["version"].commands["list"]
         )
@@ -196,29 +247,21 @@ def test_model_version_list_fails_on_bad_model(clean_workspace_with_models):
             list_command,
             args=["foo"],
         )
-        assert result.exit_code != 0
+        assert result.exit_code != 0, result.stderr
 
 
 def test_model_version_delete_found(clean_workspace_with_models):
     """Test that zenml model version delete does not fail."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         model_name = PREFIX + str(uuid4())
         model_version_name = PREFIX + str(uuid4())
         model = Client().create_model(
-            ModelRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                name=model_name,
-            )
+            name=model_name,
         )
         Client().create_model_version(
-            ModelVersionRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                name=model_version_name,
-                model=model.id,
-            )
+            name=model_version_name,
+            model_name_or_id=model.id,
         )
         delete_command = (
             cli.commands["model"].commands["version"].commands["delete"]
@@ -227,21 +270,17 @@ def test_model_version_delete_found(clean_workspace_with_models):
             delete_command,
             args=[model_name, model_version_name, "-y"],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
 
 
 def test_model_version_delete_not_found(clean_workspace_with_models):
     """Test that zenml model version delete fail."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         model_name = PREFIX + str(uuid4())
         model_version_name = PREFIX + str(uuid4())
         Client().create_model(
-            ModelRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                name=model_name,
-            )
+            name=model_name,
         )
         delete_command = (
             cli.commands["model"].commands["version"].commands["delete"]
@@ -250,31 +289,29 @@ def test_model_version_delete_not_found(clean_workspace_with_models):
             delete_command,
             args=[model_name, model_version_name, "-y"],
         )
-        assert result.exit_code != 0
+        assert result.exit_code != 0, result.stderr
 
 
 @pytest.mark.parametrize(
     "command",
-    ("artifacts", "deployments", "model_objects", "runs"),
+    ("data_artifacts", "endpoint_artifacts", "model_artifacts", "runs"),
 )
 def test_model_version_links_list(command: str, clean_workspace_with_models):
     """Test that zenml model version artifacts list fails."""
     with model_killer():
-        runner = CliRunner()
-        list_command = (
-            cli.commands["model"].commands["version"].commands[command]
-        )
+        runner = CliRunner(mix_stderr=False)
+        list_command = cli.commands["model"].commands[command]
         result = runner.invoke(
             list_command,
-            args=[NAME, "1"],
+            args=[NAME],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
 
 
 def test_model_version_update(clean_workspace_with_models):
     """Test that zenml model version stage update pass."""
     with model_killer():
-        runner = CliRunner()
+        runner = CliRunner(mix_stderr=False)
         update_command = (
             cli.commands["model"].commands["version"].commands["update"]
         )
@@ -282,4 +319,4 @@ def test_model_version_update(clean_workspace_with_models):
             update_command,
             args=[NAME, "1", "-s", "production"],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr

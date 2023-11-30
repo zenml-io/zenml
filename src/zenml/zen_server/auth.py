@@ -15,13 +15,7 @@
 
 from contextvars import ContextVar
 from datetime import datetime
-from typing import (
-    Callable,
-    List,
-    Optional,
-    Set,
-    Union,
-)
+from typing import Callable, Optional, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -31,7 +25,6 @@ from fastapi.security import (
     HTTPBasic,
     HTTPBasicCredentials,
     OAuth2PasswordBearer,
-    SecurityScopes,
 )
 from pydantic import BaseModel
 from starlette.requests import Request
@@ -39,29 +32,28 @@ from starlette.requests import Request
 from zenml.analytics.context import AnalyticsContext
 from zenml.constants import (
     API,
+    DEFAULT_USERNAME,
     EXTERNAL_AUTHENTICATOR_TIMEOUT,
     LOGIN,
     VERSION_1,
 )
-from zenml.enums import AuthScheme, OAuthDeviceStatus, PermissionType
+from zenml.enums import AuthScheme, OAuthDeviceStatus
 from zenml.exceptions import AuthorizationException, OAuthError
 from zenml.logger import get_logger
 from zenml.models import (
     APIKey,
-    APIKeyInternalResponseModel,
-    APIKeyInternalUpdateModel,
+    APIKeyInternalResponse,
+    APIKeyInternalUpdate,
     ExternalUserModel,
-    OAuthDeviceInternalResponseModel,
-    OAuthDeviceInternalUpdateModel,
+    OAuthDeviceInternalResponse,
+    OAuthDeviceInternalUpdate,
     UserAuthModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentRequestModel,
-    UserUpdateModel,
+    UserRequest,
+    UserResponse,
+    UserUpdate,
 )
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import server_config, zen_store
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
 
@@ -97,34 +89,16 @@ def set_auth_context(auth_context: "AuthContext") -> "AuthContext":
 class AuthContext(BaseModel):
     """The authentication context."""
 
-    user: UserResponseModel
+    user: UserResponse
     access_token: Optional[JWTToken] = None
     encoded_access_token: Optional[str] = None
-    device: Optional[OAuthDeviceInternalResponseModel] = None
-    api_key: Optional[APIKeyInternalResponseModel] = None
-
-    @property
-    def permissions(self) -> Set[PermissionType]:
-        """Returns the permissions of the user.
-
-        Returns:
-            The permissions of the user.
-        """
-        if self.user.roles:
-            # Merge permissions from all roles
-            permissions: List[PermissionType] = []
-            for role in self.user.roles:
-                permissions.extend(role.permissions)
-
-            # Remove duplicates
-            return set(permissions)
-
-        return set()
+    device: Optional[OAuthDeviceInternalResponse] = None
+    api_key: Optional[APIKeyInternalResponse] = None
 
 
 def _fetch_and_verify_api_key(
     api_key_id: UUID, key_to_verify: Optional[str] = None
-) -> APIKeyInternalResponseModel:
+) -> APIKeyInternalResponse:
     """Fetches an API key from the database and verifies it.
 
     Args:
@@ -180,9 +154,7 @@ def _fetch_and_verify_api_key(
     # Update the "last used" timestamp of the API key
     store.update_internal_api_key(
         api_key.id,
-        APIKeyInternalUpdateModel(  # type: ignore[call-arg]
-            update_last_login=True
-        ),
+        APIKeyInternalUpdate(update_last_login=True),  # type: ignore[call-arg]
     )
 
     return api_key
@@ -291,14 +263,14 @@ def authenticate_credentials(
             logger.error(error)
             raise AuthorizationException(error)
 
-        api_key_model: Optional[APIKeyInternalResponseModel] = None
+        api_key_model: Optional[APIKeyInternalResponse] = None
         if decoded_token.api_key_id:
             # The API token was generated from an API key. We still have to
             # verify if the API key hasn't been deactivated or deleted in the
             # meantime.
             api_key_model = _fetch_and_verify_api_key(decoded_token.api_key_id)
 
-        device_model: Optional[OAuthDeviceInternalResponseModel] = None
+        device_model: Optional[OAuthDeviceInternalResponse] = None
         if decoded_token.device_id:
             # Access tokens that have been issued for a device are only valid
             # for that device, so we need to check if the device ID matches any
@@ -347,7 +319,7 @@ def authenticate_credentials(
 
             zen_store().update_internal_authorized_device(
                 device_id=device_model.id,
-                update=OAuthDeviceInternalUpdateModel(
+                update=OAuthDeviceInternalUpdate(
                     update_last_login=True,
                 ),
             )
@@ -454,7 +426,7 @@ def authenticate_device(client_id: UUID, device_code: str) -> AuthContext:
         # counter and lock the device if the maximum number of failed auth
         # attempts has been reached.
         failed_auth_attempts = device_model.failed_auth_attempts + 1
-        update = OAuthDeviceInternalUpdateModel(
+        update = OAuthDeviceInternalUpdate(
             failed_auth_attempts=failed_auth_attempts
         )
         if failed_auth_attempts >= config.max_failed_device_auth_attempts:
@@ -499,7 +471,7 @@ def authenticate_device(client_id: UUID, device_code: str) -> AuthContext:
         else:
             expires_in = config.device_expiration_minutes or 0
 
-    update = OAuthDeviceInternalUpdateModel(
+    update = OAuthDeviceInternalUpdate(
         status=OAuthDeviceStatus.ACTIVE,
         expires_in=expires_in * 60,
     )
@@ -610,7 +582,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
         # Update the user information
         user = store.update_user(
             user_id=user.id,
-            user_update=UserUpdateModel(
+            user_update=UserUpdate(
                 name=external_user.email,
                 full_name=external_user.name or "",
                 email_opted_in=True,
@@ -624,7 +596,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
             f"server database. Creating a new user."
         )
         user = store.create_user(
-            UserRequestModel(
+            UserRequest(
                 name=external_user.email,
                 full_name=external_user.name or "",
                 external_user_id=external_user.id,
@@ -640,15 +612,6 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 traits={"email": user.email, "source": "external_auth"}
             )
             context.alias(user_id=user.id, previous_id=external_user.id)
-
-        # Create a new user role assignment for the new user
-        store.create_user_role_assignment(
-            UserRoleAssignmentRequestModel(
-                role=store._admin_role.id,
-                user=user.id,
-                workspace=None,
-            )
-        )
 
     return AuthContext(user=user)
 
@@ -688,13 +651,11 @@ def authenticate_api_key(
 
 
 def http_authentication(
-    security_scopes: SecurityScopes,
     credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
 ) -> AuthContext:
     """Authenticates any request to the ZenML Server with basic HTTP authentication.
 
     Args:
-        security_scopes: Security scope will be ignored for http_auth
         credentials: HTTP basic auth credentials passed to the request.
 
     Returns:
@@ -741,22 +702,15 @@ class CookieOAuth2TokenBearer(OAuth2PasswordBearer):
 
 
 def oauth2_authentication(
-    security_scopes: SecurityScopes,
     token: str = Depends(
         CookieOAuth2TokenBearer(
             tokenUrl=server_config().root_url_path + API + VERSION_1 + LOGIN,
-            scopes={
-                "read": "Read permissions on all entities",
-                "write": "Write permissions on all entities",
-                "me": "Editing permissions to own user",
-            },
         )
     ),
 ) -> AuthContext:
     """Authenticates any request to the ZenML server with OAuth2 JWT tokens.
 
     Args:
-        security_scopes: Security scope for this token
         token: The JWT bearer token to be authenticated.
 
     Returns:
@@ -765,39 +719,20 @@ def oauth2_authentication(
     Raises:
         HTTPException: If the JWT token could not be authorized.
     """
-    if security_scopes.scopes:
-        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
-    else:
-        authenticate_value = "Bearer"
-
     try:
         auth_context = authenticate_credentials(access_token=token)
     except AuthorizationException as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
-            headers={"WWW-Authenticate": authenticate_value},
+            headers={"WWW-Authenticate": "Bearer"},
         )
-
-    for scope in security_scopes.scopes:
-        if (
-            auth_context.access_token
-            and scope not in auth_context.access_token.permissions
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions",
-                headers={"WWW-Authenticate": authenticate_value},
-            )
 
     return auth_context
 
 
-def no_authentication(security_scopes: SecurityScopes) -> AuthContext:
+def no_authentication() -> AuthContext:
     """Doesn't authenticate requests to the ZenML server.
-
-    Args:
-        security_scopes: Security scope will be ignored for http_auth
 
     Returns:
         The authentication context reflecting the default user.

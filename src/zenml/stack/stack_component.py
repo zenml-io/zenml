@@ -25,15 +25,18 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import ComponentResponseModel, ServiceConnectorRequirements
+from zenml.models import (
+    ServiceConnectorRequirements,
+)
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
-        PipelineDeploymentResponseModel,
+    from zenml.models import (
+        ComponentResponse,
+        PipelineDeploymentBase,
+        PipelineDeploymentResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
@@ -161,9 +164,6 @@ class StackComponentConfig(BaseModel, ABC):
         method to return True if the stack component is relying on local
         resources or capabilities (e.g. local filesystem, local database or
         other services).
-
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
 
         Examples:
           * Artifact Stores that store artifacts in the local filesystem
@@ -365,7 +365,7 @@ class StackComponent:
 
     @classmethod
     def from_model(
-        cls, component_model: "ComponentResponseModel"
+        cls, component_model: "ComponentResponse"
     ) -> "StackComponent":
         """Creates a StackComponent from a ComponentModel.
 
@@ -442,7 +442,12 @@ class StackComponent:
 
     def get_settings(
         self,
-        container: Union["Step", "StepRunInfo", "PipelineDeploymentBaseModel"],
+        container: Union[
+            "Step",
+            "StepRunInfo",
+            "PipelineDeploymentBase",
+            "PipelineDeploymentResponse",
+        ],
     ) -> "BaseSettings":
         """Gets settings for this stack component.
 
@@ -638,7 +643,7 @@ class StackComponent:
         return None
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
@@ -652,7 +657,7 @@ class StackComponent:
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
     ) -> None:
         """Prepares deploying the pipeline.

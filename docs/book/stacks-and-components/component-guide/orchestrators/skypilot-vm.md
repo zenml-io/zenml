@@ -65,15 +65,15 @@ To use the SkyPilot VM Orchestrator, you need:
 * One of the SkyPilot integrations installed. You can install the SkyPilot integration for your cloud provider of choice using the following command:
   ```shell
     # For AWS
-    pip install zenml[connectors-gcp]
+    pip install "zenml[connectors-gcp]"
     zenml integration install aws vm_aws 
 
     # for GCP
-    pip install zenml[connectors-gcp]
+    pip install "zenml[connectors-gcp]"
     zenml integration install gcp vm_gcp # for GCP
 
     # for Azure
-    pip install zenml[connectors-azure]
+    pip install "zenml[connectors-azure]"
     zenml integration install azure vm_azure # for Azure
   ```
 * [Docker](https://www.docker.com) installed and running.
@@ -90,7 +90,7 @@ To use the SkyPilot VM Orchestrator, you need:
 We need first to install the SkyPilot integration for AWS and the AWS connectors extra, using the following two commands:
 
   ```shell
-    pip install zenml[connectors-aws]
+    pip install "zenml[connectors-aws]"
     zenml integration install aws vm_aws 
   ```
 
@@ -140,8 +140,8 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 We need first to install the SkyPilot integration for GCP and the GCP extra for ZenML, using the following two commands:
 
   ```shell
-    pip install zenml[connectors-gcp]
-    zenml integration install gcp vm_gcp 
+    pip install "zenml[connectors-gcp]"
+    zenml integration install gcp vm_gcp
   ```
 
 To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](../../../stacks-and-components/auth-management/gcp-service-connector.md)
@@ -198,7 +198,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 We need first to install the SkyPilot integration for Azure and the Azure extra for ZenML, using the following two commands
 
   ```shell
-    pip install zenml[connectors-azure]
+    pip install "zenml[connectors-azure]"
     zenml integration install azure vm_azure 
   ```
 

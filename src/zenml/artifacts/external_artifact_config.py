@@ -12,22 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """External artifact definition."""
-from typing import TYPE_CHECKING, Optional, Type, Union
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 
-from zenml.config.source import Source
-from zenml.enums import ModelStages
 from zenml.logger import get_logger
-from zenml.materializers.base_materializer import BaseMaterializer
-
-MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
+from zenml.models.v2.core.artifact import ArtifactResponse
 
 if TYPE_CHECKING:
-    from zenml.model.model_config import ModelConfig
-    from zenml.models.artifact_models import ArtifactResponseModel
-
+    from zenml.model.model_version import ModelVersion
 
 logger = get_logger(__name__)
 
@@ -39,119 +33,16 @@ class ExternalArtifactConfiguration(BaseModel):
     """
 
     id: Optional[UUID] = None
-    pipeline_name: Optional[str] = None
-    artifact_name: Optional[str] = None
-    model_name: Optional[str] = None
-    model_version: Optional[Union[str, int, ModelStages]] = None
-    model_artifact_name: Optional[str] = None
-    model_artifact_version: Optional[str] = None
-    model_artifact_pipeline_name: Optional[str] = None
-    model_artifact_step_name: Optional[str] = None
+    name: Optional[str] = None
+    version: Optional[str] = None
 
-    def _get_artifact_from_pipeline_run(self) -> "ArtifactResponseModel":
-        """Get artifact from pipeline run.
+    _model_version: Optional["ModelVersion"] = PrivateAttr(None)
 
-        Returns:
-            The fetched Artifact.
+    def _set_model_version(self, model_version: "ModelVersion") -> None:
+        self._model_version = model_version
 
-        Raises:
-            RuntimeError: If artifact was not found in pipeline run.
-        """
-        from zenml.client import Client
-
-        client = Client()
-
-        response = None
-        pipeline = client.get_pipeline(self.pipeline_name)  # type: ignore [arg-type]
-        for artifact in pipeline.last_successful_run.artifacts:
-            if artifact.name == self.artifact_name:
-                response = artifact
-                break
-
-        if response is None:
-            raise RuntimeError(
-                f"Artifact with name `{self.artifact_name}` was not found "
-                f"in last successful run of pipeline `{self.pipeline_name}`. "
-                "Please check your inputs and try again."
-            )
-
-        return response
-
-    def _get_artifact_from_model(
-        self, model_config: Optional["ModelConfig"] = None
-    ) -> "ArtifactResponseModel":
-        """Get artifact from Model Control Plane.
-
-        Args:
-            model_config: The model containing the model version.
-
-        Returns:
-            The fetched Artifact.
-
-        Raises:
-            RuntimeError: If artifact was not found in model version
-            RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
-        """
-        if self.model_name is None:
-            if model_config is None:
-                raise RuntimeError(
-                    "ExternalArtifact initiated with `model_artifact_name`, "
-                    "but no model config was provided and missing in @step or "
-                    "@pipeline definitions."
-                )
-            self.model_name = model_config.name
-            self.model_version = model_config.version
-        if (
-            model_config is None
-            or self.model_name != model_config.name
-            or self.model_version != model_config.version
-        ):
-            from zenml.model.model_config import ModelConfig
-
-            model_config = ModelConfig(
-                name=self.model_name,
-                version=self.model_version,
-            )
-        model_version = model_config.get_or_create_model_version()
-
-        for artifact_getter in [
-            model_version.get_artifact_object,
-            model_version.get_model_object,
-            model_version.get_deployment,
-        ]:
-            response = artifact_getter(
-                name=self.model_artifact_name,  # type: ignore [arg-type]
-                version=self.model_artifact_version,
-                pipeline_name=self.model_artifact_pipeline_name,
-                step_name=self.model_artifact_step_name,
-            )
-            if response is not None:
-                break
-
-        if response is None:
-            raise RuntimeError(
-                f"Artifact with name `{self.model_artifact_name}` was not found "
-                f"in model `{self.model_name}` version `{self.model_version}`. "
-                "Please check your inputs and try again."
-            )
-
-        return response
-
-    def get_artifact_id(
-        self, model_config: Optional["ModelConfig"] = None
-    ) -> UUID:
+    def get_artifact_version_id(self) -> UUID:
         """Get the artifact.
-
-        - If an artifact is referenced by ID, it will verify that the artifact
-          exists and is in the correct artifact store.
-        - If an artifact is referenced by pipeline and artifact name pair, it
-            will be searched in the artifact store by the referenced pipeline.
-        - If an artifact is referenced by model name and model version, it will
-            be searched in the artifact store by the referenced model.
-
-        Args:
-            model_config: The model config of the step (from step or pipeline).
 
         Returns:
             The artifact ID.
@@ -159,29 +50,38 @@ class ExternalArtifactConfiguration(BaseModel):
         Raises:
             RuntimeError: If the artifact store of the referenced artifact
                 is not the same as the one in the active stack.
-            RuntimeError: If the URI of the artifact already exists.
-            RuntimeError: If `model_artifact_name` is set, but `model_name` is empty and
-                model configuration is missing in @step and @pipeline.
-            RuntimeError: If no value, id, pipeline/artifact name pair or model name/model version/model
-                artifact name group is provided when creating an external artifact.
+            RuntimeError: If neither the ID nor the name of the artifact was
+                provided.
         """
         from zenml.client import Client
 
         client = Client()
 
         if self.id:
-            response = client.get_artifact(artifact_id=self.id)
-        elif self.pipeline_name and self.artifact_name:
-            response = self._get_artifact_from_pipeline_run()
-        elif self.model_artifact_name:
-            response = self._get_artifact_from_model(model_config)
+            response = client.get_artifact_version(self.id)
+        elif self.name:
+            if self.version:
+                response = client.get_artifact_version(
+                    self.name, version=self.version
+                )
+            elif self._model_version:
+                response_ = self._model_version.get_artifact(self.name)
+                if not isinstance(response_, ArtifactResponse):
+                    raise RuntimeError(
+                        f"Failed to pull artifact `{self.name}` from the Model "
+                        f"Version (name=`{self._model_version.name}`, version="
+                        f"`{self._model_version.version}`). Please validate the "
+                        "input and try again."
+                    )
+                response = response_
+            else:
+                response = client.get_artifact_version(self.name)
         else:
             raise RuntimeError(
-                "Either an ID, pipeline/artifact name pair or "
-                "model name/model version/model artifact name group can be "
-                "provided when creating an external artifact configuration.\n"
-                "Potential root cause: you instantiated an ExternalArtifact and "
-                "called this method before `upload_by_value` was called."
+                "Either the ID or name of the artifact must be provided. "
+                "If you created this ExternalArtifact from a value, please "
+                "ensure that `upload_by_value` was called before trying to "
+                "fetch the artifact ID."
             )
 
         artifact_store_id = client.active_stack.artifact_store.id
@@ -191,7 +91,8 @@ class ExternalArtifactConfiguration(BaseModel):
                 "referenced by an external artifact is not stored in the "
                 "artifact store of the active stack. This will lead to "
                 "issues loading the artifact. Please make sure to only "
-                "reference artifacts stored in your active artifact store."
+                "reference artifact versions stored in your active artifact "
+                "store."
             )
 
         self.id = response.id

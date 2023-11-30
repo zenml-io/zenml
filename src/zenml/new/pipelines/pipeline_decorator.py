@@ -26,7 +26,7 @@ from typing import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.model.model_config import ModelConfig
+    from zenml.model.model_version import ModelVersion
     from zenml.new.pipelines.pipeline import Pipeline
 
     HookSpecification = Union[str, FunctionType]
@@ -62,7 +62,7 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_config: Optional["ModelConfig"] = None,
+    model_version: Optional["ModelVersion"] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -81,7 +81,7 @@ def pipeline(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
-        model_config: Model(Version) configuration for this step as `ModelConfig` instance.
+        model_version: configuration of the model version in the Model Control Plane.
 
     Returns:
         A pipeline instance.
@@ -99,7 +99,7 @@ def pipeline(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model_config=model_config,
+            model_version=model_version,
             entrypoint=func,
         )
 

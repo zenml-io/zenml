@@ -22,11 +22,11 @@ In order to run this example, you need to install and initialize ZenML and Label
 Studio.
 
 ```shell
-pip install "zenml[server]"
+pip install "zenml[server]" torchvision
 
-# pull example
-zenml example pull label_studio_annotation
-cd zenml_examples/label_studio_annotation
+# clone the ZenML repository
+git clone https://github.com/zenml-io/zenml.git
+cd examples/label_studio_annotation
 
 # Initialize ZenML repo
 zenml init
@@ -65,26 +65,52 @@ example.
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch azure pillow
-```
-
-For this example we also need to upgrade the `torchvision` dependency, so please
-run:
-
-```shell
-pip install "torchvision==0.13.1"
+zenml integration install pytorch azure pillow
 ```
 
 Some setup for your stack is required.
+
+A resource group will allow you to clean up any associated resources easily, so
+either create one with the following command, or reference an existing one in
+what follows. The same applies to the storage account and container that we'll
+create and use:
+
+```bash
+az group create --name <YOUR_RESOURCE_GROUP_NAME> --location northeurope
+
+az storage account create --name <YOUR_STORAGE_ACCOUNT_NAME> --resource-group <YOUR_RESOURCE_GROUP_NAME> --location northeurope --sku Standard_ZRS --encryption-services blob
+
+az storage container create \
+    --account-name <YOUR_STORAGE_ACCOUNT_NAME> \
+    --name <YOUR_CONTAINER_NAME> \
+    --auth-mode login
+```
+
+At this point you'll want to get a storage account key with the following
+command:
+
+```bash
+az storage account keys list --account-name <YOUR_STORAGE_ACCOUNT_NAME>
+```
+
+You can pick either of the 'value' properties to use for the `--account-key`
+value for the following command that adds CORS permissions to your storage
+account:
+
+```bash
+az storage cors add --origins '*' --methods GET --allowed-headers '*' --exposed-headers 'Access-Control-Allow-Origin' --max-age 3600 --services blob --account-key <YOUR_STORAGE_ACCOUNT_KEY> --account-name <YOUR_STORAGE_ACCOUNT_NAME>
+```
+
+Now we can set up all the necessary ZenML components:
 
 ```shell
 zenml stack copy default <ANNOTATION_STACK_NAME>
 
 zenml stack set <ANNOTATION_STACK_NAME>
 
-zenml secret create <YOUR_AZURE_AUTH_SECRET_NAME> --account_name="<YOUR_AZURE_ACCOUNT_NAME>" --account_key="<YOUR_AZURE_ACCOUNT_KEY>"
+zenml secret create <YOUR_AZURE_AUTH_SECRET_NAME> --account_name="<YOUR_STORAGE_ACCOUNT_NAME>" --account_key="<YOUR_STORAGE_ACCOUNT_KEY>"
 
-zenml artifact-store register azure_artifact_store -f azure --path="az://<NAME_OF_ARTIFACT_STORE_OR_BLOB_IN_AZURE>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
+zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> -f azure --path="az://<YOUR_CONTAINER_NAME>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
 
 zenml stack update <ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 
@@ -93,6 +119,15 @@ zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
 zenml stack update <ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
+```
+
+At this point you should stop (`CTRL-C`) Label Studio, set the following two
+environment variables (or do it wherever is appropriate if you have a deployed
+Label Studio instance) before restarting Label Studio:
+
+```bash
+export AZURE_BLOB_ACCOUNT_NAME="<YOUR_STORAGE_ACCOUNT_NAME>"
+export AZURE_BLOB_ACCOUNT_KEY="<YOUR_STORAGE_ACCOUNT_KEY>"
 ```
 
 ### 🥞 Set up your stack for GCP
@@ -119,6 +154,8 @@ gcloud projects add-iam-policy-binding <YOUR_GCP_PROJECT_NAME> --member="service
 gcloud projects add-iam-policy-binding <YOUR_GCP_PROJECT_NAME> --member="serviceAccount:<YOUR_SERVICE_ACCOUNT_NAME>@<YOUR_GCP_PROJECT_NAME>.iam.gserviceaccount.com" --role="roles/iam.serviceAccountTokenCreator"
 
 gcloud iam service-accounts keys create ls-annotation-credentials.json --iam-account=<YOUR_SERVICE_ACCOUNT_NAME>@<YOUR_GCP_PROJECT_NAME>.iam.gserviceaccount.com
+
+gsutil cors set cloud_config/gcp/cors-config.json gs://<YOUR_BUCKET_NAME>
 ```
 
 Now you have a credentials `json` file that you can use to authenticate with
@@ -157,7 +194,8 @@ label-studio start -p 8093
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch s3 pillow
+# assuming label_studio was installed earlier
+zenml integration install pytorch s3 pillow
 ```
 
 Create your basic S3 bucket via CLI command:
@@ -180,26 +218,35 @@ aws s3api put-bucket-cors --bucket $S3_BUCKET_NAME --cors-configuration file://c
 cd ../..
 ```
 
+You will also need to assign a policy to your IAM user that allows it to access
+the S3 bucket in the way that Label Studio needs. You can do this using [the
+instructions described in the Label Studio
+documentation](https://labelstud.io/guide/storage.html#Configure-access-to-your-S3-bucket)
+(step two, specifically).
+
 Now you can get to the fun part of setting up Label Studio and working with
 ZenML:
 
 ```shell
-zenml stack copy default <YOUR_AWS_ZENML_STACK_NAME>
+YOUR_AWS_ZENML_STACK_NAME=<YOUR_AWS_ZENML_STACK_NAME>
+YOUR_ARTIFACT_STORE_NAME=<YOUR_ARTIFACT_STORE_NAME>
 
-zenml stack set <YOUR_AWS_ZENML_STACK_NAME>
+zenml stack copy default $YOUR_AWS_ZENML_STACK_NAME
+
+zenml stack set $YOUR_AWS_ZENML_STACK_NAME
 
 # use your standard access key id and secret access key from ~/.aws/credentials here
 zenml secret create <YOUR_AWS_SECRET_NAME> --aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
 
-zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> --flavor=s3 --path=s3://<YOUR_S3_BUCKET_NAME> --authentication_secret="<YOUR_AWS_SECRET_NAME>"
+zenml artifact-store register $YOUR_ARTIFACT_STORE_NAME --flavor=s3 --path=s3://$S3_BUCKET_NAME --authentication_secret="<YOUR_AWS_SECRET_NAME>"
 
-zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
+zenml stack update $YOUR_AWS_ZENML_STACK_NAME -a $YOUR_ARTIFACT_STORE_NAME
 
 zenml secret create <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
-zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
+zenml stack update $YOUR_AWS_ZENML_STACK_NAME -an <YOUR_LABEL_STUDIO_ANNOTATOR>
 ```
 
 ### ▶️ Run the Code
@@ -289,10 +336,6 @@ references. If you created assets under a GCP project, or an Azure resource
 group, then the newly created assets should be easy to find. With Amazon,
 deleting the IAM rules, the secrets manager vault and the S3 bucket are what you
 need to delete.
-
-```shell
-rm -rf zenml_examples
-```
 
 # 📜 Learn more
 

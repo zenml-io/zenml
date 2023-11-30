@@ -18,6 +18,7 @@ from typing import Optional, cast
 
 from zenml import get_step_context, step
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
+from zenml.artifacts.utils import save_model_metadata
 from zenml.client import Client
 from zenml.constants import MLFLOW_MODEL_FORMAT, MODEL_METADATA_YAML_FILE_NAME
 from zenml.exceptions import DoesNotExistException
@@ -40,7 +41,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import ModelVersionStage
 from zenml.utils import io_utils, source_utils
-from zenml.utils.artifact_utils import save_model_metadata
 
 logger = get_logger(__name__)
 

@@ -22,12 +22,18 @@ from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.step_configurations import Step
-from zenml.enums import ExecutionStatus
-from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.models.step_run_models import (
-    StepRunRequestModel,
-    StepRunResponseModel,
-    StepRunUpdateModel,
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.enums import (
+    ExecutionStatus,
+    StepRunInputArtifactType,
+    StepRunOutputArtifactType,
+)
+from zenml.models import (
+    StepRunRequest,
+    StepRunResponse,
+    StepRunResponseBody,
+    StepRunResponseMetadata,
+    StepRunUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -39,7 +45,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+    from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
@@ -137,7 +143,7 @@ class StepRunSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_request(cls, request: StepRunRequestModel) -> "StepRunSchema":
+    def from_request(cls, request: StepRunRequest) -> "StepRunSchema":
         """Create a step run schema from a step run request model.
 
         Args:
@@ -162,28 +168,32 @@ class StepRunSchema(NamedSchema, table=True):
             source_code=request.source_code,
         )
 
-    def to_model(self) -> StepRunResponseModel:
-        """Convert a `StepRunSchema` to a `StepRunModel`.
+    def to_model(self, hydrate: bool = False) -> StepRunResponse:
+        """Convert a `StepRunSchema` to a `StepRunResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created StepRunModel.
+            The created StepRunResponse.
 
         Raises:
             RuntimeError: If the step run schema does not have a deployment_id
                 or a step_configuration.
         """
-        metadata = {
+        run_metadata = {
             metadata_schema.key: metadata_schema.to_model()
             for metadata_schema in self.run_metadata
         }
 
         input_artifacts = {
-            artifact.name: artifact.artifact.to_model()
+            artifact.name: artifact.artifact_version.to_model()
             for artifact in self.input_artifacts
         }
 
         output_artifacts = {
-            artifact.name: artifact.artifact.to_model()
+            artifact.name: artifact.artifact_version.to_model()
             for artifact in self.output_artifacts
         }
 
@@ -198,38 +208,42 @@ class StepRunSchema(NamedSchema, table=True):
                 "Step run model creation has failed. Each step run entry "
                 "should either have a deployment_id or step_configuration."
             )
-        return StepRunResponseModel(
-            id=self.id,
-            # Attributes from the StepRunBaseModel
-            name=self.name,
-            start_time=self.start_time,
-            end_time=self.end_time,
+
+        body = StepRunResponseBody(
+            user=self.user.to_model() if self.user else None,
             status=self.status,
-            cache_key=self.cache_key,
-            code_hash=self.code_hash,
-            docstring=self.docstring,
-            source_code=self.source_code,
-            config=full_step_config.config,
-            spec=full_step_config.spec,
-            deployment_id=self.deployment_id,
-            pipeline_run_id=self.pipeline_run_id,
-            original_step_run_id=self.original_step_run_id,
-            parent_step_ids=[p.parent_id for p in self.parents],
-            # Attributes from the WorkspaceScopedResponseModel
-            user=self.user.to_model(_block_recursion=True)
-            if self.user
-            else None,
-            workspace=self.workspace.to_model(),
-            created=self.created,
-            updated=self.updated,
-            # Attributes from the StepRunResponseModel
             inputs=input_artifacts,
             outputs=output_artifacts,
+            created=self.created,
+            updated=self.updated,
+        )
+        metadata = None
+        if hydrate:
+            metadata = StepRunResponseMetadata(
+                workspace=self.workspace.to_model(),
+                config=full_step_config.config,
+                spec=full_step_config.spec,
+                cache_key=self.cache_key,
+                code_hash=self.code_hash,
+                docstring=self.docstring,
+                source_code=self.source_code,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                logs=self.logs.to_model() if self.logs else None,
+                deployment_id=self.deployment_id,
+                pipeline_run_id=self.pipeline_run_id,
+                original_step_run_id=self.original_step_run_id,
+                parent_step_ids=[p.parent_id for p in self.parents],
+                run_metadata=run_metadata,
+            )
+        return StepRunResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
             metadata=metadata,
-            logs=self.logs.to_model() if self.logs else None,
         )
 
-    def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
+    def update(self, step_update: "StepRunUpdate") -> "StepRunSchema":
         """Update a step run schema with a step run update model.
 
         Args:
@@ -284,6 +298,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str = Field(nullable=False, primary_key=True)
+    type: StepRunInputArtifactType
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(
@@ -295,9 +310,11 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
+    # Note: We keep the name artifact_id instead of artifact_version_id here to
+    # avoid having to drop and recreate the primary key constraint.
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="artifact",  # TODO: Find a way for ArtifactSchema.__tablename__
+        target="artifact_version",
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",
@@ -307,7 +324,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Relationships
     step_run: "StepRunSchema" = Relationship(back_populates="input_artifacts")
-    artifact: "ArtifactSchema" = Relationship()
+    artifact_version: "ArtifactVersionSchema" = Relationship()
 
 
 class StepRunOutputArtifactSchema(SQLModel, table=True):
@@ -317,6 +334,7 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     # Fields
     name: str
+    type: StepRunOutputArtifactType
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(
@@ -328,10 +346,11 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
-
+    # Note: we keep the name artifact_id instead of artifact_version_id here to
+    # avoid having to drop and recreate the primary key constraint.
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="artifact",  # TODO: Find a way for ArtifactSchema.__tablename__
+        target="artifact_version",
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",
@@ -341,6 +360,6 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     # Relationship
     step_run: "StepRunSchema" = Relationship(back_populates="output_artifacts")
-    artifact: "ArtifactSchema" = Relationship(
+    artifact_version: "ArtifactVersionSchema" = Relationship(
         back_populates="output_of_step_runs"
     )

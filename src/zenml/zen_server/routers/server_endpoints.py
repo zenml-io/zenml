@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
+
 from fastapi import APIRouter
 
 import zenml
 from zenml.constants import API, INFO, VERSION_1
-from zenml.models.server_models import ServerModel
+from zenml.models import ServerModel
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import handle_exceptions, zen_store
 

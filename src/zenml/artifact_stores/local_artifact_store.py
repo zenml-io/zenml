@@ -75,9 +75,6 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
     def is_local(self) -> bool:
         """Checks if this stack component is running locally.
 
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
-
         Returns:
             True if this config is for a local component, False otherwise.
         """
@@ -135,6 +132,18 @@ class LocalArtifactStore(LocalFilesystem, BaseArtifactStore):
             The local path of the artifact store.
         """
         return self.path
+
+    @property
+    def custom_cache_key(self) -> Optional[bytes]:
+        """Custom cache key.
+
+        The client ID is returned here to invalidate caching when using the same
+        local artifact store on multiple client machines.
+
+        Returns:
+            Custom cache key.
+        """
+        return GlobalConfiguration().user_id.bytes
 
 
 class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):

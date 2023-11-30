@@ -14,7 +14,10 @@
 """SQL Model Implementations."""
 
 from zenml.zen_stores.schemas.api_key_schemas import APIKeySchema
-from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+from zenml.zen_stores.schemas.artifact_schemas import (
+    ArtifactSchema,
+    ArtifactVersionSchema,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeRepositorySchema,
@@ -31,12 +34,6 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-from zenml.zen_stores.schemas.role_schemas import (
-    RolePermissionSchema,
-    RoleSchema,
-    TeamRoleAssignmentSchema,
-    UserRoleAssignmentSchema,
-)
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
@@ -53,10 +50,7 @@ from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunParentsSchema,
     StepRunSchema,
 )
-from zenml.zen_stores.schemas.team_schemas import (
-    TeamAssignmentSchema,
-    TeamSchema,
-)
+from zenml.zen_stores.schemas.tag_schemas import TagSchema, TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.model_schemas import (
@@ -69,6 +63,7 @@ from zenml.zen_stores.schemas.model_schemas import (
 __all__ = [
     "APIKeySchema",
     "ArtifactSchema",
+    "ArtifactVersionSchema",
     "BaseSchema",
     "CodeReferenceSchema",
     "CodeRepositorySchema",
@@ -81,8 +76,6 @@ __all__ = [
     "PipelineDeploymentSchema",
     "PipelineRunSchema",
     "PipelineSchema",
-    "RolePermissionSchema",
-    "RoleSchema",
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
@@ -94,10 +87,8 @@ __all__ = [
     "StepRunOutputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
-    "TeamAssignmentSchema",
-    "TeamRoleAssignmentSchema",
-    "TeamSchema",
-    "UserRoleAssignmentSchema",
+    "TagSchema",
+    "TagResourceSchema",
     "UserSchema",
     "LogsSchema",
     "ModelSchema",
