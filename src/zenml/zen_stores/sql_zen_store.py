@@ -6190,8 +6190,7 @@ class SqlZenStore(BaseZenStore):
             return model.to_model(hydrate=hydrate)
 
     def list_models(
-        self,
-        model_filter_model: ModelFilter,  hydrate: bool = False
+        self, model_filter_model: ModelFilter, hydrate: bool = False
     ) -> Page[ModelResponse]:
         """Get all models by filter.
 
@@ -6691,7 +6690,9 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_pipeline_run_link_schema)
             session.commit()
-            return model_version_pipeline_run_link_schema.to_model(hydrate=True)
+            return model_version_pipeline_run_link_schema.to_model(
+                hydrate=True
+            )
 
     def list_model_version_pipeline_run_links(
         self,
