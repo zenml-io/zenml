@@ -520,7 +520,7 @@ def test_create_run_metadata_for_pipeline_run(clean_client_with_run):
     assert new_metadata[0].type == MetadataTypeEnum.STRING
     assert new_metadata[0].pipeline_run_id == pipeline_run.id
     assert new_metadata[0].step_run_id is None
-    assert new_metadata[0].artifact_id is None
+    assert new_metadata[0].artifact_version_id is None
     assert new_metadata[0].stack_component_id is None
 
     # Assert new metadata is linked to the pipeline run
@@ -558,7 +558,7 @@ def test_create_run_metadata_for_pipeline_run_and_component(
     assert new_metadata[0].type == MetadataTypeEnum.STRING
     assert new_metadata[0].pipeline_run_id == pipeline_run.id
     assert new_metadata[0].step_run_id is None
-    assert new_metadata[0].artifact_id is None
+    assert new_metadata[0].artifact_version_id is None
     assert new_metadata[0].stack_component_id == orchestrator_id
 
     # Assert new metadata is linked to the pipeline run
@@ -595,7 +595,7 @@ def test_create_run_metadata_for_step_run(clean_client_with_run):
     assert new_metadata[0].type == MetadataTypeEnum.STRING
     assert new_metadata[0].pipeline_run_id is None
     assert new_metadata[0].step_run_id == step_run.id
-    assert new_metadata[0].artifact_id is None
+    assert new_metadata[0].artifact_version_id is None
     assert new_metadata[0].stack_component_id is None
 
     # Assert new metadata is linked to the step run
@@ -631,7 +631,7 @@ def test_create_run_metadata_for_step_run_and_component(clean_client_with_run):
     assert new_metadata[0].type == MetadataTypeEnum.STRING
     assert new_metadata[0].pipeline_run_id is None
     assert new_metadata[0].step_run_id == step_run.id
-    assert new_metadata[0].artifact_id is None
+    assert new_metadata[0].artifact_version_id is None
     assert new_metadata[0].stack_component_id == orchestrator_id
 
     # Assert new metadata is linked to the step run
@@ -652,14 +652,15 @@ def test_create_run_metadata_for_step_run_and_component(clean_client_with_run):
 
 def test_create_run_metadata_for_artifact(clean_client_with_run):
     """Test creating run metadata linked to an artifact."""
-    artifact = clean_client_with_run.list_artifacts()[0]
+    artifact_version = clean_client_with_run.list_artifact_versions()[0]
     existing_metadata = clean_client_with_run.list_run_metadata(
-        artifact_id=artifact.id
+        artifact_version_id=artifact_version.id
     )
 
     # Assert that the created metadata is correct
     new_metadata = clean_client_with_run.create_run_metadata(
-        metadata={"axel": "is awesome"}, artifact_id=artifact.id
+        metadata={"axel": "is awesome"},
+        artifact_version_id=artifact_version.id,
     )
     assert isinstance(new_metadata, list)
     assert len(new_metadata) == 1
@@ -668,12 +669,12 @@ def test_create_run_metadata_for_artifact(clean_client_with_run):
     assert new_metadata[0].type == MetadataTypeEnum.STRING
     assert new_metadata[0].pipeline_run_id is None
     assert new_metadata[0].step_run_id is None
-    assert new_metadata[0].artifact_id == artifact.id
+    assert new_metadata[0].artifact_version_id == artifact_version.id
     assert new_metadata[0].stack_component_id is None
 
     # Assert new metadata is linked to the artifact
     registered_metadata = clean_client_with_run.list_run_metadata(
-        artifact_id=artifact.id
+        artifact_version_id=artifact_version.id
     )
     assert len(registered_metadata) == len(existing_metadata) + 1
 
@@ -695,14 +696,14 @@ def test_create_run_metadata_fails_if_linked_to_multiple_entities(
     metadata = {"axel": "is awesome"}
     pipeline_run = clean_client_with_run.list_runs()[0]
     step_run = clean_client_with_run.list_run_steps()[0]
-    artifact = clean_client_with_run.list_artifacts()[0]
+    artifact_version = clean_client_with_run.list_artifact_versions()[0]
 
     with pytest.raises(ValueError):
         clean_client_with_run.create_run_metadata(
             metadata=metadata,
             pipeline_run_id=pipeline_run.id,
             step_run_id=step_run.id,
-            artifact_id=artifact.id,
+            artifact_version_id=artifact_version.id,
         )
 
     with pytest.raises(ValueError):
@@ -716,14 +717,14 @@ def test_create_run_metadata_fails_if_linked_to_multiple_entities(
         clean_client_with_run.create_run_metadata(
             metadata=metadata,
             pipeline_run_id=pipeline_run.id,
-            artifact_id=artifact.id,
+            artifact_version_id=artifact_version.id,
         )
 
     with pytest.raises(ValueError):
         clean_client_with_run.create_run_metadata(
             metadata=metadata,
             step_run_id=step_run.id,
-            artifact_id=artifact.id,
+            artifact_version_id=artifact_version.id,
         )
 
 

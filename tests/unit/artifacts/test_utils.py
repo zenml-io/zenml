@@ -28,13 +28,13 @@ from zenml.artifacts.utils import (
 )
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.materializers.numpy_materializer import NUMPY_FILENAME
-from zenml.models import ArtifactResponse, Page
+from zenml.models import ArtifactVersionResponse, Page
 
 
 @pytest.fixture
 def model_artifact(mocker):
     return mocker.Mock(
-        spec=ArtifactResponse,
+        spec=ArtifactVersionResponse,
         id="123",
         created="2023-01-01T00:00:00Z",
         updated="2023-01-01T00:00:00Z",
@@ -171,11 +171,11 @@ def test__load_artifact(numpy_file_uri):
     assert isinstance(artifact, np.ndarray)
 
 
-def test__get_new_artifact_version(mocker, sample_artifact_model):
+def test__get_new_artifact_version(mocker, sample_artifact_version_model):
     """Unit test for the `_get_new_artifact_version` function."""
     # If no artifact exists, "1" should be returned
     mocker.patch(
-        "zenml.client.Client.list_artifacts",
+        "zenml.client.Client.list_artifact_versions",
         return_value=Page(
             index=1,
             max_size=1,
@@ -184,20 +184,20 @@ def test__get_new_artifact_version(mocker, sample_artifact_model):
             items=[],
         ),
     )
-    assert _get_new_artifact_version(sample_artifact_model.name) == 1
+    assert _get_new_artifact_version(sample_artifact_version_model.name) == 1
 
     # If an artifact exists, the next version should be returned
     mocker.patch(
-        "zenml.client.Client.list_artifacts",
+        "zenml.client.Client.list_artifact_versions",
         return_value=Page(
             index=1,
             max_size=1,
             total_pages=1,
             total=1,
-            items=[sample_artifact_model],
+            items=[sample_artifact_version_model],
         ),
     )
     assert (
-        _get_new_artifact_version(sample_artifact_model.name)
-        == int(sample_artifact_model.version) + 1
+        _get_new_artifact_version(sample_artifact_version_model.name)
+        == int(sample_artifact_version_model.version) + 1
     )

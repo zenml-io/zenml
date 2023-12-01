@@ -31,7 +31,7 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.artifact import ArtifactResponse
+    from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.logs import (
         LogsRequest,
         LogsResponse,
@@ -92,11 +92,11 @@ class StepRunRequest(WorkspaceScopedRequest):
         default_factory=list,
     )
     inputs: Dict[str, UUID] = Field(
-        title="The IDs of the input artifacts of the step run.",
+        title="The IDs of the input artifact versions of the step run.",
         default={},
     )
     outputs: Dict[str, UUID] = Field(
-        title="The IDs of the output artifacts of the step run.",
+        title="The IDs of the output artifact versions of the step run.",
         default={},
     )
     logs: Optional["LogsRequest"] = Field(
@@ -115,15 +115,15 @@ class StepRunUpdate(BaseModel):
     """Update model for step runs."""
 
     outputs: Dict[str, UUID] = Field(
-        title="The IDs of the output artifacts of the step run.",
+        title="The IDs of the output artifact versions of the step run.",
         default={},
     )
-    saved_artifacts: Dict[str, UUID] = Field(
-        title="The IDs of artifacts that were saved by this step run.",
+    saved_artifact_versions: Dict[str, UUID] = Field(
+        title="The IDs of artifact versions that were saved by this step run.",
         default={},
     )
-    loaded_artifacts: Dict[str, UUID] = Field(
-        title="The IDs of artifacts that were loaded by this step run.",
+    loaded_artifact_versions: Dict[str, UUID] = Field(
+        title="The IDs of artifact versions that were loaded by this step run.",
         default={},
     )
     status: Optional[ExecutionStatus] = Field(
@@ -141,12 +141,12 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
     """Response body for step runs."""
 
     status: ExecutionStatus = Field(title="The status of the step.")
-    inputs: Dict[str, "ArtifactResponse"] = Field(
-        title="The input artifacts of the step run.",
+    inputs: Dict[str, "ArtifactVersionResponse"] = Field(
+        title="The input artifact versions of the step run.",
         default={},
     )
-    outputs: Dict[str, "ArtifactResponse"] = Field(
-        title="The output artifacts of the step run.",
+    outputs: Dict[str, "ArtifactVersionResponse"] = Field(
+        title="The output artifact versions of the step run.",
         default={},
     )
 
@@ -237,7 +237,7 @@ class StepRunResponse(
 
     # Helper properties
     @property
-    def input(self) -> "ArtifactResponse":
+    def input(self) -> "ArtifactVersionResponse":
         """Returns the input artifact that was used to run this step.
 
         Returns:
@@ -256,7 +256,7 @@ class StepRunResponse(
         return next(iter(self.inputs.values()))
 
     @property
-    def output(self) -> "ArtifactResponse":
+    def output(self) -> "ArtifactVersionResponse":
         """Returns the output artifact that was written by this step.
 
         Returns:
@@ -285,7 +285,7 @@ class StepRunResponse(
         return self.get_body().status
 
     @property
-    def inputs(self) -> Dict[str, "ArtifactResponse"]:
+    def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
         """The `inputs` property.
 
         Returns:
@@ -294,7 +294,7 @@ class StepRunResponse(
         return self.get_body().inputs
 
     @property
-    def outputs(self) -> Dict[str, "ArtifactResponse"]:
+    def outputs(self) -> Dict[str, "ArtifactVersionResponse"]:
         """The `outputs` property.
 
         Returns:
@@ -433,7 +433,7 @@ class StepRunResponse(
 
 
 class StepRunFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all Artifacts."""
+    """Model to enable advanced filtering of step runs."""
 
     name: Optional[str] = Field(
         default=None,

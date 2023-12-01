@@ -25,7 +25,8 @@ from zenml.models import (
     ArtifactVisualizationResponseBody,
     ArtifactVisualizationResponseMetadata,
 )
-from zenml.zen_stores.schemas import ArtifactSchema, BaseSchema
+from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
+from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 
@@ -39,29 +40,31 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
 
     # Foreign Keys
-    artifact_id: UUID = build_foreign_key_field(
+    artifact_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ArtifactSchema.__tablename__,
-        source_column="artifact_id",
+        target=ArtifactVersionSchema.__tablename__,
+        source_column="artifact_version_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
 
     # Relationships
-    artifact: ArtifactSchema = Relationship(back_populates="visualizations")
+    artifact_version: ArtifactVersionSchema = Relationship(
+        back_populates="visualizations"
+    )
 
     @classmethod
     def from_model(
         cls,
         artifact_visualization_request: ArtifactVisualizationRequest,
-        artifact_id: UUID,
+        artifact_version_id: UUID,
     ) -> "ArtifactVisualizationSchema":
         """Convert a `ArtifactVisualizationRequest` to a `ArtifactVisualizationSchema`.
 
         Args:
             artifact_visualization_request: The visualization.
-            artifact_id: The UUID of the artifact.
+            artifact_version_id: The UUID of the artifact version.
 
         Returns:
             The `ArtifactVisualizationSchema`.
@@ -69,7 +72,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         return cls(
             type=artifact_visualization_request.type,
             uri=artifact_visualization_request.uri,
-            artifact_id=artifact_id,
+            artifact_version_id=artifact_version_id,
         )
 
     def to_model(self, hydrate: bool = False) -> ArtifactVisualizationResponse:
@@ -92,7 +95,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         metadata = None
         if hydrate:
             metadata = ArtifactVisualizationResponseMetadata(
-                artifact_id=self.artifact_id,
+                artifact_version_id=self.artifact_version_id,
             )
 
         return ArtifactVisualizationResponse(
