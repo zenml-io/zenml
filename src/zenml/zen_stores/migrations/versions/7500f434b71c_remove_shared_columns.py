@@ -40,6 +40,10 @@ def _rename_duplicate_entities(
 
     names = reserved_names or set()
     for id, name, user_id in connection.execute(query).fetchall():
+        if user_id is None:
+            # Generate a random user id
+            user_id = uuid4().hex
+
         if name in names:
             for suffix_length in range(4, len(user_id)):
                 new_name = f"{name}-{user_id[:suffix_length]}"
@@ -72,6 +76,10 @@ def _rename_duplicate_components(table: sa.Table) -> None:
     names_per_type: Dict[str, Set[str]] = defaultdict(lambda: {"default"})
 
     for id, type_, name, user_id in connection.execute(query).fetchall():
+        if user_id is None:
+            # Generate a random user id
+            user_id = uuid4().hex
+
         names = names_per_type[type_]
         if name in names:
             for suffix_length in range(4, len(user_id)):
