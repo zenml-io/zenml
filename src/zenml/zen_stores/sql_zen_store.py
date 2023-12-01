@@ -124,20 +124,20 @@ from zenml.models import (
     FlavorResponse,
     FlavorUpdate,
     LogsResponse,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelUpdateModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
-    ModelVersionUpdateModel,
+    ModelFilter,
+    ModelRequest,
+    ModelResponse,
+    ModelUpdate,
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
+    ModelVersionResponse,
+    ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceInternalRequest,
     OAuthDeviceInternalResponse,
@@ -6124,11 +6124,9 @@ class SqlZenStore(BaseZenStore):
         session.add(new_reference)
         return new_reference.id
 
-    ########
-    # Model
-    ########
+    # ----------------------------- Models -----------------------------
 
-    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+    def create_model(self, model: ModelRequest) -> ModelResponse:
         """Creates a new model.
 
         Args:
@@ -6160,15 +6158,19 @@ class SqlZenStore(BaseZenStore):
                     resource_type=TaggableResourceTypes.MODEL,
                 )
             session.commit()
-            return ModelSchema.to_model(model_schema)
+            return model_schema.to_model(hydrate=True)
 
     def get_model(
-        self, model_name_or_id: Union[str, UUID]
-    ) -> ModelResponseModel:
+        self,
+        model_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> ModelResponse:
         """Get an existing model.
 
         Args:
             model_name_or_id: name or id of the model to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Raises:
             KeyError: specified ID or name not found.
@@ -6185,17 +6187,19 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get model with ID `{model_name_or_id}`: "
                     f"No model with this ID found."
                 )
-            return ModelSchema.to_model(model)
+            return model.to_model(hydrate=hydrate)
 
     def list_models(
         self,
-        model_filter_model: ModelFilterModel,
-    ) -> Page[ModelResponseModel]:
+        model_filter_model: ModelFilter,  hydrate: bool = False
+    ) -> Page[ModelResponse]:
         """Get all models by filter.
 
         Args:
             model_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all models.
@@ -6207,6 +6211,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ModelSchema,
                 filter_model=model_filter_model,
+                hydrate=hydrate,
             )
 
     def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
@@ -6233,8 +6238,8 @@ class SqlZenStore(BaseZenStore):
     def update_model(
         self,
         model_id: UUID,
-        model_update: ModelUpdateModel,
-    ) -> ModelResponseModel:
+        model_update: ModelUpdate,
+    ) -> ModelResponse:
         """Updates an existing model.
 
         Args:
@@ -6277,15 +6282,13 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_model)
-            return existing_model.to_model()
+            return existing_model.to_model(hydrate=True)
 
-    #################
-    # Model Versions
-    #################
+    # ----------------------------- Model Versions -----------------------------
 
     def create_model_version(
-        self, model_version: ModelVersionRequestModel
-    ) -> ModelVersionResponseModel:
+        self, model_version: ModelVersionRequest
+    ) -> ModelVersionResponse:
         """Creates a new model version.
 
         Args:
@@ -6334,16 +6337,18 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_schema)
 
             session.commit()
-            return model_version_schema.to_model()
+            return model_version_schema.to_model(hydrate=True)
 
     def get_model_version(
-        self, model_version_id: UUID
-    ) -> ModelVersionResponseModel:
+        self, model_version_id: UUID, hydrate: bool = True
+    ) -> ModelVersionResponse:
         """Get an existing model version.
 
         Args:
             model_version_id: name, id, stage or number of the model version to
                 be retrieved. If skipped - latest is retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model version of interest.
@@ -6364,19 +6369,23 @@ class SqlZenStore(BaseZenStore):
                     f"`{model_version_id}`: No model version with this "
                     f"ID found."
                 )
-            return model_version.to_model()
+            return model_version.to_model(hydrate=hydrate)
 
     def list_model_versions(
         self,
-        model_version_filter_model: ModelVersionFilterModel,
+        model_version_filter_model: ModelVersionFilter,
         model_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[ModelVersionResponseModel]:
+        hydrate: bool = False,
+    ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model versions.
-            model_version_filter_model: All filter parameters including pagination
-                params.
+            model_name_or_id: name or id of the model containing the model
+                versions.
+            model_version_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model versions.
@@ -6392,6 +6401,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ModelVersionSchema,
                 filter_model=model_version_filter_model,
+                hydrate=hydrate,
             )
 
     def delete_model_version(
@@ -6413,8 +6423,9 @@ class SqlZenStore(BaseZenStore):
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
-                    f"Unable to delete model version with id `{model_version_id}`: "
-                    f"No model version with this id found."
+                    "Unable to delete model version with id "
+                    f"`{model_version_id}`: "
+                    "No model version with this id found."
                 )
             session.delete(model_version)
             session.commit()
@@ -6422,8 +6433,8 @@ class SqlZenStore(BaseZenStore):
     def update_model_version(
         self,
         model_version_id: UUID,
-        model_version_update_model: ModelVersionUpdateModel,
-    ) -> ModelVersionResponseModel:
+        model_version_update_model: ModelVersionUpdate,
+    ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
         Args:
@@ -6435,7 +6446,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: If the model version not found
-            RuntimeError: If there is a model version with target stage, but `force` flag is off
+            RuntimeError: If there is a model version with target stage,
+                but `force` flag is off
         """
         with Session(self.engine) as session:
             existing_model_version = session.exec(
@@ -6491,19 +6503,18 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_model_version)
 
-            return existing_model_version.to_model()
+            return existing_model_version.to_model(hydrate=True)
 
-    ###########################
-    # Model Versions Artifacts
-    ###########################
+    # ------------------------ Model Versions Artifacts ------------------------
 
     def create_model_version_artifact_link(
-        self, model_version_artifact_link: ModelVersionArtifactRequestModel
-    ) -> ModelVersionArtifactResponseModel:
+        self, model_version_artifact_link: ModelVersionArtifactRequest
+    ) -> ModelVersionArtifactResponse:
         """Creates a new model version link.
 
         Args:
-            model_version_artifact_link: the Model Version to Artifact Link to be created.
+            model_version_artifact_link: the Model Version to Artifact Link
+                to be created.
 
         Returns:
             The newly created model version to artifact link.
@@ -6531,17 +6542,20 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_artifact_link_schema)
             session.commit()
-            return model_version_artifact_link_schema.to_model()
+            return model_version_artifact_link_schema.to_model(hydrate=True)
 
     def list_model_version_artifact_links(
         self,
-        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-    ) -> Page[ModelVersionArtifactResponseModel]:
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionArtifactResponse]:
         """Get all model version to artifact links by filter.
 
         Args:
             model_version_artifact_link_filter_model: All filter parameters
                 including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to artifact links.
@@ -6580,6 +6594,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ModelVersionArtifactSchema,
                 filter_model=model_version_artifact_link_filter_model,
+                hydrate=hydrate,
             )
 
     def delete_model_version_artifact_link(
@@ -6591,7 +6606,8 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             model_version_id: ID of the model version containing the link.
-            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
+            model_version_artifact_link_name_or_id: name or ID of the model
+                version to artifact link to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
@@ -6633,22 +6649,23 @@ class SqlZenStore(BaseZenStore):
             session.delete(model_version_artifact_link)
             session.commit()
 
-    ###############################
-    # Model Versions Pipeline Runs
-    ###############################
+    # ---------------------- Model Versions Pipeline Runs ----------------------
 
     def create_model_version_pipeline_run_link(
         self,
-        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-    ) -> ModelVersionPipelineRunResponseModel:
+        model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
+    ) -> ModelVersionPipelineRunResponse:
         """Creates a new model version to pipeline run link.
 
         Args:
-            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
+            model_version_pipeline_run_link: the Model Version to Pipeline Run
+                Link to be created.
 
         Returns:
-            - If Model Version to Pipeline Run Link already exists - returns the existing link.
-            - Otherwise, returns the newly created model version to pipeline run link.
+            - If Model Version to Pipeline Run Link already exists - returns
+                the existing link.
+            - Otherwise, returns the newly created model version to pipeline
+                run link.
         """
         with Session(self.engine) as session:
             # If the link already exists, return it
@@ -6674,17 +6691,20 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_pipeline_run_link_schema)
             session.commit()
-            return model_version_pipeline_run_link_schema.to_model()
+            return model_version_pipeline_run_link_schema.to_model(hydrate=True)
 
     def list_model_version_pipeline_run_links(
         self,
-        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
 
         Args:
             model_version_pipeline_run_link_filter_model: All filter parameters
                 including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to pipeline run links.
@@ -6705,6 +6725,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ModelVersionPipelineRunSchema,
                 filter_model=model_version_pipeline_run_link_filter_model,
+                hydrate=hydrate,
             )
 
     def delete_model_version_pipeline_run_link(
@@ -6715,8 +6736,10 @@ class SqlZenStore(BaseZenStore):
         """Deletes a model version to pipeline run link.
 
         Args:
-            model_version_id: name or ID of the model version containing the link.
-            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+            model_version_id: name or ID of the model version containing the
+                link.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model
+                version to pipeline run link to be deleted.
 
         Raises:
             KeyError: specified ID not found.
