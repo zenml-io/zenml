@@ -40,13 +40,12 @@ from zenml.models.base_models import (
 )
 from zenml.models.model_base_model import ModelBaseModel
 from zenml.models.tag_models import TagResponseModel
+from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import WorkspaceScopedFilter
-from zenml.models.v2.core.artifact import ArtifactResponse
+from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
-    from sqlmodel.sql.expression import Select, SelectOfScalar
-
     from zenml.model.model_version import ModelVersion
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -97,9 +96,9 @@ class ModelScopedFilterModel(WorkspaceScopedFilter):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Applies the filter to a query.
 
         Args:
@@ -195,7 +194,9 @@ class ModelVersionResponseModel(
         return mv
 
     @property
-    def model_artifacts(self) -> Dict[str, Dict[str, "ArtifactResponse"]]:
+    def model_artifacts(
+        self,
+    ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
         """Get all model artifacts linked to this model version.
 
         Returns:
@@ -205,14 +206,16 @@ class ModelVersionResponseModel(
 
         return {
             name: {
-                version: Client().get_artifact(a)
+                version: Client().get_artifact_version(a)
                 for version, a in self.model_artifact_ids[name].items()
             }
             for name in self.model_artifact_ids
         }
 
     @property
-    def data_artifacts(self) -> Dict[str, Dict[str, "ArtifactResponse"]]:
+    def data_artifacts(
+        self,
+    ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
         """Get all data artifacts linked to this model version.
 
         Returns:
@@ -222,7 +225,7 @@ class ModelVersionResponseModel(
 
         return {
             name: {
-                version: Client().get_artifact(a)
+                version: Client().get_artifact_version(a)
                 for version, a in self.data_artifact_ids[name].items()
             }
             for name in self.data_artifact_ids
@@ -231,7 +234,7 @@ class ModelVersionResponseModel(
     @property
     def endpoint_artifacts(
         self,
-    ) -> Dict[str, Dict[str, "ArtifactResponse"]]:
+    ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
         """Get all endpoint artifacts linked to this model version.
 
         Returns:
@@ -241,7 +244,7 @@ class ModelVersionResponseModel(
 
         return {
             name: {
-                version: Client().get_artifact(a)
+                version: Client().get_artifact_version(a)
                 for version, a in self.endpoint_artifact_ids[name].items()
             }
             for name in self.endpoint_artifact_ids
@@ -266,7 +269,7 @@ class ModelVersionResponseModel(
         collection: Dict[str, Dict[str, UUID]],
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the artifact linked to this model version given type.
 
         Args:
@@ -285,13 +288,13 @@ class ModelVersionResponseModel(
             return None
         if version is None:
             version = max(collection[name].keys())
-        return client.get_artifact(collection[name][version])
+        return client.get_artifact_version(collection[name][version])
 
     def get_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the artifact linked to this model version.
 
         Args:
@@ -312,7 +315,7 @@ class ModelVersionResponseModel(
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the model artifact linked to this model version.
 
         Args:
@@ -328,7 +331,7 @@ class ModelVersionResponseModel(
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the data artifact linked to this model version.
 
         Args:
@@ -348,7 +351,7 @@ class ModelVersionResponseModel(
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional["ArtifactResponse"]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the endpoint artifact linked to this model version.
 
         Args:
@@ -483,7 +486,7 @@ class ModelVersionArtifactRequestModel(
 ):
     """Model version link with artifact request model."""
 
-    artifact: UUID
+    artifact_version: UUID
 
 
 class ModelVersionArtifactResponseModel(
@@ -491,11 +494,20 @@ class ModelVersionArtifactResponseModel(
 ):
     """Model version link with artifact response model."""
 
-    artifact: ArtifactResponse
+    artifact_version: ArtifactVersionResponse
 
 
 class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
+
+    # Artifact name and type are not DB fields and need to be handled separately
+    FILTER_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "artifact_name",
+        "only_data_artifacts",
+        "only_model_artifacts",
+        "only_endpoint_artifacts",
+    ]
 
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
@@ -509,8 +521,12 @@ class ModelVersionArtifactFilterModel(WorkspaceScopedFilter):
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Filter by model version ID"
     )
-    artifact_id: Optional[Union[UUID, str]] = Field(
+    artifact_version_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Filter by artifact ID"
+    )
+    artifact_name: Optional[str] = Field(
+        default=None,
+        description="Name of the artifact",
     )
     only_data_artifacts: Optional[bool] = False
     only_model_artifacts: Optional[bool] = False
@@ -556,6 +572,12 @@ class ModelVersionPipelineRunResponseModel(
 class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilter):
     """Model version pipeline run links filter model."""
 
+    # Pipeline run name is not a DB field and needs to be handled separately
+    FILTER_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "pipeline_run_name",
+    ]
+
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
     )
@@ -570,6 +592,10 @@ class ModelVersionPipelineRunFilterModel(WorkspaceScopedFilter):
     )
     pipeline_run_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Filter by pipeline run ID"
+    )
+    pipeline_run_name: Optional[str] = Field(
+        default=None,
+        description="Name of the pipeline run",
     )
 
     CLI_EXCLUDE_FIELDS = [

@@ -198,17 +198,6 @@ class AnalyticsEventSource(StrEnum):
     ZENML_SERVER = "zenml server"
 
 
-class PermissionType(StrEnum):
-    """All permission types."""
-
-    # ANY CHANGES TO THIS ENUM WILL NEED TO BE DONE TOGETHER WITH A DB MIGRATION
-    WRITE = "write"  # allows the user to create, update, delete everything
-    READ = "read"  # allows the user to read everything
-    ME = (
-        "me"  # allows the user to self administrate (change name, password...)
-    )
-
-
 class AuthScheme(StrEnum):
     """The authentication scheme."""
 
@@ -329,6 +318,7 @@ class TaggableResourceTypes(StrEnum):
     """All possible resource types for tagging."""
 
     ARTIFACT = "artifact"
+    ARTIFACT_VERSION = "artifact_version"
     MODEL = "model"
 
 
@@ -338,3 +328,11 @@ class ResponseUpdateStrategy(StrEnum):
     ALLOW = "allow"
     IGNORE = "ignore"
     DENY = "deny"
+
+
+class MetadataResourceTypes(StrEnum):
+    """All possible resource types for adding metadata."""
+
+    PIPELINE_RUN = "pipeline_run"
+    STEP_RUN = "step_run"
+    ARTIFACT_VERSION = "artifact_version"

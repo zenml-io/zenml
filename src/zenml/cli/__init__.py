@@ -182,12 +182,7 @@ zenml orchestrator list --name "contains:sagemaker"
 ```
 
 For fields marked as being of type `BOOL`, you can use the 'True' or 'False'
-values to filter the output. For example, to find all orchestrators that are
-currently shared, you would type:
-
-```shell
-zenml orchestrator list --is_shared="True"
-```
+values to filter the output.
 
 Finally, for fields marked as being of type `DATETIME`, you can pass in datetime
 values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`,
@@ -227,8 +222,6 @@ registered within your ZenML workspace / repository, type:
 ```bash
 zenml artifact-store list
 ```
-
-If you wish to update/share
 
 If you wish to delete a particular artifact store, pass the name of the
 artifact store into the CLI with the following command:
@@ -737,20 +730,6 @@ simply pass along the `--set` flag.
 zenml stack register STACK_NAME ... --set
 ```
 
-If you want to share the stack and all of its components with everyone using
-the same ZenML deployment, simply pass along the `--share` flag.
-
-```bash
-zenml stack register STACK_NAME ... --share
-```
-
-Even if you haven't done so at creation time of the stack, you can always
-decide to do so at a later stage.
-
-```bash
-zenml stack share STACK_NAME
-```
-
 To list the stacks that you have registered within your current ZenML
 workspace, type:
 
@@ -980,20 +959,32 @@ list all artifacts that have been saved, use:
 zenml artifact list
 ```
 
-The metadata of an artifact can only be deleted if it is no longer linked to
-any pipeline runs, i.e., if the run that produced the artifact and all runs that
-cached any of its steps have been deleted.
+Each artifact has one or several versions. To list artifact versions, use:
 
-To delete all artifacts that are no longer linked to any pipeline runs, use:
+```bash
+zenml artifact versions list
+```
+
+If you would like to rename an artifact or adjust the tags of an artifact or
+artifact version, use the corresponding `update` command:
+
+```bash
+zenml artifact update <NAME> -n <NEW_NAME>
+zenml artifact update <NAME> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
+zenml artifact version update <NAME> -v <VERSION> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
+```
+
+The metadata of artifacts or artifact versions stored by ZenML can only be 
+deleted once they are no longer used by any pipeline runs. I.e., an artifact
+version can only be deleted if the run that produced it and all runs that used
+it as an input have been deleted. Similarly, an artifact can only be deleted if
+all its versions can be deleted.
+
+To delete all artifacts and artifact versions that are no longer linked to any 
+pipeline runs, use:
 
 ```bash
 zenml artifact prune
-```
-
-To delete a specific artifact, use:
-
-```bash
-zenml artifact delete <ARTIFACT_NAME_OR_ID>
 ```
 
 Each pipeline run that requires Docker images also stores a build which
@@ -1288,11 +1279,11 @@ ssl_key: null
 ssl_verify_server_cert: false
 ```
 
-Managing users, teams, workspaces and roles
+Managing users and workspaces
 -------------------------------------------
 
-When using the ZenML service, you can manage permissions by managing users,
-teams, workspaces and roles using the CLI.
+When using the ZenML service, you can manage permissions by managing users and
+workspaces and using the CLI.
 If you want to create a new user or delete an existing one, run either
 
 ```bash
@@ -1303,87 +1294,11 @@ or
 zenml user delete USER_NAME
 ```
 
-A freshly created user will by default be assigned the admin role. This
-behavior can be overwritten:
-```bash
-zenml user create USER_NAME --role guest
-```
-
 To see a list of all users, run:
 ```bash
 zenml user list
 ```
 
-A team is a grouping of many users that allows you to quickly assign and
-revoke roles. If you want to create a new team, run:
-
-```bash
-zenml team create TEAM_NAME
-```
-To add one or more users to a team, run:
-```bash
-zenml team add TEAM_NAME --user USER_NAME [--user USER_NAME ...]
-```
-Similarly, to remove users from a team run:
-```bash
-zenml team remove TEAM_NAME --user USER_NAME [--user USER_NAME ...]
-```
-To delete a team (keep in mind this will revoke any roles assigned to this
-team from the team members), run:
-```bash
-zenml team delete TEAM_NAME
-```
-
-To see a list of all teams, run:
-```bash
-zenml team list
-```
-
-A role groups permissions to resources. Currently, there are the following
-globally scoped roles to choose from: 'write', 'read' and 'me'. To create
-a role, run one of the following commands:
-```bash
-zenml role create ROLE_NAME -p write -p read -p me
-zenml role create ROLE_NAME -p read
-```
-
-To delete a role run:
-```bash
-zenml role delete ROLE_NAME
-```
-
-To see a list of all roles, run:
-```bash
-zenml role list
-```
-
-You can also update the role name and the attached permissions of a role:
-```bash
-zenml role update [-n <NEW_NAME>| -r <PERMISSION_TO_REMOVE>| -a <PERMISSION_TO_ADD>]
-```
-
-If you want to assign or revoke a role from users or teams, you can run
-
-```bash
-zenml role assign ROLE_NAME --user USER_NAME [--user USER_NAME ...]
-zenml role assign ROLE_NAME --team TEAM_NAME [--team TEAM_NAME ...]
-```
-or
-```bash
-zenml role revoke ROLE_NAME --user USER_NAME [--user USER_NAME ...]
-zenml role revoke ROLE_NAME --team TEAM_NAME [--team TEAM_NAME ...]
-```
-
-You can see a list of all current role assignments by running:
-
-```bash
-zenml role assignment list
-```
-
-At any point you may inspect all available permissions:
-```bash
-zenml permission list
-```
 
 Managing service accounts
 -------------------------
@@ -1567,7 +1482,6 @@ from zenml.cli.integration import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.model_registry import *  # noqa
 from zenml.cli.pipeline import *  # noqa
-from zenml.cli.role import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.served_model import *  # noqa
 from zenml.cli.server import *  # noqa

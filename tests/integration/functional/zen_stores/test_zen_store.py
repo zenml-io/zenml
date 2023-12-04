@@ -30,13 +30,11 @@ from tests.integration.functional.zen_stores.utils import (
     LoginContext,
     ModelVersionContext,
     PipelineRunContext,
-    RoleContext,
     SecretContext,
     ServiceAccountContext,
     ServiceConnectorContext,
     ServiceConnectorTypeContext,
     StackContext,
-    TeamContext,
     UserContext,
     list_of_entities,
 )
@@ -48,11 +46,23 @@ from zenml.artifacts.utils import (
     _load_file_from_artifact_store,
 )
 from zenml.client import Client
-from zenml.constants import ACTIVATE, DEACTIVATE, USERS
+from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.source import Source, SourceType
+from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
+from zenml.constants import (
+    ACTIVATE,
+    DEACTIVATE,
+    DEFAULT_STACK_AND_COMPONENT_NAME,
+    DEFAULT_USERNAME,
+    DEFAULT_WORKSPACE_NAME,
+    USERS,
+)
 from zenml.enums import (
+    ArtifactType,
     ColorVariants,
+    ExecutionStatus,
+    MetadataResourceTypes,
     ModelStages,
-    SecretScope,
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
@@ -65,13 +75,15 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logging.step_logging import prepare_logs_uri
+from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,
     APIKeyRequest,
     APIKeyRotateRequest,
     APIKeyUpdate,
-    ArtifactFilter,
-    ArtifactResponse,
+    ArtifactVersionFilter,
+    ArtifactVersionRequest,
+    ArtifactVersionResponse,
     ComponentFilter,
     ComponentUpdate,
     ModelVersionArtifactFilterModel,
@@ -83,9 +95,6 @@ from zenml.models import (
     ModelVersionUpdateModel,
     PipelineRunFilter,
     PipelineRunResponse,
-    RoleFilter,
-    RoleRequest,
-    RoleUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountUpdate,
@@ -95,31 +104,26 @@ from zenml.models import (
     StackRequest,
     StackUpdate,
     StepRunFilter,
-    TeamRoleAssignmentRequest,
-    TeamUpdate,
     UserRequest,
     UserResponse,
-    UserRoleAssignmentRequest,
     UserUpdate,
     WorkspaceFilter,
     WorkspaceUpdate,
 )
-from zenml.models.model_models import ModelFilterModel
 from zenml.models.tag_models import (
     TagFilterModel,
     TagRequestModel,
     TagResourceRequestModel,
     TagUpdateModel,
 )
+from zenml.models.v2.core.artifact import ArtifactRequest
+from zenml.models.v2.core.component import ComponentRequest
+from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
+from zenml.models.v2.core.pipeline_run import PipelineRunRequest
+from zenml.models.v2.core.run_metadata import RunMetadataRequest
+from zenml.models.v2.core.step_run import StepRunRequest
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_stores.base_zen_store import (
-    DEFAULT_ADMIN_ROLE,
-    DEFAULT_GUEST_ROLE,
-    DEFAULT_STACK_NAME,
-    DEFAULT_USERNAME,
-    DEFAULT_WORKSPACE_NAME,
-)
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 DEFAULT_NAME = "default"
@@ -142,31 +146,20 @@ def client() -> Client:
 )
 def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     """Tests the basic crud operations for a given entity."""
-    client = Client()
-
-    # Create the entity
-    create_model = crud_test_config.create_model
-    if hasattr(create_model, "user"):
-        create_model.user = client.active_user.id
-    if hasattr(create_model, "workspace"):
-        create_model.workspace = client.active_workspace.id
-    if hasattr(create_model, "stack"):
-        create_model.stack = client.active_stack_model.id
-
     # Test the creation
-    created_entity = crud_test_config.create_method(create_model)
+    created_entity = crud_test_config.create()
 
     # Test that the create method returns a hydrated model, if applicable
     if hasattr(created_entity, "metadata"):
         assert created_entity.metadata is not None
 
-    # Filter by id to verify the entity was actually created
+    # Test the list method
     entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
     )
     assert entities_list.total == 1
-
     entity = entities_list.items[0]
+    assert entity == created_entity
 
     # Test that the list method returns a non-hydrated model, if applicable
     if hasattr(entity, "metadata"):
@@ -174,7 +167,6 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 
         # Try to hydrate the entity
         entity.get_metadata()
-
         assert entity.metadata is not None
 
         # Test that the list method has a `hydrate` argument
@@ -183,57 +175,39 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
             hydrate=True,
         )
         assert entities_list.total == 1
-
         entity = entities_list.items[0]
-
         assert entity.metadata is not None
 
-    if hasattr(created_entity, "name"):
-        # Filter by name to verify the entity was actually created
+    # Test filtering by name if applicable
+    if "name" in created_entity.__fields__:
         entities_list = crud_test_config.list_method(
-            crud_test_config.filter_model(name=create_model.name)
+            crud_test_config.filter_model(name=created_entity.name)
         )
         assert entities_list.total == 1
-
         entity = entities_list.items[0]
-
-        # Test that the list method returns a non-hydrated model, if applicable
-        if hasattr(entity, "metadata"):
-            assert entity.metadata is None
-
-            # Try to hydrate the entity
-            entity.get_metadata()
-
-            assert entity.metadata is not None
+        assert entity == created_entity
 
     # Test the get method
-    with does_not_raise():
-        returned_entity_by_id = crud_test_config.get_method(created_entity.id)
-    assert returned_entity_by_id == created_entity
+    entity = crud_test_config.get_method(created_entity.id)
+    assert entity == created_entity
 
     # Test that the get method returns a hydrated model, if applicable
-    if hasattr(returned_entity_by_id, "metadata"):
-        assert returned_entity_by_id.metadata is not None
+    if hasattr(entity, "metadata"):
+        assert entity.metadata is not None
 
         # Test that the get method has a `hydrate` argument
-        returned_entity_by_id = crud_test_config.get_method(
+        unhydrated_entity = crud_test_config.get_method(
             created_entity.id, hydrate=False
         )
-
-        assert returned_entity_by_id.metadata is None
+        assert unhydrated_entity.metadata is None
 
         # Try to hydrate the entity
-        returned_entity_by_id.get_metadata()
+        unhydrated_entity.get_metadata()
+        assert unhydrated_entity.metadata is not None
 
-        assert returned_entity_by_id.metadata is not None
-
+    # Test the update method if applicable
     if crud_test_config.update_model:
-        # Update the created entity
-        update_model = crud_test_config.update_model
-        with does_not_raise():
-            updated_entity = crud_test_config.update_method(
-                created_entity.id, update_model
-            )
+        updated_entity = crud_test_config.update()
         # Ids should remain the same
         assert updated_entity.id == created_entity.id
         # Something in the Model should have changed
@@ -243,17 +217,17 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         if hasattr(updated_entity, "metadata"):
             assert updated_entity.metadata is not None
 
-    # Cleanup
-    with does_not_raise():
-        crud_test_config.delete_method(created_entity.id)
-    # Filter by id to verify the entity was actually deleted
+    # Test the delete method
+    crud_test_config.delete()
     with pytest.raises(KeyError):
         crud_test_config.get_method(created_entity.id)
-    # Filter by id to verify the entity was actually deleted
     entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
     )
     assert entities_list.total == 0
+
+    # Cleanup
+    crud_test_config.cleanup()
 
 
 @pytest.mark.parametrize(
@@ -263,31 +237,19 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 )
 def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
-    if crud_test_config.entity_name in {"artifact", "build", "deployment"}:
-        pytest.skip(
-            f"Duplicates of {crud_test_config.entity_name} are allowed."
-        )
+    entity_name = crud_test_config.entity_name
+    if entity_name in {"build", "deployment"}:
+        pytest.skip(f"Duplicates of {entity_name} are allowed.")
 
-    client = Client()
-    # Create the entity
-    create_model = crud_test_config.create_model
-    if hasattr(create_model, "user"):
-        create_model.user = client.active_user.id
-    if hasattr(create_model, "workspace"):
-        create_model.workspace = client.active_workspace.id
     # First creation is successful
-    created_entity = crud_test_config.create_method(
-        crud_test_config.create_model
-    )
+    crud_test_config.create()
+
     # Second one fails
     with pytest.raises(EntityExistsError):
-        crud_test_config.create_method(crud_test_config.create_model)
+        crud_test_config.create()
+
     # Cleanup
-    with does_not_raise():
-        crud_test_config.delete_method(created_entity.id)
-    # Filter by id to verify the entity was actually deleted
-    with pytest.raises(KeyError):
-        crud_test_config.get_method(created_entity.id)
+    crud_test_config.cleanup()
 
 
 @pytest.mark.parametrize(
@@ -372,81 +334,6 @@ def test_deleting_default_workspace_fails():
         client.zen_store.delete_workspace(DEFAULT_NAME)
 
 
-# .-------.
-# | TEAMS |
-# '-------'
-
-
-def test_adding_user_to_team():
-    """Tests adding a user to a team."""
-    zen_store = Client().zen_store
-    with UserContext() as created_user:
-        with TeamContext() as created_team:
-            team_update = TeamUpdate(users=[created_user.id])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-            assert created_user.id in team_update.user_ids
-            assert len(team_update.users) == 1
-
-            # Make sure the team name has not been inadvertently changed
-            assert (
-                zen_store.get_team(created_team.id).name == created_team.name
-            )
-
-
-def test_adding_nonexistent_user_to_real_team_raises_error():
-    """Tests adding a nonexistent user to a team raises an error."""
-    zen_store = Client().zen_store
-    with TeamContext() as created_team:
-        nonexistent_id = uuid.uuid4()
-
-        team_update = TeamUpdate(users=[nonexistent_id])
-        with pytest.raises(KeyError):
-            zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-
-def test_removing_user_from_team_succeeds():
-    """Tests removing a user from a team."""
-
-    zen_store = Client().zen_store
-    sample_name("arias_team")
-
-    with UserContext() as created_user:
-        with TeamContext() as created_team:
-            team_update = TeamUpdate(users=[created_user.id])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-            assert created_user.id in team_update.user_ids
-
-            team_update = TeamUpdate(users=[])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-
-            assert created_user.id not in team_update.user_ids
-
-
-def test_access_user_in_team_succeeds():
-    """Tests accessing a users in a team."""
-
-    zen_store = Client().zen_store
-    sample_name("arias_team")
-
-    with UserContext() as created_user:
-        with TeamContext() as created_team:
-            team_update = TeamUpdate(users=[created_user.id])
-            team_update = zen_store.update_team(
-                team_id=created_team.id, team_update=team_update
-            )
-            assert created_user in team_update.users
-
-
 #  .------.
 # | USERS |
 # '-------'
@@ -526,47 +413,104 @@ def test_delete_user_with_resources_fails():
     """Tests deleting a user with resources fails."""
     zen_store = Client().zen_store
 
-    if zen_store.type != StoreType.SQL:
-        pytest.skip(
-            "Only SQL Zen Stores allow creating resources for other accounts."
-        )
+    login = zen_store.type == StoreType.REST
 
-    with UserContext(delete=False) as user:
-        with ComponentContext(
+    with UserContext(delete=False, login=login) as user:
+        component_context = ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
             config={},
             user_id=user.id,
-        ) as orchestrator:
-            with ComponentContext(
-                c_type=StackComponentType.ARTIFACT_STORE,
-                flavor="local",
-                config={},
-                user_id=user.id,
-            ) as artifact_store:
-                components = {
-                    StackComponentType.ORCHESTRATOR: [orchestrator.id],
-                    StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-                }
-                with StackContext(components=components, user_id=user.id):
-                    with pytest.raises(IllegalOperationError):
-                        zen_store.delete_user(user.id)
-
-                with pytest.raises(IllegalOperationError):
-                    zen_store.delete_user(user.id)
-
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_user(user.id)
-
-        with SecretContext(user_id=user.id, delete=False):
-            # Secrets are deleted when the user is deleted
+            delete=False,
+        )
+        with component_context as orchestrator:
+            # We only use the context as a shortcut to create the resource
             pass
 
-        with CodeRepositoryContext(user_id=user.id):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_user(user.id)
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
 
-        with ServiceConnectorContext(
+    component_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        orchestrator_context = ComponentContext(
+            c_type=StackComponentType.ORCHESTRATOR,
+            flavor="local",
+            config={},
+            user_id=user.id,
+            delete=False,
+        )
+        artifact_store_context = ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE,
+            flavor="local",
+            config={},
+            user_id=user.id,
+            delete=False,
+        )
+
+        with orchestrator_context as orchestrator:
+            # We only use the context as a shortcut to create the resource
+            pass
+        with artifact_store_context as artifact_store:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+        components = {
+            StackComponentType.ORCHESTRATOR: [orchestrator.id],
+            StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+        }
+        stack_context = StackContext(
+            components=components, user_id=user.id, delete=False
+        )
+        with stack_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
+
+    stack_context.cleanup()
+    artifact_store_context.cleanup()
+    orchestrator_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        with SecretContext(user_id=user.id, delete=False):
+            pass
+
+    # Secrets are deleted when the user is deleted
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        code_repo_context = CodeRepositoryContext(
+            user_id=user.id, delete=False
+        )
+        with code_repo_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
+
+    code_repo_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        service_connector_context = ServiceConnectorContext(
             connector_type="cat'o'matic",
             auth_method="paw-print",
             resource_types=["cat"],
@@ -576,14 +520,37 @@ def test_delete_user_with_resources_fails():
                 "foods": "tuna",
             },
             user_id=user.id,
-        ):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_user(user.id)
+            delete=False,
+        )
+        with service_connector_context:
+            # We only use the context as a shortcut to create the resource
+            pass
 
-        with ModelVersionContext(create_version=True, user_id=user.id):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_user(user.id)
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
 
+    service_connector_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_user(user.id)
+
+    with UserContext(delete=False, login=login) as user:
+        model_version_context = ModelVersionContext(
+            create_version=True, user_id=user.id, delete=False
+        )
+        with model_version_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
+
+    model_version_context.cleanup()
+
+    # Can delete because owned resources have been removed
     with does_not_raise():
         zen_store.delete_user(user.id)
 
@@ -783,49 +750,104 @@ def test_delete_service_account_with_resources_fails():
     """Tests deleting a service account with resources fails."""
     zen_store = Client().zen_store
 
-    if zen_store.type != StoreType.SQL:
-        pytest.skip(
-            "Only SQL Zen Stores allow creating resources for other accounts."
-        )
+    login = zen_store.type == StoreType.REST
 
-    with ServiceAccountContext(delete=False) as service_account:
-        with ComponentContext(
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        component_context = ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
             config={},
             user_id=service_account.id,
-        ) as orchestrator:
-            with ComponentContext(
-                c_type=StackComponentType.ARTIFACT_STORE,
-                flavor="local",
-                config={},
-                user_id=service_account.id,
-            ) as artifact_store:
-                components = {
-                    StackComponentType.ORCHESTRATOR: [orchestrator.id],
-                    StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-                }
-                with StackContext(
-                    components=components, user_id=service_account.id
-                ):
-                    with pytest.raises(IllegalOperationError):
-                        zen_store.delete_service_account(service_account.id)
-
-                with pytest.raises(IllegalOperationError):
-                    zen_store.delete_service_account(service_account.id)
-
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_service_account(service_account.id)
-
-        with SecretContext(user_id=service_account.id, delete=False):
-            # Secrets are deleted when the user is deleted
+            delete=False,
+        )
+        with component_context as orchestrator:
+            # We only use the context as a shortcut to create the resource
             pass
 
-        with CodeRepositoryContext(user_id=service_account.id):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_service_account(service_account.id)
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
 
-        with ServiceConnectorContext(
+    component_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        orchestrator_context = ComponentContext(
+            c_type=StackComponentType.ORCHESTRATOR,
+            flavor="local",
+            config={},
+            user_id=service_account.id,
+            delete=False,
+        )
+        artifact_store_context = ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE,
+            flavor="local",
+            config={},
+            user_id=service_account.id,
+            delete=False,
+        )
+
+        with orchestrator_context as orchestrator:
+            # We only use the context as a shortcut to create the resource
+            pass
+        with artifact_store_context as artifact_store:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+        components = {
+            StackComponentType.ORCHESTRATOR: [orchestrator.id],
+            StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+        }
+        stack_context = StackContext(
+            components=components, user_id=service_account.id, delete=False
+        )
+        with stack_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
+
+    stack_context.cleanup()
+    artifact_store_context.cleanup()
+    orchestrator_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        with SecretContext(user_id=service_account.id, delete=False):
+            pass
+
+    # Secrets are deleted when the service_account is deleted
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        code_repo_context = CodeRepositoryContext(
+            user_id=service_account.id, delete=False
+        )
+        with code_repo_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
+
+    code_repo_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        service_connector_context = ServiceConnectorContext(
             connector_type="cat'o'matic",
             auth_method="paw-print",
             resource_types=["cat"],
@@ -835,16 +857,37 @@ def test_delete_service_account_with_resources_fails():
                 "foods": "tuna",
             },
             user_id=service_account.id,
-        ):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_service_account(service_account.id)
+            delete=False,
+        )
+        with service_connector_context:
+            # We only use the context as a shortcut to create the resource
+            pass
 
-        with ModelVersionContext(
-            create_version=True, user_id=service_account.id
-        ):
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_service_account(service_account.id)
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
 
+    service_connector_context.cleanup()
+
+    # Can delete because owned resources have been removed
+    with does_not_raise():
+        zen_store.delete_service_account(service_account.id)
+
+    with ServiceAccountContext(delete=False, login=login) as service_account:
+        model_version_context = ModelVersionContext(
+            create_version=True, user_id=service_account.id, delete=False
+        )
+        with model_version_context:
+            # We only use the context as a shortcut to create the resource
+            pass
+
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
+
+    model_version_context.cleanup()
+
+    # Can delete because owned resources have been removed
     with does_not_raise():
         zen_store.delete_service_account(service_account.id)
 
@@ -923,7 +966,9 @@ def test_list_service_accounts():
 
     with ServiceAccountContext() as service_account_one:
         accounts = zen_store.list_service_accounts(
-            ServiceAccountFilter()
+            # TODO: we use a large size to get all accounts in one page, but
+            #  the correct way to do this is to fetch all pages
+            ServiceAccountFilter(size=1000)
         ).items
         assert service_account_one.id in [account.id for account in accounts]
 
@@ -943,7 +988,9 @@ def test_list_service_accounts():
 
         with ServiceAccountContext() as service_account_two:
             accounts = zen_store.list_service_accounts(
-                ServiceAccountFilter()
+                # TODO: we use a large size to get all accounts in one page, but
+                #  the correct way to do this is to fetch all pages
+                ServiceAccountFilter(size=1000)
             ).items
             assert service_account_one.id in [
                 account.id for account in accounts
@@ -975,6 +1022,7 @@ def test_list_service_accounts():
             accounts = zen_store.list_service_accounts(
                 ServiceAccountFilter(
                     active=True,
+                    size=1000,
                 )
             ).items
             assert service_account_one.id in [
@@ -986,7 +1034,9 @@ def test_list_service_accounts():
 
             with UserContext() as user:
                 accounts = zen_store.list_service_accounts(
-                    ServiceAccountFilter()
+                    # TODO: we use a large size to get all accounts in one page,
+                    # but the correct way to do this is to fetch all pages
+                    ServiceAccountFilter(size=1000)
                 ).items
                 assert user.id not in [account.id for account in accounts]
 
@@ -1990,197 +2040,9 @@ def test_login_rotate_api_key_retain_period():
                 pass
 
 
-# .-------.
-# | ROLES |
-# '-------'
-
-
-def test_creating_role_with_empty_permissions_succeeds():
-    """Tests creating a role."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        new_role = RoleRequest(name=sample_name("cat"), permissions=set())
-        created_role = zen_store.create_role(new_role)
-        with does_not_raise():
-            zen_store.get_role(role_name_or_id=created_role.name)
-        list_of_roles = zen_store.list_roles(
-            RoleFilter(name=created_role.name)
-        )
-        assert list_of_roles.total > 0
-
-
-def test_deleting_builtin_role_fails():
-    """Tests deleting a built-in role fails."""
-    zen_store = Client().zen_store
-
-    with pytest.raises(IllegalOperationError):
-        zen_store.delete_role(DEFAULT_ADMIN_ROLE)
-
-    with pytest.raises(IllegalOperationError):
-        zen_store.delete_role(DEFAULT_GUEST_ROLE)
-
-
-def test_updating_builtin_role_fails():
-    """Tests updating a built-in role fails."""
-    zen_store = Client().zen_store
-
-    role = zen_store.get_role(DEFAULT_ADMIN_ROLE)
-    role_update = RoleUpdate(name="cat_feeder")
-
-    with pytest.raises(IllegalOperationError):
-        zen_store.update_role(role_id=role.id, role_update=role_update)
-
-    role = zen_store.get_role(DEFAULT_GUEST_ROLE)
-    with pytest.raises(IllegalOperationError):
-        zen_store.update_role(role_id=role.id, role_update=role_update)
-
-
-def test_deleting_assigned_role_fails():
-    """Tests assigning a role to a user."""
-    zen_store = Client().zen_store
-    with RoleContext() as created_role:
-        with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequest(
-                role=created_role.id,
-                user=created_user.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                (zen_store.create_user_role_assignment(role_assignment))
-            with pytest.raises(IllegalOperationError):
-                zen_store.delete_role(created_role.id)
-
-
-# .------------------.
-# | ROLE ASSIGNMENTS |
-# '------------------'
-
-
-def test_assigning_role_to_user_succeeds():
-    """Tests assigning a role to a user."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequest(
-                role=created_role.id,
-                user=created_user.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                assignment = zen_store.create_user_role_assignment(
-                    role_assignment
-                )
-
-    # With user and role deleted the assignment should be deleted as well
-    with pytest.raises(KeyError):
-        zen_store.delete_user_role_assignment(assignment.id)
-
-
-def test_assigning_role_to_team_succeeds():
-    """Tests assigning a role to a user."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with TeamContext() as created_team:
-            role_assignment = TeamRoleAssignmentRequest(
-                role=created_role.id,
-                team=created_team.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                assignment = zen_store.create_team_role_assignment(
-                    role_assignment
-                )
-    # With user and role deleted the assignment should be deleted as well
-    with pytest.raises(KeyError):
-        zen_store.get_team_role_assignment(assignment.id)
-
-
-def test_assigning_role_if_assignment_already_exists_fails():
-    """Tests assigning a role to a user if the assignment already exists."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequest(
-                role=created_role.id,
-                user=created_user.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                (zen_store.create_user_role_assignment(role_assignment))
-            with pytest.raises(EntityExistsError):
-                (zen_store.create_user_role_assignment(role_assignment))
-
-
-def test_revoking_role_for_user_succeeds():
-    """Tests revoking a role for a user."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with UserContext() as created_user:
-            role_assignment = UserRoleAssignmentRequest(
-                role=created_role.id,
-                user=created_user.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                role_assignment = zen_store.create_user_role_assignment(
-                    role_assignment
-                )
-                zen_store.delete_user_role_assignment(
-                    user_role_assignment_id=role_assignment.id
-                )
-            with pytest.raises(KeyError):
-                zen_store.get_user_role_assignment(
-                    user_role_assignment_id=role_assignment.id
-                )
-
-
-def test_revoking_role_for_team_succeeds():
-    """Tests revoking a role for a team."""
-    zen_store = Client().zen_store
-
-    with RoleContext() as created_role:
-        with TeamContext() as created_team:
-            role_assignment = TeamRoleAssignmentRequest(
-                role=created_role.id,
-                team=created_team.id,
-                workspace=None,
-            )
-            with does_not_raise():
-                role_assignment = zen_store.create_team_role_assignment(
-                    role_assignment
-                )
-                zen_store.delete_team_role_assignment(
-                    team_role_assignment_id=role_assignment.id
-                )
-            with pytest.raises(KeyError):
-                zen_store.get_team_role_assignment(
-                    team_role_assignment_id=role_assignment.id
-                )
-
-
-def test_revoking_nonexistent_role_fails():
-    """Tests revoking a nonexistent role fails."""
-    zen_store = Client().zen_store
-    with pytest.raises(KeyError):
-        zen_store.delete_team_role_assignment(
-            team_role_assignment_id=uuid.uuid4()
-        )
-    with pytest.raises(KeyError):
-        zen_store.delete_user_role_assignment(
-            user_role_assignment_id=uuid.uuid4()
-        )
-
-
 # .------------------.
 # | Stack components |
 # '------------------'
-
-# TODO: tests regarding sharing of components missing
 
 
 def test_update_default_stack_component_fails():
@@ -2191,7 +2053,7 @@ def test_update_default_stack_component_fails():
         ComponentFilter(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
-            name="default",
+            name=DEFAULT_STACK_AND_COMPONENT_NAME,
         )
     )[0]
 
@@ -2199,7 +2061,7 @@ def test_update_default_stack_component_fails():
         ComponentFilter(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
-            name="default",
+            name=DEFAULT_STACK_AND_COMPONENT_NAME,
         )
     )[0]
 
@@ -2226,7 +2088,7 @@ def test_delete_default_stack_component_fails():
         ComponentFilter(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
-            name="default",
+            name=DEFAULT_STACK_AND_COMPONENT_NAME,
         )
     )[0]
 
@@ -2234,7 +2096,7 @@ def test_delete_default_stack_component_fails():
         ComponentFilter(
             workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
-            name="default",
+            name=DEFAULT_STACK_AND_COMPONENT_NAME,
         )
     )[0]
 
@@ -2252,23 +2114,15 @@ def test_count_stack_components():
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
     active_workspace = client.active_workspace
+    filter_model = ComponentFilter(scope_workspace=active_workspace.id)
+    count_before = store.list_stack_components(filter_model).total
 
-    count_before = store.list_stack_components(
-        ComponentFilter(scope_workspace=active_workspace.id)
-    ).total
-
-    assert (
-        store.count_stack_components(workspace_id=active_workspace.id)
-        == count_before
-    )
+    assert store.count_stack_components(filter_model) == count_before
 
     with ComponentContext(
         StackComponentType.ARTIFACT_STORE, config={}, flavor="s3"
     ):
-        assert (
-            store.count_stack_components(workspace_id=active_workspace.id)
-            == count_before + 1
-        )
+        assert store.count_stack_components(filter_model) == count_before + 1
 
 
 # .-------------------------.
@@ -2284,8 +2138,8 @@ def test_updating_default_stack_fails():
     """Tests that updating the default stack is prohibited."""
     client = Client()
 
-    default_stack = client.get_stack(DEFAULT_STACK_NAME)
-    assert default_stack.name == DEFAULT_WORKSPACE_NAME
+    default_stack = client.get_stack(DEFAULT_STACK_AND_COMPONENT_NAME)
+    assert default_stack.name == DEFAULT_STACK_AND_COMPONENT_NAME
     stack_update = StackUpdate(name="axls_stack")
     with pytest.raises(IllegalOperationError):
         client.zen_store.update_stack(
@@ -2297,7 +2151,7 @@ def test_deleting_default_stack_fails():
     """Tests that deleting the default stack is prohibited."""
     client = Client()
 
-    default_stack = client.get_stack(DEFAULT_STACK_NAME)
+    default_stack = client.get_stack(DEFAULT_STACK_AND_COMPONENT_NAME)
     with pytest.raises(IllegalOperationError):
         client.zen_store.delete_stack(default_stack.id)
 
@@ -2510,43 +2364,8 @@ def test_deleting_a_stack_recursively_with_some_stack_components_present_in_anot
                             store.get_stack_component(secret.id)
 
 
-def test_private_stacks_are_inaccessible():
-    """Tests stack scoping via sharing on rest zen stores."""
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support stack scoping")
-
-    default_user_id = Client().active_user.id
-    with ComponentContext(
-        c_type=StackComponentType.ORCHESTRATOR,
-        flavor="local",
-        config={},
-        user_id=default_user_id,
-    ) as orchestrator:
-        with ComponentContext(
-            c_type=StackComponentType.ARTIFACT_STORE,
-            flavor="local",
-            config={},
-            user_id=default_user_id,
-        ) as artifact_store:
-            components = {
-                StackComponentType.ORCHESTRATOR: [orchestrator.id],
-                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-            }
-            with StackContext(
-                components=components, user_id=default_user_id
-            ) as stack:
-                with UserContext(login=True):
-                    # Unshared stack should be invisible to the current user
-                    #  Client() needs to be instantiated here with the new
-                    #  logged-in user
-                    filtered_stacks = Client().zen_store.list_stacks(
-                        StackFilter(name=stack.name)
-                    )
-                    assert len(filtered_stacks) == 0
-
-
-def test_public_stacks_are_accessible():
-    """Tests stack scoping via sharing on rest zen stores."""
+def test_stacks_are_accessible_by_other_users():
+    """Tests accessing stack on rest zen stores."""
     client = Client()
     store = client.zen_store
     if store.type == StoreType.SQL:
@@ -2572,12 +2391,6 @@ def test_public_stacks_are_accessible():
             with StackContext(
                 components=components, user_id=default_user_id
             ) as stack:
-                # Update
-                stack_update = StackUpdate(is_shared=True)
-                store.update_stack(
-                    stack_id=stack.id, stack_update=stack_update
-                )
-
                 with UserContext(login=True):
                     #  Client() needs to be instantiated here with the new
                     #  logged-in user
@@ -2623,24 +2436,20 @@ def test_count_runs():
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
     active_workspace = client.active_workspace
-
-    num_runs = store.list_runs(
-        PipelineRunFilter(scope_workspace=active_workspace.id)
-    ).total
+    filter_model = PipelineRunFilter(scope_workspace=active_workspace.id)
+    num_runs = store.list_runs(filter_model).total
 
     # At baseline this should be the same
-    assert store.count_runs(workspace_id=active_workspace.id) == num_runs
+    assert store.count_runs(filter_model) == num_runs
 
     with PipelineRunContext(5):
         assert (
-            store.count_runs(workspace_id=active_workspace.id)
+            store.count_runs(filter_model)
             == store.list_runs(
                 PipelineRunFilter(scope_workspace=active_workspace.id)
             ).total
         )
-        assert (
-            store.count_runs(workspace_id=active_workspace.id) == num_runs + 5
-        )
+        assert store.count_runs(filter_model) == num_runs + 5
 
 
 def test_filter_runs_by_code_repo(mocker):
@@ -2720,36 +2529,47 @@ def test_list_unused_artifacts():
     client = Client()
     store = client.zen_store
 
-    num_artifacts_before = store.list_artifacts(ArtifactFilter()).total
-    num_unused_artifacts_before = store.list_artifacts(
-        ArtifactFilter(only_unused=True)
+    num_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter()
+    ).total
+    num_unused_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter(only_unused=True)
     ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifacts(ArtifactFilter())
-        assert artifacts.total == num_artifacts_before + num_runs * 2
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter()
+        )
+        assert (
+            artifact_versions.total
+            == num_artifact_versions_before + num_runs * 2
+        )
 
-        artifacts = store.list_artifacts(ArtifactFilter(only_unused=True))
-        assert artifacts.total == num_unused_artifacts_before
+        artifact_versions = store.list_artifact_versions(
+            ArtifactVersionFilter(only_unused=True)
+        )
+        assert artifact_versions.total == num_unused_artifact_versions_before
 
 
-def test_artifacts_are_not_deleted_with_run(clean_workspace):
+def test_artifacts_are_not_deleted_with_run(clean_client):
     """Tests listing with `unused=True` only returns unused artifacts."""
-    store = clean_workspace.zen_store
+    store = clean_client.zen_store
 
-    num_artifacts_before = store.list_artifacts(ArtifactFilter()).total
+    num_artifact_versions_before = store.list_artifact_versions(
+        ArtifactVersionFilter()
+    ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
-        artifacts = store.list_artifacts(ArtifactFilter())
-        assert artifacts.total == num_artifacts_before + num_runs * 2
+        artifacts = store.list_artifact_versions(ArtifactVersionFilter())
+        assert artifacts.total == num_artifact_versions_before + num_runs * 2
 
         # Cleanup
         pipelines = store.list_runs(PipelineRunFilter()).items
         for p in pipelines:
             store.delete_run(p.id)
 
-        artifacts = store.list_artifacts(ArtifactFilter())
-        assert artifacts.total == num_artifacts_before + num_runs * 2
+        artifacts = store.list_artifact_versions(ArtifactVersionFilter())
+        assert artifacts.total == num_artifact_versions_before + num_runs * 2
 
 
 # .---------.
@@ -3063,9 +2883,8 @@ def test_connector_name_reuse_for_same_user_fails():
                 pass
 
 
-def test_connector_same_name_different_users():
-    """Tests that a connector's name can be used if another user has it."""
-
+def test_connector_name_reuse_for_different_user_fails():
+    """Tests that a connector's name cannot be re-used by another user."""
     if Client().zen_store.type == StoreType.SQL:
         pytest.skip("SQL Zen Stores do not support user switching.")
 
@@ -3073,60 +2892,6 @@ def test_connector_same_name_different_users():
         connector_type="cat'o'matic",
         auth_method="paw-print",
         resource_types=["cat"],
-    ) as connector_one:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-
-            with ServiceConnectorContext(
-                name=connector_one.name,
-                connector_type="cat'o'matic",
-                auth_method="paw-print",
-                resource_types=["cat"],
-                client=other_client,
-            ):
-                pass
-
-
-def test_connector_same_name_different_users_shared():
-    """Tests that a connector's name can be used even if another user has it shared."""
-
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=True,
-    ) as connector_one:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-
-            with ServiceConnectorContext(
-                name=connector_one.name,
-                connector_type="cat'o'matic",
-                auth_method="paw-print",
-                resource_types=["cat"],
-                client=other_client,
-            ):
-                pass
-
-
-def test_connector_same_name_different_users_both_shared():
-    """Tests that a shared connector's name cannot be used if another user also has it shared."""
-
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=True,
     ) as connector_one:
         with UserContext(login=True):
             #  Client() needs to be instantiated here with the new
@@ -3140,7 +2905,6 @@ def test_connector_same_name_different_users_both_shared():
                     auth_method="paw-print",
                     resource_types=["cat"],
                     client=other_client,
-                    is_shared=True,
                 ):
                     pass
 
@@ -3345,61 +3109,6 @@ def test_connector_list():
                 assert aria_connector.id not in [c.id for c in connectors]
                 assert multi_connector.id in [c.id for c in connectors]
                 assert rodent_connector.id not in [c.id for c in connectors]
-
-
-def test_private_connector_not_visible_to_other_user():
-    """Tests that a private connector is not visible to another user."""
-
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=False,
-    ) as connector:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            with pytest.raises(KeyError):
-                other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilter()
-            ).items
-
-            assert connector.id not in [c.id for c in connectors]
-
-
-def test_shared_connector_is_visible_to_other_user():
-    """Tests that a shared connector is visible to another user."""
-
-    if Client().zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=True,
-    ) as connector:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilter()
-            ).items
-
-            assert connector.id in [c.id for c in connectors]
 
 
 def _update_connector_and_test(
@@ -3662,118 +3371,6 @@ def test_connector_name_update_fails_if_exists():
                 )
 
 
-def test_connector_sharing():
-    """Tests that a connector can be shared."""
-
-    client = Client()
-    store = client.zen_store
-
-    if client.zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    config = {
-        "language": "meow",
-        "foods": "tuna",
-    }
-    secrets = {
-        "hiding-place": SecretStr("thatsformetoknowandyouneverfindout"),
-        "dreams": SecretStr("notyourbusiness"),
-    }
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        configuration=config,
-        secrets=secrets,
-        is_shared=False,
-    ) as connector:
-        assert connector.secret_id is not None
-        secret = store.get_secret(connector.secret_id)
-        assert secret.scope == SecretScope.USER
-
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            with pytest.raises(KeyError):
-                other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilter()
-            ).items
-
-            assert connector.id not in [c.id for c in connectors]
-
-        updated_connector = store.update_service_connector(
-            connector.id,
-            update=ServiceConnectorUpdate(is_shared=True),
-        )
-
-        assert updated_connector.secret_id is not None
-        assert updated_connector.secret_id == connector.secret_id
-        secret = store.get_secret(updated_connector.secret_id)
-        assert secret.scope == SecretScope.WORKSPACE
-
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilter()
-            ).items
-
-            assert connector.id in [c.id for c in connectors]
-
-
-def test_connector_sharing_fails_if_name_shared():
-    """Tests that a connector cannot be shared if the name is already shared."""
-
-    client = Client()
-
-    if client.zen_store.type == StoreType.SQL:
-        pytest.skip("SQL Zen Stores do not support user switching.")
-
-    with ServiceConnectorContext(
-        connector_type="cat'o'matic",
-        auth_method="paw-print",
-        resource_types=["cat"],
-        is_shared=True,
-    ) as connector:
-        with UserContext(login=True):
-            #  Client() needs to be instantiated here with the new
-            #  logged-in user
-            other_client = Client()
-            other_store = other_client.zen_store
-
-            other_store.get_service_connector(connector.id)
-
-            connectors = other_store.list_service_connectors(
-                ServiceConnectorFilter()
-            ).items
-
-            assert connector.id in [c.id for c in connectors]
-
-            with ServiceConnectorContext(
-                name=connector.name,
-                connector_type="cat'o'matic",
-                auth_method="paw-print",
-                resource_types=["cat"],
-                is_shared=False,
-            ) as other_connector:
-                with pytest.raises(EntityExistsError):
-                    other_store.update_service_connector(
-                        other_connector.id,
-                        update=ServiceConnectorUpdate(is_shared=True),
-                    )
-
-
 # .-------------------------.
 # | Service Connector Types |
 # '-------------------------'
@@ -3998,21 +3595,19 @@ def test_connector_validation():
 class TestModel:
     def test_latest_version_properly_fetched(self):
         """Test that latest version can be properly fetched."""
-        with ModelVersionContext() as model:
+        with ModelVersionContext() as created_model:
             zs = Client().zen_store
-            models = zs.list_models(ModelFilterModel())
-            assert models[0].latest_version is None
+            assert zs.get_model(created_model.id).latest_version is None
             for name in ["great one", "yet another one"]:
                 mv = zs.create_model_version(
                     ModelVersionRequestModel(
-                        user=model.user.id,
-                        workspace=model.workspace.id,
-                        model=model.id,
+                        user=created_model.user.id,
+                        workspace=created_model.workspace.id,
+                        model=created_model.id,
                         name=name,
                     )
                 )
-                models = zs.list_models(ModelFilterModel())
-                assert models[0].latest_version == mv.name
+                assert zs.get_model(created_model.id).latest_version == mv.name
                 time.sleep(1)  # thanks to MySQL again!
 
 
@@ -4457,7 +4052,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
 
@@ -4473,20 +4068,20 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
-            assert al1.artifact.id == artifacts[0].id
+            assert al1.artifact_version.id == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequestModel(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[1].id,
+                    artifact_version=artifacts[1].id,
                 )
             )
-            assert al2.artifact.id == artifacts[1].id
+            assert al2.artifact_version.id == artifacts[1].id
 
     def test_link_create_duplicated_by_id(self):
         """Assert that creating a link with the same artifact returns the same link."""
@@ -4501,7 +4096,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
 
@@ -4511,7 +4106,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
 
@@ -4531,7 +4126,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
             zs.create_model_version_artifact_link(
@@ -4540,7 +4135,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[1].id,
+                    artifact_version=artifacts[1].id,
                 )
             )
 
@@ -4563,7 +4158,7 @@ class TestModelVersionArtifactLinks:
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
                     model_version=model_version.id,
-                    artifact=artifacts[0].id,
+                    artifact_version=artifacts[0].id,
                 )
             )
             zs.delete_model_version_artifact_link(
@@ -4620,7 +4215,7 @@ class TestModelVersionArtifactLinks:
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
                         model_version=model_version.id,
-                        artifact=artifact.id,
+                        artifact_version=artifact.id,
                         is_model_artifact=mo,
                         is_endpoint_artifact=dep,
                     )
@@ -4665,15 +4260,15 @@ class TestModelVersionArtifactLinks:
 
             assert isinstance(
                 mv.get_model_artifact(artifacts[1].name),
-                ArtifactResponse,
+                ArtifactVersionResponse,
             )
             assert isinstance(
                 mv.get_data_artifact(artifacts[0].name),
-                ArtifactResponse,
+                ArtifactVersionResponse,
             )
             assert isinstance(
                 mv.get_endpoint_artifact(artifacts[2].name),
-                ArtifactResponse,
+                ArtifactVersionResponse,
             )
             assert (
                 mv.model_artifacts[artifacts[1].name]["1"].id
@@ -5060,3 +4655,140 @@ class TestTagResource:
                     resource_id=fake_model_id,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
+
+
+class TestRunMetadata:
+    @pytest.mark.parametrize(
+        argnames="type_",
+        argvalues=MetadataResourceTypes,
+        ids=MetadataResourceTypes.values(),
+    )
+    def test_metadata_full_cycle_with_cascade_deletion(
+        self,
+        type_: MetadataResourceTypes,
+    ):
+        client = Client()
+
+        sc = client.zen_store.create_stack_component(
+            ComponentRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                name=sample_name("foo"),
+                type=StackComponentType.ORCHESTRATOR,
+                flavor="local",
+                configuration={},
+            )
+        )
+
+        if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
+            artifact = client.zen_store.create_artifact(
+                ArtifactRequest(
+                    name=sample_name("foo"),
+                    has_custom_name=True,
+                )
+            )
+            resource = client.zen_store.create_artifact_version(
+                ArtifactVersionRequest(
+                    artifact_id=artifact.id,
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    version="1",
+                    type=ArtifactType.DATA,
+                    uri=sample_name("foo"),
+                    materializer=Source(
+                        module="acme.foo", type=SourceType.INTERNAL
+                    ),
+                    data_type=Source(
+                        module="acme.foo", type=SourceType.INTERNAL
+                    ),
+                )
+            )
+        elif (
+            type_ == MetadataResourceTypes.PIPELINE_RUN
+            or type_ == MetadataResourceTypes.STEP_RUN
+        ):
+            step_name = sample_name("foo")
+            deployment = client.zen_store.create_deployment(
+                PipelineDeploymentRequest(
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    run_name_template=sample_name("foo"),
+                    pipeline_configuration=PipelineConfiguration(
+                        name=sample_name("foo")
+                    ),
+                    stack=client.active_stack.id,
+                    client_version="0.1.0",
+                    server_version="0.1.0",
+                    step_configurations={
+                        step_name: Step(
+                            spec=StepSpec(
+                                source=Source(
+                                    module="acme.foo",
+                                    type=SourceType.INTERNAL,
+                                ),
+                                upstream_steps=[],
+                            ),
+                            config=StepConfiguration(name=step_name),
+                        )
+                    },
+                )
+            )
+            pr = client.zen_store.create_run(
+                PipelineRunRequest(
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    id=uuid4(),
+                    name=sample_name("foo"),
+                    deployment=deployment.id,
+                    status=ExecutionStatus.RUNNING,
+                )
+            )
+            sr = client.zen_store.create_run_step(
+                StepRunRequest(
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    name=step_name,
+                    status=ExecutionStatus.RUNNING,
+                    pipeline_run_id=pr.id,
+                    deployment=deployment.id,
+                )
+            )
+            resource = (
+                pr if type_ == MetadataResourceTypes.PIPELINE_RUN else sr
+            )
+
+        rm = client.zen_store.create_run_metadata(
+            RunMetadataRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                resource_id=resource.id,
+                resource_type=type_,
+                values={"foo": "bar"},
+                types={"foo": MetadataTypeEnum.STRING},
+                stack_component_id=sc.id
+                if type_ == MetadataResourceTypes.PIPELINE_RUN
+                or type_ == MetadataResourceTypes.STEP_RUN
+                else None,
+            )
+        )
+        rm = client.zen_store.get_run_metadata(rm[0].id, True)
+        assert rm.key == "foo"
+        assert rm.value == "bar"
+        assert rm.resource_id == resource.id
+        assert rm.resource_type == type_
+        assert rm.type == MetadataTypeEnum.STRING
+
+        if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
+            client.zen_store.delete_artifact_version(resource.id)
+            client.zen_store.delete_artifact(artifact.id)
+        elif (
+            type_ == MetadataResourceTypes.PIPELINE_RUN
+            or type_ == MetadataResourceTypes.STEP_RUN
+        ):
+            client.zen_store.delete_run(pr.id)
+            client.zen_store.delete_deployment(deployment.id)
+
+        with pytest.raises(KeyError):
+            client.zen_store.get_run_metadata(rm.id)
+
+        client.zen_store.delete_stack_component(sc.id)

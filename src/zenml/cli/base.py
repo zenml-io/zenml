@@ -113,11 +113,19 @@ ZENML_PROJECT_TEMPLATES = dict(
     required=False,
     help="Whether to use default parameters of the ZenML project template",
 )
+@click.option(
+    "--test",
+    is_flag=True,
+    default=False,
+    help="To skip interactivity when testing.",
+    hidden=True,
+)
 def init(
     path: Optional[Path],
     template: Optional[str] = None,
     template_tag: Optional[str] = None,
     template_with_defaults: bool = False,
+    test: bool = False,
 ) -> None:
     """Initialize ZenML on given path.
 
@@ -130,6 +138,7 @@ def init(
             If template is a pre-defined template, then this is ignored.
         template_with_defaults: Whether to use default parameters of
             the ZenML project template
+        test: Whether to skip interactivity when testing.
     """
     if path is None:
         path = Path.cwd()
@@ -160,6 +169,7 @@ def init(
         if (
             not GlobalConfiguration().user_email
             and client.active_user.email_opted_in is None
+            and not test
         ):
             _prompt_email(AnalyticsEventSource.ZENML_INIT)
 

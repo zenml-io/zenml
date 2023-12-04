@@ -31,13 +31,11 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
 from zenml.utils.string_utils import b64_decode, b64_encode
 
 if TYPE_CHECKING:
-    from sqlmodel.sql.expression import Select, SelectOfScalar
-
     from zenml.models.v2.base.filter import AnySchema
     from zenml.models.v2.core.service_account import ServiceAccountResponse
 
@@ -360,9 +358,9 @@ class APIKeyFilter(BaseFilter):
 
     def apply_filter(
         self,
-        query: Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"],
+        query: AnyQuery,
         table: Type["AnySchema"],
-    ) -> Union["Select[AnySchema]", "SelectOfScalar[AnySchema]"]:
+    ) -> AnyQuery:
         """Override to apply the service account scope as an additional filter.
 
         Args:
