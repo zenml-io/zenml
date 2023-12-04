@@ -166,6 +166,7 @@ def local_artifact_store():
         updated=datetime.now(),
     )
 
+
 @pytest.fixture
 def local_container_registry():
     """Fixture that creates a local container registry for testing."""
