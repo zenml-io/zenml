@@ -2739,16 +2739,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of artifact versions.
         """
-        artifact_id = None
-        if name:
-            try:
-                artifact = self.get_artifact(name_id_or_prefix=name)
-                artifact_id = artifact.id
-            except KeyError:
-                return Page(
-                    items=[], index=1, total=0, total_pages=1, max_size=size
-                )
-
         artifact_version_filter_model = ArtifactVersionFilter(
             sort_by=sort_by,
             page=page,
@@ -2768,6 +2758,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             only_unused=only_unused,
+            name=name,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
