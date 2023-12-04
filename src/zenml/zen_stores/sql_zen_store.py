@@ -70,6 +70,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     AuthScheme,
+    ExecutionStatus,
     LoggingLevels,
     ModelStages,
     SecretScope,
@@ -5077,8 +5078,10 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
-            # Input artifacts and parent steps cannot be updated after the
-            # step has been created.
+            self._update_pipeline_run_status(
+                pipeline_run_id=existing_step_run.pipeline_run_id,
+                session=session,
+            )
 
             session.commit()
             session.refresh(existing_step_run)
@@ -5259,6 +5262,48 @@ class SqlZenStore(BaseZenStore):
             type=output_type,
         )
         session.add(assignment)
+
+    def _update_pipeline_run_status(
+        self,
+        pipeline_run_id: UUID,
+        session: Session,
+    ) -> None:
+        """Updates the status of a pipeline run.
+
+        Args:
+            pipeline_run_id: The ID of the pipeline run to update.
+            session: The database session to use.
+        """
+        from zenml.orchestrators.publish_utils import get_pipeline_run_status
+
+        pipeline_run = session.exec(
+            select(PipelineRunSchema).where(
+                PipelineRunSchema.id == pipeline_run_id
+            )
+        ).one()
+        step_runs = session.exec(
+            select(StepRunSchema).where(
+                StepRunSchema.pipeline_run_id == pipeline_run_id
+            )
+        ).all()
+
+        # Deployment always exists for pipeline runs of newer versions
+        assert pipeline_run.deployment
+        num_steps = len(pipeline_run.deployment.to_model().step_configurations)
+        new_status = get_pipeline_run_status(
+            step_statuses=[step_run.status for step_run in step_runs],
+            num_steps=num_steps,
+        )
+
+        if new_status != pipeline_run.status:
+            pipeline_run.status = new_status
+            if new_status in {
+                ExecutionStatus.COMPLETED,
+                ExecutionStatus.FAILED,
+            }:
+                pipeline_run.end_time = datetime.utcnow()
+
+            session.add(pipeline_run)
 
     # ----------------------------- Users -----------------------------
 
