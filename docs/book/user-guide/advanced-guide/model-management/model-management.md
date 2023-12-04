@@ -36,10 +36,9 @@ and workflow.
 Registering models can be done in a number of ways depending on your specific
 needs. You can explicitly register models using the CLI or the Python SDK, or
 you can just allow ZenML to implicitly register your models as part of a
-pipeline run. (If you are using [ZenML Cloud](https://cloud.zenml.io/) you will soon
-have [a dashboard interface that allows you to register
+pipeline run. (If you are using [ZenML Cloud](https://cloud.zenml.io/) you already
+have access to [a dashboard interface that allows you to register
 models](./model-control-plane-dashboard.md).)
-
 
 ### Explicit CLI registration
 
@@ -112,27 +111,45 @@ maintaining a connection to the artifacts.
 
 ## Model versions
 
+Each model can have many model versions. Model versions are a way for you to
+track different iterations of your training process, complete with some extra
+dashboard and API functionality to support the full ML lifecycle.
+
 ### When are model versions created?
 
-### Controlling the creation of model versions
-
-how this is controlled by ModelConfig + solving common issues.
-
-highlight the impossibility to run parallel pipelines "creating" same model version.
+Model versions are created implicitly as you are running your machine learning
+training, so you don't have to immediately think about this. If you want more
+control over how and when these versions are controlled, our API has you
+covered, with options for whether new model versions are created as well as for
+the deletion of new model versions when pipeline runs fail. [See
+above](model-management.md#explicit-python-sdk-registration) for how to create
+model versions explicitly.
 
 ## Stages and Promotion
 
-Model stages are a way to model the progress that a Model takes through various
+Model stages are a way to model the progress that a model version takes through various
 stages in its lifecycle. A ZenML Model Version can be promoted to a different
 stage through the Dashboard, the ZenML CLI or code.
 
-### via CLI
+This is a way to signify the progression of your model version through the ML
+lifecycle and are an extra layer of metadata to identify the state of a
+particular model version. Possible options for stages are:
+
+- `staging`: This version is staged for production.
+- `production`: This version is running in a production setting.
+- `latest`: The latest version of the model.
+- `archived`: This is archived and no longer relevant. This stage occurs when a
+  model moves out of any other stage.
+
+
+
+### Promotion via CLI
 
 ```bash
 zenml model version update iris_logistic_regression --stage=...
 ```
 
-### via dashboard
+### Promotion via Cloud Dashboard
 
 not available yet, but you can learn more about it
 [here](./model-control-plane-dashboard.md)
