@@ -267,6 +267,18 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         Returns:
             The created `ArtifactVersionResponse`.
         """
+        try:
+            materializer = Source.parse_raw(self.materializer)
+        except ValidationError:
+            # This is an old source which was an importable source path
+            materializer = Source.from_import_path(self.materializer)
+
+        try:
+            data_type = Source.parse_raw(self.data_type)
+        except ValidationError:
+            # This is an old source which was an importable source path
+            data_type = Source.from_import_path(self.data_type)
+
         # Create the body of the model
         body = ArtifactVersionResponseBody(
             artifact=self.artifact.to_model(),
@@ -274,6 +286,8 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
             type=self.type,
+            materializer=materializer,
+            data_type=data_type,
             created=self.created,
             updated=self.updated,
         )
@@ -281,18 +295,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         # Create the metadata of the model
         metadata = None
         if hydrate:
-            try:
-                materializer = Source.parse_raw(self.materializer)
-            except ValidationError:
-                # This is an old source which was an importable source path
-                materializer = Source.from_import_path(self.materializer)
-
-            try:
-                data_type = Source.parse_raw(self.data_type)
-            except ValidationError:
-                # This is an old source which was an importable source path
-                data_type = Source.from_import_path(self.data_type)
-
             producer_step_run_id = None
             if self.output_of_step_runs:
                 step_run = self.output_of_step_runs[0].step_run
@@ -307,8 +309,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata={m.key: m.to_model() for m in self.run_metadata},
-                materializer=materializer,
-                data_type=data_type,
                 tags=[t.tag.to_model() for t in self.tags],
             )
 
