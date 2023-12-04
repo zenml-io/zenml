@@ -63,7 +63,7 @@ def _create_test_models() -> List[Any]:
     )
 
     volume_mount = k8s_client.V1VolumeMount(
-        mount_path="/dev/shm",   # nosec
+        mount_path="/dev/shm",  # nosec
         name="cache-volume",
     )
 
