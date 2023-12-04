@@ -38,7 +38,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import PipelineDeploymentSchema
+    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+        PipelineDeploymentSchema,
+    )
 
 
 class PipelineBuildSchema(BaseSchema, table=True):
