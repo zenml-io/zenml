@@ -1471,6 +1471,8 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         connector_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[ComponentResponse]:
         """Lists all registered stack components.
 
@@ -1487,7 +1489,10 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             connector_id: The id of the connector to filter by.
+            stack_id: The id of the stack to filter by.
             name: The name of the component to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of stack components.
@@ -1500,6 +1505,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
             connector_id=connector_id,
+            stack_id=stack_id,
             name=name,
             flavor=flavor,
             type=type,
@@ -1510,7 +1516,7 @@ class Client(metaclass=ClientMetaClass):
         component_filter_model.set_scope_workspace(self.active_workspace.id)
 
         return self.zen_store.list_stack_components(
-            component_filter_model=component_filter_model
+            component_filter_model=component_filter_model, hydrate=hydrate
         )
 
     def create_stack_component(
@@ -1791,6 +1797,7 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         integration: Optional[str] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[FlavorResponse]:
         """Fetches all the flavor models.
 
@@ -1806,6 +1813,8 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the flavor to filter by.
             type: The type of the flavor to filter by.
             integration: The integration of the flavor to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all the flavor models.
@@ -1825,7 +1834,7 @@ class Client(metaclass=ClientMetaClass):
         )
         flavor_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_flavors(
-            flavor_filter_model=flavor_filter_model
+            flavor_filter_model=flavor_filter_model, hydrate=hydrate
         )
 
     def delete_flavor(self, name_id_or_prefix: str) -> None:
@@ -1880,8 +1889,7 @@ class Client(metaclass=ClientMetaClass):
 
         if not (
             flavors := self.list_flavors(
-                type=component_type,
-                name=name,
+                type=component_type, name=name, hydrate=True
             ).items
         ):
             raise KeyError(
