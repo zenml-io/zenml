@@ -18,7 +18,7 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 
 # The '-vv' flag enables pytest-clarity output when tests fail.
 if [ -n "$1" ]; then
-    coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
+    coverage run -m pytest -n 7 $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
 else
     coverage run -m pytest -n 7 tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision
     coverage run -m pytest -n 7 tests/integration --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
