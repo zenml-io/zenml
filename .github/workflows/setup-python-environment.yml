@@ -20,7 +20,7 @@ on:
         description: 'Install ZenML integrations'
         type: string
         required: false
-        default: 'no'
+        default: 'yes'
       git-ref:
         description: 'Git branch or ref'
         type: string
