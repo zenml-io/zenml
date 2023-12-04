@@ -100,7 +100,6 @@ class StackRequirement(BaseTestConfigModel):
         components = depaginate(
             partial(
                 client.list_stack_components,
-                user_id=client.active_user.id,
                 name=self.name or None,
                 type=self.type,
                 flavor=self.flavor,

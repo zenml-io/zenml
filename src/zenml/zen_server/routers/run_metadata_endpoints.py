@@ -14,13 +14,18 @@
 """Endpoint definitions for run metadata."""
 
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, RUN_METADATA, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import Page, RunMetadataFilter, RunMetadataResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_list_entities,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -30,7 +35,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + RUN_METADATA,
     tags=["run_metadata"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -45,7 +50,7 @@ def list_run_metadata(
         make_dependable(RunMetadataFilter)
     ),
     hydrate: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[RunMetadataResponse]:
     """Get run metadata according to query filters.
 
@@ -58,6 +63,35 @@ def list_run_metadata(
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_run_metadata(
-        run_metadata_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=run_metadata_filter_model,
+        resource_type=ResourceType.RUN_METADATA,
+        list_method=zen_store().list_run_metadata,
+        hydrate=hydrate,
+    )
+
+
+@router.get(
+    "/{run_metadata_id}",
+    response_model=RunMetadataResponse,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_run_metadata(
+    run_metadata_id: UUID,
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize),
+) -> RunMetadataResponse:
+    """Get run metadata by ID.
+
+    Args:
+        run_metadata_id: The ID of run metadata.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+
+    Returns:
+        The run metadata response.
+    """
+    return zen_store().get_run_metadata(
+        run_metadata_id=run_metadata_id, hydrate=hydrate
     )

@@ -20,26 +20,26 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.base import (
-    BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
-    BaseResponseMetadata,
+from zenml.models.v2.base.internal import server_owned_request_model
+from zenml.models.v2.base.scoped import (
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    WorkspaceScopedFilter,
 )
-from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
     from zenml.models import (
         ServiceConnectorRequirements,
     )
-    from zenml.models.v2.core.user import UserResponse
     from zenml.models.v2.core.workspace import WorkspaceResponse
 
 # ------------------ Request Model ------------------
 
 
-class FlavorRequest(BaseRequest):
+class FlavorRequest(UserScopedRequest):
     """Request model for flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -98,12 +98,16 @@ class FlavorRequest(BaseRequest):
         title="Whether or not this flavor is a custom, user created flavor.",
         default=True,
     )
-    user: Optional[UUID] = Field(
-        default=None, title="The id of the user that created this resource."
-    )
     workspace: Optional[UUID] = Field(
         default=None, title="The workspace to which this resource belongs."
     )
+
+
+@server_owned_request_model
+class InternalFlavorRequest(FlavorRequest):
+    """Internal flavor request model."""
+
+    pass
 
 
 # ------------------ Update Model ------------------
@@ -117,12 +121,9 @@ class FlavorUpdate(FlavorRequest):
 # ------------------ Response Model ------------------
 
 
-class FlavorResponseBody(BaseResponseBody):
+class FlavorResponseBody(UserScopedResponseBody):
     """Response body for flavor."""
 
-    user: Union["UserResponse", None] = Field(
-        title="The user that created this resource.", nullable=True
-    )
     type: StackComponentType = Field(title="The type of the Flavor.")
     integration: Optional[str] = Field(
         title="The name of the integration that the Flavor belongs to.",
@@ -135,7 +136,7 @@ class FlavorResponseBody(BaseResponseBody):
     )
 
 
-class FlavorResponseMetadata(BaseResponseMetadata):
+class FlavorResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for flavors."""
 
     workspace: Optional["WorkspaceResponse"] = Field(
@@ -180,7 +181,9 @@ class FlavorResponseMetadata(BaseResponseMetadata):
     )
 
 
-class FlavorResponse(BaseResponse[FlavorResponseBody, FlavorResponseMetadata]):
+class FlavorResponse(
+    UserScopedResponse[FlavorResponseBody, FlavorResponseMetadata]
+):
     """Response model for flavors."""
 
     # Analytics
@@ -229,15 +232,6 @@ class FlavorResponse(BaseResponse[FlavorResponseBody, FlavorResponseMetadata]):
         )
 
     # Body and metadata properties
-    @property
-    def user(self) -> Union["UserResponse", None]:
-        """The `user` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().user
-
     @property
     def type(self) -> StackComponentType:
         """The `type` property.

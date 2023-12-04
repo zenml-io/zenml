@@ -152,7 +152,8 @@ def test_stack_prepare_pipeline_deployment(
 
 
 def test_stack_deployment(
-    stack_with_mock_components, empty_pipeline  # noqa: F811
+    stack_with_mock_components,
+    empty_pipeline,  # noqa: F811
 ):
     """Tests that when a pipeline is deployed on a stack, the stack calls the
     orchestrator to run the pipeline and calls cleanup methods on all of its

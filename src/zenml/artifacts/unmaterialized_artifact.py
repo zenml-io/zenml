@@ -15,14 +15,14 @@
 
 
 from zenml.models import (
-    ArtifactResponse,
+    ArtifactVersionResponse,
     RunMetadataResponse,
     UserResponse,
     WorkspaceResponse,
 )
 
 
-class UnmaterializedArtifact(ArtifactResponse):
+class UnmaterializedArtifact(ArtifactVersionResponse):
     """Unmaterialized artifact class.
 
     Typing a step input to have this type will cause ZenML to not materialize

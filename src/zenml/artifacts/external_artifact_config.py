@@ -12,12 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """External artifact definition."""
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 
 from zenml.logger import get_logger
+from zenml.models.v2.core.artifact import ArtifactResponse
+
+if TYPE_CHECKING:
+    from zenml.model.model_version import ModelVersion
 
 logger = get_logger(__name__)
 
@@ -32,7 +36,12 @@ class ExternalArtifactConfiguration(BaseModel):
     name: Optional[str] = None
     version: Optional[str] = None
 
-    def get_artifact_id(self) -> UUID:
+    _model_version: Optional["ModelVersion"] = PrivateAttr(None)
+
+    def _set_model_version(self, model_version: "ModelVersion") -> None:
+        self._model_version = model_version
+
+    def get_artifact_version_id(self) -> UUID:
         """Get the artifact.
 
         Returns:
@@ -49,12 +58,24 @@ class ExternalArtifactConfiguration(BaseModel):
         client = Client()
 
         if self.id:
-            response = client.get_artifact(self.id)
+            response = client.get_artifact_version(self.id)
         elif self.name:
             if self.version:
-                response = client.get_artifact(self.name, version=self.version)
+                response = client.get_artifact_version(
+                    self.name, version=self.version
+                )
+            elif self._model_version:
+                response_ = self._model_version.get_artifact(self.name)
+                if not isinstance(response_, ArtifactResponse):
+                    raise RuntimeError(
+                        f"Failed to pull artifact `{self.name}` from the Model "
+                        f"Version (name=`{self._model_version.name}`, version="
+                        f"`{self._model_version.version}`). Please validate the "
+                        "input and try again."
+                    )
+                response = response_
             else:
-                response = client.get_artifact(self.name)
+                response = client.get_artifact_version(self.name)
         else:
             raise RuntimeError(
                 "Either the ID or name of the artifact must be provided. "
@@ -70,7 +91,8 @@ class ExternalArtifactConfiguration(BaseModel):
                 "referenced by an external artifact is not stored in the "
                 "artifact store of the active stack. This will lead to "
                 "issues loading the artifact. Please make sure to only "
-                "reference artifacts stored in your active artifact store."
+                "reference artifact versions stored in your active artifact "
+                "store."
             )
 
         self.id = response.id

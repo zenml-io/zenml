@@ -700,7 +700,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         user: UUID,
         workspace: UUID,
         name: Optional[str] = None,
-        is_shared: bool = False,
         description: str = "",
         labels: Optional[Dict[str, str]] = None,
     ) -> "ServiceConnectorRequest":
@@ -710,7 +709,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             name: The name of the connector.
             user: The ID of the user that created the connector.
             workspace: The ID of the workspace that the connector belongs to.
-            is_shared: Whether the connector is shared with other users.
             description: The description of the connector.
             labels: The labels of the connector.
 
@@ -735,7 +733,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             description=description,
             user=user,
             workspace=workspace,
-            is_shared=is_shared,
             auth_method=self.auth_method,
             expires_at=self.expires_at,
             expiration_seconds=self.expiration_seconds,
@@ -759,7 +756,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         user: Optional[UserResponse] = None,
         name: Optional[str] = None,
         id: Optional[UUID] = None,
-        is_shared: bool = False,
         description: str = "",
         labels: Optional[Dict[str, str]] = None,
     ) -> "ServiceConnectorResponse":
@@ -770,7 +766,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             user: The user that created the connector.
             name: The name of the connector.
             id: The ID of the connector.
-            is_shared: Whether the connector is shared with other users.
             description: The description of the connector.
             labels: The labels of the connector.
 
@@ -797,7 +792,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 user=user,
                 created=datetime.utcnow(),
                 updated=datetime.utcnow(),
-                is_shared=is_shared,
                 description=description,
                 connector_type=self.get_type(),
                 auth_method=self.auth_method,

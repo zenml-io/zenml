@@ -69,6 +69,9 @@ def generate_cache_key(
     hash_.update(artifact_store.id.bytes)
     hash_.update(artifact_store.path.encode())
 
+    if artifact_store.custom_cache_key:
+        hash_.update(artifact_store.custom_cache_key)
+
     # Step source. This currently only uses the string representation of the
     # source (e.g. my_module.step_class) instead of the full source to keep
     # the caching behavior of previous versions and to not invalidate caching
@@ -81,9 +84,9 @@ def generate_cache_key(
         hash_.update(str(value).encode())
 
     # Input artifacts
-    for name, artifact_id in input_artifact_ids.items():
+    for name, artifact_version_id in input_artifact_ids.items():
         hash_.update(name.encode())
-        hash_.update(artifact_id.bytes)
+        hash_.update(artifact_version_id.bytes)
 
     # Output artifacts and materializers
     for name, output in step.config.outputs.items():

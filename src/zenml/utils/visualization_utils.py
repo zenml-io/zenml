@@ -23,11 +23,11 @@ from zenml.enums import VisualizationType
 from zenml.environment import Environment
 
 if TYPE_CHECKING:
-    from zenml.models import ArtifactResponse
+    from zenml.models import ArtifactVersionResponse
 
 
 def visualize_artifact(
-    artifact: "ArtifactResponse", title: Optional[str] = None
+    artifact: "ArtifactVersionResponse", title: Optional[str] = None
 ) -> None:
     """Visualize an artifact in notebook environments.
 

@@ -21,6 +21,11 @@ on:
         type: string
         required: false
         default: 'yes'
+      git-ref:
+        description: 'Git branch or ref'
+        type: string
+        required: false
+        default: ''
 
   workflow_dispatch:
     inputs:

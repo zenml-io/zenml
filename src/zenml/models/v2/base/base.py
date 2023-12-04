@@ -22,7 +22,7 @@ from pydantic.generics import GenericModel
 
 from zenml.analytics.models import AnalyticsTrackedModelMixin
 from zenml.enums import ResponseUpdateStrategy
-from zenml.exceptions import HydrationError
+from zenml.exceptions import HydrationError, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.utils.pydantic_utils import YAMLSerializationMixin
 
@@ -102,16 +102,17 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
     """Base domain model."""
 
     id: UUID = Field(title="The unique resource id.")
+    permission_denied: bool = False
 
     # Body and metadata pair
-    body: "AnyBody" = Field(title="The body of the resource.")
+    body: Optional["AnyBody"] = Field(title="The body of the resource.")
     metadata: Optional["AnyMetadata"] = Field(
         title="The metadata related to this resource."
     )
 
-    _response_update_strategy: ResponseUpdateStrategy = (
-        ResponseUpdateStrategy.ALLOW
-    )
+    _response_update_strategy: (
+        ResponseUpdateStrategy
+    ) = ResponseUpdateStrategy.ALLOW
     _warn_on_response_updates: bool = True
 
     def get_hydrated_version(self) -> "BaseResponse[AnyBody, AnyMetadata]":
@@ -255,7 +256,24 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
 
         Returns:
             The body field of the response.
+
+        Raises:
+            IllegalOperationError: If the user lacks permission to access the
+                entity represented by this response.
+            RuntimeError: If the body was not included in the response.
         """
+        if self.permission_denied:
+            raise IllegalOperationError(
+                f"Missing permissions to access {type(self).__name__} with "
+                f"ID {self.id}."
+            )
+
+        if not self.body:
+            raise RuntimeError(
+                f"Missing response body for {type(self).__name__} with ID "
+                f"{self.id}."
+            )
+
         return self.body
 
     def get_metadata(self) -> "AnyMetadata":
@@ -263,7 +281,17 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
 
         Returns:
             The metadata field of the response.
+
+        Raises:
+            IllegalOperationError: If the user lacks permission to access this
+                entity represented by this response.
         """
+        if self.permission_denied:
+            raise IllegalOperationError(
+                f"Missing permissions to access {type(self).__name__} with "
+                f"ID {self.id}."
+            )
+
         if self.metadata is None:
             # If the metadata is not there, check the class first.
             metadata_type = self.__fields__["metadata"].type_
@@ -302,7 +330,7 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         Returns:
             the value of the property.
         """
-        return self.body.created
+        return self.get_body().created
 
     @property
     def updated(self) -> Optional[datetime]:
@@ -311,4 +339,4 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         Returns:
             the value of the property.
         """
-        return self.body.updated
+        return self.get_body().updated

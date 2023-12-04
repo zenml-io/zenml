@@ -43,7 +43,6 @@ from zenml.enums import (
     AuthScheme,
     OAuthDeviceStatus,
     OAuthGrantTypes,
-    PermissionType,
 )
 from zenml.logger import get_logger
 from zenml.models import (
@@ -55,7 +54,6 @@ from zenml.models import (
     OAuthDeviceUserAgentHeader,
     OAuthRedirectResponse,
     OAuthTokenResponse,
-    UserRoleAssignmentFilter,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -67,6 +65,8 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.jwt import JWTToken
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     get_ip_location,
     handle_exceptions,
@@ -206,21 +206,6 @@ def generate_access_token(
     Returns:
         An authentication response with an access token.
     """
-    role_assignments = zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=UserRoleAssignmentFilter(
-            user_id=user_id
-        )
-    )
-
-    # TODO: This needs to happen at the sql level now
-    permissions = set().union(
-        *[
-            zen_store().get_role(ra.role.id).permissions
-            for ra in role_assignments.items
-            if ra.role is not None
-        ]
-    )
-
     config = server_config()
 
     # The JWT tokens are set to expire according to the values configured
@@ -246,7 +231,6 @@ def generate_access_token(
         user_id=user_id,
         device_id=device.id if device else None,
         api_key_id=api_key.id if api_key else None,
-        permissions=[p.value for p in permissions],
     ).encode(expires=expires)
 
     if not device:
@@ -499,9 +483,7 @@ def api_token(
     pipeline_id: Optional[UUID] = None,
     schedule_id: Optional[UUID] = None,
     expires_minutes: Optional[int] = None,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> str:
     """Get a workload API token for the current user.
 
@@ -525,6 +507,10 @@ def api_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated.",
         )
+
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
+    )
 
     if not token.device_id:
         # If not authenticated with a device, the current API token is returned
