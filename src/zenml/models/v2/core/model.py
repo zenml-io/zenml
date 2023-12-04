@@ -106,7 +106,7 @@ class ModelUpdate(BaseModel):
 class ModelResponseBody(WorkspaceScopedResponseBody):
     """Response body for models."""
 
-    tags: List[TagResponseModel] = Field(
+    tags: List["TagResponseModel"] = Field(
         title="Tags associated with the model",
     )
     latest_version: Optional[str]
@@ -180,7 +180,7 @@ class ModelResponse(
 
     # Body and metadata properties
     @property
-    def tags(self) -> List[TagResponseModel]:
+    def tags(self) -> List["TagResponseModel"]:
         """The `tags` property.
 
         Returns:

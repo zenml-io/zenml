@@ -356,6 +356,7 @@ FlavorResponseMetadata.update_forward_refs(
 )
 ModelResponseBody.update_forward_refs(
     UserResponse=UserResponse,
+    TagResponseModel=TagResponseModel,
 )
 ModelResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,

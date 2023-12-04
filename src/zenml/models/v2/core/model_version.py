@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing model versions."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional, Type, TypeVar, Union
 from uuid import UUID
 
@@ -133,6 +134,12 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
         description="Pipeline runs linked to the model version",
         default={},
     )
+    created: datetime = Field(
+        title="The timestamp when this component was created."
+    )
+    updated: datetime = Field(
+        title="The timestamp when this component was last updated.",
+    )
 
 
 class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -145,7 +152,11 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ModelVersionResponse(WorkspaceScopedResponse):
+class ModelVersionResponse(
+    WorkspaceScopedResponse[
+        ModelVersionResponseBody, ModelVersionResponseMetadata
+    ]
+):
     """Response model for model versions."""
 
     name: Optional[str] = Field(
@@ -216,6 +227,24 @@ class ModelVersionResponse(WorkspaceScopedResponse):
             the value of the property.
         """
         return self.get_body().pipeline_run_ids
+
+    @property
+    def created(self) -> datetime:
+        """The `created` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().created
+
+    @property
+    def updated(self) -> datetime:
+        """The `updated` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().updated
 
     @property
     def description(self) -> Optional[str]:
