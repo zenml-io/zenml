@@ -183,6 +183,7 @@ class ClientConfiguration(FileSyncModel):
     _active_workspace: Optional["WorkspaceResponse"] = None
     active_workspace_id: Optional[UUID] = None
     active_stack_id: Optional[UUID] = None
+    _active_stack: Optional["StackResponse"] = None
 
     @property
     def active_workspace(self) -> "WorkspaceResponse":
@@ -219,6 +220,7 @@ class ClientConfiguration(FileSyncModel):
             stack: The stack to set active.
         """
         self.active_stack_id = stack.id
+        self._active_stack = stack
 
     class Config:
         """Pydantic configuration class."""
@@ -1266,25 +1268,34 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        stack: Optional[StackResponse] = None
+        stack_id: Optional[UUID] = None
 
         if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
             stack_id = os.environ[ENV_ZENML_ACTIVE_STACK_ID]
             return self.get_stack(stack_id)
 
         if self._config:
-            stack = self.get_stack(self._config.active_stack_id)
+            if self._config._active_stack:
+                return self._config._active_stack
 
-        if not stack:
-            stack = self.get_stack(GlobalConfiguration().get_active_stack_id())
+            stack_id = self._config.active_stack_id
 
-        if not stack:
+        if not stack_id:
+            # Initialize the zen store so the global config loads the active
+            # stack
+            _ = GlobalConfiguration().zen_store
+            if GlobalConfiguration()._active_stack:
+                return GlobalConfiguration()._active_stack
+
+            stack_id = GlobalConfiguration().get_active_stack_id()
+
+        if not stack_id:
             raise RuntimeError(
                 "No active stack is configured. Run "
                 "`zenml stack set STACK_NAME` to set the active stack."
             )
 
-        return stack
+        return self.get_stack(stack_id)
 
     def activate_stack(
         self, stack_name_id_or_prefix: Union[str, UUID]
