@@ -46,6 +46,9 @@ from zenml.artifacts.utils import (
     _load_file_from_artifact_store,
 )
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.source import Source, SourceType
+from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.constants import (
     ACTIVATE,
     DEACTIVATE,
@@ -55,7 +58,10 @@ from zenml.constants import (
     USERS,
 )
 from zenml.enums import (
+    ArtifactType,
     ColorVariants,
+    ExecutionStatus,
+    MetadataResourceTypes,
     ModelStages,
     StackComponentType,
     StoreType,
@@ -69,12 +75,14 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logging.step_logging import prepare_logs_uri
+from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,
     APIKeyRequest,
     APIKeyRotateRequest,
     APIKeyUpdate,
     ArtifactVersionFilter,
+    ArtifactVersionRequest,
     ArtifactVersionResponse,
     ComponentFilter,
     ComponentUpdate,
@@ -108,6 +116,12 @@ from zenml.models.tag_models import (
     TagResourceRequestModel,
     TagUpdateModel,
 )
+from zenml.models.v2.core.artifact import ArtifactRequest
+from zenml.models.v2.core.component import ComponentRequest
+from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
+from zenml.models.v2.core.pipeline_run import PipelineRunRequest
+from zenml.models.v2.core.run_metadata import RunMetadataRequest
+from zenml.models.v2.core.step_run import StepRunRequest
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.sql_zen_store import SqlZenStore
@@ -4641,3 +4655,140 @@ class TestTagResource:
                     resource_id=fake_model_id,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
+
+
+class TestRunMetadata:
+    @pytest.mark.parametrize(
+        argnames="type_",
+        argvalues=MetadataResourceTypes,
+        ids=MetadataResourceTypes.values(),
+    )
+    def test_metadata_full_cycle_with_cascade_deletion(
+        self,
+        type_: MetadataResourceTypes,
+    ):
+        client = Client()
+
+        sc = client.zen_store.create_stack_component(
+            ComponentRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                name=sample_name("foo"),
+                type=StackComponentType.ORCHESTRATOR,
+                flavor="local",
+                configuration={},
+            )
+        )
+
+        if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
+            artifact = client.zen_store.create_artifact(
+                ArtifactRequest(
+                    name=sample_name("foo"),
+                    has_custom_name=True,
+                )
+            )
+            resource = client.zen_store.create_artifact_version(
+                ArtifactVersionRequest(
+                    artifact_id=artifact.id,
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    version="1",
+                    type=ArtifactType.DATA,
+                    uri=sample_name("foo"),
+                    materializer=Source(
+                        module="acme.foo", type=SourceType.INTERNAL
+                    ),
+                    data_type=Source(
+                        module="acme.foo", type=SourceType.INTERNAL
+                    ),
+                )
+            )
+        elif (
+            type_ == MetadataResourceTypes.PIPELINE_RUN
+            or type_ == MetadataResourceTypes.STEP_RUN
+        ):
+            step_name = sample_name("foo")
+            deployment = client.zen_store.create_deployment(
+                PipelineDeploymentRequest(
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    run_name_template=sample_name("foo"),
+                    pipeline_configuration=PipelineConfiguration(
+                        name=sample_name("foo")
+                    ),
+                    stack=client.active_stack.id,
+                    client_version="0.1.0",
+                    server_version="0.1.0",
+                    step_configurations={
+                        step_name: Step(
+                            spec=StepSpec(
+                                source=Source(
+                                    module="acme.foo",
+                                    type=SourceType.INTERNAL,
+                                ),
+                                upstream_steps=[],
+                            ),
+                            config=StepConfiguration(name=step_name),
+                        )
+                    },
+                )
+            )
+            pr = client.zen_store.create_run(
+                PipelineRunRequest(
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    id=uuid4(),
+                    name=sample_name("foo"),
+                    deployment=deployment.id,
+                    status=ExecutionStatus.RUNNING,
+                )
+            )
+            sr = client.zen_store.create_run_step(
+                StepRunRequest(
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    name=step_name,
+                    status=ExecutionStatus.RUNNING,
+                    pipeline_run_id=pr.id,
+                    deployment=deployment.id,
+                )
+            )
+            resource = (
+                pr if type_ == MetadataResourceTypes.PIPELINE_RUN else sr
+            )
+
+        rm = client.zen_store.create_run_metadata(
+            RunMetadataRequest(
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                resource_id=resource.id,
+                resource_type=type_,
+                values={"foo": "bar"},
+                types={"foo": MetadataTypeEnum.STRING},
+                stack_component_id=sc.id
+                if type_ == MetadataResourceTypes.PIPELINE_RUN
+                or type_ == MetadataResourceTypes.STEP_RUN
+                else None,
+            )
+        )
+        rm = client.zen_store.get_run_metadata(rm[0].id, True)
+        assert rm.key == "foo"
+        assert rm.value == "bar"
+        assert rm.resource_id == resource.id
+        assert rm.resource_type == type_
+        assert rm.type == MetadataTypeEnum.STRING
+
+        if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
+            client.zen_store.delete_artifact_version(resource.id)
+            client.zen_store.delete_artifact(artifact.id)
+        elif (
+            type_ == MetadataResourceTypes.PIPELINE_RUN
+            or type_ == MetadataResourceTypes.STEP_RUN
+        ):
+            client.zen_store.delete_run(pr.id)
+            client.zen_store.delete_deployment(deployment.id)
+
+        with pytest.raises(KeyError):
+            client.zen_store.get_run_metadata(rm.id)
+
+        client.zen_store.delete_stack_component(sc.id)
