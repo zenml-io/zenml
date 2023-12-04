@@ -318,6 +318,7 @@ class TaggableResourceTypes(StrEnum):
     """All possible resource types for tagging."""
 
     ARTIFACT = "artifact"
+    ARTIFACT_VERSION = "artifact_version"
     MODEL = "model"
 
 
@@ -327,3 +328,11 @@ class ResponseUpdateStrategy(StrEnum):
     ALLOW = "allow"
     IGNORE = "ignore"
     DENY = "deny"
+
+
+class MetadataResourceTypes(StrEnum):
+    """All possible resource types for adding metadata."""
+
+    PIPELINE_RUN = "pipeline_run"
+    STEP_RUN = "step_run"
+    ARTIFACT_VERSION = "artifact_version"

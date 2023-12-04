@@ -75,8 +75,10 @@ def test_external_artifact_by_value(clean_client: Client):
 def test_external_artifact_by_id(clean_client: Client):
     """Test passing external artifact by ID."""
     producer_pipeline(return_value=42)
-    artifact_id = producer_pipeline.model.last_successful_run.artifacts[0].id
-    consumer_pipeline(id=artifact_id, expected_value=42)
+    artifact_version_id = (
+        producer_pipeline.model.last_successful_run.artifact_versions[0].id
+    )
+    consumer_pipeline(id=artifact_version_id, expected_value=42)
 
 
 def test_external_artifact_by_name_only(clean_client: Client):

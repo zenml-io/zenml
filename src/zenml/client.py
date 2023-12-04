@@ -54,6 +54,7 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     LogicalOperators,
+    MetadataResourceTypes,
     ModelStages,
     OAuthDeviceStatus,
     SecretScope,
@@ -79,6 +80,10 @@ from zenml.models import (
     APIKeyUpdate,
     ArtifactFilter,
     ArtifactResponse,
+    ArtifactUpdate,
+    ArtifactVersionFilter,
+    ArtifactVersionResponse,
+    ArtifactVersionUpdate,
     BaseResponse,
     BaseResponseModel,
     CodeRepositoryFilter,
@@ -2553,27 +2558,24 @@ class Client(metaclass=ClientMetaClass):
             step_run_filter_model=step_run_filter_model
         )
 
-    # ------------------------------- Artifacts --------------------------------
+    # ------------------------------- Artifacts -------------------------------
 
     def get_artifact(
         self,
         name_id_or_prefix: Union[str, UUID],
-        version: Optional[str] = None,
     ) -> ArtifactResponse:
-        """Get an artifact by ID.
+        """Get an artifact by name, id or prefix.
 
         Args:
-            name_id_or_prefix: The ID or name or prefix of the artifact to get.
-            version: The version of the artifact to get.
+            name_id_or_prefix: The name, ID or prefix of the artifact to get.
 
         Returns:
             The artifact.
         """
-        return self._get_entity_version_by_id_or_name_or_prefix(
+        return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_artifact,
             list_method=self.list_artifacts,
             name_id_or_prefix=name_id_or_prefix,
-            version=version,
         )
 
     def list_artifacts(
@@ -2586,38 +2588,18 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        version: Optional[Union[str, int]] = None,
-        version_number: Optional[int] = None,
-        artifact_store_id: Optional[Union[str, UUID]] = None,
-        type: Optional[ArtifactType] = None,
-        data_type: Optional[str] = None,
-        uri: Optional[str] = None,
-        materializer: Optional[str] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
-        only_unused: Optional[bool] = False,
     ) -> Page[ArtifactResponse]:
-        """Get all artifacts.
+        """Get a list of artifacts.
 
         Args:
             sort_by: The column to sort by
             page: The page of items
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
-            id: Use the id of runs to filter by.
+            id: Use the id of artifact to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            name: The name of the run to filter by.
-            version: The version of the artifact to filter by.
-            version_number: The version number of the artifact to filter by.
-            artifact_store_id: The id of the artifact store to filter by.
-            type: The type of the artifact to filter by.
-            data_type: The data type of the artifact to filter by.
-            uri: The uri of the artifact to filter by.
-            materializer: The materializer of the artifact to filter by.
-            workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
-            only_unused: Only return artifacts that are not used in any runs.
+            name: The name of the artifact to filter by.
 
         Returns:
             A list of artifacts.
@@ -2631,7 +2613,145 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+        )
+        return self.zen_store.list_artifacts(artifact_filter_model)
+
+    def update_artifact(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        new_name: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> ArtifactResponse:
+        """Update an artifact.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the artifact to update.
+            new_name: The new name of the artifact.
+            add_tags: Tags to add to the artifact.
+            remove_tags: Tags to remove from the artifact.
+
+        Returns:
+            The updated artifact.
+        """
+        artifact = self.get_artifact(name_id_or_prefix=name_id_or_prefix)
+        artifact_update = ArtifactUpdate(
+            name=new_name,
+            add_tags=add_tags,
+            remove_tags=remove_tags,
+        )
+        return self.zen_store.update_artifact(
+            artifact_id=artifact.id, artifact_update=artifact_update
+        )
+
+    def delete_artifact(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete an artifact.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the artifact to delete.
+        """
+        artifact = self.get_artifact(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_artifact(artifact_id=artifact.id)
+        logger.info(f"Deleted artifact '{artifact.name}'.")
+
+    # --------------------------- Artifact Versions ---------------------------
+
+    def get_artifact_version(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+    ) -> ArtifactVersionResponse:
+        """Get an artifact version by ID or artifact name.
+
+        Args:
+            name_id_or_prefix: Either the ID of the artifact version or the
+                name of the artifact.
+            version: The version of the artifact to get. Only used if
+                `name_id_or_prefix` is the name of the artifact. If not
+                specified, the latest version is returned.
+
+        Returns:
+            The artifact version.
+        """
+        return self._get_entity_version_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_artifact_version,
+            list_method=self.list_artifact_versions,
+            name_id_or_prefix=name_id_or_prefix,
             version=version,
+        )
+
+    def list_artifact_versions(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        artifact_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
+        version: Optional[Union[str, int]] = None,
+        version_number: Optional[int] = None,
+        artifact_store_id: Optional[Union[str, UUID]] = None,
+        type: Optional[ArtifactType] = None,
+        data_type: Optional[str] = None,
+        uri: Optional[str] = None,
+        materializer: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        only_unused: Optional[bool] = False,
+    ) -> Page[ArtifactVersionResponse]:
+        """Get a list of artifact versions.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of artifact version to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            artifact_id: The id of the artifact to filter by.
+            name: The name of the artifact to filter by.
+            version: The version of the artifact to filter by.
+            version_number: The version number of the artifact to filter by.
+            artifact_store_id: The id of the artifact store to filter by.
+            type: The type of the artifact to filter by.
+            data_type: The data type of the artifact to filter by.
+            uri: The uri of the artifact to filter by.
+            materializer: The materializer of the artifact to filter by.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            only_unused: Only return artifact versions that are not used in
+                any pipeline runs.
+
+        Returns:
+            A list of artifact versions.
+        """
+        artifact_id = None
+        if name:
+            try:
+                artifact = self.get_artifact(name_id_or_prefix=name)
+                artifact_id = artifact.id
+            except KeyError:
+                return Page(
+                    items=[], index=1, total=0, total_pages=1, max_size=size
+                )
+
+        artifact_version_filter_model = ArtifactVersionFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            artifact_id=artifact_id,
+            version=str(version) if version else None,
             version_number=version_number,
             artifact_store_id=artifact_store_id,
             type=type,
@@ -2642,45 +2762,108 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             only_unused=only_unused,
         )
-        artifact_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_artifacts(artifact_filter_model)
+        artifact_version_filter_model.set_scope_workspace(
+            self.active_workspace.id
+        )
+        return self.zen_store.list_artifact_versions(
+            artifact_version_filter_model
+        )
 
-    def delete_artifact(
+    def update_artifact_version(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> ArtifactVersionResponse:
+        """Update an artifact version.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the artifact to update.
+            version: The version of the artifact to update. Only used if
+                `name_id_or_prefix` is the name of the artifact. If not
+                specified, the latest version is updated.
+            add_tags: Tags to add to the artifact version.
+            remove_tags: Tags to remove from the artifact version.
+
+        Returns:
+            The updated artifact version.
+        """
+        artifact_version = self.get_artifact_version(
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+        )
+        artifact_version_update = ArtifactVersionUpdate(
+            add_tags=add_tags, remove_tags=remove_tags
+        )
+        return self.zen_store.update_artifact_version(
+            artifact_version_id=artifact_version.id,
+            artifact_version_update=artifact_version_update,
+        )
+
+    def delete_artifact_version(
         self,
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
     ) -> None:
-        """Delete an artifact.
+        """Delete an artifact version.
 
         By default, this will delete only the metadata of the artifact from the
-        database, not the artifact itself.
+        database, not the actual object stored in the artifact store.
 
         Args:
             name_id_or_prefix: The ID or name or prefix of the artifact to
                 delete.
             version: The version of the artifact to delete.
-            delete_metadata: If True, delete the metadata of the artifact from
-                the database.
-            delete_from_artifact_store: If True, delete the artifact itself from
-                the artifact store.
+            delete_metadata: If True, delete the metadata of the artifact
+                version from the database.
+            delete_from_artifact_store: If True, delete the artifact object
+                itself from the artifact store.
         """
-        artifact = self.get_artifact(
+        artifact_version = self.get_artifact_version(
             name_id_or_prefix=name_id_or_prefix, version=version
         )
         if delete_from_artifact_store:
-            self._delete_artifact_from_artifact_store(artifact=artifact)
+            self._delete_artifact_from_artifact_store(
+                artifact_version=artifact_version
+            )
         if delete_metadata:
-            self._delete_artifact_metadata(artifact=artifact)
+            self._delete_artifact_version(artifact_version=artifact_version)
 
-    def _delete_artifact_from_artifact_store(
-        self, artifact: ArtifactResponse
+    def _delete_artifact_version(
+        self, artifact_version: ArtifactVersionResponse
     ) -> None:
-        """Delete an artifact from the artifact store.
+        """Delete the metadata of an artifact version from the database.
 
         Args:
-            artifact: The artifact to delete.
+            artifact_version: The artifact version to delete.
+
+        Raises:
+            ValueError: If the artifact version is still used in any runs.
+        """
+        if artifact_version not in depaginate(
+            partial(self.list_artifact_versions, only_unused=True)
+        ):
+            raise ValueError(
+                "The metadata of artifact versions that are used in runs "
+                "cannot be deleted. Please delete all runs that use this "
+                "artifact first."
+            )
+        self.zen_store.delete_artifact_version(artifact_version.id)
+        logger.info(
+            f"Deleted version '{artifact_version.version}' of artifact "
+            f"'{artifact_version.artifact.name}'."
+        )
+
+    def _delete_artifact_from_artifact_store(
+        self, artifact_version: ArtifactVersionResponse
+    ) -> None:
+        """Delete an artifact object from the artifact store.
+
+        Args:
+            artifact_version: The artifact version to delete.
 
         Raises:
             Exception: If the artifact store is inaccessible.
@@ -2688,23 +2871,24 @@ class Client(metaclass=ClientMetaClass):
         from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.stack.stack_component import StackComponent
 
-        if not artifact.artifact_store_id:
+        if not artifact_version.artifact_store_id:
             logger.warning(
-                f"Artifact '{artifact.uri}' does not have an artifact store "
-                "associated with it. Skipping deletion from artifact store."
+                f"Artifact '{artifact_version.uri}' does not have an artifact "
+                "store associated with it. Skipping deletion from artifact "
+                "store."
             )
             return
         try:
             artifact_store_model = self.get_stack_component(
                 component_type=StackComponentType.ARTIFACT_STORE,
-                name_id_or_prefix=artifact.artifact_store_id,
+                name_id_or_prefix=artifact_version.artifact_store_id,
             )
             artifact_store = StackComponent.from_model(artifact_store_model)
             assert isinstance(artifact_store, BaseArtifactStore)
-            artifact_store.rmtree(artifact.uri)
+            artifact_store.rmtree(artifact_version.uri)
         except Exception as e:
             logger.error(
-                f"Failed to delete artifact '{artifact.uri}' from the "
+                f"Failed to delete artifact '{artifact_version.uri}' from the "
                 "artifact store. This might happen if your local client "
                 "does not have access to the artifact store or does not "
                 "have the required integrations installed. Full error: "
@@ -2713,80 +2897,34 @@ class Client(metaclass=ClientMetaClass):
             raise e
         else:
             logger.info(
-                f"Deleted artifact '{artifact.uri}' from the artifact store."
+                f"Deleted artifact '{artifact_version.uri}' from the artifact "
+                "store."
             )
-
-    def _delete_artifact_metadata(self, artifact: ArtifactResponse) -> None:
-        """Delete the metadata of an artifact from the database.
-
-        Args:
-            artifact: The artifact to delete.
-
-        Raises:
-            ValueError: If the artifact is still used in any runs.
-        """
-        if artifact not in depaginate(
-            partial(self.list_artifacts, only_unused=True)
-        ):
-            raise ValueError(
-                "The metadata of artifacts that are used in runs cannot be "
-                "deleted. Please delete all runs that use this artifact "
-                "first."
-            )
-        self.zen_store.delete_artifact(artifact.id)
-        logger.info(f"Deleted metadata of artifact '{artifact.uri}'.")
 
     # ------------------------------ Run Metadata ------------------------------
 
     def create_run_metadata(
         self,
         metadata: Dict[str, "MetadataType"],
-        pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
-        artifact_id: Optional[UUID] = None,
+        resource_id: UUID,
+        resource_type: MetadataResourceTypes,
         stack_component_id: Optional[UUID] = None,
     ) -> List[RunMetadataResponse]:
         """Create run metadata.
 
         Args:
             metadata: The metadata to create as a dictionary of key-value pairs.
-            pipeline_run_id: The ID of the pipeline run during which the
-                metadata was produced. If provided, `step_run_id` and
-                `artifact_id` must be None.
-            step_run_id: The ID of the step run during which the metadata was
-                produced. If provided, `pipeline_run_id` and `artifact_id` must
-                be None.
-            artifact_id: The ID of the artifact for which the metadata was
-                produced. If provided, `pipeline_run_id` and `step_run_id` must
-                be None.
+            resource_id: The ID of the resource for which the
+                metadata was produced.
+            resource_type: The type of the resource for which the
+                metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
 
         Returns:
             The created metadata, as string to model dictionary.
-
-        Raises:
-            ValueError: If not exactly one of either `pipeline_run_id`,
-                `step_run_id`, or `artifact_id` is provided.
         """
         from zenml.metadata.metadata_types import get_metadata_type
-
-        if not (pipeline_run_id or step_run_id or artifact_id):
-            raise ValueError(
-                "Cannot create run metadata without linking it to any entity. "
-                "Please provide either a `pipeline_run_id`, `step_run_id`, or "
-                "`artifact_id`."
-            )
-        if (
-            (pipeline_run_id and step_run_id)
-            or (pipeline_run_id and artifact_id)
-            or (step_run_id and artifact_id)
-        ):
-            raise ValueError(
-                "Cannot create run metadata linked to multiple entities. "
-                "Please provide only a `pipeline_run_id` or only a "
-                "`step_run_id` or only an `artifact_id`."
-            )
 
         values: Dict[str, "MetadataType"] = {}
         types: Dict[str, "MetadataTypeEnum"] = {}
@@ -2813,9 +2951,8 @@ class Client(metaclass=ClientMetaClass):
         run_metadata = RunMetadataRequest(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-            pipeline_run_id=pipeline_run_id,
-            step_run_id=step_run_id,
-            artifact_id=artifact_id,
+            resource_id=resource_id,
+            resource_type=resource_type,
             stack_component_id=stack_component_id,
             values=values,
             types=types,
@@ -2833,9 +2970,8 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         workspace_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
-        pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
-        artifact_id: Optional[UUID] = None,
+        resource_id: Optional[UUID] = None,
+        resource_type: Optional[MetadataResourceTypes] = None,
         stack_component_id: Optional[UUID] = None,
         key: Optional[str] = None,
         value: Optional["MetadataType"] = None,
@@ -2853,9 +2989,8 @@ class Client(metaclass=ClientMetaClass):
             updated: The last update time of the metadata.
             workspace_id: The ID of the workspace the metadata belongs to.
             user_id: The ID of the user that created the metadata.
-            pipeline_run_id: The ID of the pipeline run the metadata belongs to.
-            step_run_id: The ID of the step run the metadata belongs to.
-            artifact_id: The ID of the artifact the metadata belongs to.
+            resource_id: The ID of the resource the metadata belongs to.
+            resource_type: The type of the resource the metadata belongs to.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
             key: The key of the metadata.
@@ -2875,9 +3010,8 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             workspace_id=workspace_id,
             user_id=user_id,
-            pipeline_run_id=pipeline_run_id,
-            step_run_id=step_run_id,
-            artifact_id=artifact_id,
+            resource_id=resource_id,
+            resource_type=resource_type,
             stack_component_id=stack_component_id,
             key=key,
             value=value,
@@ -4645,7 +4779,7 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[UUID, str]] = None,
         model_id: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[UUID, str]] = None,
-        artifact_id: Optional[Union[UUID, str]] = None,
+        artifact_version_id: Optional[Union[UUID, str]] = None,
         artifact_name: Optional[str] = None,
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
@@ -4664,7 +4798,7 @@ class Client(metaclass=ClientMetaClass):
             user_id: Use the user id for filtering
             model_id: Use the model id for filtering
             model_version_id: Use the model version id for filtering
-            artifact_id: Use the artifact id for filtering
+            artifact_version_id: Use the artifact id for filtering
             artifact_name: Use the artifact name for filtering
             only_data_artifacts: Use to filter by data artifacts
             only_model_artifacts: Use to filter by model artifacts
@@ -4685,7 +4819,7 @@ class Client(metaclass=ClientMetaClass):
                 user_id=user_id,
                 model_id=model_id,
                 model_version_id=model_version_id,
-                artifact_id=artifact_id,
+                artifact_version_id=artifact_version_id,
                 artifact_name=artifact_name,
                 only_data_artifacts=only_data_artifacts,
                 only_model_artifacts=only_model_artifacts,
@@ -4975,7 +5109,7 @@ class Client(metaclass=ClientMetaClass):
         exact_name_matches = list_method(
             size=1,
             sort_by="desc:created",
-            name=f"equals:{name_id_or_prefix}",
+            name=name_id_or_prefix,
             version=version,
         )
 

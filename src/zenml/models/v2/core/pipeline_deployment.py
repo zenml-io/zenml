@@ -139,10 +139,10 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     client_environment: Dict[str, str] = Field(
         default={}, title="The client environment for this deployment."
     )
-    client_version: str = Field(
+    client_version: Optional[str] = Field(
         title="The version of the ZenML installation on the client side."
     )
-    server_version: str = Field(
+    server_version: Optional[str] = Field(
         title="The version of the ZenML installation on the server side."
     )
     pipeline: Optional[PipelineResponse] = Field(
@@ -219,7 +219,7 @@ class PipelineDeploymentResponse(
         return self.get_metadata().client_environment
 
     @property
-    def client_version(self) -> str:
+    def client_version(self) -> Optional[str]:
         """The `client_version` property.
 
         Returns:
@@ -228,7 +228,7 @@ class PipelineDeploymentResponse(
         return self.get_metadata().client_version
 
     @property
-    def server_version(self) -> str:
+    def server_version(self) -> Optional[str]:
         """The `server_version` property.
 
         Returns:

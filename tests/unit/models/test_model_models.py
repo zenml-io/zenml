@@ -24,39 +24,39 @@ from zenml.models.model_models import (
     ModelVersionResponseModel,
 )
 
-ARTIFACT_IDS = [uuid4(), uuid4()]
+ARTIFACT_VERSION_IDS = [uuid4(), uuid4()]
 
 
 @pytest.mark.parametrize(
     "artifact_object_ids,query_name,query_version,expected",
     (
         (
-            {"artifact": {"1": ARTIFACT_IDS[0]}},
+            {"artifact": {"1": ARTIFACT_VERSION_IDS[0]}},
             "artifact",
             None,
-            ARTIFACT_IDS[0],
+            ARTIFACT_VERSION_IDS[0],
         ),
         (
             {
                 "artifact": {
-                    "1": ARTIFACT_IDS[0],
-                    "2": ARTIFACT_IDS[1],
+                    "1": ARTIFACT_VERSION_IDS[0],
+                    "2": ARTIFACT_VERSION_IDS[1],
                 }
             },
             "artifact",
             None,
-            ARTIFACT_IDS[1],
+            ARTIFACT_VERSION_IDS[1],
         ),
         (
             {
                 "artifact": {
-                    "1": ARTIFACT_IDS[0],
-                    "2": ARTIFACT_IDS[1],
+                    "1": ARTIFACT_VERSION_IDS[0],
+                    "2": ARTIFACT_VERSION_IDS[1],
                 }
             },
             "artifact",
             "1",
-            ARTIFACT_IDS[0],
+            ARTIFACT_VERSION_IDS[0],
         ),
         (
             {},

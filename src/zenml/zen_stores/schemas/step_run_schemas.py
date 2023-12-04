@@ -25,6 +25,7 @@ from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
+    MetadataResourceTypes,
     StepRunInputArtifactType,
     StepRunOutputArtifactType,
 )
@@ -45,7 +46,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+    from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
@@ -123,7 +124,12 @@ class StepRunSchema(NamedSchema, table=True):
         back_populates="step_runs"
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
-        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="step_run",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
+            cascade="delete",
+            overlaps="run_metadata",
+        ),
     )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
@@ -188,12 +194,12 @@ class StepRunSchema(NamedSchema, table=True):
         }
 
         input_artifacts = {
-            artifact.name: artifact.artifact.to_model()
+            artifact.name: artifact.artifact_version.to_model()
             for artifact in self.input_artifacts
         }
 
         output_artifacts = {
-            artifact.name: artifact.artifact.to_model()
+            artifact.name: artifact.artifact_version.to_model()
             for artifact in self.output_artifacts
         }
 
@@ -310,9 +316,11 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
+    # Note: We keep the name artifact_id instead of artifact_version_id here to
+    # avoid having to drop and recreate the primary key constraint.
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="artifact",
+        target="artifact_version",
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",
@@ -322,7 +330,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     # Relationships
     step_run: "StepRunSchema" = Relationship(back_populates="input_artifacts")
-    artifact: "ArtifactSchema" = Relationship()
+    artifact_version: "ArtifactVersionSchema" = Relationship()
 
 
 class StepRunOutputArtifactSchema(SQLModel, table=True):
@@ -344,10 +352,11 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
-
+    # Note: we keep the name artifact_id instead of artifact_version_id here to
+    # avoid having to drop and recreate the primary key constraint.
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="artifact",
+        target="artifact_version",
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",
@@ -357,6 +366,6 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     # Relationship
     step_run: "StepRunSchema" = Relationship(back_populates="output_artifacts")
-    artifact: "ArtifactSchema" = Relationship(
+    artifact_version: "ArtifactVersionSchema" = Relationship(
         back_populates="output_of_step_runs"
     )

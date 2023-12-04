@@ -959,20 +959,32 @@ list all artifacts that have been saved, use:
 zenml artifact list
 ```
 
-The metadata of an artifact can only be deleted if it is no longer linked to
-any pipeline runs, i.e., if the run that produced the artifact and all runs that
-cached any of its steps have been deleted.
+Each artifact has one or several versions. To list artifact versions, use:
 
-To delete all artifacts that are no longer linked to any pipeline runs, use:
+```bash
+zenml artifact versions list
+```
+
+If you would like to rename an artifact or adjust the tags of an artifact or
+artifact version, use the corresponding `update` command:
+
+```bash
+zenml artifact update <NAME> -n <NEW_NAME>
+zenml artifact update <NAME> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
+zenml artifact version update <NAME> -v <VERSION> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
+```
+
+The metadata of artifacts or artifact versions stored by ZenML can only be 
+deleted once they are no longer used by any pipeline runs. I.e., an artifact
+version can only be deleted if the run that produced it and all runs that used
+it as an input have been deleted. Similarly, an artifact can only be deleted if
+all its versions can be deleted.
+
+To delete all artifacts and artifact versions that are no longer linked to any 
+pipeline runs, use:
 
 ```bash
 zenml artifact prune
-```
-
-To delete a specific artifact, use:
-
-```bash
-zenml artifact delete <ARTIFACT_NAME_OR_ID>
 ```
 
 Each pipeline run that requires Docker images also stores a build which

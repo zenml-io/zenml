@@ -39,6 +39,7 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
+from zenml.enums import MetadataResourceTypes
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     CodeRepositoryFilter,
@@ -862,6 +863,7 @@ def create_run_metadata(
     Raises:
         IllegalOperationError: If the workspace or user specified in the run
             metadata does not match the current workspace or authenticated user.
+        RuntimeError: If the resource type is not supported.
     """
     workspace = zen_store().get_workspace(run_metadata.workspace)
 
@@ -878,17 +880,21 @@ def create_run_metadata(
             "is not supported."
         )
 
-    if run_metadata.pipeline_run_id:
-        run = zen_store().get_run(run_metadata.pipeline_run_id)
+    if run_metadata.resource_type == MetadataResourceTypes.PIPELINE_RUN:
+        run = zen_store().get_run(run_metadata.resource_id)
         verify_permission_for_model(run, action=Action.UPDATE)
-
-    if run_metadata.step_run_id:
-        step_run = zen_store().get_run_step(run_metadata.step_run_id)
-        verify_permission_for_model(step_run, action=Action.UPDATE)
-
-    if run_metadata.artifact_id:
-        artifact = zen_store().get_artifact(run_metadata.artifact_id)
-        verify_permission_for_model(artifact, action=Action.UPDATE)
+    elif run_metadata.resource_type == MetadataResourceTypes.STEP_RUN:
+        step = zen_store().get_run_step(run_metadata.resource_id)
+        verify_permission_for_model(step, action=Action.UPDATE)
+    elif run_metadata.resource_type == MetadataResourceTypes.ARTIFACT_VERSION:
+        artifact_version = zen_store().get_artifact_version(
+            run_metadata.resource_id
+        )
+        verify_permission_for_model(artifact_version, action=Action.UPDATE)
+    else:
+        raise RuntimeError(
+            f"Unknown resource type: {run_metadata.resource_type}"
+        )
 
     verify_permission(
         resource_type=ResourceType.RUN_METADATA, action=Action.CREATE

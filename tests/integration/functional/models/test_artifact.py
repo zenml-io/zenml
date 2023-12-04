@@ -29,7 +29,7 @@ from zenml.artifacts.utils import load_artifact_visualization
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import EntityExistsError
 from zenml.models import (
-    ArtifactResponse,
+    ArtifactVersionResponse,
     ArtifactVisualizationResponse,
     RunMetadataResponse,
 )
@@ -305,7 +305,7 @@ def test_disabling_artifact_metadata(clean_client, one_step_pipeline):
     _assert_metadata_enabled(clean_client)
 
 
-def _get_output_of_last_run(clean_client: "Client") -> ArtifactResponse:
+def _get_output_of_last_run(clean_client: "Client") -> ArtifactVersionResponse:
     """Get the output of the last run."""
     return list(clean_client.list_pipeline_runs()[0].steps.values())[0].output
 

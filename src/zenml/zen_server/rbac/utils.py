@@ -43,7 +43,8 @@ from zenml.zen_server.utils import rbac, server_config
 
 AnyOldResponseModel = TypeVar("AnyOldResponseModel", bound=BaseResponseModel)
 AnyNewResponseModel = TypeVar(
-    "AnyNewResponseModel", bound=BaseResponse  # type: ignore[type-arg]
+    "AnyNewResponseModel",
+    bound=BaseResponse,  # type: ignore[type-arg]
 )
 AnyResponseModel = TypeVar(
     "AnyResponseModel",
@@ -443,11 +444,15 @@ def get_surrogate_permission_model_for_model(
     Returns:
         A surrogate model or the original.
     """
-    from zenml.models import ModelVersionResponseModel
+    from zenml.models import ArtifactVersionResponse, ModelVersionResponseModel
 
-    if action == Action.READ and isinstance(model, ModelVersionResponseModel):
-        # Permissions to read a model version is the same as reading the model
-        return model.model
+    # Permissions to read entities that represent versions of another entity
+    # are checked on the parent entity
+    if action == Action.READ:
+        if isinstance(model, ModelVersionResponseModel):
+            return model.model
+        elif isinstance(model, ArtifactVersionResponse):
+            return model.artifact
 
     return model
 
@@ -466,6 +471,7 @@ def get_resource_type_for_model(
     """
     from zenml.models import (
         ArtifactResponse,
+        ArtifactVersionResponse,
         CodeRepositoryResponse,
         ComponentResponse,
         FlavorResponse,
@@ -497,6 +503,7 @@ def get_resource_type_for_model(
         SecretResponseModel: ResourceType.SECRET,
         ModelResponseModel: ResourceType.MODEL,
         ArtifactResponse: ResourceType.ARTIFACT,
+        ArtifactVersionResponse: ResourceType.ARTIFACT_VERSION,
         WorkspaceResponse: ResourceType.WORKSPACE,
         UserResponse: ResourceType.USER,
         RunMetadataResponse: ResourceType.RUN_METADATA,

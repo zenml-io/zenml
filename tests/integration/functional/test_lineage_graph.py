@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Tests for the lineage graph."""
 
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from typing_extensions import Annotated
@@ -23,6 +24,7 @@ from tests.integration.functional.zen_stores.utils import (
 )
 from zenml import load_artifact, pipeline, save_artifact, step
 from zenml.artifacts.external_artifact import ExternalArtifact
+from zenml.enums import MetadataResourceTypes
 from zenml.lineage_graph.lineage_graph import (
     ARTIFACT_PREFIX,
     STEP_PREFIX,
@@ -31,9 +33,12 @@ from zenml.lineage_graph.lineage_graph import (
 from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
 from zenml.models import PipelineRunResponse
 
+if TYPE_CHECKING:
+    from zenml.client import Client
+
 
 def test_generate_run_nodes_and_edges(
-    clean_client, connected_two_step_pipeline
+    clean_client: "Client", connected_two_step_pipeline
 ):
     """Tests that the created lineage graph has the right nodes and edges.
 
@@ -56,7 +61,8 @@ def test_generate_run_nodes_and_edges(
     # Write some metadata for the pipeline run
     clean_client.create_run_metadata(
         metadata={"orchestrator_url": Uri("https://www.ariaflow.org")},
-        pipeline_run_id=pipeline_run.id,
+        resource_id=pipeline_run.id,
+        resource_type=MetadataResourceTypes.PIPELINE_RUN,
         stack_component_id=orchestrator_id,
     )
 
@@ -67,7 +73,8 @@ def test_generate_run_nodes_and_edges(
             metadata={
                 "experiment_tracker_url": Uri("https://www.aria_and_blupus.ai")
             },
-            step_run_id=step_.id,
+            resource_id=step_.id,
+            resource_type=MetadataResourceTypes.STEP_RUN,
             stack_component_id=orchestrator_id,  # just link something
         )
 
@@ -75,7 +82,8 @@ def test_generate_run_nodes_and_edges(
         for output_artifact in step_.outputs.values():
             clean_client.create_run_metadata(
                 metadata={"aria_loves_alex": True},
-                artifact_id=output_artifact.id,
+                resource_id=output_artifact.id,
+                resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
             )
 
     # Get the run again so all the metadata is loaded
@@ -138,7 +146,7 @@ def pipeline_with_direct_edge():
     str_step(after=["int_step"])
 
 
-def test_add_direct_edges(clean_client):
+def test_add_direct_edges(clean_client: "Client"):
     """Test that direct `.after(...)` edges are added to the lineage graph."""
 
     # Create and retrieve a pipeline run
@@ -179,11 +187,11 @@ def external_artifact_loader_step(a: int) -> int:
 
 
 @pipeline
-def second_pipeline(artifact_id: UUID):
-    external_artifact_loader_step(a=ExternalArtifact(id=artifact_id))
+def second_pipeline(artifact_version_id: UUID):
+    external_artifact_loader_step(a=ExternalArtifact(id=artifact_version_id))
 
 
-def test_add_external_artifacts(clean_client):
+def test_add_external_artifacts(clean_client: "Client"):
     """Test that external artifacts are added to the lineage graph."""
 
     # Create and retrieve a pipeline run
@@ -205,11 +213,13 @@ def test_add_external_artifacts(clean_client):
     _validate_graph(graph, run_)
 
     # Check that the external artifact is a node in the graph
-    artifact_ids_of_run = {artifact.id for artifact in run_.artifacts}
+    artifact_version_ids_of_run = {
+        artifact_version.id for artifact_version in run_.artifact_versions
+    }
     external_artifact_node_id = None
     for node in graph.nodes:
         if node.type == "artifact":
-            if node.data.execution_id not in artifact_ids_of_run:
+            if node.data.execution_id not in artifact_version_ids_of_run:
                 external_artifact_node_id = node.id
     assert external_artifact_node_id
 
@@ -333,20 +343,20 @@ def _validate_graph(
 
         # Check that each step node is connected to all of its output nodes
         for output_artifact in step_.outputs.values():
-            artifact_id = ARTIFACT_PREFIX + str(output_artifact.id)
-            assert artifact_id in node_id_to_model_mapping
-            edge_id = step_id + "_" + artifact_id
+            artifact_version_id = ARTIFACT_PREFIX + str(output_artifact.id)
+            assert artifact_version_id in node_id_to_model_mapping
+            edge_id = step_id + "_" + artifact_version_id
             assert edge_id in edge_id_to_model_mapping
             edge = edge_id_to_model_mapping[edge_id]
             assert edge.source == step_id
-            assert edge.target == artifact_id
+            assert edge.target == artifact_version_id
 
         # Check that each step node is connected to all of its input nodes
         for input_artifact in step_.inputs.values():
-            artifact_id = ARTIFACT_PREFIX + str(input_artifact.id)
-            assert artifact_id in node_id_to_model_mapping
-            edge_id = artifact_id + "_" + step_id
+            artifact_version_id = ARTIFACT_PREFIX + str(input_artifact.id)
+            assert artifact_version_id in node_id_to_model_mapping
+            edge_id = artifact_version_id + "_" + step_id
             assert edge_id in edge_id_to_model_mapping
             edge = edge_id_to_model_mapping[edge_id]
-            assert edge.source == artifact_id
+            assert edge.source == artifact_version_id
             assert edge.target == step_id

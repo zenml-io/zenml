@@ -126,7 +126,7 @@ def pipeline(
             name or func.__name__,
             (BasePipeline,),
             {
-                PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type]
+                PIPELINE_INNER_FUNC_NAME: staticmethod(func),
                 CLASS_CONFIGURATION: {
                     PARAM_PIPELINE_NAME: name,
                     PARAM_ENABLE_CACHE: enable_cache,
