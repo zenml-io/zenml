@@ -18,6 +18,9 @@ from typing import TYPE_CHECKING
 
 from zenml.integrations.kubernetes import serialization_utils
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from kfp.dsl import ContainerOp
@@ -39,6 +42,12 @@ def apply_pod_settings(
         V1Volume,
         V1VolumeMount,
     )
+
+    if settings.host_ipc:
+        logger.warning(
+            "Host IPC is set to `True` but not supported in this orchestrator. "
+            "Ignoring..."
+        )
 
     for key, value in settings.node_selectors.items():
         container_op.add_node_selector_constraint(label_name=key, value=value)
