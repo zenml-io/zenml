@@ -162,7 +162,7 @@ class ModelVersionResponseModel(
         default={},
     )
     tags: List[TagResponseModel] = Field(
-        title="Tags associated with the model version",
+        title="Tags associated with the model version", default=[]
     )
 
     def to_model_version(
