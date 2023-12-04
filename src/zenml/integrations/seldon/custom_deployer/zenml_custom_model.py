@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 DEFAULT_MODEL_NAME = "model"
 DEFAULT_LOCAL_MODEL_DIR = "/mnt/models"
 
-Array_Like = Union[np.ndarray, List[Any], str, bytes, Dict[str, Any]]
+Array_Like = Union[np.ndarray[Any, Any], List[Any], str, bytes, Dict[str, Any]]
 
 
 class ZenMLCustomModel:
@@ -74,7 +74,7 @@ class ZenMLCustomModel:
 
         """
         try:
-            from zenml.utils.artifact_utils import load_model_from_metadata
+            from zenml.artifacts.utils import load_model_from_metadata
 
             self.model = load_model_from_metadata(self.model_uri)
         except Exception as e:

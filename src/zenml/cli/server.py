@@ -191,7 +191,7 @@ def up(
     assert gc.store is not None
 
     if not blocking:
-        from zenml.zen_stores.base_zen_store import (
+        from zenml.constants import (
             DEFAULT_PASSWORD,
             DEFAULT_USERNAME,
         )
@@ -614,6 +614,13 @@ def status() -> None:
     type=str,
 )
 @click.option(
+    "--api-key",
+    help="Use an API key to authenticate with a ZenML server. If "
+    "omitted, the web login will be used.",
+    required=False,
+    type=str,
+)
+@click.option(
     "--workspace",
     help="The workspace to use when connecting to the ZenML server.",
     required=False,
@@ -649,6 +656,7 @@ def connect(
     url: Optional[str] = None,
     username: Optional[str] = None,
     password: Optional[str] = None,
+    api_key: Optional[str] = None,
     workspace: Optional[str] = None,
     no_verify_ssl: bool = False,
     ssl_ca_cert: Optional[str] = None,
@@ -662,6 +670,8 @@ def connect(
         username: The username that is used to authenticate with the ZenML
             server.
         password: The password that is used to authenticate with the ZenML
+            server.
+        api_key: The API key that is used to authenticate with the ZenML
             server.
         workspace: The active workspace that is used to connect to the ZenML
             server.
@@ -714,6 +724,7 @@ def connect(
         url = store_dict.get("url", url)
         username = username or store_dict.get("username")
         password = password or store_dict.get("password")
+        api_key = api_key or store_dict.get("api_key")
         verify_ssl = store_dict.get("verify_ssl", verify_ssl)
 
     elif url is None:
@@ -745,7 +756,7 @@ def connect(
     if store_type == StoreType.REST:
         store_dict["verify_ssl"] = verify_ssl
 
-    if not username:
+    if not username and not api_key:
         if store_type == StoreType.REST:
             store_dict["api_token"] = web_login(url=url, verify_ssl=verify_ssl)
         else:
@@ -761,6 +772,8 @@ def connect(
                 hide_input=True,
             )
         store_dict["password"] = password
+    elif api_key:
+        store_dict["api_key"] = api_key
 
     store_config_class = BaseZenStore.get_store_config_class(store_type)
     assert store_config_class is not None
@@ -768,12 +781,10 @@ def connect(
     store_config = store_config_class.parse_obj(store_dict)
     try:
         GlobalConfiguration().set_store(store_config)
-    except IllegalOperationError as e:
+    except IllegalOperationError:
         cli_utils.warning(
             f"User '{username}' does not have sufficient permissions to "
-            f"to access the server at '{url}'. Please ask the server "
-            f"administrator to assign a role with permissions to your "
-            f"username: {str(e)}"
+            f"access the server at '{url}'."
         )
 
     if workspace:

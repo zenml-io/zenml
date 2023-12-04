@@ -18,15 +18,26 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, SECRETS, VERSION_1
-from zenml.enums import PermissionType
-from zenml.models.page_model import Page
-from zenml.models.secret_models import (
+from zenml.models import (
+    Page,
     SecretFilterModel,
     SecretResponseModel,
     SecretUpdateModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    get_allowed_resource_ids,
+    has_permissions_for_model,
+    is_owned_by_authenticated_user,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -36,7 +47,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + SECRETS,
     tags=["secrets"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -50,26 +61,37 @@ def list_secrets(
     secret_filter_model: SecretFilterModel = Depends(
         make_dependable(SecretFilterModel)
     ),
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> Page[SecretResponseModel]:
     """Gets a list of secrets.
 
     Args:
         secret_filter_model: Filter model used for pagination, sorting,
             filtering
-        auth_context: Authentication context.
 
     Returns:
         List of secret objects.
     """
-    secrets = zen_store().list_secrets(secret_filter_model=secret_filter_model)
+    secrets = verify_permissions_and_list_entities(
+        filter_model=secret_filter_model,
+        resource_type=ResourceType.SECRET,
+        list_method=zen_store().list_secrets,
+    )
 
-    # Remove secrets from the response if the user does not have write
-    # permissions.
-    if PermissionType.WRITE not in auth_context.permissions:
+    # This will be `None` if the user is allowed to read secret values
+    # for all secrets
+    allowed_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.SECRET,
+        action=Action.READ_SECRET_VALUE,
+    )
+
+    if allowed_ids is not None:
         for secret in secrets.items:
+            if secret.id in allowed_ids or is_owned_by_authenticated_user(
+                secret
+            ):
+                continue
+
             secret.remove_secrets()
 
     return secrets
@@ -83,24 +105,20 @@ def list_secrets(
 @handle_exceptions
 def get_secret(
     secret_id: UUID,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
+    _: AuthContext = Security(authorize),
 ) -> SecretResponseModel:
     """Gets a specific secret using its unique id.
 
     Args:
         secret_id: ID of the secret to get.
-        auth_context: Authentication context.
 
     Returns:
         A specific secret object.
     """
-    secret = zen_store().get_secret(secret_id=secret_id)
-
-    # Remove secrets from the response if the user does not have write
-    # permissions.
-    if PermissionType.WRITE not in auth_context.permissions:
+    secret = verify_permissions_and_get_entity(
+        id=secret_id, get_method=zen_store().get_secret
+    )
+    if not has_permissions_for_model(secret, action=Action.READ_SECRET_VALUE):
         secret.remove_secrets()
 
     return secret
@@ -116,7 +134,7 @@ def update_secret(
     secret_id: UUID,
     secret_update: SecretUpdateModel,
     patch_values: Optional[bool] = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> SecretResponseModel:
     """Updates the attribute on a specific secret using its unique id.
 
@@ -138,8 +156,11 @@ def update_secret(
             if key not in secret_update.values:
                 secret_update.values[key] = None
 
-    return zen_store().update_secret(
-        secret_id=secret_id, secret_update=secret_update
+    return verify_permissions_and_update_entity(
+        id=secret_id,
+        update_model=secret_update,
+        get_method=zen_store().get_secret,
+        update_method=zen_store().update_secret,
     )
 
 
@@ -150,11 +171,15 @@ def update_secret(
 @handle_exceptions
 def delete_secret(
     secret_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific secret using its unique id.
 
     Args:
         secret_id: ID of the secret to delete.
     """
-    zen_store().delete_secret(secret_id=secret_id)
+    verify_permissions_and_delete_entity(
+        id=secret_id,
+        get_method=zen_store().get_secret,
+        delete_method=zen_store().delete_secret,
+    )

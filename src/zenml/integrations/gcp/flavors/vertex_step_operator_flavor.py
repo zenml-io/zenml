@@ -20,7 +20,7 @@ from zenml.integrations.gcp import GCP_VERTEX_STEP_OPERATOR_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
@@ -44,12 +44,18 @@ class VertexStepOperatorSettings(BaseSettings):
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
         machine_type: Machine type specified here
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types.
+        boot_disk_size_gb: Size of the boot disk in GB. (Default: 100)
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
+        boot_disk_type: Type of the boot disk. (Default: pd-ssd)
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
 
     """
 
     accelerator_type: Optional[str] = None
     accelerator_count: int = 0
     machine_type: str = "n1-standard-4"
+    boot_disk_size_gb: int = 100
+    boot_disk_type: str = "pd-ssd"
 
 
 class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

@@ -12,6 +12,7 @@
 #  permissions and limitations under the License.
 import logging
 import uuid
+from copy import deepcopy
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
@@ -30,57 +31,54 @@ from zenml.enums import (
 )
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
-    APIKeyRequestModel,
-    ArtifactFilterModel,
-    ArtifactRequestModel,
+    APIKeyRequest,
+    ArtifactFilter,
+    ArtifactRequest,
+    ArtifactUpdate,
+    ArtifactVersionFilter,
+    ArtifactVersionRequest,
+    ArtifactVersionUpdate,
     AuthenticationMethodModel,
-    BaseFilterModel,
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryUpdateModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentUpdateModel,
-    FlavorFilterModel,
-    FlavorRequestModel,
+    BaseFilter,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
     ModelFilterModel,
     ModelRequestModel,
     ModelUpdateModel,
     ModelVersionRequestModel,
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineFilterModel,
-    PipelineRequestModel,
-    PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineUpdateModel,
+    Page,
+    PipelineBuildFilter,
+    PipelineBuildRequest,
+    PipelineDeploymentFilter,
+    PipelineDeploymentRequest,
+    PipelineFilter,
+    PipelineRequest,
+    PipelineRunFilter,
+    PipelineRunRequest,
     ResourceTypeModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleUpdateModel,
     SecretFilterModel,
     SecretRequestModel,
-    ServiceAccountRequestModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
+    ServiceAccountRequest,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
     ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
-    StackRequestModel,
-    StepRunFilterModel,
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamUpdateModel,
-    UserFilterModel,
-    UserRequestModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceUpdateModel,
+    ServiceConnectorUpdate,
+    StackRequest,
+    StepRunFilter,
+    UserFilter,
+    UserRequest,
+    UserUpdate,
+    WorkspaceFilter,
+    WorkspaceRequest,
+    WorkspaceUpdate,
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
-from zenml.models.page_model import Page
 from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
 from zenml.service_connectors.service_connector_registry import (
@@ -132,20 +130,20 @@ class PipelineRunContext:
                 enable_step_logs=self.enable_step_logs,
             )
 
-        # persist which runs, steps and artifacts were produced, in case
-        #  the test ends up deleting some or all of these, this allows for a
-        #  thorough cleanup nonetheless
+        # persist which runs, steps and artifact versions were produced.
+        # In case the test ends up deleting some or all of these, this allows
+        # for a thorough cleanup nonetheless
         self.runs = self.store.list_runs(
-            PipelineRunFilterModel(name=f"startswith:{self.pipeline_name}")
+            PipelineRunFilter(name=f"startswith:{self.pipeline_name}")
         ).items
         self.steps = []
-        self.artifacts = []
+        self.artifact_versions = []
         for run in self.runs:
             self.steps += self.store.list_run_steps(
-                StepRunFilterModel(pipeline_run_id=run.id)
+                StepRunFilter(pipeline_run_id=run.id)
             ).items
             for s in self.steps:
-                self.artifacts += [a for a in s.outputs.values()]
+                self.artifact_versions += [a for a in s.outputs.values()]
         return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -154,9 +152,17 @@ class PipelineRunContext:
                 self.client.delete_pipeline_run(run.id)
             except KeyError:
                 pass
-        for artifact in self.artifacts:
+        for artifact_version in self.artifact_versions:
             try:
-                self.client.delete_artifact(artifact.id)
+                self.client.delete_artifact_version(artifact_version.id)
+            except KeyError:
+                pass
+            try:
+                artifact = self.client.get_artifact(
+                    artifact_version.artifact.id
+                )
+                if not artifact.versions:
+                    self.client.delete_artifact(artifact.id)
             except KeyError:
                 pass
 
@@ -189,14 +195,10 @@ class UserContext:
 
     def __enter__(self):
         if not self.existing_user:
-            new_user = UserRequestModel(
+            new_user = UserRequest(
                 name=self.user_name, password=self.password, active=True
             )
             self.created_user = self.store.create_user(new_user)
-            self.client.create_user_role_assignment(
-                role_name_or_id="admin",
-                user_name_or_id=self.created_user.id,
-            )
         else:
             self.created_user = self.store.get_user(self.user_name)
 
@@ -251,17 +253,13 @@ class ServiceAccountContext:
 
     def __enter__(self):
         if not self.existing_account:
-            new_account = ServiceAccountRequestModel(
+            new_account = ServiceAccountRequest(
                 name=self.name,
                 description=self.description,
                 active=True,
             )
             self.created_service_account = self.store.create_service_account(
                 new_account
-            )
-            self.client.create_user_role_assignment(
-                role_name_or_id="admin",
-                user_name_or_id=self.created_service_account.id,
             )
         else:
             self.created_service_account = self.store.get_service_account(
@@ -273,7 +271,7 @@ class ServiceAccountContext:
             api_key_name = sample_name("temp_api_key")
             self.api_key = self.store.create_api_key(
                 self.created_service_account.id,
-                APIKeyRequestModel(
+                APIKeyRequest(
                     name=api_key_name,
                 ),
             )
@@ -297,6 +295,7 @@ class ServiceAccountContext:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
             _ = Client().zen_store
+        if self.existing_account or self.login and self.delete:
             self.store.delete_api_key(
                 self.created_service_account.id,
                 self.api_key.id,
@@ -349,15 +348,17 @@ class StackContext:
         components: Dict[StackComponentType, List[uuid.UUID]],
         stack_name: str = "aria",
         user_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         self.stack_name = sample_name(stack_name)
         self.user_id = user_id
         self.components = components
         self.client = Client()
         self.store = self.client.zen_store
+        self.delete = delete
 
     def __enter__(self):
-        new_stack = StackRequestModel(
+        new_stack = StackRequest(
             user=self.user_id if self.user_id else self.client.active_user.id,
             workspace=self.client.active_workspace.id,
             name=self.stack_name,
@@ -366,11 +367,15 @@ class StackContext:
         self.created_stack = self.store.create_stack(new_stack)
         return self.created_stack
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         try:
             self.store.delete_stack(self.created_stack.id)
         except KeyError:
             pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            self.cleanup()
 
 
 class ComponentContext:
@@ -381,6 +386,7 @@ class ComponentContext:
         flavor: str,
         component_name: str = "aria",
         user_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         self.component_name = sample_name(component_name)
         self.flavor = flavor
@@ -389,9 +395,10 @@ class ComponentContext:
         self.user_id = user_id
         self.client = Client()
         self.store = self.client.zen_store
+        self.delete = delete
 
     def __enter__(self):
-        new_component = ComponentRequestModel(
+        new_component = ComponentRequest(
             user=self.user_id if self.user_id else self.client.active_user.id,
             workspace=self.client.active_workspace.id,
             name=self.component_name,
@@ -404,47 +411,15 @@ class ComponentContext:
         )
         return self.created_component
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         try:
             self.store.delete_stack_component(self.created_component.id)
         except KeyError:
             pass
 
-
-class TeamContext:
-    def __init__(self, team_name: str = "arias_fanclub"):
-        self.team_name = sample_name(team_name)
-        self.client = Client()
-        self.store = self.client.zen_store
-
-    def __enter__(self):
-        new_team = TeamRequestModel(name=self.team_name)
-        self.created_team = self.store.create_team(new_team)
-        return self.created_team
-
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        try:
-            self.store.delete_team(self.created_team.id)
-        except KeyError:
-            pass
-
-
-class RoleContext:
-    def __init__(self, role_name: str = "aria_tamer"):
-        self.role_name = sample_name(role_name)
-        self.client = Client()
-        self.store = self.client.zen_store
-
-    def __enter__(self):
-        new_role = RoleRequestModel(name=self.role_name, permissions=set())
-        self.created_role = self.store.create_role(new_role)
-        return self.created_role
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        try:
-            self.store.delete_role(self.created_role.id)
-        except KeyError:
-            pass
+        if self.delete:
+            self.cleanup()
 
 
 class WorkspaceContext:
@@ -464,7 +439,7 @@ class WorkspaceContext:
 
     def __enter__(self):
         if self.create:
-            new_workspace = WorkspaceRequestModel(name=self.workspace_name)
+            new_workspace = WorkspaceRequest(name=self.workspace_name)
             self.workspace = self.store.create_workspace(new_workspace)
         else:
             self.workspace = self.store.get_workspace(self.workspace_name)
@@ -543,7 +518,7 @@ class CodeRepositoryContext:
         self.delete = delete
 
     def __enter__(self):
-        request = CodeRepositoryRequestModel(
+        request = CodeRepositoryRequest(
             name=self.code_repo_name,
             config={},
             source={
@@ -558,12 +533,15 @@ class CodeRepositoryContext:
         self.repo = self.store.create_code_repository(request)
         return self.repo
 
+    def cleanup(self):
+        try:
+            self.store.delete_code_repository(self.repo.id)
+        except KeyError:
+            pass
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
-            try:
-                self.store.delete_code_repository(self.repo.id)
-            except KeyError:
-                pass
+            self.cleanup()
 
 
 class ServiceConnectorContext:
@@ -580,7 +558,6 @@ class ServiceConnectorContext:
         expiration_seconds: Optional[int] = None,
         user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
-        is_shared: bool = False,
         labels: Optional[Dict[str, str]] = None,
         client: Optional[Client] = None,
         delete: bool = True,
@@ -596,14 +573,13 @@ class ServiceConnectorContext:
         self.expiration_seconds = expiration_seconds
         self.user_id = user_id
         self.workspace_id = workspace_id
-        self.is_shared = is_shared
         self.labels = labels
         self.client = client or Client()
         self.store = self.client.zen_store
         self.delete = delete
 
     def __enter__(self):
-        request = ServiceConnectorRequestModel(
+        request = ServiceConnectorRequest(
             name=self.name,
             connector_type=self.connector_type,
             auth_method=self.auth_method,
@@ -613,7 +589,6 @@ class ServiceConnectorContext:
             secrets=self.secrets or {},
             expires_at=self.expires_at,
             expiration_seconds=self.expiration_seconds,
-            is_shared=self.is_shared,
             labels=self.labels or {},
             user=self.user_id or self.client.active_user.id,
             workspace=self.workspace_id or self.client.active_workspace.id,
@@ -622,12 +597,15 @@ class ServiceConnectorContext:
         self.connector = self.store.create_service_connector(request)
         return self.connector
 
+    def cleanup(self):
+        try:
+            self.store.delete_service_connector(self.connector.id)
+        except KeyError:
+            pass
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
-            try:
-                self.store.delete_service_connector(self.connector.id)
-            except KeyError:
-                pass
+            self.cleanup()
 
 
 class ModelVersionContext:
@@ -637,6 +615,7 @@ class ModelVersionContext:
         create_artifacts: int = 0,
         create_prs: int = 0,
         user_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         client = Client()
         self.workspace = client.active_workspace.id
@@ -647,9 +626,11 @@ class ModelVersionContext:
         self.create_version = create_version
         self.create_artifacts = create_artifacts
         self.artifacts = []
+        self.artifact_versions = []
         self.create_prs = create_prs
         self.prs = []
         self.deployments = []
+        self.delete = delete
 
     def __enter__(self):
         client = Client()
@@ -659,16 +640,12 @@ class ModelVersionContext:
         try:
             model = client.get_model(self.model)
         except KeyError:
-            model = client.create_model(
-                ModelRequestModel(
-                    name=self.model, user=user.id, workspace=ws.id
-                )
-            )
+            model = client.create_model(name=self.model)
         if self.create_version:
             try:
                 mv = client.get_model_version(self.model, self.model_version)
             except KeyError:
-                mv = client.create_model_version(
+                mv = client.zen_store.create_model_version(
                     ModelVersionRequestModel(
                         user=user.id,
                         workspace=ws.id,
@@ -678,22 +655,30 @@ class ModelVersionContext:
                 )
 
         for _ in range(self.create_artifacts):
-            self.artifacts.append(
-                client.zen_store.create_artifact(
-                    ArtifactRequestModel(
-                        name=sample_name("sample_artifact"),
-                        data_type="module.class",
-                        materializer="module.class",
-                        type=ArtifactType.DATA,
-                        uri="",
-                        user=user.id,
-                        workspace=ws.id,
-                    )
+            artifact = client.zen_store.create_artifact(
+                ArtifactRequest(
+                    name=sample_name("sample_artifact"),
+                    has_custom_name=True,
                 )
             )
+            client.get_artifact(artifact.id)
+            self.artifacts.append(artifact)
+            artifact_version = client.zen_store.create_artifact_version(
+                ArtifactVersionRequest(
+                    artifact_id=artifact.id,
+                    version=1,
+                    data_type="module.class",
+                    materializer="module.class",
+                    type=ArtifactType.DATA,
+                    uri="",
+                    user=user.id,
+                    workspace=ws.id,
+                )
+            )
+            self.artifact_versions.append(artifact_version)
         for _ in range(self.create_prs):
             deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequestModel(
+                PipelineDeploymentRequest(
                     user=user.id,
                     workspace=ws.id,
                     stack=stack.id,
@@ -706,7 +691,7 @@ class ModelVersionContext:
             self.deployments.append(deployment)
             self.prs.append(
                 client.zen_store.create_run(
-                    PipelineRunRequestModel(
+                    PipelineRunRequest(
                         id=uuid.uuid4(),
                         name=sample_name("sample_pipeline_run"),
                         status="running",
@@ -719,31 +704,37 @@ class ModelVersionContext:
             )
         if self.create_version:
             if self.create_artifacts:
-                return mv, self.artifacts
+                return mv, self.artifact_versions
             if self.create_prs:
                 return mv, self.prs
             else:
                 return mv
         else:
             if self.create_artifacts:
-                return model, self.artifacts
+                return model, self.artifact_versions
             if self.create_prs:
                 return model, self.prs
             else:
                 return model
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def cleanup(self):
         client = Client()
         try:
             client.delete_model(self.model)
         except KeyError:
             pass
+        for artifact_version in self.artifact_versions:
+            client.delete_artifact_version(artifact_version.id)
         for artifact in self.artifacts:
             client.delete_artifact(artifact.id)
         for run in self.prs:
             client.zen_store.delete_run(run.id)
         for deployment in self.deployments:
             client.delete_deployment(str(deployment.id))
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.delete:
+            self.cleanup()
 
 
 class CatClawMarks(AuthenticationConfig):
@@ -766,7 +757,7 @@ class CatClawMarks(AuthenticationConfig):
 
 
 class CatVoicePrint(AuthenticationConfig):
-    """Cat voice print authentication credentials."""
+    """Cat voice-print authentication credentials."""
 
     secret_word: SecretStr = Field(
         title="Secret word",
@@ -851,18 +842,41 @@ AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 
 
-class CrudTestConfig(BaseModel):
+class CrudTestConfig:
     """Model to collect all methods pertaining to a given entity."""
 
-    create_model: "BaseRequestModel"
-    update_model: Optional["BaseModel"]
-    filter_model: Type[BaseFilterModel]
-    entity_name: str
+    def __init__(
+        self,
+        create_model: "BaseModel",
+        filter_model: Type[BaseFilter],
+        entity_name: str,
+        update_model: Optional["BaseModel"] = None,
+        conditional_entities: Optional[Dict[str, "CrudTestConfig"]] = None,
+    ):
+        """Initializes a CrudTestConfig.
+
+        Args:
+            create_model: Model to use for creating the entity.
+            update_model: Model to use for updating the entity.
+            filter_model: Model to use for filtering entities.
+            entity_name: Name of the entity.
+            conditional_entity_names: Names of entities that need to exist
+                before the entity under test can be created.
+            conditional_entities: Other entities that need to exist before the
+                entity under test can be created. Expected to be a mapping from
+                field in the `create_model` to corresponding `CrudTestConfig`.
+        """
+        self.create_model = create_model
+        self.update_model = update_model
+        self.filter_model = filter_model
+        self.entity_name = entity_name
+        self.conditional_entities = conditional_entities or {}
+        self.id: Optional[uuid.UUID] = None
 
     @property
     def list_method(
         self,
-    ) -> Callable[[BaseFilterModel], Page[AnyResponseModel]]:
+    ) -> Callable[[BaseFilter], Page[AnyResponseModel]]:
         store = Client().zen_store
         if self.entity_name.endswith("y"):
             method_name = f"list_{self.entity_name[:-1]}ies"
@@ -892,49 +906,91 @@ class CrudTestConfig(BaseModel):
         store = Client().zen_store
         return getattr(store, f"update_{self.entity_name}")
 
+    def create(self) -> AnyResponseModel:
+        """Creates the entity."""
+        create_model = self.create_model
+
+        # Set active user, workspace, and stack if applicable
+        client = Client()
+        if hasattr(create_model, "user"):
+            create_model.user = client.active_user.id
+        if hasattr(create_model, "workspace"):
+            create_model.workspace = client.active_workspace.id
+        if hasattr(create_model, "stack"):
+            create_model.stack = client.active_stack_model.id
+
+        # create other required entities if applicable
+        for (
+            field_name,
+            conditional_entity,
+        ) in self.conditional_entities.items():
+            setattr(create_model, field_name, conditional_entity.create().id)
+
+        # Create the entity itself
+        response = self.create_method(create_model)
+        self.id = response.id
+        return response
+
+    def list(self) -> Page[AnyResponseModel]:
+        """Lists all entities."""
+        return self.list_method(self.filter_model())
+
+    def get(self) -> AnyResponseModel:
+        """Gets the entity if it was already created."""
+        if not self.id:
+            raise ValueError("Entity not created yet.")
+        return self.get_method(self.id)
+
+    def update(self) -> AnyResponseModel:
+        """Updates the entity if it was already created."""
+        if not self.id:
+            raise ValueError("Entity not created yet.")
+        if not self.update_model:
+            raise NotImplementedError("This entity cannot be updated.")
+        return self.update_method(self.id, self.update_model)
+
+    def delete(self) -> None:
+        """Deletes the entity if it was already created."""
+        if not self.id:
+            raise ValueError("Entity not created yet.")
+        self.delete_method(self.id)
+        self.id = None
+
+    def cleanup(self) -> None:
+        """Deletes all entities that were created, including itself."""
+        if self.id:
+            self.delete()
+        for conditional_entity in self.conditional_entities.values():
+            conditional_entity.cleanup()
+
 
 workspace_crud_test_config = CrudTestConfig(
-    create_model=WorkspaceRequestModel(name=sample_name("sample_workspace")),
-    update_model=WorkspaceUpdateModel(
-        name=sample_name("updated_sample_workspace")
-    ),
-    filter_model=WorkspaceFilterModel,
+    create_model=WorkspaceRequest(name=sample_name("sample_workspace")),
+    update_model=WorkspaceUpdate(name=sample_name("updated_sample_workspace")),
+    filter_model=WorkspaceFilter,
     entity_name="workspace",
 )
 user_crud_test_config = CrudTestConfig(
-    create_model=UserRequestModel(name=sample_name("sample_user")),
-    update_model=UserUpdateModel(name=sample_name("updated_sample_user")),
-    filter_model=UserFilterModel,
+    create_model=UserRequest(name=sample_name("sample_user")),
+    update_model=UserUpdate(name=sample_name("updated_sample_user")),
+    filter_model=UserFilter,
     entity_name="user",
 )
-role_crud_test_config = CrudTestConfig(
-    create_model=RoleRequestModel(
-        name=sample_name("sample_role"), permissions=set()
-    ),
-    update_model=RoleUpdateModel(name=sample_name("updated_sample_role")),
-    filter_model=RoleFilterModel,
-    entity_name="role",
-)
-team_crud_test_config = CrudTestConfig(
-    create_model=TeamRequestModel(name=sample_name("sample_team")),
-    update_model=TeamUpdateModel(name=sample_name("updated_sample_team")),
-    filter_model=TeamFilterModel,
-    entity_name="team",
-)
 flavor_crud_test_config = CrudTestConfig(
-    create_model=FlavorRequestModel(
+    create_model=FlavorRequest(
         name=sample_name("sample_flavor"),
         type=StackComponentType.ORCHESTRATOR,
         integration="",
         source="",
         config_schema="",
+        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    filter_model=FlavorFilterModel,
+    filter_model=FlavorFilter,
     entity_name="flavor",
 )
 component_crud_test_config = CrudTestConfig(
-    create_model=ComponentRequestModel(
+    create_model=ComponentRequest(
         name=sample_name("sample_component"),
         type=StackComponentType.ORCHESTRATOR,
         flavor="local",
@@ -942,14 +998,12 @@ component_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    update_model=ComponentUpdateModel(
-        name=sample_name("updated_sample_component")
-    ),
-    filter_model=ComponentFilterModel,
+    update_model=ComponentUpdate(name=sample_name("updated_sample_component")),
+    filter_model=ComponentFilter,
     entity_name="stack_component",
 )
 pipeline_crud_test_config = CrudTestConfig(
-    create_model=PipelineRequestModel(
+    create_model=PipelineRequest(
         name=sample_name("sample_pipeline"),
         spec=PipelineSpec(steps=[]),
         user=uuid.uuid4(),
@@ -957,10 +1011,9 @@ pipeline_crud_test_config = CrudTestConfig(
         version="1",
         version_hash="abc123",
     ),
-    update_model=PipelineUpdateModel(
-        name=sample_name("updated_sample_pipeline")
-    ),
-    filter_model=PipelineFilterModel,
+    # Updating pipelines is not doing anything at the moment
+    # update_model=PipelineUpdate(name=sample_name("updated_sample_pipeline")),
+    filter_model=PipelineFilter,
     entity_name="pipeline",
 )
 # pipeline_run_crud_test_config = CrudTestConfig(
@@ -979,8 +1032,22 @@ pipeline_crud_test_config = CrudTestConfig(
 #     entity_name="run",
 # )
 artifact_crud_test_config = CrudTestConfig(
-    create_model=ArtifactRequestModel(
+    entity_name="artifact",
+    create_model=ArtifactRequest(
         name=sample_name("sample_artifact"),
+        has_custom_name=True,
+    ),
+    filter_model=ArtifactFilter,
+    update_model=ArtifactUpdate(
+        name=sample_name("sample_artifact"),
+        add_tags=["tag1", "tag2"],
+    ),
+)
+artifact_version_crud_test_config = CrudTestConfig(
+    entity_name="artifact_version",
+    create_model=ArtifactVersionRequest(
+        artifact_id=uuid.uuid4(),  # will be overridden in create()
+        version=1,
         data_type="module.class",
         materializer="module.class",
         type=ArtifactType.DATA,
@@ -988,8 +1055,9 @@ artifact_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    filter_model=ArtifactFilterModel,
-    entity_name="artifact",
+    filter_model=ArtifactVersionFilter,
+    update_model=ArtifactVersionUpdate(add_tags=["tag1", "tag2"]),
+    conditional_entities={"artifact_id": deepcopy(artifact_crud_test_config)},
 )
 secret_crud_test_config = CrudTestConfig(
     create_model=SecretRequestModel(
@@ -1002,18 +1070,18 @@ secret_crud_test_config = CrudTestConfig(
     entity_name="secret",
 )
 build_crud_test_config = CrudTestConfig(
-    create_model=PipelineBuildRequestModel(
+    create_model=PipelineBuildRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         images={},
         is_local=False,
         contains_code=True,
     ),
-    filter_model=PipelineBuildFilterModel,
+    filter_model=PipelineBuildFilter,
     entity_name="build",
 )
 deployment_crud_test_config = CrudTestConfig(
-    create_model=PipelineDeploymentRequestModel(
+    create_model=PipelineDeploymentRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         stack=uuid.uuid4(),
@@ -1022,25 +1090,25 @@ deployment_crud_test_config = CrudTestConfig(
         client_version="0.12.3",
         server_version="0.12.3",
     ),
-    filter_model=PipelineDeploymentFilterModel,
+    filter_model=PipelineDeploymentFilter,
     entity_name="deployment",
 )
 code_repository_crud_test_config = CrudTestConfig(
-    create_model=CodeRepositoryRequestModel(
+    create_model=CodeRepositoryRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name=sample_name("sample_code_repository"),
         config={},
         source={"module": "module", "type": "user"},
     ),
-    update_model=CodeRepositoryUpdateModel(
+    update_model=CodeRepositoryUpdate(
         name=sample_name("updated_sample_code_repository")
     ),
-    filter_model=CodeRepositoryFilterModel,
+    filter_model=CodeRepositoryFilter,
     entity_name="code_repository",
 )
 service_connector_crud_test_config = CrudTestConfig(
-    create_model=ServiceConnectorRequestModel(
+    create_model=ServiceConnectorRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name=sample_name("sample_service_connector"),
@@ -1051,10 +1119,10 @@ service_connector_crud_test_config = CrudTestConfig(
             password="password",
         ),
     ),
-    update_model=ServiceConnectorUpdateModel(
+    update_model=ServiceConnectorUpdate(
         name=sample_name("updated_sample_service_connector"),
     ),
-    filter_model=ServiceConnectorFilterModel,
+    filter_model=ServiceConnectorFilter,
     entity_name="service_connector",
 )
 model_crud_test_config = CrudTestConfig(
@@ -1100,14 +1168,13 @@ model_crud_test_config = CrudTestConfig(
 list_of_entities = [
     workspace_crud_test_config,
     user_crud_test_config,
-    role_crud_test_config,
-    team_crud_test_config,
     flavor_crud_test_config,
     component_crud_test_config,
     pipeline_crud_test_config,
     # step_run_crud_test_config,
     # pipeline_run_crud_test_config,
     artifact_crud_test_config,
+    artifact_version_crud_test_config,
     secret_crud_test_config,
     build_crud_test_config,
     deployment_crud_test_config,

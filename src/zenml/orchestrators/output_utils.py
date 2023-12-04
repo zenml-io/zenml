@@ -22,7 +22,7 @@ from zenml.logger import get_logger
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.models import StepRunResponse
     from zenml.stack import Stack
 
 
@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 
 def generate_artifact_uri(
     artifact_store: "BaseArtifactStore",
-    step_run: "StepRunResponseModel",
+    step_run: "StepRunResponse",
     output_name: str,
 ) -> str:
     """Generates a URI for an output artifact.
@@ -53,7 +53,7 @@ def generate_artifact_uri(
 
 
 def prepare_output_artifact_uris(
-    step_run: "StepRunResponseModel", stack: "Stack", step: "Step"
+    step_run: "StepRunResponse", stack: "Stack", step: "Step"
 ) -> Dict[str, str]:
     """Prepares the output artifact URIs to run the current step.
 

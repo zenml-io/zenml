@@ -43,19 +43,17 @@ from zenml.enums import (
     AuthScheme,
     OAuthDeviceStatus,
     OAuthGrantTypes,
-    PermissionType,
 )
 from zenml.logger import get_logger
 from zenml.models import (
-    APIKeyInternalResponseModel,
+    APIKeyInternalResponse,
     OAuthDeviceAuthorizationResponse,
-    OAuthDeviceInternalRequestModel,
-    OAuthDeviceInternalResponseModel,
-    OAuthDeviceInternalUpdateModel,
+    OAuthDeviceInternalRequest,
+    OAuthDeviceInternalResponse,
+    OAuthDeviceInternalUpdate,
     OAuthDeviceUserAgentHeader,
     OAuthRedirectResponse,
     OAuthTokenResponse,
-    UserRoleAssignmentFilterModel,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -67,6 +65,8 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.jwt import JWTToken
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     get_ip_location,
     handle_exceptions,
@@ -192,8 +192,8 @@ class OAuthLoginRequestForm:
 def generate_access_token(
     user_id: UUID,
     response: Response,
-    device: Optional[OAuthDeviceInternalResponseModel] = None,
-    api_key: Optional[APIKeyInternalResponseModel] = None,
+    device: Optional[OAuthDeviceInternalResponse] = None,
+    api_key: Optional[APIKeyInternalResponse] = None,
 ) -> OAuthTokenResponse:
     """Generates an access token for the given user.
 
@@ -206,21 +206,6 @@ def generate_access_token(
     Returns:
         An authentication response with an access token.
     """
-    role_assignments = zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
-            user_id=user_id
-        )
-    )
-
-    # TODO: This needs to happen at the sql level now
-    permissions = set().union(
-        *[
-            zen_store().get_role(ra.role.id).permissions
-            for ra in role_assignments.items
-            if ra.role is not None
-        ]
-    )
-
     config = server_config()
 
     # The JWT tokens are set to expire according to the values configured
@@ -246,7 +231,6 @@ def generate_access_token(
         user_id=user_id,
         device_id=device.id if device else None,
         api_key_id=api_key.id if api_key else None,
-        permissions=[p.value for p in permissions],
     ).encode(expires=expires)
 
     if not device:
@@ -433,7 +417,7 @@ def device_authorization(
         )
     except KeyError:
         device_model = store.create_authorized_device(
-            OAuthDeviceInternalRequestModel(
+            OAuthDeviceInternalRequest(
                 client_id=client_id,
                 expires_in=config.device_auth_timeout,
                 ip_address=ip_address,
@@ -449,7 +433,7 @@ def device_authorization(
         # for authentication anymore.
         device_model = store.update_internal_authorized_device(
             device_id=device_model.id,
-            update=OAuthDeviceInternalUpdateModel(
+            update=OAuthDeviceInternalUpdate(
                 trusted_device=False,
                 expires_in=config.device_auth_timeout,
                 status=OAuthDeviceStatus.PENDING,
@@ -499,9 +483,7 @@ def api_token(
     pipeline_id: Optional[UUID] = None,
     schedule_id: Optional[UUID] = None,
     expires_minutes: Optional[int] = None,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> str:
     """Get a workload API token for the current user.
 
@@ -525,6 +507,10 @@ def api_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated.",
         )
+
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
+    )
 
     if not token.device_id:
         # If not authenticated with a device, the current API token is returned

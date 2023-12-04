@@ -27,9 +27,7 @@ from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
 )
-from zenml.models.page_model import Page
-from zenml.models.pipeline_build_models import PipelineBuildBaseModel
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
+from zenml.models import Page, PipelineBuildBase, PipelineDeploymentBase
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.pipelines import BasePipeline, Schedule, pipeline
 from zenml.steps import BaseParameters, step
@@ -435,13 +433,13 @@ def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
 ):
     """Test that `pipeline.run(enable_cache=...)` overrides decorator values."""
 
-    def assert_cache_enabled(deployment: PipelineDeploymentBaseModel):
+    def assert_cache_enabled(deployment: PipelineDeploymentBase):
         assert deployment.pipeline_configuration.enable_cache is True
         for step_ in deployment.step_configurations.values():
             assert step_.config.enable_cache is True
 
     def assert_cache_disabled(
-        deployment: PipelineDeploymentBaseModel,
+        deployment: PipelineDeploymentBase,
     ):
         assert deployment.pipeline_configuration.enable_cache is False
         for step_ in deployment.step_configurations.values():
@@ -522,7 +520,9 @@ def test_unique_identifier_considers_step_source_code(
 
 
 def test_latest_version_fetching(
-    mocker, empty_pipeline, create_pipeline_model  # noqa: F811
+    mocker,
+    empty_pipeline,  # noqa: F811
+    create_pipeline_model,
 ):
     """Tests fetching the latest pipeline version."""
     mock_list_pipelines = mocker.patch(
@@ -572,7 +572,8 @@ def test_latest_version_fetching(
 
 
 def test_registering_new_pipeline_version(
-    mocker, empty_pipeline  # noqa: F811
+    mocker,
+    empty_pipeline,  # noqa: F811
 ):
     """Tests registering a new pipeline version."""
     mocker.patch(
@@ -602,7 +603,9 @@ def test_registering_new_pipeline_version(
 
 
 def test_reusing_pipeline_version(
-    mocker, empty_pipeline, create_pipeline_model  # noqa: F811
+    mocker,
+    empty_pipeline,  # noqa: F811
+    create_pipeline_model,
 ):
     """Tests reusing an already registered pipeline version."""
     pipeline_model = create_pipeline_model(version="3")
@@ -844,7 +847,8 @@ def test_loading_pipeline_from_old_spec_fails(create_pipeline_model):
 
 
 def test_compiling_a_pipeline_merges_schedule(
-    empty_pipeline, tmp_path  # noqa: F811
+    empty_pipeline,  # noqa: F811
+    tmp_path,
 ):
     """Tests that compiling a pipeline merges the schedule from the config
     file and in-code configuration."""
@@ -869,7 +873,8 @@ def test_compiling_a_pipeline_merges_schedule(
 
 
 def test_compiling_a_pipeline_merges_build(
-    empty_pipeline, tmp_path  # noqa: F811
+    empty_pipeline,  # noqa: F811
+    tmp_path,
 ):
     """Tests that compiling a pipeline merges the build/build ID from the config
     file and in-code configuration."""
@@ -880,7 +885,7 @@ def test_compiling_a_pipeline_merges_build(
     config_path_with_build_id.write_text(run_config_with_build_id.yaml())
 
     run_config_with_build = PipelineRunConfiguration(
-        build=PipelineBuildBaseModel(is_local=True, contains_code=True)
+        build=PipelineBuildBase(is_local=True, contains_code=True)
     )
     config_path_with_build.write_text(run_config_with_build.yaml())
 
@@ -901,7 +906,7 @@ def test_compiling_a_pipeline_merges_build(
     )
     assert build == in_code_build_id
 
-    in_code_build = PipelineBuildBaseModel(
+    in_code_build = PipelineBuildBase(
         images={"key": {"image": "image_name"}},
         is_local=False,
         contains_code=True,
@@ -919,7 +924,8 @@ def test_compiling_a_pipeline_merges_build(
 
 
 def test_building_a_pipeline_registers_it(
-    clean_client, empty_pipeline  # noqa: F811
+    clean_client,
+    empty_pipeline,  # noqa: F811
 ):
     """Tests that building a pipeline registers it in the server."""
     pipeline_instance = empty_pipeline

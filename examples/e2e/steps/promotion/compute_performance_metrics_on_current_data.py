@@ -20,10 +20,10 @@ from typing import Tuple
 import pandas as pd
 from sklearn.metrics import accuracy_score
 from typing_extensions import Annotated
-from utils import get_model_versions
 
-from zenml import step
+from zenml import get_step_context, step
 from zenml.logger import get_logger
+from zenml.model.model_version import ModelVersion
 
 logger = get_logger(__name__)
 
@@ -61,23 +61,29 @@ def compute_performance_metrics_on_current_data(
     logger.info("Evaluating model metrics...")
 
     # Get model version numbers from Model Control Plane
-    latest_version, current_version = get_model_versions(target_env)
+    latest_version = get_step_context().model_version
+    current_version = ModelVersion(
+        name=latest_version.name, version=target_env
+    )
 
-    # Get predictors
-    predictors = {
-        latest_version.number: latest_version.get_model_object("model").load(),
-        current_version.number: current_version.get_model_object(
-            "model"
-        ).load(),
-    }
+    latest_version_number = latest_version.number
+    current_version_number = current_version.number
 
-    if latest_version != current_version:
+    if current_version_number is None:
+        current_version_number = -1
+        metrics = {latest_version_number: 1.0, current_version_number: 0.0}
+    else:
+        # Get predictors
+        predictors = {
+            latest_version_number: latest_version.load_artifact("model"),
+            current_version_number: current_version.load_artifact("model"),
+        }
+
         metrics = {}
-        for version in [latest_version.number, current_version.number]:
+        for version in [latest_version_number, current_version_number]:
             # predict and evaluate
             predictions = predictors[version].predict(X)
             metrics[version] = accuracy_score(y, predictions)
-    else:
-        metrics = {latest_version.number: 1.0, current_version.number: 0.0}
+
     ### YOUR CODE ENDS HERE ###
-    return metrics[latest_version.number], metrics[current_version.number]
+    return metrics[latest_version_number], metrics[current_version_number]

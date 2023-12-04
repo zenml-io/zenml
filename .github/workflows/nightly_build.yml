@@ -1,0 +1,36 @@
+name: Nightly Build
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run this workflow every day at midnight
+    - cron: '30 0 * * *'
+
+jobs:
+    setup-and-test:
+        uses: ./.github/workflows/setup-python-environment.yml
+        with:
+          os: "ubuntu-latest"
+          python-version: "3.8"
+          git-ref: "develop"
+        secrets: inherit
+
+    publish-python-package:
+        needs: setup-and-test
+        uses: ./.github/workflows/publish_to_pypi_nightly.yml
+        secrets: inherit
+
+    wait-for-package-release:
+        runs-on: ubuntu-latest
+        needs: publish-python-package
+        steps:
+          - name: Sleep for 4 minutes
+            run: sleep 240
+            shell: bash
+
+    publish-docker-image:
+        needs: wait-for-package-release
+        uses: ./.github/workflows/publish_docker_image.yml
+        with:
+          config_file: release-cloudbuild-nightly.yaml
+        secrets: inherit

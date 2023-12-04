@@ -277,7 +277,7 @@ The GCP Service Connector is part of the GCP ZenML integration. You can either
 install the entire integration or use a pypi extra to install it independently
 of the integration:
 
-* `pip install zenml[connectors-gcp]` installs only prerequisites for the GCP
+* `pip install "zenml[connectors-gcp]"` installs only prerequisites for the GCP
 Service Connector Type
 * `zenml integration install gcp` installs the entire GCP ZenML integration
 

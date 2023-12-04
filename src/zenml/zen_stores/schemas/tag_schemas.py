@@ -33,6 +33,10 @@ from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.artifact_schemas import (
+        ArtifactSchema,
+        ArtifactVersionSchema,
+    )
     from zenml.zen_stores.schemas.model_schemas import ModelSchema
 
 
@@ -62,8 +66,15 @@ class TagSchema(NamedSchema, table=True):
             color=request.color.value,
         )
 
-    def to_model(self) -> TagResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> TagResponseModel:
         """Convert an `TagSchema` to an `TagResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `TagResponseModel`.
@@ -111,10 +122,25 @@ class TagResourceSchema(BaseSchema, table=True):
     tag: "TagSchema" = Relationship(back_populates="links")
     resource_id: UUID
     resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
+    artifact: List["ArtifactSchema"] = Relationship(
+        back_populates="tags",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
+            overlaps="tags,model,artifact_version",
+        ),
+    )
+    artifact_version: List["ArtifactVersionSchema"] = Relationship(
+        back_populates="tags",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT_VERSION.value}', foreign(TagResourceSchema.resource_id)==ArtifactVersionSchema.id)",
+            overlaps="tags,model,artifact",
+        ),
+    )
     model: List["ModelSchema"] = Relationship(
         back_populates="tags",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
+            overlaps="tags,artifact,artifact_version",
         ),
     )
 
@@ -131,14 +157,20 @@ class TagResourceSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            id=request.tag_resource_id,
             tag_id=request.tag_id,
             resource_id=request.resource_id,
             resource_type=request.resource_type.value,
         )
 
-    def to_model(self) -> TagResourceResponseModel:
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> TagResourceResponseModel:
         """Convert an `TagResourceSchema` to an `TagResourceResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `TagResourceResponseModel`.

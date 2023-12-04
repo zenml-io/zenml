@@ -23,16 +23,23 @@ from zenml.constants import (
     TAGS,
     VERSION_1,
 )
-from zenml.enums import PermissionType
 from zenml.models import (
+    Page,
     TagFilterModel,
     TagRequestModel,
     TagResponseModel,
     TagUpdateModel,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -46,7 +53,7 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + TAGS,
     tags=["tags"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
@@ -58,7 +65,7 @@ router = APIRouter(
 @handle_exceptions
 def create_tag(
     tag: TagRequestModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> TagResponseModel:
     """Create a new tag.
 
@@ -68,7 +75,11 @@ def create_tag(
     Returns:
         The created tag.
     """
-    return zen_store().create_tag(tag)
+    return verify_permissions_and_create_entity(
+        request_model=tag,
+        resource_type=ResourceType.TAG,
+        create_method=zen_store().create_tag,
+    )
 
 
 @router.get(
@@ -81,7 +92,7 @@ def list_tags(
     tag_filter_model: TagFilterModel = Depends(
         make_dependable(TagFilterModel)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> Page[TagResponseModel]:
     """Get tags according to query filters.
 
@@ -93,8 +104,10 @@ def list_tags(
     Returns:
         The tags according to query filters.
     """
-    return zen_store().list_tags(
-        tag_filter_model=tag_filter_model,
+    return verify_permissions_and_list_entities(
+        filter_model=tag_filter_model,
+        resource_type=ResourceType.TAG,
+        list_method=zen_store().list_tags,
     )
 
 
@@ -106,7 +119,7 @@ def list_tags(
 @handle_exceptions
 def get_tag(
     tag_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    _: AuthContext = Security(authorize),
 ) -> TagResponseModel:
     """Get a tag by name or ID.
 
@@ -116,7 +129,9 @@ def get_tag(
     Returns:
         The tag with the given name or ID.
     """
-    return zen_store().get_tag(tag_name_or_id)
+    return verify_permissions_and_get_entity(
+        id=tag_name_or_id, get_method=zen_store().get_tag
+    )
 
 
 @router.put(
@@ -128,7 +143,7 @@ def get_tag(
 def update_tag(
     tag_id: UUID,
     tag_update_model: TagUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> TagResponseModel:
     """Updates a tag.
 
@@ -139,9 +154,11 @@ def update_tag(
     Returns:
         The updated tag.
     """
-    return zen_store().update_tag(
-        tag_name_or_id=tag_id,
-        tag_update_model=tag_update_model,
+    return verify_permissions_and_update_entity(
+        id=tag_id,
+        update_model=tag_update_model,
+        get_method=zen_store().get_tag,
+        update_method=zen_store().update_tag,
     )
 
 
@@ -152,11 +169,15 @@ def update_tag(
 @handle_exceptions
 def delete_tag(
     tag_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Delete a tag by name or ID.
 
     Args:
         tag_name_or_id: The name or ID of the tag to delete.
     """
-    zen_store().delete_tag(tag_name_or_id)
+    verify_permissions_and_delete_entity(
+        id=tag_name_or_id,
+        get_method=zen_store().get_tag,
+        delete_method=zen_store().delete_tag,
+    )

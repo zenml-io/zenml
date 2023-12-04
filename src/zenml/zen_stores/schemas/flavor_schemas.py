@@ -21,7 +21,12 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
-from zenml.models.flavor_models import FlavorResponseModel, FlavorUpdateModel
+from zenml.models import (
+    FlavorResponse,
+    FlavorResponseBody,
+    FlavorResponseMetadata,
+    FlavorUpdate,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -78,16 +83,18 @@ class FlavorSchema(NamedSchema, table=True):
 
     is_custom: bool = Field(default=True)
 
-    def update(self, flavor_update: FlavorUpdateModel) -> "FlavorSchema":
-        """Update a `FlavorSchema` from a `FlavorUpdateModel`.
+    def update(self, flavor_update: "FlavorUpdate") -> "FlavorSchema":
+        """Update a `FlavorSchema` from a `FlavorUpdate`.
 
         Args:
-            flavor_update: The `FlavorUpdateModel` from which to update the schema.
+            flavor_update: The `FlavorUpdate` from which to update the schema.
 
         Returns:
             The updated `FlavorSchema`.
         """
-        for field, value in flavor_update.dict(exclude_unset=True).items():
+        for field, value in flavor_update.dict(
+            exclude_unset=True, exclude={"workspace", "user"}
+        ).items():
             if field == "config_schema":
                 setattr(self, field, json.dumps(value))
             else:
@@ -96,28 +103,42 @@ class FlavorSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> FlavorResponseModel:
+    def to_model(self, hydrate: bool = False) -> "FlavorResponse":
         """Converts a flavor schema to a flavor model.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The flavor model.
         """
-        return FlavorResponseModel(
-            id=self.id,
-            name=self.name,
-            type=self.type,
-            source=self.source,
-            config_schema=json.loads(self.config_schema),
-            integration=self.integration,
-            connector_type=self.connector_type,
-            connector_resource_type=self.connector_resource_type,
-            connector_resource_id_attr=self.connector_resource_id_attr,
+        body = FlavorResponseBody(
             user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model() if self.workspace else None,
+            type=self.type,
+            integration=self.integration,
+            logo_url=self.logo_url,
             created=self.created,
             updated=self.updated,
-            logo_url=self.logo_url,
-            docs_url=self.docs_url,
-            sdk_docs_url=self.sdk_docs_url,
-            is_custom=self.is_custom,
+        )
+        metadata = None
+        if hydrate:
+            metadata = FlavorResponseMetadata(
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
+                config_schema=json.loads(self.config_schema),
+                connector_type=self.connector_type,
+                connector_resource_type=self.connector_resource_type,
+                connector_resource_id_attr=self.connector_resource_id_attr,
+                source=self.source,
+                docs_url=self.docs_url,
+                sdk_docs_url=self.sdk_docs_url,
+                is_custom=self.is_custom,
+            )
+        return FlavorResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
         )

@@ -15,17 +15,20 @@
 
 
 import json
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, VARCHAR, Column
 from sqlmodel import Field, Relationship
 
+from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataTypeEnum
-from zenml.models.run_metadata_models import (
-    RunMetadataResponseModel,
+from zenml.models import (
+    RunMetadataResponse,
+    RunMetadataResponseBody,
+    RunMetadataResponseMetadata,
 )
-from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -40,42 +43,29 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     __tablename__ = "run_metadata"
 
-    pipeline_run_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=PipelineRunSchema.__tablename__,
-        source_column="pipeline_run_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
+    resource_id: UUID
+    resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
+    pipeline_run: List["PipelineRunSchema"] = Relationship(
+        back_populates="run_metadata",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataSchema.resource_id)==PipelineRunSchema.id)",
+            overlaps="run_metadata,step_run,artifact_version",
+        ),
     )
-    pipeline_run: Optional["PipelineRunSchema"] = Relationship(
-        back_populates="run_metadata"
+    step_run: List["StepRunSchema"] = Relationship(
+        back_populates="run_metadata",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataSchema.resource_id)==StepRunSchema.id)",
+            overlaps="run_metadata,pipeline_run,artifact_version",
+        ),
     )
-
-    step_run_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="step_run_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
+    artifact_version: List["ArtifactVersionSchema"] = Relationship(
+        back_populates="run_metadata",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ArtifactVersionSchema.id)",
+            overlaps="run_metadata,pipeline_run,step_run",
+        ),
     )
-    step_run: Optional["StepRunSchema"] = Relationship(
-        back_populates="run_metadata"
-    )
-
-    artifact_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=ArtifactSchema.__tablename__,
-        source_column="artifact_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    artifact: Optional["ArtifactSchema"] = Relationship(
-        back_populates="run_metadata"
-    )
-
     stack_component_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
@@ -112,25 +102,35 @@ class RunMetadataSchema(BaseSchema, table=True):
     value: str = Field(sa_column=Column(TEXT, nullable=False))
     type: MetadataTypeEnum
 
-    def to_model(self) -> "RunMetadataResponseModel":
-        """Convert a `RunMetadataSchema` to a `RunMetadataResponseModel`.
+    def to_model(self, hydrate: bool = False) -> "RunMetadataResponse":
+        """Convert a `RunMetadataSchema` to a `RunMetadataResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
-            The created `RunMetadataResponseModel`.
+            The created `RunMetadataResponse`.
         """
-        return RunMetadataResponseModel(
-            id=self.id,
-            pipeline_run_id=self.pipeline_run_id,
-            step_run_id=self.step_run_id,
-            artifact_id=self.artifact_id,
-            stack_component_id=self.stack_component_id,
+        body = RunMetadataResponseBody(
+            user=self.user.to_model() if self.user else None,
             key=self.key,
-            value=json.loads(self.value),
-            type=self.type,
-            workspace=self.workspace.to_model(),
-            user=self.user.to_model(_block_recursion=True)
-            if self.user
-            else None,
             created=self.created,
             updated=self.updated,
+            value=json.loads(self.value),
+            type=self.type,
+        )
+        metadata = None
+        if hydrate:
+            metadata = RunMetadataResponseMetadata(
+                workspace=self.workspace.to_model(),
+                resource_id=self.resource_id,
+                resource_type=MetadataResourceTypes(self.resource_type),
+                stack_component_id=self.stack_component_id,
+            )
+
+        return RunMetadataResponse(
+            id=self.id,
+            body=body,
+            metadata=metadata,
         )

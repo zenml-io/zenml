@@ -61,23 +61,22 @@ from zenml.model_registries.base_model_registry import (
     ModelVersion,
     RegisteredModel,
 )
-from zenml.models import BaseFilterModel
-from zenml.models.base_models import BaseResponseModel
-from zenml.models.filter_models import (
+from zenml.models import (
+    BaseFilter,
+    BaseResponse,
+    BaseResponseModel,
     BoolFilter,
     NumericFilter,
+    Page,
     StrFilter,
     UUIDFilter,
 )
-from zenml.models.page_model import Page
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
 from zenml.zen_server.deploy import ServerDeployment
-
-logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -89,19 +88,27 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.models import (
         AuthenticationMethodModel,
-        ComponentResponseModel,
-        FlavorResponseModel,
-        PipelineRunResponseModel,
+        ComponentResponse,
+        FlavorResponse,
+        PipelineRunResponse,
         ResourceTypeModel,
-        ServiceConnectorRequestModel,
+        ServiceConnectorRequest,
         ServiceConnectorResourcesModel,
-        ServiceConnectorResponseModel,
+        ServiceConnectorResponse,
         ServiceConnectorTypeModel,
-        StackResponseModel,
+        StackResponse,
     )
     from zenml.stack import Stack
 
+logger = get_logger(__name__)
+
 MAX_ARGUMENT_VALUE_SIZE = 10240
+
+
+T = TypeVar(
+    "T",
+    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
+)
 
 
 def title(text: str) -> None:
@@ -245,9 +252,6 @@ def print_table(
     console.print(rich_table)
 
 
-T = TypeVar("T", bound=BaseResponseModel)
-
-
 def print_pydantic_models(
     models: Union[Page[T], List[T]],
     columns: Optional[List[str]] = None,
@@ -286,9 +290,33 @@ def print_pydantic_models(
         """
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
-            include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns
-            ]
+            if isinstance(model, BaseResponse):
+                include_columns = ["id"]
+
+                if "name" in model.__fields__:
+                    include_columns.append("name")
+
+                include_columns.extend(
+                    [
+                        k
+                        for k in model.__fields__[
+                            "body"
+                        ].type_.__fields__.keys()
+                        if k not in exclude_columns
+                    ]
+                    + [
+                        k
+                        for k in model.__fields__[
+                            "metadata"
+                        ].type_.__fields__.keys()
+                        if k not in exclude_columns
+                    ]
+                )
+
+            else:
+                include_columns = [
+                    k for k in model.dict().keys() if k not in exclude_columns
+                ]
         else:
             include_columns = columns
 
@@ -299,22 +327,23 @@ def print_pydantic_models(
             # In case the response model contains nested `BaseResponseModels`
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
-            if isinstance(value, BaseResponseModel):
+            if isinstance(value, (BaseResponse, BaseResponseModel)):
                 if "name" in value.__fields__:
-                    items[k] = str(value.name)  # type: ignore[attr-defined]
+                    items[k] = str(getattr(value, "name"))
                 else:
                     items[k] = str(value.id)
 
             # If it is a list of `BaseResponseModels` access each Model within
             #  the list and extract either name or id
-            elif isinstance(value, list) and issubclass(
-                model.__fields__[k].type_, BaseResponseModel
-            ):
+            elif isinstance(value, list):
                 for v in value:
-                    if "name" in v.__fields__:
-                        items.setdefault(k, []).append(str(v.name))
-                    else:
-                        items.setdefault(k, []).append(str(v.id))
+                    if isinstance(v, (BaseResponse, BaseResponseModel)):
+                        if "name" in v.__fields__:
+                            items.setdefault(k, []).append(
+                                str(getattr(v, "name"))
+                            )
+                        else:
+                            items.setdefault(k, []).append(str(v.id))
             elif isinstance(value, Set) or isinstance(value, List):
                 items[k] = [str(v) for v in value]
             else:
@@ -388,18 +417,68 @@ def print_pydantic_model(
     rich_table.add_column("PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
 
-    model_info = model.dict(include=columns, exclude=exclude_columns)
-    for item in model_info.items():
-        if isinstance(item[1], dict) and "id" in item[1]:
-            value = str(item[1]["id"])
-        elif item[1] is not None:
-            value = str(item[1])
+    # TODO: This uses the same _dictify function up in the print_pydantic_models
+    #   function. This 2 can be generalized.
+    if exclude_columns is None:
+        exclude_columns = set()
+
+    if not columns:
+        if isinstance(model, BaseResponse):
+            include_columns = ["id"]
+
+            if "name" in model.__fields__:
+                include_columns.append("name")
+
+            include_columns.extend(
+                [
+                    k
+                    for k in model.__fields__["body"].type_.__fields__.keys()
+                    if k not in exclude_columns
+                ]
+                + [
+                    k
+                    for k in model.__fields__[
+                        "metadata"
+                    ].type_.__fields__.keys()
+                    if k not in exclude_columns
+                ]
+            )
+
         else:
-            value = ""
-        rich_table.add_row(
-            str(item[0]).upper(),
-            value,
-        )
+            include_columns = [
+                k for k in model.dict().keys() if k not in exclude_columns
+            ]
+    else:
+        include_columns = list(columns)
+
+    items: Dict[str, Any] = {}
+
+    for k in include_columns:
+        value = getattr(model, k)
+        if isinstance(value, (BaseResponse, BaseResponseModel)):
+            if "name" in value.__fields__:
+                items[k] = str(getattr(value, "name"))
+            else:
+                items[k] = str(value.id)
+
+        # If it is a list of `BaseResponseModels` access each Model within
+        #  the list and extract either name or id
+        elif isinstance(value, list):
+            for v in value:
+                if isinstance(v, (BaseResponse, BaseResponseModel)):
+                    if "name" in v.__fields__:
+                        items.setdefault(k, []).append(str(getattr(v, "name")))
+                    else:
+                        items.setdefault(k, []).append(str(v.id))
+
+                items[k] = str(items[k])
+        elif isinstance(value, Set) or isinstance(value, List):
+            items[k] = str([str(v) for v in value])
+        else:
+            items[k] = str(value)
+
+    for k, v in items.items():
+        rich_table.add_row(str(k).upper(), v)
 
     console.print(rich_table)
 
@@ -434,7 +513,7 @@ def format_integration_list(
     return list_of_dicts
 
 
-def print_stack_outputs(stack: "StackResponseModel") -> None:
+def print_stack_outputs(stack: "StackResponse") -> None:
     """Prints outputs for stacks deployed with mlstacks.
 
     Args:
@@ -471,9 +550,7 @@ def print_stack_outputs(stack: "StackResponseModel") -> None:
     console.print(rich_table)
 
 
-def print_stack_configuration(
-    stack: "StackResponseModel", active: bool
-) -> None:
+def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
     """Prints the configuration options of a stack.
 
     Args:
@@ -502,15 +579,14 @@ def print_stack_configuration(
     console.print(rich_table)
     declare(
         f"Stack '{stack.name}' with id '{stack.id}' is "
-        f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
-        f"'{'shared' if stack.is_shared else 'private'}'."
+        f"{f'owned by user {stack.user.name}.' if stack.user else 'unowned.'}"
     )
 
     if stack.stack_spec_path:
         declare(f"Stack spec path for `mlstacks`: '{stack.stack_spec_path}'")
 
 
-def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
+def print_flavor_list(flavors: Page["FlavorResponse"]) -> None:
     """Prints the list of flavors.
 
     Args:
@@ -532,7 +608,7 @@ def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
 
 
 def print_stack_component_configuration(
-    component: "ComponentResponseModel", active_status: bool
+    component: "ComponentResponse", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 
@@ -543,13 +619,12 @@ def print_stack_component_configuration(
     if component.user:
         user_name = component.user.name
     else:
-        user_name = "[DELETED]"
+        user_name = "-"
 
     declare(
         f"{component.type.value.title()} '{component.name}' of flavor "
         f"'{component.flavor}' with id '{component.id}' is owned by "
-        f"user '{user_name}' and is "
-        f"'{'shared' if component.is_shared else 'private'}'."
+        f"user '{user_name}'."
     )
 
     if len(component.configuration) == 0:
@@ -570,10 +645,6 @@ def print_stack_component_configuration(
         )
         rich_table.add_column("COMPONENT_PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
-
-        component_dict = component.dict()
-        component_dict.pop("configuration")
-        component_dict.update(component.configuration)
 
         items = component.configuration.items()
         for item in items:
@@ -1347,16 +1418,16 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
                 declare(f"  {prop_schema['description']}", width=80)
 
 
-def get_shared_emoji(is_shared: bool) -> str:
-    """Returns the emoji for whether a stack is shared or not.
+def get_boolean_emoji(value: bool) -> str:
+    """Returns the emoji for displaying a boolean.
 
     Args:
-        is_shared: Whether the stack is shared or not.
+        value: The boolean value to display
 
     Returns:
-        The emoji for whether the stack is shared or not.
+        The emoji for the boolean
     """
-    return ":white_heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
+    return ":white_heavy_check_mark:" if value else ":heavy_minus_sign:"
 
 
 def replace_emojis(text: str) -> str:
@@ -1381,7 +1452,7 @@ def replace_emojis(text: str) -> str:
 
 def print_stacks_table(
     client: "Client",
-    stacks: Sequence["StackResponseModel"],
+    stacks: Sequence["StackResponse"],
     show_active: bool = False,
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
@@ -1411,13 +1482,12 @@ def print_stacks_table(
         if stack.user:
             user_name = stack.user.name
         else:
-            user_name = "[DELETED]"
+            user_name = "-"
 
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
             "STACK ID": stack.id,
-            "SHARED": get_shared_emoji(stack.is_shared),
             "OWNER": user_name,
             **{
                 component_type.upper(): components[0].name
@@ -1432,7 +1502,7 @@ def print_stacks_table(
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
-    components: Sequence["ComponentResponseModel"],
+    components: Sequence["ComponentResponse"],
     show_active: bool = False,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
@@ -1480,8 +1550,7 @@ def print_components_table(
             "NAME": component.name,
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor,
-            "SHARED": get_shared_emoji(component.is_shared),
-            "OWNER": f"{component.user.name if component.user else 'DELETED!'}",
+            "OWNER": f"{component.user.name if component.user else '-'}",
         }
         configurations.append(component_config)
     print_table(configurations)
@@ -1532,7 +1601,7 @@ def expires_in(expires_at: datetime.datetime, expired_str: str) -> str:
 
 def print_service_connectors_table(
     client: "Client",
-    connectors: Sequence["ServiceConnectorResponseModel"],
+    connectors: Sequence["ServiceConnectorResponse"],
     show_active: bool = False,
 ) -> None:
     """Prints a table with details for a list of service connectors.
@@ -1546,7 +1615,7 @@ def print_service_connectors_table(
     if len(connectors) == 0:
         return
 
-    active_connectors: List["ServiceConnectorResponseModel"] = []
+    active_connectors: List["ServiceConnectorResponse"] = []
     for components in client.active_stack_model.components.values():
         for component in components:
             if component.connector:
@@ -1556,7 +1625,7 @@ def print_service_connectors_table(
                         # The connector embedded within the stack component
                         # does not include a hydrated connector type. We need
                         # that to print its emojis.
-                        connector.connector_type = (
+                        connector.set_connector_type(
                             client.get_service_connector_type(
                                 connector.connector_type
                             )
@@ -1589,8 +1658,7 @@ def print_service_connectors_table(
             "TYPE": connector.emojified_connector_type,
             "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
             "RESOURCE NAME": resource_name,
-            "SHARED": get_shared_emoji(connector.is_shared),
-            "OWNER": f"{connector.user.name if connector.user else 'DELETED!'}",
+            "OWNER": f"{connector.user.name if connector.user else '-'}",
             "EXPIRES IN": expires_in(
                 connector.expires_at, ":name_badge: Expired!"
             )
@@ -1673,9 +1741,7 @@ def print_service_connector_resource_table(
 
 
 def print_service_connector_configuration(
-    connector: Union[
-        "ServiceConnectorResponseModel", "ServiceConnectorRequestModel"
-    ],
+    connector: Union["ServiceConnectorResponse", "ServiceConnectorRequest"],
     active_status: bool,
     show_secrets: bool,
 ) -> None:
@@ -1688,7 +1754,7 @@ def print_service_connector_configuration(
     """
     from uuid import UUID
 
-    from zenml.models import ServiceConnectorResponseModel
+    from zenml.models import ServiceConnectorResponse
 
     if connector.user:
         if isinstance(connector.user, UUID):
@@ -1696,25 +1762,21 @@ def print_service_connector_configuration(
         else:
             user_name = connector.user.name
     else:
-        user_name = "[DELETED]"
+        user_name = "-"
 
-    if isinstance(connector, ServiceConnectorResponseModel):
+    if isinstance(connector, ServiceConnectorResponse):
         declare(
             f"Service connector '{connector.name}' of type "
             f"'{connector.type}' with id '{connector.id}' is owned by "
-            f"user '{user_name}' and is "
-            f"'{'shared' if connector.is_shared else 'private'}'."
+            f"user '{user_name}'."
         )
     else:
         declare(
             f"Service connector '{connector.name}' of type "
-            f"'{connector.type}' is "
-            f"'{'shared' if connector.is_shared else 'private'}'."
+            f"'{connector.type}'."
         )
 
-    title_ = (
-        f"'{connector.name}' {connector.type} Service Connector " "Details"
-    )
+    title_ = f"'{connector.name}' {connector.type} Service Connector Details"
 
     if active_status:
         title_ += " (ACTIVE)"
@@ -1731,7 +1793,7 @@ def print_service_connector_configuration(
     else:
         expiration = str(connector.expiration_seconds) + "s"
 
-    if isinstance(connector, ServiceConnectorResponseModel):
+    if isinstance(connector, ServiceConnectorResponse):
         properties = {
             "ID": connector.id,
             "NAME": connector.name,
@@ -1748,7 +1810,6 @@ def print_service_connector_configuration(
             else "N/A",
             "OWNER": user_name,
             "WORKSPACE": connector.workspace.name,
-            "SHARED": get_shared_emoji(connector.is_shared),
             "CREATED_AT": connector.created,
             "UPDATED_AT": connector.updated,
         }
@@ -1765,7 +1826,6 @@ def print_service_connector_configuration(
             )
             if connector.expires_at
             else "N/A",
-            "SHARED": get_shared_emoji(connector.is_shared),
         }
 
     for item in properties.items():
@@ -1845,8 +1905,8 @@ def print_service_connector_types_table(
                 connector_type.emojified_resource_types
             ),
             "AUTH METHODS": "\n".join(supported_auth_methods),
-            "LOCAL": get_shared_emoji(connector_type.local),
-            "REMOTE": get_shared_emoji(connector_type.remote),
+            "LOCAL": get_boolean_emoji(connector_type.local),
+            "REMOTE": get_boolean_emoji(connector_type.remote),
         }
         configurations.append(connector_type_config)
     print_table(configurations)
@@ -2105,7 +2165,6 @@ def print_debug_stack() -> None:
     declare("\nCURRENT STACK\n", bold=True)
     console.print(f"Name: {stack.name}")
     console.print(f"ID: {str(stack.id)}")
-    console.print(f"Shared: {'Yes' if stack.is_shared else 'No'}")
     if stack.user and stack.user.name and stack.user.id:  # mypy check
         console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
     console.print(
@@ -2124,9 +2183,6 @@ def print_debug_stack() -> None:
         console.print(f"Type: {component.type.value}")
         console.print(f"Flavor: {component.flavor}")
         console.print(f"Configuration: {_scrub_secret(component.config)}")
-        console.print(
-            f"Shared: {'Yes' if component_response.is_shared else 'No'}"
-        )
         if (
             component_response.user
             and component_response.user.name
@@ -2182,7 +2238,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    pipeline_runs: Sequence["PipelineRunResponseModel"],
+    pipeline_runs: Sequence["PipelineRunResponse"],
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 
@@ -2194,7 +2250,7 @@ def print_pipeline_runs_table(
         if pipeline_run.user:
             user_name = pipeline_run.user.name
         else:
-            user_name = "[DELETED]"
+            user_name = "-"
 
         if pipeline_run.pipeline is None:
             pipeline_name = "unlisted"
@@ -2252,9 +2308,7 @@ def print_page_info(page: Page[T]) -> None:
 F = TypeVar("F", bound=Callable[..., None])
 
 
-def create_filter_help_text(
-    filter_model: Type[BaseFilterModel], field: str
-) -> str:
+def create_filter_help_text(filter_model: Type[BaseFilter], field: str) -> str:
     """Create the help text used in the click option help text.
 
     Args:
@@ -2305,7 +2359,7 @@ def create_filter_help_text(
 
 
 def create_data_type_help_text(
-    filter_model: Type[BaseFilterModel], field: str
+    filter_model: Type[BaseFilter], field: str
 ) -> str:
     """Create a general help text for a fields datatype.
 
@@ -2345,7 +2399,7 @@ def create_data_type_help_text(
         return f"{field}"
 
 
-def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
+def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
     """Create a decorator to generate the correct list of filter parameters.
 
     The Outer decorator (`list_options`) is responsible for creating the inner

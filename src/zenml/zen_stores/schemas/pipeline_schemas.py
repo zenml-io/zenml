@@ -22,11 +22,13 @@ from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.models.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.models.pipeline_models import (
-    PipelineRequestModel,
-    PipelineResponseModel,
-    PipelineUpdateModel,
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.models import (
+    PipelineRequest,
+    PipelineResponse,
+    PipelineResponseBody,
+    PipelineResponseMetadata,
+    PipelineUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -34,12 +36,14 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import (
+    from zenml.zen_stores.schemas.pipeline_build_schemas import (
         PipelineBuildSchema,
-        PipelineDeploymentSchema,
-        PipelineRunSchema,
-        ScheduleSchema,
     )
+    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+        PipelineDeploymentSchema,
+    )
+    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+    from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 
 
 class PipelineSchema(NamedSchema, table=True):
@@ -97,9 +101,9 @@ class PipelineSchema(NamedSchema, table=True):
     @classmethod
     def from_request(
         cls,
-        pipeline_request: "PipelineRequestModel",
+        pipeline_request: "PipelineRequest",
     ) -> "PipelineSchema":
-        """Convert a `PipelineRequestModel` to a `PipelineSchema`.
+        """Convert a `PipelineRequest` to a `PipelineSchema`.
 
         Args:
             pipeline_request: The request model to convert.
@@ -120,33 +124,43 @@ class PipelineSchema(NamedSchema, table=True):
     def to_model(
         self,
         last_x_runs: int = 3,
-    ) -> "PipelineResponseModel":
-        """Convert a `PipelineSchema` to a `PipelineModel`.
+        hydrate: bool = False,
+    ) -> "PipelineResponse":
+        """Convert a `PipelineSchema` to a `PipelineResponse`.
 
         Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
             last_x_runs: How many runs to use for the execution status
 
         Returns:
-            The created PipelineModel.
+            The created PipelineResponse.
         """
-        return PipelineResponseModel(
-            id=self.id,
-            name=self.name,
-            version=self.version,
-            version_hash=self.version_hash,
-            workspace=self.workspace.to_model(),
-            user=self.user.to_model(True) if self.user else None,
-            docstring=self.docstring,
-            spec=PipelineSpec.parse_raw(self.spec),
+        body = PipelineResponseBody(
+            user=self.user.to_model() if self.user else None,
+            status=[run.status for run in self.runs[:last_x_runs]],
             created=self.created,
             updated=self.updated,
-            status=[run.status for run in self.runs[:last_x_runs]],
+            version=self.version,
+        )
+        metadata = None
+        if hydrate:
+            metadata = PipelineResponseMetadata(
+                workspace=self.workspace.to_model(),
+                version_hash=self.version_hash,
+                spec=PipelineSpec.parse_raw(self.spec),
+                docstring=self.docstring,
+            )
+
+        return PipelineResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
         )
 
-    def update(
-        self, pipeline_update: "PipelineUpdateModel"
-    ) -> "PipelineSchema":
-        """Update a `PipelineSchema` with a `PipelineUpdateModel`.
+    def update(self, pipeline_update: "PipelineUpdate") -> "PipelineSchema":
+        """Update a `PipelineSchema` with a `PipelineUpdate`.
 
         Args:
             pipeline_update: The update model.
@@ -154,14 +168,5 @@ class PipelineSchema(NamedSchema, table=True):
         Returns:
             The updated `PipelineSchema`.
         """
-        if pipeline_update.name:
-            self.name = pipeline_update.name
-
-        if pipeline_update.docstring:
-            self.docstring = pipeline_update.docstring
-
-        if pipeline_update.spec:
-            self.spec = pipeline_update.spec.json(sort_keys=True)
-
         self.updated = datetime.utcnow()
         return self
