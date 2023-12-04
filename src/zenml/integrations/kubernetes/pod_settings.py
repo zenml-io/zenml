@@ -81,7 +81,7 @@ class KubernetesPodSettings(BaseSettings):
     @validator("volume_mounts", pre=True)
     def _convert_volume_mounts(
         cls, value: List[Union[Dict[str, Any], "V1VolumeMount"]]
-    ) -> Dict[str, Any]:
+    ) -> List[Dict[str, Any]]:
         """Converts Kubernetes volume mounts to dicts.
 
         Args:
