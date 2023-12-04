@@ -29,6 +29,7 @@ from zenml.models import (
     ModelUpdate,
     ModelVersionArtifactRequest,
     ModelVersionArtifactResponse,
+    ModelVersionArtifactResponseBody,
     ModelVersionPipelineRunRequest,
     ModelVersionPipelineRunResponse,
     ModelVersionPipelineRunResponseBody,
@@ -148,6 +149,7 @@ class ModelSchema(NamedSchema, table=True):
         metadata = None
         if hydrate:
             metadata = ModelResponseMetadata(
+                workspace=self.workspace.to_model(),
                 license=self.license,
                 description=self.description,
                 audience=self.audience,
@@ -464,7 +466,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
         """
         return ModelVersionArtifactResponse(
             id=self.id,
-            body=ModelVersionResponseBody(
+            body=ModelVersionArtifactResponseBody(
                 model=self.model_id,
                 model_version=self.model_version_id,
                 artifact_version=self.artifact_version.to_model(),
