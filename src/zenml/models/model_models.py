@@ -128,6 +128,9 @@ class ModelVersionRequestModel(
     model: UUID = Field(
         description="The ID of the model containing version",
     )
+    tags: Optional[List[str]] = Field(
+        title="Tags associated with the model version",
+    )
 
 
 class ModelVersionResponseModel(
@@ -158,6 +161,9 @@ class ModelVersionResponseModel(
         description="Pipeline runs linked to the model version",
         default={},
     )
+    tags: List[TagResponseModel] = Field(
+        title="Tags associated with the model version",
+    )
 
     def to_model_version(
         self,
@@ -184,7 +190,7 @@ class ModelVersionResponseModel(
             limitations=self.model.limitations,
             trade_offs=self.model.trade_offs,
             ethics=self.model.ethics,
-            tags=[t.name for t in self.model.tags],
+            tags=[t.name for t in self.tags],
             version=self.name,
             was_created_in_this_run=was_created_in_this_run,
             suppress_class_validation_warnings=suppress_class_validation_warnings,
@@ -450,6 +456,8 @@ class ModelVersionUpdateModel(BaseModel):
     name: Optional[str] = Field(
         description="Target model version name to be set", default=None
     )
+    add_tags: Optional[List[str]] = None
+    remove_tags: Optional[List[str]] = None
 
     @validator("stage")
     def _validate_stage(cls, stage: str) -> str:

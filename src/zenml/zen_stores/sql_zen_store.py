@@ -6332,6 +6332,13 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_schema)
 
+            if model_version.tags:
+                self._attach_tags_to_resource(
+                    tag_names=model_version.tags,
+                    resource_id=model_version_schema.id,
+                    resource_type=TaggableResourceTypes.MODEL_VERSION,
+                )
+
             session.commit()
             return model_version_schema.to_model()
 
@@ -6481,6 +6488,22 @@ class SqlZenStore(BaseZenStore):
                         logger.info(
                             f"Model version {existing_model_version_in_target_stage.name} has been set to {ModelStages.ARCHIVED.value}."
                         )
+
+            if model_version_update_model.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=model_version_update_model.add_tags,
+                    resource_id=existing_model_version.id,
+                    resource_type=TaggableResourceTypes.MODEL_VERSION,
+                )
+            model_version_update_model.add_tags = None
+            if model_version_update_model.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=model_version_update_model.remove_tags,
+                    resource_id=existing_model_version.id,
+                    resource_type=TaggableResourceTypes.MODEL_VERSION,
+                )
+
+            model_version_update_model.remove_tags = None
 
             existing_model_version.update(
                 target_stage=stage,

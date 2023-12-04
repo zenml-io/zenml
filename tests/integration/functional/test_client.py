@@ -1373,6 +1373,14 @@ class TestModelVersion:
             assert model_version.number == 4
             assert model_version.description == "some desc"
 
+            model_version = client.create_model_version(
+                self.MODEL_NAME, tags=["a", "b"]
+            )
+
+            assert model_version.name == "5"
+            assert model_version.number == 5
+            assert {t.name for t in model_version.tags} == {"a", "b"}
+
     def test_create_model_version_duplicate_fails(self, warm_up_models):
         with model_killer():
             client = Client()
@@ -1391,9 +1399,13 @@ class TestModelVersion:
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
             assert model_version.stage is None
+            assert not model_version.tags
 
             client.update_model_version(
-                self.MODEL_NAME, self.VERSION_NAME, stage="staging"
+                self.MODEL_NAME,
+                self.VERSION_NAME,
+                stage="staging",
+                add_tags=["a", "b"],
             )
             model_version = client.get_model_version(
                 self.MODEL_NAME, self.VERSION_NAME
@@ -1403,9 +1415,14 @@ class TestModelVersion:
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
             assert model_version.stage == ModelStages.STAGING
+            assert {t.name for t in model_version.tags} == {"a", "b"}
 
             client.update_model_version(
-                self.MODEL_NAME, self.VERSION_NAME, name="new name"
+                self.MODEL_NAME,
+                self.VERSION_NAME,
+                name="new name",
+                add_tags=["c"],
+                remove_tags=["a"],
             )
             model_version = client.get_model_version(
                 self.MODEL_NAME, "new name"
@@ -1415,6 +1432,7 @@ class TestModelVersion:
             assert model_version.number == 1
             assert model_version.description == self.VERSION_DESC
             assert model_version.stage == ModelStages.STAGING
+            assert {t.name for t in model_version.tags} == {"b", "c"}
 
             client.create_model_version(self.MODEL_NAME, "other version")
             with pytest.raises(RuntimeError):
