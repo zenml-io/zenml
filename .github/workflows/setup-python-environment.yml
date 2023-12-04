@@ -20,7 +20,7 @@ on:
         description: 'Install ZenML integrations'
         type: string
         required: false
-        default: 'yes'
+        default: 'no'
       git-ref:
         description: 'Git branch or ref'
         type: string
@@ -36,6 +36,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
+          - ubuntu-dind-runners
         required: false
         default: 'ubuntu-latest'
       python-version:
