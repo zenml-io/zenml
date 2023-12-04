@@ -25,7 +25,8 @@ from zenml.models import (
     ArtifactVisualizationResponseBody,
     ArtifactVisualizationResponseMetadata,
 )
-from zenml.zen_stores.schemas import ArtifactVersionSchema, BaseSchema
+from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
+from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 

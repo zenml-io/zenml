@@ -54,6 +54,7 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     LogicalOperators,
+    MetadataResourceTypes,
     ModelStages,
     OAuthDeviceStatus,
     SecretScope,
@@ -2905,52 +2906,25 @@ class Client(metaclass=ClientMetaClass):
     def create_run_metadata(
         self,
         metadata: Dict[str, "MetadataType"],
-        pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
-        artifact_version_id: Optional[UUID] = None,
+        resource_id: UUID,
+        resource_type: MetadataResourceTypes,
         stack_component_id: Optional[UUID] = None,
     ) -> List[RunMetadataResponse]:
         """Create run metadata.
 
         Args:
             metadata: The metadata to create as a dictionary of key-value pairs.
-            pipeline_run_id: The ID of the pipeline run during which the
-                metadata was produced. If provided, `step_run_id` and
-                `artifact_version_id` must be None.
-            step_run_id: The ID of the step run during which the metadata was
-                produced. If provided, `pipeline_run_id` and
-                `artifact_version_id` must be None.
-            artifact_version_id: The ID of the artifact version for which the
-                metadata was produced. If provided, `pipeline_run_id` and
-                `step_run_id` must be None.
+            resource_id: The ID of the resource for which the
+                metadata was produced.
+            resource_type: The type of the resource for which the
+                metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
 
         Returns:
             The created metadata, as string to model dictionary.
-
-        Raises:
-            ValueError: If not exactly one of either `pipeline_run_id`,
-                `step_run_id`, or `artifact_version_id` is provided.
         """
         from zenml.metadata.metadata_types import get_metadata_type
-
-        if not (pipeline_run_id or step_run_id or artifact_version_id):
-            raise ValueError(
-                "Cannot create run metadata without linking it to any entity. "
-                "Please provide either a `pipeline_run_id`, `step_run_id`, or "
-                "`artifact_version_id`."
-            )
-        if (
-            (pipeline_run_id and step_run_id)
-            or (pipeline_run_id and artifact_version_id)
-            or (step_run_id and artifact_version_id)
-        ):
-            raise ValueError(
-                "Cannot create run metadata linked to multiple entities. "
-                "Please provide only a `pipeline_run_id` or only a "
-                "`step_run_id` or only an `artifact_version_id`."
-            )
 
         values: Dict[str, "MetadataType"] = {}
         types: Dict[str, "MetadataTypeEnum"] = {}
@@ -2977,9 +2951,8 @@ class Client(metaclass=ClientMetaClass):
         run_metadata = RunMetadataRequest(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-            pipeline_run_id=pipeline_run_id,
-            step_run_id=step_run_id,
-            artifact_version_id=artifact_version_id,
+            resource_id=resource_id,
+            resource_type=resource_type,
             stack_component_id=stack_component_id,
             values=values,
             types=types,
@@ -2997,9 +2970,8 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         workspace_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
-        pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
-        artifact_version_id: Optional[UUID] = None,
+        resource_id: Optional[UUID] = None,
+        resource_type: Optional[MetadataResourceTypes] = None,
         stack_component_id: Optional[UUID] = None,
         key: Optional[str] = None,
         value: Optional["MetadataType"] = None,
@@ -3017,10 +2989,8 @@ class Client(metaclass=ClientMetaClass):
             updated: The last update time of the metadata.
             workspace_id: The ID of the workspace the metadata belongs to.
             user_id: The ID of the user that created the metadata.
-            pipeline_run_id: The ID of the pipeline run the metadata belongs to.
-            step_run_id: The ID of the step run the metadata belongs to.
-            artifact_version_id: The ID of the artifact version the metadata
-                belongs to.
+            resource_id: The ID of the resource the metadata belongs to.
+            resource_type: The type of the resource the metadata belongs to.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
             key: The key of the metadata.
@@ -3040,9 +3010,8 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             workspace_id=workspace_id,
             user_id=user_id,
-            pipeline_run_id=pipeline_run_id,
-            step_run_id=step_run_id,
-            artifact_version_id=artifact_version_id,
+            resource_id=resource_id,
+            resource_type=resource_type,
             stack_component_id=stack_component_id,
             key=key,
             value=value,

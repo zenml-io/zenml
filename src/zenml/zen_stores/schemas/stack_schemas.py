@@ -31,10 +31,14 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import (
-        PipelineBuildSchema,
-        PipelineDeploymentSchema,
+    from zenml.zen_stores.schemas.component_schemas import (
         StackComponentSchema,
+    )
+    from zenml.zen_stores.schemas.pipeline_build_schemas import (
+        PipelineBuildSchema,
+    )
+    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+        PipelineDeploymentSchema,
     )
 
 
