@@ -50,7 +50,7 @@ class KubernetesPodSettings(BaseSettings):
     resources: Dict[str, Dict[str, str]] = {}
     annotations: Dict[str, str] = {}
     volumes: List[Dict[str, Any]] = []
-    volume_mounts: Dict[str, Any] = {}
+    volume_mounts: List[Dict[str, Any]] = []
     host_ipc: bool = False
 
     @validator("volumes", pre=True)
@@ -80,7 +80,7 @@ class KubernetesPodSettings(BaseSettings):
 
     @validator("volume_mounts", pre=True)
     def _convert_volume_mounts(
-        cls, value: Union[Dict[str, Any], "V1VolumeMount"]
+        cls, value: List[Union[Dict[str, Any], "V1VolumeMount"]]
     ) -> Dict[str, Any]:
         """Converts Kubernetes volume mounts to dicts.
 
@@ -92,10 +92,16 @@ class KubernetesPodSettings(BaseSettings):
         """
         from kubernetes.client.models import V1VolumeMount
 
-        if isinstance(value, V1VolumeMount):
-            return serialization_utils.serialize_kubernetes_model(value)
-        else:
-            return value
+        result = []
+        for element in value:
+            if isinstance(element, V1VolumeMount):
+                result.append(
+                    serialization_utils.serialize_kubernetes_model(element)
+                )
+            else:
+                result.append(element)
+
+        return result
 
     @validator("affinity", pre=True)
     def _convert_affinity(
