@@ -21,7 +21,12 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.enums import ExecutionStatus, StackComponentType, VisualizationType
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    StackComponentType,
+    VisualizationType,
+)
 from zenml.exceptions import DoesNotExistException, StepContextError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -198,7 +203,9 @@ def save_artifact(
     )
     if artifact_metadata:
         Client().create_run_metadata(
-            metadata=artifact_metadata, artifact_version_id=response.id
+            metadata=artifact_metadata,
+            resource_id=response.id,
+            resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
         )
 
     if manual_save:
@@ -288,9 +295,11 @@ def log_artifact_metadata(
                 "inside a step with a single output."
             )
         client = Client()
-        artifact = client.get_artifact_version(artifact_name, artifact_version)
+        response = client.get_artifact_version(artifact_name, artifact_version)
         client.create_run_metadata(
-            metadata=metadata, artifact_version_id=artifact.id
+            metadata=metadata,
+            resource_id=response.id,
+            resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
         )
 
     else:
