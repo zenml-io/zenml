@@ -246,7 +246,7 @@ class ModelVersionResponse(WorkspaceScopedResponse):
 
         Args:
             was_created_in_this_run: Whether model version was created during
-                current run.
+                the current run.
             suppress_class_validation_warnings: internally used to suppress
                 repeated warnings.
 
