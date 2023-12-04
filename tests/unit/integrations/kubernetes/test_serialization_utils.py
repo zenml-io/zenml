@@ -55,15 +55,15 @@ def _create_test_models() -> List[Any]:
         key="key", operator="Equal", value="value", effect="NoExecute"
     )
 
-    volume = k8s_client.V1Volume(  # nosec
+    volume = k8s_client.V1Volume(
         name="cache-volume",
         empty_dir=k8s_client.V1EmptyDirVolumeSource(
             medium="Memory", size_limit="1Gi"
         ),
     )
 
-    volume_mount = k8s_client.V1VolumeMount(  # nosec
-        mount_path="/dev/shm",
+    volume_mount = k8s_client.V1VolumeMount(
+        mount_path="/dev/shm",   # nosec
         name="cache-volume",
     )
 
