@@ -704,7 +704,7 @@ class BaseStep(metaclass=BaseStepMeta):
             logger.warning("Configuring the name of a step is deprecated.")
 
         def _resolve_if_necessary(
-            value: Union[str, Source, Type[Any]]
+            value: Union[str, Source, Type[Any]],
         ) -> Source:
             if isinstance(value, str):
                 return Source.from_import_path(value)
