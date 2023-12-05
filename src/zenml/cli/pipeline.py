@@ -18,12 +18,17 @@ from typing import Any, Dict, Optional, Union
 
 import click
 
+from zenml.artifacts.utils import (
+    _load_artifact_store,
+    _load_file_from_artifact_store,
+)
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildBase,
@@ -364,6 +369,112 @@ def delete_pipeline(
         cli_utils.declare(
             f"Deleted pipeline `{pipeline_name_or_id}{version_suffix}`."
         )
+
+
+@pipeline.command("logs")
+@click.option(
+    "pipeline_name_or_id",
+    "-p",
+    type=str,
+    required=False,
+)
+@click.option(
+    "run_name_or_id",
+    "-r",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--step_name",
+    "-s",
+    type=str,
+    required=True,
+)
+def get_pipeline_logs(
+    pipeline_name_or_id: str,
+    run_name_or_id: str,
+    step_name: str,
+) -> None:
+    """Get logs for a pipeline step.
+
+    If a pipeline name or ID is specified, the latest run of that pipeline
+    will be used. If a run name or ID is specified, the logs of that run will
+    be used.
+
+    Args:
+        pipeline_name_or_id: Name or ID of the pipeline.
+        run_name_or_id: Name or ID of the pipeline run.
+        step_name: Name or ID of the pipeline step.
+    """
+    if not pipeline_name_or_id and not run_name_or_id:
+        cli_utils.error(
+            "You need to specify either a pipeline name or ID or a run name "
+            "or ID along with the step name."
+        )
+    elif pipeline_name_or_id and run_name_or_id:
+        cli_utils.error(
+            "You can't specify both a pipeline name or ID and a run name or "
+            "ID. Please specify either a pipeline name or ID or a run name or "
+            "ID along with the step name."
+        )
+    client = Client()
+
+    if run_name_or_id:
+        try:
+            pipeline_run = client.get_pipeline_run(
+                name_id_or_prefix=run_name_or_id,
+            )
+        except KeyError:
+            cli_utils.error(
+                f"No pipeline run found with this name or ID: {run_name_or_id}."
+            )
+    else:
+        try:
+            pipeline = client.get_pipeline(
+                name_id_or_prefix=pipeline_name_or_id,
+            )
+        except KeyError:
+            cli_utils.error(
+                f"No pipeline found with this name or ID: {pipeline_name_or_id}."
+            )
+        try:
+            pipeline_run = pipeline.last_run
+        except RuntimeError:
+            cli_utils.error(
+                f"No runs found for pipeline '{pipeline_name_or_id}' with id "
+                f"{pipeline.id}."
+            )
+
+    step = pipeline_run.steps.get(step_name)
+    if not step:
+        cli_utils.error(
+            f"Unable to find step `{step_name}` in pipeline run "
+            f"`{pipeline_run.name}`."
+        )
+
+    try:
+        logs = step.logs
+    except IllegalOperationError:
+        cli_utils.error(
+            f"Unable to get logs for step `{step_name}` in pipeline run "
+            f"`{pipeline_run.name}`. Please check that you have the correct "
+            "permissions to access the logs."
+        )
+    if not logs:
+        cli_utils.declare(
+            f"No logs found for step `{step_name}` in pipeline run "
+            f"`{pipeline_run.name}`."
+        )
+    store = client.zen_store
+    artifact_store = _load_artifact_store(logs.artifact_store_id, store)
+    cli_utils.declare(f"Logs for step `{step_name}`:", bold=True)
+    click.echo(
+        str(
+            _load_file_from_artifact_store(
+                logs.uri, artifact_store=artifact_store, mode="r"
+            )
+        )
+    )
 
 
 @pipeline.group()
