@@ -123,6 +123,8 @@ def save_artifact(
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
     if manual_save and fileio.exists(uri):
+        # This check is only necessary for manual saves as we already check
+        # it when creating the directory for step output artifacts
         other_artifacts = client.list_artifact_versions(uri=uri, size=1)
         if other_artifacts and (other_artifact := other_artifacts[0]):
             raise RuntimeError(
