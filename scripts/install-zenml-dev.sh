@@ -24,7 +24,6 @@ parse_args () {
 install_zenml() {
     # install ZenML in editable mode
     pip install -e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]
-    pip install pytest-xdist
 }
 
 install_integrations() {
