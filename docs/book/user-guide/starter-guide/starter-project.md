@@ -49,11 +49,15 @@ zenml init
 
 ## Run your first pipelines
 
-You can either follow along in the [accompanying Jupyter notebook](https://github.com/zenml-io/zenml/blob/main/examples/starter/run.ipynb), or just keep reading the docs to move forward:
+You can either follow along in the [accompanying Jupyter notebook](https://github.com/zenml-io/zenml/blob/main/examples/starter/run.ipynb), or just keep reading the [README file for more instructions](https://github.com/zenml-io/zenml/blob/main/examples/starter/run.ipynb).
 
-```python
+Either way, at the end you would run three pipelines that are exemplary:
 
-```
+- A feature engineering pipeline that loads data and prepares it for training.
+- A training pipeline that loads the preprocessed dataset and trains a model.
+- A batch inference pipeline that runs predictions on the trained model with new data.
+
+And voilà! You're now well on your way to be a MLOps expert. As a next step, try introducing the [ZenML starter template](https://github.com/zenml-io/template-starter) to your colleagues and see the benefits of a standard ML framework at your work.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
