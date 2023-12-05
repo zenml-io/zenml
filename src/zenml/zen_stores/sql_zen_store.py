@@ -1796,6 +1796,7 @@ class SqlZenStore(BaseZenStore):
 
     # --------------------------- Code Repositories ---------------------------
 
+    @track_decorator(AnalyticsEvent.REGISTERED_CODE_REPOSITORY)
     def create_code_repository(
         self, code_repository: CodeRepositoryRequest
     ) -> CodeRepositoryResponse:
@@ -3537,6 +3538,7 @@ class SqlZenStore(BaseZenStore):
 
     # ------------------------- Service Accounts -------------------------
 
+    @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
     def create_service_account(
         self, service_account: ServiceAccountRequest
     ) -> ServiceAccountResponse:
@@ -6813,6 +6815,7 @@ class SqlZenStore(BaseZenStore):
             except KeyError:
                 pass
 
+    @track_decorator(AnalyticsEvent.CREATED_TAG)
     def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
         """Creates a new tag.
 
