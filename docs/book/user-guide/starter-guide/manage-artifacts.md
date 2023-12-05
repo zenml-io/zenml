@@ -2,9 +2,11 @@
 description: Understand and adjust how ZenML versions your data.
 ---
 
-# Data management with ZenML
+# Data artifact management with ZenML
 
 Until now, we have been focusing on step and pipeline code and configuration. Now, we will shift our attention to another pillar of any MLOps system: *data*.
+
+Data is what makes machine learning operationalization fundamentally different from normal software engineering systems. Practitioners must track how data flows and changes through their workflows to ensure a robust and reliable system.
 
 Whenever you run a ZenML pipeline, all output data of your steps are automatically versioned as artifacts into your artifact store and subsequent steps automatically load them in again. Each artifact that ZenML saves in your artifact store is assigned a name and is versioned automatically.
 
