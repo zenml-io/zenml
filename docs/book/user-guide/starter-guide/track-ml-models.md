@@ -96,7 +96,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 
 ### Fetching the model version
 
-When configured at the pipeline or step level, the model version will be available through the `StepContext` or `PipelineContext`
+When configured at the pipeline or step level, the model version will be available through the [StepContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md) or [PipelineContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md).
 
 ```python
 from zenml import get_step_context, get_pipeline_context, step, pipeline
