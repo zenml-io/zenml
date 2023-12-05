@@ -4,16 +4,10 @@ description: Iterating quickly with ZenML through caching.
 
 # Cache previous executions
 
-Developing machine learning pipelines is very iterative. ZenML speeds you up in this work with the caching feature of steps and pipelines.
+Developing machine learning pipelines is iterative in nature. ZenML speeds devleopment up in this work with step caching.
 
 In the logs of your previous runs, you might have noticed at this point that rerunning the pipeline a second time will use caching on the first step:
 
-{% tabs %}
-{% tab title="Dashboard" %}
-![DAG of a cached pipeline run](../../.gitbook/assets/CachedDag.png)
-{% endtab %}
-
-{% tab title="Logs" %}
 ```bash
 Step training_data_loader has started.
 Using cached version of training_data_loader.
@@ -21,15 +15,21 @@ Step svc_trainer has started.
 Train accuracy: 0.3416666666666667
 Step svc_trainer has finished in 0.932s.
 ```
-{% endtab %}
-{% endtabs %}
+
+![DAG of a cached pipeline run](../../.gitbook/assets/CachedDag.png)
 
 ZenML understands that nothing has changed between subsequent runs, so it re-uses the output of the previous run (the outputs are persisted in the [artifact store](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md)). This behavior is known as **caching**.
 
 In ZenML, caching is enabled by default. Since ZenML automatically tracks and versions all inputs, outputs, and parameters of steps and pipelines, steps will not be re-executed within the **same pipeline** on subsequent pipeline runs as long as there is **no change** in the inputs, parameters, or code of a step.
 
 {% hint style="warning" %}
-Currently, the caching does not automatically detect changes within the file system or on external APIs. Make sure to **manually** set caching to `False` on steps that depend on **external inputs, file-system changes,** or if the step should run regardless of caching.
+The caching does not automatically detect changes within the file system or on external APIs. Make sure to **manually** set caching to `False` on steps that depend on **external inputs, file-system changes,** or if the step should run regardless of caching.
+
+```python
+@step(enable_cache=False)
+def load_data_from_external_system(...) -> ...:
+    # This step will always be run
+```
 {% endhint %}
 
 ## Configuring caching behavior of your pipelines
