@@ -1,21 +1,22 @@
 ---
-description: Begin your MLOps journey with ZenML.
+description: Kickstart your journey into MLOps with the essentials of ZenML.
 ---
 
 # 🐣 Starter guide
 
-Whether you are a MLOps Engineer building an internal ML platform or a Data Scientist who is a ZenML-powered MLOps platform, it all starts with learning the basics. The starter guide will walk you through the basics of the ZenML framework.
+Welcome to the ZenML Starter Guide! If you're an MLOps Engineer aiming to build robust ML platforms, or a Data Scientist interested in leveraging the power of MLOps, this is the perfect place to begin. Our guide is designed to equip you with the foundational knowledge of the ZenML framework and provide you with the initial tools to manage the complexity of machine learning operations.
 
-<figure><img src="../../.gitbook/assets/abstractions_showcase.png" alt=""><figcaption><p>MLOps is complex. Let ZenML handle the complexity.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/abstractions_showcase.png" alt=""><figcaption><p>Embarking on MLOps can be intricate. ZenML simplifies the journey.</p></figcaption></figure>
 
-In this guide, we will touch on topics like:
+Throughout this guide, we'll cover essential topics including:
 
-- Creating your first ML pipeline
-- Understanding caching between pipeline steps
-- Managing data and data versioning
-- Tracking your machine learning models
-- Fetching objects after pipelines have run
+- [Creating your first ML pipeline](create-an-ml-pipeline.md)
+- [Understanding caching between pipeline steps](cache-previous-executions.md)
+- [Fetching objects after pipelines have run](fetching-pipelines.md)
+- [Managing data and data versioning](manage-artifacts.md)
+- [Tracking your machine learning models](track-ml-models.md)
 
-We will end with a [starter project](starter-project.md) that will be the first of hopefully many MLOps projects driven by ZenML.
+Before jumping in, make sure you have a Python environment ready and `virtualenv` installed to follow along with ease.
+By the end, you will have completed a [starter project](starter-project.md), marking the beginning of your venture into MLOps with ZenML.
 
-This guide intends not only to be a starting point for ZenML, but also of your entire MLOps journey. So strap in, get your virtualenvs ready, and let's get right into!
+Let this guide be not only your introduction to ZenML but also a foundational asset in your MLOps toolkit. Prepare your development environment, and let's embark on this educational journey together.

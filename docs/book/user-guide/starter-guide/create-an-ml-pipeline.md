@@ -56,7 +56,7 @@ if __name__ == "__main__":
 * **`@pipeline`** defines a function as a pipeline and within this function, the steps are called and their outputs are routed
 {% endhint %}
 
-Copy this code into a file `run.py` and run it.
+Copy this code into a new file and name it `run.py`. Then run it with your command line:
 
 {% code overflow="wrap" %}
 ```bash
@@ -81,11 +81,11 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 
 ### Explore the dashboard
 
-Once the pipeline has executed, use the `zenml up` command to view the results in the ZenML Dashboard:
+Once the pipeline has executed, use the `zenml up` command to view the results in the ZenML Dashboard. Using that command will open up the browser automatically.
 
 <figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
 
-The dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG visualization to understand the flow of data and to ensure all steps completed successfully.
+Usually, the dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG visualization to understand the flow of data and to ensure all steps completed successfully.
 
 <figure><img src="../../.gitbook/assets/DAGofRun.png" alt=""><figcaption><p>Diagram view of the run, with the runtime attributes of step 2.</p></figcaption></figure>
 
