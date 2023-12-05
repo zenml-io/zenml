@@ -33,7 +33,6 @@
     * [Visualize artifacts](user-guide/advanced-guide/artifact-management/visualize-artifacts.md)
   * [Model management](user-guide/advanced-guide/model-management/model-management.md)
     * [Models on the dashboard](user-guide/advanced-guide/model-management/model-control-plane-dashboard.md)
-    * [Using models](user-guide/advanced-guide/model-management/using-models.md)
   * [Environment management](user-guide/advanced-guide/environment-management/environment-management.md)
     * [Use the Client](user-guide/advanced-guide/environment-management/use-the-client.md)
     * [Use the Hub](user-guide/advanced-guide/environment-management/use-the-hub.md)
