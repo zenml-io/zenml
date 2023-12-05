@@ -64,7 +64,7 @@ def split_environment_variables(
 
 
 def reconstruct_environment_variables(
-    env: Optional[Dict[str, str]] = None
+    env: Optional[Dict[str, str]] = None,
 ) -> None:
     """Reconstruct environment variables that were split into chunks.
 
