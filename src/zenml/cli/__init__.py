@@ -914,19 +914,19 @@ To delete a model, use:
 zenml model delete <MODEL_NAME_OR_ID>
 ```
 
-Model CLI interface also helps to navigate through artifacts linked to a specific model versions.
+The CLI interface for models also helps to navigate through artifacts linked to a specific model versions.
 ```bash
 zenml model data_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
 zenml model endpoint_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
 zenml model model_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
 ```
 
-Model CLI interface also helps to navigate through pipeline runs linked to a specific model versions.
+You can also navigate the pipeline runs linked to a specific model versions:
 ```bash
 zenml model runs <MODEL_NAME_OR_ID> [-v <VERSION>]
 ```
 
-To list model versions of a specific model, use:
+To list the model versions of a specific model, use:
 ```bash
 zenml model version list <MODEL_NAME_OR_ID>
 ```
@@ -940,8 +940,8 @@ To update a model version, use:
 ```bash
 zenml model version update <MODEL_NAME_OR_ID> <VERSION> [--MODEL_VERSION_OPTIONS]
 ```
-Important options for update of model version are:
-- stage
+These are some of the more common uses of model version updates:
+- stage (i.e. promotion)
 ```bash
 zenml model version update <MODEL_NAME_OR_ID> <VERSION> --stage <STAGE>
 ```
