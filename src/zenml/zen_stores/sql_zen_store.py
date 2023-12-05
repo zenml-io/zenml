@@ -6127,6 +6127,7 @@ class SqlZenStore(BaseZenStore):
     # Model
     ########
 
+    @track_decorator(AnalyticsEvent.CREATE_MODEL)
     def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
         """Creates a new model.
 
@@ -6282,6 +6283,7 @@ class SqlZenStore(BaseZenStore):
     # Model Versions
     #################
 
+    @track_decorator(AnalyticsEvent.CREATE_MODEL_VERSION)
     def create_model_version(
         self, model_version: ModelVersionRequestModel
     ) -> ModelVersionResponseModel:

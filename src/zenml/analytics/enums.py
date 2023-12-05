@@ -33,8 +33,10 @@ class AnalyticsEvent(str, Enum):
     REGISTERED_STACK = "Stack registered"
     UPDATED_STACK = "Stack updated"
 
-    # Model Deployment
+    # Model Control Plane
     MODEL_DEPLOYED = "Model deployed"
+    CREATE_MODEL = "Model created"
+    CREATE_MODEL_VERSION = "Model version created"
 
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
