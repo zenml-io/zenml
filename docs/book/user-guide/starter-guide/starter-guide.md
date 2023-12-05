@@ -16,6 +16,6 @@ In this guide, we will touch on topics like:
 - Tracking your machine learning models
 - Fetching objects after pipelines have run
 
-We will end with a [starter project](starter-project.md) that will be your first of hopefully many MLOps projects driven by ZenML.
+We will end with a [starter project](starter-project.md) that will be the first of hopefully many MLOps projects driven by ZenML.
 
 This guide intends not only to be a starting point for ZenML, but also of your entire MLOps journey. So strap in, get your virtualenvs ready, and let's get right into!
