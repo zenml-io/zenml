@@ -361,10 +361,11 @@ ModelResponseBody.update_forward_refs(
 ModelResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
-ModelVersionResponse.update_forward_refs(
+ModelVersionResponseBody.update_forward_refs(
     UserResponse=UserResponse,
+    ModelResponse=ModelResponse,
 )
-ModelResponseMetadata.update_forward_refs(
+ModelVersionResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
 ModelVersionArtifactResponseBody.update_forward_refs(
