@@ -72,7 +72,7 @@ important artifacts that you would like to explore visually.
 {% endtab %}
 {% endtabs %}
 
-For more advanced configuration of your artifacts, users must use the `ArtifactConfig` class, to modify the name, version, and other properties of the artifacts.
+For more advanced configuration of your artifacts, users must use the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model/#zenml.model.artifact_config.DataArtifactConfig) class, to modify the name, version, and other properties of the artifacts.
 
 ### Assign custom artifact versions
 
