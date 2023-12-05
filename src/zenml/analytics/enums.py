@@ -38,8 +38,7 @@ class AnalyticsEvent(str, Enum):
 
     # Model Control Plane
     MODEL_DEPLOYED = "Model deployed"
-    CREATE_MODEL = "Model created"
-    CREATE_MODEL_VERSION = "Model version created"
+    CREATED_MODEL = "Model created"
 
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
