@@ -1268,11 +1268,10 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        stack_id: Optional[UUID] = None
-
         if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
-            stack_id = os.environ[ENV_ZENML_ACTIVE_STACK_ID]
-            return self.get_stack(stack_id)
+            return self.get_stack(os.environ[ENV_ZENML_ACTIVE_STACK_ID])
+
+        stack_id: Optional[UUID] = None
 
         if self._config:
             if self._config._active_stack:
@@ -1284,8 +1283,8 @@ class Client(metaclass=ClientMetaClass):
             # Initialize the zen store so the global config loads the active
             # stack
             _ = GlobalConfiguration().zen_store
-            if GlobalConfiguration()._active_stack:
-                return GlobalConfiguration()._active_stack
+            if active_stack := GlobalConfiguration()._active_stack:
+                return active_stack
 
             stack_id = GlobalConfiguration().get_active_stack_id()
 

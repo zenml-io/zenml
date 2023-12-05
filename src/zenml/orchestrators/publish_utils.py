@@ -14,7 +14,6 @@
 """Utilities to publish pipeline and step runs."""
 
 from datetime import datetime
-from functools import partial
 from typing import TYPE_CHECKING, Dict, List
 
 from zenml.client import Client
@@ -25,7 +24,6 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
-from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -114,35 +112,6 @@ def get_pipeline_run_status(
         return ExecutionStatus.RUNNING
 
     return ExecutionStatus.COMPLETED
-
-
-def update_pipeline_run_status(
-    pipeline_run: "PipelineRunResponse", num_steps: int
-) -> None:
-    """Updates the status of the current pipeline run.
-
-    Args:
-        pipeline_run: The model of the current pipeline run.
-        num_steps: The number of steps to be executed.
-    """
-    client = Client()
-    steps_in_current_run = depaginate(
-        partial(client.list_run_steps, pipeline_run_id=pipeline_run.id)
-    )
-
-    new_status = get_pipeline_run_status(
-        step_statuses=[step_run.status for step_run in steps_in_current_run],
-        num_steps=num_steps,
-    )
-
-    if new_status != pipeline_run.status:
-        run_update = PipelineRunUpdate(status=new_status)
-        if new_status in {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED}:
-            run_update.end_time = datetime.utcnow()
-
-        Client().zen_store.update_run(
-            run_id=pipeline_run.id, run_update=run_update
-        )
 
 
 def publish_pipeline_run_metadata(
