@@ -178,8 +178,8 @@ def save_artifact(
 
     # Get or create the artifact
     try:
-        artifact = client.get_artifact(name)
-    except KeyError:
+        artifact = client.list_artifacts(name=name)[0]
+    except IndexError:
         artifact = client.zen_store.create_artifact(
             ArtifactRequest(
                 name=name,
