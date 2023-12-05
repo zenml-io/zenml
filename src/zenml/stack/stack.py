@@ -151,7 +151,7 @@ class Stack:
         global _STACK_CACHE
         key = (stack_model.id, stack_model.updated)
         if key in _STACK_CACHE:
-            return _STACK_CACHE[stack_model.id]
+            return _STACK_CACHE[key]
 
         from zenml.stack import StackComponent
 
