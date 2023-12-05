@@ -207,16 +207,61 @@ def train_and_promote_model():
     promote_to_staging(after=["train_and_evaluate"])
 ```
 
-## Attaching metadata to artifacts
+## Linking Artifacts to Models
 
-(not directly functionality of Model CP, but important thing). Now only available in same step as produced step output, but should be extended soon to attach metadata in, for example, separate evaluation step to model trained in train step.
+Artifacts generated during pipeline runs can be linked to models and specific model versions in ZenML. This connecting of artifacts provides lineage tracking and transparency into what data and models are used during training, evaluation, and inference.
 
-## Reproducibility and lineage
+There are a few ways to link artifacts:
 
-(pointers to previous sections where you just explain which parts of the flow
-would be used when you want to show provenance and how linking things together
-serves this purpose)
-also pointer to next page where we discuss using models
+### Configuring the Model
+
+The easiest way is to configure the `model_version` parameter on the `@pipeline` decorator or `@step` decorator:
+
+```python
+from zenml.model import ModelVersion 
+
+model_version = ModelVersion(
+    name="my_model",
+    version="1.0.0"
+)
+
+@pipeline(model_version=model_version)
+def my_pipeline():
+    ...
+```
+
+This will automatically link all artifacts from this pipeline run to the
+specified model version.
+
+### Artifact Configuration
+
+You can also explicitly specify the linkage on a per-artifact basis by passing
+special configuration to the Annotated output:
+
+```python
+@step
+def my_step() -> Annotated[
+    MyArtifact, 
+    "artifact_name",
+    DataArtifactConfig(model_name="my_model")
+]:
+   ...
+```
+
+The `DataArtifactConfig`, `ModelArtifactConfig`, and `EndpointArtifactConfig`
+types allow configuring model linkage directly on the artifact.
+
+### Manual Linkage
+
+Finally, artifacts can be linked to an existing model version manually using the
+SDK:
+
+```python
+model_version = ModelVersion(name="my_model", version="1.0.0")
+model_version.link_artifact(my_artifact, name="new_artifact")
+```
+
+The `link_artifact` method handles creating this connection.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
