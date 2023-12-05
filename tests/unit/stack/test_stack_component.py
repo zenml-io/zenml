@@ -195,14 +195,12 @@ def test_stack_component_secret_reference_resolving(
         )
     )
 
-    stack_without_secrets_manager = (
-        client_with_stub_orchestrator_flavor.create_stack(
-            name="stack_without_secrets_manager",
-            components={
-                StackComponentType.ARTIFACT_STORE: new_artifact_store.name,
-                StackComponentType.ORCHESTRATOR: new_orchestrator.name,
-            },
-        )
+    new_stack = client_with_stub_orchestrator_flavor.create_stack(
+        name="new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator.name,
+        },
     )
 
     with pytest.raises(RuntimeError):
@@ -210,9 +208,7 @@ def test_stack_component_secret_reference_resolving(
         o = StubOrchestrator.from_model(new_orchestrator)
         _ = o.config.attribute_without_validator
 
-    client_with_stub_orchestrator_flavor.activate_stack(
-        stack_without_secrets_manager.id
-    )
+    client_with_stub_orchestrator_flavor.activate_stack(new_stack.id)
 
     with pytest.raises(RuntimeError):
         # no secret manager in stack
@@ -229,18 +225,12 @@ def test_stack_component_secret_reference_resolving(
             configuration=LocalSecretsManagerConfig().dict(),
         )
     )
-    stack_with_secrets_manager = (
-        client_with_stub_orchestrator_flavor.create_stack(
-            name="stack_with_secrets_manager",
-            components={
-                StackComponentType.ARTIFACT_STORE: new_artifact_store.name,
-                StackComponentType.ORCHESTRATOR: new_orchestrator.name,
-                StackComponentType.SECRETS_MANAGER: new_secrets_manager.name,
-            },
-        )
-    )
-    client_with_stub_orchestrator_flavor.activate_stack(
-        stack_with_secrets_manager.id
+
+    client_with_stub_orchestrator_flavor.update_stack(
+        name_id_or_prefix=new_stack.id,
+        component_updates={
+            StackComponentType.SECRETS_MANAGER: [new_secrets_manager.name]
+        },
     )
 
     with pytest.raises(KeyError):
