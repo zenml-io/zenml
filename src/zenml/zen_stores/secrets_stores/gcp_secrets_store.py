@@ -457,7 +457,7 @@ class GCPSecretsStore(BaseSecretsStore):
                 f"{secret_count} items for this query. The maximum page value "
                 f"therefore is {total_pages}."
             )
-        return Page(
+        return Page[SecretResponseModel](
             total=secret_count,
             total_pages=total_pages,
             items=sorted_results[
