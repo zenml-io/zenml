@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List
 
 from zenml.client import Client
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, MetadataResourceTypes
 from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
@@ -129,7 +129,8 @@ def publish_pipeline_run_metadata(
     for stack_component_id, metadata in pipeline_run_metadata.items():
         client.create_run_metadata(
             metadata=metadata,
-            pipeline_run_id=pipeline_run_id,
+            resource_id=pipeline_run_id,
+            resource_type=MetadataResourceTypes.PIPELINE_RUN,
             stack_component_id=stack_component_id,
         )
 
@@ -149,6 +150,7 @@ def publish_step_run_metadata(
     for stack_component_id, metadata in step_run_metadata.items():
         client.create_run_metadata(
             metadata=metadata,
-            step_run_id=step_run_id,
+            resource_id=step_run_id,
+            resource_type=MetadataResourceTypes.STEP_RUN,
             stack_component_id=stack_component_id,
         )

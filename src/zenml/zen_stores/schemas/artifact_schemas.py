@@ -22,7 +22,12 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
-from zenml.enums import ArtifactType, ExecutionStatus, TaggableResourceTypes
+from zenml.enums import (
+    ArtifactType,
+    ExecutionStatus,
+    MetadataResourceTypes,
+    TaggableResourceTypes,
+)
 from zenml.models import (
     ArtifactResponse,
     ArtifactResponseBody,
@@ -206,7 +211,11 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="artifact_version",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ArtifactVersionSchema.id)",
+            cascade="delete",
+            overlaps="run_metadata",
+        ),
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="artifact_version",
