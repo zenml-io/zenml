@@ -467,6 +467,8 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
         return ModelVersionArtifactResponse(
             id=self.id,
             body=ModelVersionArtifactResponseBody(
+                created=self.created,
+                updated=self.updated,
                 model=self.model_id,
                 model_version=self.model_version_id,
                 artifact_version=self.artifact_version.to_model(),
@@ -575,6 +577,8 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
         return ModelVersionPipelineRunResponse(
             id=self.id,
             body=ModelVersionPipelineRunResponseBody(
+                created=self.created,
+                updated=self.updated,
                 model=self.model_id,
                 model_version=self.model_version_id,
                 pipeline_run=self.pipeline_run.to_model(),
