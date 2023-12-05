@@ -75,7 +75,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 In the local case, we need to install one additional Python package that is needed for the local Airflow server:
 
 ```bash
-pip install apache-airflow-providers-docker
+pip install apache-airflow-providers-docker apache-airflow~=2.5.0
 ```
 
 Once that is installed, we can start the local Airflow server by running:
