@@ -141,9 +141,14 @@ particular model version. Possible options for stages are:
 - `archived`: This is archived and no longer relevant. This stage occurs when a
   model moves out of any other stage.
 
-
+Your own particular business or use case logic will determine which model
+version you choose to promote, and you can do this in the following ways:
 
 ### Promotion via CLI
+
+This is probably the least common way that you'll use, but it's still possible
+and perhaps might be useful for some use cases or within a CI system, for
+example. You simply use the following CLI subcommand:
 
 ```bash
 zenml model version update iris_logistic_regression --stage=...
@@ -151,31 +156,14 @@ zenml model version update iris_logistic_regression --stage=...
 
 ### Promotion via Cloud Dashboard
 
-not available yet, but you can learn more about it
-[here](./model-control-plane-dashboard.md)
+This feature is not yet available, but soon you will be able to promote your
+model versions directly from the ZenML Cloud dashboard. You can learn more about
+this feature [here](./model-control-plane-dashboard.md).
 
-### via Python SDK
+### Promotion via Python SDK
 
-In the final step of the pipeline, the new Model Version is promoted to the
-Staging stage.
-
-```python
-from zenml import get_step_context, step, pipeline
-from zenml.enums import ModelStages
-
-@step
-def promote_to_staging():
-    model_config = get_step_context().model_config
-    model_version = model_config._get_model_version()
-    model_version.set_stage(ModelStages.STAGING, force=True)
-
-@pipeline(
-    ...
-)
-def train_and_promote_model():
-    ...
-    promote_to_staging(after=["train_and_evaluate"])
-```
+This is the most common way that you'll use to promote your model versions. You
+can see how you would do this here:
 
 ```python
 from zenml import Client
@@ -196,6 +184,27 @@ model_version.set_stage(stage=ModelStages.PRODUCTION)
 # (if there is current Staging version it will get Archived)
 latest_model_version = model.versions[-1]
 latest_model_version.set_stage(stage=ModelStages.STAGING)
+```
+
+Within a pipeline context, you would get the model version from the step context
+but the mechanism for setting the stage is the same.
+
+```python
+from zenml import get_step_context, step, pipeline
+from zenml.enums import ModelStages
+
+@step
+def promote_to_staging():
+    model_config = get_step_context().model_config
+    model_version = model_config._get_model_version()
+    model_version.set_stage(ModelStages.STAGING, force=True)
+
+@pipeline(
+    ...
+)
+def train_and_promote_model():
+    ...
+    promote_to_staging(after=["train_and_evaluate"])
 ```
 
 ## Attaching metadata to artifacts
