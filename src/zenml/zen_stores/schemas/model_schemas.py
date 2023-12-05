@@ -19,7 +19,7 @@ from uuid import UUID
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.enums import TaggableResourceTypes
+from zenml.enums import MetadataResourceTypes, TaggableResourceTypes
 from zenml.models import (
     ModelRequestModel,
     ModelResponseModel,
@@ -34,6 +34,7 @@ from zenml.models import (
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -229,6 +230,15 @@ class ModelVersionSchema(NamedSchema, table=True):
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ModelVersionSchema.id)",
+            cascade="delete",
+            overlaps="run_metadata",
+        ),
+    )
+
     @classmethod
     def from_request(
         cls, model_version_request: ModelVersionRequestModel
@@ -310,6 +320,9 @@ class ModelVersionSchema(NamedSchema, table=True):
             endpoint_artifact_ids=endpoint_artifact_ids,
             data_artifact_ids=data_artifact_ids,
             pipeline_run_ids=pipeline_run_ids,
+            run_metadata={
+                rm.key: rm.to_model(hydrate=False) for rm in self.run_metadata
+            },
         )
 
     def update(

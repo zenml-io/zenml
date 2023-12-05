@@ -63,6 +63,7 @@ def _model_version_to_print(
         "number": model_version.number,
         "description": model_version.description,
         "stage": model_version.stage,
+        "metadata": model_version.to_model_version().metadata,
         "data_artifacts_count": len(model_version.data_artifact_ids),
         "model_artifacts_count": len(model_version.model_artifact_ids),
         "endpoint_artifacts_count": len(model_version.endpoint_artifact_ids),

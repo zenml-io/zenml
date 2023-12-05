@@ -323,6 +323,7 @@ ModelVersionRequestModel.update_forward_refs(
 ModelVersionResponseModel.update_forward_refs(
     UserResponse=UserResponse,
     WorkspaceResponse=WorkspaceResponse,
+    RunMetadataResponse=RunMetadataResponse,
 )
 ModelVersionArtifactRequestModel.update_forward_refs(
     UserResponse=UserResponse,

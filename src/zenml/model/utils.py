@@ -16,13 +16,16 @@
 from typing import (
     Dict,
     Optional,
+    Union,
 )
 from uuid import UUID
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
+from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.model.model_version import ModelVersion
 from zenml.models.model_models import (
     ModelVersionArtifactRequestModel,
@@ -113,3 +116,45 @@ def link_artifact_config_to_model_version(
             is_endpoint_artifact=artifact_config.is_endpoint_artifact,
         )
         client.zen_store.create_model_version_artifact_link(request)
+
+
+def log_model_version_metadata(
+    metadata: Dict[str, "MetadataType"],
+    model_name: Optional[str] = None,
+    model_version: Optional[Union[ModelStages, int, str]] = None,
+) -> None:
+    """Log model version metadata.
+
+    This function can be used to log metadata for existing model versions.
+
+    Args:
+        metadata: The metadata to log.
+        model_name: The name of the model to log metadata for. Can
+            be omitted when being called inside a step with configured
+            `model_version` in decorator.
+        model_version: The version of the model to log metadata for. Can
+            be omitted when being called inside a step with configured
+            `model_version` in decorator.
+
+    Raises:
+        ValueError: If no model name/version is provided and the function is not
+            called inside a step with configured `model_version` in decorator.
+    """
+    mv = None
+    try:
+        step_context = get_step_context()
+        mv = step_context.model_version
+    except RuntimeError:
+        step_context = None
+
+    if not step_context and not (model_name and model_version):
+        raise ValueError(
+            "Model name and version must be provided unless the function is "
+            "called inside a step with configured `model_version` in decorator."
+        )
+    if mv is None:
+        from zenml import ModelVersion
+
+        mv = ModelVersion(name=model_name, version=model_version)
+
+    mv.log_metadata(metadata)

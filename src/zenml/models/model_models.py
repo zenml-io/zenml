@@ -47,6 +47,9 @@ from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
+    from zenml.models.v2.core.run_metadata import (
+        RunMetadataResponse,
+    )
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -158,6 +161,7 @@ class ModelVersionResponseModel(
         description="Pipeline runs linked to the model version",
         default={},
     )
+    run_metadata: Dict[str, "RunMetadataResponse"] = {}
 
     def to_model_version(
         self,
