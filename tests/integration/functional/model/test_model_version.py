@@ -263,6 +263,14 @@ class TestModelVersion:
             with pytest.raises(ValueError):
                 log_model_version_metadata({"foo": "bar"})
 
+            log_model_version_metadata(
+                {"bar": "foo"}, model_name=mv.name, model_version="latest"
+            )
+
+            assert len(mv.metadata) == 2
+            assert mv.metadata["foo"] == "bar"
+            assert mv.metadata["bar"] == "foo"
+
     def test_metadata_logging_in_steps(self):
         """Test that model version can be used to track metadata from function in steps."""
         with model_killer():
