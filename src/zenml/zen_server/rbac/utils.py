@@ -111,15 +111,16 @@ def dehydrate_response_model(
             user=auth_context.user, resources=resources, action=Action.READ
         )
 
-    dehydrated_fields = {}
+    dehydrated_values = {}
+    for key, value in model.dict().items():
+        if key in model.__private_attributes__:
+            dehydrated_values[key] = value
+        else:
+            dehydrated_values[key] = _dehydrate_value(
+                value, permissions=permissions
+            )
 
-    for field_name in model.__fields__.keys():
-        value = getattr(model, field_name)
-        dehydrated_fields[field_name] = _dehydrate_value(
-            value, permissions=permissions
-        )
-
-    return type(model).parse_obj(dehydrated_fields)
+    return type(model).parse_obj(dehydrated_values)
 
 
 def _dehydrate_value(
@@ -138,16 +139,16 @@ def _dehydrate_value(
         The recursively dehydrated value.
     """
     if isinstance(value, (BaseResponse, BaseResponseModel)):
-        value = get_surrogate_permission_model_for_model(
+        permission_model = get_surrogate_permission_model_for_model(
             value, action=Action.READ
         )
-        resource = get_resource_for_model(value)
+        resource = get_resource_for_model(permission_model)
         if not resource:
             return dehydrate_response_model(value, permissions=permissions)
 
         has_permissions = (permissions or {}).get(resource, False)
         if has_permissions or has_permissions_for_model(
-            model=value, action=Action.READ
+            model=permission_model, action=Action.READ
         ):
             return dehydrate_response_model(value, permissions=permissions)
         else:
