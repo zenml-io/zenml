@@ -65,7 +65,7 @@ def decode_string(string: str) -> str:
 
 
 def decode_secret_dict(
-    secret_dict: Dict[str, str]
+    secret_dict: Dict[str, str],
 ) -> Tuple[Dict[str, str], str]:
     """Base64 decode a Secret.
 
