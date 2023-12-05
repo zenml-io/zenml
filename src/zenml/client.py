@@ -1172,10 +1172,16 @@ class Client(metaclass=ClientMetaClass):
                 for c_type, c_list in components_dict.items()
             }
 
-        return self.zen_store.update_stack(
+        updated_stack = self.zen_store.update_stack(
             stack_id=stack.id,
             stack_update=update_model,
         )
+        if updated_stack.id == self.active_stack_model.id:
+            if self._config:
+                self._config.set_active_stack(updated_stack)
+            else:
+                GlobalConfiguration().set_active_stack(updated_stack)
+        return updated_stack
 
     def delete_stack(
         self, name_id_or_prefix: Union[str, UUID], recursive: bool = False

@@ -4952,6 +4952,11 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
+            if step_run.status != ExecutionStatus.RUNNING:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=step_run.pipeline_run_id, session=session
+                )
+
             session.commit()
 
             return step_schema.to_model(hydrate=True)

@@ -16,6 +16,7 @@
 import functools
 import itertools
 import os
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -25,6 +26,7 @@ from typing import (
     NoReturn,
     Optional,
     Set,
+    Tuple,
     Type,
 )
 from uuid import UUID
@@ -69,7 +71,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-_STACK_CACHE: Dict[UUID, "Stack"] = {}
+_STACK_CACHE: Dict[Tuple[UUID, Optional[datetime]], "Stack"] = {}
 
 
 class Stack:
@@ -147,7 +149,8 @@ class Stack:
             The created Stack instance.
         """
         global _STACK_CACHE
-        if stack_model.id in _STACK_CACHE:
+        key = (stack_model.id, stack_model.updated)
+        if key in _STACK_CACHE:
             return _STACK_CACHE[stack_model.id]
 
         from zenml.stack import StackComponent
@@ -170,7 +173,7 @@ class Stack:
             name=stack_model.name,
             components=stack_components,
         )
-        _STACK_CACHE[stack_model.id] = stack
+        _STACK_CACHE[key] = stack
         return stack
 
     @classmethod
