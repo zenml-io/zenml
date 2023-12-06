@@ -4,11 +4,11 @@ description: Put your new knowledge in action with an end to end project
 
 # An end-to-end project
 
-By now, you have understood some of the basic pillars of a MLOps system:
+In this guide, we have went over some advanced concepts:
 
-- [Pipelines and steps](create-an-ml-pipeline.md)
-- [Artifacts](manage-artifacts.md)
-- [Models](track-ml-models.md)
+- The value of [deploying ZenML](connect-deployed-zenml.md)
+- Abstracting infrastructure configuration into [stacks](understand-stacks.md)
+- [Deploying a MLOps stack](cloud-stack.md) on a cloud provider of your choice
 
 We will now put this into action with a simple starter project.
 

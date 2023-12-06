@@ -14,7 +14,7 @@ This section of the production guide will be about creating your first cloud sta
 - An [AWS](../../stacks-and-components/component-guide/artifact-stores/s3.md), [GCP](../../stacks-and-components/component-guide/artifact-stores/gcp.md), or [Azure](../../stacks-and-components/component-guide/artifact-stores/azure.md) artifact store.
 - A [container registry](../../stacks-and-components/component-guide/container-registries/container-registries.md)
 
-A simplified [GCP guide](../../stacks-and-components/stack-deployment/cloud-stacks/minimal-gcp-stack.md) is already available.
+A simplified [GCP guide](../../stacks-and-components/stack-deployment/cloud-stacks/minimal-gcp-stack.md) is already available. The docs also have a dedicated [Stack deployment](../../stacks-and-components/stack-deployment/) section with a lot more information!
 
 Until this section is ready, please use the above information to configure your cloud stack!
 
