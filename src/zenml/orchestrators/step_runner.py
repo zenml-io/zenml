@@ -695,16 +695,14 @@ class StepRunner:
         Args:
             pipeline_run: The response model of current pipeline run.
         """
-        from zenml.models.model_models import (
-            ModelVersionPipelineRunRequestModel,
-        )
+        from zenml.models import ModelVersionPipelineRunRequest
 
         models = self._get_model_versions_from_config()
 
         client = Client()
         for model in models:
             client.zen_store.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequestModel(
+                ModelVersionPipelineRunRequest(
                     user=Client().active_user.id,
                     workspace=Client().active_workspace.id,
                     pipeline_run=pipeline_run.id,
@@ -726,9 +724,7 @@ class StepRunner:
             artifact_names: The name of the published output artifacts.
             external_artifacts: The external artifacts of the step.
         """
-        from zenml.models.model_models import (
-            ModelVersionPipelineRunRequestModel,
-        )
+        from zenml.models import ModelVersionPipelineRunRequest
 
         models = self._get_model_versions_from_artifacts(artifact_names)
         client = Client()
@@ -749,7 +745,7 @@ class StepRunner:
 
         for model in models:
             client.zen_store.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequestModel(
+                ModelVersionPipelineRunRequest(
                     user=client.active_user.id,
                     workspace=client.active_workspace.id,
                     pipeline_run=pipeline_run.id,

@@ -12,32 +12,29 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with Model Control Plane."""
-# from functools import partial
 from typing import Any, Dict, List, Optional
 
 import click
 
-# from uuid import UUID
-# import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.models.model_models import (
-    ModelResponseModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionResponseModel,
+from zenml.models import (
+    ModelResponse,
+    ModelVersionArtifactFilter,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionResponse,
 )
 from zenml.utils.dict_utils import remove_none_values
 
 logger = get_logger(__name__)
 
 
-def _model_to_print(model: ModelResponseModel) -> Dict[str, Any]:
+def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
     return {
         "id": model.id,
         "name": model.name,
@@ -55,7 +52,7 @@ def _model_to_print(model: ModelResponseModel) -> Dict[str, Any]:
 
 
 def _model_version_to_print(
-    model_version: ModelVersionResponseModel,
+    model_version: ModelVersionResponse,
 ) -> Dict[str, Any]:
     return {
         "id": model_version.id,
@@ -357,7 +354,7 @@ def version() -> None:
     """Interact with model versions in the Model Control Plane."""
 
 
-@cli_utils.list_options(ModelVersionFilterModel)
+@cli_utils.list_options(ModelVersionFilter)
 @click.argument("model_name_or_id")
 @version.command("list", help="List model versions with filter.")
 def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
@@ -370,7 +367,7 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     model_id = Client().get_model(model_name_or_id=model_name_or_id).id
     model_versions = Client().zen_store.list_model_versions(
         model_name_or_id=model_id,
-        model_version_filter_model=ModelVersionFilterModel(**kwargs),
+        model_version_filter_model=ModelVersionFilter(**kwargs),
     )
 
     if not model_versions:
@@ -558,7 +555,7 @@ def _print_artifacts_links_generic(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@cli_utils.list_options(ModelVersionArtifactFilterModel)
+@cli_utils.list_options(ModelVersionArtifactFilter)
 def list_model_version_data_artifacts(
     model_name: str,
     model_version: Optional[str] = None,
@@ -586,7 +583,7 @@ def list_model_version_data_artifacts(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@cli_utils.list_options(ModelVersionArtifactFilterModel)
+@cli_utils.list_options(ModelVersionArtifactFilter)
 def list_model_version_model_artifacts(
     model_name: str,
     model_version: Optional[str] = None,
@@ -614,7 +611,7 @@ def list_model_version_model_artifacts(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@cli_utils.list_options(ModelVersionArtifactFilterModel)
+@cli_utils.list_options(ModelVersionArtifactFilter)
 def list_model_version_endpoint_artifacts(
     model_name: str,
     model_version: Optional[str] = None,
@@ -642,7 +639,7 @@ def list_model_version_endpoint_artifacts(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@cli_utils.list_options(ModelVersionPipelineRunFilterModel)
+@cli_utils.list_options(ModelVersionPipelineRunFilter)
 def list_model_version_pipeline_runs(
     model_name: str,
     model_version: Optional[str] = None,
