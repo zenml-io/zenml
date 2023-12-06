@@ -446,8 +446,10 @@ class Pipeline:
             parameters_ = dict_utils.recursive_update(parameters_, from_file_)
         if parameters_:
             for k, v_runtime in kwargs.items():
-                if v_config := parameters_.get(k, None):
-                    conflicting_parameters[k] = (v_config, v_runtime)
+                if k in parameters_:
+                    v_config = parameters_[k]
+                    if v_config != v_runtime:
+                        conflicting_parameters[k] = (v_config, v_runtime)
             if conflicting_parameters:
                 is_plural = "s" if len(conflicting_parameters) > 1 else ""
                 msg = f"Configured parameter{is_plural} for the pipeline `{self.name}` conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
@@ -466,7 +468,7 @@ def pipeline_(param_name: str):
     step_name()
 
 if __name__=="__main__":
-    pipeline_(param_name="value2")
+    pipeline_.with_options(config_file="config.yaml")(param_name="value2")
 ```
 To avoid this consider setting pipeline parameters only in one place (config or code).
 """

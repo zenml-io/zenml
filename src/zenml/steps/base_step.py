@@ -911,7 +911,8 @@ class BaseStep(metaclass=BaseStepMeta):
 
         conflicting_parameters = {}
         for key, value in parameters.items():
-            if runtime_value := runtime_parameters.get(key, None):
+            if key in runtime_parameters:
+                runtime_value = runtime_parameters[key]
                 if runtime_value != value:
                     conflicting_parameters[key] = (value, runtime_value)
             if key in self.entrypoint_definition.inputs:
