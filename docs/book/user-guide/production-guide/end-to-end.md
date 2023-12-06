@@ -9,6 +9,9 @@ In this guide, we have went over some advanced concepts:
 - The value of [deploying ZenML](connect-deployed-zenml.md)
 - Abstracting infrastructure configuration into [stacks](understand-stacks.md)
 - [Deploying a MLOps stack](cloud-stack.md) on a cloud provider of your choice
+- [Connecting a git repository](connect-code-repository.md)
+- [Scaling compute](scale-compute.md)
+- Setting up [pipeline configuration](configure-pipeline.md) in production
 
 We will now put this into action with a simple starter project.
 
