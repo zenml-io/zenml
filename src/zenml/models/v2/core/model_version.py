@@ -92,7 +92,16 @@ class ModelVersionUpdate(BaseModel):
         default=False,
     )
     name: Optional[str] = Field(
-        description="Target model version name to be set", default=None
+        description="Target model version name to be set",
+        default=None,
+    )
+    add_tags: Optional[List[str]] = Field(
+        description="Tags to be added to the model version",
+        default=None,
+    )
+    remove_tags: Optional[List[str]] = Field(
+        description="Tags to be removed from the model version",
+        default=None,
     )
 
     @validator("stage")
@@ -252,6 +261,15 @@ class ModelVersionResponse(
             the value of the property.
         """
         return self.get_body().updated
+
+    @property
+    def tags(self) -> List["TagResponseModel"]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().tags
 
     @property
     def description(self) -> Optional[str]:
