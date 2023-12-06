@@ -13,11 +13,18 @@
 #  permissions and limitations under the License.
 """Models representing artifact versions."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -35,6 +42,8 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.artifact import ArtifactResponse
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+
     from zenml.models.v2.core.artifact_visualization import (
         ArtifactVisualizationRequest,
         ArtifactVisualizationResponse,
@@ -118,6 +127,14 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
     )
     type: ArtifactType = Field(title="Type of the artifact.")
+    materializer: Source = Field(
+        title="Materializer class to use for this artifact.",
+    )
+    data_type: Source = Field(
+        title="Data type of the artifact.",
+    )
+
+    _convert_source = convert_source_validator("materializer", "data_type")
 
 
 class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -140,14 +157,6 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     run_metadata: Dict[str, "RunMetadataResponse"] = Field(
         default={}, title="Metadata of the artifact."
     )
-    materializer: Source = Field(
-        title="Materializer class to use for this artifact.",
-    )
-    data_type: Source = Field(
-        title="Data type of the artifact.",
-    )
-
-    _convert_source = convert_source_validator("materializer", "data_type")
 
 
 class ArtifactVersionResponse(
@@ -258,7 +267,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().materializer
+        return self.get_body().materializer
 
     @property
     def data_type(self) -> Source:
@@ -267,7 +276,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().data_type
+        return self.get_body().data_type
 
     # Helper methods
     @property

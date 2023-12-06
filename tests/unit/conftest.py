@@ -526,10 +526,10 @@ def sample_artifact_version_model(
             updated=datetime.now(),
             uri="sample_uri",
             type=ArtifactType.DATA,
-        ),
-        metadata=ArtifactVersionResponseMetadata(
             materializer="sample_module.sample_materializer",
             data_type="sample_module.sample_data_type",
+        ),
+        metadata=ArtifactVersionResponseMetadata(
             workspace=sample_workspace_model,
             tags=[],
         ),
