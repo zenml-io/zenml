@@ -3,11 +3,12 @@
 set -e
 set -x
 
-# If only unittests are needed call
-# test-coverage-xml.sh unit
-# For only integration tests call
-# test-coverage-xml.sh integration
-TEST_SRC="tests/"${1:-""}
+# Usage:
+# test-coverage-xml.sh [unit|integration] [environment]
+# Example to run all groups for unit tests in parallel:
+# test-coverage-xml.sh unit default
+
+TEST_TYPE=${1:-"unit"} # "unit" or "integration"
 TEST_ENVIRONMENT=${2:-"default"}
 
 export ZENML_DEBUG=1
@@ -16,16 +17,31 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 
 ./zen-test environment provision $TEST_ENVIRONMENT
 
-# The '-vv' flag enables pytest-clarity output when tests fail.
-if [ -n "$1" ]; then
-    coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
+# Define the test source directory based on the test type
+if [ "$TEST_TYPE" == "unit" ]; then
+    TEST_SRC="tests/unit"
+elif [ "$TEST_TYPE" == "integration" ]; then
+    TEST_SRC="tests/integration"
 else
-    coverage run -m pytest tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision
-    coverage run -m pytest tests/integration --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
+    echo "Invalid test type: $TEST_TYPE"
+    exit 1
 fi
+
+# Run the tests for all groups in parallel
+for GROUP in {1..3}; do
+    COVERAGE_FILE=".coverage.$TEST_TYPE.$GROUP"
+    coverage run -m pytest $TEST_SRC --durations 20 --store-durations --splits 3 --group $GROUP &
+done
+
+# Wait for all background processes to finish
+wait
 
 ./zen-test environment cleanup $TEST_ENVIRONMENT
 
-coverage combine
+# Combine coverage data from all groups
+coverage combine $(ls .coverage.*)
 coverage report --show-missing
 coverage xml
+
+# Clean up individual coverage files
+rm -f .coverage.*
