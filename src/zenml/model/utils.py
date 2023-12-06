@@ -24,9 +24,7 @@ from zenml.client import Client
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.model.model_version import ModelVersion
-from zenml.models.model_models import (
-    ModelVersionArtifactRequestModel,
-)
+from zenml.models import ModelVersionArtifactRequest
 from zenml.new.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
@@ -103,7 +101,7 @@ def link_artifact_config_to_model_version(
     if model_version:
         model_version._get_or_create_model_version()
         model_version_response = model_version._get_model_version()
-        request = ModelVersionArtifactRequestModel(
+        request = ModelVersionArtifactRequest(
             user=client.active_user.id,
             workspace=client.active_workspace.id,
             artifact_version=artifact_version_id,
