@@ -29,12 +29,16 @@ class AnalyticsEvent(str, Enum):
     # Components
     REGISTERED_STACK_COMPONENT = "Stack component registered"
 
+    # Code repository
+    REGISTERED_CODE_REPOSITORY = "Code repository registered"
+
     # Stack
     REGISTERED_STACK = "Stack registered"
     UPDATED_STACK = "Stack updated"
 
-    # Model Deployment
+    # Model Control Plane
     MODEL_DEPLOYED = "Model deployed"
+    CREATED_MODEL = "Model created"
 
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
@@ -56,6 +60,9 @@ class AnalyticsEvent(str, Enum):
     # Service connector
     CREATED_SERVICE_CONNECTOR = "Service connector created"
 
+    # Service account and API keys
+    CREATED_SERVICE_ACCOUNT = "Service account created"
+
     # Stack recipes
     RUN_STACK_RECIPE = "Stack recipe ran"
     DEPLOY_STACK = "Stack deployed"
@@ -64,6 +71,9 @@ class AnalyticsEvent(str, Enum):
     # Stack component deploy
     DEPLOY_STACK_COMPONENT = "Stack component deployed"
     DESTROY_STACK_COMPONENT = "Stack component destroyed"
+
+    # Tag created
+    CREATED_TAG = "Tag created"
 
     # ZenML server events
     ZENML_SERVER_DEPLOYED = "ZenML server deployed"
