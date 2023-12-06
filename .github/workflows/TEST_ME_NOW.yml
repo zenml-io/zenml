@@ -9,7 +9,7 @@ on:
 
 jobs:
   db-migration-testing:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-dind-runners
 
     steps:
     - name: Checkout code
