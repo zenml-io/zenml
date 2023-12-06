@@ -799,7 +799,7 @@ class BaseFilter(BaseModel):
             raise RuntimeError("No valid logical operator was supplied.")
 
     def get_custom_filters(
-        self
+        self,
     ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
         """Get custom filters.
 

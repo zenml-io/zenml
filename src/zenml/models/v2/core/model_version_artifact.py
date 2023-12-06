@@ -180,7 +180,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
     only_endpoint_artifacts: Optional[bool] = False
 
     def get_custom_filters(
-        self
+        self,
     ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
         """Get custom filters.
 
