@@ -82,14 +82,16 @@ function run_tests_for_version() {
 set -e
 python3 -m venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
+
 pip3 install -U pip setuptools wheel
-pip install -e ".[templates,server]"
+pip3 install -e ".[templates,server]"
 pip3 install importlib_metadata
 
-docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password
+docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:latest
 
 sleep 10
 
 zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 run_tests_for_version current_branch_mysql
+
 deactivate
