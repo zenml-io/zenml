@@ -20,7 +20,7 @@
   * [Understand stacks](user-guide/production-guide/understand-stacks.md)
   * [Deploy a cloud stack](user-guide/production-guide/cloud-stack.md)
   * [Configure a code repository](user-guide/production-guide/connect-code-repository.md)
-  * [Scale to the cloud](user-guide/production-guide/scale-to-cloud.md)
+  * [Scale to the cloud](user-guide/production-guide/scale-compute.md)
   * [Configure your pipeline](user-guide/production-guide/configure-pipeline.md)
   * [An end-to-end project](user-guide/production-guide/end-to-end.md)
 * [🍗 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
