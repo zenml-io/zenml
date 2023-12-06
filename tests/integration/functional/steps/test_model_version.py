@@ -746,9 +746,11 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline(
     run_1 = f"run_{uuid4()}"
     _inner_pipeline.with_options(run_name=run_1)()
 
-    clean_client.delete_pipeline(
+    pipeline_response = clean_client.get_pipeline(
         "test_that_pipeline_run_is_removed_on_deletion_of_pipeline"
     )
+    for run in pipeline_response.runs:
+        clean_client.delete_pipeline_run(run.id)
     model = clean_client.get_model(model_name_or_id="step")
     mvs = model.versions
     assert len(mvs) == 1
@@ -785,6 +787,7 @@ def test_that_artifact_is_removed_on_deletion(
         run.steps["_this_step_produces_output"].outputs["data"].id
     )
     clean_client.delete_pipeline(pipeline_id)
+    clean_client.delete_pipeline_run(run.id)
     clean_client.delete_artifact_version(artifact_version_id)
     model = clean_client.get_model(model_name_or_id="step")
     mvs = model.versions
