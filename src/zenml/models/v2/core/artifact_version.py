@@ -21,9 +21,10 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
 from zenml.models.tag_models import TagResponseModel
+from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -406,12 +407,26 @@ class ArtifactVersionFilter(WorkspaceScopedFilter):
         from sqlmodel import select
 
         from zenml.zen_stores.schemas.artifact_schemas import (
+            ArtifactSchema,
             ArtifactVersionSchema,
         )
         from zenml.zen_stores.schemas.step_run_schemas import (
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
         )
+
+        if self.name:
+            value, filter_operator = self._resolve_operator(self.name)
+            filter_ = StrFilter(
+                operation=GenericFilterOps(filter_operator),
+                column="name",
+                value=value,
+            )
+            artifact_name_filter = and_(  # type: ignore[type-var]
+                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                filter_.generate_query_conditions(ArtifactSchema),
+            )
+            custom_filters.append(artifact_name_filter)
 
         if self.only_unused:
             unused_filter = and_(

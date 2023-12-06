@@ -2732,16 +2732,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of artifact versions.
         """
-        artifact_id = None
-        if name:
-            try:
-                artifact = self.get_artifact(name_id_or_prefix=name)
-                artifact_id = artifact.id
-            except KeyError:
-                return Page(
-                    items=[], index=1, total=0, total_pages=1, max_size=size
-                )
-
         artifact_version_filter_model = ArtifactVersionFilter(
             sort_by=sort_by,
             page=page,
@@ -2751,6 +2741,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             artifact_id=artifact_id,
+            name=name,
             version=str(version) if version else None,
             version_number=version_number,
             artifact_store_id=artifact_store_id,
