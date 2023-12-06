@@ -112,7 +112,7 @@ def dehydrate_response_model(
         )
 
     dehydrated_values = {}
-    for key, value in model.dict().items():
+    for key, value in model.__dict__.items():
         if key in model.__private_attributes__:
             dehydrated_values[key] = value
         else:
@@ -554,8 +554,9 @@ def get_subresources_for_model(
     """
     resources = set()
 
-    for field_name in model.__fields__.keys():
-        value = getattr(model, field_name)
+    for key, value in model.__dict__.items():
+        if key in model.__private_attributes__:
+            continue
         resources.update(_get_subresources_for_value(value))
 
     return resources
