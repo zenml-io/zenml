@@ -1,5 +1,12 @@
 #!/bin/bash
 
+DB="sqlite"
+if [ -z "$1" ]; then
+  echo "No argument passed, using default: $DB"
+else
+  DB="$1"
+fi
+
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
