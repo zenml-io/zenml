@@ -1,8 +1,8 @@
 ---
-description: Provision infrastructure on the cloud.
+description: Connect your git repository with ZenML
 ---
 
-# Deploy a cloud stack
+# Connect a code repository
 
 {% hint style="warning" %}
 We're still working on finishing this easy-to-consume Production Guide for you. In the meantime, please follow the provided links in this space as an interim guide.
