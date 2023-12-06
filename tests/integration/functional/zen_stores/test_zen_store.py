@@ -86,13 +86,13 @@ from zenml.models import (
     ArtifactVersionResponse,
     ComponentFilter,
     ComponentUpdate,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionRequestModel,
-    ModelVersionUpdateModel,
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunRequest,
+    ModelVersionRequest,
+    ModelVersionUpdate,
     PipelineRunFilter,
     PipelineRunResponse,
     ServiceAccountFilter,
@@ -3600,7 +3600,7 @@ class TestModel:
             assert zs.get_model(created_model.id).latest_version is None
             for name in ["great one", "yet another one"]:
                 mv = zs.create_model_version(
-                    ModelVersionRequestModel(
+                    ModelVersionRequest(
                         user=created_model.user.id,
                         workspace=created_model.workspace.id,
                         model=created_model.id,
@@ -3617,7 +3617,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3630,7 +3630,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3639,7 +3639,7 @@ class TestModelVersion:
             )
             with pytest.raises(EntityExistsError):
                 zs.create_model_version(
-                    ModelVersionRequestModel(
+                    ModelVersionRequest(
                         user=model.user.id,
                         workspace=model.workspace.id,
                         model=model.id,
@@ -3653,7 +3653,7 @@ class TestModelVersion:
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.create_model_version(
-                    ModelVersionRequestModel(
+                    ModelVersionRequest(
                         user=model.user.id,
                         workspace=model.workspace.id,
                         model=uuid4(),
@@ -3675,7 +3675,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3684,7 +3684,7 @@ class TestModelVersion:
             )
             mv2 = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilterModel(
+                model_version_filter_model=ModelVersionFilter(
                     name="great one"
                 ),
             ).items[0]
@@ -3696,7 +3696,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilterModel(),
+                model_version_filter_model=ModelVersionFilter(),
             )
             assert len(mvs) == 0
 
@@ -3705,7 +3705,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3713,7 +3713,7 @@ class TestModelVersion:
                 )
             )
             mv2 = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3722,7 +3722,7 @@ class TestModelVersion:
             )
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilterModel(),
+                model_version_filter_model=ModelVersionFilter(),
             )
             assert len(mvs) == 2
             assert mv1 in mvs
@@ -3742,7 +3742,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3754,7 +3754,7 @@ class TestModelVersion:
             )
             mvl = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilterModel(
+                model_version_filter_model=ModelVersionFilter(
                     name="great one"
                 ),
             ).items
@@ -3767,7 +3767,7 @@ class TestModelVersion:
             with pytest.raises(KeyError):
                 zs.update_model_version(
                     model_version_id=uuid4(),
-                    model_version_update_model=ModelVersionUpdateModel(
+                    model_version_update_model=ModelVersionUpdate(
                         model=model.id,
                         stage="staging",
                         force=False,
@@ -3779,7 +3779,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3787,7 +3787,7 @@ class TestModelVersion:
                 )
             )
             mv2 = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3796,7 +3796,7 @@ class TestModelVersion:
             )
             zs.update_model_version(
                 model_version_id=mv1.id,
-                model_version_update_model=ModelVersionUpdateModel(
+                model_version_update_model=ModelVersionUpdate(
                     model=model.id,
                     stage="staging",
                     force=False,
@@ -3804,14 +3804,12 @@ class TestModelVersion:
             )
             mv2 = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilterModel(
-                    stage="staging"
-                ),
+                model_version_filter_model=ModelVersionFilter(stage="staging"),
             ).items[0]
             assert mv1.id == mv2.id
             mv3 = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilterModel(
+                model_version_filter_model=ModelVersionFilter(
                     stage=ModelStages.STAGING
                 ),
             ).items[0]
@@ -3822,7 +3820,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3832,7 +3830,7 @@ class TestModelVersion:
 
             mvl = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilterModel(
+                model_version_filter_model=ModelVersionFilter(
                     stage=ModelStages.STAGING
                 ),
             ).items
@@ -3844,7 +3842,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3853,7 +3851,7 @@ class TestModelVersion:
             )
             time.sleep(1)  # thanks to MySQL way of storing datetimes
             latest = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3870,7 +3868,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3878,7 +3876,7 @@ class TestModelVersion:
                 )
             )
             mv2 = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3887,7 +3885,7 @@ class TestModelVersion:
             )
             zs.update_model_version(
                 model_version_id=mv1.id,
-                model_version_update_model=ModelVersionUpdateModel(
+                model_version_update_model=ModelVersionUpdate(
                     model=model.id,
                     stage="staging",
                     force=False,
@@ -3901,7 +3899,7 @@ class TestModelVersion:
             )
             zs.update_model_version(
                 model_version_id=mv2.id,
-                model_version_update_model=ModelVersionUpdateModel(
+                model_version_update_model=ModelVersionUpdate(
                     model=model.id,
                     stage="staging",
                     force=True,
@@ -3933,7 +3931,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3961,7 +3959,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3975,11 +3973,11 @@ class TestModelVersion:
     def test_model_bad_stage(self):
         """Test that update fails on bad stage value."""
         with pytest.raises(ValueError):
-            ModelVersionUpdateModel(model=uuid4(), stage="my_super_stage")
+            ModelVersionUpdate(model=uuid4(), stage="my_super_stage")
 
     def test_model_ok_stage(self):
         """Test that update works on valid stage value."""
-        mvum = ModelVersionUpdateModel(model=uuid4(), stage="staging")
+        mvum = ModelVersionUpdate(model=uuid4(), stage="staging")
         assert mvum.stage == "staging"
 
     def test_increments_version_number(self):
@@ -3987,7 +3985,7 @@ class TestModelVersion:
         with ModelVersionContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -3996,7 +3994,7 @@ class TestModelVersion:
             )
             time.sleep(1)  # thanks MySQL again!
             zs.create_model_version(
-                ModelVersionRequestModel(
+                ModelVersionRequest(
                     user=model.user.id,
                     workspace=model.workspace.id,
                     model=model.id,
@@ -4006,7 +4004,7 @@ class TestModelVersion:
 
             model_versions = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilterModel(),
+                model_version_filter_model=ModelVersionFilter(),
             )
             assert len(model_versions) == 2
             assert model_versions[0].name == "great one"
@@ -4020,7 +4018,7 @@ class TestModelVersion:
             zs = Client().zen_store
             found = zs.list_model_versions(
                 model_name_or_id=model_version.model.id,
-                model_version_filter_model=ModelVersionFilterModel(number=1),
+                model_version_filter_model=ModelVersionFilter(number=1),
             ).items[0]
             assert found.id == model_version.id
             assert found.number == 1
@@ -4033,7 +4031,7 @@ class TestModelVersion:
 
             found = zs.list_model_versions(
                 model_name_or_id=model_version.model.id,
-                model_version_filter_model=ModelVersionFilterModel(number=2),
+                model_version_filter_model=ModelVersionFilter(number=2),
             ).items
 
             assert len(found) == 0
@@ -4047,7 +4045,7 @@ class TestModelVersionArtifactLinks:
         ):
             zs = Client().zen_store
             zs.create_model_version_artifact_link(
-                ModelVersionArtifactRequestModel(
+                ModelVersionArtifactRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4063,7 +4061,7 @@ class TestModelVersionArtifactLinks:
         ):
             zs = Client().zen_store
             al1 = zs.create_model_version_artifact_link(
-                ModelVersionArtifactRequestModel(
+                ModelVersionArtifactRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4073,7 +4071,7 @@ class TestModelVersionArtifactLinks:
             )
             assert al1.artifact_version.id == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
-                ModelVersionArtifactRequestModel(
+                ModelVersionArtifactRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4091,7 +4089,7 @@ class TestModelVersionArtifactLinks:
         ):
             zs = Client().zen_store
             link1 = zs.create_model_version_artifact_link(
-                ModelVersionArtifactRequestModel(
+                ModelVersionArtifactRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4101,7 +4099,7 @@ class TestModelVersionArtifactLinks:
             )
 
             link2 = zs.create_model_version_artifact_link(
-                ModelVersionArtifactRequestModel(
+                ModelVersionArtifactRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4121,7 +4119,7 @@ class TestModelVersionArtifactLinks:
         ):
             zs = Client().zen_store
             zs.create_model_version_artifact_link(
-                ModelVersionArtifactRequestModel(
+                ModelVersionArtifactRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4130,7 +4128,7 @@ class TestModelVersionArtifactLinks:
                 )
             )
             zs.create_model_version_artifact_link(
-                ModelVersionArtifactRequestModel(
+                ModelVersionArtifactRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4140,7 +4138,7 @@ class TestModelVersionArtifactLinks:
             )
 
             links = zs.list_model_version_artifact_links(
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id
                 ),
             )
@@ -4153,7 +4151,7 @@ class TestModelVersionArtifactLinks:
         ):
             zs = Client().zen_store
             link = zs.create_model_version_artifact_link(
-                ModelVersionArtifactRequestModel(
+                ModelVersionArtifactRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4166,7 +4164,7 @@ class TestModelVersionArtifactLinks:
                 model_version_artifact_link_name_or_id=link.id,
             )
             mvls = zs.list_model_version_artifact_links(
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id
                 ),
             )
@@ -4185,7 +4183,7 @@ class TestModelVersionArtifactLinks:
         with ModelVersionContext(True) as model_version:
             zs = Client().zen_store
             mvls = zs.list_model_version_artifact_links(
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id
                 ),
             )
@@ -4198,7 +4196,7 @@ class TestModelVersionArtifactLinks:
         ):
             zs = Client().zen_store
             mvls = zs.list_model_version_artifact_links(
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id
                 ),
             )
@@ -4210,7 +4208,7 @@ class TestModelVersionArtifactLinks:
                 (False, False, artifacts[3]),
             ]:
                 zs.create_model_version_artifact_link(
-                    ModelVersionArtifactRequestModel(
+                    ModelVersionArtifactRequest(
                         user=model_version.user.id,
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
@@ -4221,21 +4219,21 @@ class TestModelVersionArtifactLinks:
                     )
                 )
             mvls = zs.list_model_version_artifact_links(
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id
                 ),
             )
             assert len(mvls) == len(artifacts)
 
             mvls = zs.list_model_version_artifact_links(
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id, only_data_artifacts=True
                 ),
             )
             assert len(mvls) == 2
 
             mvls = zs.list_model_version_artifact_links(
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id,
                     only_model_artifacts=True,
                 ),
@@ -4243,7 +4241,7 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 1
 
             mvls = zs.list_model_version_artifact_links(
-                model_version_artifact_link_filter_model=ModelVersionArtifactFilterModel(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id,
                     only_endpoint_artifacts=True,
                 ),
@@ -4292,7 +4290,7 @@ class TestModelVersionPipelineRunLinks:
         ):
             zs = Client().zen_store
             zs.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequestModel(
+                ModelVersionPipelineRunRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4309,7 +4307,7 @@ class TestModelVersionPipelineRunLinks:
         ):
             zs = Client().zen_store
             link_1 = zs.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequestModel(
+                ModelVersionPipelineRunRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4318,7 +4316,7 @@ class TestModelVersionPipelineRunLinks:
                 )
             )
             link_2 = zs.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequestModel(
+                ModelVersionPipelineRunRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4335,7 +4333,7 @@ class TestModelVersionPipelineRunLinks:
         ):
             zs = Client().zen_store
             link = zs.create_model_version_pipeline_run_link(
-                ModelVersionPipelineRunRequestModel(
+                ModelVersionPipelineRunRequest(
                     user=model_version.user.id,
                     workspace=model_version.workspace.id,
                     model=model_version.model.id,
@@ -4349,7 +4347,7 @@ class TestModelVersionPipelineRunLinks:
                 link.id,
             )
             mvls = zs.list_model_version_pipeline_run_links(
-                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
+                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilter(
                     model_version_id=model_version.id
                 ),
             )
@@ -4367,7 +4365,7 @@ class TestModelVersionPipelineRunLinks:
         with ModelVersionContext(True) as model_version:
             zs = Client().zen_store
             mvls = zs.list_model_version_pipeline_run_links(
-                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
+                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilter(
                     model_version_id=model_version.id
                 ),
             )
@@ -4380,14 +4378,14 @@ class TestModelVersionPipelineRunLinks:
         ):
             zs = Client().zen_store
             mvls = zs.list_model_version_pipeline_run_links(
-                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
+                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilter(
                     model_version_id=model_version.id
                 ),
             )
             assert len(mvls) == 0
             for pr in prs:
                 zs.create_model_version_pipeline_run_link(
-                    ModelVersionPipelineRunRequestModel(
+                    ModelVersionPipelineRunRequest(
                         user=model_version.user.id,
                         workspace=model_version.workspace.id,
                         model=model_version.model.id,
@@ -4396,7 +4394,7 @@ class TestModelVersionPipelineRunLinks:
                     )
                 )
             mvls = zs.list_model_version_pipeline_run_links(
-                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilterModel(
+                model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilter(
                     model_version_id=model_version.id
                 ),
             )

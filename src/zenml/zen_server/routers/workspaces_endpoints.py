@@ -48,14 +48,14 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
+    ModelRequest,
+    ModelResponse,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
+    ModelVersionResponse,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -1221,15 +1221,15 @@ def list_service_connector_resources(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + MODELS,
-    response_model=ModelResponseModel,
+    response_model=ModelResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model(
     workspace_name_or_id: Union[str, UUID],
-    model: ModelRequestModel,
+    model: ModelRequest,
     _: AuthContext = Security(authorize),
-) -> ModelResponseModel:
+) -> ModelResponse:
     """Create a new model.
 
     Args:
@@ -1266,16 +1266,16 @@ def create_model(
     + MODELS
     + "/{model_name_or_id}"
     + MODEL_VERSIONS,
-    response_model=ModelVersionResponseModel,
+    response_model=ModelVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model_version(
     workspace_name_or_id: Union[str, UUID],
     model_name_or_id: Union[str, UUID],
-    model_version: ModelVersionRequestModel,
+    model_version: ModelVersionRequest,
     auth_context: AuthContext = Security(authorize),
-) -> ModelVersionResponseModel:
+) -> ModelVersionResponse:
     """Create a new model version.
 
     Args:
@@ -1313,16 +1313,16 @@ def create_model_version(
     + MODEL_VERSIONS
     + "/{model_version_id}"
     + ARTIFACTS,
-    response_model=ModelVersionArtifactResponseModel,
+    response_model=ModelVersionArtifactResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model_version_artifact_link(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
-    model_version_artifact_link: ModelVersionArtifactRequestModel,
+    model_version_artifact_link: ModelVersionArtifactRequest,
     auth_context: AuthContext = Security(authorize),
-) -> ModelVersionArtifactResponseModel:
+) -> ModelVersionArtifactResponse:
     """Create a new model version to artifact link.
 
     Args:
@@ -1374,16 +1374,16 @@ def create_model_version_artifact_link(
     + MODEL_VERSIONS
     + "/{model_version_id}"
     + RUNS,
-    response_model=ModelVersionPipelineRunResponseModel,
+    response_model=ModelVersionPipelineRunResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model_version_pipeline_run_link(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
-    model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
+    model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
     auth_context: AuthContext = Security(authorize),
-) -> ModelVersionPipelineRunResponseModel:
+) -> ModelVersionPipelineRunResponse:
     """Create a new model version to pipeline run link.
 
     Args:
