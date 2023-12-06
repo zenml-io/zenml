@@ -444,12 +444,12 @@ def get_surrogate_permission_model_for_model(
     Returns:
         A surrogate model or the original.
     """
-    from zenml.models import ArtifactVersionResponse, ModelVersionResponseModel
+    from zenml.models import ArtifactVersionResponse, ModelVersionResponse
 
     # Permissions to read entities that represent versions of another entity
     # are checked on the parent entity
     if action == Action.READ:
-        if isinstance(model, ModelVersionResponseModel):
+        if isinstance(model, ModelVersionResponse):
             return model.model
         elif isinstance(model, ArtifactVersionResponse):
             return model.artifact
@@ -475,7 +475,8 @@ def get_resource_type_for_model(
         CodeRepositoryResponse,
         ComponentResponse,
         FlavorResponse,
-        ModelResponseModel,
+        ModelResponse,
+        ModelVersionResponse,
         PipelineBuildResponse,
         PipelineDeploymentResponse,
         PipelineResponse,
@@ -501,7 +502,8 @@ def get_resource_type_for_model(
         PipelineResponse: ResourceType.PIPELINE,
         CodeRepositoryResponse: ResourceType.CODE_REPOSITORY,
         SecretResponseModel: ResourceType.SECRET,
-        ModelResponseModel: ResourceType.MODEL,
+        ModelResponse: ResourceType.MODEL,
+        ModelVersionResponse: ResourceType.MODEL_VERSION,
         ArtifactResponse: ResourceType.ARTIFACT,
         ArtifactVersionResponse: ResourceType.ARTIFACT_VERSION,
         WorkspaceResponse: ResourceType.WORKSPACE,
