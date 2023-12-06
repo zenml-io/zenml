@@ -89,7 +89,7 @@ pip3 install importlib_metadata
 
 docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:latest
 
-sleep 10
+sleep 30
 
 zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 run_tests_for_version current_branch_mysql
