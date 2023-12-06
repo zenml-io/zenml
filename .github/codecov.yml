@@ -10,7 +10,7 @@ coverage:
     project:
       default:
         target: auto
-        threshold: 0%   # allow coverage to drop by 1% before failing the PR
+        threshold: 0%   # don't allow coverage to drop otherwise fail the PR
 
     patch: off
 
