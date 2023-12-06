@@ -13,7 +13,7 @@ In this guide, we have went over some advanced concepts:
 - [Scaling compute](scale-compute.md)
 - Setting up [pipeline configuration](configure-pipeline.md) in production
 
-We will now put this into action with a simple starter project.
+We will now combine all of these concepts into an end to end MLOps project powered by ZenML.
 
 ## Get started
 
@@ -29,7 +29,7 @@ We will then use [ZenML templates](../advanced-guide/best-practices/using-projec
 ```bash
 mkdir zenml_starter
 cd zenml_starter
-zenml init --template starter --template-with-defaults
+zenml init --template e2e_batch --template-with-defaults
 
 # Just in case, we install the requirements again
 pip install -r requirements.txt
@@ -39,28 +39,32 @@ pip install -r requirements.txt
 
 <summary>Above doesn't work? Here is an alternative</summary>
 
-The starter template is also available as a [ZenML example](https://github.com/zenml-io/zenml/tree/main/examples/starter). You can clone it:
+The e2e template is also available as a [ZenML example](https://github.com/zenml-io/zenml/tree/main/examples/e2e). You can clone it:
 
 ```bash
 git clone git@github.com:zenml-io/zenml.git
-cd examples/starter
+cd examples/e2e
 pip install -r requirements.txt
 zenml init
 ```
 
 </details>
 
-## Run your first pipelines
+## What you'll learn
 
-You can either follow along in the [accompanying Jupyter notebook](https://github.com/zenml-io/zenml/blob/main/examples/starter/run.ipynb), or just keep reading the [README file for more instructions](https://github.com/zenml-io/zenml/blob/main/examples/starter/run.ipynb).
+The e2e project is a comprehensive project template to cover major use cases of ZenML: a collection of steps and pipelines and,  to top it all off, a simple but useful CLI. It showcases the core ZenML concepts for supervised ML with batch predictions:
 
-Either way, at the end you would run three pipelines that are exemplary:
+- Designing [ZenML pipeline steps](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline)
+- Using [step parameterization](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline#parametrizing-a-step)
+ and [step caching](https://docs.zenml.io/user-guide/starter-guide/cache-previous-executions#caching-at-a-step-level)
+to design flexible and reusable steps
+- Using [custom data types for your artifacts and writing materializers for them](https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types)
+- Constructing and running a [ZenML pipeline](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline)
+- Accessing ZenML pipeline run artifacts in [the post-execution phase](https://docs.zenml.io/user-guide/starter-guide/fetch-runs-after-execution)
+after a pipeline run has concluded
+- Best practices for implementing and running reproducible and reliable ML pipelines with ZenML
 
-- A feature engineering pipeline that loads data and prepares it for training.
-- A training pipeline that loads the preprocessed dataset and trains a model.
-- A batch inference pipeline that runs predictions on the trained model with new data.
-
-And voilà! You're now well on your way to be a MLOps expert. As a next step, try introducing the [ZenML starter template](https://github.com/zenml-io/template-starter) to your colleagues and see the benefits of a standard ML framework at your work.
+As a next step, share the [ZenML e2e template](https://github.com/zenml-io/template-e2e-batch) with your colleagues and see how they react!
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

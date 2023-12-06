@@ -5,7 +5,7 @@ description: Provision infrastructure on the cloud.
 # Deploy a cloud stack
 
 {% hint style="warning" %}
-We're still working on finishing this easy-to-consume Production Guide for you. In the meantime, please follow the provided links in this space as an interim guide.
+We're still working on finishing this easy-to-consume Production Guide for you. In the meanwhile,, please follow the provided links in this space as an interim guide.
 {% endhint %}
 
 This section of the production guide will be about creating your first cloud stack. This means we will be creating the following components in the cloud provider of your choice:
