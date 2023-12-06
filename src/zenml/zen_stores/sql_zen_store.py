@@ -5302,13 +5302,14 @@ class SqlZenStore(BaseZenStore):
         )
 
         if new_status != pipeline_run.status:
-            pipeline_run.status = new_status
+            run_update = PipelineRunUpdate(status=new_status)
             if new_status in {
                 ExecutionStatus.COMPLETED,
                 ExecutionStatus.FAILED,
             }:
-                pipeline_run.end_time = datetime.utcnow()
+                run_update.end_time = datetime.utcnow()
 
+            pipeline_run.update(run_update)
             session.add(pipeline_run)
 
     # ----------------------------- Users -----------------------------
