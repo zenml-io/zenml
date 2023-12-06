@@ -22,7 +22,7 @@ from datasets import load_metric
 
 
 def compute_metrics(
-    eval_pred: Tuple[np.ndarray, np.ndarray]
+    eval_pred: Tuple[np.ndarray, np.ndarray],
 ) -> Dict[str, float]:
     """Compute the metrics for the model.
 

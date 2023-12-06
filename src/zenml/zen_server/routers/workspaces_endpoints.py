@@ -39,6 +39,7 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
+from zenml.enums import MetadataResourceTypes
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     CodeRepositoryFilter,
@@ -47,14 +48,14 @@ from zenml.models import (
     ComponentFilter,
     ComponentRequest,
     ComponentResponse,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
+    ModelRequest,
+    ModelResponse,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
+    ModelVersionResponse,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -862,6 +863,7 @@ def create_run_metadata(
     Raises:
         IllegalOperationError: If the workspace or user specified in the run
             metadata does not match the current workspace or authenticated user.
+        RuntimeError: If the resource type is not supported.
     """
     workspace = zen_store().get_workspace(run_metadata.workspace)
 
@@ -878,19 +880,21 @@ def create_run_metadata(
             "is not supported."
         )
 
-    if run_metadata.pipeline_run_id:
-        run = zen_store().get_run(run_metadata.pipeline_run_id)
+    if run_metadata.resource_type == MetadataResourceTypes.PIPELINE_RUN:
+        run = zen_store().get_run(run_metadata.resource_id)
         verify_permission_for_model(run, action=Action.UPDATE)
-
-    if run_metadata.step_run_id:
-        step_run = zen_store().get_run_step(run_metadata.step_run_id)
-        verify_permission_for_model(step_run, action=Action.UPDATE)
-
-    if run_metadata.artifact_version_id:
-        artifact = zen_store().get_artifact_version(
-            run_metadata.artifact_version_id
+    elif run_metadata.resource_type == MetadataResourceTypes.STEP_RUN:
+        step = zen_store().get_run_step(run_metadata.resource_id)
+        verify_permission_for_model(step, action=Action.UPDATE)
+    elif run_metadata.resource_type == MetadataResourceTypes.ARTIFACT_VERSION:
+        artifact_version = zen_store().get_artifact_version(
+            run_metadata.resource_id
         )
-        verify_permission_for_model(artifact, action=Action.UPDATE)
+        verify_permission_for_model(artifact_version, action=Action.UPDATE)
+    else:
+        raise RuntimeError(
+            f"Unknown resource type: {run_metadata.resource_type}"
+        )
 
     verify_permission(
         resource_type=ResourceType.RUN_METADATA, action=Action.CREATE
@@ -1214,15 +1218,15 @@ def list_service_connector_resources(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + MODELS,
-    response_model=ModelResponseModel,
+    response_model=ModelResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model(
     workspace_name_or_id: Union[str, UUID],
-    model: ModelRequestModel,
+    model: ModelRequest,
     _: AuthContext = Security(authorize),
-) -> ModelResponseModel:
+) -> ModelResponse:
     """Create a new model.
 
     Args:
@@ -1259,16 +1263,16 @@ def create_model(
     + MODELS
     + "/{model_name_or_id}"
     + MODEL_VERSIONS,
-    response_model=ModelVersionResponseModel,
+    response_model=ModelVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model_version(
     workspace_name_or_id: Union[str, UUID],
     model_name_or_id: Union[str, UUID],
-    model_version: ModelVersionRequestModel,
+    model_version: ModelVersionRequest,
     auth_context: AuthContext = Security(authorize),
-) -> ModelVersionResponseModel:
+) -> ModelVersionResponse:
     """Create a new model version.
 
     Args:
@@ -1306,16 +1310,16 @@ def create_model_version(
     + MODEL_VERSIONS
     + "/{model_version_id}"
     + ARTIFACTS,
-    response_model=ModelVersionArtifactResponseModel,
+    response_model=ModelVersionArtifactResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model_version_artifact_link(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
-    model_version_artifact_link: ModelVersionArtifactRequestModel,
+    model_version_artifact_link: ModelVersionArtifactRequest,
     auth_context: AuthContext = Security(authorize),
-) -> ModelVersionArtifactResponseModel:
+) -> ModelVersionArtifactResponse:
     """Create a new model version to artifact link.
 
     Args:
@@ -1367,16 +1371,16 @@ def create_model_version_artifact_link(
     + MODEL_VERSIONS
     + "/{model_version_id}"
     + RUNS,
-    response_model=ModelVersionPipelineRunResponseModel,
+    response_model=ModelVersionPipelineRunResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_model_version_pipeline_run_link(
     workspace_name_or_id: Union[str, UUID],
     model_version_id: UUID,
-    model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
+    model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
     auth_context: AuthContext = Security(authorize),
-) -> ModelVersionPipelineRunResponseModel:
+) -> ModelVersionPipelineRunResponse:
     """Create a new model version to pipeline run link.
 
     Args:

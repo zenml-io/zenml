@@ -62,7 +62,7 @@ def facets_list_visualization_step(
 
 @step
 def facets_dict_visualization_step(
-    dataframes: Dict[str, pd.DataFrame]
+    dataframes: Dict[str, pd.DataFrame],
 ) -> FacetsComparison:
     """Visualize and compare dataset statistics with Facets.
 
