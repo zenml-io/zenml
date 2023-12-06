@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -390,3 +391,37 @@ class ArtifactVersionFilter(WorkspaceScopedFilter):
     only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"
     )
+
+    def get_custom_filters(
+        self
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlalchemy import and_
+        from sqlmodel import select
+
+        from zenml.zen_stores.schemas.artifact_schemas import (
+            ArtifactVersionSchema,
+        )
+        from zenml.zen_stores.schemas.step_run_schemas import (
+            StepRunInputArtifactSchema,
+            StepRunOutputArtifactSchema,
+        )
+
+        if self.only_unused:
+            unused_filter = and_(
+                ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
+                    select(StepRunOutputArtifactSchema.artifact_id)
+                ),
+                ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
+                    select(StepRunInputArtifactSchema.artifact_id)
+                ),
+            )
+            custom_filters.append(unused_filter)
+
+        return custom_filters

@@ -18,6 +18,8 @@ from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
+from sqlalchemy import and_
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
@@ -248,3 +250,27 @@ class StackFilter(WorkspaceScopedFilter):
     component_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Component in the stack"
     )
+
+    def get_custom_filters(
+        self
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from zenml.zen_stores.schemas.stack_schemas import (
+            StackCompositionSchema,
+            StackSchema,
+        )
+
+        if self.component_id:
+            component_id_filter = and_(  # type: ignore[type-var]
+                StackCompositionSchema.stack_id == StackSchema.id,
+                StackCompositionSchema.component_id == self.component_id,
+            )
+            custom_filters.append(component_id_filter)
+
+        return custom_filters

@@ -247,7 +247,6 @@ from zenml.zen_stores.schemas import (
     ScheduleSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
-    StackCompositionSchema,
     StackSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
@@ -1634,17 +1633,6 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ArtifactVersionSchema)
-            if artifact_version_filter_model.only_unused:
-                query = query.where(
-                    ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunOutputArtifactSchema.artifact_id)
-                    )
-                )
-                query = query.where(
-                    ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunInputArtifactSchema.artifact_id)
-                    )
-                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -4633,13 +4621,6 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackSchema)
-            if stack_filter_model.component_id:
-                query = query.where(
-                    StackCompositionSchema.stack_id == StackSchema.id
-                ).where(
-                    StackCompositionSchema.component_id
-                    == stack_filter_model.component_id
-                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -6563,33 +6544,6 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ModelVersionArtifactSchema)
-
-            # Handle artifact name
-            if model_version_artifact_link_filter_model.artifact_name:
-                query = query.where(
-                    ModelVersionArtifactSchema.artifact_version_id
-                    == ArtifactSchema.id
-                ).where(
-                    ArtifactSchema.name
-                    == model_version_artifact_link_filter_model.artifact_name
-                )
-
-            # Handle model artifact types
-            if model_version_artifact_link_filter_model.only_data_artifacts:
-                query = query.where(
-                    ModelVersionArtifactSchema.is_model_artifact == False  # noqa: E712
-                ).where(
-                    ModelVersionArtifactSchema.is_endpoint_artifact == False  # noqa: E712
-                )
-            elif model_version_artifact_link_filter_model.only_endpoint_artifacts:
-                query = query.where(
-                    ModelVersionArtifactSchema.is_endpoint_artifact
-                )
-            elif model_version_artifact_link_filter_model.only_model_artifacts:
-                query = query.where(
-                    ModelVersionArtifactSchema.is_model_artifact
-                )
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -6713,15 +6667,6 @@ class SqlZenStore(BaseZenStore):
             A page of all model version to pipeline run links.
         """
         query = select(ModelVersionPipelineRunSchema)
-        # Handle pipeline run name
-        if model_version_pipeline_run_link_filter_model.pipeline_run_name:
-            query = query.where(
-                ModelVersionPipelineRunSchema.pipeline_run_id
-                == PipelineRunSchema.id
-            ).where(
-                PipelineRunSchema.name
-                == model_version_pipeline_run_link_filter_model.pipeline_run_name
-            )
         with Session(self.engine) as session:
             return self.filter_and_paginate(
                 session=session,

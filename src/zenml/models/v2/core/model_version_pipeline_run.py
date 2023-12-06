@@ -13,16 +13,19 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
+from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
     BaseResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
+from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -102,6 +105,15 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_run_name",
     ]
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        "model_id",
+        "model_version_id",
+        "user_id",
+        "workspace_id",
+        "updated",
+        "id",
+    ]
 
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="The workspace of the Model Version"
@@ -123,12 +135,39 @@ class ModelVersionPipelineRunFilter(WorkspaceScopedFilter):
         description="Name of the pipeline run",
     )
 
-    CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
-        "model_id",
-        "model_version_id",
-        "user_id",
-        "workspace_id",
-        "updated",
-        "id",
-    ]
+    def get_custom_filters(
+        self
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlalchemy import and_
+
+        from zenml.zen_stores.schemas.model_schemas import (
+            ModelVersionPipelineRunSchema,
+        )
+        from zenml.zen_stores.schemas.pipeline_run_schemas import (
+            PipelineRunSchema,
+        )
+
+        if self.pipeline_run_name:
+            value, filter_operator = self._resolve_operator(
+                self.pipeline_run_name
+            )
+            filter_ = StrFilter(
+                operation=GenericFilterOps(filter_operator),
+                column="name",
+                value=value,
+            )
+            pipeline_run_name_filter = and_(  # type: ignore[type-var]
+                ModelVersionPipelineRunSchema.pipeline_run_id
+                == PipelineRunSchema.id,
+                filter_.generate_query_conditions(PipelineRunSchema),
+            )
+            custom_filters.append(pipeline_run_name_filter)
+
+        return custom_filters
