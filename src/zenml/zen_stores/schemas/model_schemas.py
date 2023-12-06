@@ -328,6 +328,10 @@ class ModelVersionSchema(NamedSchema, table=True):
             metadata = ModelVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
+                run_metadata={
+                    rm.key: rm.to_model(hydrate=True)
+                    for rm in self.run_metadata
+                },
             )
 
         body = ModelVersionResponseBody(
@@ -341,9 +345,6 @@ class ModelVersionSchema(NamedSchema, table=True):
             data_artifact_ids=data_artifact_ids,
             endpoint_artifact_ids=endpoint_artifact_ids,
             pipeline_run_ids=pipeline_run_ids,
-            run_metadata={
-                rm.key: rm.to_model(hydrate=False) for rm in self.run_metadata
-            },
         )
 
         return ModelVersionResponse(

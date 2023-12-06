@@ -157,6 +157,10 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
+    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+        default={},
+        title="Metadata associated with this pipeline run.",
+    )
 
 
 class ModelVersionResponse(
@@ -261,6 +265,15 @@ class ModelVersionResponse(
             the value of the property.
         """
         return self.get_metadata().description
+
+    @property
+    def run_metadata(self) -> Optional[Dict[str, "RunMetadataResponse"]]:
+        """The `run_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().run_metadata
 
     def get_hydrated_version(self) -> "ModelVersionResponse":
         """Get the hydrated version of this model version.

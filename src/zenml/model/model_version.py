@@ -333,8 +333,15 @@ class ModelVersion(BaseModel):
 
         Returns:
             The model version metadata.
+
+        Raises:
+            RuntimeError: If the model version metadata cannot be fetched.
         """
-        response = self._get_or_create_model_version()
+        response = self._get_or_create_model_version(hydrate=True)
+        if response.run_metadata is None:
+            raise RuntimeError(
+                "Failed to fetch metadata of this model version."
+            )
         return {
             name: response.value
             for name, response in response.run_metadata.items()
@@ -465,7 +472,9 @@ class ModelVersion(BaseModel):
 
         return mv
 
-    def _get_or_create_model_version(self) -> "ModelVersionResponse":
+    def _get_or_create_model_version(
+        self, hydrate: bool = False
+    ) -> "ModelVersionResponse":
         """This method should get or create a model and a model version from Model Control Plane.
 
         A new model is created implicitly if missing, otherwise existing model is fetched. Model
@@ -477,6 +486,9 @@ class ModelVersion(BaseModel):
             - If `version` is set to an integer or digit string, the model version with the matching number will be fetched.
             - If `version` is set to a string, the model version with the matching version will be fetched.
             - If `version` is set to a `ModelStage`, the model version with the matching stage will be fetched.
+
+        Args:
+            hydrate: Whether to return a hydrated version of the model version.
 
         Returns:
             The model version based on configuration.
