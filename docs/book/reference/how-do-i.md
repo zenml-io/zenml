@@ -20,7 +20,7 @@ From there, each of the custom stack component types has a dedicated section abo
 
 * **dependency clashes** mitigation with ZenML?
 
-Check out [our dedicated documentation page](../user-guide/advanced-guide/environment-management/handling-dependencies.md) on some ways you can try to solve these dependency and versioning issues.
+Check out [our dedicated documentation page](../user-guide/advanced-guide/best-practices/handling-dependencies.md) on some ways you can try to solve these dependency and versioning issues.
 
 * **deploy cloud infrastructure** and/or MLOps stacks?
 

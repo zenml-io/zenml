@@ -46,13 +46,13 @@
     * [Scale compute to the cloud](user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md)
     * [Global settings of ZenML](user-guide/advanced-guide/environment-management/global-settings-of-zenml.md)
     * [Environment Variables](user-guide/advanced-guide/environment-management/environment-variables.md)
-    * [Handling dependencies](user-guide/advanced-guide/environment-management/handling-dependencies.md)
-    * [Debug and solve issues](user-guide/advanced-guide/environment-management/debug-and-solve-issues.md)
   * [Secret management](user-guide/advanced-guide/secret-management/secret-management.md)
     * [Interact with secrets](user-guide/advanced-guide/secret-management/interact-with-secrets.md)
     * [Custom secret stores](user-guide/advanced-guide/secret-management/custom-secret-stores.md)
   * [Best practices](user-guide/advanced-guide/best-practices/best-practices.md)
     * [Project templates](user-guide/advanced-guide/best-practices/using-project-templates.md)
+    * [Handling dependencies](user-guide/advanced-guide/best-practices/handling-dependencies.md)
+    * [Debug and solve issues](user-guide/advanced-guide/best-practices/debug-and-solve-issues.md)
 
 ## Deploying ZenML
 
