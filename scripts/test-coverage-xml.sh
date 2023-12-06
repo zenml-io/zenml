@@ -30,7 +30,7 @@ fi
 # Run the tests for all groups in parallel
 for GROUP in {1..3}; do
     COVERAGE_FILE=".coverage.$TEST_TYPE.$GROUP"
-    coverage run -m pytest $TEST_SRC --durations 20 --store-durations --splits 3 --group $GROUP &
+    coverage run -m pytest $TEST_SRC --durations 20 --splits 3 --group $GROUP &
 done
 
 # Wait for all background processes to finish
