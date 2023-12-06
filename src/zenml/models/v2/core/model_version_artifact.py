@@ -191,7 +191,10 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
 
         from sqlalchemy import and_
 
-        from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+        from zenml.zen_stores.schemas.artifact_schemas import (
+            ArtifactSchema,
+            ArtifactVersionSchema,
+        )
         from zenml.zen_stores.schemas.model_schemas import (
             ModelVersionArtifactSchema,
         )
@@ -205,7 +208,8 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
             )
             artifact_name_filter = and_(  # type: ignore[type-var]
                 ModelVersionArtifactSchema.artifact_version_id
-                == ArtifactSchema.id,
+                == ArtifactVersionSchema.id,
+                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
                 filter_.generate_query_conditions(ArtifactSchema),
             )
             custom_filters.append(artifact_name_filter)
