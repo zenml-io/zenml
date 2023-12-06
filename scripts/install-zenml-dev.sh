@@ -54,7 +54,6 @@ install_integrations() {
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
 
     pip install -r integration-requirements.txt
-    pip install pytest-split
     rm integration-requirements.txt
 
     # install langchain separately
