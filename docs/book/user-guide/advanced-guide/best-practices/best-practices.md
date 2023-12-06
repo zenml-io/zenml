@@ -34,7 +34,7 @@ Until now, you probably have kept all your code in one single file. In productio
 └── run.py
 ```
 
-Check out how to initialize your project from a template following best practices in the [Project templates](using-project-templates.md#generating-project-from-a-project-template) section.
+Check out how to initialize your project from a template following best practices in the [Project templates](../best-practices/using-project-templates.md#generating-project-from-a-project-template) section.
 
 #### Steps
 
@@ -61,7 +61,7 @@ def training_data_loader():
 
 Just like steps, keep your pipelines in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.
 
-It is recommended that you separate the pipeline execution from the pipeline definition so that importing the pipeline does not immediately run it. See [run.py](follow-best-practices.md) for more details.
+It is recommended that you separate the pipeline execution from the pipeline definition so that importing the pipeline does not immediately run it.
 
 {% hint style="warning" %}
 Do not give pipelines or pipeline instances the name "pipeline". Doing this will overwrite the imported `pipeline` and decorator and lead to failures at later stages if more pipelines are decorated there.

@@ -54,7 +54,7 @@ Using an `ExternalArtifact` with input data for your step automatically disables
 
 <summary>See it in action with the E2E example</summary>
 
-_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../pipelining-features/using-project-templates.md#advanced-guide)_._
+_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../best-practices/using-project-templates.md)_._
 
 In [`pipelines/batch_inference.py`](../../../../../examples/e2e/pipelines/batch_inference.py), you can find an example using the `ExternalArtifact` concept to
 share artifacts produced by a training pipeline inside a batch inference pipeline.

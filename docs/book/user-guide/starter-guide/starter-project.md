@@ -21,7 +21,7 @@ pip install "zenml[templates,server]" notebook
 zenml integration install sklearn -y
 ```
 
-We will then use [ZenML templates](../advanced-guide/pipelining-features/using-project-templates.md) to help us get the code we need for the project:
+We will then use [ZenML templates](../advanced-guide/best-practices/using-project-templates.md) to help us get the code we need for the project:
 
 ```bash
 mkdir zenml_starter
