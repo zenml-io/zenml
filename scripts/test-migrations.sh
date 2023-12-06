@@ -86,8 +86,10 @@ pip3 install -U pip setuptools wheel
 pip install -e ".[templates,server]"
 pip3 install importlib_metadata
 
-mkdir mysql-data
-docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:8.0
+docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password
+
+sleep 10
+
 zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 run_tests_for_version current_branch_mysql
 deactivate
