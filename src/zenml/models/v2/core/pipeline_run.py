@@ -426,13 +426,9 @@ class PipelineRunFilter(WorkspaceScopedFilter):
 
         if self.unlisted is not None:
             if self.unlisted is True:
-                unlisted_filter = getattr(
-                    PipelineRunSchema, "pipeline_id"
-                ).is_(None)
+                unlisted_filter = PipelineRunSchema.pipeline_id.is_(None)  # type: ignore[union-attr]
             else:
-                unlisted_filter = getattr(
-                    PipelineRunSchema, "pipeline_id"
-                ).is_not(None)
+                unlisted_filter = PipelineRunSchema.pipeline_id.is_not(None)  # type: ignore[union-attr]
             custom_filters.append(unlisted_filter)
 
         if self.code_repository_id:

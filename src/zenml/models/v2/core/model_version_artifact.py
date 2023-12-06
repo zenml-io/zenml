@@ -211,21 +211,21 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
             custom_filters.append(artifact_name_filter)
 
         if self.only_data_artifacts:
-            data_artifact_filter = and_(  # type: ignore[type-var]
-                ModelVersionArtifactSchema.is_model_artifact is False,
-                ModelVersionArtifactSchema.is_endpoint_artifact is False,
+            data_artifact_filter = and_(
+                ModelVersionArtifactSchema.is_model_artifact.is_(False),  # type: ignore[attr-defined]
+                ModelVersionArtifactSchema.is_endpoint_artifact.is_(False),  # type: ignore[attr-defined]
             )
             custom_filters.append(data_artifact_filter)
 
         if self.only_model_artifacts:
-            model_artifact_filter = and_(  # type: ignore[type-var]
-                ModelVersionArtifactSchema.is_model_artifact is True
+            model_artifact_filter = and_(
+                ModelVersionArtifactSchema.is_model_artifact.is_(True),  # type: ignore[attr-defined]
             )
             custom_filters.append(model_artifact_filter)
 
         if self.only_endpoint_artifacts:
-            endpoint_artifact_filter = and_(  # type: ignore[type-var]
-                ModelVersionArtifactSchema.is_endpoint_artifact is True
+            endpoint_artifact_filter = and_(
+                ModelVersionArtifactSchema.is_endpoint_artifact.is_(True),  # type: ignore[attr-defined]
             )
             custom_filters.append(endpoint_artifact_filter)
 
