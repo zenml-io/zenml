@@ -492,7 +492,7 @@ class AzureSecretsStore(BaseSecretsStore):
                 f"therefore is {total_pages}."
             )
 
-        return Page(
+        return Page[SecretResponseModel](
             total=total,
             total_pages=total_pages,
             items=sorted_results[
