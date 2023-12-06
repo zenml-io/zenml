@@ -25,9 +25,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import (
-    ServiceConnectorRequirements,
-)
+from zenml.models import ServiceConnectorRequirements, StepRunResponse
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -37,7 +35,6 @@ if TYPE_CHECKING:
         ComponentResponse,
         PipelineDeploymentBase,
         PipelineDeploymentResponse,
-        StepRunResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
