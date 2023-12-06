@@ -1,73 +1,63 @@
 ---
-description: Understanding how and when the version of a pipeline is incremented.
+description: Put your new knowledge in action with an end to end project
 ---
 
-# Version pipelines
+# An end-to-end project
 
-You might have noticed that when you run a pipeline in ZenML with the same name, but with different steps, it creates a new **version** of the pipeline. Consider our example pipeline:
+By now, you have understood some of the basic pillars of a MLOps system:
 
-```python
-@pipeline
-def first_pipeline(gamma: float = 0.002):
-    X_train, X_test, y_train, y_test = training_data_loader()
-    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
+- [Pipelines and steps](create-an-ml-pipeline.md)
+- [Artifacts](manage-artifacts.md)
+- [Models](track-ml-models.md)
 
+We will now put this into action with a simple starter project.
 
-if __name__ == "__main__":
-    first_pipeline()
-```
+## Get started
 
-Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`.
-
-```
-$python run.py
-...
-Registered pipeline first_pipeline (version 1).
-...
-```
-
-Running it again (`python run.py`) will create _yet another_ `run` for `version 1` of the pipeline called `first_pipeline`. So now the same pipeline has two runs. You can also verify this in the dashboard.
-
-However, now let's change the pipeline configuration itself. You can do this by modifying the step connections within the `@pipeline` function or by replacing a concrete step with another one. For example, let's create an alternative step called `digits_data_loader` which loads a different dataset.
-
-```python
-@step
-def digits_data_loader() -> Tuple[
-    Annotated[pd.DataFrame, "X_train"],
-    Annotated[pd.DataFrame, "X_test"],
-    Annotated[pd.Series, "y_train"],
-    Annotated[pd.Series, "y_test"],
-]:
-    """Loads the digits dataset and splits it into train and test data."""
-    # Load data from the digits dataset
-    digits = load_digits(as_frame=True)
-    # Split into datasets
-    X_train, X_test, y_train, y_test = train_test_split(
-        digits.data, digits.target, test_size=0.2, shuffle=True
-    )
-    return X_train, X_test, y_train, y_test
-
-
-@pipeline
-def first_pipeline(gamma: float = 0.002):
-    X_train, X_test, y_train, y_test = digits_data_loader()
-    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
-
-
-if __name__ == "__main__":
-    first_pipeline()
-```
+Start with a fresh virtual environment with no dependencies. Then let's install our dependencies:
 
 ```bash
-python run.py
-...
-Registered pipeline first_pipeline (version 2).
-...
+pip install "zenml[templates,server]" notebook
+zenml integration install sklearn -y
 ```
 
-This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`.
+We will then use [ZenML templates](../advanced-guide/best-practices/using-project-templates.md) to help us get the code we need for the project:
 
-<figure><img src="../../.gitbook/assets/PipelineVersion.png" alt=""><figcaption></figcaption></figure>
+```bash
+mkdir zenml_starter
+cd zenml_starter
+zenml init --template starter --template-with-defaults
+
+# Just in case, we install the requirements again
+pip install -r requirements.txt
+```
+
+<details>
+
+<summary>Above doesn't work? Here is an alternative</summary>
+
+The starter template is also available as a [ZenML example](https://github.com/zenml-io/zenml/tree/main/examples/starter). You can clone it:
+
+```bash
+git clone git@github.com:zenml-io/zenml.git
+cd examples/starter
+pip install -r requirements.txt
+zenml init
+```
+
+</details>
+
+## Run your first pipelines
+
+You can either follow along in the [accompanying Jupyter notebook](https://github.com/zenml-io/zenml/blob/main/examples/starter/run.ipynb), or just keep reading the [README file for more instructions](https://github.com/zenml-io/zenml/blob/main/examples/starter/run.ipynb).
+
+Either way, at the end you would run three pipelines that are exemplary:
+
+- A feature engineering pipeline that loads data and prepares it for training.
+- A training pipeline that loads the preprocessed dataset and trains a model.
+- A batch inference pipeline that runs predictions on the trained model with new data.
+
+And voilà! You're now well on your way to be a MLOps expert. As a next step, try introducing the [ZenML starter template](https://github.com/zenml-io/template-starter) to your colleagues and see the benefits of a standard ML framework at your work.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
