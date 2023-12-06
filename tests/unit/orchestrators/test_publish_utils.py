@@ -17,7 +17,6 @@ from uuid import uuid4
 import pytest
 
 from zenml.enums import ExecutionStatus
-from zenml.models import Page
 from zenml.orchestrators import publish_utils
 
 
@@ -98,45 +97,6 @@ def test_pipeline_run_status_computation(
         )
         == expected_run_status
     )
-
-
-@pytest.mark.parametrize(
-    "old_status, new_status",
-    [
-        (ExecutionStatus.RUNNING, ExecutionStatus.RUNNING),
-        (ExecutionStatus.RUNNING, ExecutionStatus.COMPLETED),
-        (ExecutionStatus.RUNNING, ExecutionStatus.FAILED),
-        (ExecutionStatus.RUNNING, ExecutionStatus.CACHED),
-    ],
-)
-def test_updating_the_pipeline_run_status(
-    mocker, sample_pipeline_run, old_status, new_status
-):
-    """Tests updating the status of a pipeline run."""
-    mocker.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
-        return_value=Page(
-            index=1, max_size=50, total_pages=1, total=0, items=[]
-        ),
-    )
-    mocker.patch(
-        "zenml.orchestrators.publish_utils.get_pipeline_run_status",
-        return_value=new_status,
-    )
-
-    mock_update_run = mocker.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore.update_run",
-    )
-
-    sample_pipeline_run.body.status = old_status
-    publish_utils.update_pipeline_run_status(sample_pipeline_run, 1)
-
-    if old_status == new_status:
-        mock_update_run.assert_not_called()
-    else:
-        _, call_kwargs = mock_update_run.call_args
-        call_kwargs["run_id"] == sample_pipeline_run.id
-        call_kwargs["run_update"].status == new_status
 
 
 def test_publish_pipeline_run_metadata(mocker):

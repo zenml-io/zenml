@@ -29,7 +29,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import StackComponentType
+from zenml.enums import LogicalOperators, StackComponentType
 from zenml.models.v2.base.internal import server_owned_request_model
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -303,6 +303,7 @@ class ComponentFilter(WorkspaceScopedFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
+        "stack_id",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -329,10 +330,13 @@ class ComponentFilter(WorkspaceScopedFilter):
         default=None, description="Workspace of the stack component"
     )
     user_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="User of the stack"
+        default=None, description="User of the stack component"
     )
     connector_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Connector linked to the stack component"
+    )
+    stack_id: Optional[Union[UUID, str]] = Field(
+        default=None, description="Stack of the stack component"
     )
 
     def set_scope_type(self, component_type: str) -> None:
@@ -356,10 +360,27 @@ class ComponentFilter(WorkspaceScopedFilter):
         Returns:
             The filter expression for the query.
         """
-        from sqlalchemy import and_
+        from sqlalchemy import and_, or_
+
+        from zenml.zen_stores.schemas import (
+            StackComponentSchema,
+            StackCompositionSchema,
+        )
 
         base_filter = super().generate_filter(table)
         if self.scope_type:
             type_filter = getattr(table, "type") == self.scope_type
             return and_(base_filter, type_filter)
+
+        if self.stack_id:
+            operator = (
+                or_ if self.logical_operator == LogicalOperators.OR else and_
+            )
+
+            stack_filter = and_(  # type: ignore[type-var]
+                StackCompositionSchema.stack_id == self.stack_id,
+                StackCompositionSchema.component_id == StackComponentSchema.id,
+            )
+            base_filter = operator(base_filter, stack_filter)
+
         return base_filter
