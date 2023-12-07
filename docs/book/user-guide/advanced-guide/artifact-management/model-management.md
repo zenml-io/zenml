@@ -98,7 +98,6 @@ from zenml.model import ModelVersion
         name="demo",
         license="Apache",
         description="Show case Model Control Plane.",
-        create_new_model_version=True,
         delete_new_version_on_failure=True,
     ),
 )
