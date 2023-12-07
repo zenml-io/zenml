@@ -104,6 +104,7 @@ from zenml.models import (
     StackRequest,
     StackUpdate,
     StepRunFilter,
+    StepRunUpdate,
     UserRequest,
     UserResponse,
     UserUpdate,
@@ -4774,3 +4775,24 @@ class TestRunMetadata:
             client.zen_store.get_run_metadata(rm.id)
 
         client.zen_store.delete_stack_component(sc.id)
+
+
+@pytest.mark.parametrize(
+    "step_status, expected_run_status",
+    [
+        (ExecutionStatus.RUNNING, ExecutionStatus.RUNNING),
+        (ExecutionStatus.COMPLETED, ExecutionStatus.COMPLETED),
+        (ExecutionStatus.CACHED, ExecutionStatus.COMPLETED),
+        (ExecutionStatus.FAILED, ExecutionStatus.FAILED),
+    ],
+)
+def test_updating_the_pipeline_run_status(step_status, expected_run_status):
+    """Tests updating the status of a pipeline run."""
+    run_context = PipelineRunContext(1)
+    with run_context:
+        Client().zen_store.update_run_step(
+            step_run_id=run_context.steps[-1].id,
+            step_run_update=StepRunUpdate(status=step_status),
+        )
+        run_status = Client().get_pipeline_run(run_context.runs[-1].id).status
+        assert run_status == expected_run_status
