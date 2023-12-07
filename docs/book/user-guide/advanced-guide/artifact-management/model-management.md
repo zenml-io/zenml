@@ -98,7 +98,6 @@ from zenml.model import ModelVersion
         name="demo",
         license="Apache",
         description="Show case Model Control Plane.",
-        delete_new_version_on_failure=True,
     ),
 )
 def train_and_promote_model():
