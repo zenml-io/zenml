@@ -135,7 +135,7 @@ particular model version. Possible options for stages are:
 
 - `staging`: This version is staged for production.
 - `production`: This version is running in a production setting.
-- `latest`: The latest version of the model.
+- `latest`: The latest version of the model. This is a virtual stage to retrieve the latest model version only - model versions cannot be promoted to `latest`.
 - `archived`: This is archived and no longer relevant. This stage occurs when a
   model moves out of any other stage.
 
