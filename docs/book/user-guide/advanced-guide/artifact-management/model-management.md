@@ -169,13 +169,7 @@ from zenml import Client
 MODEL_NAME = "iris_logistic_regression"
 from zenml.enum import ModelStages
 
-client = Client()
-# get Model by name
-model = client.get_model(model_name=MODEL_NAME)
-
-# get specific Model Version and set it as Production
-# (if there is current Production version it will get Archived)
-model_version = model.get_version(version="1.2.3")
+model_version = ModelVersion(name=MODEL_NAME, version="1.2.3")
 model_version.set_stage(stage=ModelStages.PRODUCTION)
 
 # get Latest Model Version and set it as Staging
