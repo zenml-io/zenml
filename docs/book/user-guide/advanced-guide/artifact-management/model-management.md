@@ -180,7 +180,7 @@ model_version.set_stage(stage=ModelStages.PRODUCTION)
 
 # get Latest Model Version and set it as Staging
 # (if there is current Staging version it will get Archived)
-latest_model_version = model.versions[-1]
+latest_model_version = ModelVersion(name=MODEL_NAME, version=ModelStages.LATEST)
 latest_model_version.set_stage(stage=ModelStages.STAGING)
 ```
 
