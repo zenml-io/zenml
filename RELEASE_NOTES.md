@@ -1,16 +1,21 @@
 <!-- markdown-link-check-disable -->
 # 0.50.1
 
-This release brings a range of bug fixes and enhancements to model version, and artifact management, alongside
-with a new NLP template example.
+This release comes with a breaking change to the model version model, a new use-case example for NLP, and a range of bug fixes and enhancements to the artifact management and pipeline run management features. 
+
+## Breaking Change
+* Artifact Version Table + Artifact Tagging by @fa9r in https://github.com/zenml-io/zenml/pull/2081
+* Converting model models to use the new hydration paradigm by @bcdurak in https://github.com/zenml-io/zenml/pull/2101
+
+## New Example
+* NLP Template Example is a new example that demonstrates how to use ZenML for NLP tasks. by @safoinme in https://github.com/zenml-io/zenml/pull/2070
+
 
 ## What's Changed
 * Updated to one quickstart again by @htahir1 in https://github.com/zenml-io/zenml/pull/2092
-* Adding NLP Template Example (#2051) by @fa9r in https://github.com/zenml-io/zenml/pull/2070
 * Fix Nightly Build workflow files by @strickvl in https://github.com/zenml-io/zenml/pull/2090
 * Make PyPi release depend on DB migration tests passing by @strickvl in https://github.com/zenml-io/zenml/pull/2088
 * Bump `mlstacks` version in ZenML extra by @strickvl in https://github.com/zenml-io/zenml/pull/2091
-* Artifact Version Table + Artifact Tagging by @fa9r in https://github.com/zenml-io/zenml/pull/2081
 * Fix SQL schema imports by @stefannica in https://github.com/zenml-io/zenml/pull/2098
 * Fix migration for unowned stacks/components by @schustmi in https://github.com/zenml-io/zenml/pull/2099
 * Polymorthic `run_metadata` by @avishniakov in https://github.com/zenml-io/zenml/pull/2064
@@ -18,7 +23,6 @@ with a new NLP template example.
 * Lock in airflow version as higher versions will fail by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2108
 * Swap contents for HTMLString and MarkdownString in docs by @christianversloot in https://github.com/zenml-io/zenml/pull/2110
 * Fix secrets list with cloud secrets stores and RBAC by @stefannica in https://github.com/zenml-io/zenml/pull/2107
-* Converting model models to use the new hydration paradigm by @bcdurak in https://github.com/zenml-io/zenml/pull/2101
 * More track events by @htahir1 in https://github.com/zenml-io/zenml/pull/2112
 * Fix pipeline run cascade deletion by @fa9r in https://github.com/zenml-io/zenml/pull/2104
 * Take integrations tests out of unit tests folder by @safoinme in https://github.com/zenml-io/zenml/pull/2100
