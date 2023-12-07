@@ -22,6 +22,7 @@ from typing import Optional, Tuple
 import click
 from pydantic import BaseModel
 
+from packaging import version
 from zenml import __version__ as zenml_version
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import email_opt_int, track_handler
@@ -96,15 +97,17 @@ ZENML_PROJECT_TEMPLATES = dict(
     "--template",
     type=str,
     required=False,
-    help="Name or URL of the ZenML project template to use to initialize the repository, "
-    "Can be a string like `e2e_batch`, `nlp`, `starter` etc. or a copier URL like "
-    "gh:owner/repo_name. If not specified, no template is used.",
+    help="Name or URL of the ZenML project template to use to initialize the "
+    "repository, Can be a string like `e2e_batch`, `nlp`, `starter` etc. or a "
+    "copier URL like gh:owner/repo_name. If not specified, no template is "
+    "used.",
 )
 @click.option(
     "--template-tag",
     type=str,
     required=False,
-    help="Optional tag of the ZenML project template to use to initialize the repository.",
+    help="Optional tag of the ZenML project template to use to initialize the "
+    "repository.",
 )
 @click.option(
     "--template-with-defaults",
@@ -131,11 +134,13 @@ def init(
 
     Args:
         path: Path to the repository.
-        template: Optional name or URL of the ZenML project template to use to initialize
-            the repository. Can be a string like `e2e_batch`, `nlp`, `starter` or a copier URL like
-            `gh:owner/repo_name`. If not specified, no template is used.
-        template_tag: Optional tag of the ZenML project template to use to initialize the repository/
-            If template is a pre-defined template, then this is ignored.
+        template: Optional name or URL of the ZenML project template to use to
+            initialize the repository. Can be a string like `e2e_batch`,
+            `nlp`, `starter` or a copier URL like `gh:owner/repo_name`. If
+            not specified, no template is used.
+        template_tag: Optional tag of the ZenML project template to use to
+            initialize the repository. If template is a pre-defined template,
+            then this is ignored.
         template_with_defaults: Whether to use default parameters of
             the ZenML project template
         test: Whether to skip interactivity when testing.
@@ -211,7 +216,8 @@ def init(
                 )
                 declare(
                     f"No known templates specified. Using `{template}` as URL."
-                    "If this is not a valid copier template URL, this will fail."
+                    "If this is not a valid copier template URL, this will "
+                    "fail."
                 )
 
                 src_path = template
@@ -318,12 +324,19 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
         local: If you want to delete local files associated with the active
             stack.
     """
-    ctx.invoke(
-        down,
-    )
+    ctx.invoke(down)
+
     if local:
+        curr_version = version.parse(zenml_version)
+        config_version = version.parse(GlobalConfiguration().version)
+
+        if config_version > curr_version:
+            error(
+                "Due to this version mismatch, ZenML can not detect and "
+                "shut down any running dashboards or clean any resources "
+                "related to the active stack."
+            )
         _delete_local_files(force_delete=yes)
-        return
 
     confirm = None
     if not yes:
@@ -359,7 +372,7 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
             fresh_gc = GlobalConfiguration(
                 user_id=gc.user_id,
                 analytics_opt_in=gc.analytics_opt_in,
-                version=gc.version,
+                version=zenml_version,
             )
             fresh_gc.set_default_store()
             declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
