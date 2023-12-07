@@ -94,7 +94,7 @@ from zenml.model import ModelVersion
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelVersion(
+    model_version=ModelVersion(
         name="demo",
         license="Apache",
         description="Show case Model Control Plane.",
