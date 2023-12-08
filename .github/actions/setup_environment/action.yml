@@ -57,7 +57,7 @@ runs:
       id: date
       run: echo "::set-output name=week::$(date +'calendar-week-%W')"
 
-    - uses: syphar/restore-virtualenv@v1
+    - uses: safoinme/actions-cache-s3@v0.0.1
       id: cache-virtualenv
       with:
         requirement_files: 'pyproject.toml'
