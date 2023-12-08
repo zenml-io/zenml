@@ -53,12 +53,12 @@ class WandbExperimentTrackerSettings(BaseSettings):
 
     run_name: Optional[str] = None
     tags: List[str] = []
-    settings: Union[Dict[str, Any], Settings] = {}  # type: ignore
+    settings: Dict[str, Any] = {}
 
     @validator("settings", pre=True)
     def _convert_settings(
         cls,
-        value: Union[Dict[str, Any], Settings],  # type: ignore
+        value: Union[Dict[str, Any], "Settings"],  # type: ignore
     ) -> Dict[str, Any]:
         """Converts settings to a dictionary.
 
