@@ -175,7 +175,6 @@ class UserScopedFilter(BaseFilter):
         Returns:
             The query with filter applied.
         """
-
         query = super().apply_filter(query=query, table=table)
 
         if self.scope_user:
