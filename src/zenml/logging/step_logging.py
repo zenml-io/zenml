@@ -141,6 +141,9 @@ class StepLogsStorage:
                 if self.buffer:
                     with fileio.open(self.logs_uri, "a") as file:
                         for message in self.buffer:
+                            logger.info(
+                                f"Writing message to logs file {self.logs_uri}."
+                            )
                             file.write(
                                 remove_ansi_escape_codes(message) + "\n"
                             )

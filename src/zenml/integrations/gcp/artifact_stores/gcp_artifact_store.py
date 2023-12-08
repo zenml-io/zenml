@@ -35,9 +35,11 @@ from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
     GCPArtifactStoreConfig,
 )
 from zenml.io.fileio import convert_to_str
+from zenml.logger import get_logger
 from zenml.secret.schemas import GCPSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
 
+logger = get_logger(__name__)
 PathType = Union[bytes, str]
 
 
@@ -91,7 +93,15 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         # Refresh the credentials also if the connector has expired
         if self._filesystem and not self.connector_has_expired():
+            logger.info(
+                f"Using cached gcsfs filesystem for artifact store "
+                f"'{self.name}'."
+            )
             return self._filesystem
+
+        logger.info(
+            f"Creating new gcsfs filesystem for artifact store '{self.name}'."
+        )
 
         token = self.get_credentials()
         self._filesystem = gcsfs.GCSFileSystem(token=token)

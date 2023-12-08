@@ -14,7 +14,7 @@
 """Base ZenML Service Connector class."""
 import logging
 from abc import abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import (
     Any,
     ClassVar,
@@ -826,10 +826,27 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             True if the connector has expired, False otherwise.
         """
         if not self.expires_at:
+            logger.info(
+                "connector authentication credentials have no expiration time."
+            )
             return False
 
         expires_at = self.expires_at.replace(tzinfo=timezone.utc)
-        return expires_at < datetime.now(timezone.utc)
+        # Subtract some time to account for clock skew or other delays.
+        expires_at = expires_at - timedelta(minutes=5)
+        delta = expires_at - datetime.now(timezone.utc)
+        result = delta < timedelta(seconds=0)
+
+        logger.info(
+            f"Checking if connector {self.name} has expired.\n"
+            f"Expires at: {self.expires_at}\n"
+            f"Expires at (+skew): {expires_at}\n"
+            f"Current UTC date: {datetime.now(timezone.utc)}\n"
+            f"Delta: {delta}\n"
+            f"Result: {result}\n"
+        )
+
+        return result
 
     def validate_runtime_args(
         self,
