@@ -31,7 +31,6 @@ from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
-from zenml.logging.step_logging import StepLogsStorageContext
 from zenml.model.utils import link_artifact_config_to_model_version
 from zenml.models import (
     ArtifactVersionResponse,
@@ -50,10 +49,6 @@ from zenml.orchestrators import (
 )
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
-from zenml.orchestrators.utils import (
-    get_run_name,
-    is_setting_enabled,
-)
 from zenml.stack import Stack
 from zenml.utils import string_utils
 
@@ -155,7 +150,7 @@ class StepLauncher:
         if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
         else:
-            step_logging_enabled = is_setting_enabled(
+            step_logging_enabled = orchestrator_utils.is_setting_enabled(
                 is_enabled_on_step=self._step.config.enable_step_logs,
                 is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_step_logs,
             )
@@ -170,7 +165,7 @@ class StepLauncher:
                 self._step.config.name,
             )
 
-            logs_context = StepLogsStorageContext(logs_uri=logs_uri)  # type: ignore[assignment]
+            logs_context = step_logging.StepLogsStorageContext(logs_uri=logs_uri)  # type: ignore[assignment]
 
             logs_model = LogsRequest(
                 uri=logs_uri,
@@ -278,7 +273,7 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
-        run_name = get_run_name(
+        run_name = orchestrator_utils.get_run_name(
             run_name_template=self._deployment.run_name_template
         )
 
@@ -339,7 +334,7 @@ class StepLauncher:
         step_run.parent_step_ids = parent_step_ids
         step_run.cache_key = cache_key
 
-        cache_enabled = is_setting_enabled(
+        cache_enabled = orchestrator_utils.is_setting_enabled(
             is_enabled_on_step=self._step.config.enable_cache,
             is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_cache,
         )

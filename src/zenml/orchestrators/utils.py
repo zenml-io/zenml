@@ -31,13 +31,11 @@ from zenml.constants import (
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
 from zenml.enums import StoreType
-from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
 
 
-logger = get_logger(__name__)
 
 
 def get_orchestrator_run_name(pipeline_name: str) -> str:
