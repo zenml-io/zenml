@@ -737,38 +737,6 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run():
         )
 
 
-def test_that_pipeline_run_is_removed_on_deletion_of_pipeline():
-    """Test that if pipeline gets deleted - runs are removed from model version."""
-    with model_killer():
-
-        @pipeline(
-            model_version=ModelVersion(
-                name="step", version=ModelStages.LATEST
-            ),
-            enable_cache=False,
-            name="test_that_pipeline_run_is_removed_on_deletion_of_pipeline",
-        )
-        def _inner_pipeline():
-            _this_step_produces_output.with_options(
-                model_version=ModelVersion(name="step")
-            )()
-
-        run_1 = f"run_{uuid4()}"
-        _inner_pipeline.with_options(run_name=run_1)()
-
-        client = Client()
-        client.delete_pipeline(
-            "test_that_pipeline_run_is_removed_on_deletion_of_pipeline"
-        )
-        model = client.get_model(model_name_or_id="step")
-        mvs = model.versions
-        assert len(mvs) == 1
-        assert (
-            len(client.zen_store.get_model_version(mvs[0].id).pipeline_run_ids)
-            == 0
-        )
-
-
 def test_that_artifact_is_removed_on_deletion():
     """Test that if artifact gets deleted - it is removed from model version."""
     with model_killer():
@@ -790,11 +758,12 @@ def test_that_artifact_is_removed_on_deletion():
         client = Client()
         run = client.get_pipeline_run(run_1)
         pipeline_id = run.pipeline.id
-        artifact_id = (
+        artifact_version_id = (
             run.steps["_this_step_produces_output"].outputs["data"].id
         )
         client.delete_pipeline(pipeline_id)
-        client.delete_artifact(artifact_id)
+        client.delete_pipeline_run(run.id)
+        client.delete_artifact_version(artifact_version_id)
         model = client.get_model(model_name_or_id="step")
         mvs = model.versions
         assert len(mvs) == 1

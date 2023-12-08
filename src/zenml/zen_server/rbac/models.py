@@ -49,6 +49,7 @@ class ResourceType(StrEnum):
     MODEL_VERSION = "model_version"
     SERVICE_CONNECTOR = "service_connector"
     ARTIFACT = "artifact"
+    ARTIFACT_VERSION = "artifact_version"
     SECRET = "secret"
     TAG = "tag"
     SERVICE_ACCOUNT = "service_account"

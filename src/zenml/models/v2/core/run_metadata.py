@@ -19,6 +19,7 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -34,14 +35,11 @@ from zenml.models.v2.base.scoped import (
 class RunMetadataRequest(WorkspaceScopedRequest):
     """Request model for run metadata."""
 
-    pipeline_run_id: Optional[UUID] = Field(
-        title="The ID of the pipeline run that this metadata belongs to.",
+    resource_id: UUID = Field(
+        title="The ID of the resource that this metadata belongs to.",
     )
-    step_run_id: Optional[UUID] = Field(
-        title="The ID of the step run that this metadata belongs to."
-    )
-    artifact_id: Optional[UUID] = Field(
-        title="The ID of the artifact that this metadata belongs to."
+    resource_type: MetadataResourceTypes = Field(
+        title="The type of the resource that this metadata belongs to.",
     )
     stack_component_id: Optional[UUID] = Field(
         title="The ID of the stack component that this metadata belongs to."
@@ -81,14 +79,11 @@ class RunMetadataResponseBody(WorkspaceScopedResponseBody):
 class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for run metadata."""
 
-    pipeline_run_id: Optional[UUID] = Field(
-        title="The ID of the pipeline run that this metadata belongs to.",
+    resource_id: UUID = Field(
+        title="The ID of the resource that this metadata belongs to.",
     )
-    step_run_id: Optional[UUID] = Field(
-        title="The ID of the step run that this metadata belongs to."
-    )
-    artifact_id: Optional[UUID] = Field(
-        title="The ID of the artifact that this metadata belongs to."
+    resource_type: MetadataResourceTypes = Field(
+        title="The type of the resource that this metadata belongs to.",
     )
     stack_component_id: Optional[UUID] = Field(
         title="The ID of the stack component that this metadata belongs to."
@@ -141,31 +136,22 @@ class RunMetadataResponse(
         return self.get_body().type
 
     @property
-    def pipeline_run_id(self) -> Optional[UUID]:
-        """The `pipeline_run_id` property.
+    def resource_id(self) -> UUID:
+        """The `resource_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().pipeline_run_id
+        return self.get_metadata().resource_id
 
     @property
-    def step_run_id(self) -> Optional[UUID]:
-        """The `step_run_id` property.
+    def resource_type(self) -> MetadataResourceTypes:
+        """The `resource_type` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().step_run_id
-
-    @property
-    def artifact_id(self) -> Optional[UUID]:
-        """The `artifact_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().artifact_id
+        return MetadataResourceTypes(self.get_metadata().resource_type)
 
     @property
     def stack_component_id(self) -> Optional[UUID]:
@@ -183,9 +169,8 @@ class RunMetadataResponse(
 class RunMetadataFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of run metadata."""
 
-    pipeline_run_id: Optional[Union[str, UUID]] = None
-    step_run_id: Optional[Union[str, UUID]] = None
-    artifact_id: Optional[Union[str, UUID]] = None
+    resource_id: Optional[Union[str, UUID]] = None
+    resource_type: Optional[MetadataResourceTypes] = None
     stack_component_id: Optional[Union[str, UUID]] = None
     key: Optional[str] = None
     type: Optional[Union[str, MetadataTypeEnum]] = None

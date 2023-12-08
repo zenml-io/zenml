@@ -34,11 +34,11 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
     from zenml.model.model_version import ModelVersion
     from zenml.models import (
+        ArtifactVersionResponse,
         PipelineResponse,
         PipelineRunResponse,
         StepRunResponse,
     )
-    from zenml.stack.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -144,50 +144,6 @@ class StepContext(metaclass=SingletonMetaClass):
             for key in output_materializers.keys()
         }
 
-    def _get_output(
-        self, output_name: Optional[str] = None
-    ) -> "StepContextOutput":
-        """Returns the materializer and artifact URI for a given step output.
-
-        Args:
-            output_name: Optional name of the output for which to get the
-                materializer and URI.
-
-        Returns:
-            Tuple containing the materializer and artifact URI for the
-                given output.
-
-        Raises:
-            StepContextError: If the step has no outputs, no output for
-                the given `output_name` or if no `output_name` was given but
-                the step has multiple outputs.
-        """
-        output_count = len(self._outputs)
-        if output_count == 0:
-            raise StepContextError(
-                f"Unable to get step output for step '{self.step_name}': "
-                f"This step does not have any outputs."
-            )
-
-        if not output_name and output_count > 1:
-            raise StepContextError(
-                f"Unable to get step output for step '{self.step_name}': "
-                f"This step has multiple outputs ({set(self._outputs)}), "
-                f"please specify which output to return."
-            )
-
-        if output_name:
-            if output_name not in self._outputs:
-                raise StepContextError(
-                    f"Unable to get step output '{output_name}' for "
-                    f"step '{self.step_name}'. This step does not have an "
-                    f"output with the given name, please specify one of the "
-                    f"available outputs: {set(self._outputs)}."
-                )
-            return self._outputs[output_name]
-        else:
-            return next(iter(self._outputs.values()))
-
     @property
     def pipeline(self) -> "PipelineResponse":
         """Returns the current pipeline.
@@ -236,95 +192,57 @@ class StepContext(metaclass=SingletonMetaClass):
         return model_version
 
     @property
-    def stack(self) -> Optional["Stack"]:
-        """(Deprecated) Returns the current active stack.
+    def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
+        """Returns the input artifacts of the current step.
 
         Returns:
-            The current active stack or None.
+            The input artifacts of the current step.
         """
-        logger.warning(
-            "`StepContext.stack` is deprecated and will be removed in a "
-            "future release. Please use `Client().active_stack` instead."
-        )
-        return self._stack
+        return self.step_run.inputs
 
-    @property
-    def pipeline_name(self) -> str:
-        """(Deprecated) Returns the current pipeline name.
+    def _get_output(
+        self, output_name: Optional[str] = None
+    ) -> "StepContextOutput":
+        """Returns the materializer and artifact URI for a given step output.
+
+        Args:
+            output_name: Optional name of the output for which to get the
+                materializer and URI.
 
         Returns:
-            The current pipeline name or None.
+            Tuple containing the materializer and artifact URI for the
+                given output.
 
         Raises:
-            StepContextError: If the pipeline run does not have a pipeline.
+            StepContextError: If the step has no outputs, no output for
+                the given `output_name` or if no `output_name` was given but
+                the step has multiple outputs.
         """
-        logger.warning(
-            "`StepContext.pipeline_name` is deprecated and will be removed in "
-            "a future release. Please use `StepContext.pipeline.name` instead."
-        )
-        if not self.pipeline:
+        output_count = len(self._outputs)
+        if output_count == 0:
             raise StepContextError(
-                f"Unable to get pipeline name in step '{self.step_name}' of "
-                f"pipeline run '{self.pipeline_run.name}': The pipeline run "
-                f"does not have a pipeline associated with it."
+                f"Unable to get step output for step '{self.step_name}': "
+                f"This step does not have any outputs."
             )
-        return self.pipeline.name
 
-    @property
-    def run_name(self) -> Optional[str]:
-        """(Deprecated) Returns the current run name.
+        if not output_name and output_count > 1:
+            raise StepContextError(
+                f"Unable to get step output for step '{self.step_name}': "
+                f"This step has multiple outputs ({set(self._outputs)}), "
+                f"please specify which output to return."
+            )
 
-        Returns:
-            The current run name or None.
-        """
-        logger.warning(
-            "`StepContext.run_name` is deprecated and will be removed in a "
-            "future release. Please use `StepContext.pipeline_run.name` "
-            "instead."
-        )
-        return self.pipeline_run.name
-
-    @property
-    def parameters(self) -> Dict[str, Any]:
-        """(Deprecated) The step parameters.
-
-        Returns:
-            The step parameters.
-        """
-        logger.warning(
-            "`StepContext.parameters` is deprecated and will be removed in "
-            "a future release. Please use "
-            "`StepContext.step_run.config.parameters` instead."
-        )
-        return self.step_run.config.parameters
-
-    @property
-    def step_run_info(self) -> "StepRunInfo":
-        """(Deprecated) Info about the currently running step.
-
-        Returns:
-            Info about the currently running step.
-        """
-        logger.warning(
-            "`StepContext.step_run_info` is deprecated and will be removed in "
-            "a future release. Please use `StepContext.step_run` or "
-            "`StepContext.pipeline_run` to access information about the "
-            "current run instead."
-        )
-        return self._step_run_info
-
-    @property
-    def cache_enabled(self) -> bool:
-        """(Deprecated) Returns whether cache is enabled for the step.
-
-        Returns:
-            True if cache is enabled for the step, otherwise False.
-        """
-        logger.warning(
-            "`StepContext.cache_enabled` is deprecated and will be removed in "
-            "a future release."
-        )
-        return self._cache_enabled
+        if output_name:
+            if output_name not in self._outputs:
+                raise StepContextError(
+                    f"Unable to get step output '{output_name}' for "
+                    f"step '{self.step_name}'. This step does not have an "
+                    f"output with the given name, please specify one of the "
+                    f"available outputs: {set(self._outputs)}."
+                )
+            return self._outputs[output_name]
+        else:
+            return next(iter(self._outputs.values()))
 
     def get_output_materializer(
         self,

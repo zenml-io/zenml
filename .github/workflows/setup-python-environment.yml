@@ -21,6 +21,11 @@ on:
         type: string
         required: false
         default: 'yes'
+      git-ref:
+        description: 'Git branch or ref'
+        type: string
+        required: false
+        default: ''
 
   workflow_dispatch:
     inputs:
@@ -31,6 +36,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
+          - ubuntu-dind-runners
         required: false
         default: 'ubuntu-latest'
       python-version:

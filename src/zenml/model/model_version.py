@@ -32,9 +32,9 @@ from zenml.logger import get_logger
 if TYPE_CHECKING:
     from zenml import ExternalArtifact
     from zenml.models import (
-        ArtifactResponse,
-        ModelResponseModel,
-        ModelVersionResponseModel,
+        ArtifactVersionResponse,
+        ModelResponse,
+        ModelVersionResponse,
         PipelineRunResponse,
     )
 
@@ -168,11 +168,11 @@ class ModelVersion(BaseModel):
                 the given name and version.
         """
         from zenml.artifacts.utils import load_artifact
-        from zenml.models import ArtifactResponse
+        from zenml.models import ArtifactVersionResponse
 
         artifact = self.get_artifact(name=name, version=version)
 
-        if not isinstance(artifact, ArtifactResponse):
+        if not isinstance(artifact, ArtifactVersionResponse):
             raise ValueError(
                 f"Version {self.version} of model {self.name} does not have "
                 f"an artifact with name {name} and version {version}."
@@ -200,7 +200,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the artifact linked to this model version.
 
         Args:
@@ -222,7 +222,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the model artifact linked to this model version.
 
         Args:
@@ -244,7 +244,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the data artifact linked to this model version.
 
         Args:
@@ -266,7 +266,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactResponse", "ExternalArtifact"]]:
+    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
         """Get the endpoint artifact linked to this model version.
 
         Args:
@@ -367,7 +367,7 @@ class ModelVersion(BaseModel):
         """Validate that config doesn't conflict with runtime environment."""
         self._get_or_create_model_version()
 
-    def _get_or_create_model(self) -> "ModelResponseModel":
+    def _get_or_create_model(self) -> "ModelResponse":
         """This method should get or create a model from Model Control Plane.
 
         New model is created implicitly, if missing, otherwise fetched.
@@ -376,7 +376,7 @@ class ModelVersion(BaseModel):
             The model based on configuration.
         """
         from zenml.client import Client
-        from zenml.models.model_models import ModelRequestModel
+        from zenml.models import ModelRequest
 
         zenml_client = Client()
         try:
@@ -384,7 +384,7 @@ class ModelVersion(BaseModel):
                 model_name_or_id=self.name
             )
         except KeyError:
-            model_request = ModelRequestModel(
+            model_request = ModelRequest(
                 name=self.name,
                 license=self.license,
                 description=self.description,
@@ -397,7 +397,7 @@ class ModelVersion(BaseModel):
                 user=zenml_client.active_user.id,
                 workspace=zenml_client.active_workspace.id,
             )
-            model_request = ModelRequestModel.parse_obj(model_request)
+            model_request = ModelRequest.parse_obj(model_request)
             try:
                 model = zenml_client.zen_store.create_model(
                     model=model_request
@@ -413,7 +413,7 @@ class ModelVersion(BaseModel):
         self._model_id = model.id
         return model
 
-    def _get_model_version(self) -> "ModelVersionResponseModel":
+    def _get_model_version(self) -> "ModelVersionResponse":
         """This method gets a model version from Model Control Plane.
 
         Returns:
@@ -431,7 +431,7 @@ class ModelVersion(BaseModel):
 
         return mv
 
-    def _get_or_create_model_version(self) -> "ModelVersionResponseModel":
+    def _get_or_create_model_version(self) -> "ModelVersionResponse":
         """This method should get or create a model and a model version from Model Control Plane.
 
         A new model is created implicitly if missing, otherwise existing model is fetched. Model
@@ -451,19 +451,19 @@ class ModelVersion(BaseModel):
             RuntimeError: if the model version needs to be created, but provided name is reserved
         """
         from zenml.client import Client
-        from zenml.models.model_models import ModelVersionRequestModel
+        from zenml.models import ModelVersionRequest
 
         model = self._get_or_create_model()
 
         zenml_client = Client()
-        model_version_request = ModelVersionRequestModel(
+        model_version_request = ModelVersionRequest(
             user=zenml_client.active_user.id,
             workspace=zenml_client.active_workspace.id,
             name=self.version,
             description=self.description,
             model=model.id,
         )
-        mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
+        mv_request = ModelVersionRequest.parse_obj(model_version_request)
         try:
             if not self.version:
                 try:

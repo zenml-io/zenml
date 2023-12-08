@@ -26,6 +26,10 @@ from zenml.models import (
     ArtifactRequest,
     ArtifactResponse,
     ArtifactUpdate,
+    ArtifactVersionFilter,
+    ArtifactVersionRequest,
+    ArtifactVersionResponse,
+    ArtifactVersionUpdate,
     ArtifactVisualizationResponse,
     CodeReferenceResponse,
     CodeRepositoryFilter,
@@ -41,20 +45,20 @@ from zenml.models import (
     FlavorResponse,
     FlavorUpdate,
     LogsResponse,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelUpdateModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
-    ModelVersionUpdateModel,
+    ModelFilter,
+    ModelRequest,
+    ModelResponse,
+    ModelUpdate,
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
+    ModelVersionResponse,
+    ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceResponse,
     OAuthDeviceUpdate,
@@ -334,13 +338,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def create_artifact(self, artifact: ArtifactRequest) -> ArtifactResponse:
-        """Creates an artifact.
+        """Creates a new artifact.
 
         Args:
             artifact: The artifact to create.
 
         Returns:
-            The created artifact.
+            The newly created artifact.
+
+        Raises:
+            EntityExistsError: If an artifact with the same name already exists.
         """
 
     @abstractmethod
@@ -363,14 +370,12 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_artifacts(
-        self,
-        artifact_filter_model: ArtifactFilter,
-        hydrate: bool = False,
+        self, filter_model: ArtifactFilter, hydrate: bool = False
     ) -> Page[ArtifactResponse]:
         """List all artifacts matching the given filter criteria.
 
         Args:
-            artifact_filter_model: All filter parameters including pagination
+            filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -405,6 +410,88 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the artifact doesn't exist.
+        """
+
+    # -------------------- Artifact Versions --------------------
+
+    @abstractmethod
+    def create_artifact_version(
+        self, artifact_version: ArtifactVersionRequest
+    ) -> ArtifactVersionResponse:
+        """Creates an artifact version.
+
+        Args:
+            artifact_version: The artifact version to create.
+
+        Returns:
+            The created artifact version.
+        """
+
+    @abstractmethod
+    def get_artifact_version(
+        self, artifact_version_id: UUID, hydrate: bool = True
+    ) -> ArtifactVersionResponse:
+        """Gets an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The artifact version.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
+        """
+
+    @abstractmethod
+    def list_artifact_versions(
+        self,
+        artifact_version_filter_model: ArtifactVersionFilter,
+        hydrate: bool = False,
+    ) -> Page[ArtifactVersionResponse]:
+        """List all artifact versions matching the given filter criteria.
+
+        Args:
+            artifact_version_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all artifact versions matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_artifact_version(
+        self,
+        artifact_version_id: UUID,
+        artifact_version_update: ArtifactVersionUpdate,
+    ) -> ArtifactVersionResponse:
+        """Updates an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to update.
+            artifact_version_update: The update to be applied to the artifact
+                version.
+
+        Returns:
+            The updated artifact version.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_artifact_version(self, artifact_version_id: UUID) -> None:
+        """Deletes an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to delete.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
         """
 
     # -------------------- Artifact Visualization --------------------
@@ -1866,10 +1953,10 @@ class ZenStoreInterface(ABC):
             KeyError: If no workspace with the given name exists.
         """
 
-    # -------------------- Model --------------------
+    # -------------------- Models --------------------
 
     @abstractmethod
-    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+    def create_model(self, model: ModelRequest) -> ModelResponse:
         """Creates a new model.
 
         Args:
@@ -1897,8 +1984,8 @@ class ZenStoreInterface(ABC):
     def update_model(
         self,
         model_id: UUID,
-        model_update: ModelUpdateModel,
-    ) -> ModelResponseModel:
+        model_update: ModelUpdate,
+    ) -> ModelResponse:
         """Updates an existing model.
 
         Args:
@@ -1911,12 +1998,14 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_model(
-        self, model_name_or_id: Union[str, UUID]
-    ) -> ModelResponseModel:
+        self, model_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> ModelResponse:
         """Get an existing model.
 
         Args:
             model_name_or_id: name or id of the model to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model of interest.
@@ -1928,13 +2017,16 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_models(
         self,
-        model_filter_model: ModelFilterModel,
-    ) -> Page[ModelResponseModel]:
+        model_filter_model: ModelFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelResponse]:
         """Get all models by filter.
 
         Args:
             model_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all models.
@@ -1944,8 +2036,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def create_model_version(
-        self, model_version: ModelVersionRequestModel
-    ) -> ModelVersionResponseModel:
+        self, model_version: ModelVersionRequest
+    ) -> ModelVersionResponse:
         """Creates a new model version.
 
         Args:
@@ -1956,7 +2048,8 @@ class ZenStoreInterface(ABC):
 
         Raises:
             ValueError: If `number` is not None during model version creation.
-            EntityExistsError: If a model version with the given name already exists.
+            EntityExistsError: If a model version with the given name already
+                exists.
         """
 
     @abstractmethod
@@ -1975,13 +2068,15 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_model_version(
-        self, model_version_id: UUID
-    ) -> ModelVersionResponseModel:
+        self, model_version_id: UUID, hydrate: bool = True
+    ) -> ModelVersionResponse:
         """Get an existing model version.
 
         Args:
             model_version_id: name, id, stage or number of the model version to
                 be retrieved. If skipped - latest is retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
 
         Returns:
@@ -1994,15 +2089,19 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_model_versions(
         self,
-        model_version_filter_model: ModelVersionFilterModel,
+        model_version_filter_model: ModelVersionFilter,
         model_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[ModelVersionResponseModel]:
+        hydrate: bool = False,
+    ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model versions.
-            model_version_filter_model: All filter parameters including pagination
-                params.
+            model_name_or_id: name or id of the model containing the model
+                versions.
+            model_version_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model versions.
@@ -2012,8 +2111,8 @@ class ZenStoreInterface(ABC):
     def update_model_version(
         self,
         model_version_id: UUID,
-        model_version_update_model: ModelVersionUpdateModel,
-    ) -> ModelVersionResponseModel:
+        model_version_update_model: ModelVersionUpdate,
+    ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
         Args:
@@ -2025,21 +2124,21 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the model version not found
-            RuntimeError: If there is a model version with target stage, but `force` flag is off
+            RuntimeError: If there is a model version with target stage,
+                but `force` flag is off
         """
 
-    ###########################
-    # Model Versions Artifacts
-    ###########################
+    # -------------------- Model Versions Artifacts --------------------
 
     @abstractmethod
     def create_model_version_artifact_link(
-        self, model_version_artifact_link: ModelVersionArtifactRequestModel
-    ) -> ModelVersionArtifactResponseModel:
+        self, model_version_artifact_link: ModelVersionArtifactRequest
+    ) -> ModelVersionArtifactResponse:
         """Creates a new model version link.
 
         Args:
-            model_version_artifact_link: the Model Version to Artifact Link to be created.
+            model_version_artifact_link: the Model Version to Artifact Link
+                to be created.
 
         Returns:
             The newly created model version to artifact link.
@@ -2051,13 +2150,16 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_model_version_artifact_links(
         self,
-        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-    ) -> Page[ModelVersionArtifactResponseModel]:
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionArtifactResponse]:
         """Get all model version to artifact links by filter.
 
         Args:
             model_version_artifact_link_filter_model: All filter parameters
                 including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to artifact links.
@@ -2073,41 +2175,46 @@ class ZenStoreInterface(ABC):
 
         Args:
             model_version_id: ID of the model version containing the link.
-            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
+            model_version_artifact_link_name_or_id: name or ID of the model
+                version to artifact link to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
         """
 
-    ###############################
-    # Model Versions Pipeline Runs
-    ###############################
+    # -------------------- Model Versions Pipeline Runs --------------------
 
     @abstractmethod
     def create_model_version_pipeline_run_link(
         self,
-        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-    ) -> ModelVersionPipelineRunResponseModel:
+        model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
+    ) -> ModelVersionPipelineRunResponse:
         """Creates a new model version to pipeline run link.
 
         Args:
-            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
+            model_version_pipeline_run_link: the Model Version to Pipeline Run
+                Link to be created.
 
         Returns:
-            - If Model Version to Pipeline Run Link already exists - returns the existing link.
-            - Otherwise, returns the newly created model version to pipeline run link.
+            - If Model Version to Pipeline Run Link already exists - returns
+                the existing link.
+            - Otherwise, returns the newly created model version to pipeline
+                run link.
         """
 
     @abstractmethod
     def list_model_version_pipeline_run_links(
         self,
-        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
 
         Args:
             model_version_pipeline_run_link_filter_model: All filter parameters
                 including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to pipeline run links.
@@ -2123,7 +2230,8 @@ class ZenStoreInterface(ABC):
 
         Args:
             model_version_id: ID of the model version containing the link.
-            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model
+                version to pipeline run link to be deleted.
 
         Raises:
             KeyError: specified ID not found.

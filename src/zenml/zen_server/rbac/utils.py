@@ -111,15 +111,16 @@ def dehydrate_response_model(
             user=auth_context.user, resources=resources, action=Action.READ
         )
 
-    dehydrated_fields = {}
+    dehydrated_values = {}
+    for key, value in model.__dict__.items():
+        if key in model.__private_attributes__:
+            dehydrated_values[key] = value
+        else:
+            dehydrated_values[key] = _dehydrate_value(
+                value, permissions=permissions
+            )
 
-    for field_name in model.__fields__.keys():
-        value = getattr(model, field_name)
-        dehydrated_fields[field_name] = _dehydrate_value(
-            value, permissions=permissions
-        )
-
-    return type(model).parse_obj(dehydrated_fields)
+    return type(model).parse_obj(dehydrated_values)
 
 
 def _dehydrate_value(
@@ -138,16 +139,16 @@ def _dehydrate_value(
         The recursively dehydrated value.
     """
     if isinstance(value, (BaseResponse, BaseResponseModel)):
-        value = get_surrogate_permission_model_for_model(
+        permission_model = get_surrogate_permission_model_for_model(
             value, action=Action.READ
         )
-        resource = get_resource_for_model(value)
+        resource = get_resource_for_model(permission_model)
         if not resource:
             return dehydrate_response_model(value, permissions=permissions)
 
         has_permissions = (permissions or {}).get(resource, False)
         if has_permissions or has_permissions_for_model(
-            model=value, action=Action.READ
+            model=permission_model, action=Action.READ
         ):
             return dehydrate_response_model(value, permissions=permissions)
         else:
@@ -444,11 +445,15 @@ def get_surrogate_permission_model_for_model(
     Returns:
         A surrogate model or the original.
     """
-    from zenml.models import ModelVersionResponseModel
+    from zenml.models import ArtifactVersionResponse, ModelVersionResponse
 
-    if action == Action.READ and isinstance(model, ModelVersionResponseModel):
-        # Permissions to read a model version is the same as reading the model
-        return model.model
+    # Permissions to read entities that represent versions of another entity
+    # are checked on the parent entity
+    if action == Action.READ:
+        if isinstance(model, ModelVersionResponse):
+            return model.model
+        elif isinstance(model, ArtifactVersionResponse):
+            return model.artifact
 
     return model
 
@@ -467,10 +472,12 @@ def get_resource_type_for_model(
     """
     from zenml.models import (
         ArtifactResponse,
+        ArtifactVersionResponse,
         CodeRepositoryResponse,
         ComponentResponse,
         FlavorResponse,
-        ModelResponseModel,
+        ModelResponse,
+        ModelVersionResponse,
         PipelineBuildResponse,
         PipelineDeploymentResponse,
         PipelineResponse,
@@ -496,8 +503,10 @@ def get_resource_type_for_model(
         PipelineResponse: ResourceType.PIPELINE,
         CodeRepositoryResponse: ResourceType.CODE_REPOSITORY,
         SecretResponseModel: ResourceType.SECRET,
-        ModelResponseModel: ResourceType.MODEL,
+        ModelResponse: ResourceType.MODEL,
+        ModelVersionResponse: ResourceType.MODEL_VERSION,
         ArtifactResponse: ResourceType.ARTIFACT,
+        ArtifactVersionResponse: ResourceType.ARTIFACT_VERSION,
         WorkspaceResponse: ResourceType.WORKSPACE,
         UserResponse: ResourceType.USER,
         RunMetadataResponse: ResourceType.RUN_METADATA,
@@ -547,8 +556,9 @@ def get_subresources_for_model(
     """
     resources = set()
 
-    for field_name in model.__fields__.keys():
-        value = getattr(model, field_name)
+    for key, value in model.__dict__.items():
+        if key in model.__private_attributes__:
+            continue
         resources.update(_get_subresources_for_value(value))
 
     return resources

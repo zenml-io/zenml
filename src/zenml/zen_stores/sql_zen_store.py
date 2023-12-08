@@ -70,6 +70,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     AuthScheme,
+    ExecutionStatus,
     LoggingLevels,
     ModelStages,
     SecretScope,
@@ -101,6 +102,10 @@ from zenml.models import (
     ArtifactRequest,
     ArtifactResponse,
     ArtifactUpdate,
+    ArtifactVersionFilter,
+    ArtifactVersionRequest,
+    ArtifactVersionResponse,
+    ArtifactVersionUpdate,
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseResponse,
@@ -120,20 +125,20 @@ from zenml.models import (
     FlavorResponse,
     FlavorUpdate,
     LogsResponse,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelUpdateModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
-    ModelVersionUpdateModel,
+    ModelFilter,
+    ModelRequest,
+    ModelResponse,
+    ModelUpdate,
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
+    ModelVersionResponse,
+    ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceInternalRequest,
     OAuthDeviceInternalResponse,
@@ -223,6 +228,7 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.schemas import (
     APIKeySchema,
     ArtifactSchema,
+    ArtifactVersionSchema,
     BaseSchema,
     CodeReferenceSchema,
     CodeRepositorySchema,
@@ -1373,56 +1379,36 @@ class SqlZenStore(BaseZenStore):
             session.delete(api_key)
             session.commit()
 
-    # ----------------------------- Artifacts -----------------------------
+    # -------------------- Artifacts --------------------
 
     def create_artifact(self, artifact: ArtifactRequest) -> ArtifactResponse:
-        """Creates an artifact.
+        """Creates a new artifact.
 
         Args:
             artifact: The artifact to create.
 
         Returns:
-            The created artifact.
+            The newly created artifact.
 
         Raises:
-            EntityExistsError: if an artifact with the same name and version
-                already exists.
+            EntityExistsError: If an artifact with the same name already exists.
         """
         with Session(self.engine) as session:
-            # Check if an artifact with the given name and version exists
+            # Check if an artifact with the given name already exists
             existing_artifact = session.exec(
-                select(ArtifactSchema)
-                .where(ArtifactSchema.name == artifact.name)
-                .where(ArtifactSchema.version == artifact.version)
+                select(ArtifactSchema).where(
+                    ArtifactSchema.name == artifact.name
+                )
             ).first()
             if existing_artifact is not None:
                 raise EntityExistsError(
-                    f"Unable to create artifact with name '{artifact.name}' "
-                    f"and version '{artifact.version}': An artifact with the "
-                    "same name and version already exists."
+                    f"Unable to create artifact with name '{artifact.name}': "
+                    "An artifact with the same name already exists."
                 )
 
-            # Save artifact.
+            # Create the artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
             session.add(artifact_schema)
-
-            # Save visualizations of the artifact.
-            if artifact.visualizations:
-                for vis in artifact.visualizations:
-                    vis_schema = ArtifactVisualizationSchema.from_model(
-                        artifact_visualization_request=vis,
-                        artifact_id=artifact_schema.id,
-                    )
-                    session.add(vis_schema)
-
-            # Save tags of the artifact.
-            if artifact.tags:
-                self._attach_tags_to_resource(
-                    tag_names=artifact.tags,
-                    resource_id=artifact_schema.id,
-                    resource_type=TaggableResourceTypes.ARTIFACT,
-                )
-
             session.commit()
             return artifact_schema.to_model(hydrate=True)
 
@@ -1448,20 +1434,18 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if artifact is None:
                 raise KeyError(
-                    f"Unable to get artifact with ID {artifact_id}: "
-                    f"No artifact with this ID found."
+                    f"Unable to get artifact with ID {artifact_id}: No "
+                    "artifact with this ID found."
                 )
             return artifact.to_model(hydrate=hydrate)
 
     def list_artifacts(
-        self,
-        artifact_filter_model: ArtifactFilter,
-        hydrate: bool = False,
+        self, filter_model: ArtifactFilter, hydrate: bool = False
     ) -> Page[ArtifactResponse]:
         """List all artifacts matching the given filter criteria.
 
         Args:
-            artifact_filter_model: All filter parameters including pagination
+            filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -1471,22 +1455,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
-            if artifact_filter_model.only_unused:
-                query = query.where(
-                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunOutputArtifactSchema.artifact_id)
-                    )
-                )
-                query = query.where(
-                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunInputArtifactSchema.artifact_id)
-                    )
-                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=ArtifactSchema,
-                filter_model=artifact_filter_model,
+                filter_model=filter_model,
                 hydrate=hydrate,
             )
 
@@ -1512,26 +1485,26 @@ class SqlZenStore(BaseZenStore):
             if not existing_artifact:
                 raise KeyError(f"Artifact with ID {artifact_id} not found.")
 
+            # Handle tag updates.
             if artifact_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=artifact_update.add_tags,
                     resource_id=existing_artifact.id,
                     resource_type=TaggableResourceTypes.ARTIFACT,
                 )
-            artifact_update.add_tags = None
             if artifact_update.remove_tags:
                 self._detach_tags_from_resource(
                     tag_names=artifact_update.remove_tags,
                     resource_id=existing_artifact.id,
                     resource_type=TaggableResourceTypes.ARTIFACT,
                 )
-            artifact_update.remove_tags = None
 
+            # Update the schema itself.
             existing_artifact.update(artifact_update=artifact_update)
             session.add(existing_artifact)
             session.commit()
             session.refresh(existing_artifact)
-            return existing_artifact.to_model()
+            return existing_artifact.to_model(hydrate=True)
 
     def delete_artifact(self, artifact_id: UUID) -> None:
         """Deletes an artifact.
@@ -1543,15 +1516,218 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the artifact doesn't exist.
         """
         with Session(self.engine) as session:
-            artifact = session.exec(
+            existing_artifact = session.exec(
                 select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
             ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to delete artifact with ID {artifact_id}: "
-                    f"No artifact with this ID found."
+            if not existing_artifact:
+                raise KeyError(f"Artifact with ID {artifact_id} not found.")
+            session.delete(existing_artifact)
+            session.commit()
+
+    # -------------------- Artifact Versions --------------------
+
+    def create_artifact_version(
+        self, artifact_version: ArtifactVersionRequest
+    ) -> ArtifactVersionResponse:
+        """Creates an artifact version.
+
+        Args:
+            artifact_version: The artifact version to create.
+
+        Returns:
+            The created artifact version.
+
+        Raises:
+            EntityExistsError: if an artifact with the same name and version
+                already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if an artifact with the given name and version exists
+            existing_artifact = session.exec(
+                select(ArtifactVersionSchema)
+                .where(
+                    ArtifactVersionSchema.artifact_id
+                    == artifact_version.artifact_id
                 )
-            session.delete(artifact)
+                .where(
+                    ArtifactVersionSchema.version == artifact_version.version
+                )
+            ).first()
+            if existing_artifact is not None:
+                raise EntityExistsError(
+                    f"Unable to create artifact with name "
+                    f"'{existing_artifact.artifact.name}' and version "
+                    f"'{artifact_version.version}': An artifact with the same "
+                    "name and version already exists."
+                )
+
+            # Create the artifact version.
+            artifact_version_schema = ArtifactVersionSchema.from_request(
+                artifact_version
+            )
+            session.add(artifact_version_schema)
+
+            # Save visualizations of the artifact.
+            if artifact_version.visualizations:
+                for vis in artifact_version.visualizations:
+                    vis_schema = ArtifactVisualizationSchema.from_model(
+                        artifact_visualization_request=vis,
+                        artifact_version_id=artifact_version_schema.id,
+                    )
+                    session.add(vis_schema)
+
+            # Save tags of the artifact.
+            if artifact_version.tags:
+                self._attach_tags_to_resource(
+                    tag_names=artifact_version.tags,
+                    resource_id=artifact_version_schema.id,
+                    resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
+                )
+
+            session.commit()
+            return artifact_version_schema.to_model(hydrate=True)
+
+    def get_artifact_version(
+        self, artifact_version_id: UUID, hydrate: bool = True
+    ) -> ArtifactVersionResponse:
+        """Gets an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The artifact version.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
+        """
+        with Session(self.engine) as session:
+            artifact_version = session.exec(
+                select(ArtifactVersionSchema).where(
+                    ArtifactVersionSchema.id == artifact_version_id
+                )
+            ).first()
+            if artifact_version is None:
+                raise KeyError(
+                    f"Unable to get artifact version with ID "
+                    f"{artifact_version_id}: No artifact versionwith this ID "
+                    f"found."
+                )
+            return artifact_version.to_model(hydrate=hydrate)
+
+    def list_artifact_versions(
+        self,
+        artifact_version_filter_model: ArtifactVersionFilter,
+        hydrate: bool = False,
+    ) -> Page[ArtifactVersionResponse]:
+        """List all artifact versions matching the given filter criteria.
+
+        Args:
+            artifact_version_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all artifact versions matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ArtifactVersionSchema)
+            if artifact_version_filter_model.only_unused:
+                query = query.where(
+                    ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunOutputArtifactSchema.artifact_id)
+                    )
+                )
+                query = query.where(
+                    ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunInputArtifactSchema.artifact_id)
+                    )
+                )
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ArtifactVersionSchema,
+                filter_model=artifact_version_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_artifact_version(
+        self,
+        artifact_version_id: UUID,
+        artifact_version_update: ArtifactVersionUpdate,
+    ) -> ArtifactVersionResponse:
+        """Updates an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to update.
+            artifact_version_update: The update to be applied to the artifact
+                version.
+
+        Returns:
+            The updated artifact version.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
+        """
+        with Session(self.engine) as session:
+            existing_artifact_version = session.exec(
+                select(ArtifactVersionSchema).where(
+                    ArtifactVersionSchema.id == artifact_version_id
+                )
+            ).first()
+            if not existing_artifact_version:
+                raise KeyError(
+                    f"Artifact version with ID {artifact_version_id} not found."
+                )
+
+            # Handle tag updates.
+            if artifact_version_update.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=artifact_version_update.add_tags,
+                    resource_id=existing_artifact_version.id,
+                    resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
+                )
+            if artifact_version_update.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=artifact_version_update.remove_tags,
+                    resource_id=existing_artifact_version.id,
+                    resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
+                )
+
+            # Update the schema itself.
+            existing_artifact_version.update(
+                artifact_version_update=artifact_version_update
+            )
+            session.add(existing_artifact_version)
+            session.commit()
+            session.refresh(existing_artifact_version)
+            return existing_artifact_version.to_model(hydrate=True)
+
+    def delete_artifact_version(self, artifact_version_id: UUID) -> None:
+        """Deletes an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to delete.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
+        """
+        with Session(self.engine) as session:
+            artifact_version = session.exec(
+                select(ArtifactVersionSchema).where(
+                    ArtifactVersionSchema.id == artifact_version_id
+                )
+            ).first()
+            if artifact_version is None:
+                raise KeyError(
+                    f"Unable to delete artifact version with ID "
+                    f"{artifact_version_id}: No artifact version with this ID "
+                    "found."
+                )
+            session.delete(artifact_version)
             session.commit()
 
     # ------------------------ Artifact Visualizations ------------------------
@@ -1621,6 +1797,7 @@ class SqlZenStore(BaseZenStore):
 
     # --------------------------- Code Repositories ---------------------------
 
+    @track_decorator(AnalyticsEvent.REGISTERED_CODE_REPOSITORY)
     def create_code_repository(
         self, code_repository: CodeRepositoryRequest
     ) -> CodeRepositoryResponse:
@@ -3301,9 +3478,8 @@ class SqlZenStore(BaseZenStore):
                 run_metadata_schema = RunMetadataSchema(
                     workspace_id=run_metadata.workspace,
                     user_id=run_metadata.user,
-                    pipeline_run_id=run_metadata.pipeline_run_id,
-                    step_run_id=run_metadata.step_run_id,
-                    artifact_id=run_metadata.artifact_id,
+                    resource_id=run_metadata.resource_id,
+                    resource_type=run_metadata.resource_type.value,
                     stack_component_id=run_metadata.stack_component_id,
                     key=key,
                     value=json.dumps(value),
@@ -3501,6 +3677,7 @@ class SqlZenStore(BaseZenStore):
 
     # ------------------------- Service Accounts -------------------------
 
+    @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
     def create_service_account(
         self, service_account: ServiceAccountRequest
     ) -> ServiceAccountResponse:
@@ -4896,23 +5073,28 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Save input artifact IDs into the database.
-            for input_name, artifact_id in step_run.inputs.items():
+            for input_name, artifact_version_id in step_run.inputs.items():
                 self._set_run_step_input_artifact(
                     run_step_id=step_schema.id,
-                    artifact_id=artifact_id,
+                    artifact_version_id=artifact_version_id,
                     name=input_name,
                     input_type=StepRunInputArtifactType.DEFAULT,
                     session=session,
                 )
 
             # Save output artifact IDs into the database.
-            for output_name, artifact_id in step_run.outputs.items():
+            for output_name, artifact_version_id in step_run.outputs.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_schema.id,
-                    artifact_id=artifact_id,
+                    artifact_version_id=artifact_version_id,
                     name=output_name,
                     output_type=StepRunOutputArtifactType.DEFAULT,
                     session=session,
+                )
+
+            if step_run.status != ExecutionStatus.RUNNING:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
 
             session.commit()
@@ -5005,10 +5187,10 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_step_run)
 
             # Update the output artifacts.
-            for name, artifact_id in step_run_update.outputs.items():
+            for name, artifact_version_id in step_run_update.outputs.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_run_id,
-                    artifact_id=artifact_id,
+                    artifact_version_id=artifact_version_id,
                     name=name,
                     output_type=StepRunOutputArtifactType.DEFAULT,
                     session=session,
@@ -5017,11 +5199,11 @@ class SqlZenStore(BaseZenStore):
             # Update saved artifacts
             for (
                 artifact_name,
-                artifact_id,
-            ) in step_run_update.saved_artifacts.items():
+                artifact_version_id,
+            ) in step_run_update.saved_artifact_versions.items():
                 self._set_run_step_output_artifact(
                     step_run_id=step_run_id,
-                    artifact_id=artifact_id,
+                    artifact_version_id=artifact_version_id,
                     name=artifact_name,
                     output_type=StepRunOutputArtifactType.MANUAL,
                     session=session,
@@ -5030,18 +5212,20 @@ class SqlZenStore(BaseZenStore):
             # Update loaded artifacts.
             for (
                 artifact_name,
-                artifact_id,
-            ) in step_run_update.loaded_artifacts.items():
+                artifact_version_id,
+            ) in step_run_update.loaded_artifact_versions.items():
                 self._set_run_step_input_artifact(
                     run_step_id=step_run_id,
-                    artifact_id=artifact_id,
+                    artifact_version_id=artifact_version_id,
                     name=artifact_name,
                     input_type=StepRunInputArtifactType.MANUAL,
                     session=session,
                 )
 
-            # Input artifacts and parent steps cannot be updated after the
-            # step has been created.
+            self._update_pipeline_run_status(
+                pipeline_run_id=existing_step_run.pipeline_run_id,
+                session=session,
+            )
 
             session.commit()
             session.refresh(existing_step_run)
@@ -5101,7 +5285,7 @@ class SqlZenStore(BaseZenStore):
     @staticmethod
     def _set_run_step_input_artifact(
         run_step_id: UUID,
-        artifact_id: UUID,
+        artifact_version_id: UUID,
         name: str,
         input_type: StepRunInputArtifactType,
         session: Session,
@@ -5110,7 +5294,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_step_id: The ID of the step run.
-            artifact_id: The ID of the artifact.
+            artifact_version_id: The ID of the artifact.
             name: The name of the input in the step run.
             input_type: In which way the artifact was loaded in the step.
             session: The database session to use.
@@ -5130,19 +5314,23 @@ class SqlZenStore(BaseZenStore):
 
         # Check if the artifact exists.
         artifact = session.exec(
-            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            select(ArtifactVersionSchema).where(
+                ArtifactVersionSchema.id == artifact_version_id
+            )
         ).first()
         if artifact is None:
             raise KeyError(
                 f"Unable to set input artifact: No artifact with ID "
-                f"'{artifact_id}' found."
+                f"'{artifact_version_id}' found."
             )
 
         # Check if the input is already set.
         assignment = session.exec(
             select(StepRunInputArtifactSchema)
             .where(StepRunInputArtifactSchema.step_id == run_step_id)
-            .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
+            .where(
+                StepRunInputArtifactSchema.artifact_id == artifact_version_id
+            )
             .where(StepRunInputArtifactSchema.name == name)
         ).first()
         if assignment is not None:
@@ -5151,7 +5339,7 @@ class SqlZenStore(BaseZenStore):
         # Save the input assignment in the database.
         assignment = StepRunInputArtifactSchema(
             step_id=run_step_id,
-            artifact_id=artifact_id,
+            artifact_id=artifact_version_id,
             name=name,
             type=input_type,
         )
@@ -5160,7 +5348,7 @@ class SqlZenStore(BaseZenStore):
     @staticmethod
     def _set_run_step_output_artifact(
         step_run_id: UUID,
-        artifact_id: UUID,
+        artifact_version_id: UUID,
         name: str,
         output_type: StepRunOutputArtifactType,
         session: Session,
@@ -5169,7 +5357,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             step_run_id: The ID of the step run.
-            artifact_id: The ID of the artifact.
+            artifact_version_id: The ID of the artifact version.
             name: The name of the output in the step run.
             output_type: In which way the artifact was saved by the step.
             session: The database session to use.
@@ -5189,19 +5377,23 @@ class SqlZenStore(BaseZenStore):
 
         # Check if the artifact exists.
         artifact = session.exec(
-            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            select(ArtifactVersionSchema).where(
+                ArtifactVersionSchema.id == artifact_version_id
+            )
         ).first()
         if artifact is None:
             raise KeyError(
                 f"Unable to set output artifact: No artifact with ID "
-                f"'{artifact_id}' found."
+                f"'{artifact_version_id}' found."
             )
 
         # Check if the output is already set.
         assignment = session.exec(
             select(StepRunOutputArtifactSchema)
             .where(StepRunOutputArtifactSchema.step_id == step_run_id)
-            .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
+            .where(
+                StepRunOutputArtifactSchema.artifact_id == artifact_version_id
+            )
         ).first()
         if assignment is not None:
             return
@@ -5209,11 +5401,53 @@ class SqlZenStore(BaseZenStore):
         # Save the output assignment in the database.
         assignment = StepRunOutputArtifactSchema(
             step_id=step_run_id,
-            artifact_id=artifact_id,
+            artifact_id=artifact_version_id,
             name=name,
             type=output_type,
         )
         session.add(assignment)
+
+    def _update_pipeline_run_status(
+        self,
+        pipeline_run_id: UUID,
+        session: Session,
+    ) -> None:
+        """Updates the status of a pipeline run.
+
+        Args:
+            pipeline_run_id: The ID of the pipeline run to update.
+            session: The database session to use.
+        """
+        from zenml.orchestrators.publish_utils import get_pipeline_run_status
+
+        pipeline_run = session.exec(
+            select(PipelineRunSchema).where(
+                PipelineRunSchema.id == pipeline_run_id
+            )
+        ).one()
+        step_runs = session.exec(
+            select(StepRunSchema).where(
+                StepRunSchema.pipeline_run_id == pipeline_run_id
+            )
+        ).all()
+
+        # Deployment always exists for pipeline runs of newer versions
+        assert pipeline_run.deployment
+        num_steps = len(pipeline_run.deployment.to_model().step_configurations)
+        new_status = get_pipeline_run_status(
+            step_statuses=[step_run.status for step_run in step_runs],
+            num_steps=num_steps,
+        )
+
+        if new_status != pipeline_run.status:
+            pipeline_run.status = new_status
+            if new_status in {
+                ExecutionStatus.COMPLETED,
+                ExecutionStatus.FAILED,
+            }:
+                pipeline_run.end_time = datetime.utcnow()
+
+            session.add(pipeline_run)
 
     # ----------------------------- Users -----------------------------
 
@@ -6079,11 +6313,10 @@ class SqlZenStore(BaseZenStore):
         session.add(new_reference)
         return new_reference.id
 
-    ########
-    # Model
-    ########
+    # ----------------------------- Models -----------------------------
 
-    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+    @track_decorator(AnalyticsEvent.CREATED_MODEL)
+    def create_model(self, model: ModelRequest) -> ModelResponse:
         """Creates a new model.
 
         Args:
@@ -6115,15 +6348,19 @@ class SqlZenStore(BaseZenStore):
                     resource_type=TaggableResourceTypes.MODEL,
                 )
             session.commit()
-            return ModelSchema.to_model(model_schema)
+            return model_schema.to_model(hydrate=True)
 
     def get_model(
-        self, model_name_or_id: Union[str, UUID]
-    ) -> ModelResponseModel:
+        self,
+        model_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> ModelResponse:
         """Get an existing model.
 
         Args:
             model_name_or_id: name or id of the model to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Raises:
             KeyError: specified ID or name not found.
@@ -6140,17 +6377,18 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get model with ID `{model_name_or_id}`: "
                     f"No model with this ID found."
                 )
-            return ModelSchema.to_model(model)
+            return model.to_model(hydrate=hydrate)
 
     def list_models(
-        self,
-        model_filter_model: ModelFilterModel,
-    ) -> Page[ModelResponseModel]:
+        self, model_filter_model: ModelFilter, hydrate: bool = False
+    ) -> Page[ModelResponse]:
         """Get all models by filter.
 
         Args:
             model_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all models.
@@ -6162,6 +6400,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ModelSchema,
                 filter_model=model_filter_model,
+                hydrate=hydrate,
             )
 
     def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
@@ -6188,8 +6427,8 @@ class SqlZenStore(BaseZenStore):
     def update_model(
         self,
         model_id: UUID,
-        model_update: ModelUpdateModel,
-    ) -> ModelResponseModel:
+        model_update: ModelUpdate,
+    ) -> ModelResponse:
         """Updates an existing model.
 
         Args:
@@ -6232,15 +6471,13 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_model)
-            return existing_model.to_model()
+            return existing_model.to_model(hydrate=True)
 
-    #################
-    # Model Versions
-    #################
+    # ----------------------------- Model Versions -----------------------------
 
     def create_model_version(
-        self, model_version: ModelVersionRequestModel
-    ) -> ModelVersionResponseModel:
+        self, model_version: ModelVersionRequest
+    ) -> ModelVersionResponse:
         """Creates a new model version.
 
         Args:
@@ -6289,16 +6526,18 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_schema)
 
             session.commit()
-            return model_version_schema.to_model()
+            return model_version_schema.to_model(hydrate=True)
 
     def get_model_version(
-        self, model_version_id: UUID
-    ) -> ModelVersionResponseModel:
+        self, model_version_id: UUID, hydrate: bool = True
+    ) -> ModelVersionResponse:
         """Get an existing model version.
 
         Args:
             model_version_id: name, id, stage or number of the model version to
                 be retrieved. If skipped - latest is retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model version of interest.
@@ -6319,19 +6558,23 @@ class SqlZenStore(BaseZenStore):
                     f"`{model_version_id}`: No model version with this "
                     f"ID found."
                 )
-            return model_version.to_model()
+            return model_version.to_model(hydrate=hydrate)
 
     def list_model_versions(
         self,
-        model_version_filter_model: ModelVersionFilterModel,
+        model_version_filter_model: ModelVersionFilter,
         model_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[ModelVersionResponseModel]:
+        hydrate: bool = False,
+    ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model versions.
-            model_version_filter_model: All filter parameters including pagination
-                params.
+            model_name_or_id: name or id of the model containing the model
+                versions.
+            model_version_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model versions.
@@ -6347,6 +6590,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ModelVersionSchema,
                 filter_model=model_version_filter_model,
+                hydrate=hydrate,
             )
 
     def delete_model_version(
@@ -6368,8 +6612,9 @@ class SqlZenStore(BaseZenStore):
             model_version = session.exec(query).first()
             if model_version is None:
                 raise KeyError(
-                    f"Unable to delete model version with id `{model_version_id}`: "
-                    f"No model version with this id found."
+                    "Unable to delete model version with id "
+                    f"`{model_version_id}`: "
+                    "No model version with this id found."
                 )
             session.delete(model_version)
             session.commit()
@@ -6377,8 +6622,8 @@ class SqlZenStore(BaseZenStore):
     def update_model_version(
         self,
         model_version_id: UUID,
-        model_version_update_model: ModelVersionUpdateModel,
-    ) -> ModelVersionResponseModel:
+        model_version_update_model: ModelVersionUpdate,
+    ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
         Args:
@@ -6390,7 +6635,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: If the model version not found
-            RuntimeError: If there is a model version with target stage, but `force` flag is off
+            RuntimeError: If there is a model version with target stage,
+                but `force` flag is off
         """
         with Session(self.engine) as session:
             existing_model_version = session.exec(
@@ -6446,19 +6692,18 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_model_version)
 
-            return existing_model_version.to_model()
+            return existing_model_version.to_model(hydrate=True)
 
-    ###########################
-    # Model Versions Artifacts
-    ###########################
+    # ------------------------ Model Versions Artifacts ------------------------
 
     def create_model_version_artifact_link(
-        self, model_version_artifact_link: ModelVersionArtifactRequestModel
-    ) -> ModelVersionArtifactResponseModel:
+        self, model_version_artifact_link: ModelVersionArtifactRequest
+    ) -> ModelVersionArtifactResponse:
         """Creates a new model version link.
 
         Args:
-            model_version_artifact_link: the Model Version to Artifact Link to be created.
+            model_version_artifact_link: the Model Version to Artifact Link
+                to be created.
 
         Returns:
             The newly created model version to artifact link.
@@ -6472,8 +6717,8 @@ class SqlZenStore(BaseZenStore):
                     == model_version_artifact_link.model_version
                 )
                 .where(
-                    ModelVersionArtifactSchema.artifact_id
-                    == model_version_artifact_link.artifact,
+                    ModelVersionArtifactSchema.artifact_version_id
+                    == model_version_artifact_link.artifact_version,
                 )
             ).first()
             if existing_model_version_artifact_link is not None:
@@ -6486,17 +6731,20 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_artifact_link_schema)
             session.commit()
-            return model_version_artifact_link_schema.to_model()
+            return model_version_artifact_link_schema.to_model(hydrate=True)
 
     def list_model_version_artifact_links(
         self,
-        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-    ) -> Page[ModelVersionArtifactResponseModel]:
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionArtifactResponse]:
         """Get all model version to artifact links by filter.
 
         Args:
             model_version_artifact_link_filter_model: All filter parameters
                 including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to artifact links.
@@ -6507,7 +6755,8 @@ class SqlZenStore(BaseZenStore):
             # Handle artifact name
             if model_version_artifact_link_filter_model.artifact_name:
                 query = query.where(
-                    ModelVersionArtifactSchema.artifact_id == ArtifactSchema.id
+                    ModelVersionArtifactSchema.artifact_version_id
+                    == ArtifactSchema.id
                 ).where(
                     ArtifactSchema.name
                     == model_version_artifact_link_filter_model.artifact_name
@@ -6534,6 +6783,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ModelVersionArtifactSchema,
                 filter_model=model_version_artifact_link_filter_model,
+                hydrate=hydrate,
             )
 
     def delete_model_version_artifact_link(
@@ -6545,7 +6795,8 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             model_version_id: ID of the model version containing the link.
-            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
+            model_version_artifact_link_name_or_id: name or ID of the model
+                version to artifact link to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
@@ -6562,11 +6813,18 @@ class SqlZenStore(BaseZenStore):
                     == model_version_artifact_link_name_or_id
                 )
             except ValueError:
-                query = query.where(
-                    ArtifactSchema.name
-                    == model_version_artifact_link_name_or_id
-                ).where(
-                    ModelVersionArtifactSchema.artifact_id == ArtifactSchema.id
+                query = (
+                    query.where(
+                        ModelVersionArtifactSchema.artifact_version_id
+                        == ArtifactVersionSchema.id
+                    )
+                    .where(
+                        ArtifactVersionSchema.artifact_id == ArtifactSchema.id
+                    )
+                    .where(
+                        ArtifactSchema.name
+                        == model_version_artifact_link_name_or_id
+                    )
                 )
 
             model_version_artifact_link = session.exec(query).first()
@@ -6580,22 +6838,23 @@ class SqlZenStore(BaseZenStore):
             session.delete(model_version_artifact_link)
             session.commit()
 
-    ###############################
-    # Model Versions Pipeline Runs
-    ###############################
+    # ---------------------- Model Versions Pipeline Runs ----------------------
 
     def create_model_version_pipeline_run_link(
         self,
-        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-    ) -> ModelVersionPipelineRunResponseModel:
+        model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
+    ) -> ModelVersionPipelineRunResponse:
         """Creates a new model version to pipeline run link.
 
         Args:
-            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
+            model_version_pipeline_run_link: the Model Version to Pipeline Run
+                Link to be created.
 
         Returns:
-            - If Model Version to Pipeline Run Link already exists - returns the existing link.
-            - Otherwise, returns the newly created model version to pipeline run link.
+            - If Model Version to Pipeline Run Link already exists - returns
+                the existing link.
+            - Otherwise, returns the newly created model version to pipeline
+                run link.
         """
         with Session(self.engine) as session:
             # If the link already exists, return it
@@ -6621,17 +6880,22 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_pipeline_run_link_schema)
             session.commit()
-            return model_version_pipeline_run_link_schema.to_model()
+            return model_version_pipeline_run_link_schema.to_model(
+                hydrate=True
+            )
 
     def list_model_version_pipeline_run_links(
         self,
-        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
 
         Args:
             model_version_pipeline_run_link_filter_model: All filter parameters
                 including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to pipeline run links.
@@ -6652,6 +6916,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=ModelVersionPipelineRunSchema,
                 filter_model=model_version_pipeline_run_link_filter_model,
+                hydrate=hydrate,
             )
 
     def delete_model_version_pipeline_run_link(
@@ -6662,8 +6927,10 @@ class SqlZenStore(BaseZenStore):
         """Deletes a model version to pipeline run link.
 
         Args:
-            model_version_id: name or ID of the model version containing the link.
-            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+            model_version_id: name or ID of the model version containing the
+                link.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model
+                version to pipeline run link to be deleted.
 
         Raises:
             KeyError: specified ID not found.
@@ -6759,6 +7026,7 @@ class SqlZenStore(BaseZenStore):
             except KeyError:
                 pass
 
+    @track_decorator(AnalyticsEvent.CREATED_TAG)
     def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
         """Creates a new tag.
 

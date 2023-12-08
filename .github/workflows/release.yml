@@ -52,7 +52,7 @@ jobs:
       run: bash scripts/test-migrations.sh
 
   publish-python-package:
-    needs: [setup-and-test, mlstacks-compatibility-check]
+    needs: [setup-and-test, mlstacks-compatibility-check, db-migration-testing]
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
 

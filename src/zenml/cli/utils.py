@@ -484,7 +484,7 @@ def print_pydantic_model(
 
 
 def format_integration_list(
-    integrations: List[Tuple[str, Type["Integration"]]]
+    integrations: List[Tuple[str, Type["Integration"]]],
 ) -> List[Dict[str, str]]:
     """Formats a list of integrations into a List of Dicts.
 
@@ -2469,7 +2469,7 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
 
 @contextlib.contextmanager
 def temporary_active_stack(
-    stack_name_or_id: Union["UUID", str, None] = None
+    stack_name_or_id: Union["UUID", str, None] = None,
 ) -> Iterator["Stack"]:
     """Contextmanager to temporarily activate a stack.
 
