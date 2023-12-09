@@ -60,12 +60,12 @@ runs:
     - uses: tespkg/actions-cache@v1
       id: cache-env
       env:
-        AWS_ACCESS_KEY_ID: admin
-        AWS_SECRET_ACCESS_KEY: zenmlisawesome
+        AWS_ACCESS_KEY_ID: "tQ6l02JszQmUPXZ4A0wR"
+        AWS_SECRET_ACCESS_KEY: "Akozm2t44hBhDg6ojFXN3Qsjx2bYhLdwhsqn7dE4"
       with:
         endpoint: 51.138.9.100 # optional
         insecure: true # optional, use http instead of https. default false
-        bucket: caching # required
+        bucket: "caching" # required
         use-fallback: false # optional, use github actions cache fallback, default false
         key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
         path: |
