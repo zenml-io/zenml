@@ -60,7 +60,7 @@ runs:
     - uses: tespkg/actions-cache@v1
       id: cache-env
       with:
-        endpoint: 51.138.9.100:9000 # optional, default s3.amazonaws.com
+        endpoint: "http://51.138.9.100:9000" # optional, default s3.amazonaws.com
         insecure: true # optional, use http instead of https. default false
         accessKey: "admin" # required
         secretKey: "zenmlisawesome" # required
