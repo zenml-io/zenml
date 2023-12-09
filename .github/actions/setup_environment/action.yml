@@ -57,8 +57,8 @@ runs:
       id: date
       run: echo "::set-output name=week::$(date +'calendar-week-%W')"
 
-    - uses: safoinme/restore-virtualenv@0.0.1
-      id: cache-virtualenv
+    - uses: safoinme/restore-virtualenv@0.0.3
+      id: cache-env
       with:
         requirement_files: 'pyproject.toml' 
         # The virtualenv cache is invalidated when:
@@ -89,14 +89,14 @@ runs:
         brew install hashicorp/tap/terraform
 
     - name: Install ZenML and dependencies
-      if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+      if: steps.cache-env.outputs.cache-hit != 'true'
       shell: bash
       run: |
         scripts/install-zenml-dev.sh --integrations ${{inputs.install_integrations}}
 
       # if using a cached virtualenv, just refresh the ZenML installation 
     - name: Refresh ZenML installation
-      if: steps.cache-virtualenv.outputs.cache-hit == 'true'
+      if: steps.cache-env.outputs.cache-hit == 'true'
       shell: bash
       run: |
         scripts/install-zenml-dev.sh
