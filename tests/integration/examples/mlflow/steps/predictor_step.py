@@ -25,7 +25,7 @@ def predictor(
     data: np.ndarray,
 ) -> Annotated[np.ndarray, "predictions"]:
     """Run a inference request against a prediction service."""
-    service.start(timeout=60)  # should be a NOP if already started
+    service.start(timeout=120)  # should be a NOP if already started
     prediction = service.predict(data)
     prediction = prediction.argmax(axis=-1)
     rich_print("Prediction: ", prediction)

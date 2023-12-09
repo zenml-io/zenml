@@ -344,6 +344,7 @@ def kserve_custom_model_deployer_step(
     Raises:
         ValueError: if the custom deployer parameters is not defined
         DoesNotExistException: if no active stack is found
+        RuntimeError: if the build is missing for the pipeline run
 
 
     Returns:
@@ -410,14 +411,21 @@ def kserve_custom_model_deployer_step(
     ]
 
     # verify if there is an active stack before starting the service
-    if not context.stack:
+    if not Client().active_stack:
         raise DoesNotExistException(
             "No active stack is available. "
             "Please make sure that you have registered and set a stack."
         )
 
-    image_name = step_context.step_run_info.get_image(
-        key=KSERVE_DOCKER_IMAGE_KEY
+    pipeline_run = step_context.pipeline_run
+    if not pipeline_run.build:
+        raise RuntimeError(
+            f"Missing build for run {pipeline_run.id}. This is probably "
+            "because the build was manually deleted."
+        )
+
+    image_name = pipeline_run.build.get_image(
+        component_key=KSERVE_DOCKER_IMAGE_KEY, step=step_name
     )
 
     # copy the model files to a new specific directory for the deployment
