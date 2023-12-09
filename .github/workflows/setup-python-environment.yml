@@ -188,3 +188,14 @@ jobs:
           zenml integration list
           pip list
           pip check || true
+
+      - uses: safoinme/restore-virtualenv/save@0.0.3
+        id: cache-env
+        with:
+          requirement_files: 'pyproject.toml' 
+          # The virtualenv cache is invalidated when:
+          # - manually triggered by means of a custom cache version token
+          # - on a weekly basis
+          # - any of the integration requirements change (a hash of the
+          # __init__.py files is included in the cache key)
+          custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}

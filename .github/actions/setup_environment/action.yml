@@ -57,7 +57,7 @@ runs:
       id: date
       run: echo "::set-output name=week::$(date +'calendar-week-%W')"
 
-    - uses: safoinme/restore-virtualenv@0.0.3
+    - uses: safoinme/restore-virtualenv/restore@0.0.3
       id: cache-env
       with:
         requirement_files: 'pyproject.toml' 
