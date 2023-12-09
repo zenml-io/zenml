@@ -165,7 +165,9 @@ class StepLauncher:
                 self._step.config.name,
             )
 
-            logs_context = step_logging.StepLogsStorageContext(logs_uri=logs_uri)  # type: ignore[assignment]
+            logs_context = step_logging.StepLogsStorageContext(
+                logs_uri=logs_uri
+            )  # type: ignore[assignment]
 
             logs_model = LogsRequest(
                 uri=logs_uri,
