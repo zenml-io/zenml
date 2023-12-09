@@ -1,4 +1,41 @@
 <!-- markdown-link-check-disable -->
+
+# 0.51.0
+
+This release comes with a breaking change to the model version model, a new use-case example for NLP, and a range of bug fixes and enhancements to the artifact management and pipeline run management features. 
+
+## Breaking Change
+* Artifact Version Table + Artifact Tagging by @fa9r in https://github.com/zenml-io/zenml/pull/2081
+* Converting model models to use the new hydration paradigm by @bcdurak in https://github.com/zenml-io/zenml/pull/2101
+
+## New Example
+* NLP Template Example is a new example that demonstrates how to use ZenML for NLP tasks. by @safoinme in https://github.com/zenml-io/zenml/pull/2070
+
+
+## What's Changed
+* Updated to one quickstart again by @htahir1 in https://github.com/zenml-io/zenml/pull/2092
+* Fix Nightly Build workflow files by @strickvl in https://github.com/zenml-io/zenml/pull/2090
+* Make PyPi release depend on DB migration tests passing by @strickvl in https://github.com/zenml-io/zenml/pull/2088
+* Bump `mlstacks` version in ZenML extra by @strickvl in https://github.com/zenml-io/zenml/pull/2091
+* Fix SQL schema imports by @stefannica in https://github.com/zenml-io/zenml/pull/2098
+* Fix migration for unowned stacks/components by @schustmi in https://github.com/zenml-io/zenml/pull/2099
+* Polymorthic `run_metadata` by @avishniakov in https://github.com/zenml-io/zenml/pull/2064
+* Update ruff formatter (for bugfixes) by @strickvl in https://github.com/zenml-io/zenml/pull/2106
+* Lock in airflow version as higher versions will fail by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2108
+* Swap contents for HTMLString and MarkdownString in docs by @christianversloot in https://github.com/zenml-io/zenml/pull/2110
+* Fix secrets list with cloud secrets stores and RBAC by @stefannica in https://github.com/zenml-io/zenml/pull/2107
+* More track events by @htahir1 in https://github.com/zenml-io/zenml/pull/2112
+* Fix pipeline run cascade deletion by @fa9r in https://github.com/zenml-io/zenml/pull/2104
+* Take integrations tests out of unit tests folder by @safoinme in https://github.com/zenml-io/zenml/pull/2100
+* Allow extra values when dehydrating response models by @schustmi in https://github.com/zenml-io/zenml/pull/2114
+* Request optimizations by @schustmi in https://github.com/zenml-io/zenml/pull/2103
+* Pagination in model versions by @avishniakov in https://github.com/zenml-io/zenml/pull/2115
+* Add `StepContext.inputs` property by @fa9r in https://github.com/zenml-io/zenml/pull/2105
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.50.0...0.51.0
+
+
 # 0.50.0
 
 In this release, we introduce key updates aimed at improving user experience and security.
