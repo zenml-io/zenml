@@ -17,9 +17,13 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 
 ./zen-test environment provision $TEST_ENVIRONMENT
 
-# Define the test source directory based on the test type
+# Define the test source directory and test options based on the test type
+TEST_OPTIONS=""
 if [ "$TEST_TYPE" == "unit" ]; then
     TEST_SRC="tests/unit"
+    # Rename .test_durations to .unit_test_durations to use it only for unit tests
+    mv unit_test_durations .test_durations
+    TEST_OPTIONS="--durations 20 --splits 6 --group"
 elif [ "$TEST_TYPE" == "integration" ]; then
     TEST_SRC="tests/integration"
 else
@@ -27,14 +31,33 @@ else
     exit 1
 fi
 
-# Run the tests for all groups in parallel
-for GROUP in {1..6}; do
+# Run the tests for all groups in parallel and save PIDs
+PIDS=()
+LOG_FILES=()
+GROUPS=6
+for GROUP in $(seq 1 $GROUPS); do
     COVERAGE_FILE=".coverage.$TEST_TYPE.$GROUP"
-    coverage run -m pytest $TEST_SRC --durations 20 --splits 6 --group $GROUP &
+    LOG_FILE="test_output_$GROUP.log"
+    LOG_FILES+=("$LOG_FILE")
+    if [ "$TEST_TYPE" == "unit" ]; then
+        coverage run -m pytest $TEST_SRC $TEST_OPTIONS $GROUP > "$LOG_FILE" 2>&1 &
+    else
+        coverage run -m pytest $TEST_SRC > "$LOG_FILE" 2>&1 &
+    fi
+    PIDS+=($!)
 done
 
-# Wait for all background processes to finish
-wait
+# Wait for all background processes to finish and collect exit statuses
+EXIT_STATUS=0
+for i in "${!PIDS[@]}"; do
+    PID=${PIDS[$i]}
+    LOG_FILE=${LOG_FILES[$i]}
+    if ! wait $PID; then
+        EXIT_STATUS=$?
+        echo "Test group $((i + 1)) failed. Output:"
+        cat "$LOG_FILE"
+    fi
+done
 
 ./zen-test environment cleanup $TEST_ENVIRONMENT
 
@@ -43,5 +66,17 @@ coverage combine $(ls .coverage.*)
 coverage report --show-missing
 coverage xml
 
-# Clean up individual coverage files
+# Clean up individual coverage files and log files
 rm -f .coverage.*
+rm -f "${LOG_FILES[@]}"
+
+# Rename .unit_test_durations back to .test_durations if it was used
+if [ "$TEST_TYPE" == "unit" ]; then
+    mv  .test_durations unit_test_durations
+fi
+
+# Exit with a non-zero status if any tests failed
+if [ $EXIT_STATUS -ne 0 ]; then
+    echo "Some tests failed."
+    exit $EXIT_STATUS
+fi
