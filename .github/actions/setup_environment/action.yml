@@ -58,37 +58,37 @@ runs:
       run: echo "::set-output name=week::$(date +'calendar-week-%W')"
 
 
-    - uses: whywaita/actions-cache-s3@v2
-      id: cache-env
-      with:
-        key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-        path: |
-          ~/.cache/pip
-          pyproject.toml
-        restore-keys: |
-          ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}
-        aws-s3-bucket: caching
-        aws-access-key-id: tQ6l02JszQmUPXZ4A0wR
-        aws-secret-access-key: Akozm2t44hBhDg6ojFXN3Qsjx2bYhLdwhsqn7dE4
-        aws-endpoint: "http://10.1.112.95:80"         # Optional
-        aws-s3-bucket-endpoint: true              # Optional
-
-    # - uses: tespkg/actions-cache@v1
+    # - uses: whywaita/actions-cache-s3@v2
     #   id: cache-env
-    #   env:
-    #     AWS_ACCESS_KEY_ID: "tQ6l02JszQmUPXZ4A0wR"
-    #     AWS_SECRET_ACCESS_KEY: "Akozm2t44hBhDg6ojFXN3Qsjx2bYhLdwhsqn7dE4"
     #   with:
-    #     endpoint: 51.138.9.100 # optional
-    #     insecure: true # optional, use http instead of https. default false
-    #     bucket: "caching" # required
-    #     use-fallback: false # optional, use github actions cache fallback, default false
     #     key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
     #     path: |
     #       ~/.cache/pip
     #       pyproject.toml
     #     restore-keys: |
     #       ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}
+    #     aws-s3-bucket: caching
+    #     aws-access-key-id: tQ6l02JszQmUPXZ4A0wR
+    #     aws-secret-access-key: Akozm2t44hBhDg6ojFXN3Qsjx2bYhLdwhsqn7dE4
+    #     aws-endpoint: "http://10.1.112.95:80"         # Optional
+    #     aws-s3-bucket-endpoint: true              # Optional
+
+    - uses: tespkg/actions-cache@v1
+      id: cache-env
+      env:
+        AWS_ACCESS_KEY_ID: "tQ6l02JszQmUPXZ4A0wR"
+        AWS_SECRET_ACCESS_KEY: "Akozm2t44hBhDg6ojFXN3Qsjx2bYhLdwhsqn7dE4"
+      with:
+        endpoint: "http://10.1.112.95:80"  # optional
+        insecure: true # optional, use http instead of https. default false
+        bucket: "caching" # required
+        use-fallback: false # optional, use github actions cache fallback, default false
+        key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        path: |
+          ~/.cache/pip
+          pyproject.toml
+        restore-keys: |
+          ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}
 
     #- uses: safoinme/restore-virtualenv@0.0.3
     #  id: cache-env
