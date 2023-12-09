@@ -70,8 +70,8 @@ runs:
         aws-s3-bucket: caching
         aws-access-key-id: tQ6l02JszQmUPXZ4A0wR
         aws-secret-access-key: Akozm2t44hBhDg6ojFXN3Qsjx2bYhLdwhsqn7dE4
-        aws-endpoint: "http://10.1.112.95:80"         # Optional
-        aws-region: us-east-1                      # Optional
+        aws-endpoint: 10.1.112.95:80        # Optional
+        #aws-region: us-east-1                      # Optional
         aws-s3-bucket-endpoint: true              # Optional
 
     # - uses: tespkg/actions-cache@v1
