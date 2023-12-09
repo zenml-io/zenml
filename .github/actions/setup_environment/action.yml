@@ -68,12 +68,12 @@ runs:
         use-fallback: true # optional, use github actions cache fallback, default true
 
         # actions/cache compatible properties: https://github.com/actions/cache
-        key: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        key: ${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
         path: |
-          .cache
-          .venv
+          ~/.cache/pip
           pyproject.toml
-        restore-keys: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}
+        restore-keys: |
+          ${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}
 
     #- uses: safoinme/restore-virtualenv@0.0.3
     #  id: cache-env
