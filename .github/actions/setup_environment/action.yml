@@ -57,16 +57,34 @@ runs:
       id: date
       run: echo "::set-output name=week::$(date +'calendar-week-%W')"
 
-    - uses: safoinme/restore-virtualenv@0.0.3
+    - uses: tespkg/actions-cache@v1
       id: cache-env
       with:
-        requirement_files: 'pyproject.toml' 
-        # The virtualenv cache is invalidated when:
-        # - manually triggered by means of a custom cache version token
+        endpoint: 51.138.9.100:9000 # optional, default s3.amazonaws.com
+        insecure: true # optional, use http instead of https. default false
+        accessKey: "admin" # required
+        secretKey: "zenmlisawesome" # required
+        bucket: caching # required
+        use-fallback: true # optional, use github actions cache fallback, default true
+
+        # actions/cache compatible properties: https://github.com/actions/cache
+        key: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        path: |
+          .cache
+          .venv
+          pyproject.toml
+        restore-keys: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}
+
+    #- uses: safoinme/restore-virtualenv@0.0.3
+    #  id: cache-env
+    #  with:
+    #    requirement_files: 'pyproject.toml' 
+    #    # The virtualenv cache is invalidated when:
+    #    # - manually triggered by means of a custom cache version token
         # - on a weekly basis
         # - any of the integration requirements change (a hash of the
         # __init__.py files is included in the cache key)
-        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+    #    custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
 
     # Disabled for now because it doesn't work well with multiple parallel jobs
     # - uses: syphar/restore-pip-download-cache@v1
