@@ -51,6 +51,7 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      install_integrations: no
     secrets: inherit
 
   # windows-setup-and-test-python:
