@@ -132,9 +132,9 @@ jobs:
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3
 
-      #- name: Lint check
-      #  run: |
-      #    bash scripts/lint.sh
+      - name: Lint check
+        run: |
+          bash scripts/lint.sh
 
       - name: Spelling checker
         uses: crate-ci/typos@master
@@ -170,9 +170,9 @@ jobs:
         run: |
           bash scripts/check-alembic-branches.sh
 
-      #- name: Run unit tests
-      #  run: |
-      #    bash scripts/test-coverage-xml.sh unit
+      - name: Run unit tests
+        run: |
+          bash scripts/test-coverage-xml.sh unit
 
       # - name: Upload coverage
       #   # only do it for python 3.8, we don't need to do it for every version
