@@ -110,7 +110,7 @@ runs:
       if: steps.cache-env.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        scripts/install-zenml-dev.sh --integrations ${{inputs.install_integrations}}
+        scripts/install-zenml-dev.sh --integrations no
 
       # if using a cached virtualenv, just refresh the ZenML installation 
     - name: Refresh ZenML installation
