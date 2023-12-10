@@ -14,17 +14,13 @@
 
 import pathlib
 import sys
-from collections import defaultdict
 from contextlib import ExitStack as does_not_raise
 from uuid import uuid4
 
 import pytest
 
-from tests.unit.pipelines.test_build_utils import (
-    StubLocalRepositoryContext,
-)
 from zenml.config.source import CodeRepositorySource, Source, SourceType
-from zenml.utils import code_repository_utils, source_utils
+from zenml.utils import source_utils
 
 CURRENT_MODULE_PARENT_DIR = str(pathlib.Path(__file__).resolve().parent)
 
@@ -101,6 +97,7 @@ def test_user_source_loading_prepends_source_root(mocker, tmp_path):
     )
     assert source_utils.load(correct_code_repo_source) == 1
 
+
 def test_source_resolving_fails_for_non_toplevel_classes_and_functions(mocker):
     """Tests that source resolving fails for classes and functions that are
     not defined at the module top level."""
@@ -118,6 +115,7 @@ def test_source_resolving_fails_for_non_toplevel_classes_and_functions(mocker):
 
     with pytest.raises(RuntimeError):
         source_utils.resolve(inline_function)
+
 
 def test_prepend_python_path():
     """Tests that the context manager prepends an element to the pythonpath

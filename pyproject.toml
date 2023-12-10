@@ -328,7 +328,9 @@ exclude = [
     ".venv",
     "_build",
     "buck-out",
-    "build]",
+    "build",
+    "integration_test_durations",
+    "unit_test_durations",
 ]
 
 
