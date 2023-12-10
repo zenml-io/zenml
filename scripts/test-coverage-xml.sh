@@ -20,8 +20,10 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 # Define the test source directory based on the test type
 if [ "$TEST_TYPE" == "unit" ]; then
     TEST_SRC="tests/unit"
+    mv .unit_test_durations .test_durations
 elif [ "$TEST_TYPE" == "integration" ]; then
     TEST_SRC="tests/integration"
+    mv .integeration_test_durations .test_durations
 else
     echo "Invalid test type: $TEST_TYPE"
     exit 1

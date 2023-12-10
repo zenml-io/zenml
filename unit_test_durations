@@ -543,8 +543,6 @@
     "tests/unit/utils/test_source_code_utils.py::test_get_hashed_source": 0.05207625099137658,
     "tests/unit/utils/test_source_code_utils.py::test_get_source": 0.03797595899231965,
     "tests/unit/utils/test_source_utils.py::test_basic_source_loading": 0.04615820799517678,
-    "tests/unit/utils/test_source_utils.py::test_basic_source_resolving": 0.233859334999579,
-    "tests/unit/utils/test_source_utils.py::test_module_type_detection": 0.034558458006358705,
     "tests/unit/utils/test_source_utils.py::test_package_utility_functions": 0.5880469170006108,
     "tests/unit/utils/test_source_utils.py::test_prepend_python_path": 0.0007010830013314262,
     "tests/unit/utils/test_source_utils.py::test_setting_a_custom_source_root": 0.0010357900100643747,

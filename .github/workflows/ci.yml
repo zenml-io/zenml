@@ -131,7 +131,7 @@ jobs:
       matrix:
         os: [ubuntu-dind-runners]
         # Disabled temporarily while CI is overhauled
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         # python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment:
           [
