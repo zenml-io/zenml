@@ -77,7 +77,7 @@ runs:
         AWS_ACCESS_KEY_ID: "tQ6l02JszQmUPXZ4A0wR"
         AWS_SECRET_ACCESS_KEY: "Akozm2t44hBhDg6ojFXN3Qsjx2bYhLdwhsqn7dE4"
       with:
-        endpoint: 10.1.112.95  # optional
+        endpoint: http://minio-service.minio.svc.cluster.local  # optional
         insecure: true # optional, use http instead of https. default false
         bucket: "caching" # required
         use-fallback: false # optional, use github actions cache fallback, default false
