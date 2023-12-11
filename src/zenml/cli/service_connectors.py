@@ -1445,6 +1445,7 @@ def update_service_connector(
                     # Use zero value to indicate that the expiration time
                     # should be removed in the update if not set here
                     expiration_seconds=expiration_seconds or 0,
+                    expires_skew_tolerance=expires_skew_tolerance,
                     verify=True,
                     update=False,
                 )
@@ -1536,6 +1537,7 @@ def update_service_connector(
                 # Use empty string to indicate that the expiration time
                 # should be removed in the update if not set here
                 expiration_seconds=expiration_seconds or 0,
+                expires_skew_tolerance=expires_skew_tolerance,
                 labels=parsed_labels,
                 verify=not no_verify,
                 update=True,
