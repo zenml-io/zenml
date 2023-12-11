@@ -23,7 +23,7 @@ if [ "$TEST_TYPE" == "unit" ]; then
     mv unit_test_durations .test_durations
 elif [ "$TEST_TYPE" == "integration" ]; then
     TEST_SRC="tests/integration"
-    mv integeration_test_durations .test_durations
+    mv integration_test_durations .test_durations
 else
     echo "Invalid test type: $TEST_TYPE"
     exit 1
