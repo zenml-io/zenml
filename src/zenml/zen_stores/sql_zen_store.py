@@ -6509,15 +6509,12 @@ class SqlZenStore(BaseZenStore):
                     resource_id=existing_model_version.id,
                     resource_type=TaggableResourceTypes.MODEL_VERSION,
                 )
-            model_version_update_model.add_tags = None
             if model_version_update_model.remove_tags:
                 self._detach_tags_from_resource(
                     tag_names=model_version_update_model.remove_tags,
                     resource_id=existing_model_version.id,
                     resource_type=TaggableResourceTypes.MODEL_VERSION,
                 )
-
-            model_version_update_model.remove_tags = None
 
             existing_model_version.update(
                 target_stage=stage,
