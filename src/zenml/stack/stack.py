@@ -33,6 +33,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
@@ -174,6 +175,15 @@ class Stack:
             components=stack_components,
         )
         _STACK_CACHE[key] = stack
+
+        client = Client()
+        if stack_model.id == client.active_stack_model.id:
+            if stack_model.updated > client.active_stack_model.updated:
+                if client._config:
+                    client._config.set_active_stack(stack_model)
+                else:
+                    GlobalConfiguration().set_active_stack(stack_model)
+
         return stack
 
     @classmethod

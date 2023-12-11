@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponse,
@@ -34,7 +34,7 @@ class LogsRequest(BaseRequest):
 
     uri: str = Field(
         title="The uri of the logs file",
-        max_length=STR_FIELD_MAX_LENGTH,
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
     artifact_store_id: Union[str, UUID] = Field(
         title="The artifact store ID to associate the logs with.",
@@ -54,7 +54,7 @@ class LogsResponseBody(BaseResponseBody):
 
     uri: str = Field(
         title="The uri of the logs file",
-        max_length=STR_FIELD_MAX_LENGTH,
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
 
