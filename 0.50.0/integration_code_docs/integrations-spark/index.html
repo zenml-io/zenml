@@ -4281,7 +4281,8 @@ SparkModelMaterializer            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">model_type</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">Estimator</span><span class="p">,</span> <span class="n">Model</span><span class="p">]</span>  <span class="c1"># type: ignore[type-arg]</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">Estimator</span><span class="p">,</span> <span class="n">Model</span><span class="p">],</span>  <span class="c1"># type: ignore[type-arg]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a spark model.</span>
 
@@ -4415,7 +4416,8 @@ SparkModelMaterializer            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/materializers/spark_model_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">Estimator</span><span class="p">,</span> <span class="n">Model</span><span class="p">]</span>  <span class="c1"># type: ignore[type-arg]</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">Estimator</span><span class="p">,</span> <span class="n">Model</span><span class="p">],</span>  <span class="c1"># type: ignore[type-arg]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a spark model.</span>
 

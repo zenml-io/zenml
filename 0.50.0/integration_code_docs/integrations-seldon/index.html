@@ -4074,7 +4074,7 @@ which is used as the main entry point for custom code execution.</p>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.utils.artifact_utils</span> <span class="kn">import</span> <span class="n">load_model_from_metadata</span>
+            <span class="kn">from</span> <span class="nn">zenml.artifacts.utils</span> <span class="kn">import</span> <span class="n">load_model_from_metadata</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">load_model_from_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_uri</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -4260,7 +4260,7 @@ prediction time by the materializer.</p>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.utils.artifact_utils</span> <span class="kn">import</span> <span class="n">load_model_from_metadata</span>
+        <span class="kn">from</span> <span class="nn">zenml.artifacts.utils</span> <span class="kn">import</span> <span class="n">load_model_from_metadata</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">load_model_from_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_uri</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -4306,7 +4306,7 @@ the user-defined predict function is called.</p>
   <tbody>
       <tr>
         <td><code>X</code></td>
-        <td><code>Union[numpy.ndarray, List[Any], str, bytes, Dict[str, Any]]</code></td>
+        <td><code>Union[numpy.ndarray[Any, Any], List[Any], str, bytes, Dict[str, Any]]</code></td>
         <td><p>The request to predict in a dictionary.</p></td>
         <td><em>required</em></td>
       </tr>
@@ -4334,7 +4334,7 @@ the user-defined predict function is called.</p>
   </thead>
   <tbody>
     <tr>
-      <td><code>Union[numpy.ndarray, List[Any], str, bytes, Dict[str, Any]]</code></td>
+      <td><code>Union[numpy.ndarray[Any, Any], List[Any], str, bytes, Dict[str, Any]]</code></td>
       <td><p>The prediction dictionary.</p></td>
     </tr>
   </tbody>

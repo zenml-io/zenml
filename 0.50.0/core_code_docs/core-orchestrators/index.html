@@ -4516,6 +4516,9 @@ runs are identical and can be cached.</p>
     <span class="n">hash_</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">bytes</span><span class="p">)</span>
     <span class="n">hash_</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
 
+    <span class="k">if</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">custom_cache_key</span><span class="p">:</span>
+        <span class="n">hash_</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">custom_cache_key</span><span class="p">)</span>
+
     <span class="c1"># Step source. This currently only uses the string representation of the</span>
     <span class="c1"># source (e.g. my_module.step_class) instead of the full source to keep</span>
     <span class="c1"># the caching behavior of previous versions and to not invalidate caching</span>
@@ -5507,7 +5510,7 @@ Each node is run in a separate thread to enable parallelism.</p>
 
 
 <h4 id="zenml.orchestrators.input_utils.resolve_step_inputs" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">resolve_step_inputs</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">model_version</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">resolve_step_inputs</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">run_id</span><span class="p">)</span></code>
 
 
 </h4>
@@ -5538,12 +5541,6 @@ Each node is run in a separate thread to enable parallelism.</p>
         <td><code>UUID</code></td>
         <td><p>The ID of the current pipeline run.</p></td>
         <td><em>required</em></td>
-      </tr>
-      <tr>
-        <td><code>model_version</code></td>
-        <td><code>Optional[ModelVersion]</code></td>
-        <td><p>The model version of the step (from step or pipeline).</p></td>
-        <td><code>None</code></td>
       </tr>
   </tbody>
 </table>
@@ -5584,14 +5581,12 @@ current step.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve_step_inputs</span><span class="p">(</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span>
     <span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
-    <span class="n">model_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ModelVersion&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ArtifactResponse&quot;</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">UUID</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves inputs for the current step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step: The step for which to resolve the inputs.</span>
 <span class="sd">        run_id: The ID of the current pipeline run.</span>
-<span class="sd">        model_version: The model version of the step (from step or pipeline).</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        InputResolutionError: If input resolving failed due to a missing</span>
@@ -5601,11 +5596,13 @@ current step.</p></td>
 <span class="sd">        The IDs of the input artifacts and the IDs of parent steps of the</span>
 <span class="sd">        current step.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">list_run_steps</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span>
+        <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">list_run_steps</span><span class="p">,</span> <span class="n">pipeline_run_id</span><span class="o">=</span><span class="n">run_id</span>
+    <span class="p">)</span>
+
     <span class="n">current_run_steps</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">run_step</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">run_step</span>
-        <span class="k">for</span> <span class="n">run_step</span> <span class="ow">in</span> <span class="n">Client</span><span class="p">()</span>
-        <span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">list_run_steps</span><span class="p">(</span><span class="n">StepRunFilter</span><span class="p">(</span><span class="n">pipeline_run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">))</span>
-        <span class="o">.</span><span class="n">items</span>
+        <span class="k">for</span> <span class="n">run_step</span> <span class="ow">in</span> <span class="n">pagination_utils</span><span class="o">.</span><span class="n">depaginate</span><span class="p">(</span><span class="n">list_run_steps</span><span class="p">)</span>
     <span class="p">}</span>
 
     <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ArtifactResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -5631,10 +5628,8 @@ current step.</p></td>
         <span class="n">name</span><span class="p">,</span>
         <span class="n">external_artifact</span><span class="p">,</span>
     <span class="p">)</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">external_input_artifacts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">artifact_id</span> <span class="o">=</span> <span class="n">external_artifact</span><span class="o">.</span><span class="n">get_artifact_id</span><span class="p">(</span>
-            <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span>
-        <span class="p">)</span>
-        <span class="n">input_artifacts</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">get_artifact</span><span class="p">(</span><span class="n">artifact_id</span><span class="o">=</span><span class="n">artifact_id</span><span class="p">)</span>
+        <span class="n">artifact_id</span> <span class="o">=</span> <span class="n">external_artifact</span><span class="o">.</span><span class="n">get_artifact_id</span><span class="p">()</span>
+        <span class="n">input_artifacts</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">get_artifact</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">)</span>
 
     <span class="n">parent_step_ids</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">current_run_steps</span><span class="p">[</span><span class="n">upstream_step</span><span class="p">]</span><span class="o">.</span><span class="n">id</span>
@@ -6040,9 +6035,6 @@ LocalOrchestratorConfig            (<a class="autorefs autorefs-internal" title=
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
-<span class="sd">        This designation is used to determine if the stack component can be</span>
-<span class="sd">        shared with other users or if it is only usable on the local host.</span>
-
 <span class="sd">        Returns:</span>
 <span class="sd">            True if this config is for a local component, False otherwise.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -6077,8 +6069,6 @@ LocalOrchestratorConfig            (<a class="autorefs autorefs-internal" title=
     <div class="doc doc-contents ">
 
       <p>Checks if this stack component is running locally.</p>
-<p>This designation is used to determine if the stack component can be
-shared with other users or if it is only usable on the local host.</p>
 
 <p><strong>Returns:</strong></p>
 <table>
@@ -7077,9 +7067,6 @@ LocalDockerOrchestratorConfig            (<a class="autorefs autorefs-internal" 
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
-<span class="sd">        This designation is used to determine if the stack component can be</span>
-<span class="sd">        shared with other users or if it is only usable on the local host.</span>
-
 <span class="sd">        Returns:</span>
 <span class="sd">            True if this config is for a local component, False otherwise.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -7114,8 +7101,6 @@ LocalDockerOrchestratorConfig            (<a class="autorefs autorefs-internal" 
     <div class="doc doc-contents ">
 
       <p>Checks if this stack component is running locally.</p>
-<p>This designation is used to determine if the stack component can be
-shared with other users or if it is only usable on the local host.</p>
 
 <p><strong>Returns:</strong></p>
 <table>
@@ -8605,9 +8590,7 @@ two ways depending on its configuration:
                 <span class="bp">self</span><span class="o">.</span><span class="n">_step</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="n">logs_context</span> <span class="o">=</span> <span class="n">StepLogsStorageContext</span><span class="p">(</span>
-                <span class="n">logs_uri</span><span class="o">=</span><span class="n">logs_uri</span>
-            <span class="p">)</span>  <span class="c1"># type: ignore[assignment]</span>
+            <span class="n">logs_context</span> <span class="o">=</span> <span class="n">StepLogsStorageContext</span><span class="p">(</span><span class="n">logs_uri</span><span class="o">=</span><span class="n">logs_uri</span><span class="p">)</span>  <span class="c1"># type: ignore[assignment]</span>
 
             <span class="n">logs_model</span> <span class="o">=</span> <span class="n">LogsRequest</span><span class="p">(</span>
                 <span class="n">uri</span><span class="o">=</span><span class="n">logs_uri</span><span class="p">,</span>
@@ -8773,7 +8756,6 @@ two ways depending on its configuration:
         <span class="n">input_artifacts</span><span class="p">,</span> <span class="n">parent_step_ids</span> <span class="o">=</span> <span class="n">input_utils</span><span class="o">.</span><span class="n">resolve_step_inputs</span><span class="p">(</span>
             <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_step</span><span class="p">,</span>
             <span class="n">run_id</span><span class="o">=</span><span class="n">step_run</span><span class="o">.</span><span class="n">pipeline_run_id</span><span class="p">,</span>
-            <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">input_artifact_ids</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">input_name</span><span class="p">:</span> <span class="n">artifact</span><span class="o">.</span><span class="n">id</span>
@@ -8837,7 +8819,7 @@ two ways depending on its configuration:
 <span class="sd">            model_version_from_context: The model version of the current step.</span>
 <span class="sd">            step_run: The step to run.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.model.artifact_config</span> <span class="kn">import</span> <span class="n">DataArtifactConfig</span>
+        <span class="kn">from</span> <span class="nn">zenml.artifacts.artifact_config</span> <span class="kn">import</span> <span class="n">ArtifactConfig</span>
         <span class="kn">from</span> <span class="nn">zenml.steps.base_step</span> <span class="kn">import</span> <span class="n">BaseStep</span>
         <span class="kn">from</span> <span class="nn">zenml.steps.utils</span> <span class="kn">import</span> <span class="n">parse_return_type_annotations</span>
 
@@ -8845,41 +8827,24 @@ two ways depending on its configuration:
         <span class="n">output_annotations</span> <span class="o">=</span> <span class="n">parse_return_type_annotations</span><span class="p">(</span>
             <span class="n">step_instance</span><span class="o">.</span><span class="n">entrypoint</span>
         <span class="p">)</span>
-        <span class="k">for</span> <span class="n">output_name_</span><span class="p">,</span> <span class="n">output_</span> <span class="ow">in</span> <span class="n">step_run</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">output_name_</span><span class="p">,</span> <span class="n">output_id</span> <span class="ow">in</span> <span class="n">step_run</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">output_name_</span> <span class="ow">in</span> <span class="n">output_annotations</span><span class="p">:</span>
                 <span class="n">annotation</span> <span class="o">=</span> <span class="n">output_annotations</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">output_name_</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">annotation</span> <span class="ow">and</span> <span class="n">annotation</span><span class="o">.</span><span class="n">artifact_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">artifact_config_</span> <span class="o">=</span> <span class="n">annotation</span><span class="o">.</span><span class="n">artifact_config</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">artifact_config_</span> <span class="o">=</span> <span class="n">DataArtifactConfig</span><span class="p">(</span>
-                        <span class="n">artifact_name</span><span class="o">=</span><span class="n">output_name_</span>
+                    <span class="n">artifact_config_</span> <span class="o">=</span> <span class="n">ArtifactConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">output_name_</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Linking artifact `</span><span class="si">{</span><span class="n">artifact_config_</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">` to &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;model `</span><span class="si">{</span><span class="n">artifact_config_</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2">` version &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">artifact_config_</span><span class="o">.</span><span class="n">model_version</span><span class="si">}</span><span class="s2">` implicitly.&quot;</span>
                     <span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">artifact_config_</span><span class="o">.</span><span class="n">model_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">model_version</span> <span class="o">=</span> <span class="n">model_version_from_context</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="kn">from</span> <span class="nn">zenml.model.model_version</span> <span class="kn">import</span> <span class="n">ModelVersion</span>
-
-                    <span class="n">model_version</span> <span class="o">=</span> <span class="n">ModelVersion</span><span class="p">(</span>
-                        <span class="n">name</span><span class="o">=</span><span class="n">artifact_config_</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
-                        <span class="n">version</span><span class="o">=</span><span class="n">artifact_config_</span><span class="o">.</span><span class="n">model_version</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="k">if</span> <span class="n">model_version</span><span class="p">:</span>
-                    <span class="n">model_version</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span>
-
-                    <span class="n">artifact_config_</span><span class="o">.</span><span class="n">_pipeline_name</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_deployment</span><span class="o">.</span><span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">)</span>
-                    <span class="n">artifact_config_</span><span class="o">.</span><span class="n">_step_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step_name</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Linking artifact `</span><span class="si">{</span><span class="n">artifact_config_</span><span class="o">.</span><span class="n">artifact_name</span><span class="si">}</span><span class="s2">` &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;to model `</span><span class="si">{</span><span class="n">model_version</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">` version &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">model_version</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                    <span class="p">)</span>
-                    <span class="n">artifact_config_</span><span class="o">.</span><span class="n">link_to_model</span><span class="p">(</span>
-                        <span class="n">artifact_uuid</span><span class="o">=</span><span class="n">output_</span><span class="p">,</span>
-                        <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span><span class="p">,</span>
-                    <span class="p">)</span>
+                <span class="n">link_artifact_config_to_model_version</span><span class="p">(</span>
+                    <span class="n">artifact_config</span><span class="o">=</span><span class="n">artifact_config_</span><span class="p">,</span>
+                    <span class="n">model_version</span><span class="o">=</span><span class="n">model_version_from_context</span><span class="p">,</span>
+                    <span class="n">artifact_id</span><span class="o">=</span><span class="n">output_id</span><span class="p">,</span>
+                <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_run_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -9171,9 +9136,7 @@ two ways depending on its configuration:
             <span class="bp">self</span><span class="o">.</span><span class="n">_step</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">logs_context</span> <span class="o">=</span> <span class="n">StepLogsStorageContext</span><span class="p">(</span>
-            <span class="n">logs_uri</span><span class="o">=</span><span class="n">logs_uri</span>
-        <span class="p">)</span>  <span class="c1"># type: ignore[assignment]</span>
+        <span class="n">logs_context</span> <span class="o">=</span> <span class="n">StepLogsStorageContext</span><span class="p">(</span><span class="n">logs_uri</span><span class="o">=</span><span class="n">logs_uri</span><span class="p">)</span>  <span class="c1"># type: ignore[assignment]</span>
 
         <span class="n">logs_model</span> <span class="o">=</span> <span class="n">LogsRequest</span><span class="p">(</span>
             <span class="n">uri</span><span class="o">=</span><span class="n">logs_uri</span><span class="p">,</span>
@@ -9501,10 +9464,11 @@ StepRunner        </code>
                             <span class="n">output_data</span><span class="o">=</span><span class="n">output_data</span><span class="p">,</span>
                             <span class="n">output_artifact_uris</span><span class="o">=</span><span class="n">output_artifact_uris</span><span class="p">,</span>
                             <span class="n">output_materializers</span><span class="o">=</span><span class="n">output_materializers</span><span class="p">,</span>
+                            <span class="n">output_annotations</span><span class="o">=</span><span class="n">output_annotations</span><span class="p">,</span>
                             <span class="n">artifact_metadata_enabled</span><span class="o">=</span><span class="n">artifact_metadata_enabled</span><span class="p">,</span>
                             <span class="n">artifact_visualization_enabled</span><span class="o">=</span><span class="n">artifact_visualization_enabled</span><span class="p">,</span>
                         <span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_link_artifacts_to_model</span><span class="p">(</span>
+                        <span class="n">link_step_artifacts_to_model</span><span class="p">(</span>
                             <span class="n">artifact_ids</span><span class="o">=</span><span class="n">output_artifact_ids</span>
                         <span class="p">)</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_link_pipeline_run_to_model_from_artifacts</span><span class="p">(</span>
@@ -9786,6 +9750,7 @@ StepRunner        </code>
         <span class="n">output_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">output_materializers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BaseMaterializer</span><span class="p">],</span> <span class="o">...</span><span class="p">]],</span>
         <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">output_annotations</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">OutputSignature</span><span class="p">],</span>
         <span class="n">artifact_metadata_enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">artifact_visualization_enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]:</span>
@@ -9796,6 +9761,7 @@ StepRunner        </code>
 <span class="sd">                names to return values.</span>
 <span class="sd">            output_materializers: The output materializers of the step.</span>
 <span class="sd">            output_artifact_uris: The output artifact URIs of the step.</span>
+<span class="sd">            output_annotations: The output annotations of the step function.</span>
 <span class="sd">            artifact_metadata_enabled: Whether artifact metadata collection is</span>
 <span class="sd">                enabled.</span>
 <span class="sd">            artifact_visualization_enabled: Whether artifact visualization is</span>
@@ -9804,12 +9770,7 @@ StepRunner        </code>
 <span class="sd">        Returns:</span>
 <span class="sd">            The IDs of the published output artifacts.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
-        <span class="n">artifact_stores</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">active_stack_model</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="n">StackComponentType</span><span class="o">.</span><span class="n">ARTIFACT_STORE</span>
-        <span class="p">)</span>
-        <span class="k">assert</span> <span class="n">artifact_stores</span>  <span class="c1"># Every stack has an artifact store.</span>
-        <span class="n">artifact_store_id</span> <span class="o">=</span> <span class="n">artifact_stores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">step_context</span> <span class="o">=</span> <span class="n">get_step_context</span><span class="p">()</span>
         <span class="n">output_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="k">for</span> <span class="n">output_name</span><span class="p">,</span> <span class="n">return_value</span> <span class="ow">in</span> <span class="n">output_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -9846,17 +9807,43 @@ StepRunner        </code>
                 <span class="n">materializer_class</span> <span class="o">=</span> <span class="n">materializer_registry</span><span class="p">[</span><span class="n">data_type</span><span class="p">]</span>
 
             <span class="n">uri</span> <span class="o">=</span> <span class="n">output_artifact_uris</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span>
-            <span class="n">materializer</span> <span class="o">=</span> <span class="n">materializer_class</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
+            <span class="n">artifact_config</span> <span class="o">=</span> <span class="n">output_annotations</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span><span class="o">.</span><span class="n">artifact_config</span>
 
-            <span class="n">artifact_id</span> <span class="o">=</span> <span class="n">artifact_utils</span><span class="o">.</span><span class="n">upload_artifact</span><span class="p">(</span>
-                <span class="n">name</span><span class="o">=</span><span class="n">output_name</span><span class="p">,</span>
+            <span class="k">if</span> <span class="n">artifact_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">has_custom_name</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">artifact_config</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">version</span> <span class="o">=</span> <span class="n">artifact_config</span><span class="o">.</span><span class="n">version</span>
+                <span class="n">tags</span> <span class="o">=</span> <span class="n">artifact_config</span><span class="o">.</span><span class="n">tags</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">has_custom_name</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+            <span class="c1"># Override the artifact name if it is not a custom name.</span>
+            <span class="k">if</span> <span class="n">has_custom_name</span><span class="p">:</span>
+                <span class="n">artifact_name</span> <span class="o">=</span> <span class="n">output_name</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">step_context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">pipeline</span><span class="p">:</span>
+                    <span class="n">pipeline_name</span> <span class="o">=</span> <span class="n">step_context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">pipeline_name</span> <span class="o">=</span> <span class="s2">&quot;unlisted&quot;</span>
+                <span class="n">step_name</span> <span class="o">=</span> <span class="n">step_context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">artifact_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pipeline_name</span><span class="si">}</span><span class="s2">::</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">::</span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="c1"># Get metadata that the user logged manually</span>
+            <span class="n">user_metadata</span> <span class="o">=</span> <span class="n">step_context</span><span class="o">.</span><span class="n">get_output_metadata</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span>
+
+            <span class="n">artifact</span> <span class="o">=</span> <span class="n">save_artifact</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">artifact_name</span><span class="p">,</span>
                 <span class="n">data</span><span class="o">=</span><span class="n">return_value</span><span class="p">,</span>
-                <span class="n">materializer</span><span class="o">=</span><span class="n">materializer</span><span class="p">,</span>
-                <span class="n">artifact_store_id</span><span class="o">=</span><span class="n">artifact_store_id</span><span class="p">,</span>
+                <span class="n">materializer</span><span class="o">=</span><span class="n">materializer_class</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="n">uri</span><span class="p">,</span>
                 <span class="n">extract_metadata</span><span class="o">=</span><span class="n">artifact_metadata_enabled</span><span class="p">,</span>
                 <span class="n">include_visualizations</span><span class="o">=</span><span class="n">artifact_visualization_enabled</span><span class="p">,</span>
+                <span class="n">has_custom_name</span><span class="o">=</span><span class="n">has_custom_name</span><span class="p">,</span>
+                <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
+                <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span>
+                <span class="n">user_metadata</span><span class="o">=</span><span class="n">user_metadata</span><span class="p">,</span>
+                <span class="n">manual_save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">output_artifacts</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">artifact_id</span>
+            <span class="n">output_artifacts</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">artifact</span><span class="o">.</span><span class="n">id</span>
 
         <span class="k">return</span> <span class="n">output_artifacts</span>
 
@@ -9866,70 +9853,6 @@ StepRunner        </code>
             <span class="n">model_version</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span>
         <span class="k">except</span> <span class="n">StepContextError</span><span class="p">:</span>
             <span class="k">return</span>
-
-    <span class="k">def</span> <span class="nf">_link_artifacts_to_model</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">artifact_ids</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Links the output artifacts of the step to the model.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            artifact_ids: The IDs of the published output artifacts.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.model.artifact_config</span> <span class="kn">import</span> <span class="n">DataArtifactConfig</span>
-
-        <span class="n">context</span> <span class="o">=</span> <span class="n">get_step_context</span><span class="p">()</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">model_version_from_context</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">model_version</span>
-        <span class="k">except</span> <span class="n">StepContextError</span><span class="p">:</span>
-            <span class="n">model_version_from_context</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="k">for</span> <span class="n">artifact_name</span> <span class="ow">in</span> <span class="n">artifact_ids</span><span class="p">:</span>
-            <span class="n">artifact_uuid</span> <span class="o">=</span> <span class="n">artifact_ids</span><span class="p">[</span><span class="n">artifact_name</span><span class="p">]</span>
-            <span class="n">artifact_config_</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span>
-                <span class="n">artifact_name</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">artifact_config</span>
-            <span class="k">if</span> <span class="n">artifact_config_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">model_version_from_context</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">artifact_config_</span> <span class="o">=</span> <span class="n">DataArtifactConfig</span><span class="p">(</span>
-                        <span class="n">artifact_name</span><span class="o">=</span><span class="n">artifact_name</span><span class="p">,</span>
-                    <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">artifact_config_</span> <span class="o">=</span> <span class="n">artifact_config_</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-            <span class="k">if</span> <span class="n">artifact_config_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">model_version</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="k">if</span> <span class="n">model_version_from_context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">artifact_config_</span><span class="o">.</span><span class="n">model_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                            <span class="s2">&quot;No model context found, unable to auto-link artifacts.&quot;</span>
-                        <span class="p">)</span>
-                        <span class="k">return</span>
-
-                <span class="k">if</span> <span class="n">artifact_config_</span><span class="o">.</span><span class="n">model_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="kn">from</span> <span class="nn">zenml.model.model_version</span> <span class="kn">import</span> <span class="n">ModelVersion</span>
-
-                    <span class="n">model_version</span> <span class="o">=</span> <span class="n">ModelVersion</span><span class="p">(</span>
-                        <span class="n">name</span><span class="o">=</span><span class="n">artifact_config_</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
-                        <span class="n">version</span><span class="o">=</span><span class="n">artifact_config_</span><span class="o">.</span><span class="n">model_version</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">model_version</span> <span class="o">=</span> <span class="n">model_version_from_context</span>
-
-                <span class="k">if</span> <span class="n">model_version</span><span class="p">:</span>
-                    <span class="n">artifact_config_</span><span class="o">.</span><span class="n">artifact_name</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="n">artifact_config_</span><span class="o">.</span><span class="n">artifact_name</span> <span class="ow">or</span> <span class="n">artifact_name</span>
-                    <span class="p">)</span>
-                    <span class="n">artifact_config_</span><span class="o">.</span><span class="n">_pipeline_name</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span>
-                    <span class="n">artifact_config_</span><span class="o">.</span><span class="n">_step_name</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Linking artifact `</span><span class="si">{</span><span class="n">artifact_name</span><span class="si">}</span><span class="s2">` to model &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">model_version</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">` version `</span><span class="si">{</span><span class="n">model_version</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                    <span class="p">)</span>
-                    <span class="n">artifact_config_</span><span class="o">.</span><span class="n">link_to_model</span><span class="p">(</span>
-                        <span class="n">artifact_uuid</span><span class="o">=</span><span class="n">artifact_uuid</span><span class="p">,</span>
-                        <span class="n">model_version</span><span class="o">=</span><span class="n">model_version</span><span class="p">,</span>
-                    <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_model_versions_from_artifacts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -9949,39 +9872,20 @@ StepRunner        </code>
                 <span class="n">get_step_context</span><span class="p">()</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">artifact_name</span><span class="p">)</span><span class="o">.</span><span class="n">artifact_config</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">artifact_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">model_version</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="n">artifact_config</span><span class="o">.</span><span class="n">_model_version</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">model_version</span> <span class="o">:=</span> <span class="n">artifact_config</span><span class="o">.</span><span class="n">_model_version</span>
+                <span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">model_version_response</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">model_version</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span>
                     <span class="p">)</span>
-                    <span class="n">models</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">model_version</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">model_version</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
-                <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+                    <span class="n">models</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+                        <span class="p">(</span>
+                            <span class="n">model_version_response</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                            <span class="n">model_version_response</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
                     <span class="k">break</span>
-        <span class="k">return</span> <span class="n">models</span>
-
-    <span class="k">def</span> <span class="nf">_get_model_versions_from_external_artifacts</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">external_artifacts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;ExternalArtifactConfiguration&quot;</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the model versions from the external artifacts.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            external_artifacts: The external artifacts of the step.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            Set of tuples of (model_id, model_version_id).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
-        <span class="n">models</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">external_artifact</span> <span class="ow">in</span> <span class="n">external_artifacts</span><span class="p">:</span>
-            <span class="k">if</span> <span class="p">(</span>
-                <span class="n">external_artifact</span><span class="o">.</span><span class="n">model_artifact_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                <span class="ow">and</span> <span class="n">external_artifact</span><span class="o">.</span><span class="n">model_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                <span class="ow">and</span> <span class="n">external_artifact</span><span class="o">.</span><span class="n">model_version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="p">):</span>
-                <span class="n">model_version</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_model_version</span><span class="p">(</span>
-                    <span class="n">model_name_or_id</span><span class="o">=</span><span class="n">external_artifact</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
-                    <span class="n">model_version_name_or_number_or_id</span><span class="o">=</span><span class="n">external_artifact</span><span class="o">.</span><span class="n">model_version</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">models</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">model_version</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span> <span class="n">model_version</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">models</span>
 
     <span class="k">def</span> <span class="nf">_get_model_versions_from_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]:</span>
@@ -10018,7 +9922,6 @@ StepRunner        </code>
                 <span class="n">ModelVersionPipelineRunRequestModel</span><span class="p">(</span>
                     <span class="n">user</span><span class="o">=</span><span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                     <span class="n">workspace</span><span class="o">=</span><span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_workspace</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-                    <span class="n">name</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                     <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                     <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                     <span class="n">model_version</span><span class="o">=</span><span class="n">model</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
@@ -10043,20 +9946,25 @@ StepRunner        </code>
         <span class="p">)</span>
 
         <span class="n">models</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_versions_from_artifacts</span><span class="p">(</span><span class="n">artifact_names</span><span class="p">)</span>
-
-        <span class="n">models</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">union</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_versions_from_external_artifacts</span><span class="p">(</span>
-                <span class="n">external_artifacts</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-
         <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+
+        <span class="c1"># Add models from external artifacts</span>
+        <span class="k">for</span> <span class="n">external_artifact</span> <span class="ow">in</span> <span class="n">external_artifacts</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">artifact_id</span> <span class="o">=</span> <span class="n">external_artifact</span><span class="o">.</span><span class="n">get_artifact_id</span><span class="p">()</span>
+                <span class="n">links</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">list_model_version_artifact_links</span><span class="p">(</span>
+                    <span class="n">artifact_id</span><span class="o">=</span><span class="n">artifact_id</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="n">links</span><span class="p">:</span>
+                    <span class="n">models</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">link</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">link</span><span class="o">.</span><span class="n">model_version</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>  <span class="c1"># artifacts uploaded by value have no models</span>
+                <span class="k">pass</span>
+
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
             <span class="n">client</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">create_model_version_pipeline_run_link</span><span class="p">(</span>
                 <span class="n">ModelVersionPipelineRunRequestModel</span><span class="p">(</span>
-                    <span class="n">user</span><span class="o">=</span><span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-                    <span class="n">workspace</span><span class="o">=</span><span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_workspace</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-                    <span class="n">name</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">user</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">active_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                    <span class="n">workspace</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">active_workspace</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                     <span class="n">pipeline_run</span><span class="o">=</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                     <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                     <span class="n">model_version</span><span class="o">=</span><span class="n">model</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
@@ -10504,10 +10412,11 @@ StepRunner        </code>
                         <span class="n">output_data</span><span class="o">=</span><span class="n">output_data</span><span class="p">,</span>
                         <span class="n">output_artifact_uris</span><span class="o">=</span><span class="n">output_artifact_uris</span><span class="p">,</span>
                         <span class="n">output_materializers</span><span class="o">=</span><span class="n">output_materializers</span><span class="p">,</span>
+                        <span class="n">output_annotations</span><span class="o">=</span><span class="n">output_annotations</span><span class="p">,</span>
                         <span class="n">artifact_metadata_enabled</span><span class="o">=</span><span class="n">artifact_metadata_enabled</span><span class="p">,</span>
                         <span class="n">artifact_visualization_enabled</span><span class="o">=</span><span class="n">artifact_visualization_enabled</span><span class="p">,</span>
                     <span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_link_artifacts_to_model</span><span class="p">(</span>
+                    <span class="n">link_step_artifacts_to_model</span><span class="p">(</span>
                         <span class="n">artifact_ids</span><span class="o">=</span><span class="n">output_artifact_ids</span>
                     <span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_link_pipeline_run_to_model_from_artifacts</span><span class="p">(</span>
@@ -11027,8 +10936,7 @@ used to display in the orchestrator UI.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        The orchestrator run name.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">user_name</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_user</span><span class="o">.</span><span class="n">name</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pipeline_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">user_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">()</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span><span class="si">:</span><span class="s2">08x</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pipeline_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">()</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="si">:</span><span class="s2">32x</span><span class="si">}</span><span class="s2">&quot;</span>
 </code></pre></div>
         </details>
     </div>

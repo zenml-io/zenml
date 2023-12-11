@@ -645,13 +645,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zenml.enums.PermissionType" class="md-nav__link">
-    PermissionType
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#zenml.enums.ResponseUpdateStrategy" class="md-nav__link">
     ResponseUpdateStrategy
   </a>
@@ -703,6 +696,20 @@
           <li class="md-nav__item">
   <a href="#zenml.enums.StackComponentType" class="md-nav__link">
     StackComponentType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StepRunInputArtifactType" class="md-nav__link">
+    StepRunInputArtifactType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StepRunOutputArtifactType" class="md-nav__link">
+    StepRunOutputArtifactType
   </a>
   
 </li>
@@ -2035,13 +2042,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zenml.enums.PermissionType" class="md-nav__link">
-    PermissionType
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#zenml.enums.ResponseUpdateStrategy" class="md-nav__link">
     ResponseUpdateStrategy
   </a>
@@ -2093,6 +2093,20 @@
           <li class="md-nav__item">
   <a href="#zenml.enums.StackComponentType" class="md-nav__link">
     StackComponentType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StepRunInputArtifactType" class="md-nav__link">
+    StepRunInputArtifactType
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.enums.StepRunOutputArtifactType" class="md-nav__link">
+    StepRunOutputArtifactType
   </a>
   
 </li>
@@ -3115,62 +3129,6 @@ OperatingSystemType            (<a class="autorefs autorefs-internal" title="zen
 
 
 
-<h3 id="zenml.enums.PermissionType" class="doc doc-heading">
-        <code>
-PermissionType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
-        </code>
-
-
-
-</h3>
-
-    <div class="doc doc-contents ">
-
-      <p>All permission types.</p>
-
-        <details class="quote">
-          <summary>Source code in <code>zenml/enums.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PermissionType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;All permission types.&quot;&quot;&quot;</span>
-
-    <span class="c1"># ANY CHANGES TO THIS ENUM WILL NEED TO BE DONE TOGETHER WITH A DB MIGRATION</span>
-    <span class="n">WRITE</span> <span class="o">=</span> <span class="s2">&quot;write&quot;</span>  <span class="c1"># allows the user to create, update, delete everything</span>
-    <span class="n">READ</span> <span class="o">=</span> <span class="s2">&quot;read&quot;</span>  <span class="c1"># allows the user to read everything</span>
-    <span class="n">ME</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="s2">&quot;me&quot;</span>  <span class="c1"># allows the user to self administrate (change name, password...)</span>
-    <span class="p">)</span>
-</code></pre></div>
-        </details>
-
-
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-class">
-
-
-
 <h3 id="zenml.enums.ResponseUpdateStrategy" class="doc doc-heading">
         <code>
 ResponseUpdateStrategy            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
@@ -3649,6 +3607,108 @@ StackComponentType            (<a class="autorefs autorefs-internal" title="zenm
 
 
 
+<h3 id="zenml.enums.StepRunInputArtifactType" class="doc doc-heading">
+        <code>
+StepRunInputArtifactType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible types of a step run input artifact.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunInputArtifactType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible types of a step run input artifact.&quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span>  <span class="c1"># input argument that is the output of a previous step</span>
+    <span class="n">MANUAL</span> <span class="o">=</span> <span class="s2">&quot;manual&quot;</span>  <span class="c1"># manually loaded via `zenml.load_artifact()`</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.enums.StepRunOutputArtifactType" class="doc doc-heading">
+        <code>
+StepRunOutputArtifactType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
+        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>All possible types of a step run output artifact.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/enums.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunOutputArtifactType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible types of a step run output artifact.&quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span>  <span class="c1"># output of the current step</span>
+    <span class="n">MANUAL</span> <span class="o">=</span> <span class="s2">&quot;manual&quot;</span>  <span class="c1"># manually saved via `zenml.save_artifact()`</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
 <h3 id="zenml.enums.StoreType" class="doc doc-heading">
         <code>
 StoreType            (<a class="autorefs autorefs-internal" title="zenml.utils.enum_utils.StrEnum" href="../core-utils/#zenml.utils.enum_utils.StrEnum">StrEnum</a>)
@@ -3718,6 +3778,7 @@ TaggableResourceTypes            (<a class="autorefs autorefs-internal" title="z
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TaggableResourceTypes</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;All possible resource types for tagging.&quot;&quot;&quot;</span>
 
+    <span class="n">ARTIFACT</span> <span class="o">=</span> <span class="s2">&quot;artifact&quot;</span>
     <span class="n">MODEL</span> <span class="o">=</span> <span class="s2">&quot;model&quot;</span>
 </code></pre></div>
         </details>
@@ -3725,6 +3786,7 @@ TaggableResourceTypes            (<a class="autorefs autorefs-internal" title="z
 
 
   <div class="doc doc-children">
+
 
 
 

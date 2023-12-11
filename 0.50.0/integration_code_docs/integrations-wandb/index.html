@@ -3337,7 +3337,7 @@ WandbExperimentTrackerSettings            (<a class="autorefs autorefs-internal"
       </tr>
       <tr>
         <td><code>settings</code></td>
-        <td><code>Dict[str, Any]</code></td>
+        <td><code>Union[Dict[str, Any], wandb.sdk.wandb_settings.Settings]</code></td>
         <td><p>Settings for the Wandb run.</p></td>
       </tr>
   </tbody>
@@ -3355,11 +3355,12 @@ WandbExperimentTrackerSettings            (<a class="autorefs autorefs-internal"
 
     <span class="n">run_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">settings</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">settings</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Settings</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># type: ignore</span>
 
     <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;settings&quot;</span><span class="p">,</span> <span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">_convert_settings</span><span class="p">(</span>
-        <span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="s2">&quot;wandb.Settings&quot;</span><span class="p">]</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Settings</span><span class="p">],</span>  <span class="c1"># type: ignore</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts settings to a dictionary.</span>
 

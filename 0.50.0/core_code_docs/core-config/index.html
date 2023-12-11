@@ -1169,6 +1169,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#zenml.config.server_config.ServerConfiguration.rbac_enabled" class="md-nav__link">
+    rbac_enabled
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#zenml.config.server_config.ServerConfiguration.Config" class="md-nav__link">
     Config
   </a>
@@ -3572,6 +3579,13 @@
           <li class="md-nav__item">
   <a href="#zenml.config.server_config.ServerConfiguration.deployment_id" class="md-nav__link">
     deployment_id
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.config.server_config.ServerConfiguration.rbac_enabled" class="md-nav__link">
+    rbac_enabled
   </a>
   
 </li>
@@ -11560,6 +11574,14 @@ is used.</p></td>
 <code>EXTERNAL</code> authentication scheme. If not specified, the regular
 ZenML server ID is used.</p></td>
       </tr>
+      <tr>
+        <td><code>rbac_implementation_source</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Source pointing to a class implementing
+the RBAC interface defined by
+<code>zenml.zen_server.rbac_interface.RBACInterface</code>. If not specified,
+RBAC will not be enabled for this server.</p></td>
+      </tr>
   </tbody>
 </table>
         <details class="quote">
@@ -11624,6 +11646,10 @@ ZenML server ID is used.</p></td>
 <span class="sd">        external_server_id: The ID of the ZenML server to use with the</span>
 <span class="sd">            `EXTERNAL` authentication scheme. If not specified, the regular</span>
 <span class="sd">            ZenML server ID is used.</span>
+<span class="sd">        rbac_implementation_source: Source pointing to a class implementing</span>
+<span class="sd">            the RBAC interface defined by</span>
+<span class="sd">            `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,</span>
+<span class="sd">            RBAC will not be enabled for this server.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">deployment_type</span><span class="p">:</span> <span class="n">ServerDeploymentType</span> <span class="o">=</span> <span class="n">ServerDeploymentType</span><span class="o">.</span><span class="n">OTHER</span>
@@ -11653,6 +11679,8 @@ ZenML server ID is used.</p></td>
     <span class="n">external_user_info_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">external_cookie_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">external_server_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">rbac_implementation_source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="n">_deployment_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -11714,6 +11742,15 @@ ZenML server ID is used.</p></td>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deployment_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">rbac_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether RBAC is enabled on the server or not.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Whether RBAC is enabled on the server or not.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rbac_implementation_source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">get_jwt_token_issuer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the JWT token issuer.</span>
@@ -11875,6 +11912,45 @@ ZenML server ID is used.</p></td>
 
 
 
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.config.server_config.ServerConfiguration.rbac_enabled" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">rbac_enabled</span><span class="p">:</span> <span class="nb">bool</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Whether RBAC is enabled on the server or not.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>Whether RBAC is enabled on the server or not.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
 
 
 

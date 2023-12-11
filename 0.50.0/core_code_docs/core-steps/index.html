@@ -1490,8 +1490,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zenml.steps.utils.get_output_name_from_annotation_metadata" class="md-nav__link">
-    get_output_name_from_annotation_metadata()
+  <a href="#zenml.steps.utils.get_artifact_config_from_annotation_metadata" class="md-nav__link">
+    get_artifact_config_from_annotation_metadata()
   </a>
   
 </li>
@@ -2925,8 +2925,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zenml.steps.utils.get_output_name_from_annotation_metadata" class="md-nav__link">
-    get_output_name_from_annotation_metadata()
+  <a href="#zenml.steps.utils.get_artifact_config_from_annotation_metadata" class="md-nav__link">
+    get_artifact_config_from_annotation_metadata()
   </a>
   
 </li>
@@ -4195,9 +4195,7 @@ BaseStep        </code>
         <span class="k">for</span> <span class="p">(</span>
             <span class="n">name</span><span class="p">,</span>
             <span class="n">field</span><span class="p">,</span>
-        <span class="p">)</span> <span class="ow">in</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_definition</span><span class="o">.</span><span class="n">legacy_params</span><span class="o">.</span><span class="n">annotation</span><span class="o">.</span><span class="n">__fields__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-        <span class="p">):</span>
+        <span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_definition</span><span class="o">.</span><span class="n">legacy_params</span><span class="o">.</span><span class="n">annotation</span><span class="o">.</span><span class="n">__fields__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
                 <span class="c1"># a value for this parameter has been set already</span>
                 <span class="n">values</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
@@ -8695,13 +8693,15 @@ OutputSignature            (<span title="pydantic.main.BaseModel">BaseModel</spa
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The signature of an output artifact.&quot;&quot;&quot;</span>
 
     <span class="n">resolved_annotation</span><span class="p">:</span> <span class="n">Any</span>
-    <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DataArtifactConfig</span><span class="p">]</span>
+    <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArtifactConfig</span><span class="p">]</span>
+    <span class="n">has_custom_name</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div>
         </details>
 
 
 
   <div class="doc doc-children">
+
 
 
 
@@ -9196,21 +9196,21 @@ TupleReturnVisitor            (<a class="autorefs autorefs-internal" title="zenm
 
 
 
-<h4 id="zenml.steps.utils.get_output_name_from_annotation_metadata" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">get_output_name_from_annotation_metadata</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span></code>
+<h4 id="zenml.steps.utils.get_artifact_config_from_annotation_metadata" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_artifact_config_from_annotation_metadata</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span></code>
 
 
 </h4>
 
     <div class="doc doc-contents ">
 
-      <p>Get the output name from a type annotation.</p>
+      <p>Get the artifact config from the annotation metadata of a step output.</p>
 
 <p><strong>Examples:</strong></p>
     
-      <pre><code class="language-python">get_output_name_from_annotation_metadata(int)  # None, None
-get_output_name_from_annotation_metadata(Annotated[int, &quot;name&quot;]  # name, None
-get_output_name_from_annotation_metadata(Annotated[int, &quot;name&quot;, ArtifactConfig(model_name=&quot;foo&quot;)]  # name, ArtifactConfig(model_name=&quot;foo&quot;)
+      <pre><code class="language-python">get_output_name_from_annotation_metadata(int)  # None
+get_output_name_from_annotation_metadata(Annotated[int, &quot;name&quot;]  # ArtifactConfig(name=&quot;name&quot;)
+get_output_name_from_annotation_metadata(Annotated[int, ArtifactConfig(name=&quot;name&quot;, model_name=&quot;foo&quot;)]  # ArtifactConfig(name=&quot;name&quot;, model_name=&quot;foo&quot;)
 </code></pre>
 
 <p><strong>Parameters:</strong></p>
@@ -9243,7 +9243,8 @@ get_output_name_from_annotation_metadata(Annotated[int, &quot;name&quot;, Artifa
   <tbody>
       <tr>
         <td><code>ValueError</code></td>
-        <td><p>If the annotation not following (str,ArtifactConfig) pattern</p></td>
+        <td><p>If the annotation is not following the expected format
+or if the name was specified multiple times or is an empty string.</p></td>
       </tr>
   </tbody>
 </table>
@@ -9257,63 +9258,81 @@ get_output_name_from_annotation_metadata(Annotated[int, &quot;name&quot;, Artifa
   </thead>
   <tbody>
     <tr>
-      <td><code>Tuple[Optional[str], Optional[zenml.model.artifact_config.DataArtifactConfig]]</code></td>
-      <td><p>Tuple of output_name and artifact_config.</p></td>
+      <td><code>Optional[zenml.artifacts.artifact_config.ArtifactConfig]</code></td>
+      <td><p>The artifact config.</p></td>
     </tr>
   </tbody>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_output_name_from_annotation_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_artifact_config_from_annotation_metadata</span><span class="p">(</span>
     <span class="n">annotation</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DataArtifactConfig</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the output name from a type annotation.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArtifactConfig</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the artifact config from the annotation metadata of a step output.</span>
 
 <span class="sd">    Example:</span>
 <span class="sd">    ```python</span>
-<span class="sd">    get_output_name_from_annotation_metadata(int)  # None, None</span>
-<span class="sd">    get_output_name_from_annotation_metadata(Annotated[int, &quot;name&quot;]  # name, None</span>
-<span class="sd">    get_output_name_from_annotation_metadata(Annotated[int, &quot;name&quot;, ArtifactConfig(model_name=&quot;foo&quot;)]  # name, ArtifactConfig(model_name=&quot;foo&quot;)</span>
+<span class="sd">    get_output_name_from_annotation_metadata(int)  # None</span>
+<span class="sd">    get_output_name_from_annotation_metadata(Annotated[int, &quot;name&quot;]  # ArtifactConfig(name=&quot;name&quot;)</span>
+<span class="sd">    get_output_name_from_annotation_metadata(Annotated[int, ArtifactConfig(name=&quot;name&quot;, model_name=&quot;foo&quot;)]  # ArtifactConfig(name=&quot;name&quot;, model_name=&quot;foo&quot;)</span>
 <span class="sd">    ```</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        annotation: The type annotation.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        ValueError: If the annotation not following (str,ArtifactConfig) pattern</span>
+<span class="sd">        ValueError: If the annotation is not following the expected format</span>
+<span class="sd">            or if the name was specified multiple times or is an empty string.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Tuple of output_name and artifact_config.</span>
+<span class="sd">        The artifact config.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">pydantic_typing</span><span class="o">.</span><span class="n">get_origin</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span> <span class="ow">or</span> <span class="n">annotation</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">Annotated</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">annotation</span><span class="p">,</span> <span class="o">*</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">pydantic_typing</span><span class="o">.</span><span class="n">get_args</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
 
-    <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;Annotation metadata can contain not more than 2 elements: the output name and the instance of `ArtifactConfig`.</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Artifact annotation should only contain two elements: the artifact &quot;</span>
+        <span class="s2">&quot;type, and either an output name or an `ArtifactConfig`, e.g.: &quot;</span>
+        <span class="s2">&quot;`Annotated[int, &#39;output_name&#39;]` or &quot;</span>
+        <span class="s2">&quot;`Annotated[int, ArtifactConfig(name=&#39;output_name&#39;), ...]`.&quot;</span>
+    <span class="p">)</span>
 
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+
+    <span class="c1"># Loop over all values to also support legacy annotations of the form</span>
+    <span class="c1"># `Annotated[int, &#39;output_name&#39;, ArtifactConfig(...)]`</span>
     <span class="n">output_name</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">artifact_config</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">for</span> <span class="n">metadata_instance</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata_instance</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">output_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">output_name</span> <span class="o">=</span> <span class="n">metadata_instance</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;Annotation metadata can not contain multiple output names.</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata_instance</span><span class="p">,</span> <span class="n">DataArtifactConfig</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">artifact_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">artifact_config</span> <span class="o">=</span> <span class="n">metadata_instance</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;Annotation metadata can not contain multiple `ArtifactConfig` instances.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">output_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+            <span class="n">output_name</span> <span class="o">=</span> <span class="n">metadata_instance</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata_instance</span><span class="p">,</span> <span class="n">ArtifactConfig</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">artifact_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+            <span class="n">artifact_config</span> <span class="o">=</span> <span class="n">metadata_instance</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;Annotation metadata can only contain `str` and `ArtifactConfig` instances.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">msg</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="c1"># Consolidate output name</span>
+    <span class="k">if</span> <span class="n">artifact_config</span> <span class="ow">and</span> <span class="n">artifact_config</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">output_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">output_name</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">artifact_config</span><span class="p">:</span>
+            <span class="n">artifact_config</span> <span class="o">=</span> <span class="n">ArtifactConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">output_name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">artifact_config</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="n">artifact_config</span> <span class="o">=</span> <span class="n">artifact_config</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">artifact_config</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">output_name</span>
 
-    <span class="k">return</span> <span class="n">output_name</span><span class="p">,</span> <span class="n">artifact_config</span>
+    <span class="k">if</span> <span class="n">artifact_config</span> <span class="ow">and</span> <span class="n">artifact_config</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Output name cannot be an empty string.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">artifact_config</span>
 </code></pre></div>
         </details>
     </div>
@@ -9624,7 +9643,9 @@ annotation is missing.</p></td>
   <tbody>
     <tr>
       <td><code>Dict[str, zenml.steps.utils.OutputSignature]</code></td>
-      <td><p>The function output artifacts.</p></td>
+      <td><ul>
+<li>A dictionary mapping output names to their output signatures.</li>
+</ul></td>
     </tr>
   </tbody>
 </table>
@@ -9647,14 +9668,17 @@ annotation is missing.</p></td>
 <span class="sd">            annotation is missing.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The function output artifacts.</span>
+<span class="sd">        - A dictionary mapping output names to their output signatures.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">follow_wrapped</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">return_annotation</span> <span class="o">=</span> <span class="n">signature</span><span class="o">.</span><span class="n">return_annotation</span>
+    <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 
+    <span class="c1"># Return type annotated as `None`</span>
     <span class="k">if</span> <span class="n">return_annotation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{}</span>
 
+    <span class="c1"># Return type not annotated -&gt; check whether `None` or `Any` should be used</span>
     <span class="k">if</span> <span class="n">return_annotation</span> <span class="ow">is</span> <span class="n">signature</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">enforce_type_annotations</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
@@ -9666,6 +9690,7 @@ annotation is missing.</p></td>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">return_annotation</span> <span class="o">=</span> <span class="n">Any</span>
 
+    <span class="c1"># Return type annotated using deprecated `Output(...)`</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">return_annotation</span><span class="p">,</span> <span class="n">Output</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
             <span class="s2">&quot;Using the `Output` class to define the outputs of your steps is &quot;</span>
@@ -9679,28 +9704,27 @@ annotation is missing.</p></td>
             <span class="n">output_name</span><span class="p">:</span> <span class="n">OutputSignature</span><span class="p">(</span>
                 <span class="n">resolved_annotation</span><span class="o">=</span><span class="n">resolve_type_annotation</span><span class="p">(</span><span class="n">output_type</span><span class="p">),</span>
                 <span class="n">artifact_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">has_custom_name</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">output_name</span><span class="p">,</span> <span class="n">output_type</span> <span class="ow">in</span> <span class="n">return_annotation</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">}</span>
 
     <span class="k">elif</span> <span class="n">pydantic_typing</span><span class="o">.</span><span class="n">get_origin</span><span class="p">(</span><span class="n">return_annotation</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">tuple</span><span class="p">:</span>
         <span class="n">requires_multiple_artifacts</span> <span class="o">=</span> <span class="n">has_tuple_return</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-
         <span class="k">if</span> <span class="n">requires_multiple_artifacts</span><span class="p">:</span>
-            <span class="n">output_signature</span> <span class="o">=</span> <span class="p">{}</span>
-
+            <span class="n">output_signature</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="n">args</span> <span class="o">=</span> <span class="n">pydantic_typing</span><span class="o">.</span><span class="n">get_args</span><span class="p">(</span><span class="n">return_annotation</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                     <span class="s2">&quot;Variable length output annotations are not allowed.&quot;</span>
                 <span class="p">)</span>
-
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">annotation</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
                 <span class="n">resolved_annotation</span> <span class="o">=</span> <span class="n">resolve_type_annotation</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
-                <span class="p">(</span>
-                    <span class="n">output_name</span><span class="p">,</span>
-                    <span class="n">artifact_config</span><span class="p">,</span>
-                <span class="p">)</span> <span class="o">=</span> <span class="n">get_output_name_from_annotation_metadata</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
+                <span class="n">artifact_config</span> <span class="o">=</span> <span class="n">get_artifact_config_from_annotation_metadata</span><span class="p">(</span>
+                    <span class="n">annotation</span>
+                <span class="p">)</span>
+                <span class="n">output_name</span> <span class="o">=</span> <span class="n">artifact_config</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">artifact_config</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="n">has_custom_name</span> <span class="o">=</span> <span class="n">output_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                 <span class="n">output_name</span> <span class="o">=</span> <span class="n">output_name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;output_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="k">if</span> <span class="n">output_name</span> <span class="ow">in</span> <span class="n">output_signature</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duplicate output name </span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
@@ -9708,24 +9732,25 @@ annotation is missing.</p></td>
                 <span class="n">output_signature</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">OutputSignature</span><span class="p">(</span>
                     <span class="n">resolved_annotation</span><span class="o">=</span><span class="n">resolved_annotation</span><span class="p">,</span>
                     <span class="n">artifact_config</span><span class="o">=</span><span class="n">artifact_config</span><span class="p">,</span>
+                    <span class="n">has_custom_name</span><span class="o">=</span><span class="n">has_custom_name</span><span class="p">,</span>
                 <span class="p">)</span>
-
             <span class="k">return</span> <span class="n">output_signature</span>
 
+    <span class="c1"># Return type is annotated as single value or is a tuple</span>
     <span class="n">resolved_annotation</span> <span class="o">=</span> <span class="n">resolve_type_annotation</span><span class="p">(</span><span class="n">return_annotation</span><span class="p">)</span>
-    <span class="n">output_name</span><span class="p">,</span> <span class="n">artifact_config</span> <span class="o">=</span> <span class="n">get_output_name_from_annotation_metadata</span><span class="p">(</span>
+    <span class="n">artifact_config</span> <span class="o">=</span> <span class="n">get_artifact_config_from_annotation_metadata</span><span class="p">(</span>
         <span class="n">return_annotation</span>
     <span class="p">)</span>
+    <span class="n">output_name</span> <span class="o">=</span> <span class="n">artifact_config</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">artifact_config</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">has_custom_name</span> <span class="o">=</span> <span class="n">output_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
     <span class="n">output_name</span> <span class="o">=</span> <span class="n">output_name</span> <span class="ow">or</span> <span class="n">SINGLE_RETURN_OUT_NAME</span>
-
-    <span class="n">output_signature</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span>
         <span class="n">output_name</span><span class="p">:</span> <span class="n">OutputSignature</span><span class="p">(</span>
             <span class="n">resolved_annotation</span><span class="o">=</span><span class="n">resolved_annotation</span><span class="p">,</span>
             <span class="n">artifact_config</span><span class="o">=</span><span class="n">artifact_config</span><span class="p">,</span>
+            <span class="n">has_custom_name</span><span class="o">=</span><span class="n">has_custom_name</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">}</span>
-
-    <span class="k">return</span> <span class="n">output_signature</span>
 </code></pre></div>
         </details>
     </div>

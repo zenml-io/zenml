@@ -9313,6 +9313,18 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibi
         <td><p>Machine type specified here
 https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types.</p></td>
       </tr>
+      <tr>
+        <td><code>boot_disk_size_gb</code></td>
+        <td><code>int</code></td>
+        <td><p>Size of the boot disk in GB. (Default: 100)
+https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options</p></td>
+      </tr>
+      <tr>
+        <td><code>boot_disk_type</code></td>
+        <td><code>str</code></td>
+        <td><p>Type of the boot disk. (Default: pd-ssd)
+https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options</p></td>
+      </tr>
   </tbody>
 </table>
         <details class="quote">
@@ -9331,18 +9343,26 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
 <span class="sd">            https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.</span>
 <span class="sd">        machine_type: Machine type specified here</span>
 <span class="sd">            https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types.</span>
+<span class="sd">        boot_disk_size_gb: Size of the boot disk in GB. (Default: 100)</span>
+<span class="sd">            https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options</span>
+<span class="sd">        boot_disk_type: Type of the boot disk. (Default: pd-ssd)</span>
+<span class="sd">            https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">accelerator_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">accelerator_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">machine_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;n1-standard-4&quot;</span>
+    <span class="n">boot_disk_size_gb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">boot_disk_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pd-ssd&quot;</span>
 </code></pre></div>
         </details>
 
 
 
   <div class="doc doc-children">
+
+
 
 
 
@@ -16160,6 +16180,10 @@ ZenML entrypoint command in it.</p>
                                 <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">environment</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
                             <span class="p">],</span>
                         <span class="p">},</span>
+                        <span class="s2">&quot;disk_spec&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;boot_disk_type&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">boot_disk_type</span><span class="p">,</span>
+                            <span class="s2">&quot;boot_disk_size_gb&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">boot_disk_size_gb</span><span class="p">,</span>
+                        <span class="p">},</span>
                     <span class="p">}</span>
                 <span class="p">]</span>
             <span class="p">},</span>
@@ -16654,6 +16678,10 @@ environment.</p></td>
                             <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">key</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">}</span>
                             <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">environment</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
                         <span class="p">],</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;disk_spec&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;boot_disk_type&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">boot_disk_type</span><span class="p">,</span>
+                        <span class="s2">&quot;boot_disk_size_gb&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">boot_disk_size_gb</span><span class="p">,</span>
                     <span class="p">},</span>
                 <span class="p">}</span>
             <span class="p">]</span>

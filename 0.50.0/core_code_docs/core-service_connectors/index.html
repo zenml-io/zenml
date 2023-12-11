@@ -3745,7 +3745,6 @@ types of resources that they need to access.</li>
         <span class="n">user</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">workspace</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">is_shared</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnectorRequest&quot;</span><span class="p">:</span>
@@ -3755,7 +3754,6 @@ types of resources that they need to access.</li>
 <span class="sd">            name: The name of the connector.</span>
 <span class="sd">            user: The ID of the user that created the connector.</span>
 <span class="sd">            workspace: The ID of the workspace that the connector belongs to.</span>
-<span class="sd">            is_shared: Whether the connector is shared with other users.</span>
 <span class="sd">            description: The description of the connector.</span>
 <span class="sd">            labels: The labels of the connector.</span>
 
@@ -3780,7 +3778,6 @@ types of resources that they need to access.</li>
             <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
             <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
             <span class="n">workspace</span><span class="o">=</span><span class="n">workspace</span><span class="p">,</span>
-            <span class="n">is_shared</span><span class="o">=</span><span class="n">is_shared</span><span class="p">,</span>
             <span class="n">auth_method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">auth_method</span><span class="p">,</span>
             <span class="n">expires_at</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expires_at</span><span class="p">,</span>
             <span class="n">expiration_seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expiration_seconds</span><span class="p">,</span>
@@ -3804,7 +3801,6 @@ types of resources that they need to access.</li>
         <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserResponse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">is_shared</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnectorResponse&quot;</span><span class="p">:</span>
@@ -3815,7 +3811,6 @@ types of resources that they need to access.</li>
 <span class="sd">            user: The user that created the connector.</span>
 <span class="sd">            name: The name of the connector.</span>
 <span class="sd">            id: The ID of the connector.</span>
-<span class="sd">            is_shared: Whether the connector is shared with other users.</span>
 <span class="sd">            description: The description of the connector.</span>
 <span class="sd">            labels: The labels of the connector.</span>
 
@@ -3842,7 +3837,6 @@ types of resources that they need to access.</li>
                 <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
                 <span class="n">created</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">(),</span>
                 <span class="n">updated</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">(),</span>
-                <span class="n">is_shared</span><span class="o">=</span><span class="n">is_shared</span><span class="p">,</span>
                 <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
                 <span class="n">connector_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_type</span><span class="p">(),</span>
                 <span class="n">auth_method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">auth_method</span><span class="p">,</span>
@@ -5532,7 +5526,7 @@ time.</p>
 
 
 <h5 id="zenml.service_connectors.service_connector.ServiceConnector.to_model" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">to_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_shared</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">to_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 
 </h5>
@@ -5569,12 +5563,6 @@ time.</p>
         <td><code>UUID</code></td>
         <td><p>The ID of the workspace that the connector belongs to.</p></td>
         <td><em>required</em></td>
-      </tr>
-      <tr>
-        <td><code>is_shared</code></td>
-        <td><code>bool</code></td>
-        <td><p>Whether the connector is shared with other users.</p></td>
-        <td><code>False</code></td>
       </tr>
       <tr>
         <td><code>description</code></td>
@@ -5628,7 +5616,6 @@ instance.</p></td>
     <span class="n">user</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">workspace</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">is_shared</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnectorRequest&quot;</span><span class="p">:</span>
@@ -5638,7 +5625,6 @@ instance.</p></td>
 <span class="sd">        name: The name of the connector.</span>
 <span class="sd">        user: The ID of the user that created the connector.</span>
 <span class="sd">        workspace: The ID of the workspace that the connector belongs to.</span>
-<span class="sd">        is_shared: Whether the connector is shared with other users.</span>
 <span class="sd">        description: The description of the connector.</span>
 <span class="sd">        labels: The labels of the connector.</span>
 
@@ -5663,7 +5649,6 @@ instance.</p></td>
         <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
         <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
         <span class="n">workspace</span><span class="o">=</span><span class="n">workspace</span><span class="p">,</span>
-        <span class="n">is_shared</span><span class="o">=</span><span class="n">is_shared</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">auth_method</span><span class="p">,</span>
         <span class="n">expires_at</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expires_at</span><span class="p">,</span>
         <span class="n">expiration_seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expiration_seconds</span><span class="p">,</span>
@@ -5693,7 +5678,7 @@ instance.</p></td>
 
 
 <h5 id="zenml.service_connectors.service_connector.ServiceConnector.to_response_model" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">to_response_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_shared</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">to_response_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 
 </h5>
@@ -5736,12 +5721,6 @@ instance.</p></td>
         <td><code>Optional[uuid.UUID]</code></td>
         <td><p>The ID of the connector.</p></td>
         <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>is_shared</code></td>
-        <td><code>bool</code></td>
-        <td><p>Whether the connector is shared with other users.</p></td>
-        <td><code>False</code></td>
       </tr>
       <tr>
         <td><code>description</code></td>
@@ -5796,7 +5775,6 @@ instance.</p></td>
     <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserResponse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">is_shared</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnectorResponse&quot;</span><span class="p">:</span>
@@ -5807,7 +5785,6 @@ instance.</p></td>
 <span class="sd">        user: The user that created the connector.</span>
 <span class="sd">        name: The name of the connector.</span>
 <span class="sd">        id: The ID of the connector.</span>
-<span class="sd">        is_shared: Whether the connector is shared with other users.</span>
 <span class="sd">        description: The description of the connector.</span>
 <span class="sd">        labels: The labels of the connector.</span>
 
@@ -5834,7 +5811,6 @@ instance.</p></td>
             <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
             <span class="n">created</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">(),</span>
             <span class="n">updated</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">(),</span>
-            <span class="n">is_shared</span><span class="o">=</span><span class="n">is_shared</span><span class="p">,</span>
             <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
             <span class="n">connector_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_type</span><span class="p">(),</span>
             <span class="n">auth_method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">auth_method</span><span class="p">,</span>

@@ -416,6 +416,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#zenml.artifact_stores.base_artifact_store.BaseArtifactStore.custom_cache_key" class="md-nav__link">
+    custom_cache_key
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#zenml.artifact_stores.base_artifact_store.BaseArtifactStore.path" class="md-nav__link">
     path
   </a>
@@ -593,6 +600,13 @@
   
     <nav class="md-nav" aria-label="LocalArtifactStore">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.artifact_stores.local_artifact_store.LocalArtifactStore.custom_cache_key" class="md-nav__link">
+    custom_cache_key
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#zenml.artifact_stores.local_artifact_store.LocalArtifactStore.local_path" class="md-nav__link">
@@ -2065,6 +2079,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#zenml.artifact_stores.base_artifact_store.BaseArtifactStore.custom_cache_key" class="md-nav__link">
+    custom_cache_key
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#zenml.artifact_stores.base_artifact_store.BaseArtifactStore.path" class="md-nav__link">
     path
   </a>
@@ -2242,6 +2263,13 @@
   
     <nav class="md-nav" aria-label="LocalArtifactStore">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.artifact_stores.local_artifact_store.LocalArtifactStore.custom_cache_key" class="md-nav__link">
+    custom_cache_key
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#zenml.artifact_stores.local_artifact_store.LocalArtifactStore.local_path" class="md-nav__link">
@@ -2493,6 +2521,18 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">path</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">custom_cache_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Custom cache key.</span>
+
+<span class="sd">        Any artifact store can override this property in case they need</span>
+<span class="sd">        additional control over the caching behavior.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Custom cache key.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
     <span class="c1"># --- User interface ---</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -2739,6 +2779,46 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
     <tr>
       <td><code>BaseArtifactStoreConfig</code></td>
       <td><p>The configuration.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.artifact_stores.base_artifact_store.BaseArtifactStore.custom_cache_key" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">custom_cache_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Custom cache key.</p>
+<p>Any artifact store can override this property in case they need
+additional control over the caching behavior.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Optional[bytes]</code></td>
+      <td><p>Custom cache key.</p></td>
     </tr>
   </tbody>
 </table>    </div>
@@ -4176,6 +4256,18 @@ LocalArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">            The local path of the artifact store.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">custom_cache_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Custom cache key.</span>
+
+<span class="sd">        The client ID is returned here to invalidate caching when using the same</span>
+<span class="sd">        local artifact store on multiple client machines.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Custom cache key.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">user_id</span><span class="o">.</span><span class="n">bytes</span>
 </code></pre></div>
         </details>
 
@@ -4185,6 +4277,46 @@ LocalArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 
 
 
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.artifact_stores.local_artifact_store.LocalArtifactStore.custom_cache_key" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">custom_cache_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Custom cache key.</p>
+<p>The client ID is returned here to invalidate caching when using the same
+local artifact store on multiple client machines.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Optional[bytes]</code></td>
+      <td><p>Custom cache key.</p></td>
+    </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
 
 
 
@@ -4429,9 +4561,6 @@ LocalArtifactStoreConfig            (<a class="autorefs autorefs-internal" title
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
-<span class="sd">        This designation is used to determine if the stack component can be</span>
-<span class="sd">        shared with other users or if it is only usable on the local host.</span>
-
 <span class="sd">        Returns:</span>
 <span class="sd">            True if this config is for a local component, False otherwise.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -4467,8 +4596,6 @@ LocalArtifactStoreConfig            (<a class="autorefs autorefs-internal" title
     <div class="doc doc-contents ">
 
       <p>Checks if this stack component is running locally.</p>
-<p>This designation is used to determine if the stack component can be
-shared with other users or if it is only usable on the local host.</p>
 
 <p><strong>Returns:</strong></p>
 <table>

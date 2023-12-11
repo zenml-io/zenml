@@ -1217,40 +1217,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zenml.new.steps.log_artifact_metadata" class="md-nav__link">
-    log_artifact_metadata
-  </a>
-  
-    <nav class="md-nav" aria-label="log_artifact_metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#zenml.new.steps.log_artifact_metadata.log_artifact_metadata" class="md-nav__link">
-    log_artifact_metadata()
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.new.steps.log_artifact_metadata.log_endpoint_artifact_metadata" class="md-nav__link">
-    log_endpoint_artifact_metadata()
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.new.steps.log_artifact_metadata.log_model_artifact_metadata" class="md-nav__link">
-    log_model_artifact_metadata()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#zenml.new.steps.step_context" class="md-nav__link">
     step_context
   </a>
@@ -2818,40 +2784,6 @@
   <a href="#zenml.new.steps.decorated_step" class="md-nav__link">
     decorated_step
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.new.steps.log_artifact_metadata" class="md-nav__link">
-    log_artifact_metadata
-  </a>
-  
-    <nav class="md-nav" aria-label="log_artifact_metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#zenml.new.steps.log_artifact_metadata.log_artifact_metadata" class="md-nav__link">
-    log_artifact_metadata()
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.new.steps.log_artifact_metadata.log_endpoint_artifact_metadata" class="md-nav__link">
-    log_endpoint_artifact_metadata()
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.new.steps.log_artifact_metadata.log_model_artifact_metadata" class="md-nav__link">
-    log_model_artifact_metadata()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -8585,6 +8517,7 @@ def my_pipeline():
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_step_logs</span> <span class="o">=</span> <span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">enable_step_logs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">settings</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">extra</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_version</span> <span class="o">=</span> <span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">model_version</span>
 </code></pre></div>
         </details>
 
@@ -8657,6 +8590,7 @@ from Pipeline class.</p></td>
     <span class="bp">self</span><span class="o">.</span><span class="n">enable_step_logs</span> <span class="o">=</span> <span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">enable_step_logs</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">settings</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">extra</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model_version</span> <span class="o">=</span> <span class="n">pipeline_configuration</span><span class="o">.</span><span class="n">model_version</span>
 </code></pre></div>
         </details>
     </div>
@@ -9048,354 +8982,6 @@ function with no arguments, or a source path to such a function
 
 
 
-<h4 id="zenml.new.steps.log_artifact_metadata" class="doc doc-heading">
-        <code>log_artifact_metadata</code>
-
-
-
-</h4>
-
-    <div class="doc doc-contents ">
-
-      <p>Utility functions for logging artifact metadata.</p>
-
-
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-  <div class="doc doc-object doc-function">
-
-
-
-<h5 id="zenml.new.steps.log_artifact_metadata.log_artifact_metadata" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">log_artifact_metadata</span><span class="p">(</span><span class="n">output_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
-
-
-</h5>
-
-    <div class="doc doc-contents ">
-
-      <p>Log artifact metadata.</p>
-
-<p><strong>Parameters:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Default</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>output_name</code></td>
-        <td><code>Optional[str]</code></td>
-        <td><p>The output name of the artifact to log metadata for. Can
-be omitted if there is only one output artifact.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>**kwargs</code></td>
-        <td><code>Union[str, int, float, bool, Dict[Any, Any], List[Any], Set[Any], Tuple[Any, ...], zenml.metadata.metadata_types.Uri, zenml.metadata.metadata_types.Path, zenml.metadata.metadata_types.DType, zenml.metadata.metadata_types.StorageSize]</code></td>
-        <td><p>Metadata to log.</p></td>
-        <td><code>{}</code></td>
-      </tr>
-  </tbody>
-</table>
-<p><strong>Exceptions:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Type</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>RuntimeError</code></td>
-        <td><p>If the function is called outside of a step.</p></td>
-      </tr>
-      <tr>
-        <td><code>ValueError</code></td>
-        <td><p>If no output name is provided and there is more than one
-output or if the output name is does not exist.</p></td>
-      </tr>
-  </tbody>
-</table>
-        <details class="quote">
-          <summary>Source code in <code>zenml/new/steps/log_artifact_metadata.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">log_artifact_metadata</span><span class="p">(</span>
-    <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">MetadataType</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log artifact metadata.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        output_name: The output name of the artifact to log metadata for. Can</span>
-<span class="sd">            be omitted if there is only one output artifact.</span>
-<span class="sd">        **kwargs: Metadata to log.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        RuntimeError: If the function is called outside of a step.</span>
-<span class="sd">        ValueError: If no output name is provided and there is more than one</span>
-<span class="sd">            output or if the output name is does not exist.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">:</span>
-        <span class="k">return</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">step_context</span> <span class="o">=</span> <span class="n">get_step_context</span><span class="p">()</span>
-    <span class="k">except</span> <span class="n">StepContextError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;Cannot log data artifact metadata outside of a step.&quot;</span>
-        <span class="p">)</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">step_context</span><span class="o">.</span><span class="n">add_output_metadata</span><span class="p">(</span><span class="n">output_name</span><span class="o">=</span><span class="n">output_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">StepContextError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-function">
-
-
-
-<h5 id="zenml.new.steps.log_artifact_metadata.log_endpoint_artifact_metadata" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">log_endpoint_artifact_metadata</span><span class="p">(</span><span class="n">output_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">predict_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">explain_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">healthcheck_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deployer_ui_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
-
-
-</h5>
-
-    <div class="doc doc-contents ">
-
-      <p>Log metadata for an endpoint artifact.</p>
-
-<p><strong>Parameters:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Default</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>output_name</code></td>
-        <td><code>Optional[str]</code></td>
-        <td><p>The output name of the endpoint artifact to log metadata for. Can
-be omitted if there is only one output artifact.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>description</code></td>
-        <td><code>Optional[str]</code></td>
-        <td><p>A description of the endpoint artifact.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>predict_url</code></td>
-        <td><code>Optional[str]</code></td>
-        <td><p>The predict URL of the endpoint artifact.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>explain_url</code></td>
-        <td><code>Optional[str]</code></td>
-        <td><p>The explain URL of the endpoint artifact.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>healthcheck_url</code></td>
-        <td><code>Optional[str]</code></td>
-        <td><p>The healthcheck URL of the endpoint artifact.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>deployer_ui_url</code></td>
-        <td><code>Optional[str]</code></td>
-        <td><p>The deployer UI URL of the endpoint artifact.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>**kwargs</code></td>
-        <td><code>Union[str, int, float, bool, Dict[Any, Any], List[Any], Set[Any], Tuple[Any, ...], zenml.metadata.metadata_types.Uri, zenml.metadata.metadata_types.Path, zenml.metadata.metadata_types.DType, zenml.metadata.metadata_types.StorageSize]</code></td>
-        <td><p>Other metadata to log.</p></td>
-        <td><code>{}</code></td>
-      </tr>
-  </tbody>
-</table>
-        <details class="quote">
-          <summary>Source code in <code>zenml/new/steps/log_artifact_metadata.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">log_endpoint_artifact_metadata</span><span class="p">(</span>
-    <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">predict_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">explain_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">healthcheck_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">deployer_ui_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">MetadataType</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log metadata for an endpoint artifact.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        output_name: The output name of the endpoint artifact to log metadata for. Can</span>
-<span class="sd">            be omitted if there is only one output artifact.</span>
-<span class="sd">        description: A description of the endpoint artifact.</span>
-<span class="sd">        predict_url: The predict URL of the endpoint artifact.</span>
-<span class="sd">        explain_url: The explain URL of the endpoint artifact.</span>
-<span class="sd">        healthcheck_url: The healthcheck URL of the endpoint artifact.</span>
-<span class="sd">        deployer_ui_url: The deployer UI URL of the endpoint artifact.</span>
-<span class="sd">        **kwargs: Other metadata to log.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">description</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">description</span>
-    <span class="k">if</span> <span class="n">predict_url</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;predict_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">predict_url</span>
-    <span class="k">if</span> <span class="n">explain_url</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;explain_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">explain_url</span>
-    <span class="k">if</span> <span class="n">healthcheck_url</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;healthcheck_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">healthcheck_url</span>
-    <span class="k">if</span> <span class="n">deployer_ui_url</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;deployer_ui_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deployer_ui_url</span>
-
-    <span class="n">log_artifact_metadata</span><span class="p">(</span>
-        <span class="n">output_name</span><span class="o">=</span><span class="n">output_name</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-function">
-
-
-
-<h5 id="zenml.new.steps.log_artifact_metadata.log_model_artifact_metadata" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">log_model_artifact_metadata</span><span class="p">(</span><span class="n">output_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hyperparameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
-
-
-</h5>
-
-    <div class="doc doc-contents ">
-
-      <p>Log metadata for a model artifact.</p>
-
-<p><strong>Parameters:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Default</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>output_name</code></td>
-        <td><code>Optional[str]</code></td>
-        <td><p>The output name of the model artifact to log metadata for. Can
-be omitted if there is only one output artifact.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>description</code></td>
-        <td><code>Optional[str]</code></td>
-        <td><p>A description of the model.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>metrics</code></td>
-        <td><code>Optional[Dict[str, Union[str, int, float, bool, Dict[Any, Any], List[Any], Set[Any], Tuple[Any, ...], zenml.metadata.metadata_types.Uri, zenml.metadata.metadata_types.Path, zenml.metadata.metadata_types.DType, zenml.metadata.metadata_types.StorageSize]]]</code></td>
-        <td><p>The metrics to log.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>hyperparameters</code></td>
-        <td><code>Optional[Dict[str, Union[str, int, float, bool, Dict[Any, Any], List[Any], Set[Any], Tuple[Any, ...], zenml.metadata.metadata_types.Uri, zenml.metadata.metadata_types.Path, zenml.metadata.metadata_types.DType, zenml.metadata.metadata_types.StorageSize]]]</code></td>
-        <td><p>The hyperparameters to log.</p></td>
-        <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>**kwargs</code></td>
-        <td><code>Union[str, int, float, bool, Dict[Any, Any], List[Any], Set[Any], Tuple[Any, ...], zenml.metadata.metadata_types.Uri, zenml.metadata.metadata_types.Path, zenml.metadata.metadata_types.DType, zenml.metadata.metadata_types.StorageSize]</code></td>
-        <td><p>Other metadata to log.</p></td>
-        <td><code>{}</code></td>
-      </tr>
-  </tbody>
-</table>
-        <details class="quote">
-          <summary>Source code in <code>zenml/new/steps/log_artifact_metadata.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">log_model_artifact_metadata</span><span class="p">(</span>
-    <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">metrics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">hyperparameters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">MetadataType</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log metadata for a model artifact.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        output_name: The output name of the model artifact to log metadata for. Can</span>
-<span class="sd">            be omitted if there is only one output artifact.</span>
-<span class="sd">        description: A description of the model.</span>
-<span class="sd">        metrics: The metrics to log.</span>
-<span class="sd">        hyperparameters: The hyperparameters to log.</span>
-<span class="sd">        **kwargs: Other metadata to log.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">description</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">description</span>
-    <span class="k">if</span> <span class="n">metrics</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;metrics&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span>
-    <span class="k">if</span> <span class="n">hyperparameters</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;hyperparameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hyperparameters</span>
-    <span class="n">log_artifact_metadata</span><span class="p">(</span>
-        <span class="n">output_name</span><span class="o">=</span><span class="n">output_name</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-module">
-
-
-
 <h4 id="zenml.new.steps.step_context" class="doc doc-heading">
         <code>step_context</code>
 
@@ -9490,7 +9076,7 @@ def my_trainer_step() -&gt; Any:
         <span class="n">step_run</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
         <span class="n">output_materializers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]],</span>
         <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
-        <span class="n">output_artifact_configs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;DataArtifactConfig&quot;</span><span class="p">]],</span>
+        <span class="n">output_artifact_configs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactConfig&quot;</span><span class="p">]],</span>
         <span class="n">step_run_info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
         <span class="n">cache_enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -9797,28 +9383,30 @@ def my_trainer_step() -&gt; Any:
 <span class="sd">        Returns:</span>
 <span class="sd">            Metadata for the given output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span><span class="o">.</span><span class="n">run_metadata</span> <span class="ow">or</span> <span class="p">{}</span>
 
     <span class="k">def</span> <span class="nf">add_output_metadata</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">metadata</span><span class="p">:</span> <span class="s2">&quot;MetadataType&quot;</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
+        <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds metadata for a given step output.</span>
 
 <span class="sd">        Args:</span>
+<span class="sd">            metadata: The metadata to add.</span>
 <span class="sd">            output_name: Optional name of the output for which to add the</span>
 <span class="sd">                metadata. If no name is given and the step only has a single</span>
 <span class="sd">                output, the metadata of this output will be added. If the</span>
 <span class="sd">                step has multiple outputs, an exception will be raised.</span>
-<span class="sd">            **metadata: The metadata to add.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
-            <span class="n">output</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="o">.</span><span class="n">run_metadata</span><span class="p">:</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">run_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">run_metadata</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">metadata</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_set_artifact_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">artifact_config</span><span class="p">:</span> <span class="s2">&quot;DataArtifactConfig&quot;</span><span class="p">,</span>
+        <span class="n">artifact_config</span><span class="p">:</span> <span class="s2">&quot;ArtifactConfig&quot;</span><span class="p">,</span>
         <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds artifact config for a given step output.</span>
@@ -10264,7 +9852,7 @@ context is used in.</p></td>
       </tr>
       <tr>
         <td><code>output_artifact_configs</code></td>
-        <td><code>Mapping[str, Optional[DataArtifactConfig]]</code></td>
+        <td><code>Mapping[str, Optional[ArtifactConfig]]</code></td>
         <td><p>The outputs' ArtifactConfigs of the step that this
 context is used in.</p></td>
         <td><em>required</em></td>
@@ -10307,7 +9895,7 @@ output artifacts do not match.</p></td>
     <span class="n">step_run</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
     <span class="n">output_materializers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]],</span>
     <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
-    <span class="n">output_artifact_configs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;DataArtifactConfig&quot;</span><span class="p">]],</span>
+    <span class="n">output_artifact_configs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactConfig&quot;</span><span class="p">]],</span>
     <span class="n">step_run_info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="n">cache_enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -10370,7 +9958,7 @@ output artifacts do not match.</p></td>
 
 
 <h6 id="zenml.new.steps.step_context.StepContext.add_output_metadata" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">add_output_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">metadata</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">add_output_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">output_name</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 
 </h6>
@@ -10391,6 +9979,12 @@ output artifacts do not match.</p></td>
   </thead>
   <tbody>
       <tr>
+        <td><code>metadata</code></td>
+        <td><code>Dict[str, MetadataType]</code></td>
+        <td><p>The metadata to add.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
         <td><code>output_name</code></td>
         <td><code>Optional[str]</code></td>
         <td><p>Optional name of the output for which to add the
@@ -10399,32 +9993,28 @@ output, the metadata of this output will be added. If the
 step has multiple outputs, an exception will be raised.</p></td>
         <td><code>None</code></td>
       </tr>
-      <tr>
-        <td><code>**metadata</code></td>
-        <td><code>MetadataType</code></td>
-        <td><p>The metadata to add.</p></td>
-        <td><code>{}</code></td>
-      </tr>
   </tbody>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/new/steps/step_context.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_output_metadata</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">metadata</span><span class="p">:</span> <span class="s2">&quot;MetadataType&quot;</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
+    <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds metadata for a given step output.</span>
 
 <span class="sd">    Args:</span>
+<span class="sd">        metadata: The metadata to add.</span>
 <span class="sd">        output_name: Optional name of the output for which to add the</span>
 <span class="sd">            metadata. If no name is given and the step only has a single</span>
 <span class="sd">            output, the metadata of this output will be added. If the</span>
 <span class="sd">            step has multiple outputs, an exception will be raised.</span>
-<span class="sd">        **metadata: The metadata to add.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
-        <span class="n">output</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="o">.</span><span class="n">run_metadata</span><span class="p">:</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">run_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">output</span><span class="o">.</span><span class="n">run_metadata</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">metadata</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
@@ -10700,7 +10290,7 @@ step has multiple outputs, an exception will be raised.</p></td>
 <span class="sd">    Returns:</span>
 <span class="sd">        Metadata for the given output.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span><span class="o">.</span><span class="n">run_metadata</span> <span class="ow">or</span> <span class="p">{}</span>
 </code></pre></div>
         </details>
     </div>
@@ -10742,14 +10332,14 @@ StepContextOutput        </code>
 
     <span class="n">materializer_classes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span>
     <span class="n">artifact_uri</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;DataArtifactConfig&quot;</span><span class="p">]</span>
+    <span class="n">run_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactConfig&quot;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">materializer_classes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]],</span>
         <span class="n">artifact_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;DataArtifactConfig&quot;</span><span class="p">],</span>
+        <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactConfig&quot;</span><span class="p">],</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the step output.</span>
 
@@ -10819,7 +10409,7 @@ StepContextOutput        </code>
       </tr>
       <tr>
         <td><code>artifact_config</code></td>
-        <td><code>Optional[DataArtifactConfig]</code></td>
+        <td><code>Optional[ArtifactConfig]</code></td>
         <td><p>The ArtifactConfig object of the output.</p></td>
         <td><em>required</em></td>
       </tr>
@@ -10831,7 +10421,7 @@ StepContextOutput        </code>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">materializer_classes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]],</span>
     <span class="n">artifact_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;DataArtifactConfig&quot;</span><span class="p">],</span>
+    <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactConfig&quot;</span><span class="p">],</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the step output.</span>
 

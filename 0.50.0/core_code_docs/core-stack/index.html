@@ -4214,15 +4214,12 @@ Flavor        </code>
     <span class="k">def</span> <span class="nf">to_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">integration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">scoped_by_workspace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">is_custom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorRequest</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            integration: The integration to use for the model.</span>
-<span class="sd">            scoped_by_workspace: Whether this flavor should live in the scope</span>
-<span class="sd">                of the active workspace</span>
 <span class="sd">            is_custom: Whether the flavor is a custom flavor. Custom flavors</span>
 <span class="sd">                are then scoped by user and workspace</span>
 
@@ -4248,7 +4245,8 @@ Flavor        </code>
             <span class="k">if</span> <span class="n">connector_requirements</span>
             <span class="k">else</span> <span class="kc">None</span>
         <span class="p">)</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">FlavorRequest</span><span class="p">(</span>
+        <span class="n">model_class</span> <span class="o">=</span> <span class="n">FlavorRequest</span> <span class="k">if</span> <span class="n">is_custom</span> <span class="k">else</span> <span class="n">InternalFlavorRequest</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="p">(</span>
             <span class="n">user</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">active_user</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">is_custom</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">workspace</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">active_workspace</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">is_custom</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -4903,7 +4901,7 @@ for legacy documentation before ZenML v0.34.0.</p></td>
 
 
 <h5 id="zenml.stack.flavor.Flavor.to_model" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">to_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">integration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scoped_by_workspace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_custom</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">to_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">integration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_custom</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
 
 </h5>
@@ -4928,13 +4926,6 @@ for legacy documentation before ZenML v0.34.0.</p></td>
         <td><code>Optional[str]</code></td>
         <td><p>The integration to use for the model.</p></td>
         <td><code>None</code></td>
-      </tr>
-      <tr>
-        <td><code>scoped_by_workspace</code></td>
-        <td><code>bool</code></td>
-        <td><p>Whether this flavor should live in the scope
-of the active workspace</p></td>
-        <td><code>True</code></td>
       </tr>
       <tr>
         <td><code>is_custom</code></td>
@@ -4965,15 +4956,12 @@ are then scoped by user and workspace</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">to_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">integration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">scoped_by_workspace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">is_custom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorRequest</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        integration: The integration to use for the model.</span>
-<span class="sd">        scoped_by_workspace: Whether this flavor should live in the scope</span>
-<span class="sd">            of the active workspace</span>
 <span class="sd">        is_custom: Whether the flavor is a custom flavor. Custom flavors</span>
 <span class="sd">            are then scoped by user and workspace</span>
 
@@ -4999,7 +4987,8 @@ are then scoped by user and workspace</p></td>
         <span class="k">if</span> <span class="n">connector_requirements</span>
         <span class="k">else</span> <span class="kc">None</span>
     <span class="p">)</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">FlavorRequest</span><span class="p">(</span>
+    <span class="n">model_class</span> <span class="o">=</span> <span class="n">FlavorRequest</span> <span class="k">if</span> <span class="n">is_custom</span> <span class="k">else</span> <span class="n">InternalFlavorRequest</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="p">(</span>
         <span class="n">user</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">active_user</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">is_custom</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">workspace</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">active_workspace</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">is_custom</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -5330,7 +5319,6 @@ FlavorRegistry        </code>
             <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">builtin_flavors</span><span class="p">:</span>
                 <span class="n">flavor_request_model</span> <span class="o">=</span> <span class="n">flavor</span><span class="p">()</span><span class="o">.</span><span class="n">to_model</span><span class="p">(</span>
                     <span class="n">integration</span><span class="o">=</span><span class="s2">&quot;built-in&quot;</span><span class="p">,</span>
-                    <span class="n">scoped_by_workspace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">is_custom</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">existing_flavor</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_flavors</span><span class="p">(</span>
@@ -5364,7 +5352,6 @@ FlavorRegistry        </code>
                     <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="n">integrated_flavors</span><span class="p">:</span>
                         <span class="n">flavor_request_model</span> <span class="o">=</span> <span class="n">flavor</span><span class="p">()</span><span class="o">.</span><span class="n">to_model</span><span class="p">(</span>
                             <span class="n">integration</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-                            <span class="n">scoped_by_workspace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                             <span class="n">is_custom</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="p">)</span>
                         <span class="n">existing_flavor</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_flavors</span><span class="p">(</span>
@@ -5555,7 +5542,6 @@ FlavorRegistry        </code>
         <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">builtin_flavors</span><span class="p">:</span>
             <span class="n">flavor_request_model</span> <span class="o">=</span> <span class="n">flavor</span><span class="p">()</span><span class="o">.</span><span class="n">to_model</span><span class="p">(</span>
                 <span class="n">integration</span><span class="o">=</span><span class="s2">&quot;built-in&quot;</span><span class="p">,</span>
-                <span class="n">scoped_by_workspace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">is_custom</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">existing_flavor</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_flavors</span><span class="p">(</span>
@@ -5685,7 +5671,6 @@ FlavorRegistry        </code>
                 <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="n">integrated_flavors</span><span class="p">:</span>
                     <span class="n">flavor_request_model</span> <span class="o">=</span> <span class="n">flavor</span><span class="p">()</span><span class="o">.</span><span class="n">to_model</span><span class="p">(</span>
                         <span class="n">integration</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-                        <span class="n">scoped_by_workspace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">is_custom</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="n">existing_flavor</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_flavors</span><span class="p">(</span>
@@ -11757,9 +11742,6 @@ StackComponentConfig            (<span title="pydantic.main.BaseModel">BaseModel
 <span class="sd">        resources or capabilities (e.g. local filesystem, local database or</span>
 <span class="sd">        other services).</span>
 
-<span class="sd">        This designation is used to determine if the stack component can be</span>
-<span class="sd">        shared with other users or if it is only usable on the local host.</span>
-
 <span class="sd">        Examples:</span>
 <span class="sd">          * Artifact Stores that store artifacts in the local filesystem</span>
 <span class="sd">          * Orchestrators that are connected to local orchestration runtime</span>
@@ -11925,8 +11907,6 @@ StackComponentConfig            (<span title="pydantic.main.BaseModel">BaseModel
 method to return True if the stack component is relying on local
 resources or capabilities (e.g. local filesystem, local database or
 other services).</p>
-<p>This designation is used to determine if the stack component can be
-shared with other users or if it is only usable on the local host.</p>
 
 <p><strong>Examples:</strong></p>
     <ul>
