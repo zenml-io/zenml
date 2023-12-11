@@ -3183,6 +3183,8 @@ class RestZenStore(BaseZenStore):
                 )
 
             self._session = requests.Session()
+            self._session.adapters["http://"].max_retries = 5
+            self._session.adapters["https://"].max_retries = 5
             self._session.verify = self.config.verify_ssl
             token = self._get_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
