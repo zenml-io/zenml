@@ -22,7 +22,12 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.source import Source
-from zenml.enums import ArtifactType, ExecutionStatus, TaggableResourceTypes
+from zenml.enums import (
+    ArtifactType,
+    ExecutionStatus,
+    MetadataResourceTypes,
+    TaggableResourceTypes,
+)
 from zenml.models import (
     ArtifactResponse,
     ArtifactResponseBody,
@@ -206,7 +211,11 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="artifact_version",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ArtifactVersionSchema.id)",
+            cascade="delete",
+            overlaps="run_metadata",
+        ),
     )
     output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="artifact_version",
@@ -267,6 +276,18 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         Returns:
             The created `ArtifactVersionResponse`.
         """
+        try:
+            materializer = Source.parse_raw(self.materializer)
+        except ValidationError:
+            # This is an old source which was an importable source path
+            materializer = Source.from_import_path(self.materializer)
+
+        try:
+            data_type = Source.parse_raw(self.data_type)
+        except ValidationError:
+            # This is an old source which was an importable source path
+            data_type = Source.from_import_path(self.data_type)
+
         # Create the body of the model
         body = ArtifactVersionResponseBody(
             artifact=self.artifact.to_model(),
@@ -274,6 +295,8 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
             type=self.type,
+            materializer=materializer,
+            data_type=data_type,
             created=self.created,
             updated=self.updated,
         )
@@ -281,18 +304,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         # Create the metadata of the model
         metadata = None
         if hydrate:
-            try:
-                materializer = Source.parse_raw(self.materializer)
-            except ValidationError:
-                # This is an old source which was an importable source path
-                materializer = Source.from_import_path(self.materializer)
-
-            try:
-                data_type = Source.parse_raw(self.data_type)
-            except ValidationError:
-                # This is an old source which was an importable source path
-                data_type = Source.from_import_path(self.data_type)
-
             producer_step_run_id = None
             if self.output_of_step_runs:
                 step_run = self.output_of_step_runs[0].step_run
@@ -307,8 +318,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata={m.key: m.to_model() for m in self.run_metadata},
-                materializer=materializer,
-                data_type=data_type,
                 tags=[t.tag.to_model() for t in self.tags],
             )
 

@@ -31,8 +31,8 @@ There are two ways how you can add custom visualizations to the dashboard:
 
 If you already have HTML, Markdown, or CSV data available as a string inside your step, you can simply cast them to one of the following types and return them from your step:
 
-* `zenml.types.HTMLString` for strings in HTML format, e.g., `"# Header\nSome text"`,
-* `zenml.types.MarkdownString` for strings in Markdown format, e.g., `"<h1>Header</h1>Some text"`,
+* `zenml.types.HTMLString` for strings in HTML format, e.g., `"<h1>Header</h1>Some text"`,
+* `zenml.types.MarkdownString` for strings in Markdown format, e.g., `"# Header\nSome text"`,
 * `zenml.types.CSVString` for strings in CSV format, e.g., `"a,b,c\n1,2,3"`.
 
 #### Example:

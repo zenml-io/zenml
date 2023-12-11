@@ -21,7 +21,12 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.enums import ExecutionStatus, StackComponentType, VisualizationType
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    StackComponentType,
+    VisualizationType,
+)
 from zenml.exceptions import DoesNotExistException, StepContextError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -101,6 +106,10 @@ def save_artifact(
     )
     from zenml.utils import source_utils
 
+    # TODO: Can we handle this server side? If we leave it empty in the request,
+    # it's an auto-increase?
+    # TODO: This can probably lead to issues when multiple steps request a new
+    # artifact version at the same time?
     # Get new artifact version if not specified
     version = version or _get_new_artifact_version(name)
 
@@ -113,7 +122,9 @@ def save_artifact(
         uri = os.path.join("custom_artifacts", name, str(version))
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
-    if fileio.exists(uri):
+    if manual_save and fileio.exists(uri):
+        # This check is only necessary for manual saves as we already check
+        # it when creating the directory for step output artifacts
         other_artifacts = client.list_artifact_versions(uri=uri, size=1)
         if other_artifacts and (other_artifact := other_artifacts[0]):
             raise RuntimeError(
@@ -169,8 +180,8 @@ def save_artifact(
 
     # Get or create the artifact
     try:
-        artifact = client.get_artifact(name)
-    except KeyError:
+        artifact = client.list_artifacts(name=name)[0]
+    except IndexError:
         artifact = client.zen_store.create_artifact(
             ArtifactRequest(
                 name=name,
@@ -198,7 +209,9 @@ def save_artifact(
     )
     if artifact_metadata:
         Client().create_run_metadata(
-            metadata=artifact_metadata, artifact_version_id=response.id
+            metadata=artifact_metadata,
+            resource_id=response.id,
+            resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
         )
 
     if manual_save:
@@ -288,9 +301,11 @@ def log_artifact_metadata(
                 "inside a step with a single output."
             )
         client = Client()
-        artifact = client.get_artifact_version(artifact_name, artifact_version)
+        response = client.get_artifact_version(artifact_name, artifact_version)
         client.create_run_metadata(
-            metadata=metadata, artifact_version_id=artifact.id
+            metadata=metadata,
+            resource_id=response.id,
+            resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
         )
 
     else:

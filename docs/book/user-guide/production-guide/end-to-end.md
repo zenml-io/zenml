@@ -1,73 +1,74 @@
 ---
-description: Understanding how and when the version of a pipeline is incremented.
+description: Put your new knowledge in action with an end to end project
 ---
 
-# Version pipelines
+# An end-to-end project
 
-You might have noticed that when you run a pipeline in ZenML with the same name, but with different steps, it creates a new **version** of the pipeline. Consider our example pipeline:
+In this guide, we have went over some advanced concepts:
 
-```python
-@pipeline
-def first_pipeline(gamma: float = 0.002):
-    X_train, X_test, y_train, y_test = training_data_loader()
-    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
+- The value of [deploying ZenML](connect-deployed-zenml.md)
+- Abstracting infrastructure configuration into [stacks](understand-stacks.md)
+- [Deploying a MLOps stack](cloud-stack.md) on a cloud provider of your choice
+- [Connecting a git repository](connect-code-repository.md)
+- [Scaling compute](scale-compute.md)
+- Setting up [pipeline configuration](configure-pipeline.md) in production
 
+We will now combine all of these concepts into an end to end MLOps project powered by ZenML.
 
-if __name__ == "__main__":
-    first_pipeline()
-```
+## Get started
 
-Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`.
-
-```
-$python run.py
-...
-Registered pipeline first_pipeline (version 1).
-...
-```
-
-Running it again (`python run.py`) will create _yet another_ `run` for `version 1` of the pipeline called `first_pipeline`. So now the same pipeline has two runs. You can also verify this in the dashboard.
-
-However, now let's change the pipeline configuration itself. You can do this by modifying the step connections within the `@pipeline` function or by replacing a concrete step with another one. For example, let's create an alternative step called `digits_data_loader` which loads a different dataset.
-
-```python
-@step
-def digits_data_loader() -> Tuple[
-    Annotated[pd.DataFrame, "X_train"],
-    Annotated[pd.DataFrame, "X_test"],
-    Annotated[pd.Series, "y_train"],
-    Annotated[pd.Series, "y_test"],
-]:
-    """Loads the digits dataset and splits it into train and test data."""
-    # Load data from the digits dataset
-    digits = load_digits(as_frame=True)
-    # Split into datasets
-    X_train, X_test, y_train, y_test = train_test_split(
-        digits.data, digits.target, test_size=0.2, shuffle=True
-    )
-    return X_train, X_test, y_train, y_test
-
-
-@pipeline
-def first_pipeline(gamma: float = 0.002):
-    X_train, X_test, y_train, y_test = digits_data_loader()
-    svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
-
-
-if __name__ == "__main__":
-    first_pipeline()
-```
+Start with a fresh virtual environment with no dependencies. Then let's install our dependencies:
 
 ```bash
-python run.py
-...
-Registered pipeline first_pipeline (version 2).
-...
+pip install "zenml[templates,server]" notebook
+zenml integration install sklearn -y
 ```
 
-This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`.
+We will then use [ZenML templates](../advanced-guide/best-practices/using-project-templates.md) to help us get the code we need for the project:
 
-<figure><img src="../../.gitbook/assets/PipelineVersion.png" alt=""><figcaption></figcaption></figure>
+```bash
+mkdir zenml_starter
+cd zenml_starter
+zenml init --template e2e_batch --template-with-defaults
+
+# Just in case, we install the requirements again
+pip install -r requirements.txt
+```
+
+<details>
+
+<summary>Above doesn't work? Here is an alternative</summary>
+
+The e2e template is also available as a [ZenML example](https://github.com/zenml-io/zenml/tree/main/examples/e2e). You can clone it:
+
+```bash
+git clone git@github.com:zenml-io/zenml.git
+cd examples/e2e
+pip install -r requirements.txt
+zenml init
+```
+
+</details>
+
+## What you'll learn
+
+The e2e project is a comprehensive project template to cover major use cases of ZenML: a collection of steps and pipelines and,  to top it all off, a simple but useful CLI. It showcases the core ZenML concepts for supervised ML with batch predictions:
+
+- Designing [ZenML pipeline steps](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline)
+- Using [step parameterization](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline#parametrizing-a-step)
+ and [step caching](https://docs.zenml.io/user-guide/starter-guide/cache-previous-executions#caching-at-a-step-level)
+to design flexible and reusable steps
+- Using [custom data types for your artifacts and writing materializers for them](https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types)
+- Constructing and running a [ZenML pipeline](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline)
+- Accessing ZenML pipeline run artifacts in [the post-execution phase](https://docs.zenml.io/user-guide/starter-guide/fetch-runs-after-execution)
+after a pipeline run has concluded
+- Best practices for implementing and running reproducible and reliable ML pipelines with ZenML
+
+Now trying sharing the [ZenML e2e template](https://github.com/zenml-io/template-e2e-batch) with your colleagues and see how they react!
+
+## Conclusion and next steps
+
+The production guide has now hopefully landed you with an end to end MLOps project, powered by a ZenML server connected to your cloud infrastructure. You are now ready to deep dive into writing your own pipelines and stacks. If you are looking to learn more advanced concepts, the [Advanced Guide](../advanced-guide/) is for you. Until then, wishing you best of luck chasing your MLOps dreams!
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

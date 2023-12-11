@@ -66,7 +66,7 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](using-project-templates.md#advanced-guide)_._
+_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../best-practices/using-project-templates.md#advanced-guide)_._
 
 In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../../stacks-and-components/component-guide/alerters/alerters.md) from the active stack.
 
@@ -118,7 +118,7 @@ def my_step(some_parameter: int = 1)
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](using-project-templates.md#advanced-guide)_._
+_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../best-practices/using-project-templates.md#advanced-guide)_._
 
 In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../../stacks-and-components/component-guide/alerters/alerters.md) from the active stack.
 
@@ -183,7 +183,7 @@ def my_step(...):
 
 <summary>See it in action with the E2E example</summary>
 
-_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](using-project-templates.md#advanced-guide)_._
+_To setup the local environment used below, follow the recommendations from the_ [_Project templates_](../best-practices/using-project-templates.md#advanced-guide)_._
 
 In [`steps/alerts/notify_on.py`](../../../../../examples/e2e/steps/alerts/notify\_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../../stacks-and-components/component-guide/alerters/alerters.md) from the active stack.
 

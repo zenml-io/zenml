@@ -2,21 +2,21 @@
 description: Understand and adjust how ZenML versions your data.
 ---
 
-# Data management with ZenML
+# Data artifact management with ZenML
 
-Until now, we have been focusing on step and pipeline code and configuration. Now, we will shift our attention to another pillar of any MLOps system: *data*.
-
-Whenever you run a ZenML pipeline, all output data of your steps are automatically versioned as artifacts into your artifact store and subsequent steps automatically load them in again. Each artifact that ZenML saves in your artifact store is assigned a name and is versioned automatically.
+Data sits at the heart of every machine learning workflow. Managing and versioning this data correctly is essential for reproducibility and traceability within your ML pipelines. ZenML takes a proactive approach to data versioning, ensuring that every artifact—be it data, models, or evaluations—is automatically tracked and versioned upon pipeline execution.
 
 ![Walkthrough of ZenML Data Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/dcp_walkthrough.gif)
 
+This guide will delve into artifact versioning and management, showing you how to efficiently name, organize, and utilize your data with the ZenML framework.
+
 ## Managing artifacts produced by ZenML pipelines
 
-A majority of artifacts tracked by the ZenML framework will inevitably be produced by ZenML pipelines. It is quite common to want to be able to configure these artifacts as you develop your pipelines:
+Artifacts, the outputs of your pipelines, are automatically versioned and stored in the artifact store. Configuring these artifacts is pivotal for transparent and efficient pipeline development.
 
 ### Giving names to your artifacts
 
-You can use the `Annotated` object to give your outputs unique names:
+Assigning custom names to your artifacts can greatly enhance their discoverability and manageability. Utilize the `Annotated` object within your steps to give precise, human-readable names to outputs:
 
 ```python
 from typing_extensions import Annotated
@@ -42,22 +42,20 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-If you do not give your outputs custom names, the artifacts created by your
-ZenML steps will be named `{pipeline_name}::{step_name}::output` or
-`{pipeline_name}::{step_name}::output_{i}` by default.
+Unspecified artifact outputs default to a naming pattern of `{pipeline_name}::{step_name}::output`. For visual exploration in the ZenML dashboard, it's best practice to give significant outputs clear custom names.
 {% endhint %}
 
-Now you will be able to find the created artifact as `iris_dataset` in ZenML:
+Artifacts named `iris_dataset` can then be found swiftly using various ZenML interfaces:
 
 {% tabs %}
 {% tab title="OSS (CLI)" %}
 
-`zenml artifacts list` can be used to list of artifacts and their versions.
+To list artifacts: `zenml artifacts list`
 
 {% endtab %}
 {% tab title="Cloud (Dashboard)" %}
 
-The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing these artifacts in the dashboard.
+The ZenML Cloud dashboard offers advanced visualization features for artifact exploration.
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>ZenML Data Control Plane.</p></figcaption></figure>
 
@@ -70,9 +68,7 @@ important artifacts that you would like to explore visually.
 {% endtab %}
 {% endtabs %}
 
-For more advanced configuration of your artifacts, users must use the `ArtifactConfig` class, to modify the name, version, and other properties of the artifacts.
-
-### Assign custom artifact versions
+### Versioning Artifacts Intentionally
 
 ZenML automatically versions all created artifacts using auto-incremented
 numbering. I.e., if you have defined a step creating an artifact named
@@ -80,8 +76,9 @@ numbering. I.e., if you have defined a step creating an artifact named
 create an artifact with this name and version "1", the second execution will
 create version "2" and so on.
 
-If you would like to override the version assigned to an artifact, you can use
-the `version` property of the `ArtifactConfig`, and add it your step:
+While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model/#zenml.model.artifact_config.DataArtifactConfig). This may come into play during critical runs like production releases.
+
+
 
 ```python
 from zenml import step, ArtifactConfig
@@ -106,26 +103,35 @@ you are making a particularly important pipeline run (such as a release) whose
 artifacts you want to distinguish at a glance later.
 
 {% hint style="warning" %}
-You cannot create two artifacts with the same name and version, so rerunning a
-step that specifies a manual artifact version will always fail. Therefore, it might make sense to control the artifact config via a [YAML Config](../advanced-guide/pipelining-features/configure-steps-pipelines.md) so as not to constantly edit your codebase.
+Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML Config](../advanced-guide/pipelining-features/configure-steps-pipelines.md) for artifact versioning.
 {% endhint %}
 
-Now you will be able to find the created artifact version within your `iris_dataset`:
+After execution, `iris_dataset` and its version `raw_2023` can be seen using:
 
 {% tabs %}
 {% tab title="OSS (CLI)" %}
 
-`zenml artifacts versions list` can be used to list of artifacts and their versions.
+To list versions: `zenml artifacts versions list`
 
 {% endtab %}
 {% tab title="Cloud (Dashboard)" %}
 
-The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing these artifacts versions in the dashboard.
+The Cloud dashboard visualizes version history for your review.
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>ZenML Data Versions List.</p></figcaption></figure>
 
 {% endtab %}
 {% endtabs %}
+
+### Visualizing Artifacts
+
+![Visualizing artifacts](../../.gitbook/assets/intro_dashboard_details.png)
+
+ZenML automatically saves visualizations for many common data types, allowing you to view them in the ZenML dashboard. This provides an intuitive way to explore and understand the artifacts generated by your ML pipelines, making it easier to identify patterns, trends, and potential issues in your data and models.
+
+When you ran your `training_pipeline` above, you will see some visualizations already created for your artifacts. Explore them in the dashboard!
+
+See the [Artifact Visualization Docs Page](../advanced-guide/data-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
 
 ### Consuming a versioned artifact into a pipeline
 
@@ -163,16 +169,6 @@ if __name__ == "__main__":
 {% hint style="info" %}
 Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
 {% endhint %}
-
-### Visualizing Artifacts
-
-![Visualizing artifacts](../../.gitbook/assets/intro_dashboard_details.png)
-
-ZenML automatically saves visualizations for many common data types, allowing you to view them in the ZenML dashboard. This provides an intuitive way to explore and understand the artifacts generated by your ML pipelines, making it easier to identify patterns, trends, and potential issues in your data and models.
-
-When you ran your `training_pipeline` above, you will see some visualizations already created for your artifacts. Explore them in the dashboard!
-
-See the [Artifact Visualization Docs Page](../advanced-guide/data-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
 
 ## Managing artifacts **not** produced by ZenML pipelines
 

@@ -27,7 +27,7 @@ Let us investigate how to traverse this hierarchy level-by-level:
 
 ### Access Pipeline From Class
 
-After you have run a pipeline at least once, you can access all the information associated with this pipeline through the corresponding [`PipelineResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline\_models.py) that you can access via the pipeline's `model` property:
+After you have run a pipeline at least once, you can access all the information associated with this pipeline through the [corresponding response object](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline\_models.py) that you can access via the pipeline's `model` property:
 
 ```python
 @pipeline

@@ -4,7 +4,9 @@ description: Creating a full picture of a ML model using the Model Control Plane
 
 # Keeping track of ML models in ZenML
 
-As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many `ModelVersions`. These concepts are exposed in the `Model Control Plane` (MCP for short).
+A machine learning model undergoes many different iterations throughout its lifecycle. For example, let's say you are working on a classification model. This model will probably undergo dozens of changes until it arrives at a point when its ready to be deployed. ZenML helps in tracking this lifecycle.
+
+As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many `ModelVersions` (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
 
 ![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/mcp_walkthrough.gif)
 
@@ -94,7 +96,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 
 ### Fetching the model version
 
-When configured at the pipeline or step level, the model version will be available through the `StepContext` or `PipelineContext`
+When configured at the pipeline or step level, the model version will be available through the [StepContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md) or [PipelineContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md).
 
 ```python
 from zenml import get_step_context, get_pipeline_context, step, pipeline

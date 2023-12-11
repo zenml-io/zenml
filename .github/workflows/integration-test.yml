@@ -35,6 +35,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
+          - ubuntu-dind-runners
         required: false
         default: 'ubuntu-latest'
       python-version:
@@ -145,12 +146,12 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           build-mount-path: /var/lib/docker/
-        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
       - name: Reload Docker
         run:
           sudo systemctl restart docker
-        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
       - uses: actions/checkout@v3
 

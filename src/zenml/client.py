@@ -54,6 +54,7 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     LogicalOperators,
+    MetadataResourceTypes,
     ModelStages,
     OAuthDeviceStatus,
     SecretScope,
@@ -96,18 +97,18 @@ from zenml.models import (
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelUpdateModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
-    ModelVersionUpdateModel,
+    ModelFilter,
+    ModelRequest,
+    ModelResponse,
+    ModelUpdate,
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactResponse,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
+    ModelVersionResponse,
+    ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceResponse,
     OAuthDeviceUpdate,
@@ -183,6 +184,7 @@ class ClientConfiguration(FileSyncModel):
     _active_workspace: Optional["WorkspaceResponse"] = None
     active_workspace_id: Optional[UUID] = None
     active_stack_id: Optional[UUID] = None
+    _active_stack: Optional["StackResponse"] = None
 
     @property
     def active_workspace(self) -> "WorkspaceResponse":
@@ -219,6 +221,7 @@ class ClientConfiguration(FileSyncModel):
             stack: The stack to set active.
         """
         self.active_stack_id = stack.id
+        self._active_stack = stack
 
     class Config:
         """Pydantic configuration class."""
@@ -1169,10 +1172,16 @@ class Client(metaclass=ClientMetaClass):
                 for c_type, c_list in components_dict.items()
             }
 
-        return self.zen_store.update_stack(
+        updated_stack = self.zen_store.update_stack(
             stack_id=stack.id,
             stack_update=update_model,
         )
+        if updated_stack.id == self.active_stack_model.id:
+            if self._config:
+                self._config.set_active_stack(updated_stack)
+            else:
+                GlobalConfiguration().set_active_stack(updated_stack)
+        return updated_stack
 
     def delete_stack(
         self, name_id_or_prefix: Union[str, UUID], recursive: bool = False
@@ -1266,25 +1275,33 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        stack: Optional[StackResponse] = None
-
         if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
-            stack_id = os.environ[ENV_ZENML_ACTIVE_STACK_ID]
-            return self.get_stack(stack_id)
+            return self.get_stack(os.environ[ENV_ZENML_ACTIVE_STACK_ID])
+
+        stack_id: Optional[UUID] = None
 
         if self._config:
-            stack = self.get_stack(self._config.active_stack_id)
+            if self._config._active_stack:
+                return self._config._active_stack
 
-        if not stack:
-            stack = self.get_stack(GlobalConfiguration().get_active_stack_id())
+            stack_id = self._config.active_stack_id
 
-        if not stack:
+        if not stack_id:
+            # Initialize the zen store so the global config loads the active
+            # stack
+            _ = GlobalConfiguration().zen_store
+            if active_stack := GlobalConfiguration()._active_stack:
+                return active_stack
+
+            stack_id = GlobalConfiguration().get_active_stack_id()
+
+        if not stack_id:
             raise RuntimeError(
                 "No active stack is configured. Run "
                 "`zenml stack set STACK_NAME` to set the active stack."
             )
 
-        return stack
+        return self.get_stack(stack_id)
 
     def activate_stack(
         self, stack_name_id_or_prefix: Union[str, UUID]
@@ -1471,6 +1488,8 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         connector_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[ComponentResponse]:
         """Lists all registered stack components.
 
@@ -1487,7 +1506,10 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             connector_id: The id of the connector to filter by.
+            stack_id: The id of the stack to filter by.
             name: The name of the component to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of stack components.
@@ -1500,6 +1522,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
             connector_id=connector_id,
+            stack_id=stack_id,
             name=name,
             flavor=flavor,
             type=type,
@@ -1510,7 +1533,7 @@ class Client(metaclass=ClientMetaClass):
         component_filter_model.set_scope_workspace(self.active_workspace.id)
 
         return self.zen_store.list_stack_components(
-            component_filter_model=component_filter_model
+            component_filter_model=component_filter_model, hydrate=hydrate
         )
 
     def create_stack_component(
@@ -1791,6 +1814,7 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         integration: Optional[str] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[FlavorResponse]:
         """Fetches all the flavor models.
 
@@ -1806,6 +1830,8 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the flavor to filter by.
             type: The type of the flavor to filter by.
             integration: The integration of the flavor to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all the flavor models.
@@ -1825,7 +1851,7 @@ class Client(metaclass=ClientMetaClass):
         )
         flavor_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_flavors(
-            flavor_filter_model=flavor_filter_model
+            flavor_filter_model=flavor_filter_model, hydrate=hydrate
         )
 
     def delete_flavor(self, name_id_or_prefix: str) -> None:
@@ -1880,8 +1906,7 @@ class Client(metaclass=ClientMetaClass):
 
         if not (
             flavors := self.list_flavors(
-                type=component_type,
-                name=name,
+                type=component_type, name=name, hydrate=True
             ).items
         ):
             raise KeyError(
@@ -2731,16 +2756,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of artifact versions.
         """
-        artifact_id = None
-        if name:
-            try:
-                artifact = self.get_artifact(name_id_or_prefix=name)
-                artifact_id = artifact.id
-            except KeyError:
-                return Page(
-                    items=[], index=1, total=0, total_pages=1, max_size=size
-                )
-
         artifact_version_filter_model = ArtifactVersionFilter(
             sort_by=sort_by,
             page=page,
@@ -2760,6 +2775,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             only_unused=only_unused,
+            name=name,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
@@ -2905,52 +2921,25 @@ class Client(metaclass=ClientMetaClass):
     def create_run_metadata(
         self,
         metadata: Dict[str, "MetadataType"],
-        pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
-        artifact_version_id: Optional[UUID] = None,
+        resource_id: UUID,
+        resource_type: MetadataResourceTypes,
         stack_component_id: Optional[UUID] = None,
     ) -> List[RunMetadataResponse]:
         """Create run metadata.
 
         Args:
             metadata: The metadata to create as a dictionary of key-value pairs.
-            pipeline_run_id: The ID of the pipeline run during which the
-                metadata was produced. If provided, `step_run_id` and
-                `artifact_version_id` must be None.
-            step_run_id: The ID of the step run during which the metadata was
-                produced. If provided, `pipeline_run_id` and
-                `artifact_version_id` must be None.
-            artifact_version_id: The ID of the artifact version for which the
-                metadata was produced. If provided, `pipeline_run_id` and
-                `step_run_id` must be None.
+            resource_id: The ID of the resource for which the
+                metadata was produced.
+            resource_type: The type of the resource for which the
+                metadata was produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
 
         Returns:
             The created metadata, as string to model dictionary.
-
-        Raises:
-            ValueError: If not exactly one of either `pipeline_run_id`,
-                `step_run_id`, or `artifact_version_id` is provided.
         """
         from zenml.metadata.metadata_types import get_metadata_type
-
-        if not (pipeline_run_id or step_run_id or artifact_version_id):
-            raise ValueError(
-                "Cannot create run metadata without linking it to any entity. "
-                "Please provide either a `pipeline_run_id`, `step_run_id`, or "
-                "`artifact_version_id`."
-            )
-        if (
-            (pipeline_run_id and step_run_id)
-            or (pipeline_run_id and artifact_version_id)
-            or (step_run_id and artifact_version_id)
-        ):
-            raise ValueError(
-                "Cannot create run metadata linked to multiple entities. "
-                "Please provide only a `pipeline_run_id` or only a "
-                "`step_run_id` or only an `artifact_version_id`."
-            )
 
         values: Dict[str, "MetadataType"] = {}
         types: Dict[str, "MetadataTypeEnum"] = {}
@@ -2977,9 +2966,8 @@ class Client(metaclass=ClientMetaClass):
         run_metadata = RunMetadataRequest(
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-            pipeline_run_id=pipeline_run_id,
-            step_run_id=step_run_id,
-            artifact_version_id=artifact_version_id,
+            resource_id=resource_id,
+            resource_type=resource_type,
             stack_component_id=stack_component_id,
             values=values,
             types=types,
@@ -2997,9 +2985,8 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         workspace_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
-        pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
-        artifact_version_id: Optional[UUID] = None,
+        resource_id: Optional[UUID] = None,
+        resource_type: Optional[MetadataResourceTypes] = None,
         stack_component_id: Optional[UUID] = None,
         key: Optional[str] = None,
         value: Optional["MetadataType"] = None,
@@ -3017,10 +3004,8 @@ class Client(metaclass=ClientMetaClass):
             updated: The last update time of the metadata.
             workspace_id: The ID of the workspace the metadata belongs to.
             user_id: The ID of the user that created the metadata.
-            pipeline_run_id: The ID of the pipeline run the metadata belongs to.
-            step_run_id: The ID of the step run the metadata belongs to.
-            artifact_version_id: The ID of the artifact version the metadata
-                belongs to.
+            resource_id: The ID of the resource the metadata belongs to.
+            resource_type: The type of the resource the metadata belongs to.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
             key: The key of the metadata.
@@ -3040,9 +3025,8 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             workspace_id=workspace_id,
             user_id=user_id,
-            pipeline_run_id=pipeline_run_id,
-            step_run_id=step_run_id,
-            artifact_version_id=artifact_version_id,
+            resource_id=resource_id,
+            resource_type=resource_type,
             stack_component_id=stack_component_id,
             key=key,
             value=value,
@@ -4441,7 +4425,7 @@ class Client(metaclass=ClientMetaClass):
         trade_offs: Optional[str] = None,
         ethics: Optional[str] = None,
         tags: Optional[List[str]] = None,
-    ) -> ModelResponseModel:
+    ) -> ModelResponse:
         """Creates a new model in Model Control Plane.
 
         Args:
@@ -4459,7 +4443,7 @@ class Client(metaclass=ClientMetaClass):
             The newly created model.
         """
         return self.zen_store.create_model(
-            model=ModelRequestModel(
+            model=ModelRequest(
                 name=name,
                 license=license,
                 description=description,
@@ -4494,7 +4478,7 @@ class Client(metaclass=ClientMetaClass):
         ethics: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
-    ) -> ModelResponseModel:
+    ) -> ModelResponse:
         """Updates an existing model in Model Control Plane.
 
         Args:
@@ -4515,8 +4499,8 @@ class Client(metaclass=ClientMetaClass):
         if not is_valid_uuid(model_name_or_id):
             model_name_or_id = self.zen_store.get_model(model_name_or_id).id
         return self.zen_store.update_model(
-            model_id=model_name_or_id,  # type: ignore [arg-type]
-            model_update=ModelUpdateModel(
+            model_id=model_name_or_id,  # type:ignore[arg-type]
+            model_update=ModelUpdate(
                 license=license,
                 description=description,
                 audience=audience,
@@ -4529,9 +4513,7 @@ class Client(metaclass=ClientMetaClass):
             ),
         )
 
-    def get_model(
-        self, model_name_or_id: Union[str, UUID]
-    ) -> ModelResponseModel:
+    def get_model(self, model_name_or_id: Union[str, UUID]) -> ModelResponse:
         """Get an existing model from Model Control Plane.
 
         Args:
@@ -4551,7 +4533,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-    ) -> Page[ModelResponseModel]:
+    ) -> Page[ModelResponse]:
         """Get models by filter from Model Control Plane.
 
         Args:
@@ -4566,7 +4548,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page object with all models.
         """
-        filter = ModelFilterModel(
+        filter = ModelFilter(
             name=name,
             sort_by=sort_by,
             page=page,
@@ -4587,11 +4569,12 @@ class Client(metaclass=ClientMetaClass):
         model_name_or_id: Union[str, UUID],
         name: Optional[str] = None,
         description: Optional[str] = None,
-    ) -> ModelVersionResponseModel:
+    ) -> ModelVersionResponse:
         """Creates a new model version in Model Control Plane.
 
         Args:
-            model_name_or_id: the name or id of the model to create model version in.
+            model_name_or_id: the name or id of the model to create model
+                version in.
             name: the name of the Model Version to be created.
             description: the description of the Model Version to be created.
 
@@ -4601,7 +4584,7 @@ class Client(metaclass=ClientMetaClass):
         if not is_valid_uuid(model_name_or_id):
             model_name_or_id = self.get_model(model_name_or_id).id
         return self.zen_store.create_model_version(
-            model_version=ModelVersionRequestModel(
+            model_version=ModelVersionRequest(
                 name=name,
                 description=description,
                 user=self.active_user.id,
@@ -4629,13 +4612,15 @@ class Client(metaclass=ClientMetaClass):
         model_version_name_or_number_or_id: Optional[
             Union[str, int, ModelStages, UUID]
         ] = None,
-    ) -> ModelVersionResponseModel:
+    ) -> ModelVersionResponse:
         """Get an existing model version from Model Control Plane.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped - latest version is retrieved.
+            model_name_or_id: name or id of the model containing the model
+                version.
+            model_version_name_or_number_or_id: name, id, stage or number of
+                the model version to be retrieved. If skipped - latest version
+                is retrieved.
 
         Returns:
             The model version of interest.
@@ -4654,7 +4639,7 @@ class Client(metaclass=ClientMetaClass):
         elif isinstance(model_version_name_or_number_or_id, int):
             model_versions = self.zen_store.list_model_versions(
                 model_name_or_id=model_name_or_id,
-                model_version_filter_model=ModelVersionFilterModel(
+                model_version_filter_model=ModelVersionFilter(
                     number=model_version_name_or_number_or_id,
                 ),
             ).items
@@ -4662,7 +4647,7 @@ class Client(metaclass=ClientMetaClass):
             if model_version_name_or_number_or_id == ModelStages.LATEST:
                 model_versions = self.zen_store.list_model_versions(
                     model_name_or_id=model_name_or_id,
-                    model_version_filter_model=ModelVersionFilterModel(
+                    model_version_filter_model=ModelVersionFilter(
                         sort_by=f"{SorterOps.DESCENDING}:number"
                     ),
                 ).items
@@ -4674,14 +4659,14 @@ class Client(metaclass=ClientMetaClass):
             elif model_version_name_or_number_or_id in ModelStages.values():
                 model_versions = self.zen_store.list_model_versions(
                     model_name_or_id=model_name_or_id,
-                    model_version_filter_model=ModelVersionFilterModel(
+                    model_version_filter_model=ModelVersionFilter(
                         stage=model_version_name_or_number_or_id
                     ),
                 ).items
             else:
                 model_versions = self.zen_store.list_model_versions(
                     model_name_or_id=model_name_or_id,
-                    model_version_filter_model=ModelVersionFilterModel(
+                    model_version_filter_model=ModelVersionFilter(
                         name=model_version_name_or_number_or_id
                     ),
                 ).items
@@ -4719,11 +4704,12 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
-    ) -> Page["ModelVersionResponseModel"]:
+    ) -> Page["ModelVersionResponse"]:
         """Get model versions by filter from Model Control Plane.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
+            model_name_or_id: name or id of the model containing the model
+                version.
             sort_by: The column to sort by
             page: The page of items
             size: The maximum size of all pages
@@ -4737,7 +4723,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page object with all model versions.
         """
-        model_version_filter_model = ModelVersionFilterModel(
+        model_version_filter_model = ModelVersionFilter(
             page=page,
             size=size,
             sort_by=sort_by,
@@ -4761,7 +4747,7 @@ class Client(metaclass=ClientMetaClass):
         stage: Optional[Union[str, ModelStages]] = None,
         force: bool = False,
         name: Optional[str] = None,
-    ) -> ModelVersionResponseModel:
+    ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
         Args:
@@ -4783,8 +4769,8 @@ class Client(metaclass=ClientMetaClass):
             ).id
 
         return self.zen_store.update_model_version(
-            model_version_id=version_name_or_id,  # type: ignore [arg-type]
-            model_version_update_model=ModelVersionUpdateModel(
+            model_version_id=version_name_or_id,  # type:ignore[arg-type]
+            model_version_update_model=ModelVersionUpdate(
                 model=model_name_or_id,
                 stage=stage,
                 force=force,
@@ -4815,7 +4801,7 @@ class Client(metaclass=ClientMetaClass):
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
         only_endpoint_artifacts: Optional[bool] = None,
-    ) -> Page[ModelVersionArtifactResponseModel]:
+    ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
 
         Args:
@@ -4839,7 +4825,7 @@ class Client(metaclass=ClientMetaClass):
             A page of all model version to artifact links.
         """
         return self.zen_store.list_model_version_artifact_links(
-            ModelVersionArtifactFilterModel(
+            ModelVersionArtifactFilter(
                 sort_by=sort_by,
                 logical_operator=logical_operator,
                 page=page,
@@ -4878,7 +4864,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_id: Optional[Union[UUID, str]] = None,
         pipeline_run_id: Optional[Union[UUID, str]] = None,
         pipeline_run_name: Optional[str] = None,
-    ) -> Page[ModelVersionPipelineRunResponseModel]:
+    ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
 
         Args:
@@ -4899,7 +4885,7 @@ class Client(metaclass=ClientMetaClass):
             A page of all model version to pipeline run links.
         """
         return self.zen_store.list_model_version_pipeline_run_links(
-            ModelVersionPipelineRunFilterModel(
+            ModelVersionPipelineRunFilter(
                 sort_by=sort_by,
                 logical_operator=logical_operator,
                 page=page,
