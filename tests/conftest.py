@@ -14,8 +14,10 @@
 import os
 import shutil
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Generator, Tuple
+from uuid import uuid4
 
 import pytest
 from py._builtin import execfile
@@ -29,7 +31,22 @@ from tests.harness.utils import (
     environment_session,
 )
 from tests.venv_clone_utils import clone_virtualenv
+from zenml.artifact_stores.local_artifact_store import (
+    LocalArtifactStore,
+    LocalArtifactStoreConfig,
+)
 from zenml.client import Client
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+    BaseContainerRegistryConfig,
+)
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.stack.stack import Stack
+from zenml.stack.stack_component import (
+    StackComponentConfig,
+    StackComponentType,
+)
 
 DEFAULT_ENVIRONMENT_NAME = "default"
 
@@ -333,3 +350,146 @@ def virtualenv(
 
     else:
         yield ""
+
+
+@pytest.fixture
+def local_stack():
+    """Returns a local stack with local orchestrator and artifact store."""
+    orchestrator = LocalOrchestrator(
+        name="",
+        id=uuid4(),
+        config=StackComponentConfig(),
+        flavor="default",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    artifact_store = LocalArtifactStore(
+        name="",
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(),
+        flavor="default",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    return Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=orchestrator,
+        artifact_store=artifact_store,
+    )
+
+
+@pytest.fixture
+def local_orchestrator():
+    """Returns a local orchestrator."""
+    return LocalOrchestrator(
+        name="",
+        id=uuid4(),
+        config=BaseOrchestratorConfig(),
+        flavor="local",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def local_artifact_store():
+    """Fixture that creates a local artifact store for testing."""
+    return LocalArtifactStore(
+        name="",
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(),
+        flavor="local",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def gcp_artifact_store():
+    """Fixture that creates a GCP artifact store for testing."""
+    from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
+        GCPArtifactStore,
+    )
+    from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+        GCPArtifactStoreConfig,
+    )
+
+    return GCPArtifactStore(
+        name="",
+        id=uuid4(),
+        config=GCPArtifactStoreConfig(path="gs://bucket"),
+        flavor="gcp",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def s3_artifact_store():
+    """Fixture that creates an S3 artifact store for testing."""
+    from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
+        S3ArtifactStore,
+    )
+    from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
+        S3ArtifactStoreConfig,
+    )
+
+    return S3ArtifactStore(
+        name="",
+        id=uuid4(),
+        config=S3ArtifactStoreConfig(path="s3://tmp"),
+        flavor="s3",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def local_container_registry():
+    """Fixture that creates a local container registry for testing."""
+    return BaseContainerRegistry(
+        name="",
+        id=uuid4(),
+        config=BaseContainerRegistryConfig(uri="localhost:5000"),
+        flavor="default",
+        type=StackComponentType.CONTAINER_REGISTRY,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def remote_container_registry():
+    """Fixture that creates a remote container registry for testing."""
+    return BaseContainerRegistry(
+        name="",
+        id=uuid4(),
+        config=BaseContainerRegistryConfig(uri="gcr.io/my-project"),
+        flavor="gcp",
+        type=StackComponentType.CONTAINER_REGISTRY,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )

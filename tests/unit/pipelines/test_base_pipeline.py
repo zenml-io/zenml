@@ -329,7 +329,7 @@ def test_configure_pipeline_with_invalid_settings_key(
 
 
 def test_run_configuration_in_code(
-    mocker, clean_workspace, one_step_pipeline, empty_step
+    mocker, clean_client: "Client", one_step_pipeline, empty_step
 ):
     """Tests configuring a pipeline run in code."""
     mock_compile = mocker.patch.object(
@@ -349,7 +349,7 @@ def test_run_configuration_in_code(
 
 
 def test_run_configuration_from_file(
-    mocker, clean_workspace, one_step_pipeline, empty_step, tmp_path
+    mocker, clean_client: "Client", one_step_pipeline, empty_step, tmp_path
 ):
     """Tests configuring a pipeline run from a file."""
     mock_compile = mocker.patch.object(
@@ -372,7 +372,7 @@ def test_run_configuration_from_file(
 
 
 def test_run_configuration_from_code_and_file(
-    mocker, clean_workspace, one_step_pipeline, empty_step, tmp_path
+    mocker, clean_client: "Client", one_step_pipeline, empty_step, tmp_path
 ):
     """Tests merging the configuration of a pipeline run from a file and within
     code."""
@@ -626,9 +626,7 @@ def test_reusing_pipeline_version(
     assert result == pipeline_model
 
 
-def test_loading_legacy_pipeline_from_model(
-    clean_workspace, create_pipeline_model
-):
+def test_loading_legacy_pipeline_from_model(create_pipeline_model):
     """Tests loading and running a pipeline from a model."""
     with open("my_steps.py", "w") as f:
         f.write(
