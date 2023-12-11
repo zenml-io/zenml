@@ -30,6 +30,7 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 import requests
+import urllib3
 from pydantic import BaseModel, root_validator, validator
 from requests.adapters import HTTPAdapter, Retry
 
