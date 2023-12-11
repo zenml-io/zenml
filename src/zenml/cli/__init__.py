@@ -888,7 +888,7 @@ Administering your Models
 ZenML provides several CLI commands to help you administer your models and
 model versions as part of the Model Control Plane.
 
-To register a new model you can use the following CLI command:
+To register a new model, you can use the following CLI command:
 ```bash
 zenml model register --name <NAME> [--MODEL_OPTIONS]
 ```
