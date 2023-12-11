@@ -3617,9 +3617,8 @@ class Client(metaclass=ClientMetaClass):
             resource_id: The resource id of the service connector.
             description: The description of the service connector.
             expiration_seconds: The expiration time of the service connector.
+            expires_at: The expiration time of the service connector.
             expires_skew_tolerance: The allowed expiration skew for the service
-                connector credentials.
-            expiration_skew: The allowed expiration skew for the service
                 connector credentials.
             labels: The labels of the service connector.
             auto_configure: Whether to automatically configure the service
