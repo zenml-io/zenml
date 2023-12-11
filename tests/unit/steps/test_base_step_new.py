@@ -102,9 +102,9 @@ def test_passing_valid_parameters():
         test_pipeline()
 
 
-def test_step_parameter_merging():
-    """Tests that parameters defined in the run config overwrite values defined
-    in code."""
+def test_step_parameter_from_file_and_code_fails_on_conflict():
+    """Tests that parameters defined in the run config and the code
+    raises, if conflict and pass if no conflict."""
     from zenml.client import Client
     from zenml.config.compiler import Compiler
     from zenml.config.pipeline_run_configuration import (
@@ -115,10 +115,26 @@ def test_step_parameter_merging():
     def test_pipeline():
         step_with_int_input(input_=1)
 
+    test_pipeline.prepare()
+
+    # conflict 5 and 1
     run_config = PipelineRunConfiguration.parse_obj(
         {"steps": {"step_with_int_input": {"parameters": {"input_": 5}}}}
     )
-    test_pipeline.prepare()
+    with pytest.raises(
+        RuntimeError,
+        match="Configured parameter for the step `step_with_int_input` conflict with parameter passed in runtime",
+    ):
+        deployment, _ = Compiler().compile(
+            pipeline=test_pipeline,
+            stack=Client().active_stack,
+            run_configuration=run_config,
+        )
+
+    # no conflict 1 and 1
+    run_config = PipelineRunConfiguration.parse_obj(
+        {"steps": {"step_with_int_input": {"parameters": {"input_": 1}}}}
+    )
     deployment, _ = Compiler().compile(
         pipeline=test_pipeline,
         stack=Client().active_stack,
@@ -128,7 +144,7 @@ def test_step_parameter_merging():
         deployment.step_configurations[
             "step_with_int_input"
         ].config.parameters["input_"]
-        == 5
+        == 1
     )
 
 
