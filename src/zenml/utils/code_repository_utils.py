@@ -29,7 +29,7 @@ from zenml.utils.pagination_utils import depaginate
 logger = get_logger(__name__)
 
 
-_CODE_REPOSITORY_CACHE: Dict[str, "LocalRepositoryContext"] = {}
+_CODE_REPOSITORY_CACHE: Dict[str, Optional["LocalRepositoryContext"]] = {}
 
 
 def set_custom_local_repository(
@@ -104,6 +104,7 @@ def find_active_code_repository(
     if path in _CODE_REPOSITORY_CACHE:
         return _CODE_REPOSITORY_CACHE[path]
 
+    local_context: Optional["LocalRepositoryContext"] = None
     for model in depaginate(list_method=Client().list_code_repositories):
         try:
             repo = BaseCodeRepository.from_model(model)
@@ -115,7 +116,7 @@ def find_active_code_repository(
 
         local_context = repo.get_local_context(path)
         if local_context:
-            _CODE_REPOSITORY_CACHE[path] = local_context
-            return local_context
+            break
 
-    return None
+    _CODE_REPOSITORY_CACHE[path] = local_context
+    return local_context

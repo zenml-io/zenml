@@ -106,6 +106,10 @@ def save_artifact(
     )
     from zenml.utils import source_utils
 
+    # TODO: Can we handle this server side? If we leave it empty in the request,
+    # it's an auto-increase?
+    # TODO: This can probably lead to issues when multiple steps request a new
+    # artifact version at the same time?
     # Get new artifact version if not specified
     version = version or _get_new_artifact_version(name)
 
@@ -118,7 +122,9 @@ def save_artifact(
         uri = os.path.join("custom_artifacts", name, str(version))
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
-    if fileio.exists(uri):
+    if manual_save and fileio.exists(uri):
+        # This check is only necessary for manual saves as we already check
+        # it when creating the directory for step output artifacts
         other_artifacts = client.list_artifact_versions(uri=uri, size=1)
         if other_artifacts and (other_artifact := other_artifacts[0]):
             raise RuntimeError(
@@ -174,8 +180,8 @@ def save_artifact(
 
     # Get or create the artifact
     try:
-        artifact = client.get_artifact(name)
-    except KeyError:
+        artifact = client.list_artifacts(name=name)[0]
+    except IndexError:
         artifact = client.zen_store.create_artifact(
             ArtifactRequest(
                 name=name,

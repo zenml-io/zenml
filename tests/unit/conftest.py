@@ -12,17 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datetime import datetime
-from typing import Any, Callable, Dict, Generator, Optional
+from typing import Any, Callable, Dict, Optional
 from uuid import uuid4
 
 import pytest
 
-from tests.harness.utils import clean_workspace_session
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
 )
-from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfiguration, StepSpec
@@ -85,23 +83,6 @@ from zenml.steps import StepContext, step
 from zenml.steps.entrypoint_function_utils import StepArtifact
 
 
-@pytest.fixture(scope="module", autouse=True)
-def module_auto_clean_workspace(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[Client, None, None]:
-    """Fixture to automatically create, activate and use a separate ZenML
-    workspace for an entire test module.
-
-    Yields:
-        A ZenML client configured to use the workspace.
-    """
-    with clean_workspace_session(
-        tmp_path_factory=tmp_path_factory,
-        clean_repo=True,
-    ) as client:
-        yield client
-
-
 @pytest.fixture
 def local_stack():
     """Returns a local stack with local orchestrator and artifact store."""
@@ -159,52 +140,6 @@ def local_artifact_store():
         id=uuid4(),
         config=LocalArtifactStoreConfig(),
         flavor="local",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
-
-
-@pytest.fixture
-def gcp_artifact_store():
-    """Fixture that creates a GCP artifact store for testing."""
-    from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
-        GCPArtifactStore,
-    )
-    from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-        GCPArtifactStoreConfig,
-    )
-
-    return GCPArtifactStore(
-        name="",
-        id=uuid4(),
-        config=GCPArtifactStoreConfig(path="gs://bucket"),
-        flavor="gcp",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
-
-
-@pytest.fixture
-def s3_artifact_store():
-    """Fixture that creates an S3 artifact store for testing."""
-    from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
-        S3ArtifactStore,
-    )
-    from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
-        S3ArtifactStoreConfig,
-    )
-
-    return S3ArtifactStore(
-        name="",
-        id=uuid4(),
-        config=S3ArtifactStoreConfig(path="s3://tmp"),
-        flavor="s3",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         workspace=uuid4(),
@@ -572,10 +507,10 @@ def sample_artifact_version_model(
             updated=datetime.now(),
             uri="sample_uri",
             type=ArtifactType.DATA,
-        ),
-        metadata=ArtifactVersionResponseMetadata(
             materializer="sample_module.sample_materializer",
             data_type="sample_module.sample_data_type",
+        ),
+        metadata=ArtifactVersionResponseMetadata(
             workspace=sample_workspace_model,
             tags=[],
         ),

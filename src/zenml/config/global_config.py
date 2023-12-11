@@ -134,6 +134,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
     _active_workspace: Optional["WorkspaceResponse"] = None
+    _active_stack: Optional["StackResponse"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -681,6 +682,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             stack: The model of the stack to set active.
         """
         self.active_stack_id = stack.id
+        self._active_stack = stack
 
     def get_active_workspace(self) -> "WorkspaceResponse":
         """Get a model of the active workspace for the local client.
