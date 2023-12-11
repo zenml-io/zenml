@@ -1,7 +1,7 @@
 """add connector skew tolerance [e5225281b4d3].
 
 Revision ID: e5225281b4d3
-Revises: 8ed03137cacc
+Revises: 0.51.0
 Create Date: 2023-12-08 13:50:25.321142
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "e5225281b4d3"
-down_revision = "8ed03137cacc"
+down_revision = "0.51.0"
 branch_labels = None
 depends_on = None
 
