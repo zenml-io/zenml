@@ -6645,11 +6645,11 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     ModelVersionArtifactSchema.is_model_artifact == False  # noqa: E712
                 ).where(
-                    ModelVersionArtifactSchema.is_endpoint_artifact == False  # noqa: E712
+                    ModelVersionArtifactSchema.is_deployment_artifact == False  # noqa: E712
                 )
-            elif model_version_artifact_link_filter_model.only_endpoint_artifacts:
+            elif model_version_artifact_link_filter_model.only_deployment_artifacts:
                 query = query.where(
-                    ModelVersionArtifactSchema.is_endpoint_artifact
+                    ModelVersionArtifactSchema.is_deployment_artifact
                 )
             elif model_version_artifact_link_filter_model.only_model_artifacts:
                 query = query.where(

@@ -62,7 +62,9 @@ def _model_version_to_print(
         "stage": model_version.stage,
         "data_artifacts_count": len(model_version.data_artifact_ids),
         "model_artifacts_count": len(model_version.model_artifact_ids),
-        "endpoint_artifacts_count": len(model_version.endpoint_artifact_ids),
+        "deployment_artifacts_count": len(
+            model_version.deployment_artifact_ids
+        ),
         "pipeline_runs_count": len(model_version.pipeline_run_ids),
         "updated": model_version.updated.date(),
     }
@@ -495,7 +497,7 @@ def _print_artifacts_links_generic(
     model_name_or_id: str,
     model_version_name_or_number_or_id: Optional[str] = None,
     only_data_artifacts: bool = False,
-    only_endpoint_artifacts: bool = False,
+    only_deployment_artifacts: bool = False,
     only_model_artifacts: bool = False,
     **kwargs: Any,
 ) -> None:
@@ -505,7 +507,7 @@ def _print_artifacts_links_generic(
         model_name_or_id: The ID or name of the model containing version.
         model_version_name_or_number_or_id: The name, number or ID of the model version.
         only_data_artifacts: If set, only print data artifacts.
-        only_endpoint_artifacts: If set, only print endpoint artifacts.
+        only_deployment_artifacts: If set, only print deployment artifacts.
         only_model_artifacts: If set, only print model artifacts.
         **kwargs: Keyword arguments to filter models.
     """
@@ -516,15 +518,16 @@ def _print_artifacts_links_generic(
     type_ = (
         "data artifacts"
         if only_data_artifacts
-        else "endpoint artifacts"
-        if only_endpoint_artifacts
+        else "deployment artifacts"
+        if only_deployment_artifacts
         else "model artifacts"
     )
 
     if (
         (only_data_artifacts and not model_version.data_artifact_ids)
         or (
-            only_endpoint_artifacts and not model_version.endpoint_artifact_ids
+            only_deployment_artifacts
+            and not model_version.deployment_artifact_ids
         )
         or (only_model_artifacts and not model_version.model_artifact_ids)
     ):
@@ -538,7 +541,7 @@ def _print_artifacts_links_generic(
     links = Client().list_model_version_artifact_links(
         model_version_id=model_version.id,
         only_data_artifacts=only_data_artifacts,
-        only_endpoint_artifacts=only_endpoint_artifacts,
+        only_deployment_artifacts=only_deployment_artifacts,
         only_model_artifacts=only_model_artifacts,
         **kwargs,
     )
@@ -606,18 +609,18 @@ def list_model_version_model_artifacts(
 
 
 @model.command(
-    "endpoint_artifacts",
-    help="List endpoint artifacts linked to a model version.",
+    "deployment_artifacts",
+    help="List deployment artifacts linked to a model version.",
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
 @cli_utils.list_options(ModelVersionArtifactFilter)
-def list_model_version_endpoint_artifacts(
+def list_model_version_deployment_artifacts(
     model_name: str,
     model_version: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
-    """List endpoint artifacts linked to a model version in the Model Control Plane.
+    """List deployment artifacts linked to a model version in the Model Control Plane.
 
     Args:
         model_name: The ID or name of the model containing version.
@@ -628,7 +631,7 @@ def list_model_version_endpoint_artifacts(
     _print_artifacts_links_generic(
         model_name_or_id=model_name,
         model_version_name_or_number_or_id=model_version,
-        only_endpoint_artifacts=True,
+        only_deployment_artifacts=True,
         **kwargs,
     )
 
