@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack class."""
 
+import functools
 import itertools
 import os
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -24,12 +26,14 @@ from typing import (
     NoReturn,
     Optional,
     Set,
+    Tuple,
     Type,
 )
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
@@ -40,7 +44,7 @@ from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponse
-from zenml.utils import settings_utils
+from zenml.utils import pagination_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -67,6 +71,8 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+_STACK_CACHE: Dict[Tuple[UUID, Optional[datetime]], "Stack"] = {}
 
 
 class Stack:
@@ -143,17 +149,42 @@ class Stack:
         Returns:
             The created Stack instance.
         """
+        global _STACK_CACHE
+        key = (stack_model.id, stack_model.updated)
+        if key in _STACK_CACHE:
+            return _STACK_CACHE[key]
+
         from zenml.stack import StackComponent
 
+        # Run a hydrated list call once to avoid one request per component
+        component_models = pagination_utils.depaginate(
+            list_method=functools.partial(
+                Client().list_stack_components,
+                stack_id=stack_model.id,
+                hydrate=True,
+            )
+        )
+
         stack_components = {
-            type_: StackComponent.from_model(model[0])
-            for type_, model in stack_model.components.items()
+            model.type: StackComponent.from_model(model)
+            for model in component_models
         }
-        return Stack.from_components(
+        stack = Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,
             components=stack_components,
         )
+        _STACK_CACHE[key] = stack
+
+        client = Client()
+        if stack_model.id == client.active_stack_model.id:
+            if stack_model.updated > client.active_stack_model.updated:
+                if client._config:
+                    client._config.set_active_stack(stack_model)
+                else:
+                    GlobalConfiguration().set_active_stack(stack_model)
+
+        return stack
 
     @classmethod
     def from_components(

@@ -14,6 +14,7 @@
 """Models representing models."""
 
 from datetime import datetime
+from functools import partial
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
 from uuid import UUID
 
@@ -27,6 +28,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
@@ -289,20 +291,13 @@ class ModelResponse(
         from zenml.client import Client
 
         client = Client()
-        model_versions = client.list_model_versions(
-            model_name_or_id=self.id, page=1
+        model_versions = depaginate(
+            partial(client.list_model_versions, model_name_or_id=self.id)
         )
-        ret = [
+        return [
             mv.to_model_version(suppress_class_validation_warnings=True)
-            for mv in model_versions.items
+            for mv in model_versions
         ]
-        for i in range(2, model_versions.total_pages + 1):
-            ret += [
-                mv.to_model_version(suppress_class_validation_warnings=True)
-                for mv in model_versions.items
-            ]
-
-        return ret
 
 
 # ------------------ Filter Model ------------------

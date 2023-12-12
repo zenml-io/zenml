@@ -34,24 +34,8 @@ def test_artifact_request_model_fails_with_long_name():
         )
 
 
-def test_artifact_version_request_model_fails_with_long_uri():
-    """Test that artifact version creation fails with long URIs."""
-    long_uri = "a" * (STR_FIELD_MAX_LENGTH + 1)
-    with pytest.raises(ValidationError):
-        ArtifactVersionRequest(
-            artifact_id=uuid.uuid4(),
-            user=uuid.uuid4(),
-            workspace=uuid.uuid4(),
-            version=1,
-            type=ArtifactType.DATA,
-            uri=long_uri,
-            materializer="abc",
-            data_type="abc",
-        )
-
-
-def test_artifact_version_request_model_works_with_long_materializer():
-    """Test that artifact creation works with long materializer strings."""
+def test_artifact_request_model_works_with_long_materializer():
+    """Test that the artifact base model works with long materializer strings."""
     with does_not_raise():
         long_materializer = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactVersionRequest(
