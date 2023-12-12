@@ -44,7 +44,6 @@ def prediction_service_loader(
         pipeline_name=pipeline_name,
         pipeline_step_name=pipeline_step_name,
         model_name=model_name,
-        running=running,
     )
 
     if not existing_services:
