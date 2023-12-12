@@ -8,6 +8,7 @@ Please ensure you have done the following:
 - [ ] If I have added an integration, I have updated the [integrations](https://docs.zenml.io/stacks-and-components/component-guide) table and the [corresponding website section](https://zenml.io/integrations).
 - [ ] I have added tests to cover my changes.
 - [ ] I have based my new branch on `develop` and the open PR is targeting `develop`. If your branch wasn't based on develop read [Contribution guide on rebasing branch to develop](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md#-pull-requests-rebase-your-branch-on-develop).
+- [ ] If my changes require changes to the dashboard, these changes are communicated/requested.
 
 ## Types of changes
 <!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: -->
