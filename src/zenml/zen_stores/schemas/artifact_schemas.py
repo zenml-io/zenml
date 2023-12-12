@@ -113,6 +113,7 @@ class ArtifactSchema(NamedSchema, table=True):
         body = ArtifactResponseBody(
             created=self.created,
             updated=self.updated,
+            tags=[t.tag.to_model() for t in self.tags],
         )
 
         # Create the metadata of the model
@@ -120,7 +121,6 @@ class ArtifactSchema(NamedSchema, table=True):
         if hydrate:
             metadata = ArtifactResponseMetadata(
                 has_custom_name=self.has_custom_name,
-                tags=[t.tag.to_model() for t in self.tags],
             )
 
         return ArtifactResponse(
@@ -299,6 +299,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             data_type=data_type,
             created=self.created,
             updated=self.updated,
+            tags=[t.tag.to_model() for t in self.tags],
         )
 
         # Create the metadata of the model
@@ -318,7 +319,6 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata={m.key: m.to_model() for m in self.run_metadata},
-                tags=[t.tag.to_model() for t in self.tags],
             )
 
         return ArtifactVersionResponse(
