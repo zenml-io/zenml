@@ -41,6 +41,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
     model_version: Optional[ModelVersion] = None
+    parameters: Optional[Dict[str, Any]] = None
 
     _convert_source = convert_source_validator(
         "failure_hook_source", "success_hook_source"

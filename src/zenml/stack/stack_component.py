@@ -25,9 +25,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import (
-    ServiceConnectorRequirements,
-)
+from zenml.models import ServiceConnectorRequirements, StepRunResponse
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -444,6 +442,7 @@ class StackComponent:
         self,
         container: Union[
             "Step",
+            "StepRunResponse",
             "StepRunInfo",
             "PipelineDeploymentBase",
             "PipelineDeploymentResponse",
@@ -478,7 +477,7 @@ class StackComponent:
 
         all_settings = (
             container.config.settings
-            if isinstance(container, (Step, StepRunInfo))
+            if isinstance(container, (Step, StepRunResponse, StepRunInfo))
             else container.pipeline_configuration.settings
         )
 
