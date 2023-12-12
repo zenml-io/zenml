@@ -328,14 +328,16 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
 
     if local:
         curr_version = version.parse(zenml_version)
-        config_version = version.parse(GlobalConfiguration().version)
 
-        if config_version > curr_version:
-            error(
-                "Due to this version mismatch, ZenML can not detect and "
-                "shut down any running dashboards or clean any resources "
-                "related to the active stack."
-            )
+        if GlobalConfiguration().version is not None:
+            config_version = version.parse(GlobalConfiguration().version)
+
+            if config_version > curr_version:
+                error(
+                    "Due to this version mismatch, ZenML can not detect and "
+                    "shut down any running dashboards or clean any resources "
+                    "related to the active stack."
+                )
         _delete_local_files(force_delete=yes)
 
     confirm = None
