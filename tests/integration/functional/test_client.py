@@ -26,7 +26,7 @@ from tests.integration.functional.conftest import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
-from tests.integration.functional.utils import model_killer, sample_name
+from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source
@@ -1133,9 +1133,8 @@ class TestModel:
 
     @staticmethod
     @pytest.fixture
-    def warm_up_models():
-        client = Client()
-        client.create_model(
+    def client_with_model(clean_client: "Client") -> "Client":
+        clean_client.create_model(
             name=TestModel.MODEL_NAME,
             license="l",
             description="d",
@@ -1146,123 +1145,105 @@ class TestModel:
             ethics="e",
             tags=["t", "t2"],
         )
+        return clean_client
 
-    def test_get_model_found(self, warm_up_models):
-        with model_killer():
-            client = Client()
-            model = client.get_model(self.MODEL_NAME)
+    def test_get_model_found(self, client_with_model: "Client"):
+        model = client_with_model.get_model(self.MODEL_NAME)
 
-            assert model.name == self.MODEL_NAME
-            assert model.license == "l"
-            assert model.description == "d"
-            assert model.audience == "a"
-            assert model.use_cases == "u"
-            assert model.limitations == "l"
-            assert model.trade_offs == "t"
-            assert model.ethics == "e"
-            assert {t.name for t in model.tags} == {"t", "t2"}
+        assert model.name == self.MODEL_NAME
+        assert model.license == "l"
+        assert model.description == "d"
+        assert model.audience == "a"
+        assert model.use_cases == "u"
+        assert model.limitations == "l"
+        assert model.trade_offs == "t"
+        assert model.ethics == "e"
+        assert {t.name for t in model.tags} == {"t", "t2"}
 
-    def test_get_model_not_found(self):
-        with model_killer():
-            client = Client()
-            with pytest.raises(KeyError):
-                client.get_model(self.MODEL_NAME)
+    def test_get_model_not_found(self, clean_client: "Client"):
+        with pytest.raises(KeyError):
+            clean_client.get_model(self.MODEL_NAME)
 
-    def test_create_model_pass(self):
-        with model_killer():
-            client = Client()
+    def test_create_model_pass(self, clean_client: "Client"):
+        clean_client.create_model(name="some")
+        model = clean_client.get_model("some")
 
-            client.create_model(name="some")
-            model = client.get_model("some")
+        assert model.name == "some"
 
-            assert model.name == "some"
+        clean_client.create_model(
+            name=self.MODEL_NAME,
+            license="l",
+            description="d",
+            audience="a",
+            use_cases="u",
+            limitations="l",
+            trade_offs="t",
+            ethics="e",
+            tags=["t", "t2"],
+        )
+        model = clean_client.get_model(self.MODEL_NAME)
 
-            client.create_model(
-                name=self.MODEL_NAME,
-                license="l",
-                description="d",
-                audience="a",
-                use_cases="u",
-                limitations="l",
-                trade_offs="t",
-                ethics="e",
-                tags=["t", "t2"],
-            )
-            model = client.get_model(self.MODEL_NAME)
+        assert model.name == self.MODEL_NAME
+        assert model.license == "l"
+        assert model.description == "d"
+        assert model.audience == "a"
+        assert model.use_cases == "u"
+        assert model.limitations == "l"
+        assert model.trade_offs == "t"
+        assert model.ethics == "e"
+        assert {t.name for t in model.tags} == {"t", "t2"}
 
-            assert model.name == self.MODEL_NAME
-            assert model.license == "l"
-            assert model.description == "d"
-            assert model.audience == "a"
-            assert model.use_cases == "u"
-            assert model.limitations == "l"
-            assert model.trade_offs == "t"
-            assert model.ethics == "e"
-            assert {t.name for t in model.tags} == {"t", "t2"}
+    def test_create_model_duplicate_fail(self, client_with_model: "Client"):
+        with pytest.raises(EntityExistsError):
+            client_with_model.create_model(self.MODEL_NAME)
 
-    def test_create_model_duplicate_fail(self, warm_up_models):
-        with model_killer():
-            client = Client()
+    def test_delete_model_found(self, client_with_model: "Client"):
+        client_with_model.delete_model(self.MODEL_NAME)
 
-            with pytest.raises(EntityExistsError):
-                client.create_model(self.MODEL_NAME)
+        with pytest.raises(KeyError):
+            client_with_model.get_model(self.MODEL_NAME)
 
-    def test_delete_model_found(self, warm_up_models):
-        with model_killer():
-            client = Client()
+    def test_delete_model_not_found(self, clean_client: "Client"):
+        with pytest.raises(KeyError):
+            clean_client.delete_model(self.MODEL_NAME)
 
-            client.delete_model(self.MODEL_NAME)
+    def test_update_model(self, client_with_model: "Client"):
+        client_with_model.update_model(
+            self.MODEL_NAME, add_tags=["t3"], remove_tags=["t2"]
+        )
+        model = client_with_model.get_model(self.MODEL_NAME)
 
-            with pytest.raises(KeyError):
-                client.get_model(self.MODEL_NAME)
+        assert model.name == self.MODEL_NAME
+        assert model.license == "l"
+        assert model.description == "d"
+        assert model.audience == "a"
+        assert model.use_cases == "u"
+        assert model.limitations == "l"
+        assert model.trade_offs == "t"
+        assert model.ethics == "e"
+        assert {t.name for t in model.tags} == {"t", "t3"}
 
-    def test_delete_model_not_found(self):
-        with model_killer():
-            client = Client()
+        client_with_model.update_model(
+            self.MODEL_NAME,
+            license="L",
+            description="D",
+            audience="A",
+            use_cases="U",
+            limitations="L",
+            trade_offs="T",
+            ethics="E",
+        )
+        model = client_with_model.get_model(self.MODEL_NAME)
 
-            with pytest.raises(KeyError):
-                client.delete_model(self.MODEL_NAME)
-
-    def test_update_model(self, warm_up_models):
-        with model_killer():
-            client = Client()
-
-            client.update_model(
-                self.MODEL_NAME, add_tags=["t3"], remove_tags=["t2"]
-            )
-            model = client.get_model(self.MODEL_NAME)
-
-            assert model.name == self.MODEL_NAME
-            assert model.license == "l"
-            assert model.description == "d"
-            assert model.audience == "a"
-            assert model.use_cases == "u"
-            assert model.limitations == "l"
-            assert model.trade_offs == "t"
-            assert model.ethics == "e"
-            assert {t.name for t in model.tags} == {"t", "t3"}
-
-            client.update_model(
-                self.MODEL_NAME,
-                license="L",
-                description="D",
-                audience="A",
-                use_cases="U",
-                limitations="L",
-                trade_offs="T",
-                ethics="E",
-            )
-            model = client.get_model(self.MODEL_NAME)
-
-            assert model.name == self.MODEL_NAME
-            assert model.license == "L"
-            assert model.description == "D"
-            assert model.audience == "A"
-            assert model.use_cases == "U"
-            assert model.limitations == "L"
-            assert model.trade_offs == "T"
-            assert model.ethics == "E"
-            assert {t.name for t in model.tags} == {"t", "t3"}
+        assert model.name == self.MODEL_NAME
+        assert model.license == "L"
+        assert model.description == "D"
+        assert model.audience == "A"
+        assert model.use_cases == "U"
+        assert model.limitations == "L"
+        assert model.trade_offs == "T"
+        assert model.ethics == "E"
+        assert {t.name for t in model.tags} == {"t", "t3"}
 
 
 class TestModelVersion:
@@ -1272,228 +1253,223 @@ class TestModelVersion:
 
     @staticmethod
     @pytest.fixture
-    def warm_up_models():
-        client = Client()
-        client.create_model(name=TestModelVersion.MODEL_NAME)
-        client.create_model_version(
+    def client_with_model(clean_client: "Client"):
+        clean_client.create_model(name=TestModelVersion.MODEL_NAME)
+        clean_client.create_model_version(
             model_name_or_id=TestModelVersion.MODEL_NAME,
             name=TestModelVersion.VERSION_NAME,
             description=TestModelVersion.VERSION_DESC,
         )
+        return clean_client
 
-    def test_get_model_version_by_name_found(self, warm_up_models):
-        with model_killer():
-            client = Client()
-            model_version = client.get_model_version(
-                self.MODEL_NAME, self.VERSION_NAME
-            )
+    def test_get_model_version_by_name_found(
+        self, client_with_model: "Client"
+    ):
+        model_version = client_with_model.get_model_version(
+            self.MODEL_NAME, self.VERSION_NAME
+        )
 
-            assert model_version.model.name == self.MODEL_NAME
-            assert model_version.name == self.VERSION_NAME
-            assert model_version.number == 1
-            assert model_version.description == self.VERSION_DESC
+        assert model_version.model.name == self.MODEL_NAME
+        assert model_version.name == self.VERSION_NAME
+        assert model_version.number == 1
+        assert model_version.description == self.VERSION_DESC
 
-    def test_get_model_version_by_id_found(self, warm_up_models):
-        with model_killer():
-            client = Client()
-            mv = client.get_model_version(self.MODEL_NAME, self.VERSION_NAME)
+    def test_get_model_version_by_id_found(self, client_with_model: "Client"):
+        mv = client_with_model.get_model_version(
+            self.MODEL_NAME, self.VERSION_NAME
+        )
 
-            model_version = client.get_model_version(self.MODEL_NAME, mv.id)
+        model_version = client_with_model.get_model_version(
+            self.MODEL_NAME, mv.id
+        )
 
-            assert model_version.model.name == self.MODEL_NAME
-            assert model_version.name == self.VERSION_NAME
-            assert model_version.number == 1
-            assert model_version.description == self.VERSION_DESC
+        assert model_version.model.name == self.MODEL_NAME
+        assert model_version.name == self.VERSION_NAME
+        assert model_version.number == 1
+        assert model_version.description == self.VERSION_DESC
 
-    def test_get_model_version_by_index_found(self, warm_up_models):
-        with model_killer():
-            client = Client()
-            model_version = client.get_model_version(self.MODEL_NAME, 1)
+    def test_get_model_version_by_index_found(
+        self, client_with_model: "Client"
+    ):
+        model_version = client_with_model.get_model_version(self.MODEL_NAME, 1)
 
-            assert model_version.model.name == self.MODEL_NAME
-            assert model_version.name == self.VERSION_NAME
-            assert model_version.number == 1
-            assert model_version.description == self.VERSION_DESC
+        assert model_version.model.name == self.MODEL_NAME
+        assert model_version.name == self.VERSION_NAME
+        assert model_version.number == 1
+        assert model_version.description == self.VERSION_DESC
 
-    def test_get_model_version_by_stage_found(self, warm_up_models):
-        with model_killer():
-            client = Client()
+    def test_get_model_version_by_stage_found(
+        self, client_with_model: "Client"
+    ):
+        client_with_model.update_model_version(
+            model_name_or_id=self.MODEL_NAME,
+            version_name_or_id=self.VERSION_NAME,
+            stage=ModelStages.STAGING,
+            force=True,
+        )
 
-            client.update_model_version(
-                model_name_or_id=self.MODEL_NAME,
-                version_name_or_id=self.VERSION_NAME,
-                stage=ModelStages.STAGING,
-                force=True,
-            )
+        model_version = client_with_model.get_model_version(
+            self.MODEL_NAME, ModelStages.STAGING
+        )
 
-            model_version = client.get_model_version(
+        assert model_version.model.name == self.MODEL_NAME
+        assert model_version.name == self.VERSION_NAME
+        assert model_version.number == 1
+        assert model_version.description == self.VERSION_DESC
+
+    def test_get_model_version_by_stage_not_found(
+        self, client_with_model: "Client"
+    ):
+        with pytest.raises(KeyError):
+            client_with_model.get_model_version(
                 self.MODEL_NAME, ModelStages.STAGING
             )
 
-            assert model_version.model.name == self.MODEL_NAME
-            assert model_version.name == self.VERSION_NAME
-            assert model_version.number == 1
-            assert model_version.description == self.VERSION_DESC
+    def test_get_model_version_not_found(self, client_with_model: "Client"):
+        with pytest.raises(KeyError):
+            client_with_model.get_model_version(self.MODEL_NAME, 42)
 
-    def test_get_model_version_by_stage_not_found(self, warm_up_models):
-        with model_killer():
-            client = Client()
+    def test_create_model_version_pass(self, client_with_model: "Client"):
+        model_version = client_with_model.create_model_version(self.MODEL_NAME)
 
-            with pytest.raises(KeyError):
-                client.get_model_version(self.MODEL_NAME, ModelStages.STAGING)
+        assert model_version.name == "2"
+        assert model_version.number == 2
+        assert model_version.description is None
 
-    def test_get_model_version_not_found(self):
-        with model_killer():
-            client = Client()
-            with pytest.raises(KeyError):
-                client.get_model_version(self.MODEL_NAME, 42)
+        model_version = client_with_model.create_model_version(
+            self.MODEL_NAME, "new version"
+        )
 
-    def test_create_model_version_pass(self, warm_up_models):
-        with model_killer():
-            client = Client()
-            model_version = client.create_model_version(self.MODEL_NAME)
+        assert model_version.name == "new version"
+        assert model_version.number == 3
+        assert model_version.description is None
 
-            assert model_version.name == "2"
-            assert model_version.number == 2
-            assert model_version.description is None
+        model_version = client_with_model.create_model_version(
+            self.MODEL_NAME, description="some desc"
+        )
 
-            model_version = client.create_model_version(
-                self.MODEL_NAME, "new version"
-            )
+        assert model_version.name == "4"
+        assert model_version.number == 4
+        assert model_version.description == "some desc"
 
-            assert model_version.name == "new version"
-            assert model_version.number == 3
-            assert model_version.description is None
-
-            model_version = client.create_model_version(
-                self.MODEL_NAME, description="some desc"
-            )
-
-            assert model_version.name == "4"
-            assert model_version.number == 4
-            assert model_version.description == "some desc"
-
-    def test_create_model_version_duplicate_fails(self, warm_up_models):
-        with model_killer():
-            client = Client()
-            with pytest.raises(EntityExistsError):
-                client.create_model_version(self.MODEL_NAME, self.VERSION_NAME)
-
-    def test_update_model_version(self, warm_up_models):
-        with model_killer():
-            client = Client()
-
-            model_version = client.get_model_version(
+    def test_create_model_version_duplicate_fails(
+        self, client_with_model: "Client"
+    ):
+        with pytest.raises(EntityExistsError):
+            client_with_model.create_model_version(
                 self.MODEL_NAME, self.VERSION_NAME
             )
 
-            assert model_version.name == self.VERSION_NAME
-            assert model_version.number == 1
-            assert model_version.description == self.VERSION_DESC
-            assert model_version.stage is None
+    def test_update_model_version(self, client_with_model: "Client"):
+        model_version = client_with_model.get_model_version(
+            self.MODEL_NAME, self.VERSION_NAME
+        )
 
-            client.update_model_version(
-                self.MODEL_NAME, self.VERSION_NAME, stage="staging"
-            )
-            model_version = client.get_model_version(
-                self.MODEL_NAME, self.VERSION_NAME
-            )
+        assert model_version.name == self.VERSION_NAME
+        assert model_version.number == 1
+        assert model_version.description == self.VERSION_DESC
+        assert model_version.stage is None
 
-            assert model_version.name == self.VERSION_NAME
-            assert model_version.number == 1
-            assert model_version.description == self.VERSION_DESC
-            assert model_version.stage == ModelStages.STAGING
+        client_with_model.update_model_version(
+            self.MODEL_NAME, self.VERSION_NAME, stage="staging"
+        )
+        model_version = client_with_model.get_model_version(
+            self.MODEL_NAME, self.VERSION_NAME
+        )
 
-            client.update_model_version(
-                self.MODEL_NAME, self.VERSION_NAME, name="new name"
-            )
-            model_version = client.get_model_version(
-                self.MODEL_NAME, "new name"
-            )
+        assert model_version.name == self.VERSION_NAME
+        assert model_version.number == 1
+        assert model_version.description == self.VERSION_DESC
+        assert model_version.stage == ModelStages.STAGING
 
-            assert model_version.name == "new name"
-            assert model_version.number == 1
-            assert model_version.description == self.VERSION_DESC
-            assert model_version.stage == ModelStages.STAGING
+        client_with_model.update_model_version(
+            self.MODEL_NAME, self.VERSION_NAME, name="new name"
+        )
+        model_version = client_with_model.get_model_version(
+            self.MODEL_NAME, "new name"
+        )
 
-            client.create_model_version(self.MODEL_NAME, "other version")
-            with pytest.raises(RuntimeError):
-                client.update_model_version(
-                    self.MODEL_NAME,
-                    "other version",
-                    stage=ModelStages.STAGING,
-                    force=False,
-                )
+        assert model_version.name == "new name"
+        assert model_version.number == 1
+        assert model_version.description == self.VERSION_DESC
+        assert model_version.stage == ModelStages.STAGING
 
-            client.update_model_version(
+        client_with_model.create_model_version(
+            self.MODEL_NAME, "other version"
+        )
+        with pytest.raises(RuntimeError):
+            client_with_model.update_model_version(
                 self.MODEL_NAME,
                 "other version",
                 stage=ModelStages.STAGING,
-                force=True,
-            )
-            model_version = client.get_model_version(
-                self.MODEL_NAME, "other version"
+                force=False,
             )
 
-            assert model_version.name == "other version"
-            assert model_version.number == 2
-            assert model_version.description is None
-            assert model_version.stage == ModelStages.STAGING
+        client_with_model.update_model_version(
+            self.MODEL_NAME,
+            "other version",
+            stage=ModelStages.STAGING,
+            force=True,
+        )
+        model_version = client_with_model.get_model_version(
+            self.MODEL_NAME, "other version"
+        )
 
-            model_version = client.get_model_version(
-                self.MODEL_NAME, "new name"
+        assert model_version.name == "other version"
+        assert model_version.number == 2
+        assert model_version.description is None
+        assert model_version.stage == ModelStages.STAGING
+
+        model_version = client_with_model.get_model_version(
+            self.MODEL_NAME, "new name"
+        )
+
+        assert model_version.name == "new name"
+        assert model_version.number == 1
+        assert model_version.description == self.VERSION_DESC
+        assert model_version.stage == ModelStages.ARCHIVED
+
+    def test_list_model_version(self, client_with_model: "Client"):
+        for i in range(PAGE_SIZE_DEFAULT):
+            client_with_model.create_model_version(
+                self.MODEL_NAME, f"{self.VERSION_NAME}_{i}"
             )
 
-            assert model_version.name == "new name"
-            assert model_version.number == 1
-            assert model_version.description == self.VERSION_DESC
-            assert model_version.stage == ModelStages.ARCHIVED
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME, page=1
+        )
+        assert len(model_versions) == PAGE_SIZE_DEFAULT
 
-    def test_list_model_version(self, warm_up_models):
-        with model_killer():
-            client = Client()
-            for i in range(PAGE_SIZE_DEFAULT):
-                client.create_model_version(
-                    self.MODEL_NAME, f"{self.VERSION_NAME}_{i}"
-                )
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME, page=2
+        )
+        assert len(model_versions) == 1
 
-            model_versions = client.list_model_versions(
-                self.MODEL_NAME, page=1
-            )
-            assert len(model_versions) == PAGE_SIZE_DEFAULT
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME, name=f"{self.VERSION_NAME}_{1}"
+        )
+        assert len(model_versions) == 1
 
-            model_versions = client.list_model_versions(
-                self.MODEL_NAME, page=2
-            )
-            assert len(model_versions) == 1
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME, name=f"contains:{self.VERSION_NAME}_"
+        )
+        assert len(model_versions) == PAGE_SIZE_DEFAULT
 
-            model_versions = client.list_model_versions(
-                self.MODEL_NAME, name=f"{self.VERSION_NAME}_{1}"
-            )
-            assert len(model_versions) == 1
+    def test_delete_model_version_found(self, client_with_model: "Client"):
+        client_with_model.delete_model_version(
+            client_with_model.get_model_version(
+                self.MODEL_NAME, self.VERSION_NAME
+            ).id
+        )
 
-            model_versions = client.list_model_versions(
-                self.MODEL_NAME, name=f"contains:{self.VERSION_NAME}_"
-            )
-            assert len(model_versions) == PAGE_SIZE_DEFAULT
-
-    def test_delete_model_version_found(self, warm_up_models):
-        with model_killer():
-            client = Client()
-
-            client.delete_model_version(
-                client.get_model_version(self.MODEL_NAME, self.VERSION_NAME).id
+        with pytest.raises(KeyError):
+            client_with_model.get_model_version(
+                self.MODEL_NAME, self.VERSION_NAME
             )
 
-            with pytest.raises(KeyError):
-                client.get_model_version(self.MODEL_NAME, self.VERSION_NAME)
-
-    def test_delete_model_version_not_found(self, warm_up_models):
-        with model_killer():
-            client = Client()
-
-            with pytest.raises(KeyError):
-                client.delete_model_version(uuid4())
+    def test_delete_model_version_not_found(self, client_with_model: "Client"):
+        with pytest.raises(KeyError):
+            client_with_model.delete_model_version(uuid4())
 
     def _create_some_model_version(
         self,
@@ -1509,66 +1485,52 @@ class TestModelVersion:
             name=model_version_name,
         ).to_model_version(suppress_class_validation_warnings=True)
 
-    def test_get_by_latest(self):
+    def test_get_by_latest(self, clean_client: "Client"):
         """Test that model version can be retrieved with latest."""
-        with model_killer():
-            cl = Client()
-            mv1 = self._create_some_model_version(client=cl)
+        mv1 = self._create_some_model_version(client=clean_client)
 
-            # latest returns the only model
-            mv2 = (
-                Client()
-                .get_model_version(
-                    model_name_or_id=mv1.model_id,
-                    model_version_name_or_number_or_id=ModelStages.LATEST,
-                )
-                .to_model_version(suppress_class_validation_warnings=True)
-            )
-            assert mv2 == mv1
+        # latest returns the only model
+        mv2 = clean_client.get_model_version(
+            model_name_or_id=mv1.model_id,
+            model_version_name_or_number_or_id=ModelStages.LATEST,
+        ).to_model_version(suppress_class_validation_warnings=True)
+        assert mv2 == mv1
 
-            # after second model version, latest should point to it
-            mv3 = cl.create_model_version(
-                model_name_or_id=mv1.model_id, name="2.0.0"
-            ).to_model_version(suppress_class_validation_warnings=True)
-            mv4 = (
-                Client()
-                .get_model_version(
-                    model_name_or_id=mv1.model_id,
-                    model_version_name_or_number_or_id=ModelStages.LATEST,
-                )
-                .to_model_version(suppress_class_validation_warnings=True)
-            )
-            assert mv4 != mv1
-            assert mv4 == mv3
+        # after second model version, latest should point to it
+        mv3 = clean_client.create_model_version(
+            model_name_or_id=mv1.model_id, name="2.0.0"
+        ).to_model_version(suppress_class_validation_warnings=True)
+        mv4 = clean_client.get_model_version(
+            model_name_or_id=mv1.model_id,
+            model_version_name_or_number_or_id=ModelStages.LATEST,
+        ).to_model_version(suppress_class_validation_warnings=True)
+        assert mv4 != mv1
+        assert mv4 == mv3
 
-    def test_get_by_stage(self):
+    def test_get_by_stage(self, clean_client: "Client"):
         """Test that model version can be retrieved by stage."""
-        with model_killer():
-            cl = Client()
-            mv1 = self._create_some_model_version(client=cl)
+        mv1 = self._create_some_model_version(client=clean_client)
 
-            cl.update_model_version(
-                version_name_or_id=mv1.id,
-                model_name_or_id=mv1.model_id,
-                stage=ModelStages.STAGING,
-                force=True,
-            )
+        clean_client.update_model_version(
+            version_name_or_id=mv1.id,
+            model_name_or_id=mv1.model_id,
+            stage=ModelStages.STAGING,
+            force=True,
+        )
 
-            mv2 = cl.get_model_version(
+        mv2 = clean_client.get_model_version(
+            model_name_or_id=mv1.model_id,
+            model_version_name_or_number_or_id=ModelStages.STAGING,
+        ).to_model_version(suppress_class_validation_warnings=True)
+
+        assert mv1 == mv2
+
+    def test_stage_not_found(self, clean_client: "Client"):
+        """Test that attempting to get model version fails if none at the given stage."""
+        mv1 = self._create_some_model_version(client=clean_client)
+
+        with pytest.raises(KeyError):
+            clean_client.get_model_version(
                 model_name_or_id=mv1.model_id,
                 model_version_name_or_number_or_id=ModelStages.STAGING,
-            ).to_model_version(suppress_class_validation_warnings=True)
-
-            assert mv1 == mv2
-
-    def test_stage_not_found(self):
-        """Test that attempting to get model version fails if none at the given stage."""
-        with model_killer():
-            cl = Client()
-            mv1 = self._create_some_model_version(client=cl)
-
-            with pytest.raises(KeyError):
-                Client().get_model_version(
-                    model_name_or_id=mv1.model_id,
-                    model_version_name_or_number_or_id=ModelStages.STAGING,
-                )
+            )

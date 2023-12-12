@@ -12,17 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datetime import datetime
-from typing import Any, Callable, Dict, Generator, Optional
+from typing import Any, Callable, Dict, Optional
 from uuid import uuid4
 
 import pytest
 
-from tests.harness.utils import clean_workspace_session
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
 )
-from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import StepConfiguration, StepSpec
@@ -83,23 +81,6 @@ from zenml.stack.stack_component import (
 from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
 from zenml.steps import StepContext, step
 from zenml.steps.entrypoint_function_utils import StepArtifact
-
-
-@pytest.fixture(scope="module", autouse=True)
-def module_auto_clean_workspace(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[Client, None, None]:
-    """Fixture to automatically create, activate and use a separate ZenML
-    workspace for an entire test module.
-
-    Yields:
-        A ZenML client configured to use the workspace.
-    """
-    with clean_workspace_session(
-        tmp_path_factory=tmp_path_factory,
-        clean_repo=True,
-    ) as client:
-        yield client
 
 
 @pytest.fixture
