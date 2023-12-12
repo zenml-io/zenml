@@ -144,9 +144,9 @@ class WhylogsMaterializer(BaseMaterializer):
             # we are not running as part of a pipeline
             return
 
-        run_info = step_context.step_run_info
         settings = cast(
-            WhylogsDataValidatorSettings, data_validator.get_settings(run_info)
+            WhylogsDataValidatorSettings,
+            data_validator.get_settings(step_context.step_run),
         )
 
         if not settings.enable_whylabs:

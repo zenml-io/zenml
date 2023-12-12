@@ -3,8 +3,9 @@ import os
 from typing import Optional, Type
 
 from pydantic import BaseModel
+from typing_extensions import Annotated
 
-from zenml import get_step_context, pipeline, step
+from zenml import get_step_context, log_artifact_metadata, pipeline, step
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -84,3 +85,27 @@ def test_step_can_access_step_context():
         _access_step_context_step()
 
     _simple_step_pipeline()
+
+
+@step
+def output_metadata_logging_step() -> Annotated[int, "my_output"]:
+    log_artifact_metadata(metadata={"some_key": "some_value"})
+    return 42
+
+
+@step
+def step_context_metadata_reader_step(my_input: int) -> None:
+    step_context = get_step_context()
+    my_input_metadata = step_context.inputs["my_input"].run_metadata
+    assert my_input_metadata["some_key"].value == "some_value"
+
+
+def test_input_artifacts_property():
+    """Test the `StepContext.inputs` property."""
+
+    @pipeline
+    def _pipeline():
+        output = output_metadata_logging_step()
+        step_context_metadata_reader_step(my_input=output)
+
+    _pipeline()

@@ -28,7 +28,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.config.source import Source, convert_source_validator
-from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, LogicalOperators
 from zenml.logger import get_logger
 from zenml.models.tag_models import TagResponseModel
@@ -80,7 +80,7 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         default=None,
     )
     uri: str = Field(
-        title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
+        title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
     materializer: Source = Field(
         title="Materializer class to use for this artifact.",
@@ -125,7 +125,7 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     uri: str = Field(
-        title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
+        title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
     type: ArtifactType = Field(title="Type of the artifact.")
     materializer: Source = Field(
