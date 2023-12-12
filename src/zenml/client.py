@@ -3957,6 +3957,8 @@ class Client(metaclass=ClientMetaClass):
             """Call `zen_store.list_service_connectors` with workspace scoping.
 
             Args:
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
                 **kwargs: Keyword arguments to pass to
                     `ServiceConnectorFilterModel`.
 
