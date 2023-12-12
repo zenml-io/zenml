@@ -62,6 +62,7 @@ class ModelContext:
 
 @step
 def step_metadata_logging_functional():
+    """Functional logging using implicit ModelVersion from context."""
     log_model_version_metadata({"foo": "bar"})
     assert get_step_context().model_version.metadata["foo"] == "bar"
 
