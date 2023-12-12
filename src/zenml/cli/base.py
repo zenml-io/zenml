@@ -329,8 +329,9 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
     if local:
         curr_version = version.parse(zenml_version)
 
-        if GlobalConfiguration().version is not None:
-            config_version = version.parse(GlobalConfiguration().version)
+        global_version = GlobalConfiguration().version
+        if global_version is not None:
+            config_version = version.parse(global_version)
 
             if config_version > curr_version:
                 error(
