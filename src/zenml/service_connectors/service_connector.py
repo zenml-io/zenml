@@ -14,7 +14,7 @@
 """Base ZenML Service Connector class."""
 import logging
 from abc import abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import (
     Any,
     ClassVar,
@@ -38,6 +38,7 @@ from pydantic.main import ModelMetaclass
 from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS,
+    SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS,
     handle_bool_env_var,
 )
 from zenml.exceptions import AuthorizationException
@@ -177,6 +178,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
     resource_type: Optional[str] = None
     resource_id: Optional[str] = None
     expires_at: Optional[datetime] = None
+    expires_skew_tolerance: Optional[int] = None
     expiration_seconds: Optional[int] = None
     config: AuthenticationConfig
 
@@ -687,6 +689,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             resource_id=model.resource_id,
             config=auth_config,
             expires_at=model.expires_at,
+            expires_skew_tolerance=model.expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
         )
         if isinstance(model, ServiceConnectorResponse):
@@ -735,6 +738,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             workspace=workspace,
             auth_method=self.auth_method,
             expires_at=self.expires_at,
+            expires_skew_tolerance=self.expires_skew_tolerance,
             expiration_seconds=self.expiration_seconds,
             labels=labels or {},
         )
@@ -796,6 +800,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 connector_type=self.get_type(),
                 auth_method=self.auth_method,
                 expires_at=self.expires_at,
+                expires_skew_tolerance=self.expires_skew_tolerance,
             ),
             metadata=ServiceConnectorResponseMetadata(
                 workspace=workspace,
@@ -826,10 +831,31 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             True if the connector has expired, False otherwise.
         """
         if not self.expires_at:
+            logger.info(
+                "connector authentication credentials have no expiration time."
+            )
             return False
 
         expires_at = self.expires_at.replace(tzinfo=timezone.utc)
-        return expires_at < datetime.now(timezone.utc)
+        # Subtract some time to account for clock skew or other delays.
+        expires_at = expires_at - timedelta(
+            seconds=self.expires_skew_tolerance
+            if self.expires_skew_tolerance is not None
+            else SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS
+        )
+        delta = expires_at - datetime.now(timezone.utc)
+        result = delta < timedelta(seconds=0)
+
+        logger.debug(
+            f"Checking if connector {self.name} has expired.\n"
+            f"Expires at: {self.expires_at}\n"
+            f"Expires at (+skew): {expires_at}\n"
+            f"Current UTC time: {datetime.now(timezone.utc)}\n"
+            f"Delta: {delta}\n"
+            f"Result: {result}\n"
+        )
+
+        return result
 
     def validate_runtime_args(
         self,
@@ -1351,6 +1377,12 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             resource_type=resource_type,
             resource_id=resource_id,
         )
+        # Transfer the expiration skew tolerance to the connector client
+        # if an expiration time is set for the connector client credentials.
+        if connector_client.expires_at is not None:
+            connector_client.expires_skew_tolerance = (
+                self.expires_skew_tolerance
+            )
 
         if connector_client.has_expired():
             raise AuthorizationException(

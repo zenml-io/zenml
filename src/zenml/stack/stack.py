@@ -692,9 +692,17 @@ class Stack:
                 return
 
             if not self.secrets_manager:
+                secrets_msg = ", ".join(
+                    [
+                        f"{secret_ref.name}.{secret_ref.key}"
+                        for secret_ref in required_secrets
+                    ]
+                )
                 _handle_error(
-                    f"Some component in stack `{self.name}` reference secret "
-                    "values, but there is no secrets manager in this stack."
+                    f"Some component in stack `{self.name}` reference missing "
+                    f"secret values: {secrets_msg}.\nTo register the missing "
+                    "secrets for this stack, you can run `zenml stack "
+                    "register-secrets` or `zenml secret create`."
                 )
                 return
 
