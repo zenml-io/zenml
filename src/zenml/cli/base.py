@@ -20,9 +20,9 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import click
+from packaging import version
 from pydantic import BaseModel
 
-from packaging import version
 from zenml import __version__ as zenml_version
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import email_opt_int, track_handler
