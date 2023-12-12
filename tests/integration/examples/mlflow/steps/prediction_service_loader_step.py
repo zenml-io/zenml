@@ -44,14 +44,24 @@ def prediction_service_loader(
         pipeline_name=pipeline_name,
         pipeline_step_name=pipeline_step_name,
         model_name=model_name,
+        running=running,
     )
 
     if not existing_services:
-        raise RuntimeError(
-            f"No MLflow prediction service deployed by the "
-            f"{pipeline_step_name} step in the {pipeline_name} "
-            f"pipeline for the '{model_name}' model is currently "
-            f"running."
+        # check if the service is there but not running
+        existing_services = model_deployer.find_model_server(
+            pipeline_name=pipeline_name,
+            pipeline_step_name=pipeline_step_name,
+            model_name=model_name,
+            running=False,
         )
+        if existing_services:
+            # if it is there but not running, start it
+            return existing_services[0]
+        else:
+            raise ValueError(
+                "No prediction service found for pipeline "
+                f"{pipeline_name} and step {pipeline_step_name}"
+            )
 
     return existing_services[0]
