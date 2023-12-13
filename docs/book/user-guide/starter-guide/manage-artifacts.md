@@ -138,7 +138,7 @@ You don't always want to start your pipeline with a step that produces an artifa
 
 #### Consuming external artifacts within a pipeline
 
-Using the `load_artifact` method is a good way to load (materialize) an object into memory. However, what if you do not want to load the artifact, but just pass it into a pipeline step? This can be achieved with a concept called "External Artifacts".
+The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitary data type.
 
 For example, let's say you have a snowflake query that produces a dataframe, or a CSV file that you need to read. External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
 
@@ -167,7 +167,7 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 
 #### Consuming artifacts produced by other pipelines
 
-Often times, there is a need to consume an artifact downstream after producing it in an upstream pipeline or step. Using `External Artifacts`, you can pass existing artifacts from other pipeline runs into your steps:
+Often times, there is a need to consume an artifact downstream after producing it in an upstream pipeline or step. Again, using `ExternalArtifact`, you can pass existing artifacts from other pipeline runs into your steps:
 
 ```python
 from uuid import UUID
@@ -243,6 +243,8 @@ client.get_artifact("iris_predictions").load()
 ```
 {% endhint %}
 
+Even if an artifact is created externally, it can be treated like any other artifact produced by
+ZenML steps - with all the functionalities described above!
 
 ## Assigning tags to your artifacts
 
