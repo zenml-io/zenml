@@ -70,7 +70,7 @@ first_pipeline = first_pipeline.with_options(enable_cache=False)
 
 The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@pipeline` decorators.
 
-The `with_options` function allows you to configure all sorts of things this way. We will learn more about it in the coming chapters!
+The `with_options` function allows you to configure all sorts of things this way. We will learn more about it in the [coming chapters](../production-guide/configure-pipeline.md)!
 
 ### Caching at a step-level
 
