@@ -60,7 +60,7 @@ The setting above will disable caching for all steps in the pipeline unless a st
 When writing your pipelines, be explicit. This makes it clear when looking at the code if caching is enabled or disabled for any given pipeline.
 {% endhint %}
 
-### Dynamically configuring caching for a pipeline run
+#### Dynamically configuring caching for a pipeline run
 
 Sometimes you want to have control over caching at runtime instead of defaulting to the hard-coded pipeline and step decorator settings. ZenML offers a way to override all caching settings at runtime:
 
