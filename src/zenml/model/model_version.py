@@ -404,7 +404,9 @@ class ModelVersion(BaseModel):
                 logger.warning(
                     "Provided model configuration does not match "
                     f"existing model `{self.name}` with the "
-                    f"following changes: {difference}"
+                    f"following changes: {difference}. If you want to "
+                    "update the model configuration, please use the "
+                    "`zenml model update` command."
                 )
         except KeyError:
             model_request = ModelRequest(
@@ -468,7 +470,8 @@ class ModelVersion(BaseModel):
             logger.warning(
                 "Provided model version configuration does not match existing model "
                 f"version `{self.name}::{self.version}` with the following "
-                f"changes: {difference}"
+                f"changes: {difference}. If you want to update the model version "
+                "configuration, please use the `zenml model version update` command."
             )
 
         return mv
