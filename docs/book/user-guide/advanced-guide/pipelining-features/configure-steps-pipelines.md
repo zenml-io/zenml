@@ -129,12 +129,77 @@ def my_pipeline():
     int_artifact = some_other_step()
     # We supply the value of `input_1` as an artifact and
     # `input_2` as a parameter
-    my_step(input_1=int_artifact, input_2=17)
+    my_step(input_1=int_artifact, input_2=42)
     # We could also call the step with two artifacts or two
     # parameters instead:
     # my_step(input_1=int_artifact, input_2=int_artifact)
     # my_step(input_1=1, input_2=2)
 ```
+
+Parameters of steps and pipelines can also be passed in using YAML configuration files. Following configuration file and python code can work together and give you the flexibility to update configuration only in YAML file, once needed:
+```yaml
+# config.yaml
+
+# these are parameters of the pipeline
+parameters:
+  environment: production
+
+steps:
+  my_step:
+    # these are parameters of the step `my_step`
+    parameters:
+      input_2: 42
+```
+
+```python
+@step
+def my_step(input_1: int, input_2: int) -> None:
+    pass
+
+# input `environment` will come from the configuration file
+# and it is evaluated to `production`
+@pipeline
+def my_pipeline(environment: str):
+    # We supply value of `environment` from pipeline inputs
+    int_artifact = some_other_step(environment=environment)
+    # We supply the value of `input_1` as an artifact and
+    # `input_2` is coming from the configuration file
+    my_step(input_1=int_artifact)
+
+if __name__=="__main__":
+    my_pipeline.with_options(config_paths="config.yaml")()
+```
+{% hint style="warning" %}
+There might be conflicting settings for step or pipeline inputs, while working with YAML configuration files. Such situations happen when you define a step or a pipeline parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instruction on how to fix.
+Example of such a conflict:
+```yaml
+# config.yaml
+parameters:
+    some_param: 24
+
+steps:
+  my_step:
+    parameters:
+      input_2: 42
+```
+```python
+# run.py
+@step
+def my_step(input_1: int, input_2: int) -> None:
+    pass
+
+@pipeline
+def my_pipeline(some_param: int):
+    # here an error will be raised since `input_2` is
+    # `42` in config, but `43` was provided in the code
+    my_step(input_1=42, input_2=43)
+
+if __name__=="__main__":
+    # here an error will be raised since `some_param` is
+    # `24` in config, but `23` was provided in the code
+    my_pipeline(23)
+```
+{% endhint %}
 
 **Parameters and caching**
 
