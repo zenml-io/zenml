@@ -26,12 +26,13 @@ from typing import (
     List,
     Optional,
     Type,
+    cast,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import SecretStr
+from pydantic import BaseModel, Field, root_validator
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
@@ -43,6 +44,12 @@ from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.exceptions import EntityExistsError
+from zenml.integrations.aws.service_connectors.aws_service_connector import (
+    AWS_CONNECTOR_TYPE,
+    AWS_RESOURCE_TYPE,
+    AWSAuthenticationMethods,
+    AWSServiceConnector,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -50,6 +57,10 @@ from zenml.models import (
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
+    ServiceConnectorRequest,
+)
+from zenml.service_connectors.service_connector_registry import (
+    service_connector_registry,
 )
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
@@ -59,6 +70,10 @@ logger = get_logger(__name__)
 
 
 AWS_ZENML_SECRET_NAME_PREFIX = "zenml"
+
+
+class AWSSecretsStoreConnector(BaseModel):
+    """AWS secrets store connector configuration."""
 
 
 class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
@@ -86,18 +101,40 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
     """
 
     type: SecretsStoreType = SecretsStoreType.AWS
-    region_name: str
-    aws_access_key_id: Optional[SecretStr] = None
-    aws_secret_access_key: Optional[SecretStr] = None
-    aws_session_token: Optional[SecretStr] = None
+
+    auth_method: AWSAuthenticationMethods = AWSAuthenticationMethods.SECRET_KEY
+    auth_config: Dict[str, Any] = Field(default_factory=dict)
+
     list_page_size: int = 100
     secret_list_refresh_timeout: int = 0
+
+    @root_validator(pre=True)
+    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Populate the connector configuration from legacy attributes.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+
+        Raises:
+            ValueError: If the connector attribute is not set.
+        """
+        if "auth_method" not in values or "auth_config" not in values:
+            values["auth_config"] = dict(
+                aws_access_key_id=values.get("aws_access_key_id"),
+                aws_secret_access_key=values.get("aws_secret_access_key"),
+                region=values.get("region_name"),
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
 
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra = "allow"
 
 
 class AWSSecretsStore(BaseSecretsStore):
@@ -159,6 +196,7 @@ class AWSSecretsStore(BaseSecretsStore):
     ] = AWSSecretsStoreConfiguration
 
     _client: Optional[Any] = None
+    _connector: Optional[AWSServiceConnector] = None
 
     @property
     def client(self) -> Any:
@@ -167,21 +205,43 @@ class AWSSecretsStore(BaseSecretsStore):
         Returns:
             The AWS Secrets Manager client.
         """
+        if self._connector is not None:
+            # If the client connector expires, we'll try to get a new one.
+            if self._connector.has_expired():
+                self._connector = None
+                self._client = None
+
+        if self._connector is None:
+            # Initialize a base AWS service connector with the credentials from
+            # the configuration.
+            request = ServiceConnectorRequest(
+                name="secrets-store",
+                connector_type=AWS_CONNECTOR_TYPE,
+                resource_types=[AWS_RESOURCE_TYPE],
+                user=uuid4(),
+                workspace=uuid4(),
+                auth_method=self.config.auth_method,
+                configuration=self.config.auth_config,
+            )
+            base_connector = service_connector_registry.instantiate_connector(
+                model=request
+            )
+            self._connector = cast(
+                AWSServiceConnector, base_connector.get_connector_client()
+            )
+
         if self._client is None:
             # Initialize the AWS Secrets Manager client with the
-            # credentials from the configuration, if provided.
-            self._client = boto3.client(
+            # credentials from the connector.
+            session = self._connector.connect(
+                # Don't verify again because we already did that when we
+                # initialized the connector.
+                verify=False
+            )
+            assert isinstance(session, boto3.Session)
+            self._client = session.client(
                 "secretsmanager",
-                region_name=self.config.region_name,
-                aws_access_key_id=self.config.aws_access_key_id.get_secret_value()
-                if self.config.aws_access_key_id
-                else None,
-                aws_secret_access_key=self.config.aws_secret_access_key.get_secret_value()
-                if self.config.aws_secret_access_key
-                else None,
-                aws_session_token=self.config.aws_session_token.get_secret_value()
-                if self.config.aws_session_token
-                else None,
+                region_name=self._connector.config.region,
             )
         return self._client
 

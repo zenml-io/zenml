@@ -831,9 +831,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             True if the connector has expired, False otherwise.
         """
         if not self.expires_at:
-            logger.info(
-                "connector authentication credentials have no expiration time."
-            )
             return False
 
         expires_at = self.expires_at.replace(tzinfo=timezone.utc)
@@ -967,6 +964,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def connect(
         self,
+        verify: bool = True,
         **kwargs: Any,
     ) -> Any:
         """Authenticate and connect to a resource.
@@ -982,6 +980,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         main service connector.
 
         Args:
+            verify: Whether to verify that the connector can access the
+                configured resource before connecting to it.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -993,22 +993,23 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             AuthorizationException: If the connector's authentication
                 credentials have expired.
         """
-        resource_type, resource_id = self.validate_runtime_args(
-            resource_type=self.resource_type,
-            resource_id=self.resource_id,
-            require_resource_type=True,
-            require_resource_id=True,
-        )
-
-        if self.has_expired():
-            raise AuthorizationException(
-                "the connector's authentication credentials have expired."
+        if verify:
+            resource_type, resource_id = self.validate_runtime_args(
+                resource_type=self.resource_type,
+                resource_id=self.resource_id,
+                require_resource_type=True,
+                require_resource_id=True,
             )
 
-        self._verify(
-            resource_type=resource_type,
-            resource_id=resource_id,
-        )
+            if self.has_expired():
+                raise AuthorizationException(
+                    "the connector's authentication credentials have expired."
+                )
+
+            self._verify(
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
 
         return self._connect_to_resource(
             **kwargs,
