@@ -2,7 +2,7 @@
 description: Different variations of the ZenML Cloud architecture depending on your needs.
 ---
 
-# System Architecture
+# Cloud Architecture
 
 {% hint style="info" %}
 If you would like to evaluate ZenML Cloud, please [book a demo](https://zenml.io/book-a-demo) and we can help you decide what scenario suits you best!
@@ -54,14 +54,14 @@ All access to customer secrets is, of course, regulated through authentication a
 <figure><img src="../../.gitbook/assets/cloud_architecture_scenario_3.png" alt=""><figcaption><p>Scenario 3: ZenML Agent deployment</p></figcaption></figure>
 </div>
 
-This scenario adds a new architectural component into the mix, called the ZenML Agent, which facilitates communication between the two clouds. The customer is responsible for deploying and maintaining the ZenML Agent in their environment. The agent acts as an intermediate step for all operations and information that needs to be exchanged between ZenML cloud and other customer stack components, like the artifact store. This means that all features like visualizing data artifacts in the dashboard and triggering pipelines from the dashboard are fully available, but only the ZenML Agent has access to customer secrets and accesses the customer's infrastructure services.
+This scenario adds a new architectural component into the mix, called the ZenML Agent, which facilitates communication between the two clouds. The customer is responsible for deploying and maintaining the ZenML Agent in their environment. The agent acts as an intermediate step for all operations and information that needs to be exchanged between ZenML cloud and other customer stack components, like the artifact store. This means that all features like visualizing data artifacts in the dashboard and triggering pipelines from the dashboard are fully available, but only the ZenML Agent has access to customer secrets and accesses the customer's infrastructure services. 
 
-The advantage of this deployment is that the ZenML Cloud does not need direct access to any sensitive secrets to trigger actions customer-side. The ZenML Agent executes all operations that require access to secrets or customer infrastructure on behalf of the ZenML Cloud. Secrets and data remain on the customer environment, and only one secure ingress connection is established.
+The advantage of this deployment is that the ZenML Cloud does not need direct access to any sensitive secrets to trigger actions customer-side. The ZenML Agent executes all operations that require access to secrets or customer infrastructure on behalf of the ZenML Cloud. Secrets and data remain on the customer environment, and only one secure ingress connection is established. 
 
 Here is a concrete example of how this works:
 
 * The ZenML Cloud API asks the agent to fetch an artifact for visualization.
-* The agent connects to the S3 bucket directly with the credentials configured by the customer and stored in the customer secret store or via a service connector.
+* The agent connects to the S3 bucket directly with the credentials configured by the customer and stored in the customer secret store or via a service connector. 
 * Credentials never have to leave the agent.
 * The agent fetches the artifact and sends it back to the Cloud API.
 * The Cloud API sends the visualization to the dashboard.
