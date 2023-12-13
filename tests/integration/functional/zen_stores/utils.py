@@ -555,6 +555,7 @@ class ServiceConnectorContext:
         configuration: Optional[Dict[str, str]] = None,
         secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
         expires_at: Optional[datetime] = None,
+        expires_skew_tolerance: Optional[int] = None,
         expiration_seconds: Optional[int] = None,
         user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
@@ -570,6 +571,7 @@ class ServiceConnectorContext:
         self.configuration = configuration
         self.secrets = secrets
         self.expires_at = expires_at
+        self.expires_skew_tolerance = expires_skew_tolerance
         self.expiration_seconds = expiration_seconds
         self.user_id = user_id
         self.workspace_id = workspace_id
@@ -588,6 +590,7 @@ class ServiceConnectorContext:
             configuration=self.configuration or {},
             secrets=self.secrets or {},
             expires_at=self.expires_at,
+            expires_skew_tolerance=self.expires_skew_tolerance,
             expiration_seconds=self.expiration_seconds,
             labels=self.labels or {},
             user=self.user_id or self.client.active_user.id,

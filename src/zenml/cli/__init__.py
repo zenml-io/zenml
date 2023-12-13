@@ -882,6 +882,75 @@ You can delete one of your registered code repositories like this:
 zenml code-repository delete <REPOSITORY_NAME_OR_ID>
 ```
 
+Administering your Models
+----------------------------
+
+ZenML provides several CLI commands to help you administer your models and
+model versions as part of the Model Control Plane.
+
+To register a new model, you can use the following CLI command:
+```bash
+zenml model register --name <NAME> [--MODEL_OPTIONS]
+```
+
+To list all registered models, use:
+```bash
+zenml model list
+```
+
+To update a model, use:
+```bash
+zenml model update <MODEL_NAME_OR_ID> [--MODEL_OPTIONS]
+```
+
+If you would like to add or remove tags from the model, use:
+```bash
+zenml model update <MODEL_NAME_OR_ID> --tag <TAG> --tag <TAG> .. 
+   --remove-tag <TAG> --remove-tag <TAG> ..
+```
+
+To delete a model, use:
+```bash
+zenml model delete <MODEL_NAME_OR_ID>
+```
+
+The CLI interface for models also helps to navigate through artifacts linked to a specific model versions.
+```bash
+zenml model data_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
+zenml model endpoint_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
+zenml model model_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
+```
+
+You can also navigate the pipeline runs linked to a specific model versions:
+```bash
+zenml model runs <MODEL_NAME_OR_ID> [-v <VERSION>]
+```
+
+To list the model versions of a specific model, use:
+```bash
+zenml model version list <MODEL_NAME_OR_ID>
+```
+
+To delete a model version, use:
+```bash
+zenml model version delete <MODEL_NAME_OR_ID> <VERSION>
+```
+
+To update a model version, use:
+```bash
+zenml model version update <MODEL_NAME_OR_ID> <VERSION> [--MODEL_VERSION_OPTIONS]
+```
+These are some of the more common uses of model version updates:
+- stage (i.e. promotion)
+```bash
+zenml model version update <MODEL_NAME_OR_ID> <VERSION> --stage <STAGE>
+```
+- tags
+```bash
+zenml model version update <MODEL_NAME_OR_ID> <VERSION> --tag <TAG> --tag <TAG> .. 
+   --remove-tag <TAG> --remove-tag <TAG> ..
+```
+
 Administering your Pipelines
 ----------------------------
 
