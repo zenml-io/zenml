@@ -1,4 +1,48 @@
 <!-- markdown-link-check-disable -->
+# 0.52.0
+
+This adds the ability to pass in pipeline parameters as YAML configuration and fixes a couple of minor issues affecting the W&B integration and the way expiring credentials are refreshed when service connectors are used.
+
+## Breaking Change
+
+The current pipeline YAML configurations are now being validated to ensure that configured parameters match what is available in the code. This means that if you have a pipeline that is configured with a parameter that has a different value that what is provided through code, the pipeline will fail to run. This is a breaking change, but it is a good thing as it will help you catch errors early on.
+
+This is an example of a pipeline configuration that will fail to run:
+
+```yaml
+parameters:
+    some_param: 24
+
+steps:
+  my_step:
+    parameters:
+      input_2: 42
+```
+
+```python
+# run.py
+@step
+def my_step(input_1: int, input_2: int) -> None:
+    pass
+
+@pipeline
+def my_pipeline(some_param: int):
+    # here an error will be raised since `input_2` is
+    # `42` in config, but `43` was provided in the code
+    my_step(input_1=42, input_2=43)
+
+if __name__=="__main__":
+    # here an error will be raised since `some_param` is
+    # `24` in config, but `23` was provided in the code
+    my_pipeline(23)
+```
+
+## What's Changed
+* Passing pipeline parameters as yaml config by @avishniakov in https://github.com/zenml-io/zenml/pull/2058
+* Side-effect free tests by @avishniakov in https://github.com/zenml-io/zenml/pull/2065
+* Fix various bugs by @stefannica in https://github.com/zenml-io/zenml/pull/2124
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.51.0...0.52.0
 
 # 0.51.0
 

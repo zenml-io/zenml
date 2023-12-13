@@ -37,7 +37,10 @@ if TYPE_CHECKING:
         ArtifactSchema,
         ArtifactVersionSchema,
     )
-    from zenml.zen_stores.schemas.model_schemas import ModelSchema
+    from zenml.zen_stores.schemas.model_schemas import (
+        ModelSchema,
+        ModelVersionSchema,
+    )
 
 
 class TagSchema(NamedSchema, table=True):
@@ -126,21 +129,28 @@ class TagResourceSchema(BaseSchema, table=True):
         back_populates="tags",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
-            overlaps="tags,model,artifact_version",
+            overlaps="tags,model,artifact_version,model_version",
         ),
     )
     artifact_version: List["ArtifactVersionSchema"] = Relationship(
         back_populates="tags",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT_VERSION.value}', foreign(TagResourceSchema.resource_id)==ArtifactVersionSchema.id)",
-            overlaps="tags,model,artifact",
+            overlaps="tags,model,artifact,model_version",
         ),
     )
     model: List["ModelSchema"] = Relationship(
         back_populates="tags",
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
-            overlaps="tags,artifact,artifact_version",
+            overlaps="tags,artifact,artifact_version,model_version",
+        ),
+    )
+    model_version: List["ModelVersionSchema"] = Relationship(
+        back_populates="tags",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL_VERSION.value}', foreign(TagResourceSchema.resource_id)==ModelVersionSchema.id)",
+            overlaps="tags,model,artifact,artifact_version",
         ),
     )
 
