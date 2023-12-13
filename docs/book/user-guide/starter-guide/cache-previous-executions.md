@@ -85,6 +85,8 @@ def import_data_from_api(...):
 
 The code above turns caching off for this step only.
 
+#### Dynamically configuring caching for a step
+
 You can also use `with_options` with the step, just as in the pipeline:
 
 ```python
