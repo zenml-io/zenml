@@ -70,6 +70,8 @@ first_pipeline = first_pipeline.with_options(enable_cache=False)
 
 The code above disables caching for all steps of your pipeline, no matter what you have configured in the `@step` or `@pipeline` decorators.
 
+The `with_options` function allows you to configure all sorts of things this way. We will learn more about it in the coming chapters!
+
 ### Caching at a step-level
 
 Caching can also be explicitly configured at a step level via a parameter of the `@step` decorator:
@@ -82,6 +84,14 @@ def import_data_from_api(...):
 ```
 
 The code above turns caching off for this step only.
+
+You can also use `with_options` with the step, just as in the pipeline:
+
+```python
+import_data_from_api = import_data_from_api.with_options(enable_cache=False)
+
+# use in your pipeline directly
+```
 
 ## Code Example
 
@@ -100,6 +110,9 @@ from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
 from zenml import pipeline, step
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @step
@@ -147,7 +160,17 @@ if __name__ == "__main__":
     # being disabled on the @step decorator. Even if caching was
     # enabled though, ZenML would detect a different value for the
     # `gamma` input of the second step and disable caching
+    logger.info("\n\nFirst step cached, second not due to parameter change")
     training_pipeline(gamma=0.0001)
+
+    # This will disable cache for all steps
+    logger.info("\n\nFirst step cached, second not due to settings")
+    svc_trainer = svc_trainer.with_options(enable_cache=False)
+    training_pipeline.with_options(enable_cache=False)()
+
+    # This will disable cache for all steps
+    logger.info("\n\nCaching disabled for the entire pipeline")
+    training_pipeline.with_options(enable_cache=False)()
 ```
 
 </details>
