@@ -6,17 +6,17 @@ description: Understand and adjust how ZenML versions your data.
 
 Data sits at the heart of every machine learning workflow. Managing and versioning this data correctly is essential for reproducibility and traceability within your ML pipelines. ZenML takes a proactive approach to data versioning, ensuring that every artifact—be it data, models, or evaluations—is automatically tracked and versioned upon pipeline execution.
 
-![Walkthrough of ZenML Data Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/dcp_walkthrough.gif)
+![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/dcp_walkthrough.gif)
 
 This guide will delve into artifact versioning and management, showing you how to efficiently name, organize, and utilize your data with the ZenML framework.
 
 ## Managing artifacts produced by ZenML pipelines
 
-Artifacts, the outputs of your pipelines, are automatically versioned and stored in the artifact store. Configuring these artifacts is pivotal for transparent and efficient pipeline development.
+Artifacts, the outputs of your steps and pipelines, are automatically versioned and stored in the artifact store. Configuring these artifacts is pivotal for transparent and efficient pipeline development.
 
 ### Giving names to your artifacts
 
-Assigning custom names to your artifacts can greatly enhance their discoverability and manageability. Utilize the `Annotated` object within your steps to give precise, human-readable names to outputs:
+Assigning custom names to your artifacts can greatly enhance their discoverability and manageability. As best practice, utilize the `Annotated` object within your steps to give precise, human-readable names to outputs:
 
 ```python
 from typing_extensions import Annotated
@@ -57,7 +57,7 @@ To list artifacts: `zenml artifacts list`
 
 The ZenML Cloud dashboard offers advanced visualization features for artifact exploration.
 
-<figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>ZenML Data Control Plane.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
 
 {% hint style="info" %}
 To prevent visual clutter, only artifacts with custom names are displayed in
@@ -68,7 +68,7 @@ important artifacts that you would like to explore visually.
 {% endtab %}
 {% endtabs %}
 
-### Versioning Artifacts Intentionally
+### Versioning artifacts intentionally
 
 ZenML automatically versions all created artifacts using auto-incremented
 numbering. I.e., if you have defined a step creating an artifact named
@@ -77,7 +77,6 @@ create an artifact with this name and version "1", the second execution will
 create version "2" and so on.
 
 While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model/#zenml.model.artifact_config.DataArtifactConfig). This may come into play during critical runs like production releases.
-
 
 
 ```python
@@ -131,44 +130,7 @@ ZenML automatically saves visualizations for many common data types, allowing yo
 
 When you ran your `training_pipeline` above, you will see some visualizations already created for your artifacts. Explore them in the dashboard!
 
-See the [Artifact Visualization Docs Page](../advanced-guide/data-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
-
-### Consuming a versioned artifact into a pipeline
-
-Often times, there is a need to consume an artifact downstream after producing it in an upstream pipeline or step. Using `External Artifacts`, you can pass existing artifacts from other pipeline runs into your steps. Search can be performed in one of the following ways:
-
-```python
-from uuid import UUID
-import pandas as pd
-from zenml import step, pipeline, ExternalArtifact
-
-
-@step 
-def trainer(dataset: pd.DataFrame):
-    ...
-
-@pipeline
-def training_pipeline():
-    # Fetch by ID
-    dataset_artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
-
-    # Fetch by name alone - uses latest version of this artifact
-    dataset_artifact = ExternalArtifact(name="iris_dataset")
-
-    # Fetch by name and version
-    dataset_artifact = ExternalArtifact(name="iris_dataset", version="raw_2023")
-
-    # Pass into any step
-    trainer(dataset=dataset_artifact)
-
-
-if __name__ == "__main__":
-    training_pipeline()
-```
-
-{% hint style="info" %}
-Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
-{% endhint %}
+See the [artifact visualization docs](../advanced-guide/data-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
 
 ## Managing artifacts **not** produced by ZenML pipelines
 
@@ -242,34 +204,44 @@ if __name__ == "__main__":
     printing_pipeline()
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-steps/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts/#zenml.artifacts.external_artifact.ExternalArtifact) for all available options.
 
 ### Consuming artifacts produced by other pipelines
 
-`ExternalArtifact` can also be used to consume any version of a ZenML artifact into a downstream pipeline:
+Often times, there is a need to consume an artifact downstream after producing it in an upstream pipeline or step. Using `External Artifacts`, you can pass existing artifacts from other pipeline runs into your steps:
 
 ```python
-import numpy as np
-from zenml import ExternalArtifact, pipeline, step
+from uuid import UUID
+import pandas as pd
+from zenml import step, pipeline, ExternalArtifact
 
-@step
-def print_data(data: np.ndarray):
-    print(data)
+
+@step 
+def trainer(dataset: pd.DataFrame):
+    ...
 
 @pipeline
-def printing_pipeline():
-    # Load data from an earlier produced artifact (uses latest version)
-    data = ExternalArtifact(name="iris_predictions")
+def training_pipeline():
+    # Fetch by ID
+    dataset_artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
 
-    # You can specify which version to load
-    data = ExternalArtifact(name="iris_predictions", version="1")
+    # Fetch by name alone - uses latest version of this artifact
+    dataset_artifact = ExternalArtifact(name="iris_dataset")
 
-    print_data(data=data)
+    # Fetch by name and version
+    dataset_artifact = ExternalArtifact(name="iris_dataset", version="raw_2023")
+
+    # Pass into any step
+    trainer(dataset=dataset_artifact)
 
 
 if __name__ == "__main__":
-    printing_pipeline()
+    training_pipeline()
 ```
+
+{% hint style="info" %}
+Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
+{% endhint %}
 
 ## Assign tags to your artifacts
 

@@ -118,11 +118,11 @@ Similar to pipelines, you can query runs by either ID, name, or name prefix, and
 
 ### Run Information
 
-Each run has a collection of useful information which can help you reproduce your runs. In the following, you can find a list of some of the most useful pipeline run information, but there is much more available. See the [`PipelineRunResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline\_run\_models.py) definition for a comprehensive list.
+Each run has a collection of useful information which can help you reproduce your runs. In the following, you can find a list of some of the most useful pipeline run information, but there is much more available. See the [`PipelineRunResponseModel`](https://sdkdocs.zenml.io/latest/core_code_docs/core-models/#zenml.models.v2.core.pipeline_run.PipelineRunResponse) definition for a comprehensive list.
 
 #### Status
 
-The status of a pipeline run. There are four possible states: failed, completed, running, and cached.
+The status of a pipeline run. There are five possible states: initialized, failed, completed, running, and cached.
 
 ```python
 status = run.status
