@@ -205,6 +205,7 @@ class Compiler:
                 settings=config.settings,
                 extra=config.extra,
                 model_version=config.model_version,
+                parameters=config.parameters,
             )
 
         for invocation_id in config.steps:
@@ -432,7 +433,9 @@ class Compiler:
 
         step = invocation.step
         if step_config:
-            step._apply_configuration(step_config)
+            step._apply_configuration(
+                step_config, runtime_parameters=invocation.parameters
+            )
 
         step_spec = self._get_step_spec(invocation=invocation)
         step_settings = self._filter_and_validate_settings(

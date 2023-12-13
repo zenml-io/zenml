@@ -997,8 +997,24 @@ class SqlZenStore(BaseZenStore):
         else:
             if self.alembic.db_is_empty():
                 # Case 1: the database is empty. We can just create the
-                # tables from scratch with alembic.
-                self.alembic.upgrade()
+                # tables from scratch with from SQLModel. After tables are
+                # created we put an alembic revision to latest and populate
+                # identity table with needed info.
+                logger.info("Creating database tables")
+                with self.engine.begin() as conn:
+                    conn.run_callable(
+                        SQLModel.metadata.create_all  # type: ignore[arg-type]
+                    )
+                with Session(self.engine) as session:
+                    session.add(
+                        IdentitySchema(
+                            id=str(GlobalConfiguration().user_id).replace(
+                                "-", ""
+                            )
+                        )
+                    )
+                    session.commit()
+                self.alembic.stamp("head")
             else:
                 # Case 2: the database is not empty, but has never been
                 # migrated with alembic before. We need to create the alembic
@@ -6387,6 +6403,13 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_schema)
 
+            if model_version.tags:
+                self._attach_tags_to_resource(
+                    tag_names=model_version.tags,
+                    resource_id=model_version_schema.id,
+                    resource_type=TaggableResourceTypes.MODEL_VERSION,
+                )
+
             session.commit()
             return model_version_schema.to_model(hydrate=True)
 
@@ -6545,6 +6568,19 @@ class SqlZenStore(BaseZenStore):
                         logger.info(
                             f"Model version {existing_model_version_in_target_stage.name} has been set to {ModelStages.ARCHIVED.value}."
                         )
+
+            if model_version_update_model.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=model_version_update_model.add_tags,
+                    resource_id=existing_model_version.id,
+                    resource_type=TaggableResourceTypes.MODEL_VERSION,
+                )
+            if model_version_update_model.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=model_version_update_model.remove_tags,
+                    resource_id=existing_model_version.id,
+                    resource_type=TaggableResourceTypes.MODEL_VERSION,
+                )
 
             existing_model_version.update(
                 target_stage=stage,

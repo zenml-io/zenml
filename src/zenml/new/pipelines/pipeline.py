@@ -303,6 +303,7 @@ class Pipeline:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model_version: Optional["ModelVersion"] = None,
+        parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
     ) -> T:
         """Configures the pipeline.
@@ -338,6 +339,7 @@ class Pipeline:
                 overwrite all existing ones. See the general description of this
                 method for an example.
             model_version: configuration of the model version in the Model Control Plane.
+            parameters: input parameters for the pipeline.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -363,6 +365,7 @@ class Pipeline:
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
                 "model_version": model_version,
+                "parameters": parameters,
             }
         )
         if not self.__suppress_warnings_flag__:
@@ -428,10 +431,51 @@ class Pipeline:
         Args:
             *args: Pipeline entrypoint input arguments.
             **kwargs: Pipeline entrypoint input keyword arguments.
+
+        Raises:
+            RuntimeError: If the pipeline has parameters configured differently in
+                configuration file and code.
         """
         # Clear existing parameters and invocations
         self._parameters = {}
         self._invocations = {}
+
+        conflicting_parameters = {}
+        parameters_ = (self.configuration.parameters or {}).copy()
+        if from_file_ := self._from_config_file.get("parameters", None):
+            parameters_ = dict_utils.recursive_update(parameters_, from_file_)
+        if parameters_:
+            for k, v_runtime in kwargs.items():
+                if k in parameters_:
+                    v_config = parameters_[k]
+                    if v_config != v_runtime:
+                        conflicting_parameters[k] = (v_config, v_runtime)
+            if conflicting_parameters:
+                is_plural = "s" if len(conflicting_parameters) > 1 else ""
+                msg = f"Configured parameter{is_plural} for the pipeline `{self.name}` conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
+                for key, values in conflicting_parameters.items():
+                    msg += f"`{key}`: config=`{values[0]}` | runtime=`{values[1]}`\n"
+                msg += """This happens, if you define values for pipeline parameters in configuration file and pass same parameters from the code. Example:
+```
+# config.yaml
+    parameters:
+        param_name: value1
+            
+            
+# pipeline.py
+@pipeline
+def pipeline_(param_name: str):
+    step_name()
+
+if __name__=="__main__":
+    pipeline_.with_options(config_file="config.yaml")(param_name="value2")
+```
+To avoid this consider setting pipeline parameters only in one place (config or code).
+"""
+                raise RuntimeError(msg)
+            for k, v_config in parameters_.items():
+                if k not in kwargs:
+                    kwargs[k] = v_config
 
         with self:
             # Enter the context manager, so we become the active pipeline. This
@@ -1317,11 +1361,7 @@ class Pipeline:
             with open(config_path, "r") as f:
                 _from_config_file = yaml.load(f, Loader=yaml.SafeLoader)
             _from_config_file = dict_utils.remove_none_values(
-                {
-                    k: v
-                    for k, v in _from_config_file.items()
-                    if k in matcher and v
-                }
+                {k: v for k, v in _from_config_file.items() if k in matcher}
             )
 
             if "model_version" in _from_config_file:
