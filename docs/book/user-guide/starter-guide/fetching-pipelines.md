@@ -79,7 +79,7 @@ runs = pipeline_model.runs
 The result will be a list of the most recent runs of this pipeline, ordered from newest to oldest.
 
 {% hint style="info" %}
-Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md#list-of-resources) for more information.
+Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](../advanced-guide/environment-management/use-the-client.md#list-of-resources) for more information.
 {% endhint %}
 
 ### Get Last Run of Pipeline
@@ -130,7 +130,7 @@ status = run.status
 
 #### Configuration
 
-The `pipeline_configuration` is an object that contains all configurations of the pipeline and pipeline run, including the [pipeline-level `BaseSettings`](../advanced-guide/pipelining-features/configure-steps-pipelines.md), which we will learn more about later:
+The `pipeline_configuration` is an object that contains all configurations of the pipeline and pipeline run, including the [pipeline-level settings](../production-guide/configure-pipeline.md), which we will learn more about later:
 
 ```python
 pipeline_config = run.config
