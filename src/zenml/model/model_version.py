@@ -383,6 +383,29 @@ class ModelVersion(BaseModel):
             model = zenml_client.zen_store.get_model(
                 model_name_or_id=self.name
             )
+
+            difference = {}
+            for key in (
+                "license",
+                "audience",
+                "use_cases",
+                "limitations",
+                "trade_offs",
+                "ethics",
+                "save_models_to_registry",
+            ):
+                if getattr(self, key) != getattr(model, key):
+                    difference[key] = {
+                        "config": getattr(self, key),
+                        "db": getattr(model, key),
+                    }
+
+            if difference:
+                logger.warning(
+                    "Provided model configuration does not match "
+                    f"existing model `{self.name}` with the "
+                    f"following changes: {difference}"
+                )
         except KeyError:
             model_request = ModelRequest(
                 name=self.name,
@@ -396,6 +419,7 @@ class ModelVersion(BaseModel):
                 tags=self.tags,
                 user=zenml_client.active_user.id,
                 workspace=zenml_client.active_workspace.id,
+                save_models_to_registry=self.save_models_to_registry,
             )
             model_request = ModelRequest.parse_obj(model_request)
             try:
@@ -428,6 +452,24 @@ class ModelVersion(BaseModel):
         )
         if not self._id:
             self._id = mv.id
+
+        difference: Dict[str, Any] = {}
+        if mv.description != self.description:
+            difference["description"] = {
+                "config": self.description,
+                "db": mv.description,
+            }
+        configured_tags = set(self.tags or [])
+        db_tags = {t.name for t in mv.tags}
+        if db_tags != configured_tags:
+            difference["tags added"] = list(configured_tags - db_tags)
+            difference["tags removed"] = list(db_tags - configured_tags)
+        if difference:
+            logger.warning(
+                "Provided model version configuration does not match existing model "
+                f"version `{self.name}::{self.version}` with the following "
+                f"changes: {difference}"
+            )
 
         return mv
 

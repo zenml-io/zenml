@@ -204,7 +204,6 @@ class TestModelVersion:
         mv = ModelVersion(
             name=MODEL_NAME,
             tags=["foo", "bar"],
-            delete_new_version_on_failure=False,
         )
 
         # run 2 times to first create, next get
@@ -222,7 +221,6 @@ class TestModelVersion:
         mv = ModelVersion(
             name=MODEL_NAME,
             tags=["foo", "bar"],
-            delete_new_version_on_failure=False,
         )
         model_id = mv._get_or_create_model_version().model.id
 
@@ -259,3 +257,54 @@ class TestModelVersion:
         model_version = mv._get_or_create_model_version()
         assert len(model_version.tags) == 2
         assert {t.name for t in model_version.tags} == {"foo", "bar"}
+
+    def test_model_config_differs_from_db_warns(self, clean_client: "Client"):
+        """Test that model context warns if model config differs from db."""
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            tags=["foo", "bar"],
+        )
+        mv._get_or_create_model()
+
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            tags=["bar", "new"],
+            license="NEW",
+            save_models_to_registry=False,
+        )
+        with mock.patch("zenml.model.model_version.logger.warning") as logger:
+            mv._get_or_create_model()
+            logger.assert_called_once()
+
+            warning = logger.call_args[0][0]
+            assert "license" in warning
+            assert "save_models_to_registry" in warning
+
+    def test_model_version_config_differs_from_db_warns(
+        self, clean_client: "Client"
+    ):
+        """Test that model version context warns if model version config differs from db."""
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            version="1.0.0",
+            tags=["foo", "bar"],
+        )
+        mv._get_or_create_model_version()
+
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            version="1.0.0",
+            tags=["bar", "new"],
+            license="NEW",
+            description="NEW",
+            save_models_to_registry=False,
+        )
+        with mock.patch("zenml.model.model_version.logger.warning") as logger:
+            mv._get_or_create_model_version()
+            logger.assert_called()
+            assert logger.call_count == 2  # for model and model version
+
+            warning = logger.call_args_list[1][0][0]
+            assert "tags added" in warning
+            assert "tags removed" in warning
+            assert "description" in warning
