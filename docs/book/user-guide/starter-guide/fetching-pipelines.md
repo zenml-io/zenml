@@ -25,33 +25,9 @@ Let us investigate how to traverse this hierarchy level-by-level:
 
 ## Pipelines
 
-### Access Pipeline From Class
-
-After you have run a pipeline at least once, you can access all the information associated with this pipeline through the [corresponding response object](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/pipeline\_models.py) that you can access via the pipeline's `model` property:
-
-```python
-@pipeline
-def my_pipeline():
-    ...
-
-my_pipeline()
-
-# get the Pydantic model representation of the pipeline
-pipeline_model = my_pipeline.model
-
-# find information about the pipeline
-name = pipeline_model.name
-version = pipeline_model.version
-...
-```
-
-{% hint style="info" %}
-These pipeline "models" are not related to machine learning models like decision trees or neural networks. Rather, you can think of them as similar to types in strictly-typed languages. Checkout the [ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md#resource-models) for more details.
-{% endhint %}
-
 ### Get Pipeline via Client
 
-Alternatively, if you don't have the pipeline definition loaded anymore, you can also fetch the pipeline via the [`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.get\_pipeline) method.
+After you have run a pipeline at least once, you can also fetch the pipeline via the [`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline) method.
 
 ```python
 from zenml.client import Client
@@ -67,7 +43,8 @@ Checkout the [ZenML Client Documentation](../advanced-guide/environment-manageme
 
 If you're not sure which pipeline you need to fetch, you can find a list of all registered pipelines in the ZenML dashboard, or list them programmatically either via the Client or the CLI.
 
-#### List Pipelines via Client
+{% tabs %}
+{% tab title="Python" %}
 
 You can use the [`Client.list_pipelines()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.list\_pipelines) method to get a list of all pipelines registered in ZenML:
 
@@ -76,14 +53,16 @@ from zenml.client import Client
 
 pipelines = Client().list_pipelines()
 ```
+{% endtab %}
 
-#### List Pipelines via CLI
-
+{% tab title="CLI" %}
 Alternatively, you can also list pipelines with the following CLI command:
 
 ```shell
 zenml pipeline list
 ```
+{% endtab %}
+{% endtabs %}
 
 ## Runs
 
