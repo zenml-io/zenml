@@ -96,12 +96,33 @@ class TestModelVersion:
     def test_model_create_model_and_version(self, clean_client: "Client"):
         """Test if model and version are created, not existing before."""
         with ModelContext(clean_client, create_model=False):
-            mv = ModelVersion(name=MODEL_NAME)
+            mv = ModelVersion(name=MODEL_NAME, tags=["tag1", "tag2"])
             with mock.patch("zenml.model.model_version.logger.info") as logger:
                 mv = mv._get_or_create_model_version()
                 logger.assert_called()
             assert mv.name == str(mv.number)
             assert mv.model.name == MODEL_NAME
+            assert {t.name for t in mv.tags} == {"tag1", "tag2"}
+            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+
+    def test_create_model_version_makes_proper_tagging(
+        self, clean_client: "Client"
+    ):
+        """Test if model versions get unique tags."""
+        with ModelContext(clean_client, create_model=False):
+            mv = ModelVersion(name=MODEL_NAME, tags=["tag1", "tag2"])
+            mv = mv._get_or_create_model_version()
+            assert mv.name == str(mv.number)
+            assert mv.model.name == MODEL_NAME
+            assert {t.name for t in mv.tags} == {"tag1", "tag2"}
+            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+
+            mv = ModelVersion(name=MODEL_NAME, tags=["tag3", "tag4"])
+            mv = mv._get_or_create_model_version()
+            assert mv.name == str(mv.number)
+            assert mv.model.name == MODEL_NAME
+            assert {t.name for t in mv.tags} == {"tag3", "tag4"}
+            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
 
     def test_model_fetch_model_and_version_by_number(
         self, clean_client: "Client"
@@ -212,7 +233,7 @@ class TestModelVersion:
             tags=["foo", "bar"],
             delete_new_version_on_failure=False,
         )
-        model_id = mv._get_or_create_model().id
+        model_id = mv._get_or_create_model_version().model.id
 
         clean_client.update_model(model_id, add_tags=["tag1", "tag2"])
         model = mv._get_or_create_model()
@@ -224,10 +245,29 @@ class TestModelVersion:
             "tag2",
         }
 
+        clean_client.update_model_version(
+            model_id, "1", add_tags=["tag3", "tag4"]
+        )
+        model_version = mv._get_or_create_model_version()
+        assert len(model_version.tags) == 4
+        assert {t.name for t in model_version.tags} == {
+            "foo",
+            "bar",
+            "tag3",
+            "tag4",
+        }
+
         clean_client.update_model(model_id, remove_tags=["tag1", "tag2"])
         model = mv._get_or_create_model()
         assert len(model.tags) == 2
         assert {t.name for t in model.tags} == {"foo", "bar"}
+
+        clean_client.update_model_version(
+            model_id, "1", remove_tags=["tag3", "tag4"]
+        )
+        model_version = mv._get_or_create_model_version()
+        assert len(model_version.tags) == 2
+        assert {t.name for t in model_version.tags} == {"foo", "bar"}
 
     def test_metadata_logging(self, clean_client: "Client"):
         """Test that model version can be used to track metadata from object."""

@@ -508,6 +508,7 @@ class ModelVersion(BaseModel):
             name=self.version,
             description=self.description,
             model=model.id,
+            tags=self.tags,
         )
         mv_request = ModelVersionRequest.parse_obj(model_version_request)
         try:

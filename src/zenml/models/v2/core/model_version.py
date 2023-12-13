@@ -14,13 +14,14 @@
 """Models representing model versions."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, PrivateAttr, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
+from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -71,6 +72,9 @@ class ModelVersionRequest(WorkspaceScopedRequest):
     model: UUID = Field(
         description="The ID of the model containing version",
     )
+    tags: Optional[List[str]] = Field(
+        title="Tags associated with the model version",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -91,7 +95,16 @@ class ModelVersionUpdate(BaseModel):
         default=False,
     )
     name: Optional[str] = Field(
-        description="Target model version name to be set", default=None
+        description="Target model version name to be set",
+        default=None,
+    )
+    add_tags: Optional[List[str]] = Field(
+        description="Tags to be added to the model version",
+        default=None,
+    )
+    remove_tags: Optional[List[str]] = Field(
+        description="Tags to be removed from the model version",
+        default=None,
     )
 
     @validator("stage")
@@ -140,6 +153,9 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
     run_metadata: Dict[str, "RunMetadataResponse"] = Field(
         description="Metadata linked to the model version",
         default={},
+    )
+    tags: List[TagResponseModel] = Field(
+        title="Tags associated with the model version", default=[]
     )
     created: datetime = Field(
         title="The timestamp when this component was created."
@@ -258,6 +274,15 @@ class ModelVersionResponse(
         return self.get_body().updated
 
     @property
+    def tags(self) -> List["TagResponseModel"]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().tags
+
+    @property
     def description(self) -> Optional[str]:
         """The `description` property.
 
@@ -313,7 +338,7 @@ class ModelVersionResponse(
             limitations=self.model.limitations,
             trade_offs=self.model.trade_offs,
             ethics=self.model.ethics,
-            tags=[t.name for t in self.model.tags],
+            tags=[t.name for t in self.tags],
             version=self.name,
             was_created_in_this_run=was_created_in_this_run,
             suppress_class_validation_warnings=suppress_class_validation_warnings,
