@@ -216,7 +216,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         }
 
         if self.deployment is not None:
-            steps = {s.name: s.to_model() for s in self.deployment.step_runs}
+            steps = {s.name: s.to_model() for s in self.step_runs}
 
             deployment = self.deployment.to_model()
 

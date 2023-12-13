@@ -14,7 +14,7 @@
 """Models representing service connectors."""
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
@@ -80,6 +80,12 @@ class ServiceConnectorRequest(WorkspaceScopedRequest):
         default=None,
         title="Time when the authentication credentials configured for the "
         "connector expire. If omitted, the credentials do not expire.",
+    )
+    expires_skew_tolerance: Optional[int] = Field(
+        default=None,
+        title="The number of seconds of tolerance to apply when checking "
+        "whether the authentication credentials configured for the connector "
+        "have expired. If omitted, no tolerance is applied.",
     )
     expiration_seconds: Optional[int] = Field(
         default=None,
@@ -285,6 +291,12 @@ class ServiceConnectorResponseBody(WorkspaceScopedResponseBody):
         title="Time when the authentication credentials configured for the "
         "connector expire. If omitted, the credentials do not expire.",
     )
+    expires_skew_tolerance: Optional[int] = Field(
+        default=None,
+        title="The number of seconds of tolerance to apply when checking "
+        "whether the authentication credentials configured for the connector "
+        "have expired. If omitted, no tolerance is applied.",
+    )
 
 
 class ServiceConnectorResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -433,21 +445,6 @@ class ServiceConnectorResponse(
         )
         return config
 
-    def has_expired(self) -> bool:
-        """Check if the connector credentials have expired.
-
-        Verify that the authentication credentials associated with the connector
-        have not expired by checking the expiration time against the current
-        time.
-
-        Returns:
-            True if the connector has expired, False otherwise.
-        """
-        if not self.expires_at:
-            return False
-
-        return self.expires_at < datetime.now(timezone.utc)
-
     def set_connector_type(
         self, value: Union[str, "ServiceConnectorTypeModel"]
     ) -> None:
@@ -551,6 +548,15 @@ class ServiceConnectorResponse(
             the value of the property.
         """
         return self.get_body().expires_at
+
+    @property
+    def expires_skew_tolerance(self) -> Optional[int]:
+        """The `expires_skew_tolerance` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().expires_skew_tolerance
 
     @property
     def configuration(self) -> Dict[str, Any]:

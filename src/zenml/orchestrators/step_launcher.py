@@ -241,10 +241,6 @@ class StepLauncher:
                         )
                         raise
 
-                publish_utils.update_pipeline_run_status(
-                    pipeline_run=pipeline_run,
-                    num_steps=len(self._deployment.step_configurations),
-                )
         except:  # noqa: E722
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)

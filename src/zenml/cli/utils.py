@@ -1582,18 +1582,27 @@ def seconds_to_human_readable(time_seconds: int) -> str:
     return "".join(tokens)
 
 
-def expires_in(expires_at: datetime.datetime, expired_str: str) -> str:
+def expires_in(
+    expires_at: datetime.datetime,
+    expired_str: str,
+    skew_tolerance: Optional[int] = None,
+) -> str:
     """Returns a human-readable string of the time until the token expires.
 
     Args:
         expires_at: Datetime object of the token expiration.
         expired_str: String to return if the token is expired.
+        skew_tolerance: Seconds of skew tolerance to subtract from the
+            expiration time. If the token expires within this time, it will be
+            considered expired.
 
     Returns:
         Human readable string.
     """
     now = datetime.datetime.now(datetime.timezone.utc)
     expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
+    if skew_tolerance:
+        expires_at -= datetime.timedelta(seconds=skew_tolerance)
     if expires_at < now:
         return expired_str
     return seconds_to_human_readable((expires_at - now).seconds)
@@ -1660,7 +1669,9 @@ def print_service_connectors_table(
             "RESOURCE NAME": resource_name,
             "OWNER": f"{connector.user.name if connector.user else '-'}",
             "EXPIRES IN": expires_in(
-                connector.expires_at, ":name_badge: Expired!"
+                connector.expires_at,
+                ":name_badge: Expired!",
+                connector.expires_skew_tolerance,
             )
             if connector.expires_at
             else "",
@@ -1804,9 +1815,14 @@ def print_service_connector_configuration(
             "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
             "EXPIRES IN": expires_in(
-                connector.expires_at, ":name_badge: Expired!"
+                connector.expires_at,
+                ":name_badge: Expired!",
+                connector.expires_skew_tolerance,
             )
             if connector.expires_at
+            else "N/A",
+            "EXPIRES_SKEW_TOLERANCE": connector.expires_skew_tolerance
+            if connector.expires_skew_tolerance
             else "N/A",
             "OWNER": user_name,
             "WORKSPACE": connector.workspace.name,
@@ -1822,9 +1838,14 @@ def print_service_connector_configuration(
             "RESOURCE NAME": connector.resource_id or "<multiple>",
             "SESSION DURATION": expiration,
             "EXPIRES IN": expires_in(
-                connector.expires_at, ":name_badge: Expired!"
+                connector.expires_at,
+                ":name_badge: Expired!",
+                connector.expires_skew_tolerance,
             )
             if connector.expires_at
+            else "N/A",
+            "EXPIRES_SKEW_TOLERANCE": connector.expires_skew_tolerance
+            if connector.expires_skew_tolerance
             else "N/A",
         }
 

@@ -32,13 +32,9 @@ steps:
   model_trainer:
     parameters:
       name: e2e_use_case
-  compute_performance_metrics_on_current_data:
-    parameters:
-      target_env: staging
   promote_with_metric_compare:
     parameters:
       mlflow_model_name: e2e_use_case
-      target_env: staging
   notify_on_success:
     parameters:
       notify_on_success: False
@@ -65,6 +61,9 @@ model_version:
 # pipeline level extra configurations
 extra:
   notify_on_failure: True
+# pipeline level parameters
+parameters:
+  target_env: staging
   # This set contains all the model configurations that you want 
   # to evaluate during hyperparameter tuning stage.
   model_search_space:

@@ -52,6 +52,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     configuration: Optional[bytes]
     secret_id: Optional[UUID]
     expires_at: Optional[datetime]
+    expires_skew_tolerance: Optional[int]
     expiration_seconds: Optional[int]
     labels: Optional[bytes]
 
@@ -162,6 +163,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             else None,
             secret_id=secret_id,
             expires_at=connector_request.expires_at,
+            expires_skew_tolerance=connector_request.expires_skew_tolerance,
             expiration_seconds=connector_request.expiration_seconds,
             labels=base64.b64encode(
                 json.dumps(connector_request.labels).encode("utf-8")
@@ -249,6 +251,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             resource_id=self.resource_id,
             supports_instances=self.supports_instances,
             expires_at=self.expires_at,
+            expires_skew_tolerance=self.expires_skew_tolerance,
         )
         metadata = None
         if hydrate:

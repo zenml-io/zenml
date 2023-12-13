@@ -184,6 +184,7 @@ class ClientConfiguration(FileSyncModel):
     _active_workspace: Optional["WorkspaceResponse"] = None
     active_workspace_id: Optional[UUID] = None
     active_stack_id: Optional[UUID] = None
+    _active_stack: Optional["StackResponse"] = None
 
     @property
     def active_workspace(self) -> "WorkspaceResponse":
@@ -220,6 +221,7 @@ class ClientConfiguration(FileSyncModel):
             stack: The stack to set active.
         """
         self.active_stack_id = stack.id
+        self._active_stack = stack
 
     class Config:
         """Pydantic configuration class."""
@@ -1170,10 +1172,16 @@ class Client(metaclass=ClientMetaClass):
                 for c_type, c_list in components_dict.items()
             }
 
-        return self.zen_store.update_stack(
+        updated_stack = self.zen_store.update_stack(
             stack_id=stack.id,
             stack_update=update_model,
         )
+        if updated_stack.id == self.active_stack_model.id:
+            if self._config:
+                self._config.set_active_stack(updated_stack)
+            else:
+                GlobalConfiguration().set_active_stack(updated_stack)
+        return updated_stack
 
     def delete_stack(
         self, name_id_or_prefix: Union[str, UUID], recursive: bool = False
@@ -1267,25 +1275,33 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        stack: Optional[StackResponse] = None
-
         if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
-            stack_id = os.environ[ENV_ZENML_ACTIVE_STACK_ID]
-            return self.get_stack(stack_id)
+            return self.get_stack(os.environ[ENV_ZENML_ACTIVE_STACK_ID])
+
+        stack_id: Optional[UUID] = None
 
         if self._config:
-            stack = self.get_stack(self._config.active_stack_id)
+            if self._config._active_stack:
+                return self._config._active_stack
 
-        if not stack:
-            stack = self.get_stack(GlobalConfiguration().get_active_stack_id())
+            stack_id = self._config.active_stack_id
 
-        if not stack:
+        if not stack_id:
+            # Initialize the zen store so the global config loads the active
+            # stack
+            _ = GlobalConfiguration().zen_store
+            if active_stack := GlobalConfiguration()._active_stack:
+                return active_stack
+
+            stack_id = GlobalConfiguration().get_active_stack_id()
+
+        if not stack_id:
             raise RuntimeError(
                 "No active stack is configured. Run "
                 "`zenml stack set STACK_NAME` to set the active stack."
             )
 
-        return stack
+        return self.get_stack(stack_id)
 
     def activate_stack(
         self, stack_name_id_or_prefix: Union[str, UUID]
@@ -1472,6 +1488,8 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         connector_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[ComponentResponse]:
         """Lists all registered stack components.
 
@@ -1488,7 +1506,10 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             connector_id: The id of the connector to filter by.
+            stack_id: The id of the stack to filter by.
             name: The name of the component to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of stack components.
@@ -1501,6 +1522,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
             connector_id=connector_id,
+            stack_id=stack_id,
             name=name,
             flavor=flavor,
             type=type,
@@ -1511,7 +1533,7 @@ class Client(metaclass=ClientMetaClass):
         component_filter_model.set_scope_workspace(self.active_workspace.id)
 
         return self.zen_store.list_stack_components(
-            component_filter_model=component_filter_model
+            component_filter_model=component_filter_model, hydrate=hydrate
         )
 
     def create_stack_component(
@@ -1792,6 +1814,7 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         integration: Optional[str] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[FlavorResponse]:
         """Fetches all the flavor models.
 
@@ -1807,6 +1830,8 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the flavor to filter by.
             type: The type of the flavor to filter by.
             integration: The integration of the flavor to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all the flavor models.
@@ -1826,7 +1851,7 @@ class Client(metaclass=ClientMetaClass):
         )
         flavor_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_flavors(
-            flavor_filter_model=flavor_filter_model
+            flavor_filter_model=flavor_filter_model, hydrate=hydrate
         )
 
     def delete_flavor(self, name_id_or_prefix: str) -> None:
@@ -1881,8 +1906,7 @@ class Client(metaclass=ClientMetaClass):
 
         if not (
             flavors := self.list_flavors(
-                type=component_type,
-                name=name,
+                type=component_type, name=name, hydrate=True
             ).items
         ):
             raise KeyError(
@@ -2732,16 +2756,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of artifact versions.
         """
-        artifact_id = None
-        if name:
-            try:
-                artifact = self.get_artifact(name_id_or_prefix=name)
-                artifact_id = artifact.id
-            except KeyError:
-                return Page(
-                    items=[], index=1, total=0, total_pages=1, max_size=size
-                )
-
         artifact_version_filter_model = ArtifactVersionFilter(
             sort_by=sort_by,
             page=page,
@@ -2761,6 +2775,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             only_unused=only_unused,
+            name=name,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
@@ -3575,6 +3590,7 @@ class Client(metaclass=ClientMetaClass):
         description: str = "",
         expiration_seconds: Optional[int] = None,
         expires_at: Optional[datetime] = None,
+        expires_skew_tolerance: Optional[int] = None,
         labels: Optional[Dict[str, str]] = None,
         auto_configure: bool = False,
         verify: bool = True,
@@ -3601,8 +3617,9 @@ class Client(metaclass=ClientMetaClass):
             resource_id: The resource id of the service connector.
             description: The description of the service connector.
             expiration_seconds: The expiration time of the service connector.
-            expires_at: The expiration time of the service connector
-                credentials.
+            expires_at: The expiration time of the service connector.
+            expires_skew_tolerance: The allowed expiration skew for the service
+                connector credentials.
             labels: The labels of the service connector.
             auto_configure: Whether to automatically configure the service
                 connector from the local environment.
@@ -3720,6 +3737,7 @@ class Client(metaclass=ClientMetaClass):
                 auth_method=auth_method,
                 expiration_seconds=expiration_seconds,
                 expires_at=expires_at,
+                expires_skew_tolerance=expires_skew_tolerance,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 labels=labels or {},
@@ -3922,6 +3940,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, str]] = None,
         resource_id: Optional[str] = None,
         description: Optional[str] = None,
+        expires_skew_tolerance: Optional[int] = None,
         expiration_seconds: Optional[int] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         verify: bool = True,
@@ -3964,6 +3983,8 @@ class Client(metaclass=ClientMetaClass):
                 If set to the empty string, the existing resource ID will be
                 removed.
             description: The description of the service connector.
+            expires_skew_tolerance: The allowed expiration skew for the service
+                connector credentials.
             expiration_seconds: The expiration time of the service connector.
                 If set to 0, the existing expiration time will be removed.
             labels: The service connector to update or remove. If a label value
@@ -4028,6 +4049,7 @@ class Client(metaclass=ClientMetaClass):
             connector_type=connector.connector_type,
             description=description or connector_model.description,
             auth_method=auth_method or connector_model.auth_method,
+            expires_skew_tolerance=expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
