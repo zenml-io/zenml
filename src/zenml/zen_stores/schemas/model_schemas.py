@@ -241,6 +241,14 @@ class ModelVersionSchema(NamedSchema, table=True):
         back_populates="model_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    tags: List["TagResourceSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL_VERSION.value}', foreign(TagResourceSchema.resource_id)==ModelVersionSchema.id)",
+            cascade="delete",
+            overlaps="tags",
+        ),
+    )
 
     number: int = Field(sa_column=Column(INTEGER, nullable=False))
     description: str = Field(sa_column=Column(TEXT, nullable=True))
@@ -331,6 +339,7 @@ class ModelVersionSchema(NamedSchema, table=True):
             data_artifact_ids=data_artifact_ids,
             deployment_artifact_ids=deployment_artifact_ids,
             pipeline_run_ids=pipeline_run_ids,
+            tags=[t.tag.to_model() for t in self.tags],
         )
 
         return ModelVersionResponse(
