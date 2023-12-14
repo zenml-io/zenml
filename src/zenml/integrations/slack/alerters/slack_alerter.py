@@ -14,7 +14,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, List, Optional, cast
 
 from pydantic import BaseModel
 from slack_sdk import WebClient
@@ -57,7 +57,7 @@ class SlackAlerterParameters(BaseAlerterStepParameters):
     include_format_blocks: Optional[bool] = True
 
     # Allowing user to use their own custom blocks in the slack post message
-    blocks: Optional[list[dict[str,Any]]] = None
+    blocks: Optional[list[dict[str, Any]]] = None
 
 
 class SlackAlerter(BaseAlerter):
@@ -147,7 +147,7 @@ class SlackAlerter(BaseAlerter):
 
     def _create_blocks(
         self, message: str, params: Optional[BaseAlerterStepParameters]
-    ) -> list[dict[str,Any]]:
+    ) -> list[dict[str, Any]]:
         """Helper function to create slack blocks.
 
         Args:
@@ -160,10 +160,7 @@ class SlackAlerter(BaseAlerter):
         if isinstance(params, SlackAlerterParameters):
             if hasattr(params, "blocks") and params.blocks is not None:
                 return params.blocks
-            elif (
-            hasattr(params, "payload")
-            and params.payload is not None
-            ):
+            elif hasattr(params, "payload") and params.payload is not None:
                 payload = params.payload
                 return [
                     {
