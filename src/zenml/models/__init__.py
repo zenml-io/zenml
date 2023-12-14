@@ -20,21 +20,6 @@ from zenml.models.base_models import (
     BaseResponseModel,
     WorkspaceScopedRequestModel,
 )
-from zenml.models.secret_models import (
-    SecretBaseModel,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
-)
-from zenml.models.tag_models import (
-    TagFilterModel,
-    TagResourceResponseModel,
-    TagResourceRequestModel,
-    TagResponseModel,
-    TagRequestModel,
-    TagUpdateModel,
-)
 
 # ------------------------------------- V2 -------------------------------------
 
@@ -224,6 +209,12 @@ from zenml.models.v2.core.schedule import (
     ScheduleResponseBody,
     ScheduleResponseMetadata,
 )
+from zenml.models.v2.core.secret import (
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
+)
 from zenml.models.v2.core.service_account import (
     ServiceAccountFilter,
     ServiceAccountResponseBody,
@@ -255,6 +246,16 @@ from zenml.models.v2.core.step_run import (
     StepRunResponse,
     StepRunResponseBody,
     StepRunResponseMetadata,
+)
+from zenml.models.v2.core.tag import (
+    TagFilter,
+    TagResponse,
+    TagRequest,
+    TagUpdate,
+)
+from zenml.models.v2.core.tag_resource import (
+    TagResourceResponse,
+    TagResourceRequest,
 )
 from zenml.models.v2.core.user import (
     UserRequest,
@@ -312,7 +313,7 @@ from zenml.models.v2.misc.server_models import (
 # ----------------------------- Forward References -----------------------------
 
 # V1
-SecretResponseModel.update_forward_refs(
+SecretResponse.update_forward_refs(
     UserResponse=UserResponse,
     WorkspaceResponse=WorkspaceResponse,
 )
@@ -356,7 +357,7 @@ FlavorResponseMetadata.update_forward_refs(
 )
 ModelResponseBody.update_forward_refs(
     UserResponse=UserResponse,
-    TagResponseModel=TagResponseModel,
+    TagResponseModel=TagResponse,
 )
 ModelResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
@@ -465,17 +466,7 @@ __all__ = [
     # V1
     "BaseRequestModel",
     "BaseResponseModel",
-    "SecretBaseModel",
-    "SecretFilterModel",
-    "SecretRequestModel",
-    "SecretResponseModel",
-    "SecretUpdateModel",
-    "TagFilterModel",
-    "TagResourceResponseModel",
-    "TagResourceRequestModel",
-    "TagResponseModel",
-    "TagRequestModel",
-    "TagUpdateModel",
+
     "WorkspaceScopedRequestModel",
     # V2 Base
     "BaseRequest",
@@ -616,6 +607,10 @@ __all__ = [
     "ScheduleResponse",
     "ScheduleResponseBody",
     "ScheduleResponseMetadata",
+    "SecretFilter",
+    "SecretRequest",
+    "SecretResponse",
+    "SecretUpdate",
     "ServiceAccountFilter",
     "ServiceAccountResponseBody",
     "ServiceAccountResponseMetadata",
@@ -640,6 +635,12 @@ __all__ = [
     "StepRunResponse",
     "StepRunResponseBody",
     "StepRunResponseMetadata",
+    "TagFilter",
+    "TagResourceResponse",
+    "TagResourceRequest",
+    "TagResponse",
+    "TagRequest",
+    "TagUpdate",
     "UserRequest",
     "UserUpdate",
     "UserFilter",
