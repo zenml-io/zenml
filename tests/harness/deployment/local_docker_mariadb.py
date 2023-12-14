@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Local deployments connected to a docker MySQL server."""
+"""Local deployments connected to a docker MariaDB server."""
 
 import logging
 import time
@@ -22,9 +22,9 @@ from docker.models.containers import Container
 
 from tests.harness.deployment.base import (
     DEPLOYMENT_START_TIMEOUT,
-    MYSQL_DEFAULT_PASSWORD,
-    MYSQL_DEFAULT_PORT,
-    MYSQL_DOCKER_IMAGE,
+    MARIADB_DEFAULT_PASSWORD,
+    MARIADB_DEFAULT_PORT,
+    MARIADB_DOCKER_IMAGE,
     BaseTestDeployment,
 )
 from tests.harness.model import (
@@ -34,11 +34,11 @@ from tests.harness.model import (
     DeploymentType,
 )
 
-MYSQL_DOCKER_CONTAINER_NAME_PREFIX = "zenml-mysql-"
+MARIADB_DOCKER_CONTAINER_NAME_PREFIX = "zenml-mariadb-"
 
 
 class LocalDockerMariadbTestDeployment(BaseTestDeployment):
-    """A deployment that uses a MySQL Docker container to host the ZenML database."""
+    """A deployment that uses a MariaDB Docker container to host the ZenML database."""
 
     def __init__(self, config: DeploymentConfig) -> None:
         """Initializes the deployment.
@@ -50,12 +50,12 @@ class LocalDockerMariadbTestDeployment(BaseTestDeployment):
 
     @property
     def container_name(self) -> str:
-        """The name of the MySQL container.
+        """The name of the MariaDB container.
 
         Returns:
-            The name of the MySQL container.
+            The name of the MariaDB container.
         """
-        return f"{MYSQL_DOCKER_CONTAINER_NAME_PREFIX}{self.config.name}"
+        return f"{MARIADB_DOCKER_CONTAINER_NAME_PREFIX}{self.config.name}"
 
     @property
     def container(self) -> Optional[Container]:
@@ -101,21 +101,21 @@ class LocalDockerMariadbTestDeployment(BaseTestDeployment):
         # Cleanup a previous deployment in a failed state
         self.down()
 
-        port = scan_for_available_port(MYSQL_DEFAULT_PORT)
+        port = scan_for_available_port(MARIADB_DEFAULT_PORT)
 
         if port is None:
-            raise RuntimeError("Could not find an available port for MySQL.")
+            raise RuntimeError("Could not find an available port for MariaDB.")
         self.docker_client.containers.run(
             name=self.container_name,
-            image=MYSQL_DOCKER_IMAGE,
+            image=MARIADB_DOCKER_IMAGE,
             detach=True,
-            environment={"MYSQL_ROOT_PASSWORD": MYSQL_DEFAULT_PASSWORD},
-            # Enable the primary key requirement for MySQL to catch errors related to
+            environment={"MARIADB_ROOT_PASSWORD": MARIADB_DEFAULT_PASSWORD},
+            # Enable the primary key requirement for MariaDB to catch errors related to
             # missing primary keys.
             command=["--sql_require_primary_key=on"],
             remove=True,
             auto_remove=True,
-            ports={MYSQL_DEFAULT_PORT: port},
+            ports={MARIADB_DEFAULT_PORT: port},
             labels={
                 "zenml-test": "true",
             },
@@ -194,7 +194,7 @@ class LocalDockerMariadbTestDeployment(BaseTestDeployment):
         assert container is not None
         try:
             port = int(
-                container.ports[f"{MYSQL_DEFAULT_PORT}/tcp"][0]["HostPort"]
+                container.ports[f"{MARIADB_DEFAULT_PORT}/tcp"][0]["HostPort"]
             )
         except (KeyError, IndexError):
             raise RuntimeError(
@@ -203,7 +203,7 @@ class LocalDockerMariadbTestDeployment(BaseTestDeployment):
             )
 
         return DeploymentStoreConfig(
-            url=f"mysql://root:{MYSQL_DEFAULT_PASSWORD}@127.0.0.1:{port}/zenml"
+            url=f"mysql://root:{MARIADB_DEFAULT_PASSWORD}@127.0.0.1:{port}/zenml"
         )
 
 
