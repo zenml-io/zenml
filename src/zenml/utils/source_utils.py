@@ -289,6 +289,7 @@ def is_standard_lib_file(file_path: str) -> bool:
         otherwise.
     """
     stdlib_root = get_python_lib(standard_lib=True)
+    logger.debug("Standard library root: %s", stdlib_root)
     return Path(stdlib_root).resolve() in Path(file_path).resolve().parents
 
 
