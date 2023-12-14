@@ -213,6 +213,8 @@ from zenml.models.v2.core.secret import (
     SecretFilter,
     SecretRequest,
     SecretResponse,
+SecretResponseBody,
+SecretResponseMetadata,
     SecretUpdate,
 )
 from zenml.models.v2.core.service_account import (
@@ -250,6 +252,7 @@ from zenml.models.v2.core.step_run import (
 from zenml.models.v2.core.tag import (
     TagFilter,
     TagResponse,
+TagResponseBody,
     TagRequest,
     TagUpdate,
 )
@@ -313,10 +316,6 @@ from zenml.models.v2.misc.server_models import (
 # ----------------------------- Forward References -----------------------------
 
 # V1
-SecretResponse.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
 
 # V2
 APIKeyResponseBody.update_forward_refs(
@@ -432,6 +431,12 @@ ScheduleResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
 ScheduleResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+SecretResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+SecretResponseMetadata(
     WorkspaceResponse=WorkspaceResponse,
 )
 ServiceConnectorResponseBody.update_forward_refs(
@@ -610,6 +615,8 @@ __all__ = [
     "SecretFilter",
     "SecretRequest",
     "SecretResponse",
+    "SecretResponseBody",
+    "SecretResponseMetadata",
     "SecretUpdate",
     "ServiceAccountFilter",
     "ServiceAccountResponseBody",
@@ -639,6 +646,7 @@ __all__ = [
     "TagResourceResponse",
     "TagResourceRequest",
     "TagResponse",
+    "TagResponseBody",
     "TagRequest",
     "TagUpdate",
     "UserRequest",
