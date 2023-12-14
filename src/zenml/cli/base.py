@@ -629,6 +629,14 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
         GlobalConfiguration().store
         or GlobalConfiguration().get_default_store()
     )
+    
+    # check if migration is needed by comparing the DB head with current
+    # using alembic
+
+
+    # use the URL to connect to the DB and run the dump
+
+
     if store_config.type == StoreType.SQL:
         BaseZenStore.create_store(
             store_config, skip_default_registrations=skip_default_registrations
@@ -638,3 +646,88 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
         cli_utils.warning(
             "Unable to migrate database while connected to a ZenML server."
         )
+
+
+def mysql_dump_to_s3(
+    url: str
+) -> None:
+    """Dump a mysql database into an s3 bucket directory.
+
+    Args:
+        url: The url of the database to dump
+    """
+    # get the database password, host without port and username from the URL
+    # URL of form mysql://<username>:<password>@<host>:<port>/<database>
+    db_password = url.split(":")[2].split("@")[0]
+    db_host = url.split("@")[1].split(":")[0]
+    db_name = url.split("/")[3]
+    db_user = url.split(":")[1].split("//")[1]
+
+    # check if the database exists
+    # if it does not exist, return
+    output = subprocess.check_output(
+            [
+                f"mysql -h {db_host} -u {db_user} -p{db_password} -e 'SHOW DATABASES LIKE \"{db_name}\"'"
+            ],
+            shell=True,
+        )
+    if output == b'':
+        logger.debug("Database does not exist. No backup created.")
+        return
+    
+    backups_directory = "/backups"
+    # if /backups does not exist, it's a local case, store it in /backups in current directory
+    if not os.path.exists(backups_directory):
+        backups_directory = "backups"
+        os.mkdir(backups_directory)
+
+    # use mysqldump to dump the database into a file inside the backups pv
+    os.system(
+        f"mysqldump --set-gtid-purged=OFF -h {db_host} -u {db_user} -p{db_password} {db_name} > {backups_directory}/{db_name}.sql"
+    )
+
+    logger.debug(f"Database dumped to {backups_directory}/{db_name}.sql")
+
+
+# define a function to connect to a mysql rds database using
+# the password, host and username from an aws secret
+# and perform a mysql restore of a database from an s3 bucket directory
+def mysql_restore_from_s3(
+    url: str,
+) -> None:
+    """Restore a mysql database from an s3 bucket directory.
+
+    Args:
+        url: The url of the database to restore
+    """
+    # get the database password, host without port and username from the URL
+    # URL of form mysql://<username>:<password>@<host>:<port>/<database>
+    db_password = url.split(":")[2].split("@")[0]
+    db_host = url.split("@")[1].split(":")[0]
+    db_name = url.split("/")[3]
+    db_user = url.split(":")[1].split("//")[1]
+
+    backups_directory = "/backups"
+    # if /backups does not exist, it's a local case, store it in /backups in current directory
+    if not os.path.exists(backups_directory):
+        backups_directory = "backups"
+
+    # first drop the database if it exists
+    os.system(
+        f"mysql -h {db_host} -u {db_user} -p{db_password} -e 'DROP DATABASE IF EXISTS {db_name}'"
+    )
+
+    # then create the database
+    os.system(
+        f"mysql -h {db_host} -u {db_user} -p{db_password} -e 'CREATE DATABASE {db_name}'"
+    )
+
+    # use mysql to restore the database from the dump file
+    os.system(
+        f"mysql -h {db_host} -u {db_user} -p{db_password} {db_name} < {backups_directory}/{db_name}.sql"
+    )
+
+    logger.debug(f"Database restored from {backups_directory}/{db_name}.sql")
+
+    # delete the database dump file
+    os.remove(f"{backups_directory}/{db_name}.sql")
