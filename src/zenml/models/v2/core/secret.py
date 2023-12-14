@@ -183,7 +183,7 @@ class SecretResponse(
             key: The key of the secret value.
             value: The secret value.
         """
-        self.values[key] = SecretStr(value)
+        self.get_body().values[key] = SecretStr(value)
 
     def remove_secret(self, key: str) -> None:
         """Removes a secret value from the secret.
@@ -191,11 +191,11 @@ class SecretResponse(
         Args:
             key: The key of the secret value.
         """
-        del self.values[key]
+        del self.get_body().values[key]
 
     def remove_secrets(self) -> None:
         """Removes all secret values from the secret but keep the keys."""
-        self.values = {k: None for k in self.values.keys()}
+        self.get_body().values = {k: None for k in self.values.keys()}
 
 
 # ------------------ Filter Model ------------------
@@ -285,7 +285,7 @@ class SecretFilter(WorkspaceScopedFilter):
             elif filter.operation == GenericFilterOps.LTE:
                 result = str_column_value <= str_filter_value
 
-            # Exit early if the result is False for AND and True for OR
+            # Exit early if the result is False for AND, and True for OR
             if self.logical_operator == LogicalOperators.AND:
                 if not result:
                     return False

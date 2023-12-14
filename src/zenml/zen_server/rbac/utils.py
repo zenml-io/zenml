@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """RBAC utility functions."""
 
-from datetime import datetime
-from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -23,8 +21,6 @@ from typing import (
     Sequence,
     Set,
     TypeVar,
-    Union,
-    cast,
 )
 from uuid import UUID
 
@@ -36,26 +32,15 @@ from zenml.models import (
     Page,
     UserScopedResponse,
 )
-from zenml.models.base_models import BaseResponseModel, UserScopedResponseModel
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.utils import rbac, server_config
 
-AnyOldResponseModel = TypeVar("AnyOldResponseModel", bound=BaseResponseModel)
-AnyNewResponseModel = TypeVar(
-    "AnyNewResponseModel",
-    bound=BaseResponse,  # type: ignore[type-arg]
-)
-AnyResponseModel = TypeVar(
-    "AnyResponseModel",
-    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
-)
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
 AnyModel = TypeVar("AnyModel", bound=BaseModel)
 
 
-def dehydrate_page(
-    page: Page[AnyResponseModel],
-) -> Page[AnyResponseModel]:
+def dehydrate_page(page: Page[AnyResponse]) -> Page[AnyResponse]:
     """Dehydrate all items of a page.
 
     Args:
@@ -138,7 +123,7 @@ def _dehydrate_value(
     Returns:
         The recursively dehydrated value.
     """
-    if isinstance(value, (BaseResponse, BaseResponseModel)):
+    if isinstance(value, BaseResponse):
         permission_model = get_surrogate_permission_model_for_model(
             value, action=Action.READ
         )
@@ -169,7 +154,7 @@ def _dehydrate_value(
         return value
 
 
-def has_permissions_for_model(model: AnyResponseModel, action: Action) -> bool:
+def has_permissions_for_model(model: AnyResponse, action: Action) -> bool:
     """If the active user has permissions to perform the action on the model.
 
     Args:
@@ -189,7 +174,7 @@ def has_permissions_for_model(model: AnyResponseModel, action: Action) -> bool:
         return False
 
 
-def get_permission_denied_model(model: AnyResponseModel) -> AnyResponseModel:
+def get_permission_denied_model(model: AnyResponse) -> AnyResponse:
     """Get a model to return in case of missing read permissions.
 
     Args:
@@ -198,87 +183,13 @@ def get_permission_denied_model(model: AnyResponseModel) -> AnyResponseModel:
     Returns:
         The permission denied model.
     """
-    if isinstance(model, BaseResponse):
-        return cast(AnyResponseModel, get_permission_denied_model_v2(model))
-    else:
-        return cast(
-            AnyResponseModel,
-            get_permission_denied_model_v1(cast(BaseResponseModel, model)),
-        )
-
-
-def get_permission_denied_model_v2(
-    model: AnyNewResponseModel,
-) -> AnyNewResponseModel:
-    """Get a V2 model to return in case of missing read permissions.
-
-    This function removes the body and metadata of the model.
-
-    Args:
-        model: The original model.
-
-    Returns:
-        The model with body and metadata removed.
-    """
     return model.copy(
         exclude={"body", "metadata"}, update={"permission_denied": True}
     )
 
 
-def get_permission_denied_model_v1(
-    model: AnyOldResponseModel, keep_id: bool = True, keep_name: bool = True
-) -> AnyOldResponseModel:
-    """Get a V1 model to return in case of missing read permissions.
-
-    This function replaces all attributes except name and ID in the given model.
-
-    Args:
-        model: The original model.
-        keep_id: If `True`, the model ID will not be replaced.
-        keep_name: If `True`, the model name will not be replaced.
-
-    Returns:
-        The model with attribute values replaced by default values.
-    """
-    values = {}
-
-    for field_name, field in model.__fields__.items():
-        value = getattr(model, field_name)
-
-        if keep_id and field_name == "id" and isinstance(value, UUID):
-            pass
-        elif keep_name and field_name == "name" and isinstance(value, str):
-            pass
-        elif field.allow_none:
-            value = None
-        elif isinstance(value, BaseResponseModel):
-            value = get_permission_denied_model_v1(
-                value, keep_id=False, keep_name=False
-            )
-        elif isinstance(value, BaseResponse):
-            value = get_permission_denied_model_v2(value)
-        elif isinstance(value, UUID):
-            value = UUID(int=0)
-        elif isinstance(value, datetime):
-            value = datetime.utcnow()
-        elif isinstance(value, Enum):
-            # TODO: handle enums in a more sensible way
-            value = list(type(value))[0]
-        else:
-            type_ = type(value)
-            # For the remaining cases (dict, list, set, tuple, int, float, str),
-            # simply return an empty value
-            value = type_()
-
-        values[field_name] = value
-
-    values["missing_permissions"] = True
-
-    return type(model).parse_obj(values)
-
-
 def batch_verify_permissions_for_models(
-    models: Sequence[AnyResponseModel],
+    models: Sequence[AnyResponse],
     action: Action,
 ) -> None:
     """Batch permission verification for models.
@@ -306,10 +217,7 @@ def batch_verify_permissions_for_models(
     batch_verify_permissions(resources=resources, action=action)
 
 
-def verify_permission_for_model(
-    model: AnyResponseModel,
-    action: Action,
-) -> None:
+def verify_permission_for_model(model: AnyResponse, action: Action) -> None:
     """Verifies if a user has permission to perform an action on a model.
 
     Args:
@@ -319,10 +227,7 @@ def verify_permission_for_model(
     batch_verify_permissions_for_models(models=[model], action=action)
 
 
-def batch_verify_permissions(
-    resources: Set[Resource],
-    action: Action,
-) -> None:
+def batch_verify_permissions(resources: Set[Resource], action: Action) -> None:
     """Batch permission verification.
 
     Args:
@@ -411,7 +316,7 @@ def get_allowed_resource_ids(
     return {UUID(id) for id in allowed_ids}
 
 
-def get_resource_for_model(model: AnyResponseModel) -> Optional[Resource]:
+def get_resource_for_model(model: AnyResponse) -> Optional[Resource]:
     """Get the resource associated with a model object.
 
     Args:
@@ -430,8 +335,8 @@ def get_resource_for_model(model: AnyResponseModel) -> Optional[Resource]:
 
 
 def get_surrogate_permission_model_for_model(
-    model: AnyResponseModel, action: str
-) -> Union[BaseResponse[Any, Any], BaseResponseModel]:
+    model: AnyResponse, action: str
+) -> BaseResponse[Any, Any]:
     """Get a surrogate permission model for a model.
 
     In some cases a different model instead of the original model is used to
@@ -459,7 +364,7 @@ def get_surrogate_permission_model_for_model(
 
 
 def get_resource_type_for_model(
-    model: AnyResponseModel,
+    model: AnyResponse,
 ) -> Optional[ResourceType]:
     """Get the resource type associated with a model object.
 
@@ -520,7 +425,7 @@ def get_resource_type_for_model(
     return mapping.get(type(model))
 
 
-def is_owned_by_authenticated_user(model: AnyResponseModel) -> bool:
+def is_owned_by_authenticated_user(model: AnyResponse) -> bool:
     """Returns whether the currently authenticated user owns the model.
 
     Args:
@@ -532,7 +437,7 @@ def is_owned_by_authenticated_user(model: AnyResponseModel) -> bool:
     auth_context = get_auth_context()
     assert auth_context
 
-    if isinstance(model, (UserScopedResponseModel, UserScopedResponse)):
+    if isinstance(model, UserScopedResponse):
         if model.user:
             return model.user.id == auth_context.user.id
         else:
@@ -546,7 +451,7 @@ def is_owned_by_authenticated_user(model: AnyResponseModel) -> bool:
 def get_subresources_for_model(
     model: AnyModel,
 ) -> Set[Resource]:
-    """Get all subresources of a model which need permission verification.
+    """Get all sub-resources of a model which need permission verification.
 
     Args:
         model: The model for which to get all the resources.
@@ -573,7 +478,7 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
     Returns:
         All resources of the value which need permission verification.
     """
-    if isinstance(value, (BaseResponse, BaseResponseModel)):
+    if isinstance(value, BaseResponse):
         resources = set()
         if not is_owned_by_authenticated_user(value):
             value = get_surrogate_permission_model_for_model(

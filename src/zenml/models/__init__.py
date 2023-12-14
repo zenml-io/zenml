@@ -427,7 +427,7 @@ ScheduleResponseMetadata.update_forward_refs(
 SecretResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
-SecretResponseMetadata(
+SecretResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
 ServiceConnectorResponseBody.update_forward_refs(
@@ -630,6 +630,7 @@ __all__ = [
     "StepRunResponseMetadata",
     "TagFilter",
     "TagResourceResponse",
+    "TagResourceResponseBody",
     "TagResourceRequest",
     "TagResponse",
     "TagResponseBody",

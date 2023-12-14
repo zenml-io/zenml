@@ -22,7 +22,7 @@ from pydantic.types import NonNegativeInt, PositiveInt
 from zenml.models.v2.base.base import BaseResponse
 from zenml.models.v2.base.filter import BaseFilter
 
-B = TypeVar("B", bound=BaseResponse)
+B = TypeVar("B", bound=BaseResponse)  # type: ignore[type-arg]
 
 
 class Page(GenericModel, Generic[B]):

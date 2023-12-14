@@ -40,6 +40,8 @@ from zenml.models import (
     ArtifactVersionUpdate,
     AuthenticationMethodModel,
     BaseFilter,
+    BaseRequest,
+    BaseResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryUpdate,
@@ -78,7 +80,6 @@ from zenml.models import (
     WorkspaceRequest,
     WorkspaceUpdate,
 )
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
 from zenml.service_connectors.service_connector_registry import (
@@ -841,8 +842,8 @@ class ServiceConnectorTypeContext:
                 pass
 
 
-AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
-AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
+AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)
 
 
 class CrudTestConfig:
@@ -879,7 +880,7 @@ class CrudTestConfig:
     @property
     def list_method(
         self,
-    ) -> Callable[[BaseFilter], Page[AnyResponseModel]]:
+    ) -> Callable[[BaseFilter], Page[AnyResponse]]:
         store = Client().zen_store
         if self.entity_name.endswith("y"):
             method_name = f"list_{self.entity_name[:-1]}ies"
@@ -888,7 +889,7 @@ class CrudTestConfig:
         return getattr(store, method_name)
 
     @property
-    def get_method(self) -> Callable[[uuid.UUID], AnyResponseModel]:
+    def get_method(self) -> Callable[[uuid.UUID], AnyResponse]:
         store = Client().zen_store
         return getattr(store, f"get_{self.entity_name}")
 
@@ -898,18 +899,18 @@ class CrudTestConfig:
         return getattr(store, f"delete_{self.entity_name}")
 
     @property
-    def create_method(self) -> Callable[[AnyRequestModel], AnyResponseModel]:
+    def create_method(self) -> Callable[[AnyRequest], AnyResponse]:
         store = Client().zen_store
         return getattr(store, f"create_{self.entity_name}")
 
     @property
     def update_method(
         self,
-    ) -> Callable[[uuid.UUID, BaseModel], AnyResponseModel]:
+    ) -> Callable[[uuid.UUID, BaseModel], AnyResponse]:
         store = Client().zen_store
         return getattr(store, f"update_{self.entity_name}")
 
-    def create(self) -> AnyResponseModel:
+    def create(self) -> AnyResponse:
         """Creates the entity."""
         create_model = self.create_model
 
@@ -934,17 +935,17 @@ class CrudTestConfig:
         self.id = response.id
         return response
 
-    def list(self) -> Page[AnyResponseModel]:
+    def list(self) -> Page[AnyResponse]:
         """Lists all entities."""
         return self.list_method(self.filter_model())
 
-    def get(self) -> AnyResponseModel:
+    def get(self) -> AnyResponse:
         """Gets the entity if it was already created."""
         if not self.id:
             raise ValueError("Entity not created yet.")
         return self.get_method(self.id)
 
-    def update(self) -> AnyResponseModel:
+    def update(self) -> AnyResponse:
         """Updates the entity if it was already created."""
         if not self.id:
             raise ValueError("Entity not created yet.")

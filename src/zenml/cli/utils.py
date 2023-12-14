@@ -64,7 +64,6 @@ from zenml.model_registries.base_model_registry import (
 from zenml.models import (
     BaseFilter,
     BaseResponse,
-    BaseResponseModel,
     BoolFilter,
     NumericFilter,
     Page,
@@ -105,10 +104,7 @@ logger = get_logger(__name__)
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
-T = TypeVar(
-    "T",
-    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
-)
+T = TypeVar("T", bound=BaseResponse)  # type: ignore[type-arg]
 
 
 def title(text: str) -> None:
@@ -324,20 +320,20 @@ def print_pydantic_models(
 
         for k in include_columns:
             value = getattr(model, k)
-            # In case the response model contains nested `BaseResponseModels`
+            # In case the response model contains nested `BaseResponse`s
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
-            if isinstance(value, (BaseResponse, BaseResponseModel)):
+            if isinstance(value, BaseResponse):
                 if "name" in value.__fields__:
                     items[k] = str(getattr(value, "name"))
                 else:
                     items[k] = str(value.id)
 
-            # If it is a list of `BaseResponseModels` access each Model within
+            # If it is a list of `BaseResponse`s access each Model within
             #  the list and extract either name or id
             elif isinstance(value, list):
                 for v in value:
-                    if isinstance(v, (BaseResponse, BaseResponseModel)):
+                    if isinstance(v, BaseResponse):
                         if "name" in v.__fields__:
                             items.setdefault(k, []).append(
                                 str(getattr(v, "name"))
@@ -455,17 +451,17 @@ def print_pydantic_model(
 
     for k in include_columns:
         value = getattr(model, k)
-        if isinstance(value, (BaseResponse, BaseResponseModel)):
+        if isinstance(value, BaseResponse):
             if "name" in value.__fields__:
                 items[k] = str(getattr(value, "name"))
             else:
                 items[k] = str(value.id)
 
-        # If it is a list of `BaseResponseModels` access each Model within
+        # If it is a list of `BaseResponse`s access each Model within
         #  the list and extract either name or id
         elif isinstance(value, list):
             for v in value:
-                if isinstance(v, (BaseResponse, BaseResponseModel)):
+                if isinstance(v, BaseResponse):
                     if "name" in v.__fields__:
                         items.setdefault(k, []).append(str(getattr(v, "name")))
                     else:
