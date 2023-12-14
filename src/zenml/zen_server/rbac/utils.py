@@ -483,11 +483,11 @@ def get_resource_type_for_model(
         PipelineResponse,
         PipelineRunResponse,
         RunMetadataResponse,
-        SecretResponseModel,
+        SecretResponse,
         ServiceAccountResponse,
         ServiceConnectorResponse,
         StackResponse,
-        TagResponseModel,
+        TagResponse,
         UserResponse,
         WorkspaceResponse,
     )
@@ -502,7 +502,7 @@ def get_resource_type_for_model(
         StackResponse: ResourceType.STACK,
         PipelineResponse: ResourceType.PIPELINE,
         CodeRepositoryResponse: ResourceType.CODE_REPOSITORY,
-        SecretResponseModel: ResourceType.SECRET,
+        SecretResponse: ResourceType.SECRET,
         ModelResponse: ResourceType.MODEL,
         ModelVersionResponse: ResourceType.MODEL_VERSION,
         ArtifactResponse: ResourceType.ARTIFACT,
@@ -513,7 +513,7 @@ def get_resource_type_for_model(
         PipelineDeploymentResponse: ResourceType.PIPELINE_DEPLOYMENT,
         PipelineBuildResponse: ResourceType.PIPELINE_BUILD,
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
-        TagResponseModel: ResourceType.TAG,
+        TagResponse: ResourceType.TAG,
         ServiceAccountResponse: ResourceType.SERVICE_ACCOUNT,
     }
 
