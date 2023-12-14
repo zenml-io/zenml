@@ -22,7 +22,7 @@ from docker.models.containers import Container
 
 from tests.harness.deployment.base import (
     DEPLOYMENT_START_TIMEOUT,
-    MARIADB_DEFAULT_PASSWORD,
+    MARIADB_ROOT_PASSWORD,
     MARIADB_DEFAULT_PORT,
     MARIADB_DOCKER_IMAGE,
     BaseTestDeployment,
@@ -38,7 +38,7 @@ MARIADB_DOCKER_CONTAINER_NAME_PREFIX = "zenml-mariadb-"
 
 
 class LocalDockerMariadbTestDeployment(BaseTestDeployment):
-    """A deployment that uses a MariaDB Docker container to host the ZenML database."""
+    """A deployment that uses a MariaDB (InnoDB) Docker container to host the ZenML database."""
 
     def __init__(self, config: DeploymentConfig) -> None:
         """Initializes the deployment.
@@ -109,10 +109,10 @@ class LocalDockerMariadbTestDeployment(BaseTestDeployment):
             name=self.container_name,
             image=MARIADB_DOCKER_IMAGE,
             detach=True,
-            environment={"MARIADB_ROOT_PASSWORD": MARIADB_DEFAULT_PASSWORD},
+            environment={"MARIADB_ROOT_PASSWORD": MARIADB_ROOT_PASSWORD},
             # Enable the primary key requirement for MariaDB to catch errors related to
             # missing primary keys.
-            command=["--sql_require_primary_key=on"],
+            command=["--innodb-force-primary-key=1"],
             remove=True,
             auto_remove=True,
             ports={MARIADB_DEFAULT_PORT: port},
@@ -203,10 +203,10 @@ class LocalDockerMariadbTestDeployment(BaseTestDeployment):
             )
 
         return DeploymentStoreConfig(
-            url=f"mysql://root:{MARIADB_DEFAULT_PASSWORD}@127.0.0.1:{port}/zenml"
+            url=f"mysql://root:{MARIADB_ROOT_PASSWORD}@127.0.0.1:{port}/zenml"
         )
 
 
-LocalDockerMysqlTestDeployment.register_deployment_class(
+LocalDockerMariadbTestDeployment.register_deployment_class(
     type=DeploymentType.LOCAL, setup=DeploymentSetup.DOCKER
 )
