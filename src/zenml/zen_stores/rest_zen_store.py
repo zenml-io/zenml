@@ -184,10 +184,10 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
-    TagFilterModel,
-    TagRequestModel,
-    TagResponseModel,
-    TagUpdateModel,
+    TagFilter,
+    TagRequest,
+    TagResponse,
+    TagUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -3019,7 +3019,7 @@ class RestZenStore(BaseZenStore):
     # Tags
     #################
 
-    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+    def create_tag(self, tag: TagRequest) -> TagResponse:
         """Creates a new tag.
 
         Args:
@@ -3030,7 +3030,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=tag,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
             route=TAGS,
         )
 
@@ -3046,13 +3046,14 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(resource_id=tag_name_or_id, route=TAGS)
 
     def get_tag(
-        self,
-        tag_name_or_id: Union[str, UUID],
-    ) -> TagResponseModel:
+        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The tag of interest.
@@ -3060,32 +3061,37 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=tag_name_or_id,
             route=TAGS,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_tags(
         self,
-        tag_filter_model: TagFilterModel,
-    ) -> Page[TagResponseModel]:
+        tag_filter_model: TagFilter,
+        hydrate: bool = False,
+    ) -> Page[TagResponse]:
         """Get all tags by filter.
 
         Args:
             tag_filter_model: All filter parameters including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all tags.
         """
         return self._list_paginated_resources(
             route=TAGS,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
             filter_model=tag_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        tag_update_model: TagUpdateModel,
-    ) -> TagResponseModel:
+        tag_update_model: TagUpdate,
+    ) -> TagResponse:
         """Update tag.
 
         Args:
@@ -3100,7 +3106,7 @@ class RestZenStore(BaseZenStore):
             resource_id=tag.id,
             resource_update=tag_update_model,
             route=TAGS,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
         )
 
     # =======================
