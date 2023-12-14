@@ -194,6 +194,8 @@ zenml:
     # sslCert: /path/to/client-cert.pem
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
+    backupStorageSize: 1Gi
+    # storageClass: standard
 
 
   # Secrets store settings. This is used to store centralized secrets.
