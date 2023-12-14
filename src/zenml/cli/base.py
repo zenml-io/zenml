@@ -76,7 +76,7 @@ ZENML_PROJECT_TEMPLATES = dict(
     ),
     starter=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-starter",
-        github_tag="0.45.0",
+        github_tag="0.53.0",
     ),
     nlp=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-nlp",

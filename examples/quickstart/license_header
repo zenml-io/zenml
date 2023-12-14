@@ -1,4 +1,4 @@
-# Apache Software License 2.0
+Apache Software License 2.0
 # 
 # Copyright (c) ZenML GmbH 2023. All rights reserved.
 # 
@@ -14,7 +14,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # 
-
-from .feature_engineering import feature_engineering
-from .inference import inference
-from .training import training
