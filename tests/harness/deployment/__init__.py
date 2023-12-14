@@ -34,5 +34,6 @@ __all__ = [
     "ServerLocalTestDeployment",
     "ServerDockerTestDeployment",
     "ServerDockerComposeMysqlTestDeployment",
+    "ServerDockerComposeMariadbTestDeployment",
     "ExternalServerTestDeployment",
 ]
