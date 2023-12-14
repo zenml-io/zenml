@@ -307,3 +307,7 @@ MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
 
 # Model Control Plane constants
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"
+
+
+# Service connector constants
+SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS = 60 * 5  # 5 minutes
