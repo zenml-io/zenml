@@ -213,8 +213,8 @@ from zenml.models.v2.core.secret import (
     SecretFilter,
     SecretRequest,
     SecretResponse,
-SecretResponseBody,
-SecretResponseMetadata,
+    SecretResponseBody,
+    SecretResponseMetadata,
     SecretUpdate,
 )
 from zenml.models.v2.core.service_account import (
@@ -252,12 +252,13 @@ from zenml.models.v2.core.step_run import (
 from zenml.models.v2.core.tag import (
     TagFilter,
     TagResponse,
-TagResponseBody,
+    TagResponseBody,
     TagRequest,
     TagUpdate,
 )
 from zenml.models.v2.core.tag_resource import (
     TagResourceResponse,
+    TagResourceResponseBody,
     TagResourceRequest,
 )
 from zenml.models.v2.core.user import (
