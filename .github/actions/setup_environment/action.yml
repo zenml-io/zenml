@@ -78,7 +78,7 @@ runs:
 
     - uses: tespkg/actions-cache@v1
       if: ${{ inputs.os == 'ubuntu-dind-runners' }}
-      id: custom-cache-virtualenv
+      id: custom-cache-pip
       env:
         AWS_ACCESS_KEY_ID: ${{ inputs.runners_cache_access_key_id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.runners_cache_secret_access_key }}
@@ -114,14 +114,14 @@ runs:
         brew install hashicorp/tap/terraform
 
     - name: Install ZenML and dependencies
-      if: steps.cache-virtualenv.outputs.cache-hit != 'true' && steps.custom-cache-virtualenv.outputs.cache-hit != 'true'
+      if: steps.cache-virtualenv.outputs.cache-hit != 'true' && steps.custom-cache-pip.outputs.cache-hit != 'true'
       shell: bash
       run: |
         scripts/install-zenml-dev.sh --integrations ${{ inputs.install_integrations }}
 
       # if using a cached virtualenv, just refresh the ZenML installation 
     - name: Refresh ZenML installation
-      if: steps.cache-virtualenv.outputs.cache-hit == 'true' || steps.custom-cache-virtualenv.outputs.cache-hit == 'true'
+      if: steps.cache-virtualenv.outputs.cache-hit == 'true' || steps.custom-cache-pip.outputs.cache-hit == 'true'
       shell: bash
       run: |
         scripts/install-zenml-dev.sh --integrations ${{ inputs.install_integrations }}
