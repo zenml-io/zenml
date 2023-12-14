@@ -6978,8 +6978,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def get_tag(
-        self,
-        tag_name_or_id: Union[str, UUID],hydrate: bool = True
+        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
     ) -> TagResponse:
         """Get an existing tag.
 
