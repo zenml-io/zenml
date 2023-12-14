@@ -17,6 +17,13 @@ inputs:
     type: string
     required: false
     default: 'yes'
+  runners_cache_access_key_id:
+    description: 'Runner cache AWS access key ID'
+    required: true
+  runners_cache_secret_access_key:
+    description: 'Runner cache AWS secret access key'
+    required: true
+
 
 runs:
   using: "composite"
@@ -73,8 +80,8 @@ runs:
       if: ${{ inputs.os == 'ubuntu-dind-runners' }}
       id: custom-cache-virtualenv
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ inputs.runners_cache_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.runners_cache_secret_access_key }}
       with:
         endpoint: http://minio-service.minio.svc.cluster.local  # optional
         insecure: true # optional, use http instead of https. default false

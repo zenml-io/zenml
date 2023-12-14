@@ -180,6 +180,8 @@ jobs:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
+          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
+          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
 
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
