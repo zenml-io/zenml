@@ -83,7 +83,7 @@ runs:
         AWS_ACCESS_KEY_ID: ${{ inputs.runners_cache_access_key_id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.runners_cache_secret_access_key }}
       with:
-        endpoint: http://minio-service.minio.svc.cluster.local  # optional
+        endpoint: minio-service.minio.svc.cluster.local  # optional
         insecure: true # optional, use http instead of https. default false
         bucket: "caching" # required
         use-fallback: false # optional, use github actions cache fallback, default false
