@@ -13,26 +13,30 @@
 #  permissions and limitations under the License.
 """Models representing secrets."""
 
-from zenml.models.v2.base.scoped import WorkspaceScopedFilter, \
-    WorkspaceScopedRequest, WorkspaceScopedResponse, \
-    WorkspaceScopedResponseBody, WorkspaceScopedResponseMetadata
-
-from zenml.models.v2.base.update import update_model
-from typing import ClassVar, List, Optional, Dict, Union, Any
 from datetime import datetime
-from uuid import  UUID
+from typing import Any, ClassVar, Dict, List, Optional, Union
+from uuid import UUID
 
+from pydantic import Field, SecretStr
+
+from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     GenericFilterOps,
     LogicalOperators,
     SecretScope,
     SorterOps,
 )
-from pydantic import Field, SecretStr
-from zenml.constants import STR_FIELD_MAX_LENGTH
-
+from zenml.models.v2.base.scoped import (
+    WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
+)
+from zenml.models.v2.base.update import update_model
 
 # ------------------ Request Model ------------------
+
 
 class SecretRequest(WorkspaceScopedRequest):
     """Request models for secrets."""
@@ -71,6 +75,7 @@ class SecretRequest(WorkspaceScopedRequest):
 
 # ------------------ Update Model ------------------
 
+
 @update_model
 class SecretUpdate(SecretRequest):
     """Secret update model."""
@@ -79,7 +84,9 @@ class SecretUpdate(SecretRequest):
         default=None, title="The scope of the secret."
     )
 
+
 # ------------------ Response Model ------------------
+
 
 class SecretResponseBody(WorkspaceScopedResponseBody):
     """Response body for secrets."""
@@ -91,10 +98,14 @@ class SecretResponseBody(WorkspaceScopedResponseBody):
         default_factory=dict, title="The values stored in this secret."
     )
 
+
 class SecretResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for secrets."""
 
-class SecretResponse(WorkspaceScopedResponse[SecretResponseBody, SecretResponseMetadata]):
+
+class SecretResponse(
+    WorkspaceScopedResponse[SecretResponseBody, SecretResponseMetadata]
+):
     """Response model for secrets."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
@@ -185,7 +196,6 @@ class SecretResponse(WorkspaceScopedResponse[SecretResponseBody, SecretResponseM
     def remove_secrets(self) -> None:
         """Removes all secret values from the secret but keep the keys."""
         self.values = {k: None for k in self.values.keys()}
-
 
 
 # ------------------ Filter Model ------------------
@@ -311,4 +321,3 @@ class SecretFilter(WorkspaceScopedFilter):
         )
 
         return sorted_secrets
-
