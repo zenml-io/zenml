@@ -13,14 +13,6 @@
 #  permissions and limitations under the License.
 """Pydantic models for the various concepts in ZenML."""
 
-# ------------------------------------- V1 -------------------------------------
-
-from zenml.models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
-    WorkspaceScopedRequestModel,
-)
-
 # ------------------------------------- V2 -------------------------------------
 
 # V2 Base
@@ -316,8 +308,6 @@ from zenml.models.v2.misc.server_models import (
 
 # ----------------------------- Forward References -----------------------------
 
-# V1
-
 # V2
 APIKeyResponseBody.update_forward_refs(
     ServiceAccountResponse=ServiceAccountResponse,
@@ -469,11 +459,6 @@ StepRunResponseMetadata.update_forward_refs(
 )
 
 __all__ = [
-    # V1
-    "BaseRequestModel",
-    "BaseResponseModel",
-
-    "WorkspaceScopedRequestModel",
     # V2 Base
     "BaseRequest",
     "BaseResponse",
