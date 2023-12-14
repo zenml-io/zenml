@@ -22,9 +22,9 @@ from docker.models.containers import Container
 
 from tests.harness.deployment.base import (
     DEPLOYMENT_START_TIMEOUT,
-    MARIADB_ROOT_PASSWORD,
     MARIADB_DEFAULT_PORT,
     MARIADB_DOCKER_IMAGE,
+    MARIADB_ROOT_PASSWORD,
     BaseTestDeployment,
 )
 from tests.harness.model import (

@@ -23,9 +23,9 @@ from docker.models.containers import Container
 from tests.harness.deployment.base import (
     DEPLOYMENT_START_TIMEOUT,
     LOCAL_ZENML_SERVER_DEFAULT_PORT,
-    MARIADB_ROOT_PASSWORD,
     MARIADB_DEFAULT_PORT,
     MARIADB_DOCKER_IMAGE,
+    MARIADB_ROOT_PASSWORD,
     ZENML_SERVER_IMAGE_NAME,
     BaseTestDeployment,
 )
