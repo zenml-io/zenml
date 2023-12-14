@@ -40,6 +40,16 @@ spec:
             items:
               - key: GOOGLE_APPLICATION_CREDENTIALS_FILE
                 path: credentials.json
+        # define a volume that will hold a backup of the database
+        - name: db-backup
+        # if a storage class is set, then use a pvc
+        {{- if .Values.storageClass }}
+          persistentVolumeClaim:
+            claimName: {{ include "zenml.fullname" . }}-db-backup
+        {{- else }}
+        # otherwise, use an emptyDir
+          emptyDir: {}
+        {{- end }}
       {{- end }}
       restartPolicy: Never
       containers:
@@ -130,6 +140,8 @@ spec:
             - name: gcp-credentials
               mountPath: /gcp-credentials
               readOnly: true
+            - name: db-backup
+              mountPath: /backups
           {{- end }}
       {{- with .Values.resources }}
       resources:
