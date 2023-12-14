@@ -31,7 +31,7 @@ from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, LogicalOperators
 from zenml.logger import get_logger
-from zenml.models.tag_models import TagResponseModel
+from zenml.models.v2.core.tag import TagResponse
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -149,7 +149,7 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
         title="ID of the step run that produced this artifact.",
         default=None,
     )
-    tags: List[TagResponseModel] = Field(
+    tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
@@ -233,7 +233,7 @@ class ArtifactVersionResponse(
         return self.get_metadata().producer_step_run_id
 
     @property
-    def tags(self) -> List[TagResponseModel]:
+    def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
         Returns:

@@ -74,8 +74,8 @@ class TagSchema(NamedSchema, table=True):
         """Convert an `TagSchema` to an `TagResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The created `TagResponse`.
@@ -173,8 +173,8 @@ class TagResourceSchema(BaseSchema, table=True):
         """Convert an `TagResourceSchema` to an `TagResourceResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The created `TagResourceResponse`.

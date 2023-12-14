@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field, PrivateAttr, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
-from zenml.models.tag_models import TagResponseModel
+from zenml.models.v2.core.tag import TagResponse
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -147,7 +147,7 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
         description="Pipeline runs linked to the model version",
         default={},
     )
-    tags: List[TagResponseModel] = Field(
+    tags: List[TagResponse] = Field(
         title="Tags associated with the model version", default=[]
     )
     created: datetime = Field(
@@ -263,7 +263,7 @@ class ModelVersionResponse(
         return self.get_body().updated
 
     @property
-    def tags(self) -> List["TagResponseModel"]:
+    def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
         Returns:

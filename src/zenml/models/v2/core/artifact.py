@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.tag_models import TagResponseModel
+from zenml.models.v2.core.tag import TagResponse
 from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponse,
@@ -71,7 +71,7 @@ class ArtifactResponseMetadata(BaseResponseMetadata):
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
     )
-    tags: List[TagResponseModel] = Field(
+    tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
 
@@ -107,7 +107,7 @@ class ArtifactResponse(
         return self.get_metadata().has_custom_name
 
     @property
-    def tags(self) -> List[TagResponseModel]:
+    def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
         Returns:
