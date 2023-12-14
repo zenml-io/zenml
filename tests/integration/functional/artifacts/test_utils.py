@@ -125,7 +125,13 @@ def test_log_artifact_metadata_existing(clean_client):
         artifact_version="1",
     )
     log_artifact_metadata(
-        {"float": 1.0, "int": 1, "str": "1.0"},
+        {
+            "float": 1.0,
+            "int": 1,
+            "str": "1.0",
+            "list_str": ["1.0", "2.0"],
+            "list_floats": [1.0, 2.0],
+        },
         artifact_name="meaning_of_life",
         artifact_version="1",
     )
@@ -143,6 +149,17 @@ def test_log_artifact_metadata_existing(clean_client):
     assert artifact_1.run_metadata["int"].value == 1
     assert "str" in artifact_1.run_metadata
     assert artifact_1.run_metadata["str"].value == "1.0"
+    assert "list_str" in artifact_1.run_metadata
+    assert (
+        len(set(artifact_1.run_metadata["list_str"].value) - {"1.0", "2.0"})
+        == 0
+    )
+    assert "list_floats" in artifact_1.run_metadata
+    for each in artifact_1.run_metadata["list_floats"].value:
+        if 0.99 < each < 1.01:
+            assert each - 1.0 < 10e-6
+        else:
+            assert each - 2.0 < 10e-6
 
     artifact_2 = clean_client.get_artifact_version(
         "meaning_of_life", version="43"
