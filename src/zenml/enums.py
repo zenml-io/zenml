@@ -320,6 +320,7 @@ class TaggableResourceTypes(StrEnum):
     ARTIFACT = "artifact"
     ARTIFACT_VERSION = "artifact_version"
     MODEL = "model"
+    MODEL_VERSION = "model_version"
 
 
 class ResponseUpdateStrategy(StrEnum):

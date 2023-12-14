@@ -4576,6 +4576,7 @@ class Client(metaclass=ClientMetaClass):
         model_name_or_id: Union[str, UUID],
         name: Optional[str] = None,
         description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> ModelVersionResponse:
         """Creates a new model version in Model Control Plane.
 
@@ -4584,6 +4585,7 @@ class Client(metaclass=ClientMetaClass):
                 version in.
             name: the name of the Model Version to be created.
             description: the description of the Model Version to be created.
+            tags: Tags associated with the model.
 
         Returns:
             The newly created model version.
@@ -4597,6 +4599,7 @@ class Client(metaclass=ClientMetaClass):
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 model=model_name_or_id,
+                tags=tags,
             )
         )
 
@@ -4754,6 +4757,8 @@ class Client(metaclass=ClientMetaClass):
         stage: Optional[Union[str, ModelStages]] = None,
         force: bool = False,
         name: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
     ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
@@ -4764,6 +4769,8 @@ class Client(metaclass=ClientMetaClass):
             force: Whether existing model version in target stage should be
                 silently archived or an error should be raised.
             name: Target model version name to be set.
+            add_tags: Tags to add to the model version.
+            remove_tags: Tags to remove from to the model version.
 
         Returns:
             An updated model version.
@@ -4782,6 +4789,8 @@ class Client(metaclass=ClientMetaClass):
                 stage=stage,
                 force=force,
                 name=name,
+                add_tags=add_tags,
+                remove_tags=remove_tags,
             ),
         )
 
