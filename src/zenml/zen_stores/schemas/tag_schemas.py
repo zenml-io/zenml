@@ -26,6 +26,7 @@ from zenml.models import (
     TagRequest,
     TagResourceRequest,
     TagResourceResponse,
+    TagResourceResponseBody,
     TagResponse,
     TagResponseBody,
     TagUpdate,
@@ -80,8 +81,6 @@ class TagSchema(NamedSchema, table=True):
         Returns:
             The created `TagResponse`.
         """
-        TagResponseBody()
-
         return TagResponse(
             id=self.id,
             name=self.name,
@@ -181,7 +180,7 @@ class TagResourceSchema(BaseSchema, table=True):
         """
         return TagResourceResponse(
             id=self.id,
-            body=TagResponseBody(
+            body=TagResourceResponseBody(
                 tag_id=self.tag_id,
                 resource_id=self.resource_id,
                 created=self.created,
