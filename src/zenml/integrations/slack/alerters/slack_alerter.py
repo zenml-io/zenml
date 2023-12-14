@@ -14,7 +14,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, List, Optional, cast
 
 from pydantic import BaseModel
 from slack_sdk import WebClient
@@ -55,6 +55,9 @@ class SlackAlerterParameters(BaseAlerterStepParameters):
     disapprove_msg_options: Optional[List[str]] = None
     payload: Optional[SlackAlerterPayload] = None
     include_format_blocks: Optional[bool] = True
+
+    # Allowing user to use their own custom blocks in the slack post message
+    blocks: Optional[list[dict[str, Any]]] = None
 
 
 class SlackAlerter(BaseAlerter):
@@ -144,7 +147,7 @@ class SlackAlerter(BaseAlerter):
 
     def _create_blocks(
         self, message: str, params: Optional[BaseAlerterStepParameters]
-    ) -> List[Dict]:  # type: ignore
+    ) -> list[dict[str, Any]]:
         """Helper function to create slack blocks.
 
         Args:
@@ -154,46 +157,46 @@ class SlackAlerter(BaseAlerter):
         Returns:
             List of slack blocks.
         """
-        if (
-            isinstance(params, SlackAlerterParameters)
-            and hasattr(params, "payload")
-            and params.payload is not None
-        ):
-            payload = params.payload
-            return [
-                {
-                    "type": "section",
-                    "fields": [
-                        {
-                            "type": "mrkdwn",
-                            "text": f":star: *Pipeline:*\n{payload.pipeline_name}",
+        if isinstance(params, SlackAlerterParameters):
+            if hasattr(params, "blocks") and params.blocks is not None:
+                return params.blocks
+            elif hasattr(params, "payload") and params.payload is not None:
+                payload = params.payload
+                return [
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": f":star: *Pipeline:*\n{payload.pipeline_name}",
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": f":arrow_forward: *Step:*\n{payload.step_name}",
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": f":ring_buoy: *Stack:*\n{payload.stack_name}",
+                            },
+                        ],
+                        "accessory": {
+                            "type": "image",
+                            "image_url": "https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png",
+                            "alt_text": "zenml logo",
                         },
-                        {
-                            "type": "mrkdwn",
-                            "text": f":arrow_forward: *Step:*\n{payload.step_name}",
-                        },
-                        {
-                            "type": "mrkdwn",
-                            "text": f":ring_buoy: *Stack:*\n{payload.stack_name}",
-                        },
-                    ],
-                    "accessory": {
-                        "type": "image",
-                        "image_url": "https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png",
-                        "alt_text": "zenml logo",
                     },
-                },
-                {
-                    "type": "section",
-                    "fields": [
-                        {
-                            "type": "mrkdwn",
-                            "text": f":email: *Message:*\n{message}",
-                        },
-                    ],
-                },
-            ]
-        return []
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": f":email: *Message:*\n{message}",
+                            },
+                        ],
+                    },
+                ]
+            else:
+                return []
 
     def post(
         self, message: str, params: Optional[BaseAlerterStepParameters] = None
