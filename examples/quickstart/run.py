@@ -1,19 +1,19 @@
 # Apache Software License 2.0
-# 
+#
 # Copyright (c) ZenML GmbH 2023. All rights reserved.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
 import os
 from typing import Optional
@@ -25,6 +25,7 @@ from pipelines import (
     inference,
     training,
 )
+
 from zenml.client import Client
 from zenml.logger import get_logger
 
@@ -147,7 +148,9 @@ def main(
         feature_engineering.with_options(**pipeline_args)(**run_args_feature)
         logger.info("Feature Engineering pipeline finished successfully!\n")
 
-        train_dataset_artifact = client.get_artifact_version(train_dataset_name)
+        train_dataset_artifact = client.get_artifact_version(
+            train_dataset_name
+        )
         test_dataset_artifact = client.get_artifact_version(test_dataset_name)
         logger.info(
             "The latest feature engineering pipeline produced the following "
@@ -175,25 +178,35 @@ def main(
                 test_dataset_name, test_dataset_version_name
             )
             # Use versioned artifacts
-            run_args_train["train_dataset_id"] = train_dataset_artifact_version.id
-            run_args_train["test_dataset_id"] = test_dataset_artifact_version.id
+            run_args_train[
+                "train_dataset_id"
+            ] = train_dataset_artifact_version.id
+            run_args_train[
+                "test_dataset_id"
+            ] = test_dataset_artifact_version.id
 
         # Run the SGD pipeline
         pipeline_args = {}
-        pipeline_args["config_path"] = os.path.join(config_folder, "training_sgd.yaml")
+        pipeline_args["config_path"] = os.path.join(
+            config_folder, "training_sgd.yaml"
+        )
         training.with_options(**pipeline_args)(**run_args_train)
         logger.info("Training pipeline with SGD finished successfully!\n\n")
 
         # Run the RF pipeline
         pipeline_args = {}
-        pipeline_args["config_path"] = os.path.join(config_folder, "training_rf.yaml")
+        pipeline_args["config_path"] = os.path.join(
+            config_folder, "training_rf.yaml"
+        )
         training.with_options(**pipeline_args)(**run_args_train)
         logger.info("Training pipeline with RF finished successfully!\n\n")
 
     if inference_pipeline:
         run_args_inference = {}
         pipeline_args = {"enable_cache": False}
-        pipeline_args["config_path"] = os.path.join(config_folder, "inference.yaml")
+        pipeline_args["config_path"] = os.path.join(
+            config_folder, "inference.yaml"
+        )
 
         # Configure the pipeline
         inference_configured = inference.with_options(**pipeline_args)
@@ -204,11 +217,15 @@ def main(
         zenml_model = client.get_model_version(
             config["model_version"]["name"], config["model_version"]["version"]
         )
-        preprocess_pipeline_artifact = zenml_model.get_artifact("preprocess_pipeline")
+        preprocess_pipeline_artifact = zenml_model.get_artifact(
+            "preprocess_pipeline"
+        )
 
         # Use the metadata of feature engineering pipeline artifact
         #  to get the random state and target column
-        random_state = preprocess_pipeline_artifact.run_metadata["random_state"].value
+        random_state = preprocess_pipeline_artifact.run_metadata[
+            "random_state"
+        ].value
         target = preprocess_pipeline_artifact.run_metadata["target"].value
         run_args_inference["random_state"] = random_state
         run_args_inference["target"] = target
