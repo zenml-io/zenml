@@ -37,6 +37,10 @@ GCP_SECRETS_MANAGER_FLAVOR = "gcp"
 GCP_VERTEX_ORCHESTRATOR_FLAVOR = "vertex"
 GCP_VERTEX_STEP_OPERATOR_FLAVOR = "vertex"
 
+# Service connector constants
+GCP_CONNECTOR_TYPE = "gcp"
+GCP_RESOURCE_TYPE = "gcp-generic"
+GCS_RESOURCE_TYPE = "gcs-bucket"
 
 class GcpIntegration(Integration):
     """Definition of Google Cloud Platform integration for ZenML."""

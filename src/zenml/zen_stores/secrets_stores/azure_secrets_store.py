@@ -20,30 +20,34 @@ import re
 import uuid
 from datetime import datetime
 from typing import (
+    Any,
     ClassVar,
     Dict,
     List,
     Optional,
     Type,
-    Union,
+    cast,
 )
 from uuid import UUID
 
+from azure.core.credentials import TokenCredential
 from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
-from azure.identity import (
-    ClientSecretCredential,
-    DefaultAzureCredential,
-)
 from azure.keyvault.secrets import SecretClient
-from pydantic import SecretStr
+from pydantic import root_validator
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
-from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.exceptions import EntityExistsError
+from zenml.integrations.azure import (
+    AZURE_CONNECTOR_TYPE,
+    AZURE_RESOURCE_TYPE,
+)
+from zenml.integrations.azure.service_connectors.azure_service_connector import (
+    AzureAuthenticationMethods,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -52,8 +56,9 @@ from zenml.models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.zen_stores.secrets_stores.base_secrets_store import (
-    BaseSecretsStore,
+from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
+    ServiceConnectorSecretsStore,
+    ServiceConnectorSecretsStoreConfiguration,
 )
 
 logger = get_logger(__name__)
@@ -64,39 +69,53 @@ ZENML_AZURE_SECRET_CREATED_KEY = "zenml_secret_created"
 ZENML_AZURE_SECRET_UPDATED_KEY = "zenml_secret_updated"
 
 
-class AzureSecretsStoreConfiguration(SecretsStoreConfiguration):
+class AzureSecretsStoreConfiguration(
+    ServiceConnectorSecretsStoreConfiguration
+):
     """Azure secrets store configuration.
 
     Attributes:
         type: The type of the store.
         key_vault_name: Name of the Azure Key Vault that this secrets store
             will use to store secrets.
-        azure_client_id: The client ID of the Azure application service
-            principal that will be used to access the Azure Key Vault. If not
-            set, the default Azure credential chain will be used.
-        azure_client_secret: The client secret of the Azure application
-            service principal that will be used to access the Azure Key Vault.
-            If not set, the default Azure credential chain will be used.
-        azure_tenant_id: The tenant ID of the Azure application service
-            principal that will be used to access the Azure Key Vault. If not
-            set, the default Azure credential chain will be used.
     """
 
     type: SecretsStoreType = SecretsStoreType.AZURE
-
     key_vault_name: str
-    azure_client_id: Optional[SecretStr] = None
-    azure_client_secret: Optional[SecretStr] = None
-    azure_tenant_id: Optional[SecretStr] = None
+
+    @root_validator(pre=True)
+    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Populate the connector configuration from legacy attributes.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+
+        Raises:
+            ValueError: If the connector attribute is not set.
+        """
+        if "auth_method" not in values or "auth_config" not in values:
+            values[
+                "auth_method"
+            ] = AzureAuthenticationMethods.SERVICE_PRINCIPAL
+            values["auth_config"] = dict(
+                client_id=values.get("azure_client_id"),
+                client_secret=values.get("azure_client_secret"),
+                tenant_id=values.get("azure_tenant_id"),
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
 
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra = "allow"
 
 
-class AzureSecretsStore(BaseSecretsStore):
+class AzureSecretsStore(ServiceConnectorSecretsStore):
     """Secrets store implementation that uses the Azure Key Vault API.
 
     This secrets store implementation uses the Azure Key Vault API to
@@ -132,20 +151,15 @@ class AzureSecretsStore(BaseSecretsStore):
     fetch all versions for every secret to get the created_on timestamp during
     a list operation. So instead we manage the `created` and `updated`
     timestamps ourselves and save them as tags in the Azure Key Vault secret.
-
-    Attributes:
-        config: The configuration of the Azure secrets store.
-        TYPE: The type of the store.
-        CONFIG_TYPE: The type of the store configuration.
     """
 
     config: AzureSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AZURE
     CONFIG_TYPE: ClassVar[
-        Type[SecretsStoreConfiguration]
+        Type[ServiceConnectorSecretsStoreConfiguration]
     ] = AzureSecretsStoreConfiguration
-
-    _client: Optional[SecretClient] = None
+    SERVICE_CONNECTOR_TYPE: ClassVar[str] = AZURE_CONNECTOR_TYPE
+    SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = AZURE_RESOURCE_TYPE
 
     @property
     def client(self) -> SecretClient:
@@ -154,39 +168,7 @@ class AzureSecretsStore(BaseSecretsStore):
         Returns:
             The Azure Key Vault client.
         """
-        if self._client is None:
-            azure_logger = logging.getLogger("azure")
-
-            # Suppress the INFO logging level of the Azure SDK if the
-            # ZenML logging level is WARNING or lower.
-            if logger.level <= logging.WARNING:
-                azure_logger.setLevel(logging.WARNING)
-            else:
-                azure_logger.setLevel(logging.INFO)
-
-            # Initialize the Azure Key Vault client with the
-            # credentials from the configuration, if provided.
-            vault_url = f"https://{self.config.key_vault_name}.vault.azure.net"
-            credential: Union[
-                ClientSecretCredential,
-                DefaultAzureCredential,
-            ]
-            if (
-                self.config.azure_client_id
-                and self.config.azure_tenant_id
-                and self.config.azure_client_secret
-            ):
-                credential = ClientSecretCredential(
-                    tenant_id=self.config.azure_tenant_id.get_secret_value(),
-                    client_id=self.config.azure_client_id.get_secret_value(),
-                    client_secret=self.config.azure_client_secret.get_secret_value(),
-                )
-            else:
-                credential = DefaultAzureCredential()
-            self._client = SecretClient(
-                vault_url=vault_url, credential=credential
-            )
-        return self._client
+        return cast(SecretClient, super().client)
 
     # ====================================
     # Secrets Store interface implementation
@@ -196,13 +178,28 @@ class AzureSecretsStore(BaseSecretsStore):
     # Initialization and configuration
     # --------------------------------
 
-    def _initialize(self) -> None:
-        """Initialize the Azure secrets store."""
-        logger.debug("Initializing AzureSecretsStore")
+    def _initialize_client_from_connector(self, client: Any) -> Any:
+        """Initialize the Azure Key Vault client from the service connector client.
 
-        # Initialize the Azure client early, just to catch any configuration or
-        # authentication errors early, before the Secrets Store is used.
-        _ = self.client
+        Args:
+            client: The authenticated client object returned by the service
+                connector.
+
+        Returns:
+            The Azure Key Vault client.
+        """
+        assert isinstance(client, TokenCredential)
+        azure_logger = logging.getLogger("azure")
+
+        # Suppress the INFO logging level of the Azure SDK if the
+        # ZenML logging level is WARNING or lower.
+        if logger.level <= logging.WARNING:
+            azure_logger.setLevel(logging.WARNING)
+        else:
+            azure_logger.setLevel(logging.INFO)
+
+        vault_url = f"https://{self.config.key_vault_name}.vault.azure.net"
+        return SecretClient(vault_url=vault_url, credential=client)
 
     # ------
     # Secrets

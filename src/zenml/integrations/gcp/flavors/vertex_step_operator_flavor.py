@@ -16,7 +16,10 @@
 from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.gcp import GCP_VERTEX_STEP_OPERATOR_FLAVOR
+from zenml.integrations.gcp import (
+    GCP_RESOURCE_TYPE,
+    GCP_VERTEX_STEP_OPERATOR_FLAVOR,
+)
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
@@ -116,7 +119,7 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="gcp-generic",
+            resource_type=GCP_RESOURCE_TYPE,
         )
 
     @property
