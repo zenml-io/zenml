@@ -1,0 +1,18 @@
+# if a storage class is set, create the pvc that will hold a backup of the database
+{{- if .Values.zenml.database.storageClass }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "zenml.fullname" . }}-db-backup
+  labels:
+    {{- include "zenml.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.zenml.database.backupStorageSize }}
+  {{- with .Values.zenml.database.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+{{- end }}
