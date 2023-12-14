@@ -62,8 +62,8 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunRequest,
     ResourceTypeModel,
-    SecretFilterModel,
-    SecretRequestModel,
+    SecretFilter,
+    SecretRequest,
     ServiceAccountRequest,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
@@ -485,7 +485,7 @@ class SecretContext:
         self.delete = delete
 
     def __enter__(self):
-        new_secret = SecretRequestModel(
+        new_secret = SecretRequest(
             name=self.secret_name,
             scope=self.scope,
             values=self.values,
@@ -1063,13 +1063,13 @@ artifact_version_crud_test_config = CrudTestConfig(
     conditional_entities={"artifact_id": deepcopy(artifact_crud_test_config)},
 )
 secret_crud_test_config = CrudTestConfig(
-    create_model=SecretRequestModel(
+    create_model=SecretRequest(
         name=sample_name("sample_secret"),
         values={"key": "value"},
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    filter_model=SecretFilterModel,
+    filter_model=SecretFilter,
     entity_name="secret",
 )
 build_crud_test_config = CrudTestConfig(

@@ -18,7 +18,7 @@ import pytest
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model_version import ModelVersion
-from zenml.models.tag_models import TagRequestModel
+from zenml.models import TagRequest
 
 MODEL_NAME = "super_model"
 
@@ -200,7 +200,7 @@ class TestModelVersion:
 
     def test_tags_properly_created(self, clean_client: "Client"):
         """Test that model context can create proper tag relationships."""
-        clean_client.create_tag(TagRequestModel(name="foo", color="green"))
+        clean_client.create_tag(TagRequest(name="foo", color="green"))
         mv = ModelVersion(
             name=MODEL_NAME,
             tags=["foo", "bar"],
