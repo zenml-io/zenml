@@ -338,13 +338,13 @@ def get_source_type(module: ModuleType) -> SourceType:
     if is_internal_module(module_name=module.__name__):
         return SourceType.INTERNAL
 
-    if is_standard_lib_file(file_path=file_path):
-        return SourceType.BUILTIN
-
     if is_distribution_package_file(
         file_path=file_path, module_name=module.__name__
     ):
         return SourceType.DISTRIBUTION_PACKAGE
+
+    if is_standard_lib_file(file_path=file_path):
+        return SourceType.BUILTIN
 
     # Make sure to check for distribution packages before this to catch the
     # case when a virtual environment is inside our source root
