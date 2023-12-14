@@ -36,7 +36,7 @@ from tests.harness.model import (
 )
 
 
-class ServerDockerComposeTestDeployment(BaseTestDeployment):
+class ServerDockerComposeMysqlTestDeployment(BaseTestDeployment):
     """A deployment that runs a ZenML server as a docker-compose service."""
 
     @staticmethod
@@ -291,6 +291,6 @@ services:
         )
 
 
-ServerDockerComposeTestDeployment.register_deployment_class(
+ServerDockerComposeMysqlTestDeployment.register_deployment_class(
     type=DeploymentType.SERVER, setup=DeploymentSetup.DOCKER_COMPOSE
 )
