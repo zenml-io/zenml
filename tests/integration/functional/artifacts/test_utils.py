@@ -124,6 +124,11 @@ def test_log_artifact_metadata_existing(clean_client):
         artifact_name="meaning_of_life",
         artifact_version="1",
     )
+    log_artifact_metadata(
+        {"float": 1.0, "int": 1, "str": "1.0"},
+        artifact_name="meaning_of_life",
+        artifact_version="1",
+    )
 
     artifact_1 = clean_client.get_artifact_version(
         "meaning_of_life", version="1"
@@ -132,6 +137,12 @@ def test_log_artifact_metadata_existing(clean_client):
     assert artifact_1.run_metadata["description"].value == "Aria is great!"
     assert "description_3" in artifact_1.run_metadata
     assert artifact_1.run_metadata["description_3"].value == "Axl is great!"
+    assert "float" in artifact_1.run_metadata
+    assert artifact_1.run_metadata["float"].value - 1.0 < 10e-6
+    assert "int" in artifact_1.run_metadata
+    assert artifact_1.run_metadata["int"].value == 1
+    assert "str" in artifact_1.run_metadata
+    assert artifact_1.run_metadata["str"].value == "1.0"
 
     artifact_2 = clean_client.get_artifact_version(
         "meaning_of_life", version="43"
