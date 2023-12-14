@@ -16,6 +16,7 @@
 from tests.harness.deployment.base import BaseTestDeployment
 from tests.harness.deployment.local_default import LocalDefaultTestDeployment
 from tests.harness.deployment.local_docker_mysql import LocalDockerMysqlTestDeployment
+from tests.harness.deployment.local_docker_mariadb import LocalDockerMariadbTestDeployment
 from tests.harness.deployment.server_docker import ServerDockerTestDeployment
 from tests.harness.deployment.server_docker_compose_mysql import (
     ServerDockerComposeMysqlTestDeployment,
@@ -29,6 +30,7 @@ __all__ = [
     "BaseTestDeployment",
     "LocalDefaultTestDeployment",
     "LocalDockerMysqlTestDeployment",
+    "LocalDockerMariadbTestDeployment",
     "ServerLocalTestDeployment",
     "ServerDockerTestDeployment",
     "ServerDockerComposeMysqlTestDeployment",
