@@ -114,15 +114,25 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
         Raises:
             ValueError: If the connector attribute is not set.
         """
-        if "auth_method" not in values or "auth_config" not in values:
+        # Search for legacy attributes and populate the connector configuration
+        # from them, if they exist.
+        if values.get("project_id") and os.environ.get(
+            "GOOGLE_APPLICATION_CREDENTIALS"
+        ):
+            logger.warning(
+                "The `project_id` GCP secrets store attribute and the "
+                "`GOOGLE_APPLICATION_CREDENTIALS` environment variable are "
+                "deprecated and will be removed in a future version of ZenML. "
+                "Please use the `auth_method` and `auth_config` attributes "
+                "instead."
+            )
             values["auth_method"] = GCPAuthenticationMethods.SERVICE_ACCOUNT
             values["auth_config"] = dict(
                 project_id=values.get("project_id"),
             )
-            if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-                # Load the service account credentials from the file
-                with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]) as f:
-                    values["auth_config"]["service_account_json"] = f.read()
+            # Load the service account credentials from the file
+            with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]) as f:
+                values["auth_config"]["service_account_json"] = f.read()
 
         return values
 

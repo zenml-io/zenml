@@ -105,9 +105,7 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
         if region:
             return str(region)
 
-        raise ValueError(
-            "AWS `region` must be specified in the auth_config."
-        )
+        raise ValueError("AWS `region` must be specified in the auth_config.")
 
     @root_validator(pre=True)
     def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -122,7 +120,19 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
         Raises:
             ValueError: If the connector attribute is not set.
         """
-        if "auth_method" not in values or "auth_config" not in values:
+        # Search for legacy attributes and populate the connector configuration
+        # from them, if they exist.
+        if (
+            values.get("aws_access_key_id")
+            and values.get("aws_secret_access_key")
+            and values.get("region_name")
+        ):
+            logger.warning(
+                "The `aws_access_key_id`, `aws_secret_access_key` and "
+                "`region_name` AWS secrets store attributes are deprecated and "
+                "will be removed in a future version of ZenML. Please use the "
+                "`auth_method` and `auth_config` attributes instead."
+            )
             values["auth_method"] = AWSAuthenticationMethods.SECRET_KEY
             values["auth_config"] = dict(
                 aws_access_key_id=values.get("aws_access_key_id"),

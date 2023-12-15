@@ -312,7 +312,10 @@ This method requires you to configure a DNS service like AWS Route 53 or Google 
 {% tab title="AWS" %}
 #### Using the AWS Secrets Manager as a secrets store backend
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the AWS Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the AWS credentials needed to access the AWS Secrets Manager API:
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the AWS Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the AWS credentials needed to access the AWS Secrets Manager API.
+
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API:
+
 
 ```yaml
  zenml:
@@ -331,24 +334,28 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
      # Configuration for the AWS Secrets Manager secrets store
      aws:
 
-       # The AWS region to use. This must be set to the region where the AWS
-       # Secrets Manager service that you want to use is located.
-       region_name: us-east-1
+       # The AWS Service Connector authentication method to use.
+       authMethod: secret-key
 
-       # The AWS credentials to use to authenticate with the AWS Secrets
-       # Manager instance. You can omit these if you are running the ZenML server
-       # in an AWS EKS cluster that has an IAM role attached to it that has
-       # permissions to access the AWS Secrets Manager instance.
-       aws_access_key_id: <your AWS access key ID>
-       aws_secret_access_key: <your AWS secret access key>
-       aws_session_token: <your AWS session token>
+       # The AWS Service Connector configuration.
+       authConfig:
+        # The AWS region to use. This must be set to the region where the AWS
+        # Secrets Manager service that you want to use is located.
+        region: us-east-1
+
+        # The AWS credentials to use to authenticate with the AWS Secrets
+        aws_access_key_id: <your AWS access key ID>
+        aws_secret_access_key: <your AWS secret access key>
 ```
 {% endtab %}
 
 {% tab title="GCP" %}
 #### Using the GCP Secrets Manager as a secrets store backend
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the GCP Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the GCP credentials needed to access the GCP Secrets Manager API:
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the GCP Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the GCP credentials needed to access the GCP Secrets Manager API.
+
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API:
+
 
 ```yaml
  zenml:
@@ -367,18 +374,19 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
      # Configuration for the GCP Secrets Manager secrets store
      gcp:
 
-       # The GCP project ID to use. This must be set to the project ID where the
-       # GCP Secrets Manager service that you want to use is located.
-       project_id: my-gcp-project
+       # The GCP Service Connector authentication method to use.
+       authMethod: service-account
 
-       # Path to the GCP credentials file to use to authenticate with the GCP Secrets
-       # Manager instance. You can omit this if you are running the ZenML server
-       # in a GCP GKE cluster that uses workload identity to authenticate with
-       # GCP services without the need for credentials.
-       # NOTE: the credentials file needs to be copied in the helm chart folder
-       # and the path configured here needs to be relative to the root of the
-       # helm chart.
-       google_application_credentials: cloud-credentials.json
+       # The GCP Service Connector configuration.
+       authConfig:
+
+          # The GCP project ID to use. This must be set to the project ID where the
+          # GCP Secrets Manager service that you want to use is located.
+          project_id: my-gcp-project
+
+          # GCP credentials JSON to use to authenticate with the GCP Secrets
+          # Manager instance. 
+          google_application_credentials: '{...}'
 
  serviceAccount:
 
@@ -393,7 +401,10 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
 {% tab title="Azure" %}
 #### Using the Azure Key Vault as a secrets store backend
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the Azure Key Vault service instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the Azure credentials needed to access the Azure Key Vault API:
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the Azure Key Vault service instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the Azure credentials needed to access the Azure Key Vault API.
+
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API:
+
 
 ```yaml
  zenml:
@@ -416,13 +427,17 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
        # Key Vault instance that you want to use.
        key_vault_name:
 
-       # The Azure application service principal credentials to use to
-       # authenticate with the Azure Key Vault API. You can omit these if you are
-       # running the ZenML server hosted in Azure and are using a managed
-       # identity to access the Azure Key Vault service.
-       azure_client_id: <your Azure client ID>
-       azure_client_secret: <your Azure client secret>
-       azure_tenant_id: <your Azure tenant ID>
+       # The Azure Service Connector authentication method to use.
+       authMethod: service-principal
+
+       # The Azure Service Connector configuration.
+       authConfig:
+
+          # The Azure application service principal credentials to use to
+          # authenticate with the Azure Key Vault API.
+          client_id: <your Azure client ID>
+          client_secret: <your Azure client secret>
+          tenant_id: <your Azure tenant ID>
 ```
 {% endtab %}
 

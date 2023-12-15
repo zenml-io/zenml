@@ -78,7 +78,7 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
 
     _connector: Optional[ServiceConnector] = None
     _client: Optional[Any] = None
-    _lock: Lock = Lock()
+    _lock: Lock = Field(default_factory=Lock)
 
     def _initialize(self) -> None:
         """Initialize the secrets store."""

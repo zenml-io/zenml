@@ -96,7 +96,19 @@ class AzureSecretsStoreConfiguration(
         Raises:
             ValueError: If the connector attribute is not set.
         """
-        if "auth_method" not in values or "auth_config" not in values:
+        # Search for legacy attributes and populate the connector configuration
+        # from them, if they exist.
+        if (
+            values.get("azure_client_id")
+            and values.get("azure_client_secret")
+            and values.get("azure_tenant_id")
+        ):
+            logger.warning(
+                "The `azure_client_id`, `azure_client_secret` and "
+                "`azure_tenant_id` attributes are deprecated and will be "
+                "removed in a future version or ZenML. Please use the "
+                "`auth_method` and `auth_config` attributes instead."
+            )
             values[
                 "auth_method"
             ] = AzureAuthenticationMethods.SERVICE_PRINCIPAL
