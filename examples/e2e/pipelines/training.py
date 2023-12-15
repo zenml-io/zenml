@@ -17,7 +17,7 @@
 
 
 import random
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from steps import (
     compute_performance_metrics_on_current_data,
@@ -33,7 +33,7 @@ from steps import (
     train_data_splitter,
 )
 
-from zenml import pipeline
+from zenml import get_pipeline_context, pipeline
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -41,8 +41,6 @@ logger = get_logger(__name__)
 
 @pipeline(on_failure=notify_on_failure)
 def e2e_use_case_training(
-    model_search_space: Dict[str, Any],
-    target_env: str,
     test_size: float = 0.2,
     drop_na: Optional[bool] = None,
     normalize: Optional[bool] = None,
@@ -59,8 +57,6 @@ def e2e_use_case_training(
     trains and evaluates a model.
 
     Args:
-        model_search_space: Search space for hyperparameter tuning
-        target_env: The environment to promote the model to
         test_size: Size of holdout set for training 0.0..1.0
         drop_na: If `True` NA values will be removed from dataset
         normalize: If `True` dataset will be normalized with MinMaxScaler
@@ -69,10 +65,12 @@ def e2e_use_case_training(
         min_test_accuracy: Threshold to stop execution if test set accuracy is lower
         fail_on_accuracy_quality_gates: If `True` and `min_train_accuracy` or `min_test_accuracy`
             are not met - execution will be interrupted early
+
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
+    pipeline_extra = get_pipeline_context().extra
     ########## ETL stage ##########
     raw_data, target, _ = data_loader(random_state=random.randint(0, 100))
     dataset_trn, dataset_tst = train_data_splitter(
@@ -89,7 +87,9 @@ def e2e_use_case_training(
     ########## Hyperparameter tuning stage ##########
     after = []
     search_steps_prefix = "hp_tuning_search_"
-    for config_name, model_search_configuration in model_search_space.items():
+    for config_name, model_search_configuration in pipeline_extra[
+        "model_search_space"
+    ].items():
         step_name = f"{search_steps_prefix}{config_name}"
         hp_tuning_single_search(
             id=step_name,
@@ -123,15 +123,12 @@ def e2e_use_case_training(
         latest_metric,
         current_metric,
     ) = compute_performance_metrics_on_current_data(
-        dataset_tst=dataset_tst,
-        target_env=target_env,
-        after=["model_evaluator"],
+        dataset_tst=dataset_tst, after=["model_evaluator"]
     )
 
     promote_with_metric_compare(
         latest_metric=latest_metric,
         current_metric=current_metric,
-        target_env=target_env,
     )
     last_step = "promote_with_metric_compare"
 
