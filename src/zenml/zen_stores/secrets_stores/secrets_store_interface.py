@@ -17,10 +17,10 @@ from uuid import UUID
 
 from zenml.models import (
     Page,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
 )
 
 
@@ -49,8 +49,8 @@ class SecretsStoreInterface(ABC):
     @abstractmethod
     def create_secret(
         self,
-        secret: SecretRequestModel,
-    ) -> SecretResponseModel:
+        secret: SecretRequest,
+    ) -> SecretResponse:
         """Creates a new secret.
 
         The new secret is also validated against the scoping rules enforced in
@@ -75,7 +75,7 @@ class SecretsStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+    def get_secret(self, secret_id: UUID) -> SecretResponse:
         """Get a secret with a given name.
 
         Args:
@@ -90,8 +90,8 @@ class SecretsStoreInterface(ABC):
 
     @abstractmethod
     def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
+        self, secret_filter_model: SecretFilter
+    ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
         Note that returned secrets do not include any secret values. To fetch
@@ -113,8 +113,8 @@ class SecretsStoreInterface(ABC):
     def update_secret(
         self,
         secret_id: UUID,
-        secret_update: SecretUpdateModel,
-    ) -> SecretResponseModel:
+        secret_update: SecretUpdate,
+    ) -> SecretResponse:
         """Updates a secret.
 
         Secret values that are specified as `None` in the update that are

@@ -47,10 +47,12 @@ from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretResponseBody,
+    SecretResponseMetadata,
+    SecretUpdate,
 )
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
@@ -259,7 +261,7 @@ class AzureSecretsStore(BaseSecretsStore):
         self,
         tags: Dict[str, str],
         values: Optional[str] = None,
-    ) -> SecretResponseModel:
+    ) -> SecretResponse:
         """Create a ZenML secret model from data stored in an Azure secret.
 
         If the Azure secret cannot be converted, the method acts as if the
@@ -296,7 +298,7 @@ class AzureSecretsStore(BaseSecretsStore):
         )
 
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
-    def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
         """Creates a new secret.
 
         The new secret is also validated against the scoping rules enforced in
@@ -363,20 +365,24 @@ class AzureSecretsStore(BaseSecretsStore):
 
         logger.debug("Created Azure secret: %s", azure_secret_id)
 
-        secret_model = SecretResponseModel(
+        secret_model = SecretResponse(
             id=secret_id,
             name=secret.name,
-            scope=secret.scope,
-            workspace=workspace,
-            user=user,
-            values=secret.secret_values,
-            created=created,
-            updated=created,
+            body=SecretResponseBody(
+                user=user,
+                created=created,
+                updated=created,
+                scope=secret.scope,
+                values=secret.secret_values,
+            ),
+            metadata=SecretResponseMetadata(
+                workspace=workspace,
+            ),
         )
 
         return secret_model
 
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+    def get_secret(self, secret_id: UUID) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
@@ -414,8 +420,8 @@ class AzureSecretsStore(BaseSecretsStore):
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
+        self, secret_filter_model: SecretFilter
+    ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
         Note that returned secrets do not include any secret values. To fetch
@@ -446,7 +452,7 @@ class AzureSecretsStore(BaseSecretsStore):
         # The metadata will always contain at least the filter criteria
         # required to exclude everything but Azure secrets that belong to the
         # current ZenML deployment.
-        results: List[SecretResponseModel] = []
+        results: List[SecretResponse] = []
 
         try:
             all_secrets = self.client.list_properties_of_secrets()
@@ -492,7 +498,7 @@ class AzureSecretsStore(BaseSecretsStore):
                 f"therefore is {total_pages}."
             )
 
-        return Page[SecretResponseModel](
+        return Page[SecretResponse](
             total=total,
             total_pages=total_pages,
             items=sorted_results[
@@ -505,8 +511,8 @@ class AzureSecretsStore(BaseSecretsStore):
         )
 
     def update_secret(
-        self, secret_id: UUID, secret_update: SecretUpdateModel
-    ) -> SecretResponseModel:
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
         """Updates a secret.
 
         Secret values that are specified as `None` in the update that are
@@ -538,24 +544,16 @@ class AzureSecretsStore(BaseSecretsStore):
         """
         secret = self.get_secret(secret_id)
 
-        # Prevent changes to the secret's user or workspace
-        assert secret.user is not None
-        self._validate_user_and_workspace_update(
-            secret_update=secret_update,
-            current_user=secret.user.id,
-            current_workspace=secret.workspace.id,
-        )
-
         if secret_update.name is not None:
             self._validate_azure_secret_name(secret_update.name)
             secret.name = secret_update.name
         if secret_update.scope is not None:
-            secret.scope = secret_update.scope
+            secret.get_body().scope = secret_update.scope
         if secret_update.values is not None:
             # Merge the existing values with the update values.
             # The values that are set to `None` in the update are removed from
             # the existing secret when we call `.secret_values` later.
-            secret.values.update(secret_update.values)
+            secret.get_body().values.update(secret_update.values)
 
         if secret_update.name is not None or secret_update.scope is not None:
             # Check if a secret with the same name already exists in the same
@@ -595,15 +593,19 @@ class AzureSecretsStore(BaseSecretsStore):
 
         logger.debug("Updated Azure secret: %s", azure_secret_id)
 
-        secret_model = SecretResponseModel(
+        secret_model = SecretResponse(
             id=secret_id,
             name=secret.name,
-            scope=secret.scope,
-            workspace=secret.workspace,
-            user=secret.user,
-            values=secret.secret_values,
-            created=secret.created,
-            updated=updated,
+            body=SecretResponseBody(
+                user=secret.user,
+                created=secret.created,
+                updated=updated,
+                scope=secret.scope,
+                values=secret.secret_values,
+            ),
+            metadata=SecretResponseMetadata(
+                workspace=secret.workspace,
+            ),
         )
 
         return secret_model

@@ -42,10 +42,10 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
 )
 from zenml.zen_stores.schemas import (
     SecretSchema,
@@ -254,7 +254,7 @@ class SqlSecretsStore(BaseSecretsStore):
         return False, ""
 
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
-    def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
         """Creates a new secret.
 
         The new secret is also validated against the scoping rules enforced in
@@ -298,7 +298,7 @@ class SqlSecretsStore(BaseSecretsStore):
                 encryption_engine=self._encryption_engine
             )
 
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+    def get_secret(self, secret_id: UUID) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
@@ -321,8 +321,8 @@ class SqlSecretsStore(BaseSecretsStore):
             )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
+        self, secret_filter_model: SecretFilter
+    ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
         Note that returned secrets do not include any secret values. To fetch
@@ -352,8 +352,8 @@ class SqlSecretsStore(BaseSecretsStore):
             )
 
     def update_secret(
-        self, secret_id: UUID, secret_update: SecretUpdateModel
-    ) -> SecretResponseModel:
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
         """Updates a secret.
 
         Secret values that are specified as `None` in the update that are
@@ -388,13 +388,6 @@ class SqlSecretsStore(BaseSecretsStore):
 
             if not existing_secret:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
-
-            # Prevent changes to the secret's user or workspace
-            self._validate_user_and_workspace_update(
-                secret_update=secret_update,
-                current_user=existing_secret.user.id,
-                current_workspace=existing_secret.workspace.id,
-            )
 
             # A change in name or scope requires a check of the scoping rules.
             if (

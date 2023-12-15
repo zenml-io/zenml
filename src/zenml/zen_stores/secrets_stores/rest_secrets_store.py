@@ -32,10 +32,10 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
 )
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
@@ -147,7 +147,7 @@ class RestSecretsStore(BaseSecretsStore):
     # Secrets
     # ------
 
-    def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
         """Creates a new secret.
 
         The new secret is also validated against the scoping rules enforced in
@@ -167,10 +167,10 @@ class RestSecretsStore(BaseSecretsStore):
         return self.zen_store._create_workspace_scoped_resource(
             resource=secret,
             route=SECRETS,
-            response_model=SecretResponseModel,
+            response_model=SecretResponse,
         )
 
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+    def get_secret(self, secret_id: UUID) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
@@ -182,12 +182,12 @@ class RestSecretsStore(BaseSecretsStore):
         return self.zen_store._get_resource(
             resource_id=secret_id,
             route=SECRETS,
-            response_model=SecretResponseModel,
+            response_model=SecretResponse,
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
+        self, secret_filter_model: SecretFilter
+    ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
         Note that returned secrets do not include any secret values. To fetch
@@ -206,13 +206,13 @@ class RestSecretsStore(BaseSecretsStore):
         """
         return self.zen_store._list_paginated_resources(
             route=SECRETS,
-            response_model=SecretResponseModel,
+            response_model=SecretResponse,
             filter_model=secret_filter_model,
         )
 
     def update_secret(
-        self, secret_id: UUID, secret_update: SecretUpdateModel
-    ) -> SecretResponseModel:
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
         """Updates a secret.
 
         Secret values that are specified as `None` in the update that are
@@ -239,7 +239,7 @@ class RestSecretsStore(BaseSecretsStore):
             resource_id=secret_id,
             resource_update=secret_update,
             route=SECRETS,
-            response_model=SecretResponseModel,
+            response_model=SecretResponse,
             # The default endpoint behavior is to replace all secret values
             # with the values in the update. We want to merge the values
             # instead.
