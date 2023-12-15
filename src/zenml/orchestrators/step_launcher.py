@@ -351,6 +351,13 @@ class StepLauncher:
             is_enabled_on_pipeline=self._deployment.pipeline_configuration.enable_cache,
         )
 
+        if self._step.config.experiment_tracker and cache_enabled:
+            cache_enabled = False
+            logger.warning(
+                "Using an experiment tracker in a step "
+                "disables step caching."
+            )
+
         step_cache = self._step.config.enable_cache
         if step_cache is not None:
             logger.info(
