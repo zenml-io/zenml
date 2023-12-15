@@ -35,7 +35,6 @@ from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions
 from google.cloud.secretmanager import SecretManagerServiceClient
-from google.oauth2 import service_account as gcp_service_account
 from pydantic import root_validator
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -183,10 +182,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         Returns:
             The GCP Secrets Manager client.
         """
-        assert isinstance(client, gcp_service_account.Credentials)
-        return SecretManagerServiceClient(
-            project=self.config.project_id, credentials=client
-        )
+        return SecretManagerServiceClient(credentials=client)
 
     # ------
     # Secrets

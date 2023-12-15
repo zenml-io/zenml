@@ -14,6 +14,7 @@
 """Base secrets store class used for all secrets stores that use a service connector."""
 
 
+import json
 from abc import abstractmethod
 from threading import Lock
 from typing import (
@@ -25,7 +26,7 @@ from typing import (
 )
 from uuid import uuid4
 
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.logger import get_logger
@@ -54,6 +55,20 @@ class ServiceConnectorSecretsStoreConfiguration(SecretsStoreConfiguration):
     auth_method: str
     auth_config: Dict[str, Any] = Field(default_factory=dict)
 
+    @root_validator(pre=True)
+    def validate_auth_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert the authentication configuration if given in JSON format.
+
+        Args:
+            values: The configuration values.
+
+        Returns:
+            The validated configuration values.
+        """
+        if isinstance(values.get("auth_config"), str):
+            values["auth_config"] = json.loads(values["auth_config"])
+        return values
+
 
 class ServiceConnectorSecretsStore(BaseSecretsStore):
     """Base secrets store class for service connector-based secrets stores.
@@ -78,10 +93,11 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
 
     _connector: Optional[ServiceConnector] = None
     _client: Optional[Any] = None
-    _lock: Lock = Field(default_factory=Lock)
+    _lock: Optional[Lock] = None
 
     def _initialize(self) -> None:
         """Initialize the secrets store."""
+        self._lock = Lock()
         # Initialize the client early, just to catch any configuration or
         # authentication errors early, before the Secrets Store is used.
         _ = self.client
@@ -127,6 +143,16 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
         return self._client
 
     @property
+    def lock(self) -> Lock:
+        """Get the lock used to treat the client initialization as a critical section.
+
+        Returns:
+            The lock instance.
+        """
+        assert self._lock is not None
+        return self._lock
+
+    @property
     def client(self) -> Any:
         """Get the secrets store API client.
 
@@ -137,7 +163,7 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
         # of different threads. We want to make sure that we only initialize
         # the client once, and then reuse it. We have to use a lock to treat
         # this method as a critical section.
-        with self._lock:
+        with self.lock:
             return self._get_client()
 
     @abstractmethod

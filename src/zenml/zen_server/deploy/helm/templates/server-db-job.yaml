@@ -88,7 +88,7 @@ spec:
             {{- if .Values.zenml.secretsStore.aws.region_name }}
             - name: ZENML_SECRETS_STORE_REGION_NAME
               value: {{ .Values.zenml.secretsStore.aws.region_name | quote }}
-            {{- endif }}
+            {{- end }}
             - name: ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT
               value: {{ .Values.zenml.secretsStore.aws.secret_list_refresh_timeout | quote }}
             {{- else if eq .Values.zenml.secretsStore.type "gcp" }}
@@ -97,7 +97,7 @@ spec:
             {{- if .Values.zenml.secretsStore.gcp.project_id }}
             - name: ZENML_SECRETS_STORE_PROJECT_ID
               value: {{ .Values.zenml.secretsStore.gcp.project_id | quote }}
-            {{- endif }}
+            {{- end }}
             {{- if .Values.zenml.secretsStore.gcp.google_application_credentials }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /gcp-credentials/credentials.json
