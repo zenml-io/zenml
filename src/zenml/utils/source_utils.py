@@ -507,9 +507,6 @@ def _get_package_for_module(module_name: str) -> Optional[str]:
     Returns:
         The package name or None if no package was found.
     """
-    if sys.version_info < (3, 10):
-        from importlib_metadata import packages_distributions
-    else:
         from importlib.metadata import packages_distributions
 
     top_level_module = module_name.split(".", maxsplit=1)[0]
@@ -531,11 +528,6 @@ def _get_package_version(package_name: str) -> Optional[str]:
     Returns:
         The package version or None if fetching the version failed.
     """
-    if sys.version_info < (3, 10):
-        from importlib_metadata import PackageNotFoundError, version
-
-        version = cast(Callable[..., str], version)
-    else:
         from importlib.metadata import PackageNotFoundError, version
 
     try:
