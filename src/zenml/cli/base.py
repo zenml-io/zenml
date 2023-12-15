@@ -37,6 +37,7 @@ from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     REPOSITORY_DIRECTORY_NAME,
 )
+from zenml.zen_server.utils import get_active_deployment
 from zenml.enums import AnalyticsEventSource, StoreType
 from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
@@ -312,20 +313,16 @@ def _delete_local_files(force_delete: bool = False) -> None:
     default=False,
     help="Delete local files relating to the active stack.",
 )
-@click.pass_context
-def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
+def clean(yes: bool = False, local: bool = False) -> None:
     """Delete all ZenML metadata, artifacts and stacks.
 
     This is a destructive operation, primarily intended for use in development.
 
     Args:
-        ctx: The click context.
         yes: If you don't want a confirmation prompt.
         local: If you want to delete local files associated with the active
             stack.
     """
-    ctx.invoke(down)
-
     if local:
         curr_version = version.parse(zenml_version)
 
@@ -340,6 +337,7 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
                     "related to the active stack."
                 )
         _delete_local_files(force_delete=yes)
+        return
 
     confirm = None
     if not yes:
@@ -351,6 +349,15 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
         )
 
     if yes or confirm:
+        server = get_active_deployment(local=True)
+
+        if server:
+            from zenml.zen_server.deploy.deployer import ServerDeployer
+
+            deployer = ServerDeployer()
+            deployer.remove_server(server.config.name)
+            cli_utils.declare("The local ZenML dashboard has been shut down.")
+
         # delete the .zen folder
         local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
         if fileio.exists(str(local_zen_repo_config)):
