@@ -130,7 +130,9 @@ services:
             The container for the MariaDB server if it exists, None otherwise.
         """
         try:
-            return self.docker_client.containers.get(self.mariadb_container_name)
+            return self.docker_client.containers.get(
+                self.mariadb_container_name
+            )
         except docker_errors.NotFound:
             return None
 
