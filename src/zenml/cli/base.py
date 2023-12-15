@@ -626,21 +626,30 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
         )
         return
 
-    engine = create_engine(store_config.url)
-    conn = engine.connect()
-    context = MigrationContext.configure(conn)
-    current_rev = context.get_current_revision()
-    head = context.get_current_heads()[0]
+    # replace the start of the url from mysql:// to mysql+pymysql://
+    url = store_config.url
+    if url.startswith("mysql://"):
+        url = "mysql+pymysql://" + url[8:]
 
-    if current_rev != head:
-        cli_utils.declare("Database migration needed. Performing a DB dump.")
-        mysql_dump_to_s3(store_config.url)
+    try:
+        engine = create_engine(url)
+        conn = engine.connect()
+        context = MigrationContext.configure(conn)
+        current_rev = context.get_current_revision()
+        head = context.get_current_heads()[0]
+
+        if current_rev != head:
+            logger.debug("Database migration needed. Performing a DB dump.")
+            mysql_dump_to_s3(store_config.url)
+    except Exception as e:
+        # the first time a deployment is done and the DB doesn't exist yet.
+        logger.debug(f"Database doesn't exist yet. Skipping backup.\n Error: {e}")
 
     try:
         BaseZenStore.create_store(
             store_config, skip_default_registrations=skip_default_registrations
         )
-        cli_utils.declare("Database migration finished.")
+        logger.debug("Database migration successful.")
     except Exception as e:
         mysql_restore_from_s3(store_config.url)
         cli_utils.error(f"Database migration failed with error: {e}")
@@ -652,6 +661,7 @@ def mysql_dump_to_s3(url: str) -> None:
     Args:
         url: The url of the database to dump
     """
+    import pymysql
     # get the database password, host without port and username from the URL
     # URL of form mysql://<username>:<password>@<host>:<port>/<database>
     db_password = url.split(":")[2].split("@")[0]
@@ -659,17 +669,19 @@ def mysql_dump_to_s3(url: str) -> None:
     db_name = url.split("/")[3]
     db_user = url.split(":")[1].split("//")[1]
 
+    connection = pymysql.connect(
+        host=db_host,
+        user=db_user,
+        password=db_password,
+    )
+
     # check if the database exists
     # if it does not exist, return
-    output = subprocess.check_output(
-        [
-            f"mysql -h {db_host} -u {db_user} -p{db_password} -e 'SHOW DATABASES LIKE \"{db_name}\"'"
-        ],
-        shell=True,
-    )
-    if output == b"":
-        logger.debug("Database does not exist. No backup created.")
-        return
+    with connection.cursor() as cursor:
+        result = cursor.execute(f"SHOW DATABASES LIKE \"{db_name}\"")
+        if result == 0:
+            logger.debug("Database does not exist. No backup created.")
+            return
 
     backups_directory = "/backups"
     # if /backups does not exist, it's a local case, store it in /backups in current directory
@@ -701,6 +713,7 @@ def mysql_restore_from_s3(
     Args:
         url: The url of the database to restore
     """
+    import pymysql
     # get the database password, host without port and username from the URL
     # URL of form mysql://<username>:<password>@<host>:<port>/<database>
     db_password = url.split(":")[2].split("@")[0]
@@ -709,24 +722,33 @@ def mysql_restore_from_s3(
     db_user = url.split(":")[1].split("//")[1]
 
     backups_directory = "/backups"
-    # if /backups does not exist, it's a local case, store it in /backups in current directory
+    # if /backups does not exist, it's a local case, restore from backups in current directory
     if not os.path.exists(backups_directory):
         backups_directory = "backups"
 
-    # first drop the database if it exists
-    os.system(
-        f"mysql -h {db_host} -u {db_user} -p{db_password} -e 'DROP DATABASE IF EXISTS {db_name}'"
+    # if a backup file does not exist, return
+    if not os.path.exists(f"{backups_directory}/{db_name}.sql"):
+        logger.debug("No backup found. No restore performed.")
+        return
+
+    connection = pymysql.connect(
+        host=db_host,
+        user=db_user,
+        password=db_password,
     )
+
+    # drop the database if it exists
+    with connection.cursor() as cursor:
+        cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
 
     # then create the database
-    os.system(
-        f"mysql -h {db_host} -u {db_user} -p{db_password} -e 'CREATE DATABASE {db_name}'"
-    )
+    with connection.cursor() as cursor:
+        cursor.execute(f"CREATE DATABASE {db_name}")
 
-    # use mysql to restore the database from the dump file
-    os.system(
-        f"mysql -h {db_host} -u {db_user} -p{db_password} {db_name} < {backups_directory}/{db_name}.sql"
-    )
+    # restore the database from the dump file
+    with connection.cursor() as cursor:
+        cursor.execute(f"USE {db_name}")
+        cursor.execute(f"SOURCE {backups_directory}/{db_name}.sql")
 
     logger.debug(f"Database restored from {backups_directory}/{db_name}.sql")
 
