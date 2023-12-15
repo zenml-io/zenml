@@ -357,17 +357,6 @@ class StepLauncher:
                 f"Caching {'`enabled`' if step_cache else '`disabled`'} "
                 f"explicitly for `{self._step_name}`."
             )
-        else:
-            if self._step.config.experiment_tracker and cache_enabled:
-                cache_enabled = False
-                logger.warning(
-                    "Using an experiment tracker in a step "
-                    "disables step caching by default. If you "
-                    "would like to enable step caching for "
-                    f"`{self._step_name}`, please set "
-                    "`enable_cache: true` in the step "
-                    "configuration explicitly."
-                )
 
         execution_needed = True
         if cache_enabled:
