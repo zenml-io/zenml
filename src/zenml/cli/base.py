@@ -638,6 +638,9 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
         current_rev = context.get_current_revision()
         head = context.get_current_heads()[0]
 
+        logger.debug(f"Current revision: {current_rev}")
+        logger.debug(f"Head revision: {head}")
+
         if current_rev != head:
             logger.debug("Database migration needed. Performing a DB dump.")
             mysql_dump_to_s3(store_config.url)
