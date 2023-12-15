@@ -25,12 +25,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, root_validator
 
-from zenml.enums import ModelStages
+from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml import ExternalArtifact
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.models import (
         ArtifactVersionResponse,
         ModelResponse,
@@ -306,6 +307,46 @@ class ModelVersion(BaseModel):
         """
         self._get_or_create_model_version().set_stage(stage=stage, force=force)
 
+    def log_metadata(
+        self,
+        metadata: Dict[str, "MetadataType"],
+    ) -> None:
+        """Log model version metadata.
+
+        This function can be used to log metadata for current model version.
+
+        Args:
+            metadata: The metadata to log.
+        """
+        from zenml.client import Client
+
+        response = self._get_or_create_model_version()
+        Client().create_run_metadata(
+            metadata=metadata,
+            resource_id=response.id,
+            resource_type=MetadataResourceTypes.MODEL_VERSION,
+        )
+
+    @property
+    def metadata(self) -> Dict[str, "MetadataType"]:
+        """Get model version metadata.
+
+        Returns:
+            The model version metadata.
+
+        Raises:
+            RuntimeError: If the model version metadata cannot be fetched.
+        """
+        response = self._get_or_create_model_version(hydrate=True)
+        if response.run_metadata is None:
+            raise RuntimeError(
+                "Failed to fetch metadata of this model version."
+            )
+        return {
+            name: response.value
+            for name, response in response.run_metadata.items()
+        }
+
     #########################
     #   Internal methods    #
     #########################
@@ -431,7 +472,9 @@ class ModelVersion(BaseModel):
 
         return mv
 
-    def _get_or_create_model_version(self) -> "ModelVersionResponse":
+    def _get_or_create_model_version(
+        self, hydrate: bool = False
+    ) -> "ModelVersionResponse":
         """This method should get or create a model and a model version from Model Control Plane.
 
         A new model is created implicitly if missing, otherwise existing model is fetched. Model
@@ -443,6 +486,9 @@ class ModelVersion(BaseModel):
             - If `version` is set to an integer or digit string, the model version with the matching number will be fetched.
             - If `version` is set to a string, the model version with the matching version will be fetched.
             - If `version` is set to a `ModelStage`, the model version with the matching stage will be fetched.
+
+        Args:
+            hydrate: Whether to return a hydrated version of the model version.
 
         Returns:
             The model version based on configuration.
