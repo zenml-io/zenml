@@ -1831,8 +1831,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_repo = session.exec(
-                select(CodeRepositorySchema)
-                .where(CodeRepositorySchema.name == code_repository.name)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.name == code_repository.name
+                )
             ).first()
             if existing_repo is not None:
                 raise EntityExistsError(
@@ -4131,8 +4132,9 @@ class SqlZenStore(BaseZenStore):
         # Check if service connector with the same domain key (name, workspace)
         # already exists
         existing_domain_connector = session.exec(
-            select(ServiceConnectorSchema)
-            .where(ServiceConnectorSchema.name == name)
+            select(ServiceConnectorSchema).where(
+                ServiceConnectorSchema.name == name
+            )
         ).first()
         if existing_domain_connector is not None:
             raise EntityExistsError(
@@ -4778,8 +4780,7 @@ class SqlZenStore(BaseZenStore):
             StackExistsError: If a stack with the given name already exists.
         """
         existing_domain_stack = session.exec(
-            select(StackSchema)
-            .where(StackSchema.name == stack.name)
+            select(StackSchema).where(StackSchema.name == stack.name)
         ).first()
         if existing_domain_stack is not None:
             workspace = self._get_workspace_schema(
