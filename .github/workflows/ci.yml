@@ -80,11 +80,10 @@ jobs:
     secrets: inherit
   
   update-templates-to-examples:
-    needs: custom-ubuntu-runners-setup-and-test-python
     uses: ./.github/workflows/update-templates-to-examples.yml
     with:
       python-version: "3.8"
-      os: ubuntu-dind-runners
+      os: ubuntu-latest
     secrets: inherit
 
 

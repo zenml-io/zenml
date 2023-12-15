@@ -337,3 +337,4 @@ class MetadataResourceTypes(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     STEP_RUN = "step_run"
     ARTIFACT_VERSION = "artifact_version"
+    MODEL_VERSION = "model_version"
