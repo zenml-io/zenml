@@ -415,7 +415,7 @@ PipelineRunResponseBody.update_forward_refs(
     StackResponse=StackResponse,
     PipelineBuildResponse=PipelineBuildResponse,
     ScheduleResponse=ScheduleResponse,
-    CodeRepositoryResponse=CodeRepositoryResponse,
+    CodeReferenceResponse=CodeReferenceResponse,
 )
 PipelineRunResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
