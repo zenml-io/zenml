@@ -19,8 +19,8 @@ from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model_version import ModelVersion
-from zenml.models import TagRequest
 from zenml.model.utils import log_model_version_metadata
+from zenml.models import TagRequest
 
 MODEL_NAME = "super_model"
 
