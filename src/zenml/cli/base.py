@@ -28,7 +28,6 @@ from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import email_opt_int, track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.cli.server import down
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -37,7 +36,6 @@ from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     REPOSITORY_DIRECTORY_NAME,
 )
-from zenml.zen_server.utils import get_active_deployment
 from zenml.enums import AnalyticsEventSource, StoreType
 from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
@@ -46,6 +44,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 from zenml.utils.yaml_utils import write_yaml
+from zenml.zen_server.utils import get_active_deployment
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
