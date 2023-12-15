@@ -358,7 +358,7 @@ class StepLauncher:
                 f"explicitly for `{self._step_name}`."
             )
         else:
-            if self._step.config.experiment_tracker:
+            if self._step.config.experiment_tracker and cache_enabled:
                 cache_enabled = False
                 logger.warning(
                     "Using an experiment tracker in a step "
