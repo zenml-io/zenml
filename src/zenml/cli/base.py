@@ -88,7 +88,9 @@ ZENML_PROJECT_TEMPLATES = dict(
 @cli.command("init", help="Initialize a ZenML repository.")
 @click.option(
     "--path",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    type=click.Path(
+        exists=True, file_okay=False, dir_okay=True, path_type=Path
+    ),
 )
 @click.option(
     "--template",
@@ -337,7 +339,9 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
         local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
         if fileio.exists(str(local_zen_repo_config)):
             fileio.rmtree(str(local_zen_repo_config))
-            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
+            declare(
+                f"Deleted local ZenML config from {local_zen_repo_config}."
+            )
 
         # delete the zen store and all other files and directories used by ZenML
         # to persist information locally (e.g. artifacts)
@@ -347,7 +351,8 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
             for dir_name in fileio.listdir(str(global_zen_config)):
                 if fileio.isdir(str(global_zen_config / str(dir_name))):
                     warning(
-                        f"Deleting '{str(dir_name)}' directory from global " f"config."
+                        f"Deleting '{str(dir_name)}' directory from global "
+                        f"config."
                     )
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
@@ -421,11 +426,14 @@ def go() -> None:
                         tmp_cloned_dir,
                         branch=f"release/{zenml_version}",
                     )
-                example_dir = os.path.join(tmp_cloned_dir, "examples/quickstart")
+                example_dir = os.path.join(
+                    tmp_cloned_dir, "examples/quickstart"
+                )
                 copy_dir(example_dir, zenml_tutorial_path)
         else:
             cli_utils.warning(
-                f"{zenml_tutorial_path} already exists! Continuing without " "cloning."
+                f"{zenml_tutorial_path} already exists! Continuing without "
+                "cloning."
             )
 
         # get list of all .ipynb files in zenml_tutorial_path
@@ -436,7 +444,9 @@ def go() -> None:
                     ipynb_files.append(os.path.join(dirpath, filename))
 
         ipynb_files.sort()
-        console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
+        console.print(
+            zenml_go_notebook_tutorial_message(ipynb_files), width=80
+        )
         input("Press ENTER to continue...")
     notebook_path = os.path.join(zenml_tutorial_path, "notebooks")
     subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
@@ -493,7 +503,9 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     return False
 
 
-@cli.command("info", help="Show information about the current user setup.", hidden=True)
+@cli.command(
+    "info", help="Show information about the current user setup.", hidden=True
+)
 @click.option(
     "--all",
     "-a",
@@ -575,7 +587,9 @@ def info(
         if user_info.get("packages"):
             if isinstance(user_info["packages"], dict):
                 user_info["query_packages"] = {
-                    p: v for p, v in user_info["packages"].items() if p in packages
+                    p: v
+                    for p, v in user_info["packages"].items()
+                    if p in packages
                 }
         else:
             user_info["query_packages"] = cli_utils.get_package_information(
@@ -592,7 +606,9 @@ def info(
         cli_utils.print_debug_stack()
 
 
-@cli.command("migrate-database", help="Migrate the ZenML database.", hidden=True)
+@cli.command(
+    "migrate-database", help="Migrate the ZenML database.", hidden=True
+)
 @click.option(
     "--skip_default_registrations",
     is_flag=True,
@@ -610,7 +626,8 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
     store_config = (
-        GlobalConfiguration().store or GlobalConfiguration().get_default_store()
+        GlobalConfiguration().store
+        or GlobalConfiguration().get_default_store()
     )
 
     # check if migration is needed by comparing the DB head with current
@@ -646,7 +663,9 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
             mysql_dump_to_s3(store_config.url)
     except Exception as e:
         # the first time a deployment is done and the DB doesn't exist yet.
-        logger.debug(f"Database doesn't exist yet. Skipping backup.\n Error: {e}")
+        logger.debug(
+            f"Database doesn't exist yet. Skipping backup.\n Error: {e}"
+        )
 
     try:
         BaseZenStore.create_store(
@@ -665,6 +684,7 @@ def mysql_dump_to_s3(url: str) -> None:
         url: The url of the database to dump
     """
     import pymysql
+
     # get the database password, host without port and username from the URL
     # URL of form mysql://<username>:<password>@<host>:<port>/<database>
     db_password = url.split(":")[2].split("@")[0]
@@ -681,7 +701,7 @@ def mysql_dump_to_s3(url: str) -> None:
     # check if the database exists
     # if it does not exist, return
     with connection.cursor() as cursor:
-        result = cursor.execute(f"SHOW DATABASES LIKE \"{db_name}\"")
+        result = cursor.execute(f'SHOW DATABASES LIKE "{db_name}"')
         if result == 0:
             logger.debug("Database does not exist. No backup created.")
             return
@@ -717,6 +737,7 @@ def mysql_restore_from_s3(
         url: The url of the database to restore
     """
     import pymysql
+
     # get the database password, host without port and username from the URL
     # URL of form mysql://<username>:<password>@<host>:<port>/<database>
     db_password = url.split(":")[2].split("@")[0]
