@@ -4676,6 +4676,14 @@ class TestRunMetadata:
                     ),
                 )
             )
+        elif type_ == MetadataResourceTypes.MODEL_VERSION:
+            from zenml import ModelVersion
+
+            model_name = sample_name("foo")
+            resource = ModelVersion(
+                name=model_name
+            )._get_or_create_model_version()
+
         elif (
             type_ == MetadataResourceTypes.PIPELINE_RUN
             or type_ == MetadataResourceTypes.STEP_RUN
@@ -4754,6 +4762,8 @@ class TestRunMetadata:
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             client.zen_store.delete_artifact_version(resource.id)
             client.zen_store.delete_artifact(artifact.id)
+        elif type_ == MetadataResourceTypes.MODEL_VERSION:
+            client.zen_store.delete_model(resource.model.id)
         elif (
             type_ == MetadataResourceTypes.PIPELINE_RUN
             or type_ == MetadataResourceTypes.STEP_RUN

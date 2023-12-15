@@ -15,10 +15,12 @@ from unittest import mock
 
 import pytest
 
+from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model_version import ModelVersion
 from zenml.models import TagRequest
+from zenml.model.utils import log_model_version_metadata
 
 MODEL_NAME = "super_model"
 
@@ -56,6 +58,13 @@ class ModelContext:
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         pass
+
+
+@step
+def step_metadata_logging_functional():
+    """Functional logging using implicit ModelVersion from context."""
+    log_model_version_metadata({"foo": "bar"})
+    assert get_step_context().model_version.metadata["foo"] == "bar"
 
 
 class TestModelVersion:
@@ -259,3 +268,64 @@ class TestModelVersion:
         model_version = mv._get_or_create_model_version()
         assert len(model_version.tags) == 2
         assert {t.name for t in model_version.tags} == {"foo", "bar"}
+
+    def test_metadata_logging(self, clean_client: "Client"):
+        """Test that model version can be used to track metadata from object."""
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            description="foo",
+        )
+        mv.log_metadata({"foo": "bar"})
+
+        assert len(mv.metadata) == 1
+        assert mv.metadata["foo"] == "bar"
+
+        mv.log_metadata({"bar": "foo"})
+
+        assert len(mv.metadata) == 2
+        assert mv.metadata["foo"] == "bar"
+        assert mv.metadata["bar"] == "foo"
+
+    def test_metadata_logging_functional(self, clean_client: "Client"):
+        """Test that model version can be used to track metadata from function."""
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            description="foo",
+        )
+        mv._get_or_create_model_version()
+
+        log_model_version_metadata(
+            {"foo": "bar"}, model_name=mv.name, model_version=mv.number
+        )
+
+        assert len(mv.metadata) == 1
+        assert mv.metadata["foo"] == "bar"
+
+        with pytest.raises(ValueError):
+            log_model_version_metadata({"foo": "bar"})
+
+        log_model_version_metadata(
+            {"bar": "foo"}, model_name=mv.name, model_version="latest"
+        )
+
+        assert len(mv.metadata) == 2
+        assert mv.metadata["foo"] == "bar"
+        assert mv.metadata["bar"] == "foo"
+
+    def test_metadata_logging_in_steps(self, clean_client: "Client"):
+        """Test that model version can be used to track metadata from function in steps."""
+
+        @pipeline(
+            model_version=ModelVersion(
+                name=MODEL_NAME,
+            ),
+            enable_cache=False,
+        )
+        def my_pipeline():
+            step_metadata_logging_functional()
+
+        my_pipeline()
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert len(mv.metadata) == 1
+        assert mv.metadata["foo"] == "bar"

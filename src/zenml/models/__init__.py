@@ -355,9 +355,11 @@ ModelResponseMetadata.update_forward_refs(
 ModelVersionResponseBody.update_forward_refs(
     UserResponse=UserResponse,
     ModelResponse=ModelResponse,
+    RunMetadataResponse=RunMetadataResponse,
 )
 ModelVersionResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
+    RunMetadataResponse=RunMetadataResponse,
 )
 ModelVersionArtifactResponseBody.update_forward_refs(
     ArtifactVersionResponse=ArtifactVersionResponse,
