@@ -28,7 +28,6 @@ from typing import (
     Optional,
     Type,
     Union,
-    cast,
 )
 
 from zenml.config.source import (
@@ -507,7 +506,7 @@ def _get_package_for_module(module_name: str) -> Optional[str]:
     Returns:
         The package name or None if no package was found.
     """
-        from importlib.metadata import packages_distributions
+    from importlib.metadata import packages_distributions
 
     top_level_module = module_name.split(".", maxsplit=1)[0]
     package_names = packages_distributions().get(top_level_module, [])
@@ -528,7 +527,7 @@ def _get_package_version(package_name: str) -> Optional[str]:
     Returns:
         The package version or None if fetching the version failed.
     """
-        from importlib.metadata import PackageNotFoundError, version
+    from importlib.metadata import PackageNotFoundError, version
 
     try:
         return version(distribution_name=package_name)
