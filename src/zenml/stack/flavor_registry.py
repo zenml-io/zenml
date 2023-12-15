@@ -128,9 +128,7 @@ class FlavorRegistry:
                     flavor_dict.pop("workspace")
                     flavor_dict.pop("user")
 
-                    flavor_update_model = FlavorUpdate.parse_obj(
-                        flavor_request_model
-                    )
+                    flavor_update_model = FlavorUpdate.parse_obj(flavor_dict)
                     store.update_flavor(
                         existing_flavor[0].id, flavor_update_model
                     )
