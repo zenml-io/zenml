@@ -67,7 +67,7 @@ Examples:
 @click.option(
     "--no-cache",
     is_flag=True,
-    default=False,
+    default=True,
     help="Disable caching for the pipeline run.",
 )
 @click.option(
