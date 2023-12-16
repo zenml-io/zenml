@@ -1352,6 +1352,14 @@ class TestModelVersion:
         assert model_version.number == 4
         assert model_version.description == "some desc"
 
+        model_version = client_with_model.create_model_version(
+            self.MODEL_NAME, tags=["a", "b"]
+        )
+
+        assert model_version.name == "5"
+        assert model_version.number == 5
+        assert {t.name for t in model_version.tags} == {"a", "b"}
+
     def test_create_model_version_duplicate_fails(
         self, client_with_model: "Client"
     ):

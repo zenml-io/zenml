@@ -60,6 +60,8 @@ def _model_version_to_print(
         "number": model_version.number,
         "description": model_version.description,
         "stage": model_version.stage,
+        "metadata": model_version.to_model_version().metadata,
+        "tags": [t.name for t in model_version.tags],
         "data_artifacts_count": len(model_version.data_artifact_ids),
         "model_artifacts_count": len(model_version.model_artifact_ids),
         "endpoint_artifacts_count": len(model_version.endpoint_artifact_ids),
@@ -391,6 +393,22 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     help="The stage of the model version.",
 )
 @click.option(
+    "--tag",
+    "-t",
+    help="Tags to be added to the model.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
+    "--remove-tag",
+    "-r",
+    help="Tags to be removed from the model.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
     "--force",
     "-f",
     is_flag=True,
@@ -400,6 +418,8 @@ def update_model_version(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
     stage: str,
+    tag: Optional[List[str]],
+    remove_tag: Optional[List[str]],
     force: bool = False,
 ) -> None:
     """Update an existing model version stage in the Model Control Plane.
@@ -408,6 +428,8 @@ def update_model_version(
         model_name_or_id: The ID or name of the model containing version.
         model_version_name_or_number_or_id: The ID, number or name of the model version.
         stage: The stage of the model version to be set.
+        tag: Tags to be added to the model version.
+        remove_tag: Tags to be removed from the model version.
         force: Whether existing model version in target stage should be silently archived.
     """
     model_version = Client().get_model_version(
@@ -415,10 +437,12 @@ def update_model_version(
         model_version_name_or_number_or_id=model_version_name_or_number_or_id,
     )
     try:
-        Client().update_model_version(
+        model_version = Client().update_model_version(
             model_name_or_id=model_name_or_id,
             version_name_or_id=model_version.id,
             stage=stage,
+            add_tags=tag,
+            remove_tags=remove_tag,
             force=force,
         )
     except RuntimeError:
@@ -435,15 +459,15 @@ def update_model_version(
             if not confirmation:
                 cli_utils.declare("Model version stage update canceled.")
                 return
-            Client().update_model_version(
+            model_version = Client().update_model_version(
                 model_name_or_id=model_version.model.id,
                 version_name_or_id=model_version.id,
                 stage=stage,
+                add_tags=tag,
+                remove_tags=remove_tag,
                 force=True,
             )
-    cli_utils.declare(
-        f"Model version '{model_version.name}' stage updated to '{stage}'."
-    )
+    cli_utils.print_table([_model_version_to_print(model_version)])
 
 
 @version.command("delete", help="Delete an existing model version.")
