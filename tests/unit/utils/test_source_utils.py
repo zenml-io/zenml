@@ -14,13 +14,17 @@
 
 import pathlib
 import sys
+from collections import defaultdict
 from contextlib import ExitStack as does_not_raise
 from uuid import uuid4
 
 import pytest
 
+from tests.unit.pipelines.test_build_utils import (
+    StubLocalRepositoryContext,
+)
 from zenml.config.source import CodeRepositorySource, Source, SourceType
-from zenml.utils import source_utils
+from zenml.utils import code_repository_utils, source_utils
 
 CURRENT_MODULE_PARENT_DIR = str(pathlib.Path(__file__).resolve().parent)
 
@@ -98,6 +102,88 @@ def test_user_source_loading_prepends_source_root(mocker, tmp_path):
     assert source_utils.load(correct_code_repo_source) == 1
 
 
+def test_basic_source_resolving(mocker):
+    """Tests basic source resolving."""
+    assert source_utils.resolve(int) == Source(
+        module=int.__module__, attribute=int.__name__, type=SourceType.BUILTIN
+    )
+    assert source_utils.resolve(defaultdict) == Source(
+        module=defaultdict.__module__,
+        attribute=defaultdict.__name__,
+        type=SourceType.BUILTIN,
+    )
+    assert source_utils.resolve(source_utils) == Source(
+        module=source_utils.__name__,
+        attribute=None,
+        type=SourceType.INTERNAL,
+    )
+    assert source_utils.resolve(pytest) == Source(
+        module=pytest.__name__,
+        attribute=None,
+        package_name="pytest",
+        version=pytest.__version__,
+        type=SourceType.DISTRIBUTION_PACKAGE,
+    )
+
+    # User sources
+    mocker.patch.object(
+        source_utils,
+        "get_source_root",
+        return_value=CURRENT_MODULE_PARENT_DIR,
+    )
+
+    expected_module_name = __name__.split(".")[-1]
+
+    current_module = sys.modules[__name__]
+    assert source_utils.resolve(current_module) == Source(
+        module=expected_module_name, attribute=None, type=SourceType.USER
+    )
+    assert source_utils.resolve(EmptyClass) == Source(
+        module=expected_module_name,
+        attribute=EmptyClass.__name__,
+        type=SourceType.USER,
+    )
+    assert source_utils.resolve(empty_function) == Source(
+        module=expected_module_name,
+        attribute=empty_function.__name__,
+        type=SourceType.USER,
+    )
+
+    # Code repo sources
+    clean_local_context = StubLocalRepositoryContext(
+        root=CURRENT_MODULE_PARENT_DIR, commit="commit"
+    )
+    mocker.patch.object(
+        code_repository_utils,
+        "find_active_code_repository",
+        return_value=clean_local_context,
+    )
+
+    assert source_utils.resolve(empty_function) == CodeRepositorySource(
+        module=expected_module_name,
+        attribute=empty_function.__name__,
+        type=SourceType.CODE_REPOSITORY,
+        repository_id=clean_local_context.code_repository_id,
+        commit=clean_local_context.current_commit,
+        subdirectory=".",
+    )
+
+    dirty_local_context = StubLocalRepositoryContext(
+        root=CURRENT_MODULE_PARENT_DIR, commit="commit", has_local_changes=True
+    )
+    mocker.patch.object(
+        code_repository_utils,
+        "find_active_code_repository",
+        return_value=dirty_local_context,
+    )
+
+    assert source_utils.resolve(empty_function) == Source(
+        module=expected_module_name,
+        attribute=empty_function.__name__,
+        type=SourceType.USER,
+    )
+
+
 def test_source_resolving_fails_for_non_toplevel_classes_and_functions(mocker):
     """Tests that source resolving fails for classes and functions that are
     not defined at the module top level."""
@@ -115,6 +201,42 @@ def test_source_resolving_fails_for_non_toplevel_classes_and_functions(mocker):
 
     with pytest.raises(RuntimeError):
         source_utils.resolve(inline_function)
+
+
+def test_module_type_detection(mocker):
+    """Tests detecting the correct source type for a module/file."""
+    builtin_module = sys.modules[int.__module__]
+    assert source_utils.get_source_type(builtin_module) == SourceType.BUILTIN
+
+    standard_lib_module = sys.modules[defaultdict.__module__]
+    assert (
+        source_utils.get_source_type(standard_lib_module) == SourceType.BUILTIN
+    )
+    assert source_utils.is_standard_lib_file(standard_lib_module.__file__)
+
+    internal_module = sys.modules[source_utils.__name__]
+    assert source_utils.get_source_type(internal_module) == SourceType.INTERNAL
+    assert source_utils.is_internal_module(internal_module.__name__)
+
+    distribution_package_module = sys.modules[pytest.__name__]
+    assert (
+        source_utils.get_source_type(distribution_package_module)
+        == SourceType.DISTRIBUTION_PACKAGE
+    )
+    assert source_utils.is_distribution_package_file(
+        distribution_package_module.__file__,
+        module_name=distribution_package_module.__name__,
+    )
+
+    mocker.patch.object(
+        source_utils,
+        "get_source_root",
+        return_value=CURRENT_MODULE_PARENT_DIR,
+    )
+
+    user_module = sys.modules[EmptyClass.__module__]
+    assert source_utils.get_source_type(user_module) == SourceType.USER
+    assert source_utils.is_user_file(user_module.__file__)
 
 
 def test_prepend_python_path():
