@@ -180,13 +180,15 @@ jobs:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
+          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
+          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
 
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: pip install docker-compose
 
       - name: Install Linux System Dependencies
-        if: runner.os=='Linux'
+        if: inputs.os=='ubuntu-latest'
         run: sudo apt install graphviz
 
       - name: Install MacOS System Dependencies
@@ -217,7 +219,7 @@ jobs:
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: runner.os=='Linux'
+        if: inputs.os=='ubuntu-latest'
 
       - name: Install kubectl on MacOS
         run: |

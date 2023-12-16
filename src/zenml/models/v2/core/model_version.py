@@ -36,6 +36,9 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+    from zenml.models.v2.core.run_metadata import (
+        RunMetadataResponse,
+    )
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -147,6 +150,10 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
         description="Pipeline runs linked to the model version",
         default={},
     )
+    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+        description="Metadata linked to the model version",
+        default={},
+    )
     tags: List[TagResponseModel] = Field(
         title="Tags associated with the model version", default=[]
     )
@@ -165,6 +172,10 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
         description="The description of the model version",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
+    )
+    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+        default={},
+        title="Metadata associated with this pipeline run.",
     )
 
 
@@ -279,6 +290,15 @@ class ModelVersionResponse(
             the value of the property.
         """
         return self.get_metadata().description
+
+    @property
+    def run_metadata(self) -> Optional[Dict[str, "RunMetadataResponse"]]:
+        """The `run_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().run_metadata
 
     def get_hydrated_version(self) -> "ModelVersionResponse":
         """Get the hydrated version of this model version.

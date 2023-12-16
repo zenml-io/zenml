@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import click
+from packaging import version
 from pydantic import BaseModel
 
 from zenml import __version__ as zenml_version
@@ -27,7 +28,6 @@ from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import email_opt_int, track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.cli.server import down
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -44,6 +44,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 from zenml.utils.yaml_utils import write_yaml
+from zenml.zen_server.utils import get_active_deployment
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -96,15 +97,17 @@ ZENML_PROJECT_TEMPLATES = dict(
     "--template",
     type=str,
     required=False,
-    help="Name or URL of the ZenML project template to use to initialize the repository, "
-    "Can be a string like `e2e_batch`, `nlp`, `starter` etc. or a copier URL like "
-    "gh:owner/repo_name. If not specified, no template is used.",
+    help="Name or URL of the ZenML project template to use to initialize the "
+    "repository, Can be a string like `e2e_batch`, `nlp`, `starter` etc. or a "
+    "copier URL like gh:owner/repo_name. If not specified, no template is "
+    "used.",
 )
 @click.option(
     "--template-tag",
     type=str,
     required=False,
-    help="Optional tag of the ZenML project template to use to initialize the repository.",
+    help="Optional tag of the ZenML project template to use to initialize the "
+    "repository.",
 )
 @click.option(
     "--template-with-defaults",
@@ -131,11 +134,13 @@ def init(
 
     Args:
         path: Path to the repository.
-        template: Optional name or URL of the ZenML project template to use to initialize
-            the repository. Can be a string like `e2e_batch`, `nlp`, `starter` or a copier URL like
-            `gh:owner/repo_name`. If not specified, no template is used.
-        template_tag: Optional tag of the ZenML project template to use to initialize the repository/
-            If template is a pre-defined template, then this is ignored.
+        template: Optional name or URL of the ZenML project template to use to
+            initialize the repository. Can be a string like `e2e_batch`,
+            `nlp`, `starter` or a copier URL like `gh:owner/repo_name`. If
+            not specified, no template is used.
+        template_tag: Optional tag of the ZenML project template to use to
+            initialize the repository. If template is a pre-defined template,
+            then this is ignored.
         template_with_defaults: Whether to use default parameters of
             the ZenML project template
         test: Whether to skip interactivity when testing.
@@ -211,7 +216,8 @@ def init(
                 )
                 declare(
                     f"No known templates specified. Using `{template}` as URL."
-                    "If this is not a valid copier template URL, this will fail."
+                    "If this is not a valid copier template URL, this will "
+                    "fail."
                 )
 
                 src_path = template
@@ -306,22 +312,29 @@ def _delete_local_files(force_delete: bool = False) -> None:
     default=False,
     help="Delete local files relating to the active stack.",
 )
-@click.pass_context
-def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
+def clean(yes: bool = False, local: bool = False) -> None:
     """Delete all ZenML metadata, artifacts and stacks.
 
     This is a destructive operation, primarily intended for use in development.
 
     Args:
-        ctx: The click context.
         yes: If you don't want a confirmation prompt.
         local: If you want to delete local files associated with the active
             stack.
     """
-    ctx.invoke(
-        down,
-    )
     if local:
+        curr_version = version.parse(zenml_version)
+
+        global_version = GlobalConfiguration().version
+        if global_version is not None:
+            config_version = version.parse(global_version)
+
+            if config_version > curr_version:
+                error(
+                    "Due to this version mismatch, ZenML can not detect and "
+                    "shut down any running dashboards or clean any resources "
+                    "related to the active stack."
+                )
         _delete_local_files(force_delete=yes)
         return
 
@@ -335,6 +348,15 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
         )
 
     if yes or confirm:
+        server = get_active_deployment(local=True)
+
+        if server:
+            from zenml.zen_server.deploy.deployer import ServerDeployer
+
+            deployer = ServerDeployer()
+            deployer.remove_server(server.config.name)
+            cli_utils.declare("The local ZenML dashboard has been shut down.")
+
         # delete the .zen folder
         local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
         if fileio.exists(str(local_zen_repo_config)):
@@ -359,7 +381,7 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
             fresh_gc = GlobalConfiguration(
                 user_id=gc.user_id,
                 analytics_opt_in=gc.analytics_opt_in,
-                version=gc.version,
+                version=zenml_version,
             )
             fresh_gc.set_default_store()
             declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
