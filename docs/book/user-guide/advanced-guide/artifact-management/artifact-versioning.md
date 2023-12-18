@@ -139,7 +139,7 @@ how artifacts are linked to models:
 - `model_name`: The name of the model to link the artifact to.
 - `model_version`: The version of the model to link the artifact to.
 - `is_model_artifact`: Whether the artifact is a model artifact.
-- `is_deployment_artifact`: Whether the artifact is an deployment artifact.
+- `is_deployment_artifact`: Whether the artifact is a deployment artifact.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

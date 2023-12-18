@@ -57,7 +57,7 @@ class ArtifactConfig(BaseModel):
             (42), stage (ModelStages.PRODUCTION or "production"), or
             (ModelStages.LATEST or None) for the latest version (default).
         is_model_artifact: Whether the artifact is a model artifact.
-        is_deployment_artifact: Whether the artifact is an deployment artifact.
+        is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
 
     name: Optional[str] = None
