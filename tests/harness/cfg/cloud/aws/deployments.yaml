@@ -1,6 +1,6 @@
 deployments:
   - name: aws-us-east-1-server
-    type: server
+    type: external
     setup: external
     config:
       url: "{{AWS_US_EAST_1_SERVER_URL}}"

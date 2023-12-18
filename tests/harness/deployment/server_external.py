@@ -74,5 +74,5 @@ class ExternalServerTestDeployment(BaseTestDeployment):
 
 
 ExternalServerTestDeployment.register_deployment_class(
-    type=ServerType.DOCKER, setup=DatabaseType.EXTERNAL
+    type=ServerType.EXTERNAL, setup=DatabaseType.EXTERNAL
 )

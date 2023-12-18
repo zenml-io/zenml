@@ -14,24 +14,27 @@
 """ZenML test framework deployments."""
 
 from tests.harness.deployment.base import BaseTestDeployment
-from tests.harness.deployment.local_default import LocalDefaultTestDeployment
+from tests.harness.deployment.local_sqlite import LocalSqliteTestDeployment
 from tests.harness.deployment.local_docker_mysql import LocalDockerMysqlTestDeployment
 from tests.harness.deployment.local_docker_mariadb import LocalDockerMariadbTestDeployment
-from tests.harness.deployment.server_docker import ServerDockerTestDeployment
+from tests.harness.deployment.server_docker_sqlite import ServerDockerTestDeployment
 from tests.harness.deployment.server_docker_compose_mysql import (
     ServerDockerComposeMysqlTestDeployment,
+)
+from tests.harness.deployment.server_docker_compose_mariadb import (
+    ServerDockerComposeMariadbTestDeployment,
 )
 from tests.harness.deployment.server_external import (
     ExternalServerTestDeployment,
 )
-from tests.harness.deployment.server_local import ServerLocalTestDeployment
+from tests.harness.deployment.server_sqlite import ServerSqliteTestDeployment
 
 __all__ = [
     "BaseTestDeployment",
-    "LocalDefaultTestDeployment",
+    "LocalSqliteTestDeployment",
     "LocalDockerMysqlTestDeployment",
     "LocalDockerMariadbTestDeployment",
-    "ServerLocalTestDeployment",
+    "ServerSqliteTestDeployment",
     "ServerDockerTestDeployment",
     "ServerDockerComposeMysqlTestDeployment",
     "ServerDockerComposeMariadbTestDeployment",

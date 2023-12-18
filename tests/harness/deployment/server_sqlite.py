@@ -21,7 +21,7 @@ from tests.harness.deployment.base import (
     LOCAL_ZENML_SERVER_DEFAULT_PORT,
     BaseTestDeployment,
 )
-from tests.harness.deployment.local_default import LocalDefaultTestDeployment
+from tests.harness.deployment.local_sqlite import LocalSqliteTestDeployment
 from tests.harness.model import (
     DeploymentConfig,
     DatabaseType,
@@ -46,7 +46,7 @@ class ServerSqliteTestDeployment(BaseTestDeployment):
 
         # The server local deployment is built on top of a local default
         # deployment because the server is provisioned through the client
-        self.default_deployment = LocalDefaultTestDeployment(config)
+        self.default_deployment = LocalSqliteTestDeployment(config)
 
     @property
     def server(self) -> Optional["ServerDeployment"]:

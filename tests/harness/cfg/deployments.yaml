@@ -98,15 +98,15 @@ deployments:
   - name: docker-compose-server-mysql
     description: >-
       Local ZenML server and MySQL running in docker with docker-compose.
-    type: docker-compose
-    setup: mariadb
+    type: dockercompose
+    setup: mysql
     capabilities:
       server: true
 
-    - name: docker-compose-server-mariadb
+  - name: docker-compose-server-mariadb
     description: >-
       Local ZenML server and MariaDB running in docker with docker-compose.
-    type: docker-compose
+    type: dockercompose
     setup: mariadb
     capabilities:
       server: true

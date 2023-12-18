@@ -1,6 +1,6 @@
 deployments:
   - name: gcp-us-east4-server
-    type: server
+    type: external
     setup: external
     config:
       url: "{{GCP_US_EAST4_SERVER_URL}}"
