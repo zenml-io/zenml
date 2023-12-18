@@ -4210,7 +4210,7 @@ class TestModelVersionArtifactLinks:
                         model_version=model_version.id,
                         artifact_version=artifact.id,
                         is_model_artifact=mo,
-                        is_endpoint_artifact=dep,
+                        is_deployment_artifact=dep,
                     )
                 )
             mvls = zs.list_model_version_artifact_links(
@@ -4238,7 +4238,7 @@ class TestModelVersionArtifactLinks:
             mvls = zs.list_model_version_artifact_links(
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id,
-                    only_endpoint_artifacts=True,
+                    only_deployment_artifacts=True,
                 ),
             )
             assert len(mvls) == 1
@@ -4249,7 +4249,7 @@ class TestModelVersionArtifactLinks:
 
             assert len(mv.model_artifact_ids) == 1
             assert len(mv.data_artifact_ids) == 2
-            assert len(mv.endpoint_artifact_ids) == 1
+            assert len(mv.deployment_artifact_ids) == 1
 
             assert isinstance(
                 mv.get_model_artifact(artifacts[1].name),
@@ -4260,7 +4260,7 @@ class TestModelVersionArtifactLinks:
                 ArtifactVersionResponse,
             )
             assert isinstance(
-                mv.get_endpoint_artifact(artifacts[2].name),
+                mv.get_deployment_artifact(artifacts[2].name),
                 ArtifactVersionResponse,
             )
             assert (
@@ -4272,7 +4272,7 @@ class TestModelVersionArtifactLinks:
                 == mv.model_artifacts[artifacts[1].name]["1"]
             )
             assert (
-                mv.get_endpoint_artifact(artifacts[2].name, "1")
+                mv.get_deployment_artifact(artifacts[2].name, "1")
                 == mv.endpoint_artifacts[artifacts[2].name]["1"]
             )
 
