@@ -31,7 +31,10 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Include latest dashboard
-        run: bash scripts/install-dashboard.sh
+        shell: bash
+        env:
+          TAG: v0.9.0
+        run: scripts/install-dashboard.sh
 
       - name: publish
         env:

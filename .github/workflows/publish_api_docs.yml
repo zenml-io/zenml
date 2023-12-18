@@ -51,4 +51,4 @@ jobs:
 
       - name: Runs docs generation
         run: |
-          bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${{ steps.get_version.outputs.VERSION }}
+          bash scripts/generate-docs.sh -s src/zenml/ --push -v ${{ steps.get_version.outputs.VERSION }}
