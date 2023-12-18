@@ -227,7 +227,7 @@ def main(
 
         # Fetch the production model
         with open(pipeline_args["config_path"], "r") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
+            config = yaml.load(f, Loader=yaml.SafeLoader)
         zenml_model = client.get_model_version(
             config["model_version"]["name"], config["model_version"]["version"]
         )
