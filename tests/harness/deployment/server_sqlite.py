@@ -23,8 +23,8 @@ from tests.harness.deployment.base import (
 )
 from tests.harness.deployment.local_sqlite import LocalSqliteTestDeployment
 from tests.harness.model import (
-    DeploymentConfig,
     DatabaseType,
+    DeploymentConfig,
     DeploymentStoreConfig,
     ServerType,
 )

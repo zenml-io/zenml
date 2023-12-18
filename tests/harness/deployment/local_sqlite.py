@@ -19,8 +19,8 @@ from typing import Optional
 
 from tests.harness.deployment.base import BaseTestDeployment
 from tests.harness.model import (
-    DeploymentConfig,
     DatabaseType,
+    DeploymentConfig,
     DeploymentStoreConfig,
     ServerType,
 )

@@ -25,8 +25,8 @@ from docker.client import DockerClient
 
 import zenml
 from tests.harness.model import (
-    DeploymentConfig,
     DatabaseType,
+    DeploymentConfig,
     DeploymentStoreConfig,
     ServerType,
 )
