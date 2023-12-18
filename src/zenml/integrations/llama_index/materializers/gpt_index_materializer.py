@@ -39,8 +39,12 @@ if TYPE_CHECKING and sys.version_info < (3, 8):
     GPTFaissIndex = Any
     T = TypeVar("T", bound=Any)
 else:
-    from llama_index.indices.base import BaseGPTIndex
-    from llama_index.indices.vector_store import GPTFaissIndex
+    from llama_index.indices.base import (  # type: ignore[import]
+        BaseGPTIndex,
+    )
+    from llama_index.indices.vector_store import (  # type: ignore[import]
+        GPTFaissIndex,
+    )
 
     T = TypeVar("T", bound=BaseGPTIndex[Any])
 
