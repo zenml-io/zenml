@@ -184,8 +184,6 @@ class StackComponentConfig(BaseModel, ABC):
             key: The key for which to get the attribute value.
 
         Raises:
-            RuntimeError: If the stack component is not part of the active
-                stack.
             KeyError: If the secret or secret key don't exist.
 
         Returns:
