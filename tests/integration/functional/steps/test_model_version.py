@@ -19,7 +19,7 @@ from uuid import uuid4
 import pytest
 from typing_extensions import Annotated
 
-from zenml import get_step_context, pipeline, step
+from zenml import get_pipeline_context, get_step_context, pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
@@ -787,3 +787,63 @@ def test_that_artifact_is_removed_on_deletion(
         )
         == 0
     )
+
+
+@step
+def _this_step_asserts_context_with_artifact(artifact: str):
+    """Assert given arg with model_version number."""
+    assert artifact == str(get_step_context().model_version.id)
+
+
+@step
+def _this_step_produces_output_model_version() -> (
+    Annotated[str, ArtifactConfig(name="artifact")]
+):
+    """This step produces artifact with model_version number."""
+    return str(get_step_context().model_version.id)
+
+
+def test_pipeline_context_pass_artifact_from_model_and_link_run(
+    clean_client: "Client"
+):
+    """Test that ExternalArtifact from pipeline context is matched to proper version and run is linked."""
+
+    @pipeline(model_version=ModelVersion(name="pipeline"), enable_cache=False)
+    def _producer(do_promote: bool):
+        _this_step_produces_output_model_version()
+        if do_promote:
+            get_pipeline_context().model_version.set_stage(
+                ModelStages.PRODUCTION
+            )
+
+    @pipeline(
+        model_version=ModelVersion(
+            name="pipeline", version=ModelStages.PRODUCTION
+        ),
+        enable_cache=False,
+    )
+    def _consumer():
+        artifact = get_pipeline_context().model_version.get_artifact(
+            "artifact"
+        )
+        _this_step_asserts_context_with_artifact(artifact)
+
+    _producer.with_options(run_name="run_1")(True)
+    _producer.with_options(run_name="run_2")(False)
+    _consumer.with_options(run_name="run_3")()
+
+    mv = clean_client.get_model_version(
+        model_name_or_id="pipeline",
+        model_version_name_or_number_or_id=ModelStages.LATEST,
+    )
+
+    assert len(mv.pipeline_run_ids) == 1
+    assert {run_name for run_name in mv.pipeline_run_ids} == {"run_2"}
+
+    mv = clean_client.get_model_version(
+        model_name_or_id="pipeline",
+        model_version_name_or_number_or_id=ModelStages.PRODUCTION,
+    )
+
+    assert len(mv.pipeline_run_ids) == 2
+    assert {run_name for run_name in mv.pipeline_run_ids} == {"run_1", "run_3"}
