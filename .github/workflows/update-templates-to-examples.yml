@@ -237,6 +237,7 @@ jobs:
 
       - name: Check-out fresh Starter template
         run: |
+          rm -rf examples/quickstart
           mkdir -p examples/quickstart
           printf 'info@zenml.io' | zenml init --path examples/quickstart --template quickstart --template-with-defaults
           bash scripts/format.sh
