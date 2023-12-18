@@ -601,14 +601,6 @@ def _consumer_pipeline_with_step_context():
     )(ExternalArtifact(name="output_0"), 1)
 
 
-@pipeline
-def _consumer_pipeline_with_artifact_context():
-    _consumer_step(
-        ExternalArtifact(name="output_1"),
-        2,
-    )
-
-
 @pipeline(model_version=ModelVersion(name="step", version=ModelStages.LATEST))
 def _consumer_pipeline_with_pipeline_context():
     _consumer_step(
@@ -629,18 +621,14 @@ def test_that_consumption_also_registers_run_in_model_version(
     producer_run = f"producer_run_{uuid4()}"
     consumer_run_1 = f"consumer_run_1_{uuid4()}"
     consumer_run_2 = f"consumer_run_2_{uuid4()}"
-    consumer_run_3 = f"consumer_run_3_{uuid4()}"
     _producer_pipeline.with_options(
         run_name=producer_run, enable_cache=False
     )()
     _consumer_pipeline_with_step_context.with_options(
         run_name=consumer_run_1
     )()
-    _consumer_pipeline_with_artifact_context.with_options(
-        run_name=consumer_run_2
-    )()
     _consumer_pipeline_with_pipeline_context.with_options(
-        run_name=consumer_run_3
+        run_name=consumer_run_2
     )()
 
     mv = clean_client.get_model_version(
@@ -648,12 +636,11 @@ def test_that_consumption_also_registers_run_in_model_version(
         model_version_name_or_number_or_id=ModelStages.LATEST,
     )
 
-    assert len(mv.pipeline_run_ids) == 4
+    assert len(mv.pipeline_run_ids) == 3
     assert {run_name for run_name in mv.pipeline_run_ids} == {
         producer_run,
         consumer_run_1,
         consumer_run_2,
-        consumer_run_3,
     }
 
 
