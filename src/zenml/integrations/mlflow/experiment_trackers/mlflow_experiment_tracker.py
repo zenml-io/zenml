@@ -237,10 +237,10 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 # Correctly prefix the module name with 'mlflow.'
                 module_name = f"mlflow.{framework}"
                 # Dynamically import the module corresponding to the framework
-                module = __import__(module_name, fromlist=['autolog'])
+                module = __import__(module_name, fromlist=["autolog"])
                 # Call the autolog function with disable=True
                 module.autolog(disable=True)
-            except ImportError as e:
+            except ImportError:
                 logger.warning(f"Module {module_name} not found. Skipping autologging disable for {framework}.")
             except Exception as e:
                 logger.warning(
