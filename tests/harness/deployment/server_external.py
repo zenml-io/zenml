@@ -18,7 +18,7 @@ from typing import Optional
 from tests.harness.deployment.base import BaseTestDeployment
 from tests.harness.model import (
     DeploymentConfig,
-    DeploymentSetup,
+    DatabaseType,
     DeploymentStoreConfig,
     ServerType,
 )
@@ -74,5 +74,5 @@ class ExternalServerTestDeployment(BaseTestDeployment):
 
 
 ExternalServerTestDeployment.register_deployment_class(
-    type=ServerType.DOCKER, setup=DeploymentSetup.EXTERNAL
+    type=ServerType.DOCKER, setup=DatabaseType.EXTERNAL
 )

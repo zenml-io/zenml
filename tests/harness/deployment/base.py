@@ -26,7 +26,7 @@ from docker.client import DockerClient
 import zenml
 from tests.harness.model import (
     DeploymentConfig,
-    DeploymentSetup,
+    DatabaseType,
     DeploymentStoreConfig,
     ServerType,
 )
@@ -56,7 +56,7 @@ class BaseTestDeployment(ABC):
     """Base class for ZenML test deployments."""
 
     DEPLOYMENTS: Dict[
-        Tuple[ServerType, DeploymentSetup], Type["BaseTestDeployment"]
+        Tuple[ServerType, DatabaseType], Type["BaseTestDeployment"]
     ] = {}
 
     def __init__(self, config: DeploymentConfig) -> None:
@@ -70,7 +70,7 @@ class BaseTestDeployment(ABC):
 
     @classmethod
     def register_deployment_class(
-        cls, type: ServerType, setup: DeploymentSetup
+        cls, type: ServerType, setup: DatabaseType
     ) -> None:
         """Registers the deployment in the global registry.
 
@@ -82,7 +82,7 @@ class BaseTestDeployment(ABC):
 
     @classmethod
     def get_deployment_class(
-        cls, type: ServerType, setup: DeploymentSetup
+        cls, type: ServerType, setup: DatabaseType
     ) -> Optional[Type["BaseTestDeployment"]]:
         """Returns the deployment class for the given type and setup.
 

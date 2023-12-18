@@ -30,7 +30,7 @@ from tests.harness.deployment.base import (
     BaseTestDeployment,
 )
 from tests.harness.model import (
-    DeploymentSetup,
+    DatabaseType,
     DeploymentStoreConfig,
     ServerType,
 )
@@ -292,5 +292,5 @@ services:
 
 
 ServerDockerComposeMysqlTestDeployment.register_deployment_class(
-    type=ServerType.DOCKER_COMPOSE, setup=DeploymentSetup.DOCKER_COMPOSE
+    type=ServerType.DOCKER_COMPOSE, setup=DatabaseType.MYSQL
 )

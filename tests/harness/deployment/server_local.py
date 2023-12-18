@@ -24,7 +24,7 @@ from tests.harness.deployment.base import (
 from tests.harness.deployment.local_default import LocalDefaultTestDeployment
 from tests.harness.model import (
     DeploymentConfig,
-    DeploymentSetup,
+    DatabaseType,
     DeploymentStoreConfig,
     ServerType,
 )
@@ -190,5 +190,5 @@ class ServerLocalTestDeployment(BaseTestDeployment):
 
 
 ServerLocalTestDeployment.register_deployment_class(
-    type=ServerType.LOCAL, setup=DeploymentSetup.DEFAULT
+    type=ServerType.LOCAL, setup=DatabaseType.SQLITE
 )

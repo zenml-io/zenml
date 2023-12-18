@@ -29,7 +29,7 @@ from tests.harness.deployment.base import (
 )
 from tests.harness.model import (
     DeploymentConfig,
-    DeploymentSetup,
+    DatabaseType,
     DeploymentStoreConfig,
     ServerType,
 )
@@ -208,5 +208,5 @@ class LocalDockerMysqlTestDeployment(BaseTestDeployment):
 
 
 LocalDockerMysqlTestDeployment.register_deployment_class(
-    type=ServerType.LOCAL, setup=DeploymentSetup.DOCKER
+    type=ServerType.LOCAL, setup=DatabaseType.MYSQL
 )

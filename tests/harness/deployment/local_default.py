@@ -20,7 +20,7 @@ from typing import Optional
 from tests.harness.deployment.base import BaseTestDeployment
 from tests.harness.model import (
     DeploymentConfig,
-    DeploymentSetup,
+    DatabaseType,
     DeploymentStoreConfig,
     ServerType,
 )
@@ -84,5 +84,5 @@ class LocalDefaultTestDeployment(BaseTestDeployment):
 
 
 LocalDefaultTestDeployment.register_deployment_class(
-    type=ServerType.LOCAL, setup=DeploymentSetup.DEFAULT
+    type=ServerType.LOCAL, setup=DatabaseType.SQLITE
 )

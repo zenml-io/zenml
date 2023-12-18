@@ -24,7 +24,7 @@ from tests.harness.deployment.base import (
 from tests.harness.deployment.local_default import LocalDefaultTestDeployment
 from tests.harness.model import (
     DeploymentConfig,
-    DeploymentSetup,
+    DatabaseType,
     DeploymentStoreConfig,
     ServerType,
 )
@@ -180,5 +180,5 @@ class ServerDockerTestDeployment(BaseTestDeployment):
 
 
 ServerDockerTestDeployment.register_deployment_class(
-    type=ServerType.DOCKER, setup=DeploymentSetup.DOCKER
+    type=ServerType.DOCKER, setup=DatabaseType.SQLITE
 )

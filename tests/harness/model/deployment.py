@@ -36,12 +36,12 @@ class ServerType(str, Enum):
     EXTERNAL = "external"
 
 
-class DeploymentSetup(str, Enum):
+class DatabaseType(str, Enum):
     """Enum for the different types of deployment setup methods."""
 
-    DEFAULT = "default"
-    DOCKER = "docker"
-    DOCKER_COMPOSE = "docker-compose"
+    SQLITE = "sqlite"
+    MYSQL = "mysql"
+    MARIADB = "mariadb"
     EXTERNAL = "external"
 
 
@@ -63,7 +63,7 @@ class DeploymentConfig(BaseTestConfigModel):
     name: str = Field(regex="^[a-z][a-z0-9-_]+$")
     description: str = ""
     type: ServerType = ServerType.LOCAL
-    setup: DeploymentSetup = DeploymentSetup.DEFAULT
+    setup: DatabaseType = DatabaseType.DEFAULT
     config: Optional[DeploymentStoreConfig] = None
     disabled: bool = False
     capabilities: Dict[str, bool] = Field(default_factory=dict)
