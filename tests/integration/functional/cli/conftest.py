@@ -83,7 +83,7 @@ def step_2() -> (
             int, ArtifactConfig(name=NAME + "b", is_model_artifact=True)
         ],
         Annotated[
-            int, ArtifactConfig(name=NAME + "c", is_endpoint_artifact=True)
+            int, ArtifactConfig(name=NAME + "c", is_deployment_artifact=True)
         ],
     ]
 ):
