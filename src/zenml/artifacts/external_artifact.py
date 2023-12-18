@@ -56,7 +56,9 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             `version`, `pipeline_run_name`, or `pipeline_name` are set, the
             latest version of the artifact will be used.
         version: Version of the artifact to search. Only used when `name` is
-            provided.
+            provided. Cannot be used together with `model_version`.
+        model_version: The model version to search in. Only used when `name`
+            is provided. Cannot be used together with `version`.
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.
         store_artifact_metadata: Whether metadata for the artifact should
@@ -147,4 +149,5 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             id=self.id,
             name=self.name,
             version=self.version,
+            model_version=self.model_version,
         )
