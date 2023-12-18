@@ -19,9 +19,6 @@ from pydantic import validator
 
 from zenml.client import Client
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
-from zenml.enums import StackComponentType
-from zenml.secret import ArbitrarySecretSchema
-from zenml.secrets_managers import LocalSecretsManagerFlavor
 from zenml.utils import secret_utils
 
 
@@ -85,47 +82,19 @@ def test_secret_reference_resolving(clean_client: Client):
     """Tests the secret resolving of the mixin class."""
     obj = MixinSubclass(value="{{secret.key}}")
 
-    # No active secrets manager
+    # Secret does not exist
     with pytest.raises(RuntimeError):
         _ = obj.value
 
-    flavor = LocalSecretsManagerFlavor()
-    clean_client.create_stack_component(
-        "local_secrets_manager",
-        flavor=flavor.name,
-        component_type=flavor.type,
-        configuration={},
-    )
-    components = {
-        StackComponentType.ORCHESTRATOR: clean_client.get_stack_component(
-            component_type=StackComponentType.ORCHESTRATOR
-        ).id,
-        StackComponentType.ARTIFACT_STORE: clean_client.get_stack_component(
-            component_type=StackComponentType.ARTIFACT_STORE
-        ).id,
-        flavor.type: "local_secrets_manager",
-    }
-    clean_client.create_stack(name="stack", components=components)
-    clean_client.activate_stack("stack")
-
-    # Secret missing
-    with pytest.raises(KeyError):
-        _ = obj.value
-
-    secrets_manager = clean_client.active_stack.secrets_manager
-    assert secrets_manager
-
-    secret_without_correct_key = ArbitrarySecretSchema(
-        name="secret", wrong_key="value"
-    )
-    secrets_manager.register_secret(secret_without_correct_key)
+    clean_client.create_secret("secret", values=dict(wrong_key="value"))
 
     # Key missing in secret
     with pytest.raises(KeyError):
         _ = obj.value
 
-    secret_with_correct_key = ArbitrarySecretSchema(name="secret", key="value")
-    secrets_manager.update_secret(secret_with_correct_key)
+    clean_client.update_secret(
+        "secret", add_or_update_values=dict(key="value")
+    )
 
     with does_not_raise():
         _ = obj.value

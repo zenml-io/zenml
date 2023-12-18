@@ -57,7 +57,6 @@ logger = get_logger(__name__)
 
 
 GCP_ZENML_SECRET_NAME_PREFIX = "zenml"
-ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
 ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR = "-"
 ZENML_GCP_DATE_FORMAT_STRING = "%Y-%m-%d-%H-%M-%S"

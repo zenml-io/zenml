@@ -13,19 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation for Seldon secret schemas."""
 
-from typing import ClassVar, Optional
+from typing import Optional
 
 from typing_extensions import Literal
 
-from zenml.secret import register_secret_schema_class
 from zenml.secret.base_secret import BaseSecretSchema
 
-SELDON_S3_SECRET_SCHEMA_TYPE = "seldon_s3"
-SELDON_GS_SECRET_SCHEMA_TYPE = "seldon_gs"
-SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE = "seldon_az"
 
-
-@register_secret_schema_class
 class SeldonS3SecretSchema(BaseSecretSchema):
     """Seldon S3 credentials.
 
@@ -46,8 +40,6 @@ class SeldonS3SecretSchema(BaseSecretSchema):
 
     """
 
-    TYPE: ClassVar[str] = SELDON_S3_SECRET_SCHEMA_TYPE
-
     rclone_config_s3_type: Literal["s3"] = "s3"
     rclone_config_s3_provider: str = "aws"
     rclone_config_s3_env_auth: bool = False
@@ -57,13 +49,7 @@ class SeldonS3SecretSchema(BaseSecretSchema):
     rclone_config_s3_region: Optional[str] = None
     rclone_config_s3_endpoint: Optional[str] = None
 
-    class Config:
-        """Pydantic config."""
 
-        extra = "forbid"
-
-
-@register_secret_schema_class
 class SeldonGSSecretSchema(BaseSecretSchema):
     """Seldon GCS credentials.
 
@@ -84,8 +70,6 @@ class SeldonGSSecretSchema(BaseSecretSchema):
         rclone_config_gs_auth_url: auth server URL.
     """
 
-    TYPE: ClassVar[str] = SELDON_GS_SECRET_SCHEMA_TYPE
-
     rclone_config_gs_type: Literal[
         "google cloud storage"
     ] = "google cloud storage"
@@ -98,13 +82,7 @@ class SeldonGSSecretSchema(BaseSecretSchema):
     rclone_config_gs_auth_url: Optional[str] = None
     rclone_config_gs_token_url: Optional[str] = None
 
-    class Config:
-        """Pydantic config."""
 
-        extra = "forbid"
-
-
-@register_secret_schema_class
 class SeldonAzureSecretSchema(BaseSecretSchema):
     """Seldon Azure Blob Storage credentials.
 
@@ -131,8 +109,6 @@ class SeldonAzureSecretSchema(BaseSecretSchema):
             authentication.
     """
 
-    TYPE: ClassVar[str] = SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE
-
     rclone_config_az_type: Literal["azureblob"] = "azureblob"
     rclone_config_az_env_auth: bool = False
     rclone_config_az_account: Optional[str] = None
@@ -142,8 +118,3 @@ class SeldonAzureSecretSchema(BaseSecretSchema):
     rclone_config_az_client_secret: Optional[str] = None
     rclone_config_az_client_id: Optional[str] = None
     rclone_config_az_tenant: Optional[str] = None
-
-    class Config:
-        """Pydantic config."""
-
-        extra = "forbid"

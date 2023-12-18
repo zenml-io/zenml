@@ -84,14 +84,13 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
                     "Azure service principal credentials."
                 )
             return AzureSecretSchema(
-                name="",
                 client_id=credentials._client_id,
                 client_secret=credentials._client_credential,
                 tenant_id=credentials._tenant_id,
                 account_name=client.account_name,
             )
 
-        secret = self.get_authentication_secret(
+        secret = self.get_typed_authentication_secret(
             expected_schema_type=AzureSecretSchema
         )
         return secret
@@ -105,7 +104,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         if not self._filesystem:
             secret = self.get_credentials()
-            credentials = secret.content if secret else {}
+            credentials = secret.get_values() if secret else {}
 
             self._filesystem = adlfs.AzureBlobFileSystem(
                 **credentials,

@@ -27,12 +27,12 @@ from zenml.artifact_stores.local_artifact_store import (
 from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.image_builders.local_image_builder import (
+    LocalImageBuilder,
+    LocalImageBuilderConfig,
+)
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.secrets_managers.local.local_secrets_manager import (
-    LocalSecretsManager,
-    LocalSecretsManagerConfig,
-)
 
 NOT_STACKS = ["abc_def", "my_other_cat_is_called_blupus", "stack123"]
 
@@ -71,13 +71,13 @@ def _create_local_artifact_store(
     )
 
 
-def _create_local_secrets_manager(client: Client):
-    return LocalSecretsManager(
-        name="arias_secrets_manager",
+def _create_local_image_builder(client: Client):
+    return LocalImageBuilder(
+        name="arias_image_builder",
         id=uuid4(),
-        config=LocalSecretsManagerConfig(),
+        config=LocalImageBuilderConfig(),
         flavor="local",
-        type=StackComponentType.SECRETS_MANAGER,
+        type=StackComponentType.IMAGE_BUILDER,
         user=client.active_user.id,
         workspace=client.active_workspace.id,
         created=datetime.now(),
@@ -248,27 +248,27 @@ def test_update_stack_adding_component_succeeds(
     )
     clean_client.activate_stack(new_stack.id)
 
-    local_secrets_manager = _create_local_secrets_manager(clean_client)
+    local_image_builder = _create_local_image_builder(clean_client)
 
-    local_secrets_manager_model = clean_client.create_stack_component(
-        name=local_secrets_manager.name,
-        flavor=local_secrets_manager.flavor,
-        component_type=local_secrets_manager.type,
-        configuration=local_secrets_manager.config.dict(),
+    local_image_builder_model = clean_client.create_stack_component(
+        name=local_image_builder.name,
+        flavor=local_image_builder.flavor,
+        component_type=local_image_builder.type,
+        configuration=local_image_builder.config.dict(),
     )
 
     runner = CliRunner()
     update_command = cli.commands["stack"].commands["update"]
-    result = runner.invoke(update_command, ["-x", local_secrets_manager.name])
+    result = runner.invoke(update_command, ["-i", local_image_builder.name])
 
     new_stack = clean_client.get_stack(new_stack.id)
 
     assert result.exit_code == 0
-    assert StackComponentType.SECRETS_MANAGER in new_stack.components.keys()
-    assert new_stack.components[StackComponentType.SECRETS_MANAGER] is not None
+    assert StackComponentType.IMAGE_BUILDER in new_stack.components.keys()
+    assert new_stack.components[StackComponentType.IMAGE_BUILDER] is not None
     assert (
-        new_stack.components[StackComponentType.SECRETS_MANAGER][0].id
-        == local_secrets_manager_model.id
+        new_stack.components[StackComponentType.IMAGE_BUILDER][0].id
+        == local_image_builder_model.id
     )
 
 
@@ -296,48 +296,47 @@ def test_update_stack_adding_to_default_stack_fails(
     )
     clean_client.activate_stack(new_stack.id)
 
-    local_secrets_manager = _create_local_secrets_manager(clean_client)
+    local_image_builder = _create_local_image_builder(clean_client)
 
-    local_secrets_manager_model = clean_client.create_stack_component(
-        name=local_secrets_manager.name,
-        flavor=local_secrets_manager.flavor,
-        component_type=local_secrets_manager.type,
-        configuration=local_secrets_manager.config.dict(),
+    local_image_builder_model = clean_client.create_stack_component(
+        name=local_image_builder.name,
+        flavor=local_image_builder.flavor,
+        component_type=local_image_builder.type,
+        configuration=local_image_builder.config.dict(),
     )
 
     runner = CliRunner()
     update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(
-        update_command, ["default", "-x", local_secrets_manager_model.name]
+        update_command, ["default", "-i", local_image_builder_model.name]
     )
     assert result.exit_code == 1
 
     default_stack = clean_client.get_stack("default")
     assert (
-        StackComponentType.SECRETS_MANAGER
-        not in default_stack.components.keys()
+        StackComponentType.IMAGE_BUILDER not in default_stack.components.keys()
     )
 
 
 def test_update_stack_nonexistent_stack_fails(clean_client: "Client") -> None:
     """Test stack update of nonexistent stack fails."""
-    local_secrets_manager = _create_local_secrets_manager(clean_client)
+    local_image_builder = _create_local_image_builder(clean_client)
 
-    local_secrets_manager_model = clean_client.create_stack_component(
-        name=local_secrets_manager.name,
-        flavor=local_secrets_manager.flavor,
-        component_type=local_secrets_manager.type,
-        configuration=local_secrets_manager.config.dict(),
+    local_image_builder_model = clean_client.create_stack_component(
+        name=local_image_builder.name,
+        flavor=local_image_builder.flavor,
+        component_type=local_image_builder.type,
+        configuration=local_image_builder.config.dict(),
     )
 
     runner = CliRunner()
     update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(
-        update_command, ["not_a_stack", "-x", local_secrets_manager_model.name]
+        update_command, ["not_a_stack", "-i", local_image_builder_model.name]
     )
 
     assert result.exit_code == 1
-    assert clean_client.active_stack.secrets_manager is None
+    assert clean_client.active_stack.image_builder is None
 
 
 def test_rename_stack_nonexistent_stack_fails(clean_client: "Client") -> None:
@@ -495,30 +494,30 @@ def test_remove_component_non_core_component_succeeds(
         configuration=new_orchestrator.config.dict(),
     )
 
-    new_secrets_manager = _create_local_secrets_manager(clean_client)
+    new_image_builder = _create_local_image_builder(clean_client)
 
-    new_secrets_manager_model = clean_client.create_stack_component(
-        name=new_secrets_manager.name,
-        flavor=new_secrets_manager.flavor,
-        component_type=new_secrets_manager.type,
-        configuration=new_secrets_manager.config.dict(),
+    new_image_builder_model = clean_client.create_stack_component(
+        name=new_image_builder.name,
+        flavor=new_image_builder.flavor,
+        component_type=new_image_builder.type,
+        configuration=new_image_builder.config.dict(),
     )
     new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
             StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
-            StackComponentType.SECRETS_MANAGER: new_secrets_manager_model.name,
+            StackComponentType.IMAGE_BUILDER: new_image_builder_model.name,
         },
     )
     clean_client.activate_stack(new_stack.id)
 
     runner = CliRunner()
     remove_command = cli.commands["stack"].commands["remove-component"]
-    result = runner.invoke(remove_command, [new_stack.name, "-x"])
+    result = runner.invoke(remove_command, [new_stack.name, "-i"])
     assert result.exit_code == 0
     assert (
-        StackComponentType.SECRETS_MANAGER
+        StackComponentType.IMAGE_BUILDER
         not in clean_client.active_stack_model.components
     )
 
@@ -593,20 +592,20 @@ def test_delete_stack_recursively_with_flag_succeeds(
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_secrets_manager = _create_local_secrets_manager(clean_client)
+    new_image_builder = _create_local_image_builder(clean_client)
 
-    new_secrets_manager_model = clean_client.create_stack_component(
-        name=new_secrets_manager.name,
-        flavor=new_secrets_manager.flavor,
-        component_type=new_secrets_manager.type,
-        configuration=new_secrets_manager.config.dict(),
+    new_image_builder_model = clean_client.create_stack_component(
+        name=new_image_builder.name,
+        flavor=new_image_builder.flavor,
+        component_type=new_image_builder.type,
+        configuration=new_image_builder.config.dict(),
     )
     new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
-            StackComponentType.SECRETS_MANAGER: new_secrets_manager_model.name,
+            StackComponentType.IMAGE_BUILDER: new_image_builder_model.name,
         },
     )
 
@@ -618,7 +617,7 @@ def test_delete_stack_recursively_with_flag_succeeds(
         clean_client.get_stack(new_stack.id)
     with pytest.raises(KeyError):
         clean_client.get_stack_component(
-            StackComponentType.SECRETS_MANAGER, new_secrets_manager_model.name
+            StackComponentType.IMAGE_BUILDER, new_image_builder_model.name
         )
     assert clean_client.get_stack_component(
         StackComponentType.ARTIFACT_STORE, artifact_store_name

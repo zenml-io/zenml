@@ -86,7 +86,6 @@ class StackComponentType(StrEnum):
     IMAGE_BUILDER = "image_builder"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
-    SECRETS_MANAGER = "secrets_manager"
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
 

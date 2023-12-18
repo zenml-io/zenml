@@ -18,9 +18,6 @@ environment. Specifically, it allows the use of cloud artifact stores
 and provides an `io` module to handle file operations on Google Cloud Storage
 (GCS).
 
-Additionally, the GCP secrets manager integration submodule provides a
-way to access the GCP secrets manager from within your ZenML Pipeline runs.
-
 The Vertex AI integration submodule provides a way to run ZenML pipelines in a
 Vertex AI environment.
 """
@@ -33,7 +30,6 @@ from zenml.stack import Flavor
 
 GCP_ARTIFACT_STORE_FLAVOR = "gcp"
 GCP_IMAGE_BUILDER_FLAVOR = "gcp"
-GCP_SECRETS_MANAGER_FLAVOR = "gcp"
 GCP_VERTEX_ORCHESTRATOR_FLAVOR = "vertex"
 GCP_VERTEX_STEP_OPERATOR_FLAVOR = "vertex"
 
@@ -70,7 +66,6 @@ class GcpIntegration(Integration):
         from zenml.integrations.gcp.flavors import (
             GCPArtifactStoreFlavor,
             GCPImageBuilderFlavor,
-            GCPSecretsManagerFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
         )
@@ -78,7 +73,6 @@ class GcpIntegration(Integration):
         return [
             GCPArtifactStoreFlavor,
             GCPImageBuilderFlavor,
-            GCPSecretsManagerFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
         ]

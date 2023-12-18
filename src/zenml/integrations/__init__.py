@@ -63,7 +63,6 @@ from zenml.integrations.spark import SparkIntegration  # noqa
 from zenml.integrations.tekton import TektonIntegration  # noqa
 from zenml.integrations.tensorboard import TensorBoardIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
-from zenml.integrations.vault import VaultSecretsManagerIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa
