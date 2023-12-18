@@ -185,7 +185,10 @@ class ServerDeployer(metaclass=SingletonMetaClass):
         provider = self.get_provider(server.config.provider)
 
         if self.is_connected_to_server(server_name):
-            self.disconnect_from_server(server_name)
+            try:
+                self.disconnect_from_server(server_name)
+            except Exception as e:
+                logger.warning(f"Failed to disconnect from the server: {e}")
 
         logger.info(
             f"Tearing down the '{server_name}' {provider_name} ZenML server."
