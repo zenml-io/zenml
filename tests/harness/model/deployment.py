@@ -63,7 +63,7 @@ class DeploymentConfig(BaseTestConfigModel):
     name: str = Field(regex="^[a-z][a-z0-9-_]+$")
     description: str = ""
     type: ServerType = ServerType.LOCAL
-    setup: DatabaseType = DatabaseType.DEFAULT
+    setup: DatabaseType = DatabaseType.SQLITE
     config: Optional[DeploymentStoreConfig] = None
     disabled: bool = False
     capabilities: Dict[str, bool] = Field(default_factory=dict)
