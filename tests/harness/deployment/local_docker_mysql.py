@@ -31,7 +31,7 @@ from tests.harness.model import (
     DeploymentConfig,
     DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 
 MYSQL_DOCKER_CONTAINER_NAME_PREFIX = "zenml-mysql-"
@@ -208,5 +208,5 @@ class LocalDockerMysqlTestDeployment(BaseTestDeployment):
 
 
 LocalDockerMysqlTestDeployment.register_deployment_class(
-    type=DeploymentType.LOCAL, setup=DeploymentSetup.DOCKER
+    type=ServerType.LOCAL, setup=DeploymentSetup.DOCKER
 )

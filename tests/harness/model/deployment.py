@@ -26,11 +26,14 @@ if TYPE_CHECKING:
     from tests.harness.harness import TestHarness
 
 
-class DeploymentType(str, Enum):
-    """Enum for the different types of deployments."""
+class ServerType(str, Enum):
+    """Enum for the server type of deployments."""
 
+    NONE = "none"
     LOCAL = "local"
-    SERVER = "server"
+    DOCKER = "docker"
+    DOCKER_COMPOSE = "docker-compose"
+    EXTERNAL = "external"
 
 
 class DeploymentSetup(str, Enum):
@@ -59,7 +62,7 @@ class DeploymentConfig(BaseTestConfigModel):
 
     name: str = Field(regex="^[a-z][a-z0-9-_]+$")
     description: str = ""
-    type: DeploymentType = DeploymentType.LOCAL
+    type: ServerType = ServerType.LOCAL
     setup: DeploymentSetup = DeploymentSetup.DEFAULT
     config: Optional[DeploymentStoreConfig] = None
     disabled: bool = False

@@ -28,7 +28,7 @@ from tests.harness.model import (
     DeploymentConfig,
     DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 from zenml.enums import StoreType
 
@@ -56,7 +56,7 @@ class BaseTestDeployment(ABC):
     """Base class for ZenML test deployments."""
 
     DEPLOYMENTS: Dict[
-        Tuple[DeploymentType, DeploymentSetup], Type["BaseTestDeployment"]
+        Tuple[ServerType, DeploymentSetup], Type["BaseTestDeployment"]
     ] = {}
 
     def __init__(self, config: DeploymentConfig) -> None:
@@ -70,7 +70,7 @@ class BaseTestDeployment(ABC):
 
     @classmethod
     def register_deployment_class(
-        cls, type: DeploymentType, setup: DeploymentSetup
+        cls, type: ServerType, setup: DeploymentSetup
     ) -> None:
         """Registers the deployment in the global registry.
 
@@ -82,7 +82,7 @@ class BaseTestDeployment(ABC):
 
     @classmethod
     def get_deployment_class(
-        cls, type: DeploymentType, setup: DeploymentSetup
+        cls, type: ServerType, setup: DeploymentSetup
     ) -> Optional[Type["BaseTestDeployment"]]:
         """Returns the deployment class for the given type and setup.
 

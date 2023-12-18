@@ -19,7 +19,7 @@ from tests.harness.model.deployment import (
     DeploymentConfig,
     DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 from tests.harness.model.environment import EnvironmentConfig
 from tests.harness.model.requirements import TestRequirements
@@ -31,7 +31,7 @@ __all__ = [
     "Configuration",
     "DeploymentConfig",
     "DeploymentSetup",
-    "DeploymentType",
+    "ServerType",
     "DeploymentStoreConfig",
     "EnvironmentConfig",
     "TestRequirements",

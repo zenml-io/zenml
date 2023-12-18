@@ -20,7 +20,7 @@ from tests.harness.model import (
     DeploymentConfig,
     DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 
 
@@ -74,5 +74,5 @@ class ExternalServerTestDeployment(BaseTestDeployment):
 
 
 ExternalServerTestDeployment.register_deployment_class(
-    type=DeploymentType.SERVER, setup=DeploymentSetup.EXTERNAL
+    type=ServerType.DOCKER, setup=DeploymentSetup.EXTERNAL
 )

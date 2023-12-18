@@ -26,7 +26,7 @@ from tests.harness.model import (
     DeploymentConfig,
     DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 
 if TYPE_CHECKING:
@@ -190,5 +190,5 @@ class ServerLocalTestDeployment(BaseTestDeployment):
 
 
 ServerLocalTestDeployment.register_deployment_class(
-    type=DeploymentType.SERVER, setup=DeploymentSetup.DEFAULT
+    type=ServerType.LOCAL, setup=DeploymentSetup.DEFAULT
 )

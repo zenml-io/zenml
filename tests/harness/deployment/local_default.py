@@ -22,7 +22,7 @@ from tests.harness.model import (
     DeploymentConfig,
     DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 
 
@@ -84,5 +84,5 @@ class LocalDefaultTestDeployment(BaseTestDeployment):
 
 
 LocalDefaultTestDeployment.register_deployment_class(
-    type=DeploymentType.LOCAL, setup=DeploymentSetup.DEFAULT
+    type=ServerType.LOCAL, setup=DeploymentSetup.DEFAULT
 )

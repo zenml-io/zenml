@@ -31,7 +31,7 @@ from tests.harness.model import (
     DeploymentConfig,
     DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 
 MARIADB_DOCKER_CONTAINER_NAME_PREFIX = "zenml-mariadb-"
@@ -208,5 +208,5 @@ class LocalDockerMariadbTestDeployment(BaseTestDeployment):
 
 
 LocalDockerMariadbTestDeployment.register_deployment_class(
-    type=DeploymentType.LOCAL, setup=DeploymentSetup.DOCKER
+    type=ServerType.LOCAL, setup=DeploymentSetup.DOCKER
 )

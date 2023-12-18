@@ -26,7 +26,7 @@ from tests.harness.model import (
     DeploymentConfig,
     DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 
 if TYPE_CHECKING:
@@ -180,5 +180,5 @@ class ServerDockerTestDeployment(BaseTestDeployment):
 
 
 ServerDockerTestDeployment.register_deployment_class(
-    type=DeploymentType.SERVER, setup=DeploymentSetup.DOCKER
+    type=ServerType.DOCKER, setup=DeploymentSetup.DOCKER
 )
