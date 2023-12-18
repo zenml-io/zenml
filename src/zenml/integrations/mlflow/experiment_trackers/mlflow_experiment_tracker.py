@@ -257,7 +257,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 pytorch.autolog(disable=True)
             else:
                 raise ValueError(f"Unknown framework: {framework}")
-                
+
         except Exception as e:
             logger.warning(
                 f"Failed to disable MLflow autologging for framework "
