@@ -136,7 +136,7 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
-          ref-zenml: 'main'
+          ref-zenml: ${{ github.ref }}
           ref-template: '0.45.0' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       
       - name: Clean-up
@@ -196,7 +196,7 @@ jobs:
             
 
   update-starter-template-to-examples:
-    name: update-nlp-template-to-examples
+    name: update-starter-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
@@ -215,7 +215,7 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
-          ref-zenml: 'main'
+          ref-zenml: ${{ github.ref }}
           ref-template: '0.53.0' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
 
       - name: Clean-up
