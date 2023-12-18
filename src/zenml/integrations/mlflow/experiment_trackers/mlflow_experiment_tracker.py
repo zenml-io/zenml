@@ -282,7 +282,36 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         self.disable_autologging_for_framework("spark")
         self.disable_autologging_for_framework("sklearn")
         self.disable_autologging_for_framework("fastai")
-        self.disable_autologging_for_framework("pytorch")
+
+    def disable_autologging(self) -> None:
+        """Disables MLflow autologging for all supported frameworks."""
+        frameworks = [
+            "tensorflow",
+            "gluon",
+            "xgboost",
+            "lightgbm",
+            "statsmodels",
+            "spark",
+            "sklearn",
+            "fastai",
+            "pytorch",
+        ]
+
+        for framework in frameworks:
+            try:
+                # Correctly prefix the module name with 'mlflow.'
+                module_name = f"mlflow.{framework}"
+                # Dynamically import the module corresponding to the framework
+                module = __import__(module_name, fromlist=['autolog'])
+                # Call the autolog function with disable=True
+                module.autolog(disable=True)
+            except ImportError as e:
+                logger.warning(f"Module {module_name} not found. Skipping autologging disable for {framework}.")
+            except Exception as e:
+                logger.warning(
+                    f"Failed to disable MLflow autologging for framework "
+                    f"{framework}: {e}"
+                )
 
     def cleanup_step_run(
         self,
