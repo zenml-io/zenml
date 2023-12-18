@@ -26,7 +26,7 @@ from tests.harness.model import (
 )
 
 
-class LocalDefaultTestDeployment(BaseTestDeployment):
+class LocalSqliteTestDeployment(BaseTestDeployment):
     """Default ZenML deployment."""
 
     def __init__(self, config: DeploymentConfig) -> None:
@@ -83,6 +83,6 @@ class LocalDefaultTestDeployment(BaseTestDeployment):
         return None
 
 
-LocalDefaultTestDeployment.register_deployment_class(
+LocalSqliteTestDeployment.register_deployment_class(
     type=ServerType.LOCAL, setup=DatabaseType.SQLITE
 )

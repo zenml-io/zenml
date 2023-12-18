@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from zenml.zen_server.deploy.deployment import ServerDeployment
 
 
-class ServerLocalTestDeployment(BaseTestDeployment):
+class ServerSqliteTestDeployment(BaseTestDeployment):
     """A deployment that runs a ZenML server as a background process."""
 
     def __init__(self, config: DeploymentConfig) -> None:
@@ -189,6 +189,6 @@ class ServerLocalTestDeployment(BaseTestDeployment):
         )
 
 
-ServerLocalTestDeployment.register_deployment_class(
+ServerSqliteTestDeployment.register_deployment_class(
     type=ServerType.LOCAL, setup=DatabaseType.SQLITE
 )
