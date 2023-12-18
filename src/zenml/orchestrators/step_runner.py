@@ -60,9 +60,6 @@ from zenml.steps.utils import (
 from zenml.utils import materializer_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.artifacts.external_artifact_config import (
-        ExternalArtifactConfiguration,
-    )
     from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models import (
@@ -259,9 +256,6 @@ class StepRunner:
                         self._link_pipeline_run_to_model_from_artifacts(
                             pipeline_run=pipeline_run,
                             artifact_names=list(output_artifact_ids.keys()),
-                            external_artifacts=list(
-                                step_run.config.external_input_artifacts.values()
-                            ),
                         )
                     StepContext._clear()  # Remove the step context singleton
 
@@ -715,33 +709,17 @@ class StepRunner:
         self,
         pipeline_run: "PipelineRunResponse",
         artifact_names: List[str],
-        external_artifacts: List["ExternalArtifactConfiguration"],
     ) -> None:
         """Links the pipeline run to the model version using artifacts data.
 
         Args:
             pipeline_run: The response model of current pipeline run.
             artifact_names: The name of the published output artifacts.
-            external_artifacts: The external artifacts of the step.
         """
         from zenml.models import ModelVersionPipelineRunRequest
 
         models = self._get_model_versions_from_artifacts(artifact_names)
         client = Client()
-
-        # Add models from external artifacts
-        for external_artifact in external_artifacts:
-            try:
-                artifact_version_id = (
-                    external_artifact.get_artifact_version_id()
-                )
-                links = client.list_model_version_artifact_links(
-                    artifact_version_id=artifact_version_id,
-                )
-                for link in links:
-                    models.add((link.model, link.model_version))
-            except RuntimeError:  # artifacts uploaded by value have no models
-                pass
 
         for model in models:
             client.zen_store.create_model_version_pipeline_run_link(
