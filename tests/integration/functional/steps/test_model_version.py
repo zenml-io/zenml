@@ -804,7 +804,7 @@ def _this_step_produces_output_model_version() -> (
 
 
 def test_pipeline_context_pass_artifact_from_model_and_link_run(
-    clean_client: "Client"
+    clean_client: "Client",
 ):
     """Test that ExternalArtifact from pipeline context is matched to proper version and run is linked."""
 
