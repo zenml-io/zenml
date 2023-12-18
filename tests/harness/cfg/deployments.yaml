@@ -61,13 +61,19 @@ deployments:
     description: >-
       Default deployment.
     type: local
-    setup: default
+    setup: sqlite
 
   - name: local-mysql
     description: >-
       Local client connect directly to MySQL running in container.
     type: local
-    setup: docker
+    setup: mysql
+
+  - name: local-mariadb
+    description: >-
+      Local client connect directly to MariaDB running in container.
+    type: local
+    setup: mariadb
 
     # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
     # daemons in pytest leads to serious issues because the whole test process
@@ -76,23 +82,31 @@ deployments:
   - name: local-server
     description: >-
       Local ZenML server.
-    type: server
-    setup: default
+    type: local
+    setup: sqlite
     capabilities:
       server: true
 
   - name: docker-server
     description: >-
       Local ZenML server running in docker.
-    type: server
-    setup: docker
+    type: docker
+    setup: sqlite
     capabilities:
       server: true
 
-  - name: docker-compose-server
+  - name: docker-compose-server-mysql
     description: >-
       Local ZenML server and MySQL running in docker with docker-compose.
-    type: server
-    setup: docker-compose
+    type: docker-compose
+    setup: mariadb
+    capabilities:
+      server: true
+
+    - name: docker-compose-server-mariadb
+    description: >-
+      Local ZenML server and MariaDB running in docker with docker-compose.
+    type: docker-compose
+    setup: mariadb
     capabilities:
       server: true

@@ -32,7 +32,7 @@ class ServerType(str, Enum):
     NONE = "none"
     LOCAL = "local"
     DOCKER = "docker"
-    DOCKER_COMPOSE = "docker-compose"
+    DOCKER_COMPOSE = "dockercompose"
     EXTERNAL = "external"
 
 
