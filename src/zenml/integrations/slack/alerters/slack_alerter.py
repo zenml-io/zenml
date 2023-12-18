@@ -57,7 +57,7 @@ class SlackAlerterParameters(BaseAlerterStepParameters):
     include_format_blocks: Optional[bool] = True
 
     # Allowing user to use their own custom blocks in the slack post message
-    blocks: Optional[List[Dict]] = None
+    blocks: Optional[List[Dict]] = None # type: ignore
 
 
 class SlackAlerter(BaseAlerter):
