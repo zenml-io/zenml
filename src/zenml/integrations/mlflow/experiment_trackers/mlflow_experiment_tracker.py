@@ -242,7 +242,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 # Call the autolog function with disable=True
                 module.autolog(disable=True)
             except ImportError:
-                logger.warning(f"Module {module_name} not found. Skipping autologging disable for {framework}.")
+                logger.warning(
+                    f"Module {module_name} not found. Skipping autologging disable for {framework}."
+                )
             except Exception as e:
                 logger.warning(
                     f"Failed to disable MLflow autologging for framework "
