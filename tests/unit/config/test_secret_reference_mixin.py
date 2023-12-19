@@ -83,7 +83,7 @@ def test_secret_reference_resolving(clean_client: Client):
     obj = MixinSubclass(value="{{secret.key}}")
 
     # Secret does not exist
-    with pytest.raises(RuntimeError):
+    with pytest.raises(KeyError):
         _ = obj.value
 
     clean_client.create_secret("secret", values=dict(wrong_key="value"))
