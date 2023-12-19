@@ -13,15 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation for Seldon secret schemas."""
 
-from typing import ClassVar, Optional
+from typing import Optional
 
-from zenml.secret import register_secret_schema_class
 from zenml.secret.base_secret import BaseSecretSchema
 
-WHYLABS_SECRET_SCHEMA_TYPE = "whylabs"
 
-
-@register_secret_schema_class
 class WhylabsSecretSchema(BaseSecretSchema):
     """Whylabs credentials.
 
@@ -31,8 +27,6 @@ class WhylabsSecretSchema(BaseSecretSchema):
         whylabs_default_dataset_id: default Whylabs dataset ID to use when
             logging data profiles.
     """
-
-    TYPE: ClassVar[str] = WHYLABS_SECRET_SCHEMA_TYPE
 
     whylabs_default_org_id: str
     whylabs_api_key: str

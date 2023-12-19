@@ -32,6 +32,7 @@ from uuid import UUID
 import requests
 import urllib3
 from pydantic import BaseModel, root_validator, validator
+from requests.adapters import HTTPAdapter, Retry
 
 import zenml
 from zenml.analytics import source_context
@@ -3181,6 +3182,9 @@ class RestZenStore(BaseZenStore):
                 )
 
             self._session = requests.Session()
+            retries = Retry(backoff_factor=0.1, connect=5)
+            self._session.mount("https://", HTTPAdapter(max_retries=retries))
+            self._session.mount("http://", HTTPAdapter(max_retries=retries))
             self._session.verify = self.config.verify_ssl
             token = self._get_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})

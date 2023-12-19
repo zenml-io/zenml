@@ -70,7 +70,6 @@ from zenml.models import (
     StrFilter,
     UUIDFilter,
 )
-from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
 from zenml.stack.stack_component import StackComponentConfig
@@ -1064,24 +1063,17 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: "Union[BaseSecretSchema, Dict[str, str]]",
+    secret: Dict[str, str],
     hide_secret: bool = True,
-    print_name: bool = False,
 ) -> None:
-    """Given a secret with values, print all key-value pairs associated with the secret.
+    """Print all key-value pairs associated with a secret.
 
     Args:
-        secret: Secret of type BaseSecretSchema
+        secret: Secret values to print.
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
-        print_name: boolean that configures if the secret name is shown on the
-            CLI
     """
     title: Optional[str] = None
-    if isinstance(secret, BaseSecretSchema):
-        if print_name:
-            title = f"Secret: {secret.name}"
-        secret = secret.content
 
     def get_secret_value(value: Any) -> str:
         if value is None:
@@ -2544,49 +2536,6 @@ def print_user_info(info: Dict[str, Any]) -> None:
             continue
 
         declare(f"{key.upper()}: {value}")
-
-
-def warn_deprecated_secrets_manager() -> None:
-    """Warning for deprecating secrets managers."""
-    warning(
-        "Secrets managers are deprecated and will be removed in an upcoming "
-        "release in favor of centralized secrets management. Please consider "
-        "migrating all your secrets to the centralized secrets store by means "
-        "of the `zenml secrets-manager secret migrate` CLI command. "
-        "See the `zenml secret` CLI command and the "
-        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
-        "documentation page for more information."
-    )
-
-
-def fail_secrets_manager_creation() -> None:
-    """Warning for deprecating secrets managers."""
-    error(
-        "Creating secrets managers is no longer supported. Existing secrets "
-        "managers will be removed in an upcoming release in favor of the "
-        "centralized secrets management. Please consider migrating all your "
-        "existing secrets to the centralized secrets store by means of the "
-        "`zenml secrets-manager secret migrate` CLI command."
-        " See the `zenml secret` CLI command or the "
-        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
-        "documentation page for more information. "
-    )
-
-
-def fail_secret_creation_on_secrets_manager() -> None:
-    """Warning for deprecating secrets managers."""
-    error(
-        "Creating secrets within the stack component `secrets manager` is no "
-        "longer supported. "
-        "Existing secrets managers will be removed in an "
-        "upcoming release in favor of the centralized secrets management. "
-        "Learn more about this in our documentation:"
-        "https://docs.zenml.io/user-guide/advanced-guide/secret-management "
-        "Please also consider migrating all your existing secrets to the "
-        "centralized secrets store by means of the "
-        "`zenml secrets-manager secret migrate` CLI command. "
-        "See the `zenml secret --help` for more information."
-    )
 
 
 def get_parsed_labels(

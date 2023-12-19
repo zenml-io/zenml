@@ -142,8 +142,8 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
         description="Data artifacts linked to the model version",
         default={},
     )
-    endpoint_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Endpoint artifacts linked to the model version",
+    deployment_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
+        description="Deployment artifacts linked to the model version",
         default={},
     )
     pipeline_run_ids: Dict[str, UUID] = Field(
@@ -234,13 +234,13 @@ class ModelVersionResponse(
         return self.get_body().data_artifact_ids
 
     @property
-    def endpoint_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
-        """The `endpoint_artifact_ids` property.
+    def deployment_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+        """The `deployment_artifact_ids` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().endpoint_artifact_ids
+        return self.get_body().deployment_artifact_ids
 
     @property
     def pipeline_run_ids(self) -> Dict[str, UUID]:
@@ -387,10 +387,10 @@ class ModelVersionResponse(
     def endpoint_artifacts(
         self,
     ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
-        """Get all endpoint artifacts linked to this model version.
+        """Get all deployment artifacts linked to this model version.
 
         Returns:
-            Dictionary of endpoint artifacts with versions as
+            Dictionary of deployment artifacts with versions as
             Dict[str, Dict[str, ArtifactResponse]]
         """
         from zenml.client import Client
@@ -398,9 +398,9 @@ class ModelVersionResponse(
         return {
             name: {
                 version: Client().get_artifact_version(a)
-                for version, a in self.endpoint_artifact_ids[name].items()
+                for version, a in self.deployment_artifact_ids[name].items()
             }
-            for name in self.endpoint_artifact_ids
+            for name in self.deployment_artifact_ids
         }
 
     @property
@@ -428,7 +428,7 @@ class ModelVersionResponse(
         Args:
             collection: The collection to search in (one of
                 self.model_artifact_ids, self.data_artifact_ids,
-                self.endpoint_artifact_ids)
+                self.deployment_artifact_ids)
             name: The name of the artifact to retrieve.
             version: The version of the artifact to retrieve (None for
                 latest/non-versioned)
@@ -464,7 +464,7 @@ class ModelVersionResponse(
         all_artifact_ids = {
             **self.model_artifact_ids,
             **self.data_artifact_ids,
-            **self.endpoint_artifact_ids,
+            **self.deployment_artifact_ids,
         }
         return self._get_linked_object(all_artifact_ids, name, version)
 
@@ -506,23 +506,23 @@ class ModelVersionResponse(
             version,
         )
 
-    def get_endpoint_artifact(
+    def get_deployment_artifact(
         self,
         name: str,
         version: Optional[str] = None,
     ) -> Optional["ArtifactVersionResponse"]:
-        """Get the endpoint artifact linked to this model version.
+        """Get the deployment artifact linked to this model version.
 
         Args:
-            name: The name of the endpoint artifact to retrieve.
-            version: The version of the endpoint artifact to retrieve (None for
+            name: The name of the deployment artifact to retrieve.
+            version: The version of the deployment artifact to retrieve (None for
                 latest/non-versioned)
 
         Returns:
-            Specific version of the endpoint artifact or None
+            Specific version of the deployment artifact or None
         """
         return self._get_linked_object(
-            self.endpoint_artifact_ids,
+            self.deployment_artifact_ids,
             name,
             version,
         )
