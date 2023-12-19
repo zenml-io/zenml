@@ -138,6 +138,9 @@ CONFIG_FILE_NAME = "config.yaml"
 # Default store directory subpath:
 DEFAULT_STORE_DIRECTORY_NAME = "default_zen_store"
 
+# SQL Store backup directory subpath:
+SQL_STORE_BACKUP_DIRECTORY_NAME = "sql_store_backup"
+
 DEFAULT_USERNAME = "default"
 DEFAULT_PASSWORD = ""
 DEFAULT_WORKSPACE_NAME = "default"

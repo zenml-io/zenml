@@ -67,6 +67,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     TEXT_FIELD_MAX_LENGTH,
+    SQL_STORE_BACKUP_DIRECTORY_NAME,
 )
 from zenml.enums import (
     AuthScheme,
@@ -356,6 +357,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
     pool_pre_ping: bool = True
+
+    # backup
+    backup_directory: Optional[str] = os.path.join(
+        GlobalConfiguration().config_directory, SQL_STORE_BACKUP_DIRECTORY_NAME
+    )
 
     @validator("secrets_store")
     def validate_secrets_store(
@@ -917,11 +923,74 @@ class SqlZenStore(BaseZenStore):
                     raise
 
         self._alembic = Alembic(self.engine)
+
+        self.db_backup_file_path = (
+            f"{self.config.backup_directory}/{self.engine.url.database}.sql"
+        )
+
         if (
             not self.skip_migrations
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
-            self.migrate_database()
+            # TODO add a try catch block around this fn call
+            # perform DB restore if exception is raised.
+            try:
+                self.migrate_database()
+            except Exception as e:
+                logger.error(
+                    "Failed to migrate the database. Attempting to restore "
+                    "the database from a backup."
+                )
+                self.restore_database()
+                raise e
+
+    def restore_database(self) -> None:
+        """Restore the database from a backup."""
+        # if a backup file does not exist, return
+        db_name = self.db_backup_file_path.split("/")[-1].split(".")[0]
+        if not os.path.exists(self.db_backup_file_path):
+            logger.debug("No backup found. No restore performed.")
+            return
+
+        connection = self.engine.connect()
+
+        # drop the database if it exists
+        connection.execute(f"DROP DATABASE IF EXISTS {db_name}")
+
+        # then create the database
+        connection.execute(f"CREATE DATABASE {db_name}")
+
+        # restore the database from the dump file
+        connection.execute(f"USE {db_name}")
+        connection.execute(f"SOURCE {self.db_backup_file_path}")
+
+        logger.debug(f"Database restored from {self.db_backup_file_path}")
+
+        # delete the database dump file
+        os.remove(self.db_backup_file_path)
+
+    def backup_database(self) -> None:
+        """Backup the database to a file."""
+        db_name = self.db_backup_file_path.split("/")[-1].split(".")[0]
+        connection = self.engine.connect()
+
+        result = connection.execute(f'SHOW DATABASES LIKE "{db_name}"')
+        # TODO maybe check if result.first() is None instead
+        if result.rowcount == 0:
+            logger.debug("Database does not exist. No backup created.")
+            return
+
+        # create the backup directory if it does not exist
+        if not os.path.exists(self.config.backup_directory):
+            os.makedirs(self.config.backup_directory)
+
+        # dump the database to a file
+        os.system(
+            f"mysqldump --set-gtid-purged=OFF -h {self.engine.url.host} -u {self.config.username} "
+            f"-p{self.config.password} {db_name} > {self.db_backup_file_path}"
+        )
+
+        logger.debug(f"Database backed up to {self.db_backup_file_path}")
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
@@ -993,6 +1062,9 @@ class SqlZenStore(BaseZenStore):
                 )
             # Case 3: the database has been migrated with alembic before. Just
             # upgrade to the latest revision.
+            # TODO run a dump either here or inside alembic upgrade fn
+            # TODO use the engine.connect() to execute queries that check
+            # if the database is present
             self.alembic.upgrade()
         else:
             if self.alembic.db_is_empty():
