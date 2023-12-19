@@ -135,15 +135,22 @@ jobs:
         test_environment:
           [
             "default",
-            "docker-server-docker-orchestrator",
+            "docker-server-docker-orchestrator-mysql",
+            "docker-server-docker-orchestrator-mariadb",
           ]
         exclude:
           # docker is time-consuming to run, so we only run it on 3.8
-          - test_environment: docker-server-docker-orchestrator
+          - test_environment: docker-server-docker-orchestrator-mysql
             python-version: "3.9"
-          - test_environment: docker-server-docker-orchestrator
+          - test_environment: docker-server-docker-orchestrator-mysql
             python-version: "3.10"
-          - test_environment: docker-server-docker-orchestrator
+          - test_environment: docker-server-docker-orchestrator-mysql
+            python-version: "3.11"
+          - test_environment: docker-server-docker-orchestrator-mariadb
+            python-version: "3.9"
+          - test_environment: docker-server-docker-orchestrator-mariadb
+            python-version: "3.10"
+          - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: "3.11"
 
       fail-fast: false
