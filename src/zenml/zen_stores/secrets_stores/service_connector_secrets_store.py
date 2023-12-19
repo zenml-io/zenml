@@ -115,7 +115,7 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
                 self._client = None
 
         if self._connector is None:
-            # Initialize a base AWS service connector with the credentials from
+            # Initialize a base service connector with the credentials from
             # the configuration.
             request = ServiceConnectorRequest(
                 name="secrets-store",

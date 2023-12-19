@@ -212,14 +212,14 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
     # --------------------------------
 
     def _initialize_client_from_connector(self, client: Any) -> Any:
-        """Initialize the GCP Secrets Manager client from the service connector client.
+        """Initialize the AWS Secrets Manager client from the service connector client.
 
         Args:
             client: The authenticated client object returned by the service
                 connector.
 
         Returns:
-            The GCP Secrets Manager client.
+            The AWS Secrets Manager client.
         """
         assert isinstance(client, boto3.Session)
         return client.client(
