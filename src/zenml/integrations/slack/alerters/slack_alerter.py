@@ -198,7 +198,7 @@ class SlackAlerter(BaseAlerter):
                     },
                 ]
             else:
-                logger.info("No custom blocks or payload set. Settings empty blocks")
+                logger.info("No custom blocks or payload set for slack alerter.")
                 return []
 
     def post(
