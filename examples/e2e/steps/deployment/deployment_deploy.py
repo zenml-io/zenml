@@ -37,7 +37,7 @@ logger = get_logger(__name__)
 def deployment_deploy() -> (
     Annotated[
         Optional[MLFlowDeploymentService],
-        ArtifactConfig(name="mlflow_deployment", is_endpoint_artifact=True),
+        ArtifactConfig(name="mlflow_deployment", is_deployment_artifact=True),
     ]
 ):
     """Predictions step.

@@ -111,7 +111,7 @@ def link_artifact_config_to_model_version(
             model=model_version_response.model.id,
             model_version=model_version_response.id,
             is_model_artifact=artifact_config.is_model_artifact,
-            is_endpoint_artifact=artifact_config.is_endpoint_artifact,
+            is_deployment_artifact=artifact_config.is_deployment_artifact,
         )
         client.zen_store.create_model_version_artifact_link(request)
 
