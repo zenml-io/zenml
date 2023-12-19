@@ -671,7 +671,9 @@ class Stack:
             )
 
             _handle_error(
-                f"Missing secrets for stack: {secrets_msg}.\nTo register the "
+                f"Some components in the `{self.name}` stack reference secrets "
+                f"or secret keys that do not exist in the secret store: "
+                f"{secrets_msg}.\nTo register the "
                 "missing secrets for this stack, run `zenml stack "
                 f"register-secrets {self.name}`\nIf you want to "
                 "adjust the degree to which ZenML validates the existence "

@@ -77,7 +77,8 @@ class AuthenticationMixin(StackComponent):
         except (KeyError, NotImplementedError):
             raise KeyError(
                 f"The authentication secret {self.config.authentication_secret} "
-                "does not exist."
+                f"referenced by the `{self.name}` `{self.type}` stack "
+                "component does not exist."
             )
 
     def get_typed_authentication_secret(
@@ -109,7 +110,8 @@ class AuthenticationMixin(StackComponent):
             )
         except (TypeError, ValueError) as e:
             raise TypeError(
-                f"Authentication secret {self.config.authentication_secret} "
+                f"Authentication secret `{self.config.authentication_secret}` "
+                f"referenced by the `{self.name}` `{self.type}` stack component"
                 f"could not be converted to {expected_schema_type}: {e}"
             )
 

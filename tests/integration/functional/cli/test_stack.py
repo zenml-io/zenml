@@ -429,7 +429,7 @@ def test_remove_component_from_nonexistent_stack_fails(
     """Test stack remove-component of nonexistent stack fails."""
     runner = CliRunner()
     remove_command = cli.commands["stack"].commands["remove-component"]
-    result = runner.invoke(remove_command, ["not_a_stack", "-x"])
+    result = runner.invoke(remove_command, ["not_a_stack", "-i"])
     assert result.exit_code == 1
 
 
