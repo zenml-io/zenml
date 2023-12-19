@@ -508,6 +508,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         created: datetime,
         updated: datetime,
         values: Optional[Dict[str, str]] = None,
+        hydrate: bool = False,
     ) -> SecretResponse:
         """Create a ZenML secret model from metadata stored in the secrets store backend.
 
@@ -517,6 +518,8 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             created: The secret creation time.
             updated: The secret last updated time.
             values: The secret values (optional).
+            hydrate: Flag deciding whether to hydrate the output model
+                by including metadata fields in the response.
 
         Returns:
             The ZenML secret.
@@ -577,7 +580,9 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             ),
             metadata=SecretResponseMetadata(
                 workspace=workspace,
-            ),
+            )
+            if hydrate
+            else None,
         )
 
         return secret_model

@@ -170,11 +170,15 @@ class RestSecretsStore(BaseSecretsStore):
             response_model=SecretResponse,
         )
 
-    def get_secret(self, secret_id: UUID) -> SecretResponse:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -183,10 +187,11 @@ class RestSecretsStore(BaseSecretsStore):
             resource_id=secret_id,
             route=SECRETS,
             response_model=SecretResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilter
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
     ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
@@ -196,6 +201,8 @@ class RestSecretsStore(BaseSecretsStore):
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -208,6 +215,7 @@ class RestSecretsStore(BaseSecretsStore):
             route=SECRETS,
             response_model=SecretResponse,
             filter_model=secret_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_secret(

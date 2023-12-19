@@ -270,6 +270,7 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
         self,
         tags: Dict[str, str],
         values: Optional[str] = None,
+        hydrate: bool = False,
     ) -> SecretResponse:
         """Create a ZenML secret model from data stored in an Azure secret.
 
@@ -280,6 +281,8 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
             tags: The Azure secret tags.
             values: The Azure secret values encoded as a JSON string
                 (optional).
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The ZenML secret.
@@ -304,6 +307,7 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
             created=created,
             updated=updated,
             values=json.loads(values) if values else None,
+            hydrate=hydrate,
         )
 
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
@@ -391,11 +395,15 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
 
         return secret_model
 
-    def get_secret(self, secret_id: UUID) -> SecretResponse:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -426,10 +434,11 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
         return self._convert_azure_secret(
             tags=azure_secret.properties.tags,
             values=azure_secret.value,
+            hydrate=hydrate,
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilter
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
     ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
@@ -439,6 +448,8 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -473,7 +484,7 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
                     # anyway.
                     assert secret_property.tags is not None
                     secret_model = self._convert_azure_secret(
-                        tags=secret_property.tags,
+                        tags=secret_property.tags, hydrate=hydrate
                     )
                 except KeyError:
                     # The _convert_azure_secret method raises a KeyError
@@ -587,8 +598,12 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
         # We manage the created and updated times ourselves, so we don't need to
         # rely on the Azure Key Vault API to set them.
         updated = datetime.utcnow()
-        metadata[ZENML_AZURE_SECRET_CREATED_KEY] = secret.created.isoformat()
         metadata[ZENML_AZURE_SECRET_UPDATED_KEY] = updated.isoformat()
+        metadata[ZENML_AZURE_SECRET_CREATED_KEY] = (
+            secret.created.isoformat()
+            if secret.created
+            else metadata[ZENML_AZURE_SECRET_UPDATED_KEY]
+        )
 
         try:
             self.client.set_secret(

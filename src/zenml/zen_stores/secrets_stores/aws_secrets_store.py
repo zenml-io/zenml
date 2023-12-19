@@ -286,6 +286,7 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
         created: datetime,
         updated: datetime,
         values: Optional[str] = None,
+        hydrate: bool = False,
     ) -> SecretResponse:
         """Create a ZenML secret model from data stored in an AWS secret.
 
@@ -297,6 +298,8 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
             created: The AWS secret creation time.
             updated: The AWS secret last updated time.
             values: The AWS secret values encoded as a JSON string (optional).
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The ZenML secret.
@@ -309,6 +312,7 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
             created=created,
             updated=updated,
             values=json.loads(values) if values else None,
+            hydrate=hydrate,
         )
 
     @staticmethod
@@ -510,11 +514,15 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
 
         return secret_model
 
-    def get_secret(self, secret_id: UUID) -> SecretResponse:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -559,10 +567,11 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
             created=describe_secret_response["CreatedDate"],
             updated=describe_secret_response["LastChangedDate"],
             values=get_secret_value_response["SecretString"],
+            hydrate=hydrate,
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilter
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
     ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
@@ -572,6 +581,8 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -657,6 +668,7 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
                             tags=secret["Tags"],
                             created=secret["CreatedDate"],
                             updated=secret["LastChangedDate"],
+                            hydrate=hydrate,
                         )
                     except KeyError:
                         # The _convert_aws_secret method raises a KeyError

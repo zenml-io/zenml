@@ -75,11 +75,15 @@ class SecretsStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_secret(self, secret_id: UUID) -> SecretResponse:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret with a given name.
 
         Args:
             secret_id: ID of the secret.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -90,7 +94,7 @@ class SecretsStoreInterface(ABC):
 
     @abstractmethod
     def list_secrets(
-        self, secret_filter_model: SecretFilter
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
     ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
@@ -100,6 +104,8 @@ class SecretsStoreInterface(ABC):
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination

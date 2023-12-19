@@ -236,6 +236,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
     def _convert_vault_secret(
         self,
         vault_secret: Dict[str, Any],
+        hydrate: bool = False,
     ) -> SecretResponse:
         """Create a ZenML secret model from data stored in an HashiCorp Vault secret.
 
@@ -244,6 +245,8 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
 
         Args:
             vault_secret: The HashiCorp Vault secret in JSON form.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The ZenML secret.
@@ -270,6 +273,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             created=created,
             updated=updated,
             values=values,
+            hydrate=hydrate,
         )
 
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
@@ -356,11 +360,15 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
 
         return secret_model
 
-    def get_secret(self, secret_id: UUID) -> SecretResponse:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -393,10 +401,11 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
         # in the first place, knowing that it will be cascade-deleted soon.
         return self._convert_vault_secret(
             vault_secret,
+            hydrate=hydrate,
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilter
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
     ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
@@ -406,6 +415,8 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -464,6 +475,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
                 try:
                     secret_model = self._convert_vault_secret(
                         vault_secret,
+                        hydrate=hydrate,
                     )
                 except KeyError as e:
                     # The _convert_vault_secret method raises a KeyError
@@ -586,7 +598,9 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
                 secret={
                     ZENML_VAULT_SECRET_VALUES_KEY: secret.secret_values,
                     ZENML_VAULT_SECRET_METADATA_KEY: metadata,
-                    ZENML_VAULT_SECRET_CREATED_KEY: secret.created.isoformat(),
+                    ZENML_VAULT_SECRET_CREATED_KEY: secret.created.isoformat()
+                    if secret.created
+                    else updated.isoformat(),
                     ZENML_VAULT_SECRET_UPDATED_KEY: updated.isoformat(),
                 },
             )

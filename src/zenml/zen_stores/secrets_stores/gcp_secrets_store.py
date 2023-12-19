@@ -261,6 +261,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         self,
         labels: Dict[str, str],
         values: Optional[Dict[str, str]] = None,
+        hydrate: bool = False,
     ) -> SecretResponse:
         """Create a ZenML secret model from data stored in an GCP secret.
 
@@ -270,6 +271,8 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         Args:
             labels: The GCP secret labels.
             values: The GCP secret values.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The ZenML secret model.
@@ -303,6 +306,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
             created=created,
             updated=updated,
             values=values,
+            hydrate=hydrate,
         )
 
     def _get_gcp_filter_string(self, secret_filter_model: SecretFilter) -> str:
@@ -421,11 +425,15 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
             ),
         )
 
-    def get_secret(self, secret_id: UUID) -> SecretResponse:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -461,10 +469,11 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         return self._convert_gcp_secret(
             labels=secret.labels,
             values=secret_values,
+            hydrate=hydrate,
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilter
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
     ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
@@ -473,6 +482,8 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
 
         Args:
             secret_filter_model: The filter criteria.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -504,7 +515,11 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
                 }
             ):
                 try:
-                    secrets.append(self._convert_gcp_secret(secret.labels))
+                    secrets.append(
+                        self._convert_gcp_secret(
+                            secret.labels, hydrate=hydrate
+                        )
+                    )
                 except KeyError:
                     # keep going / ignore if this secret version doesn't exist
                     # or isn't a ZenML secret
@@ -615,8 +630,10 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         metadata[ZENML_GCP_SECRET_UPDATED_KEY] = updated.strftime(
             ZENML_GCP_DATE_FORMAT_STRING
         )
-        metadata[ZENML_GCP_SECRET_CREATED_KEY] = secret.created.strftime(
-            ZENML_GCP_DATE_FORMAT_STRING
+        metadata[ZENML_GCP_SECRET_CREATED_KEY] = (
+            secret.created.strftime(ZENML_GCP_DATE_FORMAT_STRING)
+            if secret.created
+            else metadata[ZENML_GCP_SECRET_UPDATED_KEY]
         )
 
         try:

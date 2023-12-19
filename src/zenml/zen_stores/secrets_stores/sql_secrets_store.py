@@ -295,14 +295,18 @@ class SqlSecretsStore(BaseSecretsStore):
             session.commit()
 
             return new_secret.to_model(
-                encryption_engine=self._encryption_engine
+                encryption_engine=self._encryption_engine, hydrate=True
             )
 
-    def get_secret(self, secret_id: UUID) -> SecretResponse:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -317,11 +321,11 @@ class SqlSecretsStore(BaseSecretsStore):
             if secret_in_db is None:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
             return secret_in_db.to_model(
-                encryption_engine=self._encryption_engine
+                encryption_engine=self._encryption_engine, hydrate=hydrate
             )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilter
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
     ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
@@ -331,6 +335,8 @@ class SqlSecretsStore(BaseSecretsStore):
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -347,7 +353,7 @@ class SqlSecretsStore(BaseSecretsStore):
                 table=SecretSchema,
                 filter_model=secret_filter_model,
                 custom_schema_to_model_conversion=lambda secret: secret.to_model(
-                    include_values=False
+                    include_values=False, hydrate=hydrate
                 ),
             )
 
@@ -420,7 +426,7 @@ class SqlSecretsStore(BaseSecretsStore):
             # Refresh the Model that was just created
             session.refresh(existing_secret)
             return existing_secret.to_model(
-                encryption_engine=self._encryption_engine
+                encryption_engine=self._encryption_engine, hydrate=True
             )
 
     def delete_secret(self, secret_id: UUID) -> None:
