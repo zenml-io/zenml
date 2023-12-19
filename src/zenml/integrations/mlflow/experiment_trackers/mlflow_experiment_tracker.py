@@ -233,6 +233,8 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             "pytorch",
         ]
 
+        failed_frameworks = []
+
         for framework in frameworks:
             try:
                 # Correctly prefix the module name with 'mlflow.'
@@ -241,15 +243,14 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 module = importlib.import_module(module_name)
                 # Call the autolog function with disable=True
                 module.autolog(disable=True)
-            except ImportError:
-                logger.warning(
-                    f"Module {module_name} not found. Skipping autologging disable for {framework}."
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to disable MLflow autologging for framework "
-                    f"{framework}: {e}"
-                )
+            except Exception:
+                failed_frameworks.append(framework)
+
+        if len(failed_frameworks) > 0:
+            logger.warning(
+                f"Failed to disable MLflow autologging for the following frameworks: "
+                f"{failed_frameworks}."
+            )
 
     def cleanup_step_run(
         self,
