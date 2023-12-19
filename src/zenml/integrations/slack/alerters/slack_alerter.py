@@ -57,7 +57,7 @@ class SlackAlerterParameters(BaseAlerterStepParameters):
     include_format_blocks: Optional[bool] = True
 
     # Allowing user to use their own custom blocks in the slack post message
-    blocks: Optional[List[Dict]] = None # type: ignore
+    blocks: Optional[List[Dict]] = None  # type: ignore
 
 
 class SlackAlerter(BaseAlerter):
@@ -147,7 +147,7 @@ class SlackAlerter(BaseAlerter):
 
     def _create_blocks(
         self, message: str, params: Optional[BaseAlerterStepParameters]
-    ) -> List[Dict]: #type: ignore
+    ) -> List[Dict]:  # type: ignore
         """Helper function to create slack blocks.
 
         Args:
@@ -198,7 +198,9 @@ class SlackAlerter(BaseAlerter):
                     },
                 ]
             else:
-                logger.info("No custom blocks or payload set. Settings empty blocks")
+                logger.info(
+                    "No custom blocks or payload set. Settings empty blocks"
+                )
                 return []
 
     def post(
