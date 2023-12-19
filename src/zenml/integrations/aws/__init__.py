@@ -29,6 +29,10 @@ AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
 AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
 AWS_SAGEMAKER_ORCHESTRATOR_FLAVOR = "sagemaker"
 
+# Service connector constants
+AWS_CONNECTOR_TYPE = "aws"
+AWS_RESOURCE_TYPE = "aws-generic"
+S3_RESOURCE_TYPE = "s3-bucket"
 
 class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
