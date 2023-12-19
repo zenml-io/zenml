@@ -162,7 +162,7 @@ class SlackAlerter(BaseAlerter):
                 logger.info("Using custom blocks")
                 return params.blocks
             elif hasattr(params, "payload") and params.payload is not None:
-                logger.info("No customer blocks set. Using default blocks")
+                logger.info("No custom blocks set. Using default blocks for slack alerter")
                 payload = params.payload
                 return [
                     {
@@ -198,9 +198,7 @@ class SlackAlerter(BaseAlerter):
                     },
                 ]
             else:
-                logger.info(
-                    "No custom blocks or payload set. Settings empty blocks"
-                )
+                logger.info("No custom blocks or payload set for slack alerter.")
                 return []
 
     def post(
