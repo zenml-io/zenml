@@ -193,8 +193,7 @@ class ModelVersion(BaseModel):
         except RuntimeError:
             return None
 
-        ea = ExternalArtifact(name=name, version=version)
-        ea._set_model_version(self)
+        ea = ExternalArtifact(name=name, version=version, model_version=self)
         return ea
 
     def get_artifact(
