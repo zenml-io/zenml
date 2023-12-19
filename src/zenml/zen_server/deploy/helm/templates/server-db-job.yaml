@@ -43,7 +43,7 @@ spec:
         # define a volume that will hold a backup of the database
         - name: db-backup
         # if a storage class is set, then use a pvc
-        {{- if .Values.storageClass }}
+        {{- if .Values.zenml.database.backupStorageClass }}
           persistentVolumeClaim:
             claimName: {{ include "zenml.fullname" . }}-db-backup
         {{- else }}
