@@ -11,42 +11,42 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Docker ZenML server deployment."""
+"""Local ZenML server deployment."""
 
 import logging
+import sys
 from typing import TYPE_CHECKING, Optional
 
 from tests.harness.deployment.base import (
     LOCAL_ZENML_SERVER_DEFAULT_PORT,
-    ZENML_SERVER_IMAGE_NAME,
     BaseTestDeployment,
 )
-from tests.harness.deployment.local_default import LocalDefaultTestDeployment
+from tests.harness.deployment.client_sqlite import ClientSQLiteTestDeployment
 from tests.harness.model import (
+    DatabaseType,
     DeploymentConfig,
-    DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 
 if TYPE_CHECKING:
     from zenml.zen_server.deploy.deployment import ServerDeployment
 
 
-class ServerDockerTestDeployment(BaseTestDeployment):
-    """A deployment that runs a ZenML server as a docker container."""
+class ServerSQLiteTestDeployment(BaseTestDeployment):
+    """A deployment that runs a ZenML server as a background process."""
 
     def __init__(self, config: DeploymentConfig) -> None:
-        """Initializes a docker ZenML server deployment.
+        """Initializes a local ZenML server deployment.
 
         Args:
             config: The configuration for the deployment.
         """
         super().__init__(config)
 
-        # The server docker deployment is built on top of a local default
+        # The server local deployment is built on top of a local default
         # deployment because the server is provisioned through the client
-        self.default_deployment = LocalDefaultTestDeployment(config)
+        self.default_deployment = ClientSQLiteTestDeployment(config)
 
     @property
     def server(self) -> Optional["ServerDeployment"]:
@@ -63,7 +63,7 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         with self.default_deployment.connect():
             deployer = ServerDeployer()
             servers = deployer.list_servers(
-                provider_type=ServerProviderType.DOCKER
+                provider_type=ServerProviderType.LOCAL
             )
             if not servers:
                 return None
@@ -72,10 +72,10 @@ class ServerDockerTestDeployment(BaseTestDeployment):
 
     @property
     def is_running(self) -> bool:
-        """Returns whether the deployment is running.
+        """Returns whether the ZenML server is running.
 
         Returns:
-            Whether the deployment is running.
+            True if the server is running, False otherwise.
         """
         server = self.server
         if server is not None and server.is_running:
@@ -84,15 +84,23 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         return False
 
     def up(self) -> None:
-        """Starts up the deployment.
+        """Starts the ZenML deployment.
 
         Raises:
-            RuntimeError: If the deployment could not be started.
+            RuntimeError: If the deployment is not supported on the host OS.
         """
         from zenml.enums import ServerProviderType
         from zenml.utils.networking_utils import scan_for_available_port
         from zenml.zen_server.deploy.deployer import ServerDeployer
         from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
+
+        if sys.platform == "win32":
+            raise RuntimeError(
+                "Running the ZenML server locally as a background process is "
+                "not supported on Windows."
+            )
+        else:
+            pass
 
         if self.is_running:
             logging.info(
@@ -102,8 +110,6 @@ class ServerDockerTestDeployment(BaseTestDeployment):
             return
 
         self.default_deployment.up()
-
-        self.build_server_image()
 
         # Managing the local server deployment is done through the default
         # deployment with the same config.
@@ -118,9 +124,8 @@ class ServerDockerTestDeployment(BaseTestDeployment):
             deployer = ServerDeployer()
             server_config = ServerDeploymentConfig(
                 name=self.config.name,
-                provider=ServerProviderType.DOCKER,
+                provider=ServerProviderType.LOCAL,
                 port=port,
-                image=ZENML_SERVER_IMAGE_NAME,
             )
             deployer.deploy_server(server_config)
 
@@ -129,16 +134,21 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         )
 
     def down(self) -> None:
-        """Tears down the deployment."""
+        """Stops the ZenML deployment."""
         from zenml.zen_server.deploy.deployer import ServerDeployer
 
         server = self.server
-        if server is not None:
-            # Managing the local server deployment is done through the default
-            # deployment with the same config.
-            with self.default_deployment.connect():
-                deployer = ServerDeployer()
-                deployer.remove_server(server.config.name)
+        if server is None:
+            logging.info(
+                f"Deployment '{self.config.name}' is no longer running. "
+            )
+            return
+
+        # Managing the local server deployment is done through the default
+        # deployment with the same config.
+        with self.default_deployment.connect():
+            deployer = ServerDeployer()
+            deployer.remove_server(server.config.name)
 
         self.default_deployment.down()
 
@@ -159,7 +169,7 @@ class ServerDockerTestDeployment(BaseTestDeployment):
 
         if not self.is_running:
             raise RuntimeError(
-                f"The {self.config.name} deployment is not running."
+                f"The '{self.config.name}' deployment is not running."
             )
 
         server = self.server
@@ -179,6 +189,6 @@ class ServerDockerTestDeployment(BaseTestDeployment):
         )
 
 
-ServerDockerTestDeployment.register_deployment_class(
-    type=DeploymentType.SERVER, setup=DeploymentSetup.DOCKER
+ServerSQLiteTestDeployment.register_deployment_class(
+    server_type=ServerType.LOCAL, database_type=DatabaseType.SQLITE
 )

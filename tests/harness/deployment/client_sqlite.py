@@ -19,15 +19,15 @@ from typing import Optional
 
 from tests.harness.deployment.base import BaseTestDeployment
 from tests.harness.model import (
+    DatabaseType,
     DeploymentConfig,
-    DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 
 
-class LocalDefaultTestDeployment(BaseTestDeployment):
-    """Default ZenML deployment."""
+class ClientSQLiteTestDeployment(BaseTestDeployment):
+    """Default client ZenML deployment."""
 
     def __init__(self, config: DeploymentConfig) -> None:
         """Initializes the default deployment.
@@ -83,6 +83,6 @@ class LocalDefaultTestDeployment(BaseTestDeployment):
         return None
 
 
-LocalDefaultTestDeployment.register_deployment_class(
-    type=DeploymentType.LOCAL, setup=DeploymentSetup.DEFAULT
+ClientSQLiteTestDeployment.register_deployment_class(
+    server_type=ServerType.NONE, database_type=DatabaseType.SQLITE
 )
