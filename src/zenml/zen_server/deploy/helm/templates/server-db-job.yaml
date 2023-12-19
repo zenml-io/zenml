@@ -87,6 +87,8 @@ spec:
             {{- end }}
             - name: ZENML_STORE_TYPE
               value: sql
+            - name: ZENML_STORE_BACKUP_DIRECTORY
+              value: /backups
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
             {{- if .Values.zenml.secretsStore.enabled }}
