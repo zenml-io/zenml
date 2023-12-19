@@ -84,5 +84,5 @@ class LocalSqliteTestDeployment(BaseTestDeployment):
 
 
 LocalSqliteTestDeployment.register_deployment_class(
-    type=ServerType.LOCAL, setup=DatabaseType.SQLITE
+    type=ServerType.NONE, setup=DatabaseType.SQLITE
 )

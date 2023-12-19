@@ -208,5 +208,5 @@ class LocalDockerMysqlTestDeployment(BaseTestDeployment):
 
 
 LocalDockerMysqlTestDeployment.register_deployment_class(
-    type=ServerType.LOCAL, setup=DatabaseType.MYSQL
+    type=ServerType.NONE, setup=DatabaseType.MYSQL
 )

@@ -208,5 +208,5 @@ class LocalDockerMariadbTestDeployment(BaseTestDeployment):
 
 
 LocalDockerMariadbTestDeployment.register_deployment_class(
-    type=ServerType.LOCAL, setup=DatabaseType.MARIADB
+    type=ServerType.NONE, setup=DatabaseType.MARIADB
 )

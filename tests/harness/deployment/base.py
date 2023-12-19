@@ -77,7 +77,16 @@ class BaseTestDeployment(ABC):
         Args:
             type: The deployment type.
             setup: The deployment setup method.
+
+        Raises:
+            ValueError: If a deployment class is already registered for the
+                given deployment type and setup method.
         """
+        if cls.get_deployment_class(type, setup) is not None:
+            raise ValueError(
+                f"Deployment class for type '{type}' and setup '{setup}' "
+                f"already registered"
+            )
         BaseTestDeployment.DEPLOYMENTS[(type, setup)] = cls
 
     @classmethod

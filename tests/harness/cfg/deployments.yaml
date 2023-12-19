@@ -60,19 +60,19 @@ deployments:
   - name: default
     description: >-
       Default deployment.
-    type: local
+    type: none
     setup: sqlite
 
   - name: local-mysql
     description: >-
       Local client connect directly to MySQL running in container.
-    type: local
+    type: none
     setup: mysql
 
   - name: local-mariadb
     description: >-
       Local client connect directly to MariaDB running in container.
-    type: local
+    type: none
     setup: mariadb
 
     # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
