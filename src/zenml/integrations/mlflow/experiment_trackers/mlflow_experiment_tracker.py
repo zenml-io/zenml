@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow experiment tracker for ZenML."""
 
+import importlib
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
@@ -237,7 +238,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 # Correctly prefix the module name with 'mlflow.'
                 module_name = f"mlflow.{framework}"
                 # Dynamically import the module corresponding to the framework
-                module = __import__(module_name, fromlist=["autolog"])
+                module = importlib.import_module(module_name)
                 # Call the autolog function with disable=True
                 module.autolog(disable=True)
             except ImportError:
