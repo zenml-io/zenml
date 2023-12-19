@@ -70,40 +70,40 @@ class BaseTestDeployment(ABC):
 
     @classmethod
     def register_deployment_class(
-        cls, type: ServerType, setup: DatabaseType
+        cls, server_type: ServerType, database_type: DatabaseType
     ) -> None:
         """Registers the deployment in the global registry.
 
         Args:
-            type: The deployment type.
-            setup: The deployment setup method.
+            server_type: The server deployment type.
+            database_type: The database deployment type.
 
         Raises:
             ValueError: If a deployment class is already registered for the
-                given deployment type and setup method.
+                given server and database types.
         """
-        if cls.get_deployment_class(type, setup) is not None:
+        if cls.get_deployment_class(server_type, database_type) is not None:
             raise ValueError(
-                f"Deployment class for type '{type}' and setup '{setup}' "
-                f"already registered"
+                f"Deployment class for type '{server_type}' and setup "
+                f"'{database_type}' already registered"
             )
-        BaseTestDeployment.DEPLOYMENTS[(type, setup)] = cls
+        BaseTestDeployment.DEPLOYMENTS[(server_type, database_type)] = cls
 
     @classmethod
     def get_deployment_class(
-        cls, type: ServerType, setup: DatabaseType
+        cls, server_type: ServerType, database_type: DatabaseType
     ) -> Optional[Type["BaseTestDeployment"]]:
-        """Returns the deployment class for the given type and setup.
+        """Returns the deployment class for the given server and database types.
 
         Args:
-            type: The deployment type.
-            setup: The deployment setup method.
+            server_type: The server deployment type.
+            database_type: The database deployment type.
 
         Returns:
-            The deployment class registered for the given deployment type and
-            setup method.
+            The deployment class registered for the given server and database
+            types, if one exists.
         """
-        return cls.DEPLOYMENTS.get((type, setup))
+        return cls.DEPLOYMENTS.get((server_type, database_type))
 
     @classmethod
     def from_config(cls, config: DeploymentConfig) -> "BaseTestDeployment":
@@ -119,11 +119,13 @@ class BaseTestDeployment(ABC):
             ValueError: If no deployment class is registered for the given
                 deployment type and setup method.
         """
-        deployment_class = cls.get_deployment_class(config.type, config.setup)
+        deployment_class = cls.get_deployment_class(
+            config.server, config.database
+        )
         if deployment_class is None:
             raise ValueError(
-                f"No deployment class registered for type '{config.type}' "
-                f"and setup '{config.setup}'"
+                f"No deployment class registered for type '{config.server}' "
+                f"and setup '{config.database}'"
             )
         return deployment_class(config)
 

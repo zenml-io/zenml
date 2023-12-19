@@ -129,7 +129,7 @@ environments:
     description: >-
       Server docker-compose deployment with local orchestrator and all local
       components, using a MySQL database.
-    deployment: docker-compose-server-mysql
+    deployment: docker-server-mysql
     requirements:
       - data-validators
       - mlflow-local-tracker
@@ -142,7 +142,7 @@ environments:
     description: >-
       Server docker-compose deployment with docker orchestrator and all local
       components, using a MySQL database.
-    deployment: docker-compose-server-mysql
+    deployment: docker-server-mysql
     requirements:
       - data-validators
       - mlflow-local-tracker
@@ -155,7 +155,7 @@ environments:
     description: >-
       Server docker-compose deployment with local airflow orchestrator and all
       local components, using a MySQL database.
-    deployment: docker-compose-server-mysql
+    deployment: docker-server-mysql
     requirements:
       - data-validators
       - mlflow-local-tracker
@@ -168,7 +168,7 @@ environments:
     description: >-
       Server docker-compose deployment with local orchestrator and all local
       components, using a MariaDB database.
-    deployment: docker-compose-server-mariadb
+    deployment: docker-server-mariadb
     requirements:
       - data-validators
       - mlflow-local-tracker
@@ -181,7 +181,7 @@ environments:
     description: >-
       Server docker-compose deployment with docker orchestrator and all local
       components, using a MariaDB database.
-    deployment: docker-compose-server-mariadb
+    deployment: docker-server-mariadb
     requirements:
       - data-validators
       - mlflow-local-tracker
@@ -194,7 +194,7 @@ environments:
     description: >-
       Server docker-compose deployment with local airflow orchestrator and all
       local components, using a MariaDB database.
-    deployment: docker-compose-server-mariadb
+    deployment: docker-server-mariadb
     requirements:
       - data-validators
       - mlflow-local-tracker

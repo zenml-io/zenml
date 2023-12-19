@@ -37,8 +37,8 @@ from tests.harness.model import (
 MARIADB_DOCKER_CONTAINER_NAME_PREFIX = "zenml-mariadb-"
 
 
-class LocalDockerMariadbTestDeployment(BaseTestDeployment):
-    """A deployment that uses a MariaDB (InnoDB) Docker container to host the ZenML database."""
+class ClientMariaDBTestDeployment(BaseTestDeployment):
+    """A client deployment that uses a MariaDB (InnoDB) Docker container to host the ZenML database."""
 
     def __init__(self, config: DeploymentConfig) -> None:
         """Initializes the deployment.
@@ -207,6 +207,6 @@ class LocalDockerMariadbTestDeployment(BaseTestDeployment):
         )
 
 
-LocalDockerMariadbTestDeployment.register_deployment_class(
-    type=ServerType.NONE, setup=DatabaseType.MARIADB
+ClientMariaDBTestDeployment.register_deployment_class(
+    server_type=ServerType.NONE, database_type=DatabaseType.MARIADB
 )

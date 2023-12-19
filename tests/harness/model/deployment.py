@@ -27,17 +27,16 @@ if TYPE_CHECKING:
 
 
 class ServerType(str, Enum):
-    """Enum for the server type of deployments."""
+    """Enum for the different types of server deployment methods."""
 
     NONE = "none"
     LOCAL = "local"
     DOCKER = "docker"
-    DOCKER_COMPOSE = "dockercompose"
     EXTERNAL = "external"
 
 
 class DatabaseType(str, Enum):
-    """Enum for the different types of deployment setup methods."""
+    """Enum for the different types of database deployment methods."""
 
     SQLITE = "sqlite"
     MYSQL = "mysql"
@@ -62,8 +61,8 @@ class DeploymentConfig(BaseTestConfigModel):
 
     name: str = Field(regex="^[a-z][a-z0-9-_]+$")
     description: str = ""
-    type: ServerType = ServerType.LOCAL
-    setup: DatabaseType = DatabaseType.SQLITE
+    server: ServerType = ServerType.LOCAL
+    database: DatabaseType = DatabaseType.SQLITE
     config: Optional[DeploymentStoreConfig] = None
     disabled: bool = False
     capabilities: Dict[str, bool] = Field(default_factory=dict)

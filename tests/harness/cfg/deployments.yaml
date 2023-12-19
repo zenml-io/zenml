@@ -11,30 +11,35 @@
 # - name: The name of the deployment. This is used to refer to the deployment
 #   in test environments and in the test framework CLI. It is also used to
 #   generate unique names for resources that may need to be deployed locally.
-# - type: The deployment type. It can take one of the following values:
-#   -  local: A local deployment that doesn't use a ZenML server. Clients have
-#      to connect directly to a local database.
-#   -  server: A deployment that uses a ZenML server running either locally or
-#      remotely.
-# - setup: The type of setup used to deploy and manage the test environment. For
-#   deployments that are running locally, that are provisioned and managed by
-#   the test framework, this controls how the deployment is provisioned.
-#   It can take one of the following values:
-#   -  default: Indicates that the default setup method should be used. For
-#      `local` deployments, this means that the default SQLite database will be
-#      used. For `server` deployments, this is equivalent to deploying the
-#      default ZenML server with `zenml up`.
-#   -  docker: When used with a `local` deployment type, a MySQL database
-#      service container is provisioned locally and used instead of the default
-#      SQLite database. When used with a `server` deployment type, a local ZenML
-#      server is deployed, similar to running `zenml up --docker`. The test
-#      framework also takes care of building and using a `zenml-server` Docker
-#      image with the latest code available in the local zenml code repository
-#      clone.
-#   -  docker-compose: A ZenML server and MySQL database are both provisioned
-#      locally using Docker Compose. The test framework also takes care of
-#      building and using a `zenml-server` Docker image with the latest code
-#      available in the local zenml code repository clone.
+# - server: The method used to deploy the ZenML server used in the tests. It can
+#   take one of the following values:
+#   -  none: A deployment that uses a local client that is not connected to
+#      any ZenML Server. The client connects directly to a database, which is
+#      either local or remote.
+#   -  local: A deployment that uses a ZenML server running locally as a
+#      daemon process (similar to running `zenml up`). The test framework takes
+#      care of starting and stopping the server process.
+#   -  docker: A deployment that uses a ZenML server running locally as a
+#      docker container (similar to running `zenml up --docker`). The test
+#      framework takes care of starting and stopping the server container. It
+#      also takes care of building and using a `zenml-server` Docker image with
+#      the latest code available in the local zenml code repository clone.
+#      When used with a dockerized database server like MySQL or MariaDB, the
+#      test framework uses Docker Compose to start and stop both containers.
+#   -  external: A deployment that uses a ZenML server running remotely. The
+#      test framework will not provision or manage this server.
+#      The test framework will only connect to the server and run tests against
+#      it. A `config` section must be provided in the deployment configuration
+#      to specify the connection details.
+# - database: The type of database used by the deployment. It can take one of
+#   the following values:
+#   -  sqlite: Indicates that the default SQLite database is used. For `local`
+#      and `docker` server deployments, this is equivalent to deploying the
+#      ZenML server with `zenml up` or `zenml up --docker`.
+#   -  mysql: Uses a MySQL database server running locally as a Docker
+#      container.
+#   -  mariadb: Uses a MariaDB database server running locally as a Docker
+#      container.
 #   -  external: A 3rd party ZenML server that is installed and maintained
 #      externally. The test framework will not provision or manage this server.
 #      The test framework will only connect to the server and run tests against
@@ -60,20 +65,20 @@ deployments:
   - name: default
     description: >-
       Default deployment.
-    type: none
-    setup: sqlite
+    server: none
+    database: sqlite
 
-  - name: local-mysql
+  - name: client-mysql
     description: >-
-      Local client connect directly to MySQL running in container.
-    type: none
-    setup: mysql
+      Local client connected directly to MySQL running in container.
+    server: none
+    database: mysql
 
-  - name: local-mariadb
+  - name: client-mariadb
     description: >-
-      Local client connect directly to MariaDB running in container.
-    type: none
-    setup: mariadb
+      Local client connected directly to MariaDB running in container.
+    server: none
+    database: mariadb
 
     # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
     # daemons in pytest leads to serious issues because the whole test process
@@ -81,32 +86,33 @@ deployments:
     # before pytest is invoked.
   - name: local-server
     description: >-
-      Local ZenML server.
-    type: local
-    setup: sqlite
+      Local ZenML server running as daemon process using the default SQLite
+      database.
+    server: local
+    database: sqlite
     capabilities:
       server: true
 
   - name: docker-server
     description: >-
-      Local ZenML server running in docker.
-    type: docker
-    setup: sqlite
+      Local ZenML server running in docker using the default SQLite database.
+    server: docker
+    database: sqlite
     capabilities:
       server: true
 
-  - name: docker-compose-server-mysql
+  - name: docker-server-mysql
     description: >-
-      Local ZenML server and MySQL running in docker with docker-compose.
-    type: dockercompose
-    setup: mysql
+      Local ZenML server and MySQL both running in docker with docker-compose.
+    server: docker
+    database: mysql
     capabilities:
       server: true
 
-  - name: docker-compose-server-mariadb
+  - name: docker-server-mariadb
     description: >-
-      Local ZenML server and MariaDB running in docker with docker-compose.
-    type: dockercompose
-    setup: mariadb
+      Local ZenML server and MariaDB both running in docker with docker-compose.
+    server: docker
+    database: mariadb
     capabilities:
       server: true

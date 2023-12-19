@@ -74,5 +74,5 @@ class ExternalServerTestDeployment(BaseTestDeployment):
 
 
 ExternalServerTestDeployment.register_deployment_class(
-    type=ServerType.EXTERNAL, setup=DatabaseType.EXTERNAL
+    server_type=ServerType.EXTERNAL, database_type=DatabaseType.EXTERNAL
 )

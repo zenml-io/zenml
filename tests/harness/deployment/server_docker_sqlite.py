@@ -21,7 +21,7 @@ from tests.harness.deployment.base import (
     ZENML_SERVER_IMAGE_NAME,
     BaseTestDeployment,
 )
-from tests.harness.deployment.local_sqlite import LocalSqliteTestDeployment
+from tests.harness.deployment.client_sqlite import ClientSQLiteTestDeployment
 from tests.harness.model import (
     DatabaseType,
     DeploymentConfig,
@@ -46,7 +46,7 @@ class ServerDockerTestDeployment(BaseTestDeployment):
 
         # The server docker deployment is built on top of a local default
         # deployment because the server is provisioned through the client
-        self.default_deployment = LocalSqliteTestDeployment(config)
+        self.default_deployment = ClientSQLiteTestDeployment(config)
 
     @property
     def server(self) -> Optional["ServerDeployment"]:
@@ -180,5 +180,5 @@ class ServerDockerTestDeployment(BaseTestDeployment):
 
 
 ServerDockerTestDeployment.register_deployment_class(
-    type=ServerType.DOCKER, setup=DatabaseType.SQLITE
+    server_type=ServerType.DOCKER, database_type=DatabaseType.SQLITE
 )

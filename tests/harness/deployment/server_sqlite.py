@@ -21,7 +21,7 @@ from tests.harness.deployment.base import (
     LOCAL_ZENML_SERVER_DEFAULT_PORT,
     BaseTestDeployment,
 )
-from tests.harness.deployment.local_sqlite import LocalSqliteTestDeployment
+from tests.harness.deployment.client_sqlite import ClientSQLiteTestDeployment
 from tests.harness.model import (
     DatabaseType,
     DeploymentConfig,
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from zenml.zen_server.deploy.deployment import ServerDeployment
 
 
-class ServerSqliteTestDeployment(BaseTestDeployment):
+class ServerSQLiteTestDeployment(BaseTestDeployment):
     """A deployment that runs a ZenML server as a background process."""
 
     def __init__(self, config: DeploymentConfig) -> None:
@@ -46,7 +46,7 @@ class ServerSqliteTestDeployment(BaseTestDeployment):
 
         # The server local deployment is built on top of a local default
         # deployment because the server is provisioned through the client
-        self.default_deployment = LocalSqliteTestDeployment(config)
+        self.default_deployment = ClientSQLiteTestDeployment(config)
 
     @property
     def server(self) -> Optional["ServerDeployment"]:
@@ -189,6 +189,6 @@ class ServerSqliteTestDeployment(BaseTestDeployment):
         )
 
 
-ServerSqliteTestDeployment.register_deployment_class(
-    type=ServerType.LOCAL, setup=DatabaseType.SQLITE
+ServerSQLiteTestDeployment.register_deployment_class(
+    server_type=ServerType.LOCAL, database_type=DatabaseType.SQLITE
 )

@@ -36,8 +36,8 @@ from tests.harness.model import (
 )
 
 
-class ServerDockerComposeMariadbTestDeployment(BaseTestDeployment):
-    """A deployment that runs a ZenML server as a docker-compose service."""
+class ServerDockerComposeMariaDBTestDeployment(BaseTestDeployment):
+    """A deployment that runs a ZenML server and MariaDB DB as docker containers using docker-compose."""
 
     @staticmethod
     def _generate_docker_compose_manifest() -> str:
@@ -293,6 +293,6 @@ services:
         )
 
 
-ServerDockerComposeMariadbTestDeployment.register_deployment_class(
-    type=ServerType.DOCKER_COMPOSE, setup=DatabaseType.MARIADB
+ServerDockerComposeMariaDBTestDeployment.register_deployment_class(
+    server_type=ServerType.DOCKER, database_type=DatabaseType.MARIADB
 )

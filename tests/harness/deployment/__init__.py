@@ -14,29 +14,29 @@
 """ZenML test framework deployments."""
 
 from tests.harness.deployment.base import BaseTestDeployment
-from tests.harness.deployment.local_sqlite import LocalSqliteTestDeployment
-from tests.harness.deployment.local_docker_mysql import LocalDockerMysqlTestDeployment
-from tests.harness.deployment.local_docker_mariadb import LocalDockerMariadbTestDeployment
+from tests.harness.deployment.client_sqlite import ClientSQLiteTestDeployment
+from tests.harness.deployment.client_mysql import ClientMySQLTestDeployment
+from tests.harness.deployment.client_mariadb import ClientMariaDBTestDeployment
 from tests.harness.deployment.server_docker_sqlite import ServerDockerTestDeployment
-from tests.harness.deployment.server_docker_compose_mysql import (
-    ServerDockerComposeMysqlTestDeployment,
+from tests.harness.deployment.server_docker_mysql import (
+    ServerDockerComposeMySQLTestDeployment,
 )
-from tests.harness.deployment.server_docker_compose_mariadb import (
-    ServerDockerComposeMariadbTestDeployment,
+from tests.harness.deployment.server_docker_mariadb import (
+    ServerDockerComposeMariaDBTestDeployment,
 )
 from tests.harness.deployment.server_external import (
     ExternalServerTestDeployment,
 )
-from tests.harness.deployment.server_sqlite import ServerSqliteTestDeployment
+from tests.harness.deployment.server_sqlite import ServerSQLiteTestDeployment
 
 __all__ = [
     "BaseTestDeployment",
-    "LocalSqliteTestDeployment",
-    "LocalDockerMysqlTestDeployment",
-    "LocalDockerMariadbTestDeployment",
-    "ServerSqliteTestDeployment",
+    "ClientSQLiteTestDeployment",
+    "ClientMySQLTestDeployment",
+    "ClientMariaDBTestDeployment",
+    "ServerSQLiteTestDeployment",
     "ServerDockerTestDeployment",
-    "ServerDockerComposeMysqlTestDeployment",
-    "ServerDockerComposeMariadbTestDeployment",
+    "ServerDockerComposeMySQLTestDeployment",
+    "ServerDockerComposeMariaDBTestDeployment",
     "ExternalServerTestDeployment",
 ]

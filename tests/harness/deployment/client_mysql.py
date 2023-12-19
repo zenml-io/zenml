@@ -37,8 +37,8 @@ from tests.harness.model import (
 MYSQL_DOCKER_CONTAINER_NAME_PREFIX = "zenml-mysql-"
 
 
-class LocalDockerMysqlTestDeployment(BaseTestDeployment):
-    """A deployment that uses a MySQL Docker container to host the ZenML database."""
+class ClientMySQLTestDeployment(BaseTestDeployment):
+    """A client deployment that uses a MySQL Docker container to host the ZenML database."""
 
     def __init__(self, config: DeploymentConfig) -> None:
         """Initializes the deployment.
@@ -207,6 +207,6 @@ class LocalDockerMysqlTestDeployment(BaseTestDeployment):
         )
 
 
-LocalDockerMysqlTestDeployment.register_deployment_class(
-    type=ServerType.NONE, setup=DatabaseType.MYSQL
+ClientMySQLTestDeployment.register_deployment_class(
+    server_type=ServerType.NONE, database_type=DatabaseType.MYSQL
 )
