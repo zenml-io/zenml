@@ -65,16 +65,16 @@ To use the SkyPilot VM Orchestrator, you need:
 * One of the SkyPilot integrations installed. You can install the SkyPilot integration for your cloud provider of choice using the following command:
   ```shell
     # For AWS
-    pip install "zenml[connectors-gcp]"
-    zenml integration install aws vm_aws 
+    pip install "zenml[connectors-aws]"
+    zenml integration install aws skypilot_aws 
 
     # for GCP
     pip install "zenml[connectors-gcp]"
-    zenml integration install gcp vm_gcp # for GCP
+    zenml integration install gcp skypilot_gcp # for GCP
 
     # for Azure
     pip install "zenml[connectors-azure]"
-    zenml integration install azure vm_azure # for Azure
+    zenml integration install azure skypilot_azure # for Azure
   ```
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
@@ -370,6 +370,38 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
 
 {% endtab %}
 {% endtabs %}
+
+
+One of the key features of the SkyPilot VM Orchestrator is the ability to run each step of a pipeline on a separate VM with its own specific settings. This allows for fine-grained control over the resources allocated to each step, ensuring that each part of your pipeline has the necessary compute power while optimizing for cost and efficiency.
+
+## Configuring Step-Specific Resources
+
+The SkyPilot VM Orchestrator allows you to configure resources for each step individually. This means you can specify different VM types, CPU and memory requirements, and even use spot instances for certain steps while using on-demand instances for others.
+
+To configure step-specific resources, you can pass a `SkypilotBaseOrchestratorSettings` object to the `settings` parameter of the `@step` decorator. This object allows you to define various attributes such as `instance_type`, `cpus`, `memory`, `use_spot`, `region`, and more.
+
+Here's an example of how to configure specific resources for a step for the AWS cloud:
+
+```python
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
+
+# Settings for a specific step that requires more resources
+high_resource_settings = SkypilotAWSOrchestratorSettings(
+    instance_type='t2.2xlarge',
+    cpus=8,
+    memory=32,
+    use_spot=False,
+    region='us-east-1',
+    # ... other settings
+)
+
+@step(settings={"orchestrator.vm_aws": high_resource_settings})
+def my_resource_intensive_step():
+    # Step implementation
+    pass
+```
+
+By using the `settings` parameter, you can tailor the resources for each step according to its specific needs. This flexibility allows you to optimize your pipeline execution for both performance and cost.
 
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_flavor.SkypilotBaseOrchestratorSettings)
