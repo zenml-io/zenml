@@ -193,8 +193,7 @@ class ModelVersion(BaseModel):
         except RuntimeError:
             return None
 
-        ea = ExternalArtifact(name=name, version=version)
-        ea._set_model_version(self)
+        ea = ExternalArtifact(name=name, version=version, model_version=self)
         return ea
 
     def get_artifact(
@@ -263,24 +262,24 @@ class ModelVersion(BaseModel):
             version=version,
         )
 
-    def get_endpoint_artifact(
+    def get_deployment_artifact(
         self,
         name: str,
         version: Optional[str] = None,
     ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
-        """Get the endpoint artifact linked to this model version.
+        """Get the deployment artifact linked to this model version.
 
         Args:
-            name: The name of the endpoint artifact to retrieve.
-            version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
+            name: The name of the deployment artifact to retrieve.
+            version: The version of the deployment artifact to retrieve (None for latest/non-versioned)
 
         Returns:
             Inside pipeline context: ExternalArtifact object as a lazy loader
-            Outside of pipeline context: Specific version of the endpoint artifact or None
+            Outside of pipeline context: Specific version of the deployment artifact or None
         """
         if response := self._try_get_as_external_artifact(name, version):
             return response
-        return self._get_or_create_model_version().get_endpoint_artifact(
+        return self._get_or_create_model_version().get_deployment_artifact(
             name=name,
             version=version,
         )

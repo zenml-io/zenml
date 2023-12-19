@@ -188,7 +188,7 @@ jobs:
         run: pip install docker-compose
 
       - name: Install Linux System Dependencies
-        if: runner.os=='Linux'
+        if: inputs.os=='ubuntu-latest'
         run: sudo apt install graphviz
 
       - name: Install MacOS System Dependencies
@@ -219,7 +219,7 @@ jobs:
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: runner.os=='Linux'
+        if: inputs.os=='ubuntu-latest'
 
       - name: Install kubectl on MacOS
         run: |
