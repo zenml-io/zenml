@@ -2342,21 +2342,21 @@ def test_deleting_a_stack_recursively_with_some_stack_components_present_in_anot
             }
             with StackContext(components=components) as stack:
                 with ComponentContext(
-                    c_type=StackComponentType.SECRETS_MANAGER,
+                    c_type=StackComponentType.IMAGE_BUILDER,
                     flavor="local",
                     config={},
-                ) as secret:
+                ) as image_builder:
                     components = {
                         StackComponentType.ORCHESTRATOR: [orchestrator.id],
                         StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-                        StackComponentType.SECRETS_MANAGER: [secret.id],
+                        StackComponentType.IMAGE_BUILDER: [image_builder.id],
                     }
                     with StackContext(components=components) as stack:
                         client.delete_stack(stack.id, recursive=True)
                         with pytest.raises(KeyError):
                             store.get_stack(stack.id)
                         with pytest.raises(KeyError):
-                            store.get_stack_component(secret.id)
+                            store.get_stack_component(image_builder.id)
 
 
 def test_stacks_are_accessible_by_other_users():
