@@ -134,6 +134,9 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     data_type: Source = Field(
         title="Data type of the artifact.",
     )
+    tags: List[TagResponseModel] = Field(
+        title="Tags associated with the model",
+    )
 
     _convert_source = convert_source_validator("materializer", "data_type")
 
@@ -148,9 +151,6 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     producer_step_run_id: Optional[UUID] = Field(
         title="ID of the step run that produced this artifact.",
         default=None,
-    )
-    tags: List[TagResponseModel] = Field(
-        title="Tags associated with the model",
     )
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
@@ -215,6 +215,15 @@ class ArtifactVersionResponse(
         return self.get_body().type
 
     @property
+    def tags(self) -> List[TagResponseModel]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().tags
+
+    @property
     def artifact_store_id(self) -> Optional[UUID]:
         """The `artifact_store_id` property.
 
@@ -231,15 +240,6 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_metadata().producer_step_run_id
-
-    @property
-    def tags(self) -> List[TagResponseModel]:
-        """The `tags` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().tags
 
     @property
     def visualizations(

@@ -40,7 +40,7 @@ def single_output_step_from_context_model() -> (
 
 @step(model_version=ModelVersion(name=MODEL_NAME))
 def single_output_step_from_context_endpoint() -> (
-    Annotated[int, ArtifactConfig(is_endpoint_artifact=True)]
+    Annotated[int, ArtifactConfig(is_deployment_artifact=True)]
 ):
     """Untyped single output linked as endpoint artifact from step context."""
     return 1
@@ -80,13 +80,13 @@ def test_link_minimalistic(clean_client: "Client"):
     one_is_data_artifact = False
     for link in links:
         one_is_endpoint_artifact ^= (
-            link.is_endpoint_artifact and not link.is_model_artifact
+            link.is_deployment_artifact and not link.is_model_artifact
         )
         one_is_model_artifact ^= (
-            not link.is_endpoint_artifact and link.is_model_artifact
+            not link.is_deployment_artifact and link.is_model_artifact
         )
         one_is_data_artifact ^= (
-            not link.is_endpoint_artifact and not link.is_model_artifact
+            not link.is_deployment_artifact and not link.is_model_artifact
         )
     assert one_is_endpoint_artifact
     assert one_is_model_artifact

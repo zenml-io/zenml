@@ -19,7 +19,7 @@ from zenml.artifact_stores import (
     BaseArtifactStoreConfig,
     BaseArtifactStoreFlavor,
 )
-from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR, GCS_RESOURCE_TYPE
 from zenml.models import ServiceConnectorRequirements
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
@@ -64,7 +64,7 @@ class GCPArtifactStoreFlavor(BaseArtifactStoreFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="gcs-bucket",
+            resource_type=GCS_RESOURCE_TYPE,
             resource_id_attr="path",
         )
 

@@ -29,6 +29,11 @@ AZURE_ARTIFACT_STORE_FLAVOR = "azure"
 AZURE_SECRETS_MANAGER_FLAVOR = "azure"
 AZUREML_STEP_OPERATOR_FLAVOR = "azureml"
 
+# Service connector constants
+AZURE_CONNECTOR_TYPE = "azure"
+AZURE_RESOURCE_TYPE = "azure-generic"
+BLOB_RESOURCE_TYPE = "blob-container"
+
 
 class AzureIntegration(Integration):
     """Definition of Azure integration for ZenML."""

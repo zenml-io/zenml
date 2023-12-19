@@ -250,19 +250,71 @@ zenml:
 
     # AWS secrets store configuration. Only relevant if the `aws` secrets store
     # type is configured.
+    #
+    # The AWS secrets store uses the AWS Service Connector under the hood to
+    # authenticate with the AWS Secrets Manager API. This means that you can
+    # use the same authentication methods and configuration as you would use for
+    # the AWS Service Connector. Just set the `authMethod` field to the
+    # authentication method that you want to use and set the required
+    # configuration attributes under the `authConfig` field.
+    # 
+    # For a list of supported authentication methods and their configuration
+    # options, see the following documentation:
+    # https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods
+    # 
+    # You can also use the ZenML CLI to get the list of supported authentication
+    # methods and their configuration options, e.g.:
+    #
+    #   ```shell
+    #   zenml service-connector describe-type aws
+    #   zenml service-connector describe-type aws --auth-method secret-key
+    #   ```
     aws:
 
+      # The AWS Service Connector authentication method to use. The currently
+      # supported authentication methods are:
+      #
+      # - implicit - Use the IAM role attached to the ZenML server pod or
+      #              environment variables to authenticate with the AWS Secrets
+      #              Manager API
+      # - secret-key - Use an AWS secret key
+      # - iam-role - Use an IAM role
+      # - session-token - Use an AWS session token derived from an AWS secret
+      #                   key
+      # - federation-token - Use an AWS federation token derived from an AWS
+      #                      secret key
+      authMethod: secret-key
+
+      # The AWS Service Connector authentication configuration. This should
+      # include the corresponding authentication configuration attributes for
+      # the `authMethod` that you have chosen above.
+      authConfig:
+        # The AWS region to use. This must be set to the region where the AWS
+        # Secrets Manager service that you want to use is located. Mandatory
+        # for all authentication methods.
+        region:
+        # The AWS access key and secret key to use to authenticate with the AWS
+        # Secrets Manager instance. Both are required if the `authMethod` is set
+        # to `secret-key`, `sts-token`, `iam-role`, or `federation-token`.
+        aws_access_key_id:
+        aws_secret_access_key:
+        # The AWS role ARN to use to authenticate with the AWS Secrets Manager
+        # instance. Required if the `authMethod` is set to `iam-role`.
+        role_arn:
+        
       # The AWS region to use. This must be set to the region where the AWS
       # Secrets Manager service that you want to use is located.
-      region_name: us-east-1
+      #
+      # NOTE: deprecated; use `authConfig.region` instead.
+      region_name:
 
       # The AWS credentials to use to authenticate with the AWS Secrets
       # Manager instance. You can omit these if you are running the ZenML server
       # in an AWS EKS cluster that has an IAM role attached to it that has
       # permissions to access the AWS Secrets Manager instance.
-      # NOTE: setting this is the same as setting the AWS_ACCESS_KEY_ID,
-      # AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN environment variables
-      # in the zenml.secretEnvironment variable.
+      #
+      # NOTE: deprecated; use `authConfig.aws_access_key_id`,
+      # and `authConfig.aws_secret_access_key` instead.
       aws_access_key_id:
       aws_secret_access_key:
       aws_session_token:
@@ -280,21 +332,119 @@ zenml:
 
     # GCP secrets store configuration. Only relevant if the `gcp` secrets store
     # type is configured.
+    #
+    # The GCP secrets store uses the GCP Service Connector under the hood to
+    # authenticate with the GCP Secrets Manager API. This means that you can
+    # use the same authentication methods and configuration as you would use for
+    # the GCP Service Connector. Just set the `authMethod` field to the
+    # authentication method that you want to use and set the required
+    # configuration attributes under the `authConfig` field.
+    # 
+    # For a list of supported authentication methods and their configuration
+    # options, see the following documentation:
+    # https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods
+    # 
+    # You can also use the ZenML CLI to get the list of supported authentication
+    # methods and their configuration options, e.g.:
+    #
+    #   ```shell
+    #   zenml service-connector describe-type gcp
+    #   zenml service-connector describe-type gcp --auth-method service-account
+    #   ```
     gcp:
+
+      # The GCP Service Connector authentication method to use. The currently
+      # supported authentication methods are:
+      #
+      # - implicit - Use the GCP service account attached to the ZenML server
+      #              pod or environment variables to authenticate with the GCP
+      #              Secrets Manager API
+      # - user-account - Use a GCP user account
+      # - service-account - Use a GCP service account
+      # - impersonation - Use the GCP service account impersonation feature
+      authMethod: service-account
+
+      # The GCP Service Connector authentication configuration. This should
+      # include the corresponding authentication configuration attributes for
+      # the `authMethod` that you have chosen above.
+      authConfig:
+        # The GCP project ID to use. This must be set to the project ID where
+        # the GCP Secrets Manager service that you want to use is located.
+        # Mandatory for all authentication methods.
+        project_id:
+
+        # The GCP user account credentials to use to authenticate with the GCP
+        # Secrets Manager instance. Required if the `authMethod` is set to
+        # `user-account`.
+        user_account_json:
+
+        # The GCP service account credentials to use to authenticate with the
+        # GCP Secrets Manager instance. Required if the `authMethod` is set to
+        # `service-account` or `impersonation`.
+        service_account_json: 
+
+        # The GCP service account to impersonate when authenticating with the
+        # GCP Secrets Manager instance. Required if the `authMethod` is set to
+        # `impersonation`.
+        target_principal:
 
       # The GCP project ID to use. This must be set to the project ID where the
       # GCP Secrets Manager service that you want to use is located.
-      project_id: my-gcp-project
+      #
+      # NOTE: deprecated; use `authConfig.project_id` instead.
+      project_id:
 
       # The JSON content of the GCP credentials file to use to authenticate with 
       # the GCP Secrets Manager instance. You can omit this if you are running 
       # the ZenML server in a GCP GKE cluster that uses workload identity to 
       # authenticate with GCP services without the need for credentials.
+      #
+      # NOTE: deprecated; use `authConfig.service_account_json` instead.
       google_application_credentials:
 
-    # AWS Key Vault secrets store configuration. Only relevant if the `azure`
+    # Azure Key Vault secrets store configuration. Only relevant if the `azure`
     # secrets store type is configured.
+    #
+    # The Azure secrets store uses the Azure Service Connector under the hood to
+    # authenticate with the Azure Key Vault API. This means that you can
+    # use the same authentication methods and configuration as you would use for
+    # the Azure Service Connector. Just set the `authMethod` field to the
+    # authentication method that you want to use and set the required
+    # configuration attributes under the `authConfig` field.
+    # 
+    # For a list of supported authentication methods and their configuration
+    # options, see the following documentation:
+    # https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods
+    # 
+    # You can also use the ZenML CLI to get the list of supported authentication
+    # methods and their configuration options, e.g.:
+    #
+    #   ```shell
+    #   zenml service-connector describe-type azure
+    #   zenml service-connector describe-type azure --auth-method service-principal
+    #   ```
     azure:
+
+      # The Azure Service Connector authentication method to use. The currently
+      # supported authentication methods are:
+      #
+      # - implicit - Use the Azure managed identity attached to the ZenML server
+      #              pod or environment variables to authenticate with the Azure
+      #              Key Vault API
+      # - service-principal - Use an Azure service principal
+      authMethod: service-principal
+
+      # The Azure Service Connector authentication configuration. This should
+      # include the corresponding authentication configuration attributes for
+      # the `authMethod` that you have chosen above.
+      authConfig:
+
+        # The Azure service principal credentials to use to authenticate with
+        # the Azure Key Vault API. All three are Required if the `authMethod` is
+        # set to `service-principal`.
+        client_id:
+        client_secret:
+        tenant_id:
 
       # The name of the Azure Key Vault. This must be set to point to the Azure
       # Key Vault instance that you want to use.
@@ -304,9 +454,9 @@ zenml:
       # authenticate with the Azure Key Vault API. You can omit these if you are
       # running the ZenML server hosted in Azure and are using a managed
       # identity to access the Azure Key Vault service.
-      # NOTE: setting this is the same as setting the AZURE_CLIENT_ID,
-      # AZURE_CLIENT_SECRET, and AZURE_TENANT_ID environment variables
-      # in the zenml.secretEnvironment variable.
+      #
+      # NOTE: deprecated; use `authConfig.client_id`, `authConfig.client_secret`,
+      # and `authConfig.tenant_id` instead.
       azure_client_id:
       azure_client_secret:
       azure_tenant_id:
