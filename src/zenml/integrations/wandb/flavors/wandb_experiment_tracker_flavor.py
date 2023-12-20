@@ -53,12 +53,12 @@ class WandbExperimentTrackerSettings(BaseSettings):
 
     run_name: Optional[str] = None
     tags: List[str] = []
-    settings: Union[Dict[str, Any], Settings] = {}  # type: ignore
+    settings: Dict[str, Any] = {}
 
     @validator("settings", pre=True)
     def _convert_settings(
         cls,
-        value: Union[Dict[str, Any], Settings],  # type: ignore
+        value: Union[Dict[str, Any], "Settings"],  # type: ignore
     ) -> Dict[str, Any]:
         """Converts settings to a dictionary.
 
@@ -71,7 +71,12 @@ class WandbExperimentTrackerSettings(BaseSettings):
         import wandb
 
         if isinstance(value, wandb.Settings):
-            return cast(Dict[str, Any], value.make_static())
+            # Depending on the wandb version, either `make_static` or `to_dict`
+            # is available to convert the settings to a dictionary
+            if hasattr(value, "make_static"):
+                return cast(Dict[str, Any], value.make_static())
+            else:
+                return value.to_dict()
         else:
             return value
 

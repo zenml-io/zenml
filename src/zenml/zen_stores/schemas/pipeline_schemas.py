@@ -95,7 +95,6 @@ class PipelineSchema(NamedSchema, table=True):
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="pipeline",
-        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     @classmethod

@@ -16,6 +16,7 @@
 
 import json
 import math
+import os
 import re
 import uuid
 from datetime import datetime
@@ -28,19 +29,27 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions
 from google.cloud.secretmanager import SecretManagerServiceClient
+from pydantic import root_validator
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
-from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.exceptions import EntityExistsError
+from zenml.integrations.gcp import (
+    GCP_CONNECTOR_TYPE,
+    GCP_RESOURCE_TYPE,
+)
+from zenml.integrations.gcp.service_connectors.gcp_service_connector import (
+    GCPAuthenticationMethods,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -49,15 +58,15 @@ from zenml.models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.zen_stores.secrets_stores.base_secrets_store import (
-    BaseSecretsStore,
+from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
+    ServiceConnectorSecretsStore,
+    ServiceConnectorSecretsStoreConfiguration,
 )
 
 logger = get_logger(__name__)
 
 
 GCP_ZENML_SECRET_NAME_PREFIX = "zenml"
-ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
 ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR = "-"
 ZENML_GCP_DATE_FORMAT_STRING = "%Y-%m-%d-%H-%M-%S"
@@ -65,53 +74,118 @@ ZENML_GCP_SECRET_CREATED_KEY = "zenml-secret-created"
 ZENML_GCP_SECRET_UPDATED_KEY = "zenml-secret-updated"
 
 
-class GCPSecretsStoreConfiguration(SecretsStoreConfiguration):
+class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
     """GCP secrets store configuration.
 
     Attributes:
         type: The type of the store.
-        project_id: The GCP project ID where the secrets are stored.
-
     """
 
     type: SecretsStoreType = SecretsStoreType.GCP
-    project_id: str
+
+    @property
+    def project_id(self) -> str:
+        """Get the GCP project ID.
+
+        Returns:
+            The GCP project ID.
+
+        Raises:
+            ValueError: If the project ID is not set.
+        """
+        project_id = self.auth_config.get("project_id")
+        if project_id:
+            return str(project_id)
+
+        raise ValueError("GCP `project_id` must be specified in auth_config.")
+
+    @root_validator(pre=True)
+    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Populate the connector configuration from legacy attributes.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+
+        Raises:
+            ValueError: If the connector attribute is not set.
+        """
+        # Search for legacy attributes and populate the connector configuration
+        # from them, if they exist.
+        if values.get("project_id") and os.environ.get(
+            "GOOGLE_APPLICATION_CREDENTIALS"
+        ):
+            logger.warning(
+                "The `project_id` GCP secrets store attribute and the "
+                "`GOOGLE_APPLICATION_CREDENTIALS` environment variable are "
+                "deprecated and will be removed in a future version of ZenML. "
+                "Please use the `auth_method` and `auth_config` attributes "
+                "instead."
+            )
+            values["auth_method"] = GCPAuthenticationMethods.SERVICE_ACCOUNT
+            values["auth_config"] = dict(
+                project_id=values.get("project_id"),
+            )
+            # Load the service account credentials from the file
+            with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]) as f:
+                values["auth_config"]["service_account_json"] = f.read()
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
 
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra = "allow"
 
 
-class GCPSecretsStore(BaseSecretsStore):
+class GCPSecretsStore(ServiceConnectorSecretsStore):
     """Secrets store implementation that uses the GCP Secrets Manager API."""
 
     config: GCPSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.GCP
     CONFIG_TYPE: ClassVar[
-        Type[SecretsStoreConfiguration]
+        Type[ServiceConnectorSecretsStoreConfiguration]
     ] = GCPSecretsStoreConfiguration
+    SERVICE_CONNECTOR_TYPE: ClassVar[str] = GCP_CONNECTOR_TYPE
+    SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = GCP_RESOURCE_TYPE
 
     _client: Optional[SecretManagerServiceClient] = None
 
-    def _initialize(self) -> None:
-        """Initialize the GCP secrets store."""
-        logger.debug("Initializing GCPSecretsStore")
-
-        # Initialize the GCP client.
-        _ = self.client
-
     @property
-    def client(self) -> Any:
+    def client(self) -> SecretManagerServiceClient:
         """Initialize and return the GCP Secrets Manager client.
+
+        Returns:
+            The GCP Secrets Manager client instance.
+        """
+        return cast(SecretManagerServiceClient, super().client)
+
+    # ====================================
+    # Secrets Store interface implementation
+    # ====================================
+
+    # --------------------------------
+    # Initialization and configuration
+    # --------------------------------
+
+    def _initialize_client_from_connector(self, client: Any) -> Any:
+        """Initialize the GCP Secrets Manager client from the service connector client.
+
+        Args:
+            client: The authenticated client object returned by the service
+                connector.
 
         Returns:
             The GCP Secrets Manager client.
         """
-        if self._client is None:
-            self._client = SecretManagerServiceClient()
-        return self._client
+        return SecretManagerServiceClient(credentials=client)
+
+    # ------
+    # Secrets
+    # ------
 
     @property
     def parent_name(self) -> str:
@@ -457,7 +531,7 @@ class GCPSecretsStore(BaseSecretsStore):
                 f"{secret_count} items for this query. The maximum page value "
                 f"therefore is {total_pages}."
             )
-        return Page(
+        return Page[SecretResponseModel](
             total=secret_count,
             total_pages=total_pages,
             items=sorted_results[

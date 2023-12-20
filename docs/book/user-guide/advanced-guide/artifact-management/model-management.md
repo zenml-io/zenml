@@ -94,12 +94,10 @@ from zenml.model import ModelVersion
 
 @pipeline(
     enable_cache=False,
-    model_config=ModelVersion(
+    model_version=ModelVersion(
         name="demo",
         license="Apache",
         description="Show case Model Control Plane.",
-        create_new_model_version=True,
-        delete_new_version_on_failure=True,
     ),
 )
 def train_and_promote_model():
@@ -180,7 +178,7 @@ particular model version. Possible options for stages are:
 
 - `staging`: This version is staged for production.
 - `production`: This version is running in a production setting.
-- `latest`: The latest version of the model.
+- `latest`: The latest version of the model. This is a virtual stage to retrieve the latest model version only - model versions cannot be promoted to `latest`.
 - `archived`: This is archived and no longer relevant. This stage occurs when a
   model moves out of any other stage.
 
@@ -214,18 +212,12 @@ from zenml import Client
 MODEL_NAME = "iris_logistic_regression"
 from zenml.enum import ModelStages
 
-client = Client()
-# get Model by name
-model = client.get_model(model_name=MODEL_NAME)
-
-# get specific Model Version and set it as Production
-# (if there is current Production version it will get Archived)
-model_version = model.get_version(version="1.2.3")
+model_version = ModelVersion(name=MODEL_NAME, version="1.2.3")
 model_version.set_stage(stage=ModelStages.PRODUCTION)
 
 # get Latest Model Version and set it as Staging
 # (if there is current Staging version it will get Archived)
-latest_model_version = model.versions[-1]
+latest_model_version = ModelVersion(name=MODEL_NAME, version=ModelStages.LATEST)
 latest_model_version.set_stage(stage=ModelStages.STAGING)
 ```
 
@@ -238,8 +230,7 @@ from zenml.enums import ModelStages
 
 @step
 def promote_to_staging():
-    model_config = get_step_context().model_config
-    model_version = model_config._get_model_version()
+    model_version = get_step_context().model_version
     model_version.set_stage(ModelStages.STAGING, force=True)
 
 @pipeline(

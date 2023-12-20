@@ -48,10 +48,10 @@ from zenml.models import (
     ComponentUpdate,
     FlavorFilter,
     FlavorRequest,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelUpdateModel,
-    ModelVersionRequestModel,
+    ModelFilter,
+    ModelRequest,
+    ModelUpdate,
+    ModelVersionRequest,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -555,6 +555,7 @@ class ServiceConnectorContext:
         configuration: Optional[Dict[str, str]] = None,
         secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
         expires_at: Optional[datetime] = None,
+        expires_skew_tolerance: Optional[int] = None,
         expiration_seconds: Optional[int] = None,
         user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
@@ -570,6 +571,7 @@ class ServiceConnectorContext:
         self.configuration = configuration
         self.secrets = secrets
         self.expires_at = expires_at
+        self.expires_skew_tolerance = expires_skew_tolerance
         self.expiration_seconds = expiration_seconds
         self.user_id = user_id
         self.workspace_id = workspace_id
@@ -588,6 +590,7 @@ class ServiceConnectorContext:
             configuration=self.configuration or {},
             secrets=self.secrets or {},
             expires_at=self.expires_at,
+            expires_skew_tolerance=self.expires_skew_tolerance,
             expiration_seconds=self.expiration_seconds,
             labels=self.labels or {},
             user=self.user_id or self.client.active_user.id,
@@ -646,7 +649,7 @@ class ModelVersionContext:
                 mv = client.get_model_version(self.model, self.model_version)
             except KeyError:
                 mv = client.zen_store.create_model_version(
-                    ModelVersionRequestModel(
+                    ModelVersionRequest(
                         user=user.id,
                         workspace=ws.id,
                         model=model.id,
@@ -1126,7 +1129,7 @@ service_connector_crud_test_config = CrudTestConfig(
     entity_name="service_connector",
 )
 model_crud_test_config = CrudTestConfig(
-    create_model=ModelRequestModel(
+    create_model=ModelRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name="super_model",
@@ -1139,11 +1142,11 @@ model_crud_test_config = CrudTestConfig(
         ethics="all good",
         tags=["cool", "stuff"],
     ),
-    update_model=ModelUpdateModel(
+    update_model=ModelUpdate(
         name=sample_name("updated_sample_service_connector"),
         description="new_description",
     ),
-    filter_model=ModelFilterModel,
+    filter_model=ModelFilter,
     entity_name="model",
 )
 

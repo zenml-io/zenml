@@ -852,16 +852,18 @@ class BaseStep(metaclass=BaseStepMeta):
         self,
         config: "StepConfigurationUpdate",
         merge: bool = True,
+        runtime_parameters: Dict[str, Any] = {},
     ) -> None:
         """Applies an update to the step configuration.
 
         Args:
             config: The configuration update.
+            runtime_parameters: Dictionary of parameters passed to a step from runtime
             merge: Whether to merge the updates with the existing configuration
                 or not. See the `BaseStep.configure(...)` method for a detailed
                 explanation.
         """
-        self._validate_configuration(config)
+        self._validate_configuration(config, runtime_parameters)
 
         self._configuration = pydantic_utils.update_model(
             self._configuration, update=config, recursive=merge
@@ -871,33 +873,48 @@ class BaseStep(metaclass=BaseStepMeta):
         logger.debug(self._configuration)
 
     def _validate_configuration(
-        self, config: "StepConfigurationUpdate"
+        self,
+        config: "StepConfigurationUpdate",
+        runtime_parameters: Dict[str, Any],
     ) -> None:
         """Validates a configuration update.
 
         Args:
             config: The configuration update to validate.
+            runtime_parameters: Dictionary of parameters passed to a step from runtime
         """
         settings_utils.validate_setting_keys(list(config.settings))
-        self._validate_function_parameters(parameters=config.parameters)
+        self._validate_function_parameters(
+            parameters=config.parameters, runtime_parameters=runtime_parameters
+        )
         self._validate_outputs(outputs=config.outputs)
 
     def _validate_function_parameters(
-        self, parameters: Dict[str, Any]
+        self,
+        parameters: Dict[str, Any],
+        runtime_parameters: Dict[str, Any],
     ) -> None:
         """Validates step function parameters.
 
         Args:
             parameters: The parameters to validate.
+            runtime_parameters: Dictionary of parameters passed to a step from runtime
 
         Raises:
             StepInterfaceError: If the step requires no function parameters but
                 parameters were configured.
+            RuntimeError: If the step has parameters configured differently in
+                configuration file and code.
         """
         if not parameters:
             return
 
+        conflicting_parameters = {}
         for key, value in parameters.items():
+            if key in runtime_parameters:
+                runtime_value = runtime_parameters[key]
+                if runtime_value != value:
+                    conflicting_parameters[key] = (value, runtime_value)
             if key in self.entrypoint_definition.inputs:
                 self.entrypoint_definition.validate_input(key=key, value=value)
 
@@ -906,6 +923,32 @@ class BaseStep(metaclass=BaseStepMeta):
                     f"Unable to find parameter '{key}' in step function "
                     "signature."
                 )
+        if conflicting_parameters:
+            is_plural = "s" if len(conflicting_parameters) > 1 else ""
+            msg = f"Configured parameter{is_plural} for the step `{self.name}` conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
+            for key, values in conflicting_parameters.items():
+                msg += (
+                    f"`{key}`: config=`{values[0]}` | runtime=`{values[1]}`\n"
+                )
+            msg += """This happens, if you define values for step parameters in configuration file and pass same parameters from the code. Example:
+```
+# config.yaml
+
+steps:
+    step_name:
+        parameters:
+            param_name: value1
+            
+            
+# pipeline.py
+
+@pipeline
+def pipeline_():
+    step_name(param_name="other_value")
+```
+To avoid this consider setting step parameters only in one place (config or code).
+"""
+            raise RuntimeError(msg)
 
     def _validate_outputs(
         self, outputs: Mapping[str, "PartialArtifactConfiguration"]

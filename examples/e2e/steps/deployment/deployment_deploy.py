@@ -37,7 +37,7 @@ logger = get_logger(__name__)
 def deployment_deploy() -> (
     Annotated[
         Optional[MLFlowDeploymentService],
-        ArtifactConfig(name="mlflow_deployment", is_endpoint_artifact=True),
+        ArtifactConfig(name="mlflow_deployment", is_deployment_artifact=True),
     ]
 ):
     """Predictions step.
@@ -65,9 +65,9 @@ def deployment_deploy() -> (
         # deploy predictor service
         deployment_service = mlflow_model_registry_deployer_step.entrypoint(
             registry_model_name=model_version.name,
-            registry_model_version=model_version.get_model_artifact("model")
-            .run_metadata["model_registry_version"]
-            .value,
+            registry_model_version=model_version.metadata[
+                "model_registry_version"
+            ],
             replace_existing=True,
         )
     else:

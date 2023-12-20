@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow experiment tracker for ZenML."""
 
+import importlib
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
@@ -219,34 +220,37 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         }
 
     def disable_autologging(self) -> None:
-        """Disables MLflow autologging."""
-        from mlflow import (
-            fastai,
-            gluon,
-            lightgbm,
-            pytorch,
-            sklearn,
-            spark,
-            statsmodels,
-            tensorflow,
-            xgboost,
-        )
+        """Disables MLflow autologging for all supported frameworks."""
+        frameworks = [
+            "tensorflow",
+            "gluon",
+            "xgboost",
+            "lightgbm",
+            "statsmodels",
+            "spark",
+            "sklearn",
+            "fastai",
+            "pytorch",
+        ]
 
-        # There is no way to disable auto-logging for all frameworks at once.
-        # If auto-logging is explicitly enabled for a framework by calling its
-        # autolog() method, it cannot be disabled by calling
-        # `mlflow.autolog(disable=True)`. Therefore, we need to disable
-        # auto-logging for all frameworks explicitly.
+        failed_frameworks = []
 
-        tensorflow.autolog(disable=True)
-        gluon.autolog(disable=True)
-        xgboost.autolog(disable=True)
-        lightgbm.autolog(disable=True)
-        statsmodels.autolog(disable=True)
-        spark.autolog(disable=True)
-        sklearn.autolog(disable=True)
-        fastai.autolog(disable=True)
-        pytorch.autolog(disable=True)
+        for framework in frameworks:
+            try:
+                # Correctly prefix the module name with 'mlflow.'
+                module_name = f"mlflow.{framework}"
+                # Dynamically import the module corresponding to the framework
+                module = importlib.import_module(module_name)
+                # Call the autolog function with disable=True
+                module.autolog(disable=True)
+            except Exception:
+                failed_frameworks.append(framework)
+
+        if len(failed_frameworks) > 0:
+            logger.warning(
+                f"Failed to disable MLflow autologging for the following frameworks: "
+                f"{failed_frameworks}."
+            )
 
     def cleanup_step_run(
         self,

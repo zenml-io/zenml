@@ -36,6 +36,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
+          - ubuntu-dind-runners
         required: false
         default: 'ubuntu-latest'
       python-version:
@@ -126,6 +127,8 @@ jobs:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
           install_integrations: ${{ inputs.install_integrations }}
+          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
+          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
 
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}

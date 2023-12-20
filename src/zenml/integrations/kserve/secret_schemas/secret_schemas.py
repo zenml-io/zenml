@@ -13,17 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation for KServe secret schemas."""
 
-from typing import ClassVar, Optional
+from typing import Optional
 
-from zenml.secret import register_secret_schema_class
 from zenml.secret.base_secret import BaseSecretSchema
 
-KSERVE_S3_SECRET_SCHEMA_TYPE = "kserve_s3"
-KSERVE_GS_SECRET_SCHEMA_TYPE = "kserve_gs"
-KSERVE_AZUREBLOB_SECRET_SCHEMA_TYPE = "kserve_az"
 
-
-@register_secret_schema_class
 class KServeS3SecretSchema(BaseSecretSchema):
     """KServe S3 credentials.
 
@@ -36,8 +30,6 @@ class KServeS3SecretSchema(BaseSecretSchema):
         s3_verify_ssl: whether to verify SSL.
     """
 
-    TYPE: ClassVar[str] = KSERVE_S3_SECRET_SCHEMA_TYPE
-
     aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
     s3_endpoint: Optional[str] = None
@@ -46,7 +38,6 @@ class KServeS3SecretSchema(BaseSecretSchema):
     s3_verify_ssl: Optional[str] = None
 
 
-@register_secret_schema_class
 class KServeGSSecretSchema(BaseSecretSchema):
     """KServe GCS credentials.
 
@@ -55,12 +46,9 @@ class KServeGSSecretSchema(BaseSecretSchema):
             in JSON format.
     """
 
-    TYPE: ClassVar[str] = KSERVE_GS_SECRET_SCHEMA_TYPE
-
     google_application_credentials: Optional[str]
 
 
-@register_secret_schema_class
 class KServeAzureSecretSchema(BaseSecretSchema):
     """KServe Azure Blob Storage credentials.
 
@@ -70,8 +58,6 @@ class KServeAzureSecretSchema(BaseSecretSchema):
         azure_tenant_id: the Azure tenant ID.
         azure_subscription_id: the Azure subscription ID.
     """
-
-    TYPE: ClassVar[str] = KSERVE_AZUREBLOB_SECRET_SCHEMA_TYPE
 
     azure_client_id: Optional[str] = None
     azure_client_secret: Optional[str] = None

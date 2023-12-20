@@ -119,14 +119,6 @@ def stack() -> None:
     required=False,
 )
 @click.option(
-    "-x",
-    "--secrets_manager",
-    "secrets_manager",
-    help="Name of the secrets manager for this stack.",
-    type=str,
-    required=False,
-)
-@click.option(
     "-s",
     "--step_operator",
     "step_operator",
@@ -203,7 +195,6 @@ def register_stack(
     orchestrator: str,
     container_registry: Optional[str] = None,
     model_registry: Optional[str] = None,
-    secrets_manager: Optional[str] = None,
     step_operator: Optional[str] = None,
     feature_store: Optional[str] = None,
     model_deployer: Optional[str] = None,
@@ -222,7 +213,6 @@ def register_stack(
         orchestrator: Name of the orchestrator for this stack.
         container_registry: Name of the container registry for this stack.
         model_registry: Name of the model registry for this stack.
-        secrets_manager: Name of the secrets manager for this stack.
         step_operator: Name of the step operator for this stack.
         feature_store: Name of the feature store for this stack.
         model_deployer: Name of the model deployer for this stack.
@@ -255,8 +245,6 @@ def register_stack(
             components[StackComponentType.MODEL_DEPLOYER] = model_deployer
         if model_registry:
             components[StackComponentType.MODEL_REGISTRY] = model_registry
-        if secrets_manager:
-            components[StackComponentType.SECRETS_MANAGER] = secrets_manager
         if step_operator:
             components[StackComponentType.STEP_OPERATOR] = step_operator
         if experiment_tracker:
@@ -338,14 +326,6 @@ def register_stack(
     required=False,
 )
 @click.option(
-    "-x",
-    "--secrets_manager",
-    "secrets_manager",
-    help="Name of the new secrets manager for this stack.",
-    type=str,
-    required=False,
-)
-@click.option(
     "-f",
     "--feature_store",
     "feature_store",
@@ -407,7 +387,6 @@ def update_stack(
     orchestrator: Optional[str] = None,
     container_registry: Optional[str] = None,
     step_operator: Optional[str] = None,
-    secrets_manager: Optional[str] = None,
     feature_store: Optional[str] = None,
     model_deployer: Optional[str] = None,
     experiment_tracker: Optional[str] = None,
@@ -425,7 +404,6 @@ def update_stack(
         orchestrator: Name of the new orchestrator for this stack.
         container_registry: Name of the new container registry for this stack.
         step_operator: Name of the new step operator for this stack.
-        secrets_manager: Name of the new secrets manager for this stack.
         feature_store: Name of the new feature store for this stack.
         model_deployer: Name of the new model deployer for this stack.
         experiment_tracker: Name of the new experiment tracker for this
@@ -466,8 +444,6 @@ def update_stack(
             updates[StackComponentType.MODEL_DEPLOYER] = [model_deployer]
         if orchestrator:
             updates[StackComponentType.ORCHESTRATOR] = [orchestrator]
-        if secrets_manager:
-            updates[StackComponentType.SECRETS_MANAGER] = [secrets_manager]
         if step_operator:
             updates[StackComponentType.STEP_OPERATOR] = [step_operator]
 
@@ -513,14 +489,6 @@ def update_stack(
     "--model_registry",
     "model_registry_flag",
     help="Include this to remove the the model registry from this stack.",
-    is_flag=True,
-    required=False,
-)
-@click.option(
-    "-x",
-    "--secrets_manager",
-    "secrets_manager_flag",
-    help="Include this to remove the secrets manager from this stack.",
     is_flag=True,
     required=False,
 )
@@ -584,7 +552,6 @@ def remove_stack_component(
     stack_name_or_id: Optional[str] = None,
     container_registry_flag: Optional[bool] = False,
     step_operator_flag: Optional[bool] = False,
-    secrets_manager_flag: Optional[bool] = False,
     feature_store_flag: Optional[bool] = False,
     model_deployer_flag: Optional[bool] = False,
     experiment_tracker_flag: Optional[bool] = False,
@@ -601,7 +568,6 @@ def remove_stack_component(
         container_registry_flag: To remove the container registry from this
             stack.
         step_operator_flag: To remove the step operator from this stack.
-        secrets_manager_flag: To remove the secrets manager from this stack.
         feature_store_flag: To remove the feature store from this stack.
         model_deployer_flag: To remove the model deployer from this stack.
         experiment_tracker_flag: To remove the experiment tracker from this
@@ -622,9 +588,6 @@ def remove_stack_component(
 
         if step_operator_flag:
             stack_component_update[StackComponentType.STEP_OPERATOR] = []
-
-        if secrets_manager_flag:
-            stack_component_update[StackComponentType.SECRETS_MANAGER] = []
 
         if feature_store_flag:
             stack_component_update[StackComponentType.FEATURE_STORE] = []
@@ -1151,19 +1114,12 @@ def register_secrets(
         return
 
     secret_names = {s.name for s in required_secrets}
-    secrets_manager = stack_.secrets_manager
-    if not secrets_manager:
-        cli_utils.error(
-            f"Unable to register required secrets ({secret_names}) because "
-            "the stack doesn't contain a secrets manager. Please add a secrets "
-            "manager to your stack and then rerun this command."
-        )
 
     secrets_to_register = []
     secrets_to_update = []
     for name in secret_names:
         try:
-            secret_content = secrets_manager.get_secret(name).content.copy()
+            secret_content = client.get_secret(name).secret_values.copy()
             secret_exists = True
         except KeyError:
             secret_content = {}
@@ -1205,23 +1161,29 @@ def register_secrets(
 
             secret_content[key] = value
 
-        from zenml.secret import ArbitrarySecretSchema
-
-        secret = ArbitrarySecretSchema(name=name, **secret_content)
-
         if not secret_exists:
-            secrets_to_register.append(secret)
+            secrets_to_register.append(
+                (
+                    name,
+                    secret_content,
+                )
+            )
         elif needs_update:
-            secrets_to_update.append(secret)
+            secrets_to_update.append(
+                (
+                    name,
+                    secret_content,
+                )
+            )
 
-    for secret in secrets_to_register:
-        cli_utils.declare(f"Registering secret `{secret.name}`:")
-        cli_utils.pretty_print_secret(secret=secret, hide_secret=True)
-        secrets_manager.register_secret(secret)
-    for secret in secrets_to_update:
-        cli_utils.declare(f"Updating secret `{secret.name}`:")
-        cli_utils.pretty_print_secret(secret=secret, hide_secret=True)
-        secrets_manager.update_secret(secret)
+    for secret_name, secret_values in secrets_to_register:
+        cli_utils.declare(f"Registering secret `{secret_name}`:")
+        cli_utils.pretty_print_secret(secret_values, hide_secret=True)
+        client.create_secret(secret_name, values=secret_values)
+    for secret_name, secret_values in secrets_to_update:
+        cli_utils.declare(f"Updating secret `{secret_name}`:")
+        cli_utils.pretty_print_secret(secret_values, hide_secret=True)
+        client.update_secret(secret_name, add_or_update_values=secret_values)
 
 
 def _get_deployment_params_interactively(

@@ -35,6 +35,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
+          - ubuntu-dind-runners
         required: false
         default: 'ubuntu-latest'
       python-version:
@@ -60,33 +61,12 @@ on:
           - local-server-docker-orchestrator
           - local-server-airflow-orchestrator
           # Local ZenML docker-compose server deployments
-          - docker-server
-          - docker-server-docker-orchestrator
-          - docker-server-airflow-orchestrator
-          # AWS ZenML server deployment with local components
-          - aws-local-orchestrator
-          - aws-docker-orchestrator
-          - aws-kubeflow-orchestrator
-          - aws-airflow-orchestrator
-          # AWS ZenML server deployment with AWS cloud components
-          - aws-cloud-local-orchestrator
-          - aws-cloud-docker-orchestrator
-          - aws-cloud-kubeflow-orchestrator
-          - aws-cloud-kubernetes-orchestrator
-          - aws-cloud-tekton-orchestrator
-          - aws-cloud-sagemaker-orchestrator
-          # GCP ZenML server deployment with local components
-          - gcp-local-orchestrator
-          - gcp-docker-orchestrator
-          - gcp-kubeflow-orchestrator
-          - gcp-airflow-orchestrator
-          # GCP ZenML server deployment with GCP cloud components
-          - gcp-cloud-local-orchestrator
-          - gcp-cloud-docker-orchestrator
-          - gcp-cloud-kubeflow-orchestrator
-          - gcp-cloud-kubernetes-orchestrator
-          - gcp-cloud-tekton-orchestrator
-          - gcp-cloud-vertex-ai-orchestrator
+          - docker-server-mysql
+          - docker-server-mariadb
+          - docker-server-docker-orchestrator-mysql
+          - docker-server-docker-orchestrator-mariadb
+          - docker-server-airflow-orchestrator-mysql
+          - docker-server-airflow-orchestrator-mariadb
         required: false
         default: 'default'
       enable_tmate:
@@ -145,12 +125,12 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           build-mount-path: /var/lib/docker/
-        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
       - name: Reload Docker
         run:
           sudo systemctl restart docker
-        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
       - uses: actions/checkout@v3
 
@@ -179,13 +159,15 @@ jobs:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
+          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
+          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
 
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: pip install docker-compose
 
       - name: Install Linux System Dependencies
-        if: runner.os=='Linux'
+        if: inputs.os=='ubuntu-latest'
         run: sudo apt install graphviz
 
       - name: Install MacOS System Dependencies
@@ -216,7 +198,7 @@ jobs:
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: runner.os=='Linux'
+        if: inputs.os=='ubuntu-latest'
 
       - name: Install kubectl on MacOS
         run: |

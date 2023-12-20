@@ -56,17 +56,17 @@ def test_init_creates_from_templates(
         ],
     )
     assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
-    files_in_top_level = set(os.listdir(str(tmp_path)))
+    files_in_top_level = set([f.lower() for f in os.listdir(str(tmp_path))])
     must_have_files = {
         ".copier-answers.yml",
         ".dockerignore",
-        "LICENSE",
+        "license",
         "run.py",
     }
     assert not must_have_files - files_in_top_level
 
 
-def test_clean_user_config(clean_workspace) -> None:
+def test_clean_user_config(clean_client) -> None:
     global_zen_config_yaml = (
         Path(get_global_config_directory()) / CONFIG_FILE_NAME
     )
