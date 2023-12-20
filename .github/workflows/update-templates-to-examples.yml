@@ -71,7 +71,7 @@ jobs:
             please make the code in zenml-io/template-e2e-batch compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
@@ -151,7 +151,7 @@ jobs:
             please make the code in zenml-io/template-nlp compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
@@ -231,7 +231,7 @@ jobs:
             please make the code in zenml-io/template-starter compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 

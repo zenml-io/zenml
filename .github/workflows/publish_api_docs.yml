@@ -19,7 +19,7 @@ jobs:
       PYTHONIOENCODING: "utf-8"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.1
         with:
           fetch-depth: 0 # fetch all commits/branches including gh-pages
 

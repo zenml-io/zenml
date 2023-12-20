@@ -85,40 +85,9 @@ jobs:
         shell: bash
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.inputs.git-ref || github.ref }}
-
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        if: ${{ inputs.os == 'ubuntu-latest' }}
-        with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
-          tool-cache: true
-
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
-
-      - name: clean unnecessary files to save space
-        if: ${{ inputs.os == 'ubuntu-latest' }}
-        run: |
-            sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/sudo apt/sources.list.d
-            sudo apt -y autoremove --purge
-            sudo apt -y autoclean
-            sudo apt clean
-            rm --recursive --force "$AGENT_TOOLSDIRECTORY"
-            df -h
-
-      - name: Reinstall packages needed for unit tests
-        if: ${{ inputs.os == 'ubuntu-latest' }}
-        run: sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6 -y
 
       - name: Setup environment
         uses: ./.github/actions/setup_environment
@@ -132,14 +101,14 @@ jobs:
 
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3.17
 
       - name: Lint check
         run: |
           bash scripts/lint.sh
 
       - name: Spelling checker
-        uses: crate-ci/typos@master
+        uses: crate-ci/typos@1.16.25
         with:
           files: "."
           config: ./.typos.toml
@@ -155,7 +124,7 @@ jobs:
         run: bash scripts/check-security.sh
 
       - name: Markdown link check
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'no'
@@ -183,7 +152,7 @@ jobs:
 
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3.17
 
       - name: Verify Python Env unaffected
         run: |
