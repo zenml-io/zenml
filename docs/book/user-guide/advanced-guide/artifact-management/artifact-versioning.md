@@ -2,6 +2,11 @@
 description: Understand and adjust how ZenML versions your data.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Artifact versioning and configuration
 
 Each artifact that ZenML saves in your artifact store is assigned a name and
