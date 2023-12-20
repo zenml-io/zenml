@@ -1,6 +1,8 @@
 #!/bin/bash
 
 DB="sqlite"
+DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
+
 if [ -z "$1" ]; then
   echo "No argument passed, using default: $DB"
 else
@@ -42,13 +44,13 @@ if [ "$1" == "mysql" ]; then
     # run a mysql instance in docker
     docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:latest
     # mysql takes a while to start up
-    sleep 30
+    sleep $DB_STARTUP_DELAY
 elif [ "$1" == "mariadb" ]; then
     echo "===== Testing MariaDB ====="
     # run a mariadb instance in docker
     docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:10.6
     # mariadb takes a while to start up
-    sleep 30
+    sleep $DB_STARTUP_DELAY
 fi
 
 # List of versions to test
