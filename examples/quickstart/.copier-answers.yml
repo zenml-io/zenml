@@ -1,0 +1,8 @@
+# Changes here will be overwritten by Copier
+_commit: 0.43.0-48-g652a614
+_src_path: gh:zenml-io/template-starter
+email: ''
+full_name: ZenML GmbH
+open_source_license: apache
+project_name: ZenML Starter
+version: 0.1.0

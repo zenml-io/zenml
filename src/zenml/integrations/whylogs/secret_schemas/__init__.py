@@ -18,11 +18,9 @@ use the Whylabs platform to automatically log all whylogs data profiles
 generated and by pipeline steps.
 """
 from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
-    WHYLABS_SECRET_SCHEMA_TYPE,
     WhylabsSecretSchema,
 )
 
 __all__ = [
-    "WHYLABS_SECRET_SCHEMA_TYPE",
     "WhylabsSecretSchema",
 ]

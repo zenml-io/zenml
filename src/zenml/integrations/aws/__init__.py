@@ -58,13 +58,11 @@ class AWSIntegration(Integration):
         """
         from zenml.integrations.aws.flavors import (
             AWSContainerRegistryFlavor,
-            AWSSecretsManagerFlavor,
             SagemakerOrchestratorFlavor,
             SagemakerStepOperatorFlavor,
         )
 
         return [
-            AWSSecretsManagerFlavor,
             AWSContainerRegistryFlavor,
             SagemakerStepOperatorFlavor,
             SagemakerOrchestratorFlavor,
