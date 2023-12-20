@@ -153,18 +153,41 @@ the pipeline as a whole.
 
 ### Autonumbering of versions
 
-If you don't specify a version number, or if you pass `None` into the `version`
+ZenML automatically numbers your model versions for you. If you don't specify a version number, or if you pass `None` into the `version`
 argument of the `ModelVersion` object, ZenML will automatically generate a
-version number (or a new version, if you already have a version) for you.
+version number (or a new version, if you already have a version) for you. For
+example if we had a model version `really_good_version` for model `my_model` and
+we wanted to create a new version of this model, we could do so as follows:
 
-When creating a If `version` is set to 
+```python
+from zenml import ModelVersion, step
 
-- If `version` is None, a new model version is created, if not created by other steps in same run.
-        - If `version` is not None a model version will be fetched based on the version:
-            - If `version` is set to an integer or digit string, the model version with the matching number will be fetched.
-            - If `version` is set to a string, the model version with the matching version will be fetched.
-            - If `version` is set to a `ModelStage`, the model version with the matching stage will be fetched.
+model_version = ModelVersion(
+    name="my_model",
+    version="even_better_version"
+)
 
+@step(model_version=model_version)
+def svc_trainer(...) -> ...:
+    ...
+```
+
+A new model version will be created and ZenML will track that this is the next
+in the iteration sequence of the models using the `number` property. If
+`really_good_version` was the 5th version of `my_model`, then
+`even_better_version` will be the 6th version of `my_model`.
+
+```python
+earlier_version = ModelVersion(
+    name="my_model",
+    version="really_good_version"
+).number # == 5
+
+updated_version = ModelVersion(
+    name="my_model",
+    version="even_better_version"
+).number # == 6
+```
 
 ## Stages and Promotion
 
