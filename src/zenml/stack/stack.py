@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack class."""
 
+import functools
 import itertools
 import os
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -24,12 +26,14 @@ from typing import (
     NoReturn,
     Optional,
     Set,
+    Tuple,
     Type,
 )
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
@@ -40,7 +44,7 @@ from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponse
-from zenml.utils import settings_utils
+from zenml.utils import pagination_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -60,13 +64,14 @@ if TYPE_CHECKING:
     from zenml.model_registries import BaseModelRegistry
     from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse
     from zenml.orchestrators import BaseOrchestrator
-    from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
     from zenml.utils import secret_utils
 
 
 logger = get_logger(__name__)
+
+_STACK_CACHE: Dict[Tuple[UUID, Optional[datetime]], "Stack"] = {}
 
 
 class Stack:
@@ -87,7 +92,6 @@ class Stack:
         orchestrator: "BaseOrchestrator",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
-        secrets_manager: Optional["BaseSecretsManager"] = None,
         step_operator: Optional["BaseStepOperator"] = None,
         feature_store: Optional["BaseFeatureStore"] = None,
         model_deployer: Optional["BaseModelDeployer"] = None,
@@ -106,7 +110,6 @@ class Stack:
             orchestrator: Orchestrator component of the stack.
             artifact_store: Artifact store component of the stack.
             container_registry: Container registry component of the stack.
-            secrets_manager: Secrets manager component of the stack.
             step_operator: Step operator component of the stack.
             feature_store: Feature store component of the stack.
             model_deployer: Model deployer component of the stack.
@@ -123,7 +126,6 @@ class Stack:
         self._artifact_store = artifact_store
         self._container_registry = container_registry
         self._step_operator = step_operator
-        self._secrets_manager = secrets_manager
         self._feature_store = feature_store
         self._model_deployer = model_deployer
         self._experiment_tracker = experiment_tracker
@@ -143,17 +145,42 @@ class Stack:
         Returns:
             The created Stack instance.
         """
+        global _STACK_CACHE
+        key = (stack_model.id, stack_model.updated)
+        if key in _STACK_CACHE:
+            return _STACK_CACHE[key]
+
         from zenml.stack import StackComponent
 
+        # Run a hydrated list call once to avoid one request per component
+        component_models = pagination_utils.depaginate(
+            list_method=functools.partial(
+                Client().list_stack_components,
+                stack_id=stack_model.id,
+                hydrate=True,
+            )
+        )
+
         stack_components = {
-            type_: StackComponent.from_model(model[0])
-            for type_, model in stack_model.components.items()
+            model.type: StackComponent.from_model(model)
+            for model in component_models
         }
-        return Stack.from_components(
+        stack = Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,
             components=stack_components,
         )
+        _STACK_CACHE[key] = stack
+
+        client = Client()
+        if stack_model.id == client.active_stack_model.id:
+            if stack_model.updated > client.active_stack_model.updated:
+                if client._config:
+                    client._config.set_active_stack(stack_model)
+                else:
+                    GlobalConfiguration().set_active_stack(stack_model)
+
+        return stack
 
     @classmethod
     def from_components(
@@ -189,7 +216,6 @@ class Stack:
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
-        from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
@@ -225,12 +251,6 @@ class Stack:
             container_registry, BaseContainerRegistry
         ):
             _raise_type_error(container_registry, BaseContainerRegistry)
-
-        secrets_manager = components.get(StackComponentType.SECRETS_MANAGER)
-        if secrets_manager is not None and not isinstance(
-            secrets_manager, BaseSecretsManager
-        ):
-            _raise_type_error(secrets_manager, BaseSecretsManager)
 
         step_operator = components.get(StackComponentType.STEP_OPERATOR)
         if step_operator is not None and not isinstance(
@@ -290,7 +310,6 @@ class Stack:
             orchestrator=orchestrator,
             artifact_store=artifact_store,
             container_registry=container_registry,
-            secrets_manager=secrets_manager,
             step_operator=step_operator,
             feature_store=feature_store,
             model_deployer=model_deployer,
@@ -315,7 +334,6 @@ class Stack:
                 self.orchestrator,
                 self.artifact_store,
                 self.container_registry,
-                self.secrets_manager,
                 self.step_operator,
                 self.feature_store,
                 self.model_deployer,
@@ -374,15 +392,6 @@ class Stack:
             have a container registry.
         """
         return self._container_registry
-
-    @property
-    def secrets_manager(self) -> Optional["BaseSecretsManager"]:
-        """The secrets manager of the stack.
-
-        Returns:
-            The secrets manager of the stack.
-        """
-        return self._secrets_manager
 
     @property
     def step_operator(self) -> Optional["BaseStepOperator"]:
@@ -596,14 +605,12 @@ class Stack:
         """Validates that all secrets of the stack exists.
 
         Args:
-            raise_exception: If `True`, raises an exception if the stack has
-                no secrets manager or a secret is missing. Otherwise a
-                warning is logged.
+            raise_exception: If `True`, raises an exception if a secret is
+                missing. Otherwise a warning is logged.
 
         # noqa: DAR402
         Raises:
-            StackValidationError: If the stack has no secrets manager or a
-                secret is missing.
+            StackValidationError: If a secret is missing.
         """
         env_value = os.getenv(
             ENV_ZENML_SECRET_VALIDATION_LEVEL,
@@ -636,67 +643,45 @@ class Stack:
                     )
                     logger.warning(message)
 
-            missing = []
-
             client = Client()
 
-            # First, attempt to resolve secrets through the secrets store
+            # Attempt to resolve secrets through the secrets store
             for secret_ref in required_secrets.copy():
                 try:
-                    store_secret = client.get_secret(secret_ref.name)
+                    secret = client.get_secret(secret_ref.name)
                     if (
                         secret_validation_level
                         == SecretValidationLevel.SECRET_AND_KEY_EXISTS
                     ):
-                        _ = store_secret.values[secret_ref.key]
+                        _ = secret.values[secret_ref.key]
                 except (KeyError, NotImplementedError):
                     pass
                 else:
                     # Drop this secret from the list of required secrets
                     required_secrets.remove(secret_ref)
 
-            # If there are still required secrets, continue with the secrets
-            # manager
             if not required_secrets:
                 return
 
-            if not self.secrets_manager:
-                _handle_error(
-                    f"Some component in stack `{self.name}` reference secret "
-                    "values, but there is no secrets manager in this stack."
-                )
-                return
+            secrets_msg = ", ".join(
+                [
+                    f"{secret_ref.name}.{secret_ref.key}"
+                    for secret_ref in required_secrets
+                ]
+            )
 
-            existing_secrets = set(self.secrets_manager.get_all_secret_keys())
-            for secret_ref in required_secrets:
-                if (
-                    secret_validation_level
-                    == SecretValidationLevel.SECRET_AND_KEY_EXISTS
-                ):
-                    try:
-                        _ = self.secrets_manager.get_secret(
-                            secret_ref.name
-                        ).content[secret_ref.key]
-                    except KeyError:
-                        missing.append(secret_ref)
-                elif (
-                    secret_validation_level
-                    == SecretValidationLevel.SECRET_EXISTS
-                ):
-                    if secret_ref.name not in existing_secrets:
-                        missing.append(secret_ref)
-
-            if missing:
-                _handle_error(
-                    f"Missing secrets for stack: {missing}.\nTo register the "
-                    "missing secrets for this stack, run `zenml stack "
-                    f"register-secrets {self.name}`\nIf you want to "
-                    "adjust the degree to which ZenML validates the existence "
-                    "of secrets in your stack, you can do so by setting the "
-                    f"environment variable {ENV_ZENML_SECRET_VALIDATION_LEVEL} "
-                    "to one of the following values: "
-                    f"{SecretValidationLevel.values()}."
-                )
+            _handle_error(
+                f"Some components in the `{self.name}` stack reference secrets "
+                f"or secret keys that do not exist in the secret store: "
+                f"{secrets_msg}.\nTo register the "
+                "missing secrets for this stack, run `zenml stack "
+                f"register-secrets {self.name}`\nIf you want to "
+                "adjust the degree to which ZenML validates the existence "
+                "of secrets in your stack, you can do so by setting the "
+                f"environment variable {ENV_ZENML_SECRET_VALIDATION_LEVEL} "
+                "to one of the following values: "
+                f"{SecretValidationLevel.values()}."
+            )
 
     def validate(
         self,

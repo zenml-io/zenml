@@ -14,6 +14,7 @@
 """Models representing stacks."""
 
 import json
+from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
@@ -91,6 +92,13 @@ class StackUpdate(StackRequest):
 
 class StackResponseBody(WorkspaceScopedResponseBody):
     """Response body for stacks."""
+
+    created: datetime = Field(
+        title="The timestamp when this component was created."
+    )
+    updated: datetime = Field(
+        title="The timestamp when this component was last updated.",
+    )
 
 
 class StackResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -184,6 +192,24 @@ class StackResponse(
         return metadata
 
     # Body and metadata properties
+    @property
+    def created(self) -> datetime:
+        """The`created` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().created
+
+    @property
+    def updated(self) -> datetime:
+        """The `updated` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().updated
+
     @property
     def description(self) -> Optional[str]:
         """The `description` property.

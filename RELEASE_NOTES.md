@@ -1,4 +1,85 @@
 <!-- markdown-link-check-disable -->
+# 0.52.0
+
+This adds the ability to pass in pipeline parameters as YAML configuration and fixes a couple of minor issues affecting the W&B integration and the way expiring credentials are refreshed when service connectors are used.
+
+## Breaking Change
+
+The current pipeline YAML configurations are now being validated to ensure that configured parameters match what is available in the code. This means that if you have a pipeline that is configured with a parameter that has a different value that what is provided through code, the pipeline will fail to run. This is a breaking change, but it is a good thing as it will help you catch errors early on.
+
+This is an example of a pipeline configuration that will fail to run:
+
+```yaml
+parameters:
+    some_param: 24
+
+steps:
+  my_step:
+    parameters:
+      input_2: 42
+```
+
+```python
+# run.py
+@step
+def my_step(input_1: int, input_2: int) -> None:
+    pass
+
+@pipeline
+def my_pipeline(some_param: int):
+    # here an error will be raised since `input_2` is
+    # `42` in config, but `43` was provided in the code
+    my_step(input_1=42, input_2=43)
+
+if __name__=="__main__":
+    # here an error will be raised since `some_param` is
+    # `24` in config, but `23` was provided in the code
+    my_pipeline(23)
+```
+
+## What's Changed
+* Passing pipeline parameters as yaml config by @avishniakov in https://github.com/zenml-io/zenml/pull/2058
+* Side-effect free tests by @avishniakov in https://github.com/zenml-io/zenml/pull/2065
+* Fix various bugs by @stefannica in https://github.com/zenml-io/zenml/pull/2124
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.51.0...0.52.0
+
+# 0.51.0
+
+This release comes with a breaking change to the model version model, a new use-case example for NLP, and a range of bug fixes and enhancements to the artifact management and pipeline run management features. 
+
+## Breaking Change
+* Artifact Version Table + Artifact Tagging by @fa9r in https://github.com/zenml-io/zenml/pull/2081
+* Converting model models to use the new hydration paradigm by @bcdurak in https://github.com/zenml-io/zenml/pull/2101
+
+## New Example
+* NLP Template Example is a new example that demonstrates how to use ZenML for NLP tasks. by @safoinme in https://github.com/zenml-io/zenml/pull/2070
+
+
+## What's Changed
+* Updated to one quickstart again by @htahir1 in https://github.com/zenml-io/zenml/pull/2092
+* Fix Nightly Build workflow files by @strickvl in https://github.com/zenml-io/zenml/pull/2090
+* Make PyPi release depend on DB migration tests passing by @strickvl in https://github.com/zenml-io/zenml/pull/2088
+* Bump `mlstacks` version in ZenML extra by @strickvl in https://github.com/zenml-io/zenml/pull/2091
+* Fix SQL schema imports by @stefannica in https://github.com/zenml-io/zenml/pull/2098
+* Fix migration for unowned stacks/components by @schustmi in https://github.com/zenml-io/zenml/pull/2099
+* Polymorthic `run_metadata` by @avishniakov in https://github.com/zenml-io/zenml/pull/2064
+* Update ruff formatter (for bugfixes) by @strickvl in https://github.com/zenml-io/zenml/pull/2106
+* Lock in airflow version as higher versions will fail by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2108
+* Swap contents for HTMLString and MarkdownString in docs by @christianversloot in https://github.com/zenml-io/zenml/pull/2110
+* Fix secrets list with cloud secrets stores and RBAC by @stefannica in https://github.com/zenml-io/zenml/pull/2107
+* More track events by @htahir1 in https://github.com/zenml-io/zenml/pull/2112
+* Fix pipeline run cascade deletion by @fa9r in https://github.com/zenml-io/zenml/pull/2104
+* Take integrations tests out of unit tests folder by @safoinme in https://github.com/zenml-io/zenml/pull/2100
+* Allow extra values when dehydrating response models by @schustmi in https://github.com/zenml-io/zenml/pull/2114
+* Request optimizations by @schustmi in https://github.com/zenml-io/zenml/pull/2103
+* Pagination in model versions by @avishniakov in https://github.com/zenml-io/zenml/pull/2115
+* Add `StepContext.inputs` property by @fa9r in https://github.com/zenml-io/zenml/pull/2105
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.50.0...0.51.0
+
+
 # 0.50.0
 
 In this release, we introduce key updates aimed at improving user experience and security.

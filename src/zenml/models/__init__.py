@@ -27,25 +27,6 @@ from zenml.models.secret_models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.models.model_models import (
-    ModelFilterModel,
-    ModelResponseModel,
-    ModelRequestModel,
-    ModelUpdateModel,
-    ModelVersionBaseModel,
-    ModelVersionResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionArtifactBaseModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionPipelineRunBaseModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionUpdateModel,
-)
 from zenml.models.tag_models import (
     TagFilterModel,
     TagResourceResponseModel,
@@ -87,7 +68,6 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
-
 from zenml.models.v2.core.api_key import (
     APIKey,
     APIKeyRequest,
@@ -168,6 +148,34 @@ from zenml.models.v2.core.logs import (
     LogsResponse,
     LogsResponseBody,
     LogsResponseMetadata,
+)
+from zenml.models.v2.core.model import (
+    ModelFilter,
+    ModelResponse,
+    ModelResponseBody,
+    ModelResponseMetadata,
+    ModelRequest,
+    ModelUpdate,
+)
+from zenml.models.v2.core.model_version import (
+    ModelVersionResponse,
+    ModelVersionRequest,
+    ModelVersionResponseBody,
+    ModelVersionResponseMetadata,
+    ModelVersionFilter,
+    ModelVersionUpdate,
+)
+from zenml.models.v2.core.model_version_artifact import (
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionArtifactResponseBody,
+)
+from zenml.models.v2.core.model_version_pipeline_run import (
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionPipelineRunResponseBody,
 )
 from zenml.models.v2.core.pipeline import (
     PipelineRequest,
@@ -308,38 +316,6 @@ SecretResponseModel.update_forward_refs(
     UserResponse=UserResponse,
     WorkspaceResponse=WorkspaceResponse,
 )
-ModelRequestModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionRequestModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionArtifactRequestModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionArtifactResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionPipelineRunRequestModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-ModelVersionPipelineRunResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
 
 # V2
 APIKeyResponseBody.update_forward_refs(
@@ -377,6 +353,28 @@ FlavorResponseBody.update_forward_refs(
 )
 FlavorResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
+)
+ModelResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+    TagResponseModel=TagResponseModel,
+)
+ModelResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+ModelVersionResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+    ModelResponse=ModelResponse,
+    RunMetadataResponse=RunMetadataResponse,
+)
+ModelVersionResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    RunMetadataResponse=RunMetadataResponse,
+)
+ModelVersionArtifactResponseBody.update_forward_refs(
+    ArtifactVersionResponse=ArtifactVersionResponse,
+)
+ModelVersionPipelineRunResponseBody.update_forward_refs(
+    PipelineRunResponse=PipelineRunResponse
 )
 OAuthDeviceResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -419,6 +417,7 @@ PipelineRunResponseBody.update_forward_refs(
     StackResponse=StackResponse,
     PipelineBuildResponse=PipelineBuildResponse,
     ScheduleResponse=ScheduleResponse,
+    CodeReferenceResponse=CodeReferenceResponse,
 )
 PipelineRunResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
@@ -469,23 +468,6 @@ __all__ = [
     # V1
     "BaseRequestModel",
     "BaseResponseModel",
-    "ModelFilterModel",
-    "ModelRequestModel",
-    "ModelResponseModel",
-    "ModelUpdateModel",
-    "ModelVersionBaseModel",
-    "ModelVersionFilterModel",
-    "ModelVersionRequestModel",
-    "ModelVersionResponseModel",
-    "ModelVersionUpdateModel",
-    "ModelVersionArtifactBaseModel",
-    "ModelVersionArtifactFilterModel",
-    "ModelVersionArtifactRequestModel",
-    "ModelVersionArtifactResponseModel",
-    "ModelVersionPipelineRunBaseModel",
-    "ModelVersionPipelineRunFilterModel",
-    "ModelVersionPipelineRunRequestModel",
-    "ModelVersionPipelineRunResponseModel",
     "SecretBaseModel",
     "SecretFilterModel",
     "SecretRequestModel",
@@ -574,6 +556,26 @@ __all__ = [
     "LogsResponse",
     "LogsResponseBody",
     "LogsResponseMetadata",
+    "ModelFilter",
+    "ModelRequest",
+    "ModelResponse",
+    "ModelResponseBody",
+    "ModelResponseMetadata",
+    "ModelUpdate",
+    "ModelVersionFilter",
+    "ModelVersionRequest",
+    "ModelVersionResponse",
+    "ModelVersionResponseBody",
+    "ModelVersionResponseMetadata",
+    "ModelVersionUpdate",
+    "ModelVersionArtifactFilter",
+    "ModelVersionArtifactRequest",
+    "ModelVersionArtifactResponse",
+    "ModelVersionArtifactResponseBody",
+    "ModelVersionPipelineRunFilter",
+    "ModelVersionPipelineRunRequest",
+    "ModelVersionPipelineRunResponse",
+    "ModelVersionPipelineRunResponseBody",
     "OAuthDeviceUpdate",
     "OAuthDeviceFilter",
     "OAuthDeviceResponse",

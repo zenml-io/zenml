@@ -25,16 +25,17 @@ from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, root_validator
 
-from zenml.enums import ModelStages
+from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml import ExternalArtifact
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.models import (
         ArtifactVersionResponse,
-        ModelResponseModel,
-        ModelVersionResponseModel,
+        ModelResponse,
+        ModelVersionResponse,
         PipelineRunResponse,
     )
 
@@ -192,8 +193,7 @@ class ModelVersion(BaseModel):
         except RuntimeError:
             return None
 
-        ea = ExternalArtifact(name=name, version=version)
-        ea._set_model_version(self)
+        ea = ExternalArtifact(name=name, version=version, model_version=self)
         return ea
 
     def get_artifact(
@@ -262,24 +262,24 @@ class ModelVersion(BaseModel):
             version=version,
         )
 
-    def get_endpoint_artifact(
+    def get_deployment_artifact(
         self,
         name: str,
         version: Optional[str] = None,
     ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
-        """Get the endpoint artifact linked to this model version.
+        """Get the deployment artifact linked to this model version.
 
         Args:
-            name: The name of the endpoint artifact to retrieve.
-            version: The version of the endpoint artifact to retrieve (None for latest/non-versioned)
+            name: The name of the deployment artifact to retrieve.
+            version: The version of the deployment artifact to retrieve (None for latest/non-versioned)
 
         Returns:
             Inside pipeline context: ExternalArtifact object as a lazy loader
-            Outside of pipeline context: Specific version of the endpoint artifact or None
+            Outside of pipeline context: Specific version of the deployment artifact or None
         """
         if response := self._try_get_as_external_artifact(name, version):
             return response
-        return self._get_or_create_model_version().get_endpoint_artifact(
+        return self._get_or_create_model_version().get_deployment_artifact(
             name=name,
             version=version,
         )
@@ -305,6 +305,46 @@ class ModelVersion(BaseModel):
             force: whether to force archiving of current model version in target stage or raise.
         """
         self._get_or_create_model_version().set_stage(stage=stage, force=force)
+
+    def log_metadata(
+        self,
+        metadata: Dict[str, "MetadataType"],
+    ) -> None:
+        """Log model version metadata.
+
+        This function can be used to log metadata for current model version.
+
+        Args:
+            metadata: The metadata to log.
+        """
+        from zenml.client import Client
+
+        response = self._get_or_create_model_version()
+        Client().create_run_metadata(
+            metadata=metadata,
+            resource_id=response.id,
+            resource_type=MetadataResourceTypes.MODEL_VERSION,
+        )
+
+    @property
+    def metadata(self) -> Dict[str, "MetadataType"]:
+        """Get model version metadata.
+
+        Returns:
+            The model version metadata.
+
+        Raises:
+            RuntimeError: If the model version metadata cannot be fetched.
+        """
+        response = self._get_or_create_model_version(hydrate=True)
+        if response.run_metadata is None:
+            raise RuntimeError(
+                "Failed to fetch metadata of this model version."
+            )
+        return {
+            name: response.value
+            for name, response in response.run_metadata.items()
+        }
 
     #########################
     #   Internal methods    #
@@ -367,7 +407,7 @@ class ModelVersion(BaseModel):
         """Validate that config doesn't conflict with runtime environment."""
         self._get_or_create_model_version()
 
-    def _get_or_create_model(self) -> "ModelResponseModel":
+    def _get_or_create_model(self) -> "ModelResponse":
         """This method should get or create a model from Model Control Plane.
 
         New model is created implicitly, if missing, otherwise fetched.
@@ -376,7 +416,7 @@ class ModelVersion(BaseModel):
             The model based on configuration.
         """
         from zenml.client import Client
-        from zenml.models.model_models import ModelRequestModel
+        from zenml.models import ModelRequest
 
         zenml_client = Client()
         try:
@@ -384,7 +424,7 @@ class ModelVersion(BaseModel):
                 model_name_or_id=self.name
             )
         except KeyError:
-            model_request = ModelRequestModel(
+            model_request = ModelRequest(
                 name=self.name,
                 license=self.license,
                 description=self.description,
@@ -397,7 +437,7 @@ class ModelVersion(BaseModel):
                 user=zenml_client.active_user.id,
                 workspace=zenml_client.active_workspace.id,
             )
-            model_request = ModelRequestModel.parse_obj(model_request)
+            model_request = ModelRequest.parse_obj(model_request)
             try:
                 model = zenml_client.zen_store.create_model(
                     model=model_request
@@ -413,7 +453,7 @@ class ModelVersion(BaseModel):
         self._model_id = model.id
         return model
 
-    def _get_model_version(self) -> "ModelVersionResponseModel":
+    def _get_model_version(self) -> "ModelVersionResponse":
         """This method gets a model version from Model Control Plane.
 
         Returns:
@@ -431,7 +471,9 @@ class ModelVersion(BaseModel):
 
         return mv
 
-    def _get_or_create_model_version(self) -> "ModelVersionResponseModel":
+    def _get_or_create_model_version(
+        self, hydrate: bool = False
+    ) -> "ModelVersionResponse":
         """This method should get or create a model and a model version from Model Control Plane.
 
         A new model is created implicitly if missing, otherwise existing model is fetched. Model
@@ -444,6 +486,9 @@ class ModelVersion(BaseModel):
             - If `version` is set to a string, the model version with the matching version will be fetched.
             - If `version` is set to a `ModelStage`, the model version with the matching stage will be fetched.
 
+        Args:
+            hydrate: Whether to return a hydrated version of the model version.
+
         Returns:
             The model version based on configuration.
 
@@ -451,19 +496,20 @@ class ModelVersion(BaseModel):
             RuntimeError: if the model version needs to be created, but provided name is reserved
         """
         from zenml.client import Client
-        from zenml.models.model_models import ModelVersionRequestModel
+        from zenml.models import ModelVersionRequest
 
         model = self._get_or_create_model()
 
         zenml_client = Client()
-        model_version_request = ModelVersionRequestModel(
+        model_version_request = ModelVersionRequest(
             user=zenml_client.active_user.id,
             workspace=zenml_client.active_workspace.id,
             name=self.version,
             description=self.description,
             model=model.id,
+            tags=self.tags,
         )
-        mv_request = ModelVersionRequestModel.parse_obj(model_version_request)
+        mv_request = ModelVersionRequest.parse_obj(model_version_request)
         try:
             if not self.version:
                 try:
