@@ -7076,7 +7076,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a tag resource relationship with the given
-                configuration.
+                configuration already exists.
         """
         with Session(self.engine) as session:
             existing_tag_resource = session.exec(

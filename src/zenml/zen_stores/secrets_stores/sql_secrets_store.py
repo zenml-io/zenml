@@ -407,9 +407,8 @@ class SqlSecretsStore(BaseSecretsStore):
                     secret_name=secret_update.name or existing_secret.name,
                     scope=secret_update.scope
                     or SecretScope(existing_secret.scope),
-                    workspace=secret_update.workspace
-                    or existing_secret.workspace.id,
-                    user=secret_update.user or existing_secret.user.id,
+                    workspace=existing_secret.workspace.id,
+                    user=existing_secret.user.id,
                     exclude_secret_id=secret_id,
                 )
 

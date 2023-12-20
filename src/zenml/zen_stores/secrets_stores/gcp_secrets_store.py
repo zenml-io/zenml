@@ -310,7 +310,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         )
 
     def _get_gcp_filter_string(self, secret_filter_model: SecretFilter) -> str:
-        """Convert a SecretFilterModel to a GCP filter string.
+        """Convert a SecretFilter to a GCP filter string.
 
         Args:
             secret_filter_model: The secret filter model.
