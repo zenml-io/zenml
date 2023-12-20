@@ -1,7 +1,7 @@
 <!-- markdown-link-check-disable -->
 # 0.53.0
 
-This release is packed with deeply reworked quickstart example and started template, removal of secret manager stack component, improved experience with Cloud Secret Stores, support for tags and metadata directly in Model Versions, some breaking changes for Model Control Plane and fw bugfixes.
+This release is packed with a deeply reworked quickstart example and starter template, the removal of secret manager stack component, improved experience with Cloud Secret Stores, support for tags and metadata directly in Model Versions, some breaking changes for Model Control Plane and a few bugfixes.
 
 ## Breaking changes
 
