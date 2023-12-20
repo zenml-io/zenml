@@ -4,7 +4,7 @@ description: Managing your models with ZenML.
 
 # Model management
 
-Models are a special type of artifact that are used to represent the outputs of
+Models are used to represent the outputs of
 a training process along with all metadata associated with that output. In other
 words: models in ZenML are more broadly defined as the weights as well as any
 associated information. Models are a first-class citizen in ZenML and as such
@@ -124,6 +124,49 @@ covered, with options for whether new model versions are created as well as for
 the deletion of new model versions when pipeline runs fail. [See
 above](model-management.md#explicit-python-sdk-registration) for how to create
 model versions explicitly.
+
+### Explicitly name your model version
+
+If you want to explicitly name your model version, you can do so by passing in
+the `version` argument to the `ModelVersion` object. If you don't do this, ZenML
+will automatically generate a version number for you.
+
+```python
+from zenml.model import ModelVersion
+
+model_version = ModelVersion(
+    name="my_model",
+    version="1.0.5"
+)
+
+# The step configuration will take precedence over the pipeline
+@step(model_version=model_version)
+def svc_trainer(...) -> ...:
+    ...
+
+# This configures it for all steps within the pipeline
+@pipeline(model_version=model_version)
+def training_pipeline( ... ):
+    # training happens here
+```
+
+Here we are specifically setting the model version for a particular step or for
+the pipeline as a whole.
+
+### Autonumbering of versions
+
+If you don't specify a version number, or if you pass `None` into the `version`
+argument of the `ModelVersion` object, ZenML will automatically generate a
+version number (or a new version, if you already have a version) for you.
+
+When creating a If `version` is set to 
+
+- If `version` is None, a new model version is created, if not created by other steps in same run.
+        - If `version` is not None a model version will be fetched based on the version:
+            - If `version` is set to an integer or digit string, the model version with the matching number will be fetched.
+            - If `version` is set to a string, the model version with the matching version will be fetched.
+            - If `version` is set to a `ModelStage`, the model version with the matching stage will be fetched.
+
 
 ## Stages and Promotion
 

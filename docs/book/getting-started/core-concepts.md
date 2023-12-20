@@ -28,7 +28,7 @@ Artifacts represent the data that goes through your steps as inputs and outputs 
 
 #### Models
 
-Models are a special type of artifact that are used to represent the outputs of
+Models are used to represent the outputs of
 a training process along with all metadata associated with that output. In other
 words: models in ZenML are more broadly defined as the weights as well as any
 associated information. Models are a first-class citizen in ZenML and as such
