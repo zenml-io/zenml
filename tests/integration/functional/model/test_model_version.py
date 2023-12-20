@@ -15,9 +15,11 @@ from unittest import mock
 
 import pytest
 
+from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model_version import ModelVersion
+from zenml.model.utils import log_model_version_metadata
 from zenml.models.tag_models import TagRequestModel
 
 MODEL_NAME = "super_model"
@@ -58,6 +60,13 @@ class ModelContext:
         pass
 
 
+@step
+def step_metadata_logging_functional():
+    """Functional logging using implicit ModelVersion from context."""
+    log_model_version_metadata({"foo": "bar"})
+    assert get_step_context().model_version.metadata["foo"] == "bar"
+
+
 class TestModelVersion:
     def test_model_created_with_warning(self, clean_client: "Client"):
         """Test if the model is created with a warning.
@@ -87,12 +96,33 @@ class TestModelVersion:
     def test_model_create_model_and_version(self, clean_client: "Client"):
         """Test if model and version are created, not existing before."""
         with ModelContext(clean_client, create_model=False):
-            mv = ModelVersion(name=MODEL_NAME)
+            mv = ModelVersion(name=MODEL_NAME, tags=["tag1", "tag2"])
             with mock.patch("zenml.model.model_version.logger.info") as logger:
                 mv = mv._get_or_create_model_version()
                 logger.assert_called()
             assert mv.name == str(mv.number)
             assert mv.model.name == MODEL_NAME
+            assert {t.name for t in mv.tags} == {"tag1", "tag2"}
+            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+
+    def test_create_model_version_makes_proper_tagging(
+        self, clean_client: "Client"
+    ):
+        """Test if model versions get unique tags."""
+        with ModelContext(clean_client, create_model=False):
+            mv = ModelVersion(name=MODEL_NAME, tags=["tag1", "tag2"])
+            mv = mv._get_or_create_model_version()
+            assert mv.name == str(mv.number)
+            assert mv.model.name == MODEL_NAME
+            assert {t.name for t in mv.tags} == {"tag1", "tag2"}
+            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
+
+            mv = ModelVersion(name=MODEL_NAME, tags=["tag3", "tag4"])
+            mv = mv._get_or_create_model_version()
+            assert mv.name == str(mv.number)
+            assert mv.model.name == MODEL_NAME
+            assert {t.name for t in mv.tags} == {"tag3", "tag4"}
+            assert {t.name for t in mv.model.tags} == {"tag1", "tag2"}
 
     def test_model_fetch_model_and_version_by_number(
         self, clean_client: "Client"
@@ -203,7 +233,7 @@ class TestModelVersion:
             tags=["foo", "bar"],
             delete_new_version_on_failure=False,
         )
-        model_id = mv._get_or_create_model().id
+        model_id = mv._get_or_create_model_version().model.id
 
         clean_client.update_model(model_id, add_tags=["tag1", "tag2"])
         model = mv._get_or_create_model()
@@ -215,7 +245,87 @@ class TestModelVersion:
             "tag2",
         }
 
+        clean_client.update_model_version(
+            model_id, "1", add_tags=["tag3", "tag4"]
+        )
+        model_version = mv._get_or_create_model_version()
+        assert len(model_version.tags) == 4
+        assert {t.name for t in model_version.tags} == {
+            "foo",
+            "bar",
+            "tag3",
+            "tag4",
+        }
+
         clean_client.update_model(model_id, remove_tags=["tag1", "tag2"])
         model = mv._get_or_create_model()
         assert len(model.tags) == 2
         assert {t.name for t in model.tags} == {"foo", "bar"}
+
+        clean_client.update_model_version(
+            model_id, "1", remove_tags=["tag3", "tag4"]
+        )
+        model_version = mv._get_or_create_model_version()
+        assert len(model_version.tags) == 2
+        assert {t.name for t in model_version.tags} == {"foo", "bar"}
+
+    def test_metadata_logging(self, clean_client: "Client"):
+        """Test that model version can be used to track metadata from object."""
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            description="foo",
+        )
+        mv.log_metadata({"foo": "bar"})
+
+        assert len(mv.metadata) == 1
+        assert mv.metadata["foo"] == "bar"
+
+        mv.log_metadata({"bar": "foo"})
+
+        assert len(mv.metadata) == 2
+        assert mv.metadata["foo"] == "bar"
+        assert mv.metadata["bar"] == "foo"
+
+    def test_metadata_logging_functional(self, clean_client: "Client"):
+        """Test that model version can be used to track metadata from function."""
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            description="foo",
+        )
+        mv._get_or_create_model_version()
+
+        log_model_version_metadata(
+            {"foo": "bar"}, model_name=mv.name, model_version=mv.number
+        )
+
+        assert len(mv.metadata) == 1
+        assert mv.metadata["foo"] == "bar"
+
+        with pytest.raises(ValueError):
+            log_model_version_metadata({"foo": "bar"})
+
+        log_model_version_metadata(
+            {"bar": "foo"}, model_name=mv.name, model_version="latest"
+        )
+
+        assert len(mv.metadata) == 2
+        assert mv.metadata["foo"] == "bar"
+        assert mv.metadata["bar"] == "foo"
+
+    def test_metadata_logging_in_steps(self, clean_client: "Client"):
+        """Test that model version can be used to track metadata from function in steps."""
+
+        @pipeline(
+            model_version=ModelVersion(
+                name=MODEL_NAME,
+            ),
+            enable_cache=False,
+        )
+        def my_pipeline():
+            step_metadata_logging_functional()
+
+        my_pipeline()
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert len(mv.metadata) == 1
+        assert mv.metadata["foo"] == "bar"

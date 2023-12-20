@@ -244,12 +244,6 @@ def pull(
     "If not specified, no experiment tracker will be deployed.",
 )
 @click.option(
-    "--secrets-manager",
-    "-x",
-    help="The flavor of secrets manager to use. "
-    "If not specified, no secrets manager will be deployed.",
-)
-@click.option(
     "--step-operator",
     "-s",
     help="The flavor of step operator to use. "
@@ -271,7 +265,6 @@ def deploy(
     container_registry: Optional[str],
     model_deployer: Optional[str],
     experiment_tracker: Optional[str],
-    secrets_manager: Optional[str],
     step_operator: Optional[str],
     path: str,
     force: bool,
@@ -314,10 +307,6 @@ def deploy(
             that will be deployed.
         model_deployer: The flavor of model deployer to deploy.
         experiment_tracker: The flavor of experiment tracker to deploy.
-        secrets_manager: The flavor of secrets manager to deploy. In the
-            case of the secrets manager, it doesn't matter what you specify
-            here, as there's only one flavor per cloud provider and that will
-            be deployed.
         step_operator: The flavor of step operator to deploy.
         config: Use a YAML or JSON configuration or configuration file to pass
             variables to the stack recipe.

@@ -483,10 +483,10 @@ def sample_artifact_model() -> ArtifactResponse:
         body=ArtifactResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
+            tags=[],
         ),
         metadata=ArtifactResponseMetadata(
             has_custom_name=True,
-            tags=[],
         ),
     )
 
@@ -508,10 +508,10 @@ def sample_artifact_version_model(
             type=ArtifactType.DATA,
             materializer="sample_module.sample_materializer",
             data_type="sample_module.sample_data_type",
+            tags=[],
         ),
         metadata=ArtifactVersionResponseMetadata(
             workspace=sample_workspace_model,
-            tags=[],
         ),
     )
 

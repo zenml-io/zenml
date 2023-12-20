@@ -3590,6 +3590,7 @@ class Client(metaclass=ClientMetaClass):
         description: str = "",
         expiration_seconds: Optional[int] = None,
         expires_at: Optional[datetime] = None,
+        expires_skew_tolerance: Optional[int] = None,
         labels: Optional[Dict[str, str]] = None,
         auto_configure: bool = False,
         verify: bool = True,
@@ -3616,8 +3617,9 @@ class Client(metaclass=ClientMetaClass):
             resource_id: The resource id of the service connector.
             description: The description of the service connector.
             expiration_seconds: The expiration time of the service connector.
-            expires_at: The expiration time of the service connector
-                credentials.
+            expires_at: The expiration time of the service connector.
+            expires_skew_tolerance: The allowed expiration skew for the service
+                connector credentials.
             labels: The labels of the service connector.
             auto_configure: Whether to automatically configure the service
                 connector from the local environment.
@@ -3735,6 +3737,7 @@ class Client(metaclass=ClientMetaClass):
                 auth_method=auth_method,
                 expiration_seconds=expiration_seconds,
                 expires_at=expires_at,
+                expires_skew_tolerance=expires_skew_tolerance,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 labels=labels or {},
@@ -3937,6 +3940,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, str]] = None,
         resource_id: Optional[str] = None,
         description: Optional[str] = None,
+        expires_skew_tolerance: Optional[int] = None,
         expiration_seconds: Optional[int] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         verify: bool = True,
@@ -3979,6 +3983,8 @@ class Client(metaclass=ClientMetaClass):
                 If set to the empty string, the existing resource ID will be
                 removed.
             description: The description of the service connector.
+            expires_skew_tolerance: The allowed expiration skew for the service
+                connector credentials.
             expiration_seconds: The expiration time of the service connector.
                 If set to 0, the existing expiration time will be removed.
             labels: The service connector to update or remove. If a label value
@@ -4043,6 +4049,7 @@ class Client(metaclass=ClientMetaClass):
             connector_type=connector.connector_type,
             description=description or connector_model.description,
             auth_method=auth_method or connector_model.auth_method,
+            expires_skew_tolerance=expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
@@ -4569,6 +4576,7 @@ class Client(metaclass=ClientMetaClass):
         model_name_or_id: Union[str, UUID],
         name: Optional[str] = None,
         description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> ModelVersionResponse:
         """Creates a new model version in Model Control Plane.
 
@@ -4577,6 +4585,7 @@ class Client(metaclass=ClientMetaClass):
                 version in.
             name: the name of the Model Version to be created.
             description: the description of the Model Version to be created.
+            tags: Tags associated with the model.
 
         Returns:
             The newly created model version.
@@ -4590,6 +4599,7 @@ class Client(metaclass=ClientMetaClass):
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 model=model_name_or_id,
+                tags=tags,
             )
         )
 
@@ -4747,6 +4757,8 @@ class Client(metaclass=ClientMetaClass):
         stage: Optional[Union[str, ModelStages]] = None,
         force: bool = False,
         name: Optional[str] = None,
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
     ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
@@ -4757,6 +4769,8 @@ class Client(metaclass=ClientMetaClass):
             force: Whether existing model version in target stage should be
                 silently archived or an error should be raised.
             name: Target model version name to be set.
+            add_tags: Tags to add to the model version.
+            remove_tags: Tags to remove from to the model version.
 
         Returns:
             An updated model version.
@@ -4775,6 +4789,8 @@ class Client(metaclass=ClientMetaClass):
                 stage=stage,
                 force=force,
                 name=name,
+                add_tags=add_tags,
+                remove_tags=remove_tags,
             ),
         )
 
@@ -4800,7 +4816,7 @@ class Client(metaclass=ClientMetaClass):
         artifact_name: Optional[str] = None,
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
-        only_endpoint_artifacts: Optional[bool] = None,
+        only_deployment_artifacts: Optional[bool] = None,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
 
@@ -4819,7 +4835,7 @@ class Client(metaclass=ClientMetaClass):
             artifact_name: Use the artifact name for filtering
             only_data_artifacts: Use to filter by data artifacts
             only_model_artifacts: Use to filter by model artifacts
-            only_endpoint_artifacts: Use to filter by endpoint artifacts
+            only_deployment_artifacts: Use to filter by deployment artifacts
 
         Returns:
             A page of all model version to artifact links.
@@ -4840,7 +4856,7 @@ class Client(metaclass=ClientMetaClass):
                 artifact_name=artifact_name,
                 only_data_artifacts=only_data_artifacts,
                 only_model_artifacts=only_model_artifacts,
-                only_endpoint_artifacts=only_endpoint_artifacts,
+                only_deployment_artifacts=only_deployment_artifacts,
             )
         )
 

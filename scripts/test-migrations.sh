@@ -1,5 +1,12 @@
 #!/bin/bash
 
+DB="sqlite"
+if [ -z "$1" ]; then
+  echo "No argument passed, using default: $DB"
+else
+  DB="$1"
+fi
+
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
@@ -31,8 +38,17 @@ function run_tests_for_version() {
     echo "===== Finished testing version $VERSION ====="
 }
 
+if [ "$1" == "mysql" ]; then
+    echo "===== Testing MySQL ====="
+    # run a mysql instance in docker
+    docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:latest
+
+    # mysql takes a while to start up
+    sleep 30
+fi
+
 # List of versions to test
-VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0")
+VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0")
 
 # Start completely fresh
 rm -rf ~/.config/zenml
@@ -58,21 +74,41 @@ do
         pip3 install importlib_metadata
     fi
 
+    if [ "$1" == "mysql" ]; then
+        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+    fi
+
     # Run the tests for this version
     run_tests_for_version $VERSION
+
+    if [ "$1" == "mysql" ]; then
+        zenml disconnect
+        sleep 5
+    fi
 
     deactivate
 done
 
-# Test the version of the current branch
+
+# Test the most recent migration with MySQL
 set -e
 python3 -m venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
 
 pip3 install -U pip setuptools wheel
-pip install -e ".[templates,server]"
+pip3 install -e ".[templates,server]"
 pip3 install importlib_metadata
 
-run_tests_for_version current_branch
+if [ "$1" == "mysql" ]; then
+    zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+fi
+
+run_tests_for_version current_branch_mysql
+
+if [ "$1" == "mysql" ]; then
+    zenml disconnect
+    docker rm -f mysql
+fi
 
 deactivate
+

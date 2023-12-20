@@ -48,7 +48,7 @@ def get_orchestrator_run_name(pipeline_name: str) -> str:
     Returns:
         The orchestrator run name.
     """
-    return f"{pipeline_name}_{random.Random().getrandbits(128):32x}"
+    return f"{pipeline_name}_{random.Random().getrandbits(128):032x}"
 
 
 def is_setting_enabled(

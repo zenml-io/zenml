@@ -6541,6 +6541,13 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_schema)
 
+            if model_version.tags:
+                self._attach_tags_to_resource(
+                    tag_names=model_version.tags,
+                    resource_id=model_version_schema.id,
+                    resource_type=TaggableResourceTypes.MODEL_VERSION,
+                )
+
             session.commit()
             return model_version_schema.to_model(hydrate=True)
 
@@ -6700,6 +6707,19 @@ class SqlZenStore(BaseZenStore):
                             f"Model version {existing_model_version_in_target_stage.name} has been set to {ModelStages.ARCHIVED.value}."
                         )
 
+            if model_version_update_model.add_tags:
+                self._attach_tags_to_resource(
+                    tag_names=model_version_update_model.add_tags,
+                    resource_id=existing_model_version.id,
+                    resource_type=TaggableResourceTypes.MODEL_VERSION,
+                )
+            if model_version_update_model.remove_tags:
+                self._detach_tags_from_resource(
+                    tag_names=model_version_update_model.remove_tags,
+                    resource_id=existing_model_version.id,
+                    resource_type=TaggableResourceTypes.MODEL_VERSION,
+                )
+
             existing_model_version.update(
                 target_stage=stage,
                 target_name=model_version_update_model.name,
@@ -6783,11 +6803,11 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     ModelVersionArtifactSchema.is_model_artifact == False  # noqa: E712
                 ).where(
-                    ModelVersionArtifactSchema.is_endpoint_artifact == False  # noqa: E712
+                    ModelVersionArtifactSchema.is_deployment_artifact == False  # noqa: E712
                 )
-            elif model_version_artifact_link_filter_model.only_endpoint_artifacts:
+            elif model_version_artifact_link_filter_model.only_deployment_artifacts:
                 query = query.where(
-                    ModelVersionArtifactSchema.is_endpoint_artifact
+                    ModelVersionArtifactSchema.is_deployment_artifact
                 )
             elif model_version_artifact_link_filter_model.only_model_artifacts:
                 query = query.where(

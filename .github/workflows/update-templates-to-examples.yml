@@ -57,7 +57,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: '2023.11.24' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: '2023.12.12' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
           
       - name: Clean-up
         run: |
@@ -136,7 +136,7 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
-          ref-zenml: 'main'
+          ref-zenml: ${{ github.ref }}
           ref-template: '0.45.0' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       
       - name: Clean-up
@@ -192,4 +192,85 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: 'NLP template updates in `examples/nlp-case` have been pushed.'
+            })
+            
+
+  update-starter-template-to-examples:
+    name: update-starter-template-to-examples
+    runs-on: ${{ inputs.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: "utf-8"
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message, 'GitBook:')
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Run template tests for zenml-io/template-starter
+        uses: zenml-io/template-starter/.github/actions/starter_template_test@main
+        with:
+          python-version: ${{ inputs.python-version }}
+          stack-name: local
+          ref-zenml: ${{ github.ref }}
+          ref-template: '2023.12.18' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+
+      - name: Clean-up
+        run: |
+          rm -rf ./local_checkout
+
+      - name: message-on-error
+        if: failure()
+        run: |
+          echo "::error title=zenml-io/template-starter project template testing failed with new version of 
+            ZenML core!::\
+            Breaking changes affecting templates have been introduced. To mitigate this issue,\
+            please make the code in zenml-io/template-starter compatible with new version of\
+            ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
+
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Check-out fresh Starter template
+        run: |
+          rm -rf examples/quickstart
+          mkdir -p examples/quickstart
+          printf 'info@zenml.io' | zenml init --path examples/quickstart --template starter --template-with-defaults
+          bash scripts/format.sh
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet "origin/${{ github.event.pull_request.head.ref }}"; then
+            echo "No active Git changes found."
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Active Git changes found."
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push template
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -am "Auto-update of Starter template"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Create PR comment
+        if: steps.check_changes.outputs.changes == 'true'
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.createComment({
+              issue_number: ${{ github.event.pull_request.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Quickstart template updates in `examples/quickstart` have been pushed.'
             })
