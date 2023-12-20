@@ -47,7 +47,7 @@ if [ "$1" == "mysql" ]; then
 elif [ "$1" == "mariadb" ]; then
     echo "===== Testing MariaDB ====="
     # run a mariadb instance in docker
-    docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:latest
+    docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:10.6
     # mariadb takes a while to start up
     sleep 30
 fi
