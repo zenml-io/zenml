@@ -116,9 +116,6 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
 
         Returns:
             Validated settings.
-
-        Raises:
-            ValueError: If the connector attribute is not set.
         """
         # Search for legacy attributes and populate the connector configuration
         # from them, if they exist.
