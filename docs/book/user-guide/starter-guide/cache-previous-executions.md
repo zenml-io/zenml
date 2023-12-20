@@ -4,7 +4,7 @@ description: Iterating quickly with ZenML through caching.
 
 # Cache previous executions
 
-Developing machine learning pipelines is iterative in nature. ZenML speeds devleopment up in this work with step caching.
+Developing machine learning pipelines is iterative in nature. ZenML speeds up development in this work with step caching.
 
 In the logs of your previous runs, you might have noticed at this point that rerunning the pipeline a second time will use caching on the first step:
 

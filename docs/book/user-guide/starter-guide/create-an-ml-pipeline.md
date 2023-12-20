@@ -4,7 +4,7 @@ description: Start with the basics of steps and pipelines.
 
 # Developing ML pipelines
 
-Imagine you have your first machine learning models trained, and perhaps even deployed in some ad-hoc manner. This is typically where you would start thinking about MLOps, and how to standardize your process so you and your team can quickly get models out the door without much overhead.
+Imagine you have your first machine learning models trained and perhaps even deployed in some ad-hoc manner. This is typically where you would start thinking about MLOps, and how to standardize your process so you and your team can quickly get models out the door without much overhead.
 
 In this quest for production-ready ML models, workflows can quickly become complex. Decoupling and standardizing stages such as data ingestion, preprocessing, and model evaluation allows for more manageable, reusable, and scalable processes. ZenML pipelines facilitate this by enabling each stage—represented as **Steps**—to be modularly developed and then integrated smoothly into an end-to-end **Pipeline**.
 
@@ -95,7 +95,7 @@ If you have closed the browser tab with the ZenML dashboard, you can always reop
 
 ## Understanding steps and artifacts
 
-When you ran the pipeline, each individual function that ran is shown in the DAG visualization as a `step` and is marked with the function name. Steps are connected with `artifacts`, which are simply the objects that are returned by these functions and input into downstream functions. This simple logic let's us breakdown our entire machine learning code into a sequence of tasks that pass data between each other.
+When you ran the pipeline, each individual function that ran is shown in the DAG visualization as a `step` and is marked with the function name. Steps are connected with `artifacts`, which are simply the objects that are returned by these functions and input into downstream functions. This simple logic lets us break down our entire machine learning code into a sequence of tasks that pass data between each other.
 
 The artifacts produced by your steps are automatically stored and versioned by ZenML. The code that produced these artifacts is also automatically tracked. The parameters and all other configuration is also automatically captured.
 
@@ -145,7 +145,7 @@ import logging
 @step
 def training_data_loader() -> Tuple[
     # Notice we use a Tuple and Annotated to return 
-    # multiple, named outputs
+    # multiple named outputs
     Annotated[pd.DataFrame, "X_train"],
     Annotated[pd.DataFrame, "X_test"],
     Annotated[pd.Series, "y_train"],
@@ -233,9 +233,9 @@ In the dashboard, you should now be able to see this new run, along with its run
 
 <figure><img src="../../.gitbook/assets/RunWithVisualization.png" alt=""><figcaption><p>Run created by the code in this section along with a visualization of the ground-truth distribution.</p></figcaption></figure>
 
-### Configure with a yaml file
+### Configure with a YAML file
 
-Instead of configuring your pipeline runs in code, you can also do so from a YAML file. This is best when we do not want to make unnecessary changes to the code (in production this is usually the case).
+Instead of configuring your pipeline runs in code, you can also do so from a YAML file. This is best when we do not want to make unnecessary changes to the code; in production this is usually the case.
 
 To do this, simply reference the file like this:
 

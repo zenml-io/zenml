@@ -19,7 +19,7 @@ Steps are functions annotated with the `@step` decorator. These functions have i
 ```python
 @step(enable_cache=False)
 def step_2(input_one: str, input_two: str) -> None:
-    """Combines the two strings at its input and prints them."""
+    """Combines the two strings passed in."""
     combined_str = f"{input_one} {input_two}"
     return combined_str
 ```
@@ -35,7 +35,7 @@ As seen in the image, a step might use the outputs from a previous step and thus
 
 Pipelines and steps are defined in code using Python _decorators_ or _classes_. This is where the core business logic and value of your work lives, and you will spend most of your time defining these two things.
 
-Even though pipelines are simple Python functions, you are only allowed to call steps within this function. The inputs for steps called within a pipeline can either be the outputs of previous steps or alternatively, you can pass in values directly (as long as they're JSON serializable).
+Even though pipelines are simple Python functions, you are only allowed to call steps within this function. The inputs for steps called within a pipeline can either be the outputs of previous steps or alternatively, you can pass in values directly (as long as they're JSON-serializable).
 
 ```python
 @pipeline
@@ -44,7 +44,7 @@ def my_pipeline():
     step_2(input_one="hello", input_two=output_step_one)
 ```
 
-Executing the Pipeline is as easy as just calling the function that you decorated with the `@pipeline` decorator.
+Executing the Pipeline is as easy as calling the function that you decorated with the `@pipeline` decorator.
 
 ```python
 if __name__ == "__main__":
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
 #### Artifacts
 
-Artifacts represent the data that goes through your steps as inputs and outputs and they are stored in the artifact store. They are automatically tracked and stored by ZenML in the artifact store. Artifacts are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather at the output of a step they are written to storage and at the input of the step they are loaded from storage.
+Artifacts represent the data that goes through your steps as inputs and outputs and they are stored in the artifact store. They are automatically tracked and stored by ZenML in the artifact store. Artifacts are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather, at the output of a step they are written to storage and at the input of the step they are loaded from storage.
 
 The serialization and deserialization logic of artifacts is defined by Materializers.
 
@@ -115,7 +115,7 @@ In order to benefit from the aforementioned core concepts to their fullest exten
 
 #### ZenML Server
 
-First, in order to utilize _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/production-guide/connect-deployed-zenml.md), so that it can communicate with these stack components and run your pipelines. The server is also responsible for storing managing ZenML business entities like pipelines, steps, models etc.
+To use _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/production-guide/connect-deployed-zenml.md) so it can communicate with these stack components and run your pipelines. The server is also responsible for managing ZenML business entities like pipelines, steps, models etc.
 
 ![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04\_architecture.png)
 
