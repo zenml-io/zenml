@@ -204,6 +204,11 @@ class SlackAlerter(BaseAlerter):
                     "No custom blocks or payload set for slack alerter."
                 )
                 return []
+        else:
+            logger.info(
+                "params is not of type SlackAlerterParameters. Returning empty blocks."
+            )
+            return []
 
     def post(
         self, message: str, params: Optional[BaseAlerterStepParameters] = None
