@@ -29,7 +29,7 @@ jobs:
           BRANCH='${{github.ref_name}}'
           echo ::set-output name=VERSION::${BRANCH#release/}
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4.0.1
         with:
           node-version: "14"
       - run: npm install

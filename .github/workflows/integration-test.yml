@@ -117,7 +117,7 @@ jobs:
 
     steps:
       - name: Maximize space for Docker
-        uses: easimon/maximize-build-space@v8
+        uses: easimon/maximize-build-space@v10
         with:
           root-reserve-mb: 20000
           swap-size-mb: 1024
@@ -238,7 +238,7 @@ jobs:
 
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3.17
         with:
           timeout-minutes: ${{ inputs.tmate_timeout }}
 
@@ -248,7 +248,7 @@ jobs:
 
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3.17
         with:
           timeout-minutes: ${{ inputs.tmate_timeout }}
 
