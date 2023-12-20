@@ -83,18 +83,28 @@ spec:
             - name: ZENML_SECRETS_STORE_TYPE
               value: {{ .Values.zenml.secretsStore.type | quote }}
             {{- if eq .Values.zenml.secretsStore.type "aws" }}
+            - name: ZENML_SECRETS_STORE_AUTH_METHOD
+              value: {{ .Values.zenml.secretsStore.aws.authMethod | quote }}
+            {{- if .Values.zenml.secretsStore.aws.region_name }}
             - name: ZENML_SECRETS_STORE_REGION_NAME
               value: {{ .Values.zenml.secretsStore.aws.region_name | quote }}
+            {{- end }}
             - name: ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT
               value: {{ .Values.zenml.secretsStore.aws.secret_list_refresh_timeout | quote }}
             {{- else if eq .Values.zenml.secretsStore.type "gcp" }}
+            - name: ZENML_SECRETS_STORE_AUTH_METHOD
+              value: {{ .Values.zenml.secretsStore.gcp.authMethod | quote }}
+            {{- if .Values.zenml.secretsStore.gcp.project_id }}
             - name: ZENML_SECRETS_STORE_PROJECT_ID
               value: {{ .Values.zenml.secretsStore.gcp.project_id | quote }}
+            {{- end }}
             {{- if .Values.zenml.secretsStore.gcp.google_application_credentials }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /gcp-credentials/credentials.json
             {{- end }}
             {{- else if eq .Values.zenml.secretsStore.type "azure" }}
+            - name: ZENML_SECRETS_STORE_AUTH_METHOD
+              value: {{ .Values.zenml.secretsStore.azure.authMethod | quote }}
             - name: ZENML_SECRETS_STORE_KEY_VAULT_NAME
               value: {{ .Values.zenml.secretsStore.azure.key_vault_name | quote }}
             {{- else if eq .Values.zenml.secretsStore.type "hashicorp" }}

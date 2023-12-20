@@ -2342,21 +2342,21 @@ def test_deleting_a_stack_recursively_with_some_stack_components_present_in_anot
             }
             with StackContext(components=components) as stack:
                 with ComponentContext(
-                    c_type=StackComponentType.SECRETS_MANAGER,
+                    c_type=StackComponentType.IMAGE_BUILDER,
                     flavor="local",
                     config={},
-                ) as secret:
+                ) as image_builder:
                     components = {
                         StackComponentType.ORCHESTRATOR: [orchestrator.id],
                         StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-                        StackComponentType.SECRETS_MANAGER: [secret.id],
+                        StackComponentType.IMAGE_BUILDER: [image_builder.id],
                     }
                     with StackContext(components=components) as stack:
                         client.delete_stack(stack.id, recursive=True)
                         with pytest.raises(KeyError):
                             store.get_stack(stack.id)
                         with pytest.raises(KeyError):
-                            store.get_stack_component(secret.id)
+                            store.get_stack_component(image_builder.id)
 
 
 def test_stacks_are_accessible_by_other_users():
@@ -4210,7 +4210,7 @@ class TestModelVersionArtifactLinks:
                         model_version=model_version.id,
                         artifact_version=artifact.id,
                         is_model_artifact=mo,
-                        is_endpoint_artifact=dep,
+                        is_deployment_artifact=dep,
                     )
                 )
             mvls = zs.list_model_version_artifact_links(
@@ -4238,7 +4238,7 @@ class TestModelVersionArtifactLinks:
             mvls = zs.list_model_version_artifact_links(
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id,
-                    only_endpoint_artifacts=True,
+                    only_deployment_artifacts=True,
                 ),
             )
             assert len(mvls) == 1
@@ -4249,7 +4249,7 @@ class TestModelVersionArtifactLinks:
 
             assert len(mv.model_artifact_ids) == 1
             assert len(mv.data_artifact_ids) == 2
-            assert len(mv.endpoint_artifact_ids) == 1
+            assert len(mv.deployment_artifact_ids) == 1
 
             assert isinstance(
                 mv.get_model_artifact(artifacts[1].name),
@@ -4260,7 +4260,7 @@ class TestModelVersionArtifactLinks:
                 ArtifactVersionResponse,
             )
             assert isinstance(
-                mv.get_endpoint_artifact(artifacts[2].name),
+                mv.get_deployment_artifact(artifacts[2].name),
                 ArtifactVersionResponse,
             )
             assert (
@@ -4272,7 +4272,7 @@ class TestModelVersionArtifactLinks:
                 == mv.model_artifacts[artifacts[1].name]["1"]
             )
             assert (
-                mv.get_endpoint_artifact(artifacts[2].name, "1")
+                mv.get_deployment_artifact(artifacts[2].name, "1")
                 == mv.endpoint_artifacts[artifacts[2].name]["1"]
             )
 
@@ -4686,6 +4686,14 @@ class TestRunMetadata:
                     ),
                 )
             )
+        elif type_ == MetadataResourceTypes.MODEL_VERSION:
+            from zenml import ModelVersion
+
+            model_name = sample_name("foo")
+            resource = ModelVersion(
+                name=model_name
+            )._get_or_create_model_version()
+
         elif (
             type_ == MetadataResourceTypes.PIPELINE_RUN
             or type_ == MetadataResourceTypes.STEP_RUN
@@ -4764,6 +4772,8 @@ class TestRunMetadata:
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             client.zen_store.delete_artifact_version(resource.id)
             client.zen_store.delete_artifact(artifact.id)
+        elif type_ == MetadataResourceTypes.MODEL_VERSION:
+            client.zen_store.delete_model(resource.model.id)
         elif (
             type_ == MetadataResourceTypes.PIPELINE_RUN
             or type_ == MetadataResourceTypes.STEP_RUN

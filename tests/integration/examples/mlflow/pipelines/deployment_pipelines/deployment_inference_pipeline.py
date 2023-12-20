@@ -23,7 +23,7 @@ from zenml.integrations.constants import MLFLOW, TENSORFLOW
 docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
 
 
-@pipeline(enable_cache=True, settings={"docker": docker_settings})
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
 def mlflow_deployment_inference_pipeline(
     pipeline_name: str = "mlflow_train_deploy_pipeline",
     pipeline_step_name: str = "mlflow_model_deployer_step",

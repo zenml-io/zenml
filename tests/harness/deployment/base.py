@@ -25,10 +25,10 @@ from docker.client import DockerClient
 
 import zenml
 from tests.harness.model import (
+    DatabaseType,
     DeploymentConfig,
-    DeploymentSetup,
     DeploymentStoreConfig,
-    DeploymentType,
+    ServerType,
 )
 from zenml.enums import StoreType
 
@@ -39,6 +39,9 @@ LOCAL_ZENML_SERVER_DEFAULT_PORT = 9000
 MYSQL_DOCKER_IMAGE = "mysql:8.0"
 MYSQL_DEFAULT_PASSWORD = "zenml"
 MYSQL_DEFAULT_PORT = 3306
+MARIADB_DOCKER_IMAGE = "mariadb:10.6"
+MARIADB_ROOT_PASSWORD = "zenml"
+MARIADB_DEFAULT_PORT = 3306
 ZENML_SERVER_IMAGE_NAME = "localhost/zenml-server"
 ZENML_IMAGE_NAME = (
     f"zenmldocker/zenml:{zenml.__version__}-"
@@ -53,7 +56,7 @@ class BaseTestDeployment(ABC):
     """Base class for ZenML test deployments."""
 
     DEPLOYMENTS: Dict[
-        Tuple[DeploymentType, DeploymentSetup], Type["BaseTestDeployment"]
+        Tuple[ServerType, DatabaseType], Type["BaseTestDeployment"]
     ] = {}
 
     def __init__(self, config: DeploymentConfig) -> None:
@@ -67,31 +70,40 @@ class BaseTestDeployment(ABC):
 
     @classmethod
     def register_deployment_class(
-        cls, type: DeploymentType, setup: DeploymentSetup
+        cls, server_type: ServerType, database_type: DatabaseType
     ) -> None:
         """Registers the deployment in the global registry.
 
         Args:
-            type: The deployment type.
-            setup: The deployment setup method.
+            server_type: The server deployment type.
+            database_type: The database deployment type.
+
+        Raises:
+            ValueError: If a deployment class is already registered for the
+                given server and database types.
         """
-        BaseTestDeployment.DEPLOYMENTS[(type, setup)] = cls
+        if cls.get_deployment_class(server_type, database_type) is not None:
+            raise ValueError(
+                f"Deployment class for type '{server_type}' and setup "
+                f"'{database_type}' already registered"
+            )
+        BaseTestDeployment.DEPLOYMENTS[(server_type, database_type)] = cls
 
     @classmethod
     def get_deployment_class(
-        cls, type: DeploymentType, setup: DeploymentSetup
+        cls, server_type: ServerType, database_type: DatabaseType
     ) -> Optional[Type["BaseTestDeployment"]]:
-        """Returns the deployment class for the given type and setup.
+        """Returns the deployment class for the given server and database types.
 
         Args:
-            type: The deployment type.
-            setup: The deployment setup method.
+            server_type: The server deployment type.
+            database_type: The database deployment type.
 
         Returns:
-            The deployment class registered for the given deployment type and
-            setup method.
+            The deployment class registered for the given server and database
+            types, if one exists.
         """
-        return cls.DEPLOYMENTS.get((type, setup))
+        return cls.DEPLOYMENTS.get((server_type, database_type))
 
     @classmethod
     def from_config(cls, config: DeploymentConfig) -> "BaseTestDeployment":
@@ -107,11 +119,13 @@ class BaseTestDeployment(ABC):
             ValueError: If no deployment class is registered for the given
                 deployment type and setup method.
         """
-        deployment_class = cls.get_deployment_class(config.type, config.setup)
+        deployment_class = cls.get_deployment_class(
+            config.server, config.database
+        )
         if deployment_class is None:
             raise ValueError(
-                f"No deployment class registered for type '{config.type}' "
-                f"and setup '{config.setup}'"
+                f"No deployment class registered for type '{config.server}' "
+                f"and setup '{config.database}'"
             )
         return deployment_class(config)
 

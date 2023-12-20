@@ -31,11 +31,10 @@ from uuid import UUID
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import SecretStr
+from pydantic import root_validator
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
-from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     GenericFilterOps,
     LogicalOperators,
@@ -43,6 +42,13 @@ from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.exceptions import EntityExistsError
+from zenml.integrations.aws import (
+    AWS_CONNECTOR_TYPE,
+    AWS_RESOURCE_TYPE,
+)
+from zenml.integrations.aws.service_connectors.aws_service_connector import (
+    AWSAuthenticationMethods,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -51,8 +57,9 @@ from zenml.models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.zen_stores.secrets_stores.base_secrets_store import (
-    BaseSecretsStore,
+from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
+    ServiceConnectorSecretsStore,
+    ServiceConnectorSecretsStoreConfiguration,
 )
 
 logger = get_logger(__name__)
@@ -61,16 +68,11 @@ logger = get_logger(__name__)
 AWS_ZENML_SECRET_NAME_PREFIX = "zenml"
 
 
-class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
+class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
     """AWS secrets store configuration.
 
     Attributes:
         type: The type of the store.
-        region_name: The AWS region name to use.
-        aws_access_key_id: The AWS access key ID to use to authenticate.
-        aws_secret_access_key: The AWS secret access key to use to
-            authenticate.
-        aws_session_token: The AWS session token to use to authenticate.
         list_page_size: The number of secrets to fetch per page when
             listing secrets.
         secret_list_refresh_timeout: The number of seconds to wait after
@@ -86,21 +88,68 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
     """
 
     type: SecretsStoreType = SecretsStoreType.AWS
-    region_name: str
-    aws_access_key_id: Optional[SecretStr] = None
-    aws_secret_access_key: Optional[SecretStr] = None
-    aws_session_token: Optional[SecretStr] = None
     list_page_size: int = 100
     secret_list_refresh_timeout: int = 0
+
+    @property
+    def region(self) -> str:
+        """The AWS region to use.
+
+        Returns:
+            The AWS region to use.
+
+        Raises:
+            ValueError: If the region is not configured.
+        """
+        region = self.auth_config.get("region")
+        if region:
+            return str(region)
+
+        raise ValueError("AWS `region` must be specified in the auth_config.")
+
+    @root_validator(pre=True)
+    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Populate the connector configuration from legacy attributes.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+
+        Raises:
+            ValueError: If the connector attribute is not set.
+        """
+        # Search for legacy attributes and populate the connector configuration
+        # from them, if they exist.
+        if (
+            values.get("aws_access_key_id")
+            and values.get("aws_secret_access_key")
+            and values.get("region_name")
+        ):
+            logger.warning(
+                "The `aws_access_key_id`, `aws_secret_access_key` and "
+                "`region_name` AWS secrets store attributes are deprecated and "
+                "will be removed in a future version of ZenML. Please use the "
+                "`auth_method` and `auth_config` attributes instead."
+            )
+            values["auth_method"] = AWSAuthenticationMethods.SECRET_KEY
+            values["auth_config"] = dict(
+                aws_access_key_id=values.get("aws_access_key_id"),
+                aws_secret_access_key=values.get("aws_secret_access_key"),
+                region=values.get("region_name"),
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
 
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra = "allow"
 
 
-class AWSSecretsStore(BaseSecretsStore):
+class AWSSecretsStore(ServiceConnectorSecretsStore):
     """Secrets store implementation that uses the AWS Secrets Manager API.
 
     This secrets store implementation uses the AWS Secrets Manager API to
@@ -144,46 +193,15 @@ class AWSSecretsStore(BaseSecretsStore):
     workspace) does not update the secret's `updated` timestamp. This is a
     limitation of the AWS Secrets Manager API (updating AWS tags does not update
     the secret's `updated` timestamp).
-
-
-    Attributes:
-        config: The configuration of the AWS secrets store.
-        TYPE: The type of the store.
-        CONFIG_TYPE: The type of the store configuration.
     """
 
     config: AWSSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AWS
     CONFIG_TYPE: ClassVar[
-        Type[SecretsStoreConfiguration]
+        Type[ServiceConnectorSecretsStoreConfiguration]
     ] = AWSSecretsStoreConfiguration
-
-    _client: Optional[Any] = None
-
-    @property
-    def client(self) -> Any:
-        """Initialize and return the AWS Secrets Manager client.
-
-        Returns:
-            The AWS Secrets Manager client.
-        """
-        if self._client is None:
-            # Initialize the AWS Secrets Manager client with the
-            # credentials from the configuration, if provided.
-            self._client = boto3.client(
-                "secretsmanager",
-                region_name=self.config.region_name,
-                aws_access_key_id=self.config.aws_access_key_id.get_secret_value()
-                if self.config.aws_access_key_id
-                else None,
-                aws_secret_access_key=self.config.aws_secret_access_key.get_secret_value()
-                if self.config.aws_secret_access_key
-                else None,
-                aws_session_token=self.config.aws_session_token.get_secret_value()
-                if self.config.aws_session_token
-                else None,
-            )
-        return self._client
+    SERVICE_CONNECTOR_TYPE: ClassVar[str] = AWS_CONNECTOR_TYPE
+    SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = AWS_RESOURCE_TYPE
 
     # ====================================
     # Secrets Store interface implementation
@@ -193,13 +211,21 @@ class AWSSecretsStore(BaseSecretsStore):
     # Initialization and configuration
     # --------------------------------
 
-    def _initialize(self) -> None:
-        """Initialize the AWS secrets store."""
-        logger.debug("Initializing AWSSecretsStore")
+    def _initialize_client_from_connector(self, client: Any) -> Any:
+        """Initialize the AWS Secrets Manager client from the service connector client.
 
-        # Initialize the AWS client early, just to catch any configuration or
-        # authentication errors early, before the Secrets Store is used.
-        _ = self.client
+        Args:
+            client: The authenticated client object returned by the service
+                connector.
+
+        Returns:
+            The AWS Secrets Manager client.
+        """
+        assert isinstance(client, boto3.Session)
+        return client.client(
+            "secretsmanager",
+            region_name=self.config.region,
+        )
 
     # ------
     # Secrets
