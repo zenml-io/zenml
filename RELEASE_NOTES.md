@@ -29,7 +29,7 @@ This is just a renaming to provide better alignment with industry standards. Tho
 * Model Versions are taggable by @avishniakov in https://github.com/zenml-io/zenml/pull/2102
 * Adding a condition to the PR template by @bcdurak in https://github.com/zenml-io/zenml/pull/2140
 * trying local caching for custom runners by @safoinme in https://github.com/zenml-io/zenml/pull/2148
-* make template tests runs on ubunut latest instead of custom runners by @safoinme in https://github.com/zenml-io/zenml/pull/2150
+* make template tests runs on ubuntu latest instead of custom runners by @safoinme in https://github.com/zenml-io/zenml/pull/2150
 * Fix various bugs by @stefannica in https://github.com/zenml-io/zenml/pull/2147
 * Fix `importlib` calling to `importlib.metadata` by @safoinme in https://github.com/zenml-io/zenml/pull/2160
 * Debugging `zenml clean` by @bcdurak in https://github.com/zenml-io/zenml/pull/2119
