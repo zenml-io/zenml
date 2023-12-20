@@ -84,6 +84,18 @@ class SecretUpdate(SecretRequest):
         default=None, title="The scope of the secret."
     )
 
+    def get_secret_values_update(self) -> Dict[str, Optional[str]]:
+        """Returns a dictionary with the secret values to update.
+
+        Returns:
+            A dictionary with the secret values to update.
+        """
+        return {
+            k: v.get_secret_value()
+            for k, v in self.values.items()
+            if v is not None
+        }
+
 
 # ------------------ Response Model ------------------
 
@@ -196,6 +208,14 @@ class SecretResponse(
     def remove_secrets(self) -> None:
         """Removes all secret values from the secret but keep the keys."""
         self.get_body().values = {k: None for k in self.values.keys()}
+
+    def set_secrets(self, values: Dict[str, str]) -> None:
+        """Sets the secret values of the secret.
+
+        Args:
+            values: The secret values to set.
+        """
+        self.get_body().values = {k: SecretStr(v) for k, v in values.items()}
 
 
 # ------------------ Filter Model ------------------

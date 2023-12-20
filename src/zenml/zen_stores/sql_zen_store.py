@@ -168,6 +168,8 @@ from zenml.models import (
     ScheduleUpdate,
     SecretFilter,
     SecretRequest,
+    SecretResponse,
+    SecretUpdate,
     ServerDatabaseType,
     ServerModel,
     ServiceAccountFilter,
@@ -219,7 +221,6 @@ from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
-from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.migrations.alembic import (
     ZENML_ALEMBIC_START_REVISION,
     Alembic,
@@ -245,6 +246,7 @@ from zenml.zen_stores.schemas import (
     PipelineSchema,
     RunMetadataSchema,
     ScheduleSchema,
+    SecretSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
     StackSchema,
@@ -3676,6 +3678,368 @@ class SqlZenStore(BaseZenStore):
             session.delete(schedule)
             session.commit()
 
+    # ------------------------- Secrets -------------------------
+
+    def _check_sql_secret_scope(
+        self,
+        session: Session,
+        secret_name: str,
+        scope: SecretScope,
+        workspace: UUID,
+        user: UUID,
+        exclude_secret_id: Optional[UUID] = None,
+    ) -> Tuple[bool, str]:
+        """Checks if a secret with the given name already exists in the given scope.
+
+        This method enforces the following scope rules:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            session: The SQLAlchemy session.
+            secret_name: The name of the secret.
+            scope: The scope of the secret.
+            workspace: The ID of the workspace to which the secret belongs.
+            user: The ID of the user to which the secret belongs.
+            exclude_secret_id: The ID of a secret to exclude from the check
+                (used e.g. during an update to exclude the existing secret).
+
+        Returns:
+            True if a secret with the given name already exists in the given
+            scope, False otherwise, and an error message.
+        """
+        scope_filter = (
+            select(SecretSchema)
+            .where(SecretSchema.name == secret_name)
+            .where(SecretSchema.scope == scope.value)
+        )
+
+        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+            scope_filter = scope_filter.where(
+                SecretSchema.workspace_id == workspace
+            )
+        if scope == SecretScope.USER:
+            scope_filter = scope_filter.where(SecretSchema.user_id == user)
+        if exclude_secret_id is not None:
+            scope_filter = scope_filter.where(
+                SecretSchema.id != exclude_secret_id
+            )
+
+        existing_secret = session.exec(scope_filter).first()
+
+        if existing_secret is not None:
+            existing_secret_model = existing_secret.to_model(hydrate=True)
+
+            msg = (
+                f"Found an existing {scope.value} scoped secret with the "
+                f"same '{secret_name}' name"
+            )
+            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+                msg += (
+                    f" in the same '{existing_secret_model.workspace.name}' "
+                    f"workspace"
+                )
+            if scope == SecretScope.USER:
+                assert existing_secret_model.user
+                msg += (
+                    f" for the same '{existing_secret_model.user.name}' user"
+                )
+
+            return True, msg
+
+        return False, ""
+
+    def _set_secret_values(
+        self, secret_id: UUID, values: Dict[str, str]
+    ) -> None:
+        """Sets the values of a secret in the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret to set the values of.
+            values: The values to set.
+        """
+        self.secrets_store.store_secret_values(
+            secret_id=secret_id, secret_values=values
+        )
+
+    def _get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+        """Gets the values of a secret in the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret to set the values of.
+            values: The values to set.
+        """
+        return self.secrets_store.get_secret_values(
+            secret_id=secret_id,
+        )
+
+    def _update_secret_values(
+        self, secret_id: UUID, values: Dict[str, Optional[str]]
+    ) -> Dict[str, str]:
+        """Updates the values of a secret in the configured secrets store.
+
+        This method will update the existing values with the new values
+        and drop `None` values.
+
+        Args:
+            secret_id: The ID of the secret to set the values of.
+            values: The updated values to set.
+
+        Returns:
+            The updated values.
+        """
+        existing_values = self._get_secret_values(secret_id=secret_id)
+
+        for k, v in values.items():
+            if v is not None:
+                existing_values[k] = v
+            # Drop values removed in the update
+            if v is None and k in existing_values:
+                del existing_values[k]
+
+        self._set_secret_values(secret_id=secret_id, values=existing_values)
+
+        return existing_values
+
+    def _delete_secret_values(
+        self,
+        secret_id: UUID,
+    ) -> None:
+        """Deletes the values of a secret in the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret for which to delete the values.
+        """
+        self.secrets_store.delete_secret_values(secret_id=secret_id)
+
+    @track_decorator(AnalyticsEvent.CREATED_SECRET)
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
+        """Creates a new secret.
+
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret: The secret to create.
+
+        Returns:
+            The newly created secret.
+
+        Raises:
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+        with Session(self.engine) as session:
+            # Check if a secret with the same name already exists in the same
+            # scope.
+            secret_exists, msg = self._check_sql_secret_scope(
+                session=session,
+                secret_name=secret.name,
+                scope=secret.scope,
+                workspace=secret.workspace,
+                user=secret.user,
+            )
+            if secret_exists:
+                raise EntityExistsError(msg)
+
+            new_secret = SecretSchema.from_request(
+                secret,
+            )
+            session.add(new_secret)
+            session.commit()
+
+            secret_model = new_secret.to_model()
+
+        try:
+            # Set the secret values in the configured secrets store
+            self._set_secret_values(
+                secret_id=new_secret.id, values=secret.secret_values
+            )
+        except:
+            # If setting the secret values fails, delete the secret from the
+            # database.
+            with Session(self.engine) as session:
+                session.delete(new_secret)
+                session.commit()
+            raise
+
+        secret_model.set_secrets(secret.secret_values)
+        return secret_model
+
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
+        """Get a secret by ID.
+
+        Args:
+            secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The secret.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+        """
+        with Session(self.engine) as session:
+            secret_in_db = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).first()
+            if secret_in_db is None:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+            secret_model = secret_in_db.to_model(hydrate=hydrate)
+
+        secret_model.set_secrets(self._get_secret_values(secret_id=secret_id))
+
+        return secret_model
+
+    def list_secrets(
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
+        """List all secrets matching the given filter criteria.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
+        Args:
+            secret_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all secrets matching the filter criteria, with pagination
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
+        """
+        with Session(self.engine) as session:
+            query = select(SecretSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=SecretSchema,
+                filter_model=secret_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_secret(
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
+        """Updates a secret.
+
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret_id: The ID of the secret to be updated.
+            secret_update: The update to be applied.
+
+        Returns:
+            The updated secret.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+        with Session(self.engine) as session:
+            existing_secret = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).first()
+
+            if not existing_secret:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+
+            # A change in name or scope requires a check of the scoping rules.
+            if (
+                secret_update.name is not None
+                and existing_secret.name != secret_update.name
+                or secret_update.scope is not None
+                and existing_secret.scope != secret_update.scope
+            ):
+                secret_exists, msg = self._check_sql_secret_scope(
+                    session=session,
+                    secret_name=secret_update.name or existing_secret.name,
+                    scope=secret_update.scope
+                    or SecretScope(existing_secret.scope),
+                    workspace=existing_secret.workspace.id,
+                    user=existing_secret.user.id,
+                    exclude_secret_id=secret_id,
+                )
+
+                if secret_exists:
+                    raise EntityExistsError(msg)
+
+            existing_secret.update(
+                secret_update=secret_update,
+            )
+            session.add(existing_secret)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_secret)
+            secret_model = existing_secret.to_model(hydrate=True)
+
+        if secret_update.values is not None:
+            # Update the secret values in the configured secrets store
+            updated_values = self._update_secret_values(
+                secret_id=secret_id,
+                values=secret_update.get_secret_values_update(),
+            )
+            secret_model.set_secrets(updated_values)
+        else:
+            secret_model.set_secrets(self._get_secret_values(secret_id))
+
+        return secret_model
+
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Delete a secret.
+
+        Args:
+            secret_id: The id of the secret to delete.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+        """
+        # Delete the secret values in the configured secrets store
+        try:
+            self._delete_secret_values(secret_id=secret_id)
+        except KeyError:
+            # If the secret values don't exist in the secrets store, we don't
+            # need to raise an error.
+            pass
+
+        with Session(self.engine) as session:
+            try:
+                secret_in_db = session.exec(
+                    select(SecretSchema).where(SecretSchema.id == secret_id)
+                ).one()
+                session.delete(secret_in_db)
+                session.commit()
+            except NoResultFound:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+
     # ------------------------- Service Accounts -------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
@@ -3929,9 +4293,9 @@ class SqlZenStore(BaseZenStore):
                 session.refresh(new_service_connector)
             except Exception:
                 # Delete the secret if it was created
-                if secret_id and self.secrets_store:
+                if secret_id:
                     try:
-                        self.secrets_store.delete_secret(secret_id)
+                        self.delete_secret(secret_id)
                     except Exception:
                         # Ignore any errors that occur while deleting the
                         # secret
@@ -4227,11 +4591,9 @@ class SqlZenStore(BaseZenStore):
                 else:
                     session.delete(service_connector)
 
-                if service_connector.secret_id and self.secrets_store:
+                if service_connector.secret_id:
                     try:
-                        self.secrets_store.delete_secret(
-                            service_connector.secret_id
-                        )
+                        self.delete_secret(service_connector.secret_id)
                     except KeyError:
                         # If the secret doesn't exist anymore, we can ignore
                         # this error
@@ -4292,18 +4654,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The ID of the newly created secret or None, if the service connector
             does not contain any secret credentials.
-
-        Raises:
-            NotImplementedError: If a secrets store is not configured or
-                supported.
         """
         if not secrets:
             return None
-
-        if not self.secrets_store:
-            raise NotImplementedError(
-                "A secrets store is not configured or supported."
-            )
 
         # Generate a unique name for the secret
         # Replace all non-alphanumeric characters with a dash because
@@ -4314,14 +4667,14 @@ class SqlZenStore(BaseZenStore):
         # that is not already in use
         while True:
             secret_name = f"connector-{connector_name}-{random_str(4)}".lower()
-            existing_secrets = self.secrets_store.list_secrets(
+            existing_secrets = self.list_secrets(
                 SecretFilter(
                     name=secret_name,
                 )
             )
             if not existing_secrets.size:
                 try:
-                    return self.secrets_store.create_secret(
+                    return self.create_secret(
                         SecretRequest(
                             name=secret_name,
                             user=user,
@@ -4417,16 +4770,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The ID of the updated secret or None, if the new service connector
             does not contain any secret credentials.
-
-        Raises:
-            NotImplementedError: If a secrets store is not configured or
-                supported.
         """
-        if not self.secrets_store:
-            raise NotImplementedError(
-                "A secrets store is not configured or supported."
-            )
-
         if updated_connector.secrets is None:
             # If the connector update does not contain a secrets update, keep
             # the existing secret (if any)
@@ -4435,7 +4779,7 @@ class SqlZenStore(BaseZenStore):
         # Delete the existing secret (if any), to be replaced by the new secret
         if existing_connector.secret_id:
             try:
-                self.secrets_store.delete_secret(existing_connector.secret_id)
+                self.delete_secret(existing_connector.secret_id)
             except KeyError:
                 # Ignore if the secret no longer exists
                 pass
@@ -5471,10 +5815,8 @@ class SqlZenStore(BaseZenStore):
             and attr
             not in
             # These are not resources owned by the user or  are resources that
-            # are deleted automatically when the user is deleted. Secrets in
-            # particular are left out because they are automatically deleted
-            # even when stored in an external secret store.
-            ["api_keys", "auth_devices", "secrets"]
+            # are deleted automatically when the user is deleted.
+            ["api_keys", "auth_devices"]
         ]
 
         # This next part is crucial in preserving scalability: we don't fetch
@@ -5778,8 +6120,6 @@ class SqlZenStore(BaseZenStore):
                     "account or consider deactivating it instead."
                 )
 
-            self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
-
             session.delete(user)
             session.commit()
 
@@ -5967,10 +6307,6 @@ class SqlZenStore(BaseZenStore):
                 raise IllegalOperationError(
                     "The default workspace cannot be deleted."
                 )
-
-            self._trigger_event(
-                StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
-            )
 
             session.delete(workspace)
             session.commit()

@@ -571,13 +571,21 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if "type" not in env_secrets_store_config:
                 env_secrets_store_config["type"] = config.type.value
 
-            logger.debug(
-                "Using environment variables to configure the secrets store"
-            )
+            if env_secrets_store_config["type"] != StoreType.SQL.value:
+                logger.warning(
+                    "Secrets store configuration via environment variables "
+                    "is only supported for SQL secrets stores. "
+                    "Ignoring environment variables for secrets store "
+                    "configuration."
+                )
+            else:
+                logger.debug(
+                    "Using environment variables to configure the secrets store"
+                )
 
-            config.secrets_store = SecretsStoreConfiguration(
-                **env_secrets_store_config
-            )
+                config.secrets_store = SecretsStoreConfiguration(
+                    **env_secrets_store_config
+                )
 
         return config
 

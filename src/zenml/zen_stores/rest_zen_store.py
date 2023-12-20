@@ -37,7 +37,6 @@ from requests.adapters import HTTPAdapter, Retry
 import zenml
 from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
@@ -69,6 +68,7 @@ from zenml.constants import (
     RUN_METADATA,
     RUNS,
     SCHEDULES,
+    SECRETS,
     SERVICE_ACCOUNTS,
     SERVICE_CONNECTOR_CLIENT,
     SERVICE_CONNECTOR_RESOURCES,
@@ -85,7 +85,6 @@ from zenml.constants import (
 )
 from zenml.enums import (
     OAuthGrantTypes,
-    SecretsStoreType,
     StoreType,
 )
 from zenml.exceptions import (
@@ -164,6 +163,10 @@ from zenml.models import (
     ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
     ServerModel,
     ServiceAccountFilter,
     ServiceAccountRequest,
@@ -205,9 +208,6 @@ from zenml.utils.networking_utils import (
 )
 from zenml.zen_server.exceptions import exception_from_response
 from zenml.zen_stores.base_zen_store import BaseZenStore
-from zenml.zen_stores.secrets_stores.rest_secrets_store import (
-    RestSecretsStoreConfiguration,
-)
 
 logger = get_logger(__name__)
 
@@ -228,9 +228,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     Attributes:
         type: The type of the store.
-        secrets_store: The configuration of the secrets store to use.
-            This defaults to a REST secrets store that extends the REST ZenML
-            store.
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
         api_key: The service account API key to use to connect to the Zen
@@ -247,39 +244,12 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.REST
 
-    secrets_store: Optional[SecretsStoreConfiguration] = None
-
     username: Optional[str] = None
     password: Optional[str] = None
     api_key: Optional[str] = None
     api_token: Optional[str] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
-
-    @validator("secrets_store")
-    def validate_secrets_store(
-        cls, secrets_store: Optional[SecretsStoreConfiguration]
-    ) -> SecretsStoreConfiguration:
-        """Ensures that the secrets store uses an associated REST secrets store.
-
-        Args:
-            secrets_store: The secrets store config to be validated.
-
-        Returns:
-            The validated secrets store config.
-
-        Raises:
-            ValueError: If the secrets store is not of type REST.
-        """
-        if secrets_store is None:
-            secrets_store = RestSecretsStoreConfiguration()
-        elif secrets_store.type != SecretsStoreType.REST:
-            raise ValueError(
-                "The secrets store associated with a REST zen store must be "
-                f"of type REST, but is of type {secrets_store.type}."
-            )
-
-        return secrets_store
 
     @root_validator
     def validate_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -1668,6 +1638,126 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=schedule_id,
             route=SCHEDULES,
+        )
+
+    # --------------------------- Secrets ---------------------------
+
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
+        """Creates a new secret.
+
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret: The secret to create.
+
+        Returns:
+            The newly created secret.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=secret,
+            route=SECRETS,
+            response_model=SecretResponse,
+        )
+
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
+        """Get a secret by ID.
+
+        Args:
+            secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The secret.
+        """
+        return self._get_resource(
+            resource_id=secret_id,
+            route=SECRETS,
+            response_model=SecretResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_secrets(
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
+        """List all secrets matching the given filter criteria.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
+        Args:
+            secret_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all secrets matching the filter criteria, with pagination
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
+        """
+        return self._list_paginated_resources(
+            route=SECRETS,
+            response_model=SecretResponse,
+            filter_model=secret_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_secret(
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
+        """Updates a secret.
+
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret_id: The ID of the secret to be updated.
+            secret_update: The update to be applied.
+
+        Returns:
+            The updated secret.
+        """
+        return self._update_resource(
+            resource_id=secret_id,
+            resource_update=secret_update,
+            route=SECRETS,
+            response_model=SecretResponse,
+            # The default endpoint behavior is to replace all secret values
+            # with the values in the update. We want to merge the values
+            # instead.
+            params=dict(patch_values=True),
+        )
+
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Delete a secret.
+
+        Args:
+            secret_id: The id of the secret to delete.
+        """
+        self._delete_resource(
+            resource_id=secret_id,
+            route=SECRETS,
         )
 
     # --------------------------- Service Accounts ---------------------------

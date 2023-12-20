@@ -17,8 +17,9 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
+    Dict,
+    List,
     Optional,
-    Tuple,
     Type,
 )
 from uuid import UUID
@@ -28,24 +29,16 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesGcmEngine
 from sqlmodel import Session, select
 
-from zenml.analytics.enums import AnalyticsEvent
-from zenml.analytics.utils import track_decorator
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
-    SecretScope,
     SecretsStoreType,
 )
 from zenml.exceptions import (
-    EntityExistsError,
     IllegalOperationError,
 )
 from zenml.logger import get_logger
 from zenml.models import (
-    Page,
-    SecretFilter,
-    SecretRequest,
     SecretResponse,
-    SecretUpdate,
 )
 from zenml.zen_stores.schemas import (
     SecretSchema,
@@ -179,140 +172,22 @@ class SqlSecretsStore(BaseSecretsStore):
     # Secrets
     # ------
 
-    def _check_sql_secret_scope(
+    def store_secret_values(
         self,
-        session: Session,
-        secret_name: str,
-        scope: SecretScope,
-        workspace: UUID,
-        user: UUID,
-        exclude_secret_id: Optional[UUID] = None,
-    ) -> Tuple[bool, str]:
-        """Checks if a secret with the given name already exists in the given scope.
+        secret_id: UUID,
+        secret_values: Dict[str, str],
+    ) -> None:
+        """Store secret values for a new secret.
 
-        This method enforces the following scope rules:
-
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+        The secret is already created in the database by the SQL Zen store, this
+        method only stores the secret values.
 
         Args:
-            session: The SQLAlchemy session.
-            secret_name: The name of the secret.
-            scope: The scope of the secret.
-            workspace: The ID of the workspace to which the secret belongs.
-            user: The ID of the user to which the secret belongs.
-            exclude_secret_id: The ID of a secret to exclude from the check
-                (used e.g. during an update to exclude the existing secret).
-
-        Returns:
-            True if a secret with the given name already exists in the given
-            scope, False otherwise, and an error message.
-        """
-        scope_filter = (
-            select(SecretSchema)
-            .where(SecretSchema.name == secret_name)
-            .where(SecretSchema.scope == scope.value)
-        )
-
-        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-            scope_filter = scope_filter.where(
-                SecretSchema.workspace_id == workspace
-            )
-        if scope == SecretScope.USER:
-            scope_filter = scope_filter.where(SecretSchema.user_id == user)
-        if exclude_secret_id is not None:
-            scope_filter = scope_filter.where(
-                SecretSchema.id != exclude_secret_id
-            )
-
-        existing_secret = session.exec(scope_filter).first()
-
-        if existing_secret is not None:
-            existing_secret_model = existing_secret.to_model(
-                encryption_engine=self._encryption_engine
-            )
-
-            msg = (
-                f"Found an existing {scope.value} scoped secret with the "
-                f"same '{secret_name}' name"
-            )
-            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-                msg += (
-                    f" in the same '{existing_secret_model.workspace.name}' "
-                    f"workspace"
-                )
-            if scope == SecretScope.USER:
-                assert existing_secret_model.user
-                msg += (
-                    f" for the same '{existing_secret_model.user.name}' user"
-                )
-
-            return True, msg
-
-        return False, ""
-
-    @track_decorator(AnalyticsEvent.CREATED_SECRET)
-    def create_secret(self, secret: SecretRequest) -> SecretResponse:
-        """Creates a new secret.
-
-        The new secret is also validated against the scoping rules enforced in
-        the secrets store:
-
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
-
-        Args:
-            secret: The secret to create.
-
-        Returns:
-            The newly created secret.
+            secret_id: ID of the secret.
+            secret_values: Values for the secret.
 
         Raises:
-            EntityExistsError: If a secret with the same name already exists in
-                the same scope.
-        """
-        with Session(self.engine) as session:
-            # Check if a secret with the same name already exists in the same
-            # scope.
-            secret_exists, msg = self._check_sql_secret_scope(
-                session=session,
-                secret_name=secret.name,
-                scope=secret.scope,
-                workspace=secret.workspace,
-                user=secret.user,
-            )
-            if secret_exists:
-                raise EntityExistsError(msg)
-
-            new_secret = SecretSchema.from_request(
-                secret, encryption_engine=self._encryption_engine
-            )
-            session.add(new_secret)
-            session.commit()
-
-            return new_secret.to_model(
-                encryption_engine=self._encryption_engine, hydrate=True
-            )
-
-    def get_secret(
-        self, secret_id: UUID, hydrate: bool = True
-    ) -> SecretResponse:
-        """Get a secret by ID.
-
-        Args:
-            secret_id: The ID of the secret to fetch.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The secret.
-
-        Raises:
-            KeyError: if the secret doesn't exist.
+            KeyError: if a secret for the given ID is not found.
         """
         with Session(self.engine) as session:
             secret_in_db = session.exec(
@@ -320,129 +195,91 @@ class SqlSecretsStore(BaseSecretsStore):
             ).first()
             if secret_in_db is None:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
-            return secret_in_db.to_model(
-                encryption_engine=self._encryption_engine, hydrate=hydrate
+            secret_in_db.set_secret_values(
+                secret_values=secret_values,
+                encryption_engine=self._encryption_engine,
             )
+            session.add(secret_in_db)
+            session.commit()
 
-    def list_secrets(
-        self, secret_filter_model: SecretFilter, hydrate: bool = False
-    ) -> Page[SecretResponse]:
-        """List all secrets matching the given filter criteria.
-
-        Note that returned secrets do not include any secret values. To fetch
-        the secret values, use `get_secret`.
+    def get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+        """Get the secret values for an existing secret.
 
         Args:
-            secret_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
+            secret_id: ID of the secret.
 
         Returns:
-            A list of all secrets matching the filter criteria, with pagination
-            information and sorted according to the filter criteria. The
-            returned secrets do not include any secret values, only metadata. To
-            fetch the secret values, use `get_secret` individually with each
-            secret.
+            The secret values.
+
+        Raises:
+            KeyError: if no secret values for the given ID are stored in the
+                secrets store.
         """
         with Session(self.engine) as session:
-            query = select(SecretSchema)
-            return self.zen_store.filter_and_paginate(
-                session=session,
-                query=query,
-                table=SecretSchema,
-                filter_model=secret_filter_model,
-                custom_schema_to_model_conversion=lambda secret: secret.to_model(
-                    include_values=False, hydrate=hydrate
-                ),
+            secret_in_db = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).first()
+            if secret_in_db is None:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+            return secret_in_db.get_secret_values(
+                encryption_engine=self._encryption_engine,
             )
 
-    def update_secret(
-        self, secret_id: UUID, secret_update: SecretUpdate
-    ) -> SecretResponse:
-        """Updates a secret.
-
-        Secret values that are specified as `None` in the update that are
-        present in the existing secret are removed from the existing secret.
-        Values that are present in both secrets are overwritten. All other
-        values in both the existing secret and the update are kept (merged).
-
-        If the update includes a change of name or scope, the scoping rules
-        enforced in the secrets store are used to validate the update:
-
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+    def update_secret_values(
+        self,
+        secret_id: UUID,
+        secret_values: Dict[str, str],
+    ) -> None:
+        """Updates secret values for an existing secret.
 
         Args:
             secret_id: The ID of the secret to be updated.
-            secret_update: The update to be applied.
-
-        Returns:
-            The updated secret.
+            secret_values: The new secret values.
 
         Raises:
-            KeyError: if the secret doesn't exist.
-            EntityExistsError: If a secret with the same name already exists in
-                the same scope.
+            KeyError: if no secret values for the given ID are stored in the
+                secrets store.
         """
-        with Session(self.engine) as session:
-            existing_secret = session.exec(
-                select(SecretSchema).where(SecretSchema.id == secret_id)
-            ).first()
+        self.store_secret_values(secret_id, secret_values)
 
-            if not existing_secret:
-                raise KeyError(f"Secret with ID {secret_id} not found.")
-
-            # A change in name or scope requires a check of the scoping rules.
-            if (
-                secret_update.name is not None
-                and existing_secret.name != secret_update.name
-                or secret_update.scope is not None
-                and existing_secret.scope != secret_update.scope
-            ):
-                secret_exists, msg = self._check_sql_secret_scope(
-                    session=session,
-                    secret_name=secret_update.name or existing_secret.name,
-                    scope=secret_update.scope
-                    or SecretScope(existing_secret.scope),
-                    workspace=existing_secret.workspace.id,
-                    user=existing_secret.user.id,
-                    exclude_secret_id=secret_id,
-                )
-
-                if secret_exists:
-                    raise EntityExistsError(msg)
-
-            existing_secret.update(
-                secret_update=secret_update,
-                encryption_engine=self._encryption_engine,
-            )
-            session.add(existing_secret)
-            session.commit()
-
-            # Refresh the Model that was just created
-            session.refresh(existing_secret)
-            return existing_secret.to_model(
-                encryption_engine=self._encryption_engine, hydrate=True
-            )
-
-    def delete_secret(self, secret_id: UUID) -> None:
-        """Delete a secret.
+    def delete_secret_values(self, secret_id: UUID) -> None:
+        """Deletes secret values for an existing secret.
 
         Args:
-            secret_id: The id of the secret to delete.
+            secret_id: The ID of the secret.
 
         Raises:
-            KeyError: if the secret doesn't exist.
+            KeyError: if no secret values for the given ID are stored in the
+                secrets store.
         """
         with Session(self.engine) as session:
             try:
                 secret_in_db = session.exec(
                     select(SecretSchema).where(SecretSchema.id == secret_id)
                 ).one()
-                session.delete(secret_in_db)
+                secret_in_db.values = None
                 session.commit()
             except NoResultFound:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
+
+    # ------------------------------------------------
+    # Deprecated - kept only for migration from 0.53.0
+    # ------------------------------------------------
+
+    def list_secrets(self) -> List[SecretResponse]:
+        """List all secrets.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
+        Returns:
+            A list of all secrets.
+
+        Raises:
+            NotImplementedError: This method is deprecated and will be removed
+                in a future version.
+        """
+        # We don't need to implement this method for the SQL ZenML store.
+        raise NotImplementedError(
+            "This method is deprecated and will be removed in a future version."
+        )
