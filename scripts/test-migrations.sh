@@ -15,7 +15,6 @@ function run_tests_for_version() {
     # Initialize zenml with the appropriate template
     # hardcoded to 0.43.0 since this is the latest template-starter repo
     # release tag
-    git clone -b "release/0.43.0" https://github.com/zenml-io/template-starter
     copier copy --trust -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git .
     cd test_starter
 
