@@ -146,7 +146,9 @@ class SlackAlerter(BaseAlerter):
         return DEFAULT_DISAPPROVE_MSG_OPTIONS
 
     def _create_blocks(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
+        self,
+        message: Optional[str],
+        params: Optional[BaseAlerterStepParameters],
     ) -> List[Dict]:  # type: ignore
         """Helper function to create slack blocks.
 
@@ -211,7 +213,9 @@ class SlackAlerter(BaseAlerter):
             return []
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self,
+        message: Optional[str] = None,
+        params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a Slack channel.
 
