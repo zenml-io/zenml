@@ -131,7 +131,17 @@ def _disable_primary_key_requirement_if_necessary() -> None:
 
     if engine_name == "mysql":
         server_version_info = connection.engine.dialect.server_version_info
-        if server_version_info and server_version_info >= (8, 0, 13):
+
+        # Check if MariaDB
+        is_mariadb = (
+            "MariaDB" in connection.execute("SELECT VERSION();").fetchone()[0]
+        )
+
+        if (
+            not is_mariadb
+            and server_version_info
+            and server_version_info >= (8, 0, 13)
+        ):
             try:
                 potential_session_var = connection.execute(
                     text(
@@ -139,10 +149,10 @@ def _disable_primary_key_requirement_if_necessary() -> None:
                     )
                 ).fetchone()
                 if potential_session_var and potential_session_var[1] == "ON":
-                    # Temporarily disable this MySQL setting so we can update the
-                    # primary key
+                    # Temporarily disable this MySQL setting so we can
+                    # update the primary key
                     op.execute("SET SESSION sql_require_primary_key = 0;")
             except Exception as e:
                 # Handle the case where the variable does not exist
-                # (e.g., in MariaDB)
+                # or other errors
                 print("Skipping setting sql_require_primary_key: ", e)
