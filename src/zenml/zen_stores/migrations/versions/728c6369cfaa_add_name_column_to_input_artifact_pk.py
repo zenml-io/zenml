@@ -126,19 +126,23 @@ def downgrade() -> None:
 
 def _disable_primary_key_requirement_if_necessary() -> None:
     """Disables MySQL primary key requirement if necessary."""
-    if op.get_bind().engine.name == "mysql":
-        server_version_info = op.get_bind().engine.dialect.server_version_info
+    connection = op.get_bind()
+    engine_name = connection.engine.name
+
+    if engine_name == "mysql":
+        server_version_info = connection.engine.dialect.server_version_info
         if server_version_info and server_version_info >= (8, 0, 13):
-            potential_session_var = (
-                op.get_bind()
-                .execute(
+            try:
+                potential_session_var = connection.execute(
                     text(
                         'SHOW SESSION VARIABLES LIKE "sql_require_primary_key";'
                     )
-                )
-                .fetchone()
-            )
-            if potential_session_var and potential_session_var[1] == "ON":
-                # Temporarily disable this MySQL setting so we can update the
-                # primary key
-                op.execute("SET SESSION sql_require_primary_key = 0;")
+                ).fetchone()
+                if potential_session_var and potential_session_var[1] == "ON":
+                    # Temporarily disable this MySQL setting so we can update the
+                    # primary key
+                    op.execute("SET SESSION sql_require_primary_key = 0;")
+            except Exception as e:
+                # Handle the case where the variable does not exist
+                # (e.g., in MariaDB)
+                print("Skipping setting sql_require_primary_key: ", e)
