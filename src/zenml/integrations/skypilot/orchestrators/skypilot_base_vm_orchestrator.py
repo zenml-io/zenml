@@ -15,8 +15,9 @@
 
 import os
 import re
+import time
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 from uuid import uuid4
 
 import sky
@@ -33,6 +34,7 @@ from zenml.orchestrators import (
 )
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.stack import StackValidator
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -166,6 +168,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID
         ] = orchestrator_run_id
 
+        start_time = time.time()
+
         # Set up credentials
         self.setup_credentials()
 
@@ -190,7 +194,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             setup = None
             task_envs = None
 
-        unique_resource_configs: Dict[str, List[str]] = {}
+        unique_resource_configs: Dict[str, str] = {}
         for step_name, step in deployment.step_configurations.items():
             settings = cast(
                 SkypilotBaseOrchestratorSettings,
@@ -223,109 +227,101 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 if part is not None
             ]
             cluster_name = "cluster-" + "-".join(cluster_name_parts)
-            unique_resource_configs.setdefault(cluster_name, []).append(
-                step_name
-            )
+            unique_resource_configs[step_name] = cluster_name
 
         # Process each unique resource configuration
-        for cluster_name, steps in unique_resource_configs.items():
+        for step_name, step in deployment.step_configurations.items():
+            cluster_name = unique_resource_configs[step_name]
             # Process each step in the resource configuration
-            for step_name in steps:
-                step = deployment.step_configurations[step_name]
-                settings = cast(
-                    SkypilotBaseOrchestratorSettings,
-                    self.get_settings(step),
-                )
-                # Use the step-specific entrypoint configuration
-                entrypoint = (
-                    StepEntrypointConfiguration.get_entrypoint_command()
-                )
-                entrypoint_str = " ".join(entrypoint)
-                arguments = (
-                    StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment.id
-                    )
-                )
-                arguments_str = " ".join(arguments)
+            step = deployment.step_configurations[step_name]
+            settings = cast(
+                SkypilotBaseOrchestratorSettings,
+                self.get_settings(step),
+            )
+            # Use the step-specific entrypoint configuration
+            entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
+            entrypoint_str = " ".join(entrypoint)
+            arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
+                step_name=step_name, deployment_id=deployment.id
+            )
+            arguments_str = " ".join(arguments)
 
-                # Set up docker run command
-                image = self.get_image(
-                    deployment=deployment, step_name=step_name
-                )
-                docker_environment_str = " ".join(
-                    f"-e {k}={v}" for k, v in environment.items()
-                )
+            # Set up docker run command
+            image = self.get_image(deployment=deployment, step_name=step_name)
+            docker_environment_str = " ".join(
+                f"-e {k}={v}" for k, v in environment.items()
+            )
 
-                # Set up the task
-                task = sky.Task(
-                    run=f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}",
-                    setup=setup,
-                    envs=task_envs,
+            # Set up the task
+            task = sky.Task(
+                run=f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}",
+                setup=setup,
+                envs=task_envs,
+            )
+            task = task.set_resources(
+                sky.Resources(
+                    cloud=self.cloud,
+                    instance_type=settings.instance_type
+                    or self.DEFAULT_INSTANCE_TYPE,
+                    cpus=settings.cpus,
+                    memory=settings.memory,
+                    disk_size=settings.disk_size,
+                    disk_tier=settings.disk_tier,
+                    accelerators=settings.accelerators,
+                    accelerator_args=settings.accelerator_args,
+                    use_spot=settings.use_spot,
+                    spot_recovery=settings.spot_recovery,
+                    region=settings.region,
+                    zone=settings.zone,
+                    image_id=settings.image_id,
                 )
-                task = task.set_resources(
-                    sky.Resources(
-                        cloud=self.cloud,
-                        instance_type=settings.instance_type
-                        or self.DEFAULT_INSTANCE_TYPE,
-                        cpus=settings.cpus,
-                        memory=settings.memory,
-                        disk_size=settings.disk_size,
-                        disk_tier=settings.disk_tier,
-                        accelerators=settings.accelerators,
-                        accelerator_args=settings.accelerator_args,
-                        use_spot=settings.use_spot,
-                        spot_recovery=settings.spot_recovery,
-                        region=settings.region,
-                        zone=settings.zone,
-                        image_id=settings.image_id,
-                    )
-                )
+            )
 
-                # Launch the cluster
-                try:
-                    sky.launch(
-                        task,
-                        cluster_name,
-                        retry_until_up=settings.retry_until_up,
-                        idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
-                        down=settings.down,
-                        stream_logs=settings.stream_logs,
-                    )
-                except Exception as e:
-                    # If there's a resource mismatch, check if this is the last step using this configuration
-                    if steps[-1] == step_name:
-                        logger.warning(
-                            f"Resource mismatch for cluster '{cluster_name}': {e}. "
-                            "Attempting to down the existing cluster."
-                        )
-                        sky.down(cluster_name)
-                        # Retry launching the task after bringing down the cluster
-                        sky.launch(
-                            task,
-                            cluster_name,
-                            retry_until_up=settings.retry_until_up,
-                            idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
-                            down=settings.down,
-                            stream_logs=settings.stream_logs,
-                        )
-                    else:
-                        logger.warning(
-                            f"Resource mismatch for cluster '{cluster_name}', but "
-                            "the cluster will be used for subsequent steps. "
-                            "Skipping the downing of the cluster: {e}."
-                        )
+            # Launch the cluster
+            try:
+                sky.launch(
+                    task,
+                    cluster_name,
+                    retry_until_up=settings.retry_until_up,
+                    idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
+                    down=settings.down,
+                    stream_logs=settings.stream_logs,
+                )
+            except Exception as e:
+                raise e
+
+            # Pop the resource configuration for this step
+            unique_resource_configs.pop(step_name)
+
+            if cluster_name in unique_resource_configs.values():
+                # If there are more steps using this configuration, skip downing the cluster
+                logger.info(
+                    f"Resource configuration for cluster '{cluster_name}' "
+                    "is used by subsequent steps. Skipping the downing of "
+                    "the cluster."
+                )
+                continue
+            else:
+                # If there are no more steps using this configuration, down the cluster
+                logger.info(
+                    f"Resource configuration for cluster '{cluster_name}' "
+                    "is not used by subsequent steps. Downing the cluster."
+                )
+                sky.down(cluster_name)
 
         # Unset the service connector AWS profile ENV variable
         self.prepare_environment_variable(set=False)
 
+        run_duration = time.time() - start_time
         # Log the completion of the pipeline run
         run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
             orchestrator=self, orchestrator_run_id=orchestrator_run_id
         )
         run_model = Client().zen_store.get_run(run_id)
         logger.info(
-            "Pipeline run `%s` has finished.\n",
+            "Pipeline run `%s` has finished in `%s`.\n",
             run_model.name,
+            string_utils.get_human_readable_time(run_duration),
         )
 
     def sanitize_for_cluster_name(self, value: Any) -> str:
