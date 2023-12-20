@@ -66,6 +66,21 @@ jobs:
     - name: Test migrations across versions
       run: bash scripts/test-migrations.sh sqlite
 
+  mariadb-db-migration-testing:
+    runs-on: ubuntu-dind-runners
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.1.1
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4.8.0
+      with:
+        python-version: "3.9"
+
+    - name: Test migrations across versions
+      run: bash scripts/test-migrations.sh mariadb
+
   publish-python-package:
     needs: [setup-and-test, mlstacks-compatibility-check, sqlite-db-migration-testing, mysql-db-migration-testing]
     uses: ./.github/workflows/publish_to_pypi.yml

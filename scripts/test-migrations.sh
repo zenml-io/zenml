@@ -42,8 +42,13 @@ if [ "$1" == "mysql" ]; then
     echo "===== Testing MySQL ====="
     # run a mysql instance in docker
     docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:latest
-
     # mysql takes a while to start up
+    sleep 30
+elif [ "$1" == "mariadb" ]; then
+    echo "===== Testing MariaDB ====="
+    # run a mariadb instance in docker
+    docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:latest
+    # mariadb takes a while to start up
     sleep 30
 fi
 
@@ -76,6 +81,8 @@ do
 
     if [ "$1" == "mysql" ]; then
         zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+    elif [ "$1" == "mariadb" ]; then
+        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
     fi
 
     # Run the tests for this version
@@ -101,6 +108,8 @@ pip3 install importlib_metadata
 
 if [ "$1" == "mysql" ]; then
     zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+elif [ "$1" == "mariadb" ]; then
+    zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 fi
 
 run_tests_for_version current_branch_mysql
@@ -108,6 +117,9 @@ run_tests_for_version current_branch_mysql
 if [ "$1" == "mysql" ]; then
     zenml disconnect
     docker rm -f mysql
+elif [ "$1" == "mariadb" ]; then
+    zenml disconnect
+    docker rm -f mariadb
 fi
 
 deactivate
