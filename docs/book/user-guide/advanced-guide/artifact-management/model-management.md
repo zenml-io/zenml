@@ -296,17 +296,19 @@ You can also explicitly specify the linkage on a per-artifact basis by passing
 special configuration to the Annotated output:
 
 ```python
+from zenml import ArtifactConfig
+
 @step
-def my_step() -> Annotated[
-    MyArtifact, 
-    "artifact_name",
-    DataArtifactConfig(model_name="my_model")
-]:
-   ...
+def my_step() -> Annotated[MyArtifact, ArtifactConfig(model_name="my_model",
+                                                      name="my_artifact",
+                                                      is_model_artifact=True)]:
+    ...
 ```
 
-The `DataArtifactConfig`, `ModelArtifactConfig`, and `EndpointArtifactConfig`
-types allow configuring model linkage directly on the artifact.
+The `ArtifactConfig` object allows configuring model linkage directly on the
+artifact, and you specify whether it's for a model or deployment by using the
+`is_model_artifact` and `is_deployment_artifact` flags (as shown above) else it
+will be assumed to be a data artifact.
 
 ### Manual Linkage
 
