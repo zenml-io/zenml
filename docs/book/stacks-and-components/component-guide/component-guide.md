@@ -15,7 +15,6 @@ Here is a full list of all stack components currently supported in ZenML, with a
 | [Orchestrator](orchestrators/orchestrators.md)                       | Orchestrating the runs of your pipeline                           |
 | [Artifact Store](artifact-stores/artifact-stores.md)                 | Storage for the artifacts created by your pipelines               |
 | [Container Registry](container-registries/container-registries.md)   | Store for your containers                                         |
-| [Secrets Manager](secrets-managers/secrets-managers.md) (deprecated) | Centralized location for the storage of your secrets              |
 | [Step Operator](step-operators/step-operators.md)                    | Execution of individual steps in specialized runtime environments |
 | [Model Deployer](model-deployers/model-deployers.md)                 | Services/platforms responsible for online model serving           |
 | [Feature Store](feature-stores/feature-stores.md)                    | Management of your data/features                                  |

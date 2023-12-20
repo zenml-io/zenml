@@ -61,33 +61,12 @@ on:
           - local-server-docker-orchestrator
           - local-server-airflow-orchestrator
           # Local ZenML docker-compose server deployments
-          - docker-server
-          - docker-server-docker-orchestrator
-          - docker-server-airflow-orchestrator
-          # AWS ZenML server deployment with local components
-          - aws-local-orchestrator
-          - aws-docker-orchestrator
-          - aws-kubeflow-orchestrator
-          - aws-airflow-orchestrator
-          # AWS ZenML server deployment with AWS cloud components
-          - aws-cloud-local-orchestrator
-          - aws-cloud-docker-orchestrator
-          - aws-cloud-kubeflow-orchestrator
-          - aws-cloud-kubernetes-orchestrator
-          - aws-cloud-tekton-orchestrator
-          - aws-cloud-sagemaker-orchestrator
-          # GCP ZenML server deployment with local components
-          - gcp-local-orchestrator
-          - gcp-docker-orchestrator
-          - gcp-kubeflow-orchestrator
-          - gcp-airflow-orchestrator
-          # GCP ZenML server deployment with GCP cloud components
-          - gcp-cloud-local-orchestrator
-          - gcp-cloud-docker-orchestrator
-          - gcp-cloud-kubeflow-orchestrator
-          - gcp-cloud-kubernetes-orchestrator
-          - gcp-cloud-tekton-orchestrator
-          - gcp-cloud-vertex-ai-orchestrator
+          - docker-server-mysql
+          - docker-server-mariadb
+          - docker-server-docker-orchestrator-mysql
+          - docker-server-docker-orchestrator-mariadb
+          - docker-server-airflow-orchestrator-mysql
+          - docker-server-airflow-orchestrator-mariadb
         required: false
         default: 'default'
       enable_tmate:

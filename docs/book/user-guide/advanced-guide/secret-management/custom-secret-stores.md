@@ -71,11 +71,11 @@ the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-zen\_stores
 .
 {% endhint %}
 
-#### Build your own custom secrets manager
+#### Build your own custom secrets store
 
 If you want to create your own custom secrets store implementation, you can follow the following steps:
 
-1. Create a class that inherits from the `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsManager` base
+1. Create a class that inherits from the `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore` base
    class and implements the `abstractmethod`s shown in the interface above. Use `SecretsStoreType.CUSTOM` as the `TYPE`
    value for your secrets store class.
 2. If you need to provide any configuration, create a class that inherits from the `SecretsStoreConfiguration` class and

@@ -301,7 +301,7 @@ class ModelVersionSchema(NamedSchema, table=True):
         """
         # Construct {name: {version: id}} dicts for all linked artifacts
         model_artifact_ids: Dict[str, Dict[str, UUID]] = {}
-        endpoint_artifact_ids: Dict[str, Dict[str, UUID]] = {}
+        deployment_artifact_ids: Dict[str, Dict[str, UUID]] = {}
         data_artifact_ids: Dict[str, Dict[str, UUID]] = {}
         for artifact_link in self.artifact_links:
             if not artifact_link.artifact_version:
@@ -313,8 +313,8 @@ class ModelVersionSchema(NamedSchema, table=True):
                 model_artifact_ids.setdefault(artifact_name, {}).update(
                     {str(artifact_version): artifact_version_id}
                 )
-            elif artifact_link.is_endpoint_artifact:
-                endpoint_artifact_ids.setdefault(artifact_name, {}).update(
+            elif artifact_link.is_deployment_artifact:
+                deployment_artifact_ids.setdefault(artifact_name, {}).update(
                     {str(artifact_version): artifact_version_id}
                 )
             else:
@@ -351,7 +351,7 @@ class ModelVersionSchema(NamedSchema, table=True):
             model=self.model.to_model(),
             model_artifact_ids=model_artifact_ids,
             data_artifact_ids=data_artifact_ids,
-            endpoint_artifact_ids=endpoint_artifact_ids,
+            deployment_artifact_ids=deployment_artifact_ids,
             pipeline_run_ids=pipeline_run_ids,
             tags=[t.tag.to_model() for t in self.tags],
         )
@@ -447,7 +447,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     )
 
     is_model_artifact: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
-    is_endpoint_artifact: bool = Field(
+    is_deployment_artifact: bool = Field(
         sa_column=Column(BOOLEAN, nullable=True)
     )
 
@@ -471,7 +471,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             model_version_id=model_version_artifact_request.model_version,
             artifact_version_id=model_version_artifact_request.artifact_version,
             is_model_artifact=model_version_artifact_request.is_model_artifact,
-            is_endpoint_artifact=model_version_artifact_request.is_endpoint_artifact,
+            is_deployment_artifact=model_version_artifact_request.is_deployment_artifact,
         )
 
     def to_model(
@@ -496,7 +496,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
                 model_version=self.model_version_id,
                 artifact_version=self.artifact_version.to_model(),
                 is_model_artifact=self.is_model_artifact,
-                is_endpoint_artifact=self.is_endpoint_artifact,
+                is_deployment_artifact=self.is_deployment_artifact,
             ),
             metadata=BaseResponseMetadata() if hydrate else None,
         )

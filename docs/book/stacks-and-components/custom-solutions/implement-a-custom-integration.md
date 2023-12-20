@@ -14,7 +14,7 @@ _However, what if you want to make your extension of ZenML part of the main code
 
 In [the previous page](implement-a-custom-stack-component.md), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](../../../stacks-and-components/component-guide/component-guide.md) as well.
 
-Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](../../../stacks-and-components/component-guide/container-registries/container-registries.md), [artifact stores](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md), [secrets managers](../../../stacks-and-components/component-guide/secrets-managers/secrets-managers.md) etc.
+Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](../../../stacks-and-components/component-guide/container-registries/container-registries.md), [artifact stores](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md) etc.
 
 ### Step 2: Create individual stack component flavors
 

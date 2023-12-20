@@ -26,19 +26,21 @@ if TYPE_CHECKING:
     from tests.harness.harness import TestHarness
 
 
-class DeploymentType(str, Enum):
-    """Enum for the different types of deployments."""
+class ServerType(str, Enum):
+    """Enum for the different types of server deployment methods."""
 
+    NONE = "none"
     LOCAL = "local"
-    SERVER = "server"
-
-
-class DeploymentSetup(str, Enum):
-    """Enum for the different types of deployment setup methods."""
-
-    DEFAULT = "default"
     DOCKER = "docker"
-    DOCKER_COMPOSE = "docker-compose"
+    EXTERNAL = "external"
+
+
+class DatabaseType(str, Enum):
+    """Enum for the different types of database deployment methods."""
+
+    SQLITE = "sqlite"
+    MYSQL = "mysql"
+    MARIADB = "mariadb"
     EXTERNAL = "external"
 
 
@@ -59,8 +61,8 @@ class DeploymentConfig(BaseTestConfigModel):
 
     name: str = Field(regex="^[a-z][a-z0-9-_]+$")
     description: str = ""
-    type: DeploymentType = DeploymentType.LOCAL
-    setup: DeploymentSetup = DeploymentSetup.DEFAULT
+    server: ServerType = ServerType.LOCAL
+    database: DatabaseType = DatabaseType.SQLITE
     config: Optional[DeploymentStoreConfig] = None
     disabled: bool = False
     capabilities: Dict[str, bool] = Field(default_factory=dict)
