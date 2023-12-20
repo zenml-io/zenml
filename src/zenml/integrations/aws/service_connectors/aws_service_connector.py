@@ -42,6 +42,11 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
+from zenml.integrations.aws import (
+    AWS_CONNECTOR_TYPE,
+    AWS_RESOURCE_TYPE,
+    S3_RESOURCE_TYPE,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -61,10 +66,6 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-
-AWS_CONNECTOR_TYPE = "aws"
-AWS_RESOURCE_TYPE = "aws-generic"
-S3_RESOURCE_TYPE = "s3-bucket"
 EKS_KUBE_API_TOKEN_EXPIRATION = 60
 DEFAULT_IAM_ROLE_TOKEN_EXPIRATION = 3600  # 1 hour
 DEFAULT_STS_TOKEN_EXPIRATION = 43200  # 12 hours

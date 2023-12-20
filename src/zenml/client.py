@@ -4816,7 +4816,7 @@ class Client(metaclass=ClientMetaClass):
         artifact_name: Optional[str] = None,
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
-        only_endpoint_artifacts: Optional[bool] = None,
+        only_deployment_artifacts: Optional[bool] = None,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
 
@@ -4835,7 +4835,7 @@ class Client(metaclass=ClientMetaClass):
             artifact_name: Use the artifact name for filtering
             only_data_artifacts: Use to filter by data artifacts
             only_model_artifacts: Use to filter by model artifacts
-            only_endpoint_artifacts: Use to filter by endpoint artifacts
+            only_deployment_artifacts: Use to filter by deployment artifacts
 
         Returns:
             A page of all model version to artifact links.
@@ -4856,7 +4856,7 @@ class Client(metaclass=ClientMetaClass):
                 artifact_name=artifact_name,
                 only_data_artifacts=only_data_artifacts,
                 only_model_artifacts=only_model_artifacts,
-                only_endpoint_artifacts=only_endpoint_artifacts,
+                only_deployment_artifacts=only_deployment_artifacts,
             )
         )
 
