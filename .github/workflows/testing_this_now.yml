@@ -1,23 +1,18 @@
-# This is a basic workflow to help you get started with Actions
-name: Release Package & Docker Image
-
+---
+name: TEST MariaDB DB migrations
 on:
-    pull_request:
-        types: [opened, synchronize, ready_for_review]
-        paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
-
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
 jobs:
-    mariadb-db-migration-testing:
+  mariadb-db-migration-testing:
     runs-on: ubuntu-dind-runners
-
     steps:
-    - name: Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4.1.1
-
-    - name: Set up Python 3.9
+      - name: Set up Python 3.9
         uses: actions/setup-python@v4.8.0
         with:
-        python-version: "3.9"
-
-    - name: Test migrations across versions
+          python-version: '3.9'
+      - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mariadb
