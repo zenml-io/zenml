@@ -136,6 +136,7 @@ pytest = { version = "^7.4.0", optional = true }
 pytest-randomly = { version = "^3.10.1", optional = true }
 pytest-mock = { version = "^3.6.1", optional = true }
 pytest-clarity = { version = "^1.0.1", optional = true }
+pytest-shard = { version = "^0.1.2", optional = true }
 # mkdocs including plugins
 mkdocs = { version = "^1.2.3", optional = true }
 mkdocs-material = { version = "^8.1.7", optional = true }
@@ -214,6 +215,7 @@ dev = [
     "pytest-randomly",
     "pytest-mock",
     "pytest-clarity",
+    "pytest-shard",
     "mkdocs",
     "mkdocs-material",
     "mkdocs-awesome-pages-plugin",

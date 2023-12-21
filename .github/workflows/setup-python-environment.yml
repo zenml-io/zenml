@@ -69,6 +69,12 @@ jobs:
   setup-and-test:
     name: setup-and-test
     runs-on: ${{ inputs.os }}
+    strategy:
+      matrix:
+        shard: [
+             1/8,  2/8,  3/8,  4/8,
+             5/8,  6/8,  7/8,  8/8,
+        ]
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -173,8 +179,10 @@ jobs:
           bash scripts/check-alembic-branches.sh
 
       - name: Run unit tests
+        env:
+          SHARD: ${{ matrix.shard }}
         run: |
-          bash scripts/test-coverage-xml.sh unit
+          bash scripts/test-coverage-xml.sh unit default $SHARD
 
       # - name: Upload coverage
       #   # only do it for python 3.8, we don't need to do it for every version
