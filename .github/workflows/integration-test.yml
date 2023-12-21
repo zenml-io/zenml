@@ -148,7 +148,7 @@ jobs:
         if: contains(inputs.test_environment, 'gcp')
 
       - name: 'Set up gcloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
+        uses: 'google-github-actions/setup-gcloud@v2'
         with:
           install_components: 'gke-gcloud-auth-plugin'
         if: contains(inputs.test_environment, 'gcp')

@@ -26,7 +26,7 @@ jobs:
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@v0
+      - uses: google-github-actions/setup-gcloud@v2
         with:
           service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
           service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
