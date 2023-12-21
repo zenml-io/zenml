@@ -73,8 +73,8 @@ from zenml.models import (
     RunMetadataResponse,
     ScheduleRequest,
     ScheduleResponse,
-    SecretRequestModel,
-    SecretResponseModel,
+    SecretRequest,
+    SecretResponse,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
@@ -908,15 +908,15 @@ def create_run_metadata(
 
 @router.post(
     WORKSPACES + "/{workspace_name_or_id}" + SECRETS,
-    response_model=SecretResponseModel,
+    response_model=SecretResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_secret(
     workspace_name_or_id: Union[str, UUID],
-    secret: SecretRequestModel,
+    secret: SecretRequest,
     _: AuthContext = Security(authorize),
-) -> SecretResponseModel:
+) -> SecretResponse:
     """Creates a secret.
 
     Args:
