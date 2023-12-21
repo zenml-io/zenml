@@ -708,6 +708,7 @@ class SqlZenStore(BaseZenStore):
 
     config: SqlZenStoreConfiguration
     skip_migrations: bool = False
+    db_backup_file_path: Optional[str] = None
     TYPE: ClassVar[StoreType] = StoreType.SQL
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
@@ -1051,20 +1052,21 @@ class SqlZenStore(BaseZenStore):
         #   before (i.e. was created with SQLModel back when alembic wasn't
         #   used)
         # 3. the database is not empty and has been migrated with alembic before
-        revisions = self.alembic.current_revisions()
-        if len(revisions) >= 1:
-            if len(revisions) > 1:
+        current_revisions = self.alembic.current_revisions()
+        head_revisions = self.alembic.head_revisions()
+        if len(current_revisions) >= 1:
+            if len(current_revisions) > 1:
                 logger.warning(
                     "The ZenML database has more than one migration head "
                     "revision. This is not expected and might indicate a "
                     "database migration problem. Please raise an issue on "
                     "GitHub if you encounter this."
                 )
+            # if the current revision and head revision don't match, run a dump
+            if current_revisions[0] != head_revisions[0]:
+                self.backup_database(self.db_backup_file_path)
             # Case 3: the database has been migrated with alembic before. Just
             # upgrade to the latest revision.
-            # TODO run a dump either here or inside alembic upgrade fn
-            # TODO use the engine.connect() to execute queries that check
-            # if the database is present
             self.alembic.upgrade()
         else:
             if self.alembic.db_is_empty():
@@ -1093,6 +1095,9 @@ class SqlZenStore(BaseZenStore):
                 # version table, initialize it with the first revision where we
                 # introduced alembic and then upgrade to the latest revision.
                 self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
+                # if the current revision and head revision don't match, run a dump
+                if current_revisions[0] != head_revisions[0]:
+                    self.backup_database(self.db_backup_file_path)
                 self.alembic.upgrade()
 
         # If an alembic migration took place, all non-custom flavors are purged
@@ -1100,7 +1105,7 @@ class SqlZenStore(BaseZenStore):
         #  flavors in the db.
         revisions_afterwards = self.alembic.current_revisions()
 
-        if revisions != revisions_afterwards:
+        if current_revisions != revisions_afterwards:
             self._sync_flavors()
 
     def _sync_flavors(self) -> None:
