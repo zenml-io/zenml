@@ -402,13 +402,22 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     "--stage",
     "-s",
     type=click.Choice(choices=ModelStages.values()),
+    required=False,
     help="The stage of the model version.",
 )
 @click.option(
     "--name",
     "-n",
     type=str,
+    required=False,
     help="The name of the model version.",
+)
+@click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="The description of the model version.",
 )
 @click.option(
     "--tag",
@@ -435,8 +444,9 @@ def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
 def update_model_version(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
-    stage: str,
-    name: str,
+    stage: Optional[str],
+    name: Optional[str],
+    description: Optional[str],
     tag: Optional[List[str]],
     remove_tag: Optional[List[str]],
     force: bool = False,
@@ -448,6 +458,7 @@ def update_model_version(
         model_version_name_or_number_or_id: The ID, number or name of the model version.
         stage: The stage of the model version to be set.
         name: The name of the model version.
+        description: The description of the model version.
         tag: Tags to be added to the model version.
         remove_tag: Tags to be removed from the model version.
         force: Whether existing model version in target stage should be silently archived.
@@ -465,6 +476,7 @@ def update_model_version(
             remove_tags=remove_tag,
             force=force,
             name=name,
+            description=description,
         )
     except RuntimeError:
         if not force:
@@ -487,6 +499,7 @@ def update_model_version(
                 add_tags=tag,
                 remove_tags=remove_tag,
                 force=True,
+                description=description,
             )
     cli_utils.print_table([_model_version_to_print(model_version)])
 
