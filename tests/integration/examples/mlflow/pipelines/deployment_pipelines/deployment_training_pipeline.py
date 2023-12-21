@@ -21,7 +21,7 @@ from zenml.config import DockerSettings
 from zenml.integrations.constants import MLFLOW, TENSORFLOW
 from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 
-SERVICE_START_STOP_TIMEOUT = 120
+SERVICE_START_STOP_TIMEOUT = 220
 docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
 
 
