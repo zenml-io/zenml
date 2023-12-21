@@ -944,7 +944,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 try:
                     self.restore_database()
-                except Exception as e:
+                except Exception:
                     logger.exception(
                         "Failed to restore the database from a backup. "
                         "Please check the logs for more details."
