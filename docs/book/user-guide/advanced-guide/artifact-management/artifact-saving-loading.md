@@ -2,6 +2,11 @@
 description: Saving and loading artifacts manually.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Artifact saving and loading
 
 Whenever you run a ZenML pipeline, all outputs of your steps are automatically saved as artifacts into your artifact store and subsequent steps automatically load them in again. For most use cases, this is the recommended way of saving or loading artifacts. However, there are a few exceptions that are enabled by the following advanced concepts:
