@@ -18,7 +18,7 @@ from typing import Optional, Type, TypeVar, cast
 from pydantic import BaseModel
 
 from zenml.client import Client
-from zenml.models import SecretResponseModel
+from zenml.models import SecretResponse
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
 T = TypeVar("T", bound=BaseModel)
@@ -56,7 +56,7 @@ class AuthenticationMixin(StackComponent):
 
     def get_authentication_secret(
         self,
-    ) -> Optional[SecretResponseModel]:
+    ) -> Optional[SecretResponse]:
         """Gets the secret referred to by the authentication secret attribute.
 
         Returns:
