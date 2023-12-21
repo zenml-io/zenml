@@ -942,7 +942,13 @@ class SqlZenStore(BaseZenStore):
                     "Failed to migrate the database. Attempting to restore "
                     "the database from a backup."
                 )
-                self.restore_database()
+                try:
+                    self.restore_database()
+                except Exception as e:
+                    logger.exception(
+                        "Failed to restore the database from a backup. "
+                        "Please check the logs for more details."
+                    )
                 raise e
 
     def restore_database(self) -> None:
@@ -988,7 +994,9 @@ class SqlZenStore(BaseZenStore):
         # dump the database to a file
         os.system(
             f"mysqldump --set-gtid-purged=OFF -h {self.engine.url.host} -u {self.config.username} "
-            f"-p{self.config.password} {db_name} > {self.db_backup_file_path}"
+            f"-p{self.config.password} --ssl-ca={self.config.ssl_ca} "
+            f"--ssl-cert={self.config.ssl_cert} --ssl-key={self.config.ssl_key} "
+            f"{db_name} > {self.db_backup_file_path}"
         )
 
         logger.debug(f"Database backed up to {self.db_backup_file_path}")
@@ -1064,7 +1072,14 @@ class SqlZenStore(BaseZenStore):
                 )
             # if the current revision and head revision don't match, run a dump
             if current_revisions[0] != head_revisions[0]:
-                self.backup_database(self.db_backup_file_path)
+                try:
+                    self.backup_database(self.db_backup_file_path)
+                except Exception as e:
+                    logger.exception(
+                        "Failed to backup the database. Please check the logs "
+                        "for more details."
+                    )
+                    raise e
             # Case 3: the database has been migrated with alembic before. Just
             # upgrade to the latest revision.
             self.alembic.upgrade()
@@ -1097,7 +1112,14 @@ class SqlZenStore(BaseZenStore):
                 self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
                 # if the current revision and head revision don't match, run a dump
                 if current_revisions[0] != head_revisions[0]:
-                    self.backup_database(self.db_backup_file_path)
+                    try:
+                        self.backup_database(self.db_backup_file_path)
+                    except Exception as e:
+                        logger.exception(
+                            "Failed to backup the database. Please check the logs "
+                            "for more details."
+                        )
+                        raise e
                 self.alembic.upgrade()
 
         # If an alembic migration took place, all non-custom flavors are purged
