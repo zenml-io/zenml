@@ -25,10 +25,10 @@ from zenml.constants import (
 )
 from zenml.models import (
     Page,
-    TagFilterModel,
-    TagRequestModel,
-    TagResponseModel,
-    TagUpdateModel,
+    TagFilter,
+    TagRequest,
+    TagResponse,
+    TagUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -59,14 +59,14 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=TagResponseModel,
+    response_model=TagResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_tag(
-    tag: TagRequestModel,
+    tag: TagRequest,
     _: AuthContext = Security(authorize),
-) -> TagResponseModel:
+) -> TagResponse:
     """Create a new tag.
 
     Args:
@@ -84,22 +84,22 @@ def create_tag(
 
 @router.get(
     "",
-    response_model=Page[TagResponseModel],
+    response_model=Page[TagResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_tags(
-    tag_filter_model: TagFilterModel = Depends(
-        make_dependable(TagFilterModel)
-    ),
+    tag_filter_model: TagFilter = Depends(make_dependable(TagFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[TagResponseModel]:
+) -> Page[TagResponse]:
     """Get tags according to query filters.
 
     Args:
         tag_filter_model: Filter model used for pagination, sorting,
             filtering
-
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The tags according to query filters.
@@ -108,43 +108,47 @@ def list_tags(
         filter_model=tag_filter_model,
         resource_type=ResourceType.TAG,
         list_method=zen_store().list_tags,
+        hydrate=hydrate,
     )
 
 
 @router.get(
     "/{tag_name_or_id}",
-    response_model=TagResponseModel,
+    response_model=TagResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_tag(
     tag_name_or_id: Union[str, UUID],
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> TagResponseModel:
+) -> TagResponse:
     """Get a tag by name or ID.
 
     Args:
         tag_name_or_id: The name or ID of the tag to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The tag with the given name or ID.
     """
     return verify_permissions_and_get_entity(
-        id=tag_name_or_id, get_method=zen_store().get_tag
+        id=tag_name_or_id, get_method=zen_store().get_tag, hydrate=hydrate
     )
 
 
 @router.put(
     "/{tag_id}",
-    response_model=TagResponseModel,
+    response_model=TagResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_tag(
     tag_id: UUID,
-    tag_update_model: TagUpdateModel,
+    tag_update_model: TagUpdate,
     _: AuthContext = Security(authorize),
-) -> TagResponseModel:
+) -> TagResponse:
     """Updates a tag.
 
     Args:

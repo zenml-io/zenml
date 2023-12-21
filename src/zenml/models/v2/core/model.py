@@ -32,7 +32,7 @@ from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
-    from zenml.models.tag_models import TagResponseModel
+    from zenml.models.v2.core.tag import TagResponse
 
 
 # ------------------ Request Model ------------------
@@ -108,7 +108,7 @@ class ModelUpdate(BaseModel):
 class ModelResponseBody(WorkspaceScopedResponseBody):
     """Response body for models."""
 
-    tags: List["TagResponseModel"] = Field(
+    tags: List["TagResponse"] = Field(
         title="Tags associated with the model",
     )
     latest_version: Optional[str]
@@ -182,7 +182,7 @@ class ModelResponse(
 
     # Body and metadata properties
     @property
-    def tags(self) -> List["TagResponseModel"]:
+    def tags(self) -> List["TagResponse"]:
         """The `tags` property.
 
         Returns:

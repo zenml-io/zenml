@@ -24,10 +24,12 @@ from sqlmodel import Field, Relationship
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import SecretScope
-from zenml.models.secret_models import (
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+from zenml.models import (
+    SecretRequest,
+    SecretResponse,
+    SecretResponseBody,
+    SecretResponseMetadata,
+    SecretUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -133,13 +135,13 @@ class SecretSchema(NamedSchema, table=True):
     @classmethod
     def from_request(
         cls,
-        secret: SecretRequestModel,
+        secret: SecretRequest,
         encryption_engine: Optional[AesGcmEngine] = None,
     ) -> "SecretSchema":
-        """Create a `SecretSchema` from a `SecretRequestModel`.
+        """Create a `SecretSchema` from a `SecretRequest`.
 
         Args:
-            secret: The `SecretRequestModel` from which to create the schema.
+            secret: The `SecretRequest` from which to create the schema.
             encryption_engine: The encryption engine to use to encrypt the
                 secret values. If None, the values will be base64 encoded.
 
@@ -159,17 +161,17 @@ class SecretSchema(NamedSchema, table=True):
 
     def update(
         self,
-        secret_update: SecretUpdateModel,
+        secret_update: SecretUpdate,
         encryption_engine: Optional[AesGcmEngine] = None,
     ) -> "SecretSchema":
-        """Update a `SecretSchema` from a `SecretUpdateModel`.
+        """Update a `SecretSchema` from a `SecretUpdate`.
 
         The method also knows how to handle the `values` field of the secret
         update model: It will update the existing values with the new values
         and drop `None` values.
 
         Args:
-            secret_update: The `SecretUpdateModel` from which to update the schema.
+            secret_update: The `SecretUpdate` from which to update the schema.
             encryption_engine: The encryption engine to use to encrypt the
                 secret values. If None, the values will be base64 encoded.
 
@@ -201,7 +203,8 @@ class SecretSchema(NamedSchema, table=True):
         self,
         encryption_engine: Optional[AesGcmEngine] = None,
         include_values: bool = True,
-    ) -> SecretResponseModel:
+        hydrate: bool = False,
+    ) -> SecretResponse:
         """Converts a secret schema to a secret model.
 
         Args:
@@ -209,19 +212,30 @@ class SecretSchema(NamedSchema, table=True):
                 secret values. If None, the values will be base64 decoded.
             include_values: Whether to include the secret values in the
                 response model or not.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret model.
         """
-        return SecretResponseModel(
-            id=self.id,
-            name=self.name,
+        metadata = None
+        if hydrate:
+            metadata = SecretResponseMetadata(
+                workspace=self.workspace.to_model(),
+            )
+
+        body = SecretResponseBody(
+            user=self.user.to_model() if self.user else None,
+            created=self.created,
+            updated=self.updated,
             scope=self.scope,
             values=self._load_secret_values(self.values, encryption_engine)
             if include_values
             else {},
-            user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
-            created=self.created,
-            updated=self.updated,
+        )
+        return SecretResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
         )

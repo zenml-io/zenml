@@ -53,10 +53,12 @@ from zenml.integrations.gcp.service_connectors.gcp_service_connector import (
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretResponseBody,
+    SecretResponseMetadata,
+    SecretUpdate,
 )
 from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
@@ -194,7 +196,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         return f"projects/{self.config.project_id}"
 
     def _get_secret_labels(
-        self, secret: Union[SecretRequestModel, SecretResponseModel]
+        self, secret: Union[SecretRequest, SecretResponse]
     ) -> List[Tuple[str, str]]:
         """Return a list of Google secret label values for a given secret.
 
@@ -256,7 +258,8 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         self,
         labels: Dict[str, str],
         values: Optional[Dict[str, str]] = None,
-    ) -> SecretResponseModel:
+        hydrate: bool = False,
+    ) -> SecretResponse:
         """Create a ZenML secret model from data stored in an GCP secret.
 
         If the GCP secret cannot be converted, the method acts as if the
@@ -265,6 +268,8 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         Args:
             labels: The GCP secret labels.
             values: The GCP secret values.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The ZenML secret model.
@@ -298,12 +303,11 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
             created=created,
             updated=updated,
             values=values,
+            hydrate=hydrate,
         )
 
-    def _get_gcp_filter_string(
-        self, secret_filter_model: SecretFilterModel
-    ) -> str:
-        """Convert a SecretFilterModel to a GCP filter string.
+    def _get_gcp_filter_string(self, secret_filter_model: SecretFilter) -> str:
+        """Convert a SecretFilter to a GCP filter string.
 
         Args:
             secret_filter_model: The secret filter model.
@@ -325,7 +329,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         )
 
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
-    def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
         """Create a new secret.
 
         The new secret is also validated against the scoping rules enforced in
@@ -403,22 +407,30 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
 
         logger.debug("Added value to secret.")
 
-        return SecretResponseModel(
+        return SecretResponse(
             id=secret_id,
             name=secret.name,
-            scope=secret.scope,
-            workspace=workspace,
-            user=user,
-            values=secret.secret_values,
-            created=created,
-            updated=created,
+            body=SecretResponseBody(
+                user=user,
+                created=created,
+                updated=created,
+                scope=secret.scope,
+                values=secret.secret_values,
+            ),
+            metadata=SecretResponseMetadata(
+                workspace=workspace,
+            ),
         )
 
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -454,11 +466,12 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         return self._convert_gcp_secret(
             labels=secret.labels,
             values=secret_values,
+            hydrate=hydrate,
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
         Note that returned secrets do not include any secret values. To fetch
@@ -466,6 +479,8 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
 
         Args:
             secret_filter_model: The filter criteria.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -497,7 +512,11 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
                 }
             ):
                 try:
-                    secrets.append(self._convert_gcp_secret(secret.labels))
+                    secrets.append(
+                        self._convert_gcp_secret(
+                            secret.labels, hydrate=hydrate
+                        )
+                    )
                 except KeyError:
                     # keep going / ignore if this secret version doesn't exist
                     # or isn't a ZenML secret
@@ -528,7 +547,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
                 f"{secret_count} items for this query. The maximum page value "
                 f"therefore is {total_pages}."
             )
-        return Page[SecretResponseModel](
+        return Page[SecretResponse](
             total=secret_count,
             total_pages=total_pages,
             items=sorted_results[
@@ -541,8 +560,8 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         )
 
     def update_secret(
-        self, secret_id: UUID, secret_update: SecretUpdateModel
-    ) -> SecretResponseModel:
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
         """Update a secret.
 
         Secret values that are specified as `None` in the update that are
@@ -577,23 +596,16 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
             self._get_gcp_secret_name(secret_id=secret_id),
         )
 
-        assert secret.user is not None
-        self._validate_user_and_workspace_update(
-            secret_update=secret_update,
-            current_user=secret.user.id,
-            current_workspace=secret.workspace.id,
-        )
-
         if secret_update.name is not None:
             self._validate_gcp_secret_name(secret_update.name)
             secret.name = secret_update.name
         if secret_update.scope is not None:
-            secret.scope = secret_update.scope
+            secret.get_body().scope = secret_update.scope
         if secret_update.values is not None:
             # Merge the existing values with the update values.
             # The values that are set to `None` in the update are removed from
             # the existing secret when we call `.secret_values` later.
-            secret.values.update(secret_update.values)
+            secret.get_body().values.update(secret_update.values)
 
         if secret_update.name is not None or secret_update.scope is not None:
             # Check if a secret with the same name already exists in the same
@@ -615,8 +627,10 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
         metadata[ZENML_GCP_SECRET_UPDATED_KEY] = updated.strftime(
             ZENML_GCP_DATE_FORMAT_STRING
         )
-        metadata[ZENML_GCP_SECRET_CREATED_KEY] = secret.created.strftime(
-            ZENML_GCP_DATE_FORMAT_STRING
+        metadata[ZENML_GCP_SECRET_CREATED_KEY] = (
+            secret.created.strftime(ZENML_GCP_DATE_FORMAT_STRING)
+            if secret.created
+            else metadata[ZENML_GCP_SECRET_UPDATED_KEY]
         )
 
         try:
@@ -645,15 +659,19 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
 
         logger.debug("Updated GCP secret: %s", gcp_secret_name)
 
-        return SecretResponseModel(
+        return SecretResponse(
             id=secret_id,
             name=secret.name,
-            scope=secret.scope,
-            workspace=secret.workspace,
-            user=secret.user,
-            values=secret.secret_values,
-            created=secret.created,
-            updated=updated,
+            body=SecretResponseBody(
+                user=secret.user,
+                created=secret.created,
+                updated=updated,
+                scope=secret.scope,
+                values=secret.secret_values,
+            ),
+            metadata=SecretResponseMetadata(
+                workspace=secret.workspace,
+            ),
         )
 
     def delete_secret(self, secret_id: UUID) -> None:
