@@ -1,0 +1,69 @@
+name: Build, Lint, Unit, Integration and Templates Tests
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches: ["main"]
+    paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
+
+concurrency:
+  # New commit on branch cancels running workflows of the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  custom-ubuntu-runners-setup-and-test-python:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [ubuntu-dind-runners]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+      fail-fast: false
+    uses: ./.github/workflows/setup-python-environment.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+
+  custom-ubuntu-runners-integration-test:
+    needs:
+      - custom-ubuntu-runners-setup-and-test-python
+    strategy:
+      matrix:
+        os: [ubuntu-dind-runners]
+        # Disabled temporarily while CI is overhauled
+        python-version: ["3.8", "3.9", "3.10"]
+        # python-version: ["3.8", "3.9", "3.10", "3.11"]
+        test_environment:
+          [
+            "default",
+            "docker-server-docker-orchestrator-mysql",
+            "docker-server-docker-orchestrator-mariadb",
+          ]
+        exclude:
+          # docker is time-consuming to run, so we only run it on 3.8
+          - test_environment: docker-server-docker-orchestrator-mysql
+            python-version: "3.9"
+          - test_environment: docker-server-docker-orchestrator-mysql
+            python-version: "3.10"
+          - test_environment: docker-server-docker-orchestrator-mysql
+            python-version: "3.11"
+          - test_environment: docker-server-docker-orchestrator-mariadb
+            python-version: "3.9"
+          - test_environment: docker-server-docker-orchestrator-mariadb
+            python-version: "3.10"
+          - test_environment: docker-server-docker-orchestrator-mariadb
+            python-version: "3.11"
+
+      fail-fast: false
+
+    uses: ./.github/workflows/integration-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
+    secrets: inherit

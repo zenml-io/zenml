@@ -179,7 +179,6 @@ jobs:
       #     bash scripts/check-alembic-branches.sh
 
       - name: Run unit tests
-        if: ${{ inputs.os == 'ubuntu-latest' }}
         env:
           SHARD: ${{ matrix.shard }}
         run: |

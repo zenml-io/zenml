@@ -86,12 +86,16 @@ on:
         default: 30
 
 jobs:
-
   integration-and-template-tests:
     name: integration-and-template-tests
     runs-on: ${{ inputs.os }}
     strategy:
       fail-fast: false
+      matrix:
+        shard: [
+             0,  1,  2,  3,
+             4,  5,  6,  7,
+        ]
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -244,7 +248,7 @@ jobs:
 
       - name: Test
         run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} $SHARD
 
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
