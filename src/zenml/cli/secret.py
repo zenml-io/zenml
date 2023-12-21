@@ -42,7 +42,7 @@ from zenml.enums import (
 )
 from zenml.exceptions import EntityExistsError, ZenKeyError
 from zenml.logger import get_logger
-from zenml.models.secret_models import SecretFilterModel, SecretResponseModel
+from zenml.models import SecretFilter, SecretResponse
 
 logger = get_logger(__name__)
 
@@ -165,7 +165,7 @@ def create_secret(
 @secret.command(
     "list", help="List all registered secrets that match the filter criteria."
 )
-@list_options(SecretFilterModel)
+@list_options(SecretFilter)
 def list_secrets(**kwargs: Any) -> None:
     """List all secrets that fulfill the filter criteria.
 
@@ -225,7 +225,7 @@ def get_secret(name_id_or_prefix: str, scope: Optional[str] = None) -> None:
 
 def _get_secret(
     name_id_or_prefix: str, scope: Optional[str] = None
-) -> SecretResponseModel:
+) -> SecretResponse:
     """Get a secret with a given name, prefix or id.
 
     Args:

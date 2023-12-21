@@ -109,7 +109,6 @@ from zenml.models import (
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseResponse,
-    BaseResponseModel,
     CodeReferenceRequest,
     CodeReferenceResponse,
     CodeRepositoryFilter,
@@ -167,8 +166,8 @@ from zenml.models import (
     ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
-    SecretFilterModel,
-    SecretRequestModel,
+    SecretFilter,
+    SecretRequest,
     ServerDatabaseType,
     ServerModel,
     ServiceAccountFilter,
@@ -189,12 +188,12 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
-    TagFilterModel,
-    TagRequestModel,
-    TagResourceRequestModel,
-    TagResourceResponseModel,
-    TagResponseModel,
-    TagUpdateModel,
+    TagFilter,
+    TagRequest,
+    TagResourceRequest,
+    TagResourceResponse,
+    TagResponse,
+    TagUpdate,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -269,10 +268,8 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-B = TypeVar(
-    "B",
-    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
-)
+
+B = TypeVar("B", bound=BaseResponse)  # type: ignore[type-arg]
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -4192,14 +4189,14 @@ class SqlZenStore(BaseZenStore):
         while True:
             secret_name = f"connector-{connector_name}-{random_str(4)}".lower()
             existing_secrets = self.secrets_store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret_name,
                 )
             )
             if not existing_secrets.size:
                 try:
                     return self.secrets_store.create_secret(
-                        SecretRequestModel(
+                        SecretRequest(
                             name=secret_name,
                             user=user,
                             workspace=workspace,
@@ -6888,10 +6885,10 @@ class SqlZenStore(BaseZenStore):
             try:
                 tag = self.get_tag(tag_name)
             except KeyError:
-                tag = self.create_tag(TagRequestModel(name=tag_name))
+                tag = self.create_tag(TagRequest(name=tag_name))
             try:
                 self.create_tag_resource(
-                    TagResourceRequestModel(
+                    TagResourceRequest(
                         tag_id=tag.id,
                         resource_id=resource_id,
                         resource_type=resource_type,
@@ -6925,7 +6922,7 @@ class SqlZenStore(BaseZenStore):
                 pass
 
     @track_decorator(AnalyticsEvent.CREATED_TAG)
-    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+    def create_tag(self, tag: TagRequest) -> TagResponse:
         """Creates a new tag.
 
         Args:
@@ -6951,7 +6948,7 @@ class SqlZenStore(BaseZenStore):
             session.add(tag_schema)
 
             session.commit()
-            return TagSchema.to_model(tag_schema)
+            return tag_schema.to_model(hydrate=True)
 
     def delete_tag(
         self,
@@ -6978,13 +6975,14 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def get_tag(
-        self,
-        tag_name_or_id: Union[str, UUID],
-    ) -> TagResponseModel:
+        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The tag of interest.
@@ -7001,16 +6999,19 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get tag with ID `{tag_name_or_id}`: "
                     f"No tag with this ID found."
                 )
-            return TagSchema.to_model(tag)
+            return tag.to_model(hydrate=hydrate)
 
     def list_tags(
         self,
-        tag_filter_model: TagFilterModel,
-    ) -> Page[TagResponseModel]:
+        tag_filter_model: TagFilter,
+        hydrate: bool = False,
+    ) -> Page[TagResponse]:
         """Get all tags by filter.
 
         Args:
             tag_filter_model: All filter parameters including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all tags.
@@ -7022,13 +7023,14 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=TagSchema,
                 filter_model=tag_filter_model,
+                hydrate=hydrate,
             )
 
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        tag_update_model: TagUpdateModel,
-    ) -> TagResponseModel:
+        tag_update_model: TagUpdate,
+    ) -> TagResponse:
         """Update tag.
 
         Args:
@@ -7055,15 +7057,15 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the tag that was just created
             session.refresh(tag)
-            return tag.to_model()
+            return tag.to_model(hydrate=True)
 
     ####################
     # Tags <> resources
     ####################
 
     def create_tag_resource(
-        self, tag_resource: TagResourceRequestModel
-    ) -> TagResourceResponseModel:
+        self, tag_resource: TagResourceRequest
+    ) -> TagResourceResponse:
         """Creates a new tag resource relationship.
 
         Args:
@@ -7073,7 +7075,8 @@ class SqlZenStore(BaseZenStore):
             The newly created tag resource relationship.
 
         Raises:
-            EntityExistsError: If a tag resource relationship with the given configuration.
+            EntityExistsError: If a tag resource relationship with the given
+                configuration already exists.
         """
         with Session(self.engine) as session:
             existing_tag_resource = session.exec(
@@ -7086,8 +7089,10 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_tag_resource is not None:
                 raise EntityExistsError(
-                    f"Unable to create a tag {tag_resource.resource_type.name.lower()} "
-                    f"relationship with IDs `{tag_resource.tag_id}`|`{tag_resource.resource_id}`. "
+                    f"Unable to create a tag "
+                    f"{tag_resource.resource_type.name.lower()} "
+                    f"relationship with IDs "
+                    f"`{tag_resource.tag_id}`|`{tag_resource.resource_id}`. "
                     "This relationship already exists."
                 )
 
@@ -7095,7 +7100,7 @@ class SqlZenStore(BaseZenStore):
             session.add(tag_resource_schema)
 
             session.commit()
-            return TagResourceSchema.to_model(tag_resource_schema)
+            return tag_resource_schema.to_model(hydrate=True)
 
     def delete_tag_resource(
         self,
@@ -7123,8 +7128,8 @@ class SqlZenStore(BaseZenStore):
             if tag_model is None:
                 raise KeyError(
                     f"Unable to delete tag<>resource with IDs: "
-                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
-                    f"`resource_type`='{resource_type.value}': No "
+                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' "
+                    f"and `resource_type`='{resource_type.value}': No "
                     "tag<>resource with these IDs found."
                 )
             session.delete(tag_model)
