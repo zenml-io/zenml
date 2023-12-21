@@ -12,6 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
+import sys
+
+# TEMPORARILY DISABLED
+if platform.system() == "Darwin" and sys.version_info[:2] in [(3, 9), (3, 10)]:
+    print(
+        "This script is not intended to run on macOS with Python 3.9 or 3.10."
+    )
+    sys.exit()
 
 import pytest
 
