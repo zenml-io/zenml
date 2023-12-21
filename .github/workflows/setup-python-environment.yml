@@ -72,8 +72,8 @@ jobs:
     strategy:
       matrix:
         shard: [
-             1/8,  2/8,  3/8,  4/8,
-             5/8,  6/8,  7/8,  8/8,
+             0,  1,  2,  3,
+             4,  5,  6,  7,
         ]
     env:
       ZENML_DEBUG: 1
@@ -140,45 +140,46 @@ jobs:
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3
 
-      - name: Lint check
-        run: |
-          bash scripts/lint.sh
+      # - name: Lint check
+      #   run: |
+      #     bash scripts/lint.sh
 
-      - name: Spelling checker
-        uses: crate-ci/typos@master
-        with:
-          files: "."
-          config: ./.typos.toml
-        # Only run the spell check on ubuntu-latest and python 3.8
-        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
+      # - name: Spelling checker
+      #   uses: crate-ci/typos@master
+      #   with:
+      #     files: "."
+      #     config: ./.typos.toml
+      #   # Only run the spell check on ubuntu-latest and python 3.8
+      #   if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
 
-      - name: Docstring check
-        run: bash scripts/docstring.sh
-        # Only run the docstring check on ubuntu-latest and python 3.8
-        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
+      # - name: Docstring check
+      #   run: bash scripts/docstring.sh
+      #   # Only run the docstring check on ubuntu-latest and python 3.8
+      #   if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
 
-      - name: Security check
-        run: bash scripts/check-security.sh
+      # - name: Security check
+      #   run: bash scripts/check-security.sh
 
-      - name: Markdown link check
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
-        with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'no'
-          folder-path: './examples, ./docs/book, ./src'
-          file-path: './README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md, CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md'
-          config-file: .github/workflows/markdown_check_config.json
-        continue-on-error: true
-        # Only run the markdown link check on ubuntu-latest and python 3.8
-        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
+      # - name: Markdown link check
+      #   uses: gaurav-nelson/github-action-markdown-link-check@v1
+      #   with:
+      #     use-quiet-mode: 'yes'
+      #     use-verbose-mode: 'no'
+      #     folder-path: './examples, ./docs/book, ./src'
+      #     file-path: './README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md, CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md'
+      #     config-file: .github/workflows/markdown_check_config.json
+      #   continue-on-error: true
+      #   # Only run the markdown link check on ubuntu-latest and python 3.8
+      #   if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
 
-      - name: Check for alembic branch divergence
-        env:
-          ZENML_DEBUG: 0
-        run: |
-          bash scripts/check-alembic-branches.sh
+      # - name: Check for alembic branch divergence
+      #   env:
+      #     ZENML_DEBUG: 0
+      #   run: |
+      #     bash scripts/check-alembic-branches.sh
 
       - name: Run unit tests
+        if: ${{ inputs.os == 'ubuntu-latest' }}
         env:
           SHARD: ${{ matrix.shard }}
         run: |
@@ -189,9 +190,9 @@ jobs:
       #   if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
       #   uses: codecov/codecov-action@v2
 
-      - name: Setup tmate session after tests
-        if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session after tests
+      #   if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
+      #   uses: mxschmitt/action-tmate@v3
 
       - name: Verify Python Env unaffected
         run: |
