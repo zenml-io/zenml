@@ -19,7 +19,7 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     conn = op.get_bind()
     meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("flavor"))
+    meta.reflect(only=("flavor",))
     flavors = sa.Table("flavor", meta)
 
     # Remove all secrets manager flavors
