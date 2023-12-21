@@ -168,7 +168,7 @@ class Alembic:
         self.run_migrations(do_get_head_rev)
 
         return head_revisions
-    
+
     def current_revisions(self) -> List[str]:
         """Get the current database revisions.
 
