@@ -33,6 +33,7 @@ def mlflow_registry_inference_pipeline():
         registry_model_version="1",
         # or you can use the model stage if you have set it in the MLflow registry
         # registered_model_stage="None" # "Staging", "Production", "Archived"
+        timeout=220,
     )
     batch_data = dynamic_importer()
     inference_data = tf_predict_preprocessor(batch_data)
