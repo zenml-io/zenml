@@ -148,6 +148,27 @@ class Alembic:
             with self.environment_context.begin_transaction():
                 self.environment_context.run_migrations()
 
+    def head_revisions(self) -> List[str]:
+        """Get the head database revisions.
+
+        Returns:
+            List of head revisions.
+        """
+        head_revisions: List[str] = []
+
+        def do_get_head_rev(rev: _RevIdType, context: Any) -> List[Any]:
+            nonlocal head_revisions
+
+            for r in self.script_directory.get_heads():
+                if r is None:
+                    continue
+                head_revisions.append(r)
+            return []
+
+        self.run_migrations(do_get_head_rev)
+
+        return head_revisions
+    
     def current_revisions(self) -> List[str]:
         """Get the current database revisions.
 
