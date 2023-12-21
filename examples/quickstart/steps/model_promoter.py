@@ -61,7 +61,7 @@ def model_promoter(accuracy: float, stage: str = "production") -> bool:
             )
             # We compare their metrics
             prod_accuracy = (
-                stage_model_version.get_artifact("model")
+                stage_model_version.get_artifact("sklearn_classifier")
                 .run_metadata["test_accuracy"]
                 .value
             )
