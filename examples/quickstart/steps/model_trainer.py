@@ -35,7 +35,8 @@ def model_trainer(
     model_type: str = "sgd",
     target: Optional[str] = "target",
 ) -> Annotated[
-    ClassifierMixin, ArtifactConfig(name="model", is_model_artifact=True)
+    ClassifierMixin,
+    ArtifactConfig(name="sklearn_classifier", is_model_artifact=True),
 ]:
     """Configure and train a model on the training dataset.
 
