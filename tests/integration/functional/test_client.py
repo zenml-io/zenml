@@ -1245,6 +1245,17 @@ class TestModel:
         assert model.ethics == "E"
         assert {t.name for t in model.tags} == {"t", "t3"}
 
+    def test_name_is_mutable(self, clean_client: "Client"):
+        """Test that model version name is mutable."""
+        model = clean_client.create_model(name=self.MODEL_NAME)
+
+        model = clean_client.get_model(model.id)
+        assert model.name == self.MODEL_NAME
+
+        clean_client.update_model(model.id, name="bar")
+        model = clean_client.get_model(model.id)
+        assert model.name == "bar"
+
 
 class TestModelVersion:
     MODEL_NAME = "foo"
@@ -1542,3 +1553,19 @@ class TestModelVersion:
                 model_name_or_id=mv1.model_id,
                 model_version_name_or_number_or_id=ModelStages.STAGING,
             )
+
+    def test_name_is_mutable(self, clean_client: "Client"):
+        """Test that model version name is mutable."""
+        model = clean_client.create_model(name=self.MODEL_NAME)
+        mv = clean_client.create_model_version(model.id)
+
+        mv = clean_client.get_model_version(
+            self.MODEL_NAME, ModelStages.LATEST
+        )
+        assert mv.name == "1"
+
+        clean_client.update_model_version(self.MODEL_NAME, mv.id, name="bar")
+        mv = clean_client.get_model_version(
+            self.MODEL_NAME, ModelStages.LATEST
+        )
+        assert mv.name == "bar"

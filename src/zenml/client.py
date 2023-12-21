@@ -4495,6 +4495,7 @@ class Client(metaclass=ClientMetaClass):
     def update_model(
         self,
         model_name_or_id: Union[str, UUID],
+        name: Optional[str] = None,
         license: Optional[str] = None,
         description: Optional[str] = None,
         audience: Optional[str] = None,
@@ -4509,6 +4510,7 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             model_name_or_id: name or id of the model to be deleted.
+            name: The name of the model.
             license: The license under which the model is created.
             description: The description of the model.
             audience: The target audience of the model.
@@ -4527,6 +4529,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.update_model(
             model_id=model_name_or_id,  # type:ignore[arg-type]
             model_update=ModelUpdate(
+                name=name,
                 license=license,
                 description=description,
                 audience=audience,
