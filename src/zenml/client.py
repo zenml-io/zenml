@@ -4779,6 +4779,7 @@ class Client(metaclass=ClientMetaClass):
         stage: Optional[Union[str, ModelStages]] = None,
         force: bool = False,
         name: Optional[str] = None,
+        description: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
     ) -> ModelVersionResponse:
@@ -4791,6 +4792,7 @@ class Client(metaclass=ClientMetaClass):
             force: Whether existing model version in target stage should be
                 silently archived or an error should be raised.
             name: Target model version name to be set.
+            description: Target model version description to be set.
             add_tags: Tags to add to the model version.
             remove_tags: Tags to remove from to the model version.
 
@@ -4811,6 +4813,7 @@ class Client(metaclass=ClientMetaClass):
                 stage=stage,
                 force=force,
                 name=name,
+                description=description,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
             ),

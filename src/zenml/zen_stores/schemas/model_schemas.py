@@ -367,12 +367,14 @@ class ModelVersionSchema(NamedSchema, table=True):
         self,
         target_stage: Optional[str] = None,
         target_name: Optional[str] = None,
+        target_description: Optional[str] = None,
     ) -> "ModelVersionSchema":
         """Updates a `ModelVersionSchema` to a target stage.
 
         Args:
             target_stage: The stage to be updated.
             target_name: The version name to be updated.
+            target_description: The version description to be updated.
 
         Returns:
             The updated `ModelVersionSchema`.
@@ -381,6 +383,8 @@ class ModelVersionSchema(NamedSchema, table=True):
             self.stage = target_stage
         if target_name is not None:
             self.name = target_name
+        if target_description is not None:
+            self.description = target_description
         self.updated = datetime.utcnow()
         return self
 

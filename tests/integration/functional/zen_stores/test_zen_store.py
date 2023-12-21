@@ -3825,7 +3825,7 @@ class TestModelVersion:
             ).items[0]
             assert mv1.id == mv3.id
 
-    def test_update_name(self, clean_client: "Client"):
+    def test_update_name_and_description(self, clean_client: "Client"):
         """Test that update name works, if model version exists."""
         with ModelVersionContext() as model:
             zs = clean_client.zen_store
@@ -3835,20 +3835,24 @@ class TestModelVersion:
                     workspace=model.workspace.id,
                     model=model.id,
                     name="great one",
+                    description="this is great",
                 )
             )
             mv = zs.get_model_version(mv1.id)
             assert mv.name == "great one"
+            assert mv.description == "this is great"
 
             zs.update_model_version(
                 model_version_id=mv1.id,
                 model_version_update_model=ModelVersionUpdate(
                     model=mv1.model.id,
                     name="and yet another one",
+                    description="this is great and better",
                 ),
             )
             mv = zs.get_model_version(mv1.id)
             assert mv.name == "and yet another one"
+            assert mv.description == "this is great and better"
 
     def test_in_stage_not_found(self):
         """Test that get in stage fails if not found."""

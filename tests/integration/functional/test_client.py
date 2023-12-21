@@ -1554,18 +1554,22 @@ class TestModelVersion:
                 model_version_name_or_number_or_id=ModelStages.STAGING,
             )
 
-    def test_name_is_mutable(self, clean_client: "Client"):
+    def test_name_and_description_is_mutable(self, clean_client: "Client"):
         """Test that model version name is mutable."""
         model = clean_client.create_model(name=self.MODEL_NAME)
-        mv = clean_client.create_model_version(model.id)
+        mv = clean_client.create_model_version(model.id, description="foo")
 
         mv = clean_client.get_model_version(
             self.MODEL_NAME, ModelStages.LATEST
         )
         assert mv.name == "1"
+        assert mv.description == "foo"
 
-        clean_client.update_model_version(self.MODEL_NAME, mv.id, name="bar")
+        clean_client.update_model_version(
+            self.MODEL_NAME, mv.id, name="bar", description="bar"
+        )
         mv = clean_client.get_model_version(
             self.MODEL_NAME, ModelStages.LATEST
         )
         assert mv.name == "bar"
+        assert mv.description == "bar"
