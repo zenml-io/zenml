@@ -161,8 +161,9 @@ def training_pipeline(gamma: float = 0.002):
 
 ## Logging metadata to the `ModelVersion` object
 
-One of the most useful way's of interacting with model versions in ZenML is the ability
-to associate metadata with them. [As mentioned before](fetching-pipelines.md#artifact-information), artifact metadata is an arbitary dictionary of key-value pairs that are useful to understand the nature of the data.
+[Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), model versions too can take a dictionary
+of key-value pairs to capture their metadata. This is achieved using the 
+`log_model_version_metadata` method:
 
 ```python
 from zenml import get_step_context, step, log_model_version_metadata 
