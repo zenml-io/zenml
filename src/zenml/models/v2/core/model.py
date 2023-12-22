@@ -91,6 +91,7 @@ class ModelRequest(WorkspaceScopedRequest):
 class ModelUpdate(BaseModel):
     """Update model for models."""
 
+    name: Optional[str] = None
     license: Optional[str] = None
     description: Optional[str] = None
     audience: Optional[str] = None
