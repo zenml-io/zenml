@@ -114,7 +114,7 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
-An example of adding a custom slack block to your pipeline could look like this:
+An example of adding a custom Slack block as part of any alerter logic for your pipeline could look like this:
 
 ```python
 from typing import List, Dict
