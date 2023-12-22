@@ -77,7 +77,7 @@ if [ -z "$SKIP_INSTALL" ]; then
   # pip install feast --upgrade  # The integration feast version has unsupported googleapis-common-protos >=1.52.* requirement
   
   # TEMPORARY FIX
-  pip install -r docs/requirements-alexej.txt
+  pip install -r docs/requirements-docs-frozen.txt
   pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs]"
 fi
 
