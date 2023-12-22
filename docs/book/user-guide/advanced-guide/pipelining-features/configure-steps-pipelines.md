@@ -115,7 +115,7 @@ If you do not give your outputs custom names, the created artifacts will be name
 When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
 
 {% hint style="info" %}
-In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters. If you want to pass other non-JSON-serializable objects such as NumPy arrays to your steps, use [External Artifacts](../data-management/artifact-saving-loading.md#external-artifacts) instead.
+In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters. If you want to pass other non-JSON-serializable objects such as NumPy arrays to your steps, use [External Artifacts](../../starter-guide/manage-artifacts.md#passing-artifacts-to-a-downstream-pipeline) instead.
 {% endhint %}
 
 ```python

@@ -1,145 +1,40 @@
 ---
-description: Understand and adjust how ZenML versions your data.
+description: Understand how ZenML stores your data under-the-hood.
 ---
 
-# Artifact versioning and configuration
+# Artifact management
 
-Each artifact that ZenML saves in your artifact store is assigned a name and
-is versioned automatically. Using the `ArtifactConfig` class, you can annotate
-your ZenML steps to modify the name, version, and other properties of the 
-artifacts created by the step:
+ZenML seamlessly integrates data versioning and lineage into its core functionality. When a pipeline is executed, each run generates automatically tracked and managed artifacts. One can easily view the entire lineage of how artifacts are created and interact with them. The dashboard is also a way to interact with the artifacts produced by different pipeline runs. ZenML's artifact management, caching, lineage tracking, and visualization capabilities can help gain valuable insights, streamline the experimentation process, and ensure the reproducibility and reliability of machine learning workflows.
 
-```python
-from zenml import step, ArtifactConfig
+## Artifact Creation and Caching
 
-@step
-def my_step() -> Annotated[int, ArtifactConfig(name=..., version=..., ...)]:
-    ...
+Each time a ZenML pipeline runs, the system first checks if there have been any changes in the inputs, outputs, parameters, or configuration of the pipeline steps. Each step in a run gets a new directory in the artifact store:
 
+![Artifact Stores Under the Hood](../../../.gitbook/assets/zenml_artifact_store_underthehood_1.png)
 
-@step
-def my_multi_output_step() -> Tuple[
-    Annotated[int, ArtifactConfig(...)],
-    Annotated[int, ArtifactConfig(...)],
-]:
-    ...
-```
+Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md) with a unique ID and stores the data using the appropriate materializers in this directory.
 
-## Assign custom artifact names
+![Artifact Stores Under the Hood](../../../.gitbook/assets/zenml\_artifact\_store\_underthehood\_2.png)
 
-If you do not give your outputs custom names, the artifacts created by your
-ZenML steps will be named `{pipeline_name}::{step_name}::output` or
-`{pipeline_name}::{step_name}::output_{i}` by default:
+On the other hand, if the step remains unchanged, ZenML intelligently decides whether to cache the step or not. By caching steps that have not been modified, ZenML can save [valuable time and computational resources](../../starter-guide/cache-previous-executions.md), allowing you to focus on experimenting with different configurations and improving your machine-learning models without the need to rerun unchanged parts of your pipeline.
 
-```python
-from zenml import pipeline, step
+With ZenML, you can easily trace an artifact back to its origins and understand the exact sequence of executions that led to its creation, such as a trained model. This feature enables you to gain insights into the entire lineage of your artifacts, providing a clear understanding of how your data has been processed and transformed throughout your machine-learning pipelines. With ZenML, you can ensure the reproducibility of your results, and identify potential issues or bottlenecks in your pipelines. This level of transparency and traceability is essential for maintaining the reliability and trustworthiness of machine learning projects, especially when working in a team or across different environments.
 
-@step
-def my_step() -> int:
-    ...
+By tracking the lineage of artifacts across environments and stacks, ZenML enables ML engineers to reproduce results and understand the exact steps taken to create a model. This is crucial for ensuring the reliability and reproducibility of machine learning models, especially when working in a team or across different environments.
 
-@step
-def my_multi_output_step() -> Tuple[int, int]
-    ...
+## Artifact Versioning and Configuration
 
-@pipeline
-def my_pipeline():
+Each artifact that ZenML saves in your artifact store is automatically versioned, allowing you to easily load and compare different versions of your data.
 
-    # Default artifact name will be `my_pipeline::my_step::output`
-    my_step()
+For more details on how to adjust the names or versions assigned to your artifacts, assign tags to them, or adjust other artifact properties, see the [documentation on artifact versioning and configuration](../../starter-guide/manage-artifacts.md).
 
-    # Default artifact names will be
-    #   - `my_pipeline::my_multi_output_step::output_1`
-    #   - `my_pipeline::my_multi_output_step::output_2`
-    my_multi_output_step()
-```
+## Saving and Loading Artifacts with Materializers
 
-</details>
+[Materializers](handle-custom-data-types.md) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
 
+![Visualizing artifacts](../../../.gitbook/assets/zenml_artifact_store_underthehood_3.png)
 
-To give your artifacts custom names, use the `name` parameter of the
-`ArtifactConfig` class:
+Materializers are designed to be extensible and customizable, allowing you to define your own serialization and deserialization logic for specific data types or storage systems. By default, ZenML provides built-in materializers for common data types and uses `cloudpickle` to pickle objects where there is no default materializer. If you want direct control over how objects are serialized, you can easily create custom materializers by extending the `BaseMaterializer` class and implementing the required methods for your specific use case. Read more about materializers [here](handle-custom-data-types.md).
 
-```python
-from zenml import step, ArtifactConfig
+When a pipeline runs, ZenML uses the appropriate materializers to save and load artifacts using the ZenML `fileio` system (built to work across multiple artifact stores). This not only simplifies the process of working with different data formats and storage systems but also enables artifact caching and lineage tracking. You can see an example of a default materializer (the `numpy` materializer) in action [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py).
 
-@step
-def my_step() -> Annotated[int, ArtifactConfig(name="my_custom_name")]:
-    ...
-```
-
-Now you will be able to find the created artifact as `my_custom_name` in your
-ZenML dashboard.
-
-{% hint style="info" %}
-To prevent visual clutter, only artifacts with custom names are displayed in
-the ZenML dashboard by default. Thus, make sure to assign names to your most
-important artifacts that you would like to explore visually.
-{% endhint %}
-
-## Assign custom artifact versions
-
-ZenML automatically versions all created artifacts using auto-incremented
-numbering. I.e., if you have defined a step creating an artifact named
-"my_custom_artifact" as shown above, the first execution of the step will
-create an artifact with this name and version "1", the second execution will
-create version "2" and so on.
-
-If you would like to override the version assigned to an artifact, you can use
-the `version` property of the `ArtifactConfig`:
-
-```python
-from zenml import step, ArtifactConfig
-
-@step
-def my_step() -> (
-    Annotated[
-        int, 
-        ArtifactConfig(
-            name="my_custom_name", 
-            version="my_custom_version"
-        ),
-    ]
-):
-    ...
-```
-
-The next execution of this step will then create an artifact with the name
-"my_custom_name" and version "my_custom_version". This is primarily useful if
-you are making a particularly important pipeline run (such as a release) whose
-artifacts you want to distinguish at a glance later.
-
-{% hint style="warning" %}
-You cannot create two artifacts with the same name and version, so rerunning a
-step that specifies a manual artifact version will always fail.
-{% endhint %}
-
-## Assign tags to your artifacts
-
-If you want to tag the artifacts of a step or pipeline that is executed
-repeatedly, you can use the `tags` property of `ArtifactConfig` to assign an arbitrary number of tags to the created artifacts:
-
-```python
-from zenml import step, ArtifactConfig
-
-@step
-def my_step() -> (
-    Annotated[int, ArtifactConfig(tags=["my_tag_1", "my_tag_2"])]
-):
-    ...
-```
-
-This will assign tags "my_tag_1" and "my_tag_2" to all artifacts created by
-this step, which can later be used to filter for artifacts in the dashboard.
-
-## Link artifacts to models
-
-`ArtifactConfig` contains several other properties that you can set to modify
-how artifacts are linked to models:
-- `model_name`: The name of the model to link the artifact to.
-- `model_version`: The version of the model to link the artifact to.
-- `is_model_artifact`: Whether the artifact is a model artifact.
-- `is_deployment_artifact`: Whether the artifact is a deployment artifact.
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

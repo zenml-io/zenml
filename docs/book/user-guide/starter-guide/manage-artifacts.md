@@ -242,8 +242,11 @@ client.get_artifact("iris_predictions").load()
 ```
 {% endhint %}
 
-Even if an artifact is created externally, it can be treated like any other artifact produced by
-ZenML steps - with all the functionalities described above!
+Even if an artifact is created externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
+
+{% hint style="info" %}
+It is also possible to use these functions inside your ZenML steps. However, it is usually cleaner to return the artifacts as outputs of your step to save them, or to use External Artifacts to load them instead.
+{% endhint %}
 
 ## Assigning tags to your artifacts
 
