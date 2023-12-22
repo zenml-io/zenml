@@ -196,20 +196,46 @@ Similarly, you can use the `inputs` and `input` properties to get the input arti
 Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names) to see what the output names of your steps are and how to customize them.
 {% endhint %}
 
-### Artifact Information
+Note, the output of a step corresponds to a specific artifact version.
 
-Similar to the other entities, each artifact is represented by a corresponding [`ArtifactResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/artifact\_models.py) which contains a lot of general information about the artifact as well as datatype-specific metadata and visualizations.
+### Fetching artifacts directly
 
-#### Artifact Metadata
+If you'd like to fetch an artifact or an artifact version directly, it is easy
+to do so with the `Client`:
 
-All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `metadata` attribute of an output, e.g.:
+```python
+from zenml.client import Client
+
+# Get artifact
+artifact = Client().get_artifact('iris_dataset')
+artifact.versions  # Contains all the versions of the artifact
+output = artifact.versions['2022']  # Get version name "2022" 
+
+# Get artifact version directly:
+
+# Using version name:
+output = Client().get_artifact_version('iris_dataset', '2022')
+
+# Using UUID
+output = Client().get_artifact_version('f429f94c-fb15-43b5-961d-dbea287507c5')
+loaded_artifact = output.load()
+```
+
+Regardless as to how one fetches it, each artifact contains a lot of general
+information about the artifact as well as datatype specific metadata and visualizations.
+
+#### Metadata
+
+All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `run_metadata` attribute of an output, e.g.:
 
 ```python
 output_metadata = output.run_metadata
 storage_size_in_bytes = output_metadata["storage_size"].value
 ```
 
-#### Artifact Visualizations
+We will talk more about metadata [in the next section](manage-artifacts.md#logging-metadata-for-an-artifact)
+
+#### Visualizations
 
 ZenML automatically saves visualizations for many common data types. Using the `visualize()` method you can programmatically show these visualizations in Jupyter notebooks:
 

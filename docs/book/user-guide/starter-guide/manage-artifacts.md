@@ -163,7 +163,7 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 
 ### Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. Again, using `ExternalArtifact`, you can pass existing artifacts from other pipeline runs into your steps:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step.  As we have learned in the [previous section](fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly. However, in ZenML the best practice is not to use the `Client` for this use-case, but rather use the `ExternalArtifact` to pass existing artifacts from other pipeline runs into your steps. This is a more convenient interface:
 
 ```python
 from uuid import UUID
@@ -286,7 +286,7 @@ For now, let's keep going on understanding major ZenML concepts!
 ## Logging metadata for an artifact
 
 One of the most useful way's of interacting with artifacts in ZenML is the ability
-to associate metadata with them. Artifact metadata is an arbitary dictionary of key-value pairs that are useful to understand the nature of the data.
+to associate metadata with them. [As mentioned before](fetching-pipelines.md#artifact-information), artifact metadata is an arbitary dictionary of key-value pairs that are useful to understand the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact,
 the shape of a table alongside a `pandas` dataframe, or a size of an image alongside a PNG
