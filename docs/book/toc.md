@@ -33,7 +33,7 @@
     * [Fetch metadata during pipeline composition](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md)
     * [Use failure/success hooks](user-guide/advanced-guide/pipelining-features/use-failure-success-hooks.md)
     * [Hyperparameter tuning](user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
-  * [Data management](user-guide/advanced-guide/data-management/data-management.md)
+  * [Data management](user-guide/advanced-guide/data-management/artifact-management.md)
     * [Artifact versioning and configuration](user-guide/advanced-guide/data-management/artifact-versioning.md)
     * [Artifact saving and loading](user-guide/advanced-guide/data-management/artifact-saving-loading.md)
     * [Handle custom data types](user-guide/advanced-guide/data-management/handle-custom-data-types.md)

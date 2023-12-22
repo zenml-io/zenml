@@ -285,6 +285,10 @@ To learn more about artifacts, please refer to the [Advanced section on artifact
 For now, let's keep going on understanding major ZenML concepts!
 
 
+There is a lot more to learn about artifacts within ZenML. There is
+a [dedicated data management guide](../advanced-guide/data-management/)
+that goes into more depth on the topic.
+
 ## Code Example
 
 This section combines all the code from this section into one simple script that you can use easily:
