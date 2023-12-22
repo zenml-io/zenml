@@ -86,7 +86,7 @@ As an example, here we have a training pipeline which orchestrates the training
 of a model object, storing datasets and the model object itself as links within
 a newly created Model Version. This integration is achieved by configuring the
 pipeline within a Model Context using `ModelVersion`. The name and
-`create_new_model_version` fields are specified, while other fields remain optional for this task.
+is specified, while other fields remain optional for this task.
 
 ```python
 from zenml import pipeline
