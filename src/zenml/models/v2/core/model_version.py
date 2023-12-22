@@ -98,6 +98,10 @@ class ModelVersionUpdate(BaseModel):
         description="Target model version name to be set",
         default=None,
     )
+    description: Optional[str] = Field(
+        description="Target model version description to be set",
+        default=None,
+    )
     add_tags: Optional[List[str]] = Field(
         description="Tags to be added to the model version",
         default=None,

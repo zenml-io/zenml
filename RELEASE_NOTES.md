@@ -1,4 +1,15 @@
 <!-- markdown-link-check-disable -->
+# 0.53.1
+
+This minor release contains a hot fix for a bug that was introduced in 0.53.0
+where the secrets manager flavors were not removed from the database
+properly. This release fixes that issue.
+
+## What's Changed
+* Remove secrets manager flavors from DB by @stefannica in https://github.com/zenml-io/zenml/pull/2182
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.53.0...0.53.1
+
 # 0.53.0
 
 This release is packed with a deeply reworked quickstart example and starter template, the removal of secret manager stack component, improved experience with Cloud Secret Stores, support for tags and metadata directly in Model Versions, some breaking changes for Model Control Plane and a few bugfixes.

@@ -118,7 +118,7 @@ jobs:
 
     steps:
       - name: Maximize space for Docker
-        uses: easimon/maximize-build-space@v8
+        uses: easimon/maximize-build-space@v10
         with:
           root-reserve-mb: 20000
           swap-size-mb: 1024
@@ -133,7 +133,7 @@ jobs:
           sudo systemctl restart docker
         if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.1
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -239,7 +239,7 @@ jobs:
 
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3.17
         with:
           timeout-minutes: ${{ inputs.tmate_timeout }}
 
@@ -249,7 +249,7 @@ jobs:
 
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3.17
         with:
           timeout-minutes: ${{ inputs.tmate_timeout }}
 

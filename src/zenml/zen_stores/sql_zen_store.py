@@ -6582,6 +6582,7 @@ class SqlZenStore(BaseZenStore):
             existing_model_version.update(
                 target_stage=stage,
                 target_name=model_version_update_model.name,
+                target_description=model_version_update_model.description,
             )
             session.add(existing_model_version)
             session.commit()
