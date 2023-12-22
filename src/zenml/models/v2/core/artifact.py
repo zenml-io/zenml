@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponse,
@@ -26,6 +25,7 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
 )
 from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
@@ -63,7 +63,7 @@ class ArtifactUpdate(BaseModel):
 class ArtifactResponseBody(BaseResponseBody):
     """Response body for artifacts."""
 
-    tags: List[TagResponseModel] = Field(
+    tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
 
@@ -99,7 +99,7 @@ class ArtifactResponse(
 
     # Body and metadata properties
     @property
-    def tags(self) -> List[TagResponseModel]:
+    def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
         Returns:
