@@ -5,7 +5,7 @@ description: Connect your git repository with ZenML
 # Connect a code repository
 
 {% hint style="warning" %}
-We're still working on finishing this easy-to-consume Production Guide for you. In the meanwhile,, please follow the provided links in this space as an interim guide.
+We're still working on finishing this easy-to-consume production guide for you. In the meanwhile,, please follow the provided links in this space as an interim guide.
 {% endhint %}
 
 This section of the production guide will be about connecting your git code repository. Until this section is ready, here are some useful links to achieve this goal:

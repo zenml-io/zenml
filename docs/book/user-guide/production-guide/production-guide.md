@@ -4,7 +4,7 @@ description: Level up your skills in a production setting.
 
 # 🐣 Production guide
 
-The ZenML Production Guide builds upon the [Starter guide](../starter-guide/) and is the next step in the MLOps Engineer journey with ZenML. If you're a ML practitioner hoping to implement a proof of concept within your workplace to showcase the importance of MLOps, this is the place for you.
+The ZenML production guide builds upon the [Starter guide](../starter-guide/) and is the next step in the MLOps Engineer journey with ZenML. If you're a ML practitioner hoping to implement a proof of concept within your workplace to showcase the importance of MLOps, this is the place for you.
 
 <figure><img src="../../.gitbook/assets/stack_showcase.png" alt=""><figcaption><p>ZenML simplifies development of MLOps pipelines that can span multiple production stacks.</p></figcaption></figure>
 

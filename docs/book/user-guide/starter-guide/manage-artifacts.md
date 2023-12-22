@@ -134,7 +134,7 @@ See the [artifact visualization docs](../advanced-guide/data-management/visualiz
 
 ### Consuming external artifacts within a pipeline
 
-It is not often desirable to start a pipeline with a step that produces an artifact. Instead, it is often the case to want to consume artifacts in other ways. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitary data type.
+While most pipelines start with a step that produces an artifact, it is often the case to want to consume artifacts external from the pipeline. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitary data type.
 
 For example, let's say we have a Snowflake query that produces a dataframe, or a CSV file that we need to read. External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
 
