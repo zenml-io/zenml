@@ -70,7 +70,7 @@ def step_metadata_logging_functional():
 
 @step
 def consume_from_model_version(
-    is_consume: bool
+    is_consume: bool,
 ) -> Annotated[str, "custom_output"]:
     """A step which can either produce string output or read and return it from model version 1."""
     if is_consume:
