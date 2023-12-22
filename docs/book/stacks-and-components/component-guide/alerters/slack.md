@@ -142,8 +142,8 @@ def my_custom_block_step(block_message) -> List[Dict]:
 def my_pipeline(...):
     ...
     message_blocks = my_custom_block_step("my custom block!")
-    approved = slack_alerter_post_step(message_blocks)
-    ... # Potentially have different behavior in subsequent steps if `approved`
+    post_message = slack_alerter_post_step(params = message_blocks)
+    return post_message
 
 if __name__ == "__main__":
     my_pipeline()
