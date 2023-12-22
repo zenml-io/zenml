@@ -20,13 +20,9 @@ On the other hand, if the step remains unchanged, ZenML intelligently decides wh
 
 With ZenML, you can easily trace an artifact back to its origins and understand the exact sequence of executions that led to its creation, such as a trained model. This feature enables you to gain insights into the entire lineage of your artifacts, providing a clear understanding of how your data has been processed and transformed throughout your machine-learning pipelines. With ZenML, you can ensure the reproducibility of your results, and identify potential issues or bottlenecks in your pipelines. This level of transparency and traceability is essential for maintaining the reliability and trustworthiness of machine learning projects, especially when working in a team or across different environments.
 
-By tracking the lineage of artifacts across environments and stacks, ZenML enables ML engineers to reproduce results and understand the exact steps taken to create a model. This is crucial for ensuring the reliability and reproducibility of machine learning models, especially when working in a team or across different environments.
-
-## Artifact Versioning and Configuration
-
-Each artifact that ZenML saves in your artifact store is automatically versioned, allowing you to easily load and compare different versions of your data.
-
 For more details on how to adjust the names or versions assigned to your artifacts, assign tags to them, or adjust other artifact properties, see the [documentation on artifact versioning and configuration](../../starter-guide/manage-artifacts.md).
+
+By tracking the lineage of artifacts across environments and stacks, ZenML enables ML engineers to reproduce results and understand the exact steps taken to create a model. This is crucial for ensuring the reliability and reproducibility of machine learning models, especially when working in a team or across different environments.
 
 ## Saving and Loading Artifacts with Materializers
 
