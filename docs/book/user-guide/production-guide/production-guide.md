@@ -19,6 +19,6 @@ This guide will focus on shifting gears from running pipelines _locally_ on your
 
 Like in the starter guide, make sure you have a Python environment ready and `virtualenv` installed to follow along with ease. As now we are dealing with cloud infrastructure, you'll also want to select one of the major cloud providers (AWS, GCP, Azure), and make sure the respective CLI's are installed and authorized.
 
-By the end, you will have completed a [end to end](end-to-end.md) MLOps project, that you can use as inspiration for your own work. Let's get right into it!
+By the end, you will have completed an [end to end](end-to-end.md) MLOps project that you can use as inspiration for your own work. Let's get right into it!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
