@@ -157,6 +157,85 @@ def svc_trainer(
     ...
 ```
 
+## Logging metadata for a model version
+
+One of the most useful way's of interacting with artifacts in ZenML is the ability
+to associate metadata with them. [As mentioned before](fetching-pipelines.md#artifact-information), artifact metadata is an arbitary dictionary of key-value pairs that are useful to understand the nature of the data.
+
+As an example, one can associate the results of a model training alongside a model artifact,
+the shape of a table alongside a `pandas` dataframe, or a size of an image alongside a PNG
+file.
+
+For some artifacts, ZenML automatically logs metadata. As an example, for `pandas.Series`
+and `pandas.Dataframe` objects, ZenML logs the shape and size of the objects:
+
+{% tabs %}
+{% tab title="Python" %}
+
+```python
+from zenml.client import Client
+
+# Get an artifact version (e.g. pd.Dataframe)
+artifact = Client().get_artifact_version('50ce903f-faa6-41f6-a95f-ff8c0ec66010')
+
+# Fetch it's metadata
+artifact.run_metadata["storage_size"].value  # Size in bytes
+artifact.run_metadata["shape"].value  # Shape e.g. (500,20)
+```
+
+{% endtab %}
+{% tab title="OSS (Dashboard)" %}
+
+The information for an artifacts metadata can be found within the DAG visualizer interface on the OSS dashboard:
+
+<figure><img src="../../.gitbook/assets/dashboard_artifact_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
+
+{% endtab %}
+{% tab title="Cloud (Dashboard)" %}
+
+The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
+
+<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
+
+{% endtab %}
+{% endtabs %}
+
+A user can also add metadata to an artifact within a step directly using the
+`log_artifact_metadata` method:
+
+```python
+from zenml import step, log_artifact_metadata
+
+@step
+def model_finetuner_step(
+    model: ClassifierMixin, dataset: Tuple[np.ndarray, np.ndarray]
+) -> Annotated[
+    ClassifierMixin, ArtifactConfig(name="my_model", tags=["SVC", "trained"])
+]:
+    """Finetunes a given model on a given dataset."""
+    model.fit(dataset[0], dataset[1])
+    accuracy = model.score(dataset[0], dataset[1])
+
+    
+    log_artifact_metadata(
+        # Artifact name can be omitted if step returns only one output
+        artifact_name="my_model",
+        # Passing None or omitting this will use the `latest` version
+        version=None,
+        # Metadata should be a dictionary of JSON-serializable values
+        metadata={"accuracy": float(accuracy)}
+        # A dictionary of dictionaries can also be passed to group metadata
+        #  in the dashboard
+        # metadata = {"metrics": {"accuracy": accuracy}}
+    )
+    return model
+```
+
+For further depth, there is an [advanced metadata logging guide](../advanced-guide/data-management/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
+
+Additionally, there is a lot more to learn about artifacts within ZenML. Please read
+the [dedicated data management guide](../advanced-guide/data-management/) for more information.
+
 ## Using the stages of a model
 
 A models versions can exist in various stages. These are meant to signify their lifecycle state:

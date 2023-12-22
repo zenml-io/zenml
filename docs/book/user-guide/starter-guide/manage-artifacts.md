@@ -362,7 +362,6 @@ For further depth, there is an [advanced metadata logging guide](../advanced-gui
 Additionally, there is a lot more to learn about artifacts within ZenML. Please read
 the [dedicated data management guide](../advanced-guide/data-management/) for more information.
 
-
 ## Code Example
 
 This section combines all the code from this section into one simple script that you can use easily:
