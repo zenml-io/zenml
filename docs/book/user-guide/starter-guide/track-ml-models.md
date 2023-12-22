@@ -84,7 +84,7 @@ def training_pipeline(gamma: float = 0.002):
 if __name__ == "__main__":
     training_pipeline()
 
-# In the YAML the same can be done, in this case the 
+# In the YAML the same can be done; in this case the 
 #  passing to the decorators is not needed
 # model_version: 
   # name: iris_classifier
