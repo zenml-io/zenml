@@ -42,10 +42,10 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
 )
 from zenml.zen_stores.schemas import (
     SecretSchema,
@@ -254,7 +254,7 @@ class SqlSecretsStore(BaseSecretsStore):
         return False, ""
 
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
-    def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
         """Creates a new secret.
 
         The new secret is also validated against the scoping rules enforced in
@@ -295,14 +295,18 @@ class SqlSecretsStore(BaseSecretsStore):
             session.commit()
 
             return new_secret.to_model(
-                encryption_engine=self._encryption_engine
+                encryption_engine=self._encryption_engine, hydrate=True
             )
 
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -317,12 +321,12 @@ class SqlSecretsStore(BaseSecretsStore):
             if secret_in_db is None:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
             return secret_in_db.to_model(
-                encryption_engine=self._encryption_engine
+                encryption_engine=self._encryption_engine, hydrate=hydrate
             )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
         Note that returned secrets do not include any secret values. To fetch
@@ -331,6 +335,8 @@ class SqlSecretsStore(BaseSecretsStore):
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -347,13 +353,13 @@ class SqlSecretsStore(BaseSecretsStore):
                 table=SecretSchema,
                 filter_model=secret_filter_model,
                 custom_schema_to_model_conversion=lambda secret: secret.to_model(
-                    include_values=False
+                    include_values=False, hydrate=hydrate
                 ),
             )
 
     def update_secret(
-        self, secret_id: UUID, secret_update: SecretUpdateModel
-    ) -> SecretResponseModel:
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
         """Updates a secret.
 
         Secret values that are specified as `None` in the update that are
@@ -389,13 +395,6 @@ class SqlSecretsStore(BaseSecretsStore):
             if not existing_secret:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
 
-            # Prevent changes to the secret's user or workspace
-            self._validate_user_and_workspace_update(
-                secret_update=secret_update,
-                current_user=existing_secret.user.id,
-                current_workspace=existing_secret.workspace.id,
-            )
-
             # A change in name or scope requires a check of the scoping rules.
             if (
                 secret_update.name is not None
@@ -408,9 +407,8 @@ class SqlSecretsStore(BaseSecretsStore):
                     secret_name=secret_update.name or existing_secret.name,
                     scope=secret_update.scope
                     or SecretScope(existing_secret.scope),
-                    workspace=secret_update.workspace
-                    or existing_secret.workspace.id,
-                    user=secret_update.user or existing_secret.user.id,
+                    workspace=existing_secret.workspace.id,
+                    user=existing_secret.user.id,
                     exclude_secret_id=secret_id,
                 )
 
@@ -427,7 +425,7 @@ class SqlSecretsStore(BaseSecretsStore):
             # Refresh the Model that was just created
             session.refresh(existing_secret)
             return existing_secret.to_model(
-                encryption_engine=self._encryption_engine
+                encryption_engine=self._encryption_engine, hydrate=True
             )
 
     def delete_secret(self, secret_id: UUID) -> None:

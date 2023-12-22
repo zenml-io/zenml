@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
 
       # The following sed command replaces the version number in Chart.yaml with the tag version.
       # It replaces the line that starts with "version: " with "version: <tag version>"
@@ -44,7 +44,7 @@ jobs:
 
       #TODO: revisit the pinned helm version + find a higher version
       - name: install helm with version 3.9.2
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v3.5
         with:
           version: "v3.9.2" # default is latest (stable)
         id: install-helm

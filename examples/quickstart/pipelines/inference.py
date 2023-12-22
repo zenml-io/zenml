@@ -41,7 +41,9 @@ def inference(random_state: str, target: str):
         target: Name of target column in dataset.
     """
     # Get the production model artifact
-    model = get_pipeline_context().model_version.get_artifact("model")
+    model = get_pipeline_context().model_version.get_artifact(
+        "sklearn_classifier"
+    )
 
     # Get the preprocess pipeline artifact associated with this version
     preprocess_pipeline = get_pipeline_context().model_version.get_artifact(
