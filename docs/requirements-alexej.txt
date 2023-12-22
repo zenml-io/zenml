@@ -669,7 +669,6 @@ xmljson==0.2.0
 xxhash==3.3.0
 yarl==1.9.2
 yellowbrick==1.5
--e git+ssh://git@github.com/zenml-io/zenml.git@129db1fdd86ef24e64f8833431155b1edd07e658#egg=zenml
 zipp==3.16.2
 zope.event==5.0
 zope.interface==6.0
