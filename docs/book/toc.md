@@ -35,7 +35,7 @@
     * [Hyperparameter tuning](user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
   * [Data management](user-guide/advanced-guide/data-management/data-management.md)
     * [How ZenML stores data](user-guide/advanced-guide/data-management/artifact-versioning.md)
-    * [Artifact saving and loading](user-guide/advanced-guide/data-management/artifact-saving-loading.md)
+    * [Logging metadata](user-guide/advanced-guide/data-management/logging-metadata.md)
     * [Handle custom data types](user-guide/advanced-guide/data-management/handle-custom-data-types.md)
     * [Visualize artifacts](user-guide/advanced-guide/data-management/visualize-artifacts.md)
   * [Environment management](user-guide/advanced-guide/environment-management/environment-management.md)
