@@ -58,7 +58,7 @@ from zenml.model import ModelVersion
 
 model_version = ModelVersion(
     # The name uniquely identifies this model
-    # It usually represents the business use-case
+    # It usually represents the business use case
     name="iris_classifier",
     # The version specifies the version
     # If None or an unseen version is specified, it will be created
