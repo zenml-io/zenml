@@ -50,6 +50,8 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 The easiest way to use a ZenML model is to pass a model version object as part of a pipeline run. This can be done easily at a pipeline or a step level, or via a 
 [YAML config](../production-guide/configure-pipeline.md).
 
+Once you configure a pipeline this way, **all** artifacts generated during pipeline runs are automatically linked to the specified model version. This connecting of artifacts provides lineage tracking and transparency into what data and models are used during training, evaluation, and inference.
+
 ```python
 from zenml import pipeline
 from zenml.model import ModelVersion
@@ -82,9 +84,11 @@ if __name__ == "__main__":
     training_pipeline()
 ```
 
-The above will estabilish a **link between all artifacts that pass through this ZenML pipeline and this model**. You will be able to see all associated artifacts and pipeline runs all within one view.
+The above will estabilish a **link between all artifacts that pass through this ZenML pipeline and this model**. This includes the **technical model** which is what comes out of the `svc_trainer` step. You will be able to see all associated artifacts and pipeline runs all within one view.
 
-You can see all versions of a model, and associated artifacts:
+Further, this pipeline run, and all other pipeline runs that are configured with this model version will be linked to this model as well. 
+
+You can see all versions of a model, and associated artifacts and run like this:
 
 {% tabs %}
 {% tab title="OSS (CLI)" %}
