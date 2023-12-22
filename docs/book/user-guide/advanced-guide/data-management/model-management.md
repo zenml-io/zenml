@@ -85,7 +85,7 @@ the `model_version` argument of the `@pipeline` decorator.
 As an example, here we have a training pipeline which orchestrates the training
 of a model object, storing datasets and the model object itself as links within
 a newly created Model Version. This integration is achieved by configuring the
-pipeline within a Model Context using `ModelVersion`. The name and
+pipeline within a Model Context using `ModelVersion`. The name
 is specified, while other fields remain optional for this task.
 
 ```python
