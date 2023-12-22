@@ -364,6 +364,7 @@ class ModelVersion(BaseModel):
             delete_from_artifact_store: Whether to delete the artifact from the artifact store.
         """
         from zenml.client import Client
+        from zenml.models import ArtifactVersionResponse
 
         artifact_version = self.get_artifact(name, version)
         if isinstance(artifact_version, ArtifactVersionResponse):

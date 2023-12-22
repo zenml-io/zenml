@@ -50,7 +50,7 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, SQLModel, create_engine, or_, select
+from sqlmodel import Session, SQLModel, create_engine, delete, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -6745,17 +6745,12 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             model_version = self.get_model_version(model_version_id)
-            query = select(ModelVersionArtifactSchema).where(
-                ModelVersionArtifactSchema.model_version_id == model_version.id
-            )
-            model_version_artifact_links = session.exec(query).fetchall()
-            if len(model_version_artifact_links) == 0:
-                logger.warning(
-                    "No model version to artifacts links found in model "
-                    f"version `{model_version_id}`."
+            session.execute(
+                delete(ModelVersionArtifactSchema).where(
+                    ModelVersionArtifactSchema.model_version_id
+                    == model_version.id
                 )
-            for model_version_artifact_link in model_version_artifact_links:
-                session.delete(model_version_artifact_link)
+            )
             session.commit()
 
     # ---------------------- Model Versions Pipeline Runs ----------------------
