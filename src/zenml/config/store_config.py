@@ -14,9 +14,9 @@
 """Functionality to support ZenML store configurations."""
 
 from pathlib import PurePath
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import StoreType
@@ -91,6 +91,29 @@ class StoreConfiguration(BaseModel):
             True if the URL scheme is supported, False otherwise.
         """
         return True
+
+    @root_validator(pre=True)
+    def validate_secrets_store(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate the secrets store configuration.
+
+        Args:
+            values: The values of the store configuration.
+
+        Returns:
+            The values of the store configuration.
+        """
+        if values.get("secrets_store") is None:
+            return values
+
+        # Remove the legacy REST secrets store configuration since it is no
+        # longer supported/needed
+        secrets_store = values["secrets_store"]
+        if isinstance(secrets_store, dict):
+            secrets_store_type = secrets_store.get("type")
+            if secrets_store_type == "rest":
+                del values["secrets_store"]
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
