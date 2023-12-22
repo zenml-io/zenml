@@ -34,6 +34,15 @@ into the concept of service connectors and how they can configured to give the s
 permission to access the artifact store. For a concrete example, see the [AWS S3](../../../stacks-and-components/component-guide/artifact-stores/s3.md) artifact store
 documentation.
 
+{% hint style="info" %}
+When using the default/local artifact store with a deployed ZenML, the server naturally
+does not have access to your local files. In this case, the visualizations are also not
+displayed on the dashboard.
+
+Please use a service connector enabled and remote artifact store alongside a deployed ZenML to view visualizations.
+{% endhint %}
+
+
 ### Configuring Artifact Stores
 
 If all visualizations of a certain pipeline run are not showing up in the dashboard, it might be that your ZenML server does not have the required dependencies or permissions to access that artifact store. See the [custom artifact store docs page](../../../stacks-and-components/component-guide/artifact-stores/custom.md#enabling-artifact-visualizations-with-custom-artifact-stores) for more information.
