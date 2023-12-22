@@ -1138,6 +1138,28 @@ class TestArtifact:
         clean_client.prune_artifacts()
         with pytest.raises(KeyError):
             clean_client.get_artifact_version(artifact_id)
+        with pytest.raises(FileNotFoundError):
+            os.listdir(artifact.uri)
+
+    def test_prune_only_metadata(self, clean_client: "Client"):
+        """Test that artifact pruning works with only metadata flag."""
+        artifact_id = ExternalArtifact(value="foo").upload_by_value()
+        artifact = clean_client.get_artifact_version(artifact_id)
+        assert artifact is not None
+        clean_client.prune_artifacts(only_metadata=True)
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version(artifact_id)
+        assert os.listdir(artifact.uri)
+
+    def test_prune_only_artifact(self, clean_client: "Client"):
+        """Test that artifact pruning works with only artifacts flag."""
+        artifact_id = ExternalArtifact(value="foo").upload_by_value()
+        artifact = clean_client.get_artifact_version(artifact_id)
+        assert artifact is not None
+        clean_client.prune_artifacts(only_artifact=True)
+        assert clean_client.get_artifact_version(artifact_id).id == artifact.id
+        with pytest.raises(FileNotFoundError):
+            os.listdir(artifact.uri)
 
 
 class TestModel:
