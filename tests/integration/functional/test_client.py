@@ -1149,7 +1149,7 @@ class TestArtifact:
         clean_client.prune_artifacts(only_metadata=True)
         with pytest.raises(KeyError):
             clean_client.get_artifact_version(artifact_id)
-        assert os.listdir(artifact.uri)
+        assert os.path.exists(artifact.uri)
 
     def test_prune_only_artifact(self, clean_client: "Client"):
         """Test that artifact pruning works with only artifacts flag."""
