@@ -1,7 +1,7 @@
 """endpoint_artifact>deployment_artifact [4e1972485075].
 
 Revision ID: 4e1972485075
-Revises: 5cc3f41cf048
+Revises: 0.52.0
 Create Date: 2023-12-12 10:51:44.177810
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "4e1972485075"
-down_revision = "5cc3f41cf048"
+down_revision = "0.52.0"
 branch_labels = None
 depends_on = None
 
