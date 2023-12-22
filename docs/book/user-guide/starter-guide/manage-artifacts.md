@@ -342,9 +342,17 @@ def model_finetuner_step(
     model.fit(dataset[0], dataset[1])
     accuracy = model.score(dataset[0], dataset[1])
 
-    # Pass in a dictionary of JSON-serializable values
+    
     log_artifact_metadata(
+        # Artifact name can be omitted if step returns only one output
+        artifact_name="my_model",
+        # Passing None or omitting this will use the `latest` version
+        version=None,
+        # Metadata should be a dictionary of JSON-serializable values
         metadata={"accuracy": float(accuracy)}
+        # A dictionary of dictionaries can also be passed to group metadata
+        #  in the dashboard
+        # metadata = {"metrics": {"accuracy": accuracy}}
     )
     return model
 ```
