@@ -115,7 +115,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-### Fetching the model version
+### Fetching the model version in a pipeline
 
 When configured at the pipeline or step level, the model version will be available through the [StepContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md) or [PipelineContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md).
 
@@ -153,29 +153,24 @@ def training_pipeline(gamma: float = 0.002):
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
 
-### Using the ModelVersion object
+### Using the `ModelVersion` object
 
-Once a `ModelVersion` is fetched within a step, there are numerous use cases. For example, one can associate metadata like metrics to the model version or its associated artifacts.
+Once a `ModelVersion` is fetched within a step, there are numerous use cases. For example, one can associate metadata like metrics to the model version or its associated artifacts:
 
 ```python
-# TBD
-
-from zenml import get_step_context, step 
+from zenml import get_step_context, step, log_model_version_metadata 
 
 @step
 def svc_trainer(
     X_train: pd.DataFrame,
     y_train: pd.Series,
     gamma: float = 0.001,
-) -> Tuple[
-    Annotated[ClassifierMixin, "trained_model"],
-    Annotated[float, "training_acc"],
-]:
+) -> Annotated[ClassifierMixin, "sklearn_classifier"],:
     # This will return the model version specified in the 
     # @pipeline decorator. In this case, the production version of 
     # the `iris_classifier` will be returned in this case.
     model_version = get_step_context().model_version
-    ...
+    
 ```
 
 ## Logging metadata for a model version
