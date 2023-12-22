@@ -2182,6 +2182,17 @@ class ZenStoreInterface(ABC):
             KeyError: specified ID or name not found.
         """
 
+    @abstractmethod
+    def delete_all_model_version_artifact_link(
+        self,
+        model_version_id: UUID,
+    ) -> None:
+        """Deletes all model version to artifact links.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+        """
+
     # -------------------- Model Versions Pipeline Runs --------------------
 
     @abstractmethod

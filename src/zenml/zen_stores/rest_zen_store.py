@@ -2836,6 +2836,20 @@ class RestZenStore(BaseZenStore):
             route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
         )
 
+    def delete_all_model_version_artifact_link(
+        self,
+        model_version_id: UUID,
+    ) -> None:
+        """Deletes all model version to artifact links.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+        """
+        self._delete_resource(
+            resource_id="all",
+            route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
+        )
+
     # ---------------------- Model Versions Pipeline Runs ----------------------
 
     def create_model_version_pipeline_run_link(

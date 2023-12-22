@@ -6734,6 +6734,30 @@ class SqlZenStore(BaseZenStore):
             session.delete(model_version_artifact_link)
             session.commit()
 
+    def delete_all_model_version_artifact_link(
+        self,
+        model_version_id: UUID,
+    ) -> None:
+        """Deletes all model version to artifact links.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+        """
+        with Session(self.engine) as session:
+            model_version = self.get_model_version(model_version_id)
+            query = select(ModelVersionArtifactSchema).where(
+                ModelVersionArtifactSchema.model_version_id == model_version.id
+            )
+            model_version_artifact_links = session.exec(query).fetchall()
+            if len(model_version_artifact_links) == 0:
+                logger.warning(
+                    "No model version to artifacts links found in model "
+                    f"version `{model_version_id}`."
+                )
+            for model_version_artifact_link in model_version_artifact_links:
+                session.delete(model_version_artifact_link)
+            session.commit()
+
     # ---------------------- Model Versions Pipeline Runs ----------------------
 
     def create_model_version_pipeline_run_link(

@@ -245,15 +245,19 @@ def delete_model_version_artifact_link(
     Args:
         model_version_id: ID of the model version containing the link.
         model_version_artifact_link_name_or_id: name or ID of the model
-            version to artifact link to be deleted.
+            version to artifact link to be deleted. `all` can be used
+            to delete all model version to artifact links.
     """
     model_version = zen_store().get_model_version(model_version_id)
     verify_permission_for_model(model_version, action=Action.UPDATE)
 
-    zen_store().delete_model_version_artifact_link(
-        model_version_id,
-        model_version_artifact_link_name_or_id,
-    )
+    if model_version_artifact_link_name_or_id == "all":
+        zen_store().delete_all_model_version_artifact_link(model_version_id)
+    else:
+        zen_store().delete_model_version_artifact_link(
+            model_version_id,
+            model_version_artifact_link_name_or_id,
+        )
 
 
 ##############################
