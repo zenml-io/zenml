@@ -2845,10 +2845,7 @@ class RestZenStore(BaseZenStore):
         Args:
             model_version_id: ID of the model version containing the link.
         """
-        self._delete_resource(
-            resource_id="all",
-            route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
-        )
+        self.delete(f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}")
 
     # ---------------------- Model Versions Pipeline Runs ----------------------
 
