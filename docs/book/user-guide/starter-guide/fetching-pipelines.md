@@ -221,12 +221,12 @@ output = Client().get_artifact_version('f429f94c-fb15-43b5-961d-dbea287507c5')
 loaded_artifact = output.load()
 ```
 
-#### Artifact Information
+### Artifact Information
 
 Regardless as to how one fetches it, each artifact contains a lot of general
 information about the artifact as well as datatype specific metadata and visualizations.
 
-**Metadata**
+#### Metadata
 
 All output artifacts saved through ZenML will automatically have certain datatype-specific metadata saved with them. NumPy Arrays, for instance, always have their storage size, `shape`, `dtype`, and some statistical properties saved with them. You can access such metadata via the `run_metadata` attribute of an output, e.g.:
 
@@ -237,7 +237,7 @@ storage_size_in_bytes = output_metadata["storage_size"].value
 
 We will talk more about metadata [in the next section](manage-artifacts.md#logging-metadata-for-an-artifact)
 
-**Visualizations**
+#### Visualizations
 
 ZenML automatically saves visualizations for many common data types. Using the `visualize()` method you can programmatically show these visualizations in Jupyter notebooks:
 
