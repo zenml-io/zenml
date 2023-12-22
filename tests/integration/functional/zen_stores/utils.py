@@ -1142,6 +1142,7 @@ model_crud_test_config = CrudTestConfig(
         trade_offs="secret",
         ethics="all good",
         tags=["cool", "stuff"],
+        save_models_to_registry=True,
     ),
     update_model=ModelUpdate(
         name=sample_name("updated_sample_service_connector"),

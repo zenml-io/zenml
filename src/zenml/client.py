@@ -4488,6 +4488,7 @@ class Client(metaclass=ClientMetaClass):
         trade_offs: Optional[str] = None,
         ethics: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        save_models_to_registry: bool = True,
     ) -> ModelResponse:
         """Creates a new model in Model Control Plane.
 
@@ -4501,6 +4502,8 @@ class Client(metaclass=ClientMetaClass):
             trade_offs: The tradeoffs of the model.
             ethics: The ethical implications of the model.
             tags: Tags associated with the model.
+            save_models_to_registry: Whether to save the model to the
+                registry.
 
         Returns:
             The newly created model.
@@ -4518,6 +4521,7 @@ class Client(metaclass=ClientMetaClass):
                 tags=tags,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
+                save_models_to_registry=save_models_to_registry,
             )
         )
 

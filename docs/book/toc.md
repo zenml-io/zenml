@@ -31,6 +31,7 @@
     * [Artifact saving and loading](user-guide/advanced-guide/artifact-management/artifact-saving-loading.md)
     * [Handle custom data types](user-guide/advanced-guide/artifact-management/handle-custom-data-types.md)
     * [Visualize artifacts](user-guide/advanced-guide/artifact-management/visualize-artifacts.md)
+    * [Model management](user-guide/advanced-guide/artifact-management/model-management.md)
   * [Environment management](user-guide/advanced-guide/environment-management/environment-management.md)
     * [Use the Client](user-guide/advanced-guide/environment-management/use-the-client.md)
     * [Use the Hub](user-guide/advanced-guide/environment-management/use-the-hub.md)
