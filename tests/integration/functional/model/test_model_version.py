@@ -347,7 +347,7 @@ class TestModelVersion:
     def test_that_artifacts_are_not_linked_to_models_outside_of_the_context(
         self, clean_client: "Client"
     ):
-        """Test that model version can be used to track metadata from function in steps."""
+        """Test that artifacts are linked only to model versions from the context."""
 
         @pipeline(model_version=ModelVersion(name=MODEL_NAME))
         def my_pipeline(is_consume: bool):
