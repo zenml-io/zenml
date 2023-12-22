@@ -326,6 +326,26 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualizatio
 {% endtab %}
 {% endtabs %}
 
+A user can also add metadata to an artifact within a step directly:
+
+```python
+from zenml import step, log_artifact_metadata
+
+@step
+def model_finetuner_step(
+    model: ClassifierMixin, dataset: Tuple[np.ndarray, np.ndarray]
+) -> Annotated[
+    ClassifierMixin, ArtifactConfig(name="my_model", tags=["SVC", "trained"])
+]:
+    """Finetunes a given model on a given dataset."""
+    model.fit(dataset[0], dataset[1])
+    accuracy = model.score(dataset[0], dataset[1])
+
+    log_artifact_metadata(
+        metadata={"accuracy": float(accuracy)}
+    )
+    return model
+```
 
 There is a lot more to learn about artifacts within ZenML. There is
 a [dedicated data management guide](../advanced-guide/data-management/)
@@ -348,9 +368,8 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_digits
 from sklearn.svm import SVC
-import zenml
-from zenml import ArtifactConfig, ExternalArtifact, pipeline, step
-
+from zenml import ArtifactConfig, ExternalArtifact, pipeline, step, log_artifact_metadata
+from zenml import save_artifact, load_artifact
 
 @step
 def versioned_data_loader_step() -> (
@@ -371,10 +390,12 @@ def versioned_data_loader_step() -> (
 def model_finetuner_step(
     model: ClassifierMixin, dataset: Tuple[np.ndarray, np.ndarray]
 ) -> Annotated[
-    ClassifierMixin, ArtifactConfig(name="my_model", tags=["SVC", "trained"])
+    ClassifierMixin, ArtifactConfig(name="my_model", is_model_artifact=True, tags=["SVC", "trained"])
 ]:
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])
+    accuracy = model.score(dataset[0], dataset[1])
+    log_artifact_metadata(metadata={"accuracy": float(accuracy)})
     return model
 
 
@@ -401,7 +422,7 @@ def model_finetuning_pipeline(
 def main():
     # Save an untrained model as first version of "my_model"
     untrained_model = SVC(gamma=0.001)
-    zenml.save_artifact(
+    save_artifact(
         untrained_model, name="my_model", version="1", tags=["SVC", "untrained"]
     )
 
@@ -412,8 +433,8 @@ def main():
     model_finetuning_pipeline(dataset_version="1")
 
     # Run inference with the latest model on an older version of the dataset
-    latest_trained_model = zenml.load_artifact("my_model")
-    old_dataset = zenml.load_artifact("my_dataset", version="1")
+    latest_trained_model = load_artifact("my_model")
+    old_dataset = load_artifact("my_dataset", version="1")
     latest_trained_model.predict(old_dataset[0])
 
 if __name__ == "__main__":
