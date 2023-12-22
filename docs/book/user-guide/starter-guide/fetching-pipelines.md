@@ -232,7 +232,7 @@ output_metadata = output.run_metadata
 storage_size_in_bytes = output_metadata["storage_size"].value
 ```
 
-We will talk more about metadata [in the next section](manage-artifacts.md#logging-metadata-for-an-artifact)
+We will talk more about metadata [in the next section](manage-artifacts.md#logging-metadata-for-an-artifact).
 
 #### Visualizations
 
