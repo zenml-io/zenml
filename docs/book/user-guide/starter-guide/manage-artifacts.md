@@ -285,7 +285,7 @@ For now, let's keep going on understanding major ZenML concepts!
 
 ## Logging metadata for an artifact
 
-One of the most useful way's of interacting with artifacts in ZenML is the ability
+One of the most useful ways of interacting with artifacts in ZenML is the ability
 to associate metadata with them. [As mentioned before](fetching-pipelines.md#artifact-information), artifact metadata is an arbitary dictionary of key-value pairs that are useful to understand the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or a size of an image alongside a PNG file.
