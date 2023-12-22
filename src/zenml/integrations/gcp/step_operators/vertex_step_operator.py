@@ -21,6 +21,7 @@ google_cloud_ai_platform/training_clients.py
 import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
+from google.api_core.exceptions import ServerError
 from google.cloud import aiplatform
 
 from zenml import __version__
@@ -300,19 +301,20 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             try:
                 response = client.get_custom_job(name=job_id)
                 retry_count = 0
-            # Handle transient connection error.
-            except ConnectionError as err:
+            # Handle transient connection errors and credential expiration by
+            # recreating the Python API client.
+            except (ConnectionError, ServerError) as err:
                 if retry_count < CONNECTION_ERROR_RETRY_LIMIT:
                     retry_count += 1
                     logger.warning(
-                        "ConnectionError (%s) encountered when polling job: "
-                        "%s. Trying to recreate the API client.",
-                        err,
-                        job_id,
+                        f"Error encountered when polling job "
+                        f"{job_id}: {err}\nRetrying...",
                     )
+                    # This call will refresh the credentials if they expired.
+                    credentials, project_id = self._get_authentication()
                     # Recreate the Python API client.
                     client = aiplatform.gapic.JobServiceClient(
-                        client_options=client_options
+                        credentials=credentials, client_options=client_options
                     )
                 else:
                     logger.error(
@@ -320,7 +322,6 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                         CONNECTION_ERROR_RETRY_LIMIT,
                     )
                     raise
-
             if response.state in VERTEX_JOB_STATES_FAILED:
                 err_msg = (
                     "Job '{}' did not succeed.  Detailed response {}.".format(

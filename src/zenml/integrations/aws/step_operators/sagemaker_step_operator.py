@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import boto3
 import sagemaker
+from botocore.exceptions import BotoCoreError, ClientError
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
@@ -47,6 +48,7 @@ logger = get_logger(__name__)
 
 SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_step_operator"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
+CONNECTION_ERROR_RETRY_LIMIT = 5
 
 
 class SagemakerStepOperator(BaseStepOperator):
@@ -55,6 +57,43 @@ class SagemakerStepOperator(BaseStepOperator):
     This class defines code that builds an image with the ZenML entrypoint
     to run using Sagemaker's Estimator.
     """
+
+    _sagemaker_session: Optional[sagemaker.Session] = None
+
+    @property
+    def sagemaker_session(self) -> sagemaker.Session:
+        """Returns a sagemaker session.
+
+        Returns:
+            A sagemaker session.
+        """
+        if self._connector_instance is not None:
+            # If the connector instance has expired, we need to create a new
+            # session.
+            if self._connector_instance.has_expired():
+                self._sagemaker_session = None
+
+        if self._sagemaker_session is not None:
+            return self._sagemaker_session
+
+        # Option 1: Service connector
+        boto_session: boto3.Session
+        if connector := self.get_connector():
+            boto_session = connector.connect()
+            if not isinstance(boto_session, boto3.Session):
+                raise RuntimeError(
+                    f"Expected to receive a `boto3.Session` object from the "
+                    f"linked connector, but got type `{type(boto_session)}`."
+                )
+        # Option 2: Implicit configuration
+        else:
+            boto_session = boto3.Session()
+
+        self._sagemaker_session = sagemaker.Session(
+            boto_session=boto_session, default_bucket=self.config.bucket
+        )
+
+        return self._sagemaker_session
 
     @property
     def config(self) -> SagemakerStepOperatorConfig:
@@ -200,22 +239,6 @@ class SagemakerStepOperator(BaseStepOperator):
         estimator_args = settings.estimator_args
 
         # Get authenticated session
-        # Option 1: Service connector
-        boto_session: boto3.Session
-        if connector := self.get_connector():
-            boto_session = connector.connect()
-            if not isinstance(boto_session, boto3.Session):
-                raise RuntimeError(
-                    f"Expected to receive a `boto3.Session` object from the "
-                    f"linked connector, but got type `{type(boto_session)}`."
-                )
-        # Option 2: Implicit configuration
-        else:
-            boto_session = boto3.Session()
-
-        session = sagemaker.Session(
-            boto_session=boto_session, default_bucket=self.config.bucket
-        )
 
         estimator_args.setdefault(
             "instance_type", settings.instance_type or "ml.m5.large"
@@ -223,7 +246,7 @@ class SagemakerStepOperator(BaseStepOperator):
 
         estimator_args["environment"] = environment
         estimator_args["instance_count"] = 1
-        estimator_args["sagemaker_session"] = session
+        estimator_args["sagemaker_session"] = self.sagemaker_session
 
         # Create Estimator
         estimator = sagemaker.estimator.Estimator(
@@ -263,8 +286,34 @@ class SagemakerStepOperator(BaseStepOperator):
             }
 
         estimator.fit(
-            wait=True,
+            wait=False,
             inputs=inputs,
             experiment_config=experiment_config,
             job_name=sanitized_training_job_name,
         )
+
+        latest_training_job = estimator.latest_training_job
+        assert latest_training_job is not None
+        retry_count = 0
+        while True:
+            try:
+                latest_training_job.wait()
+                break
+            # If an authorization error occurs, we want to refresh the session
+            # credentials and try again.
+            except (ClientError, BotoCoreError) as e:
+                if retry_count < CONNECTION_ERROR_RETRY_LIMIT:
+                    retry_count += 1
+                    logger.warning(
+                        f"Error encountered while waiting for job to complete: "
+                        f"{e}. Retrying..."
+                    )
+                    # Refresh the session credentials and try again.
+                    latest_training_job.sagemaker_session = (
+                        self.sagemaker_session
+                    )
+                else:
+                    logger.exception(
+                        f"Request failed after {CONNECTION_ERROR_RETRY_LIMIT} retries.",
+                    )
+                    raise
