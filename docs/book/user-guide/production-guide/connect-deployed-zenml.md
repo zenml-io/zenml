@@ -204,3 +204,6 @@ To keep things simple, we can summarize the steps:
 Every API key issued is a potential gateway to access your data, secrets and
 infrastructure. It's important to regularly rotate API keys and deactivate
 or delete service accounts and API keys that are no longer needed.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
