@@ -123,9 +123,6 @@ def save_artifact(
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
 
-    # Force URIs to have forward slashes
-    uri = uri.replace("\\", "/")
-
     if manual_save and fileio.exists(uri):
         # This check is only necessary for manual saves as we already check
         # it when creating the directory for step output artifacts
