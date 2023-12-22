@@ -346,6 +346,72 @@ class ModelVersion(BaseModel):
             for name, response in response.run_metadata.items()
         }
 
+    def delete_artifact(
+        self,
+        name: str,
+        version: Optional[str] = None,
+        only_link: bool = True,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
+    ) -> None:
+        """Delete the artifact linked to this model version.
+
+        Args:
+            name: The name of the artifact to delete.
+            version: The version of the artifact to delete (None for latest/non-versioned)
+            only_link: Whether to only delete the link to the artifact.
+            delete_metadata: Whether to delete the metadata of the artifact.
+            delete_from_artifact_store: Whether to delete the artifact from the artifact store.
+        """
+        from zenml.client import Client
+
+        artifact_version: ArtifactVersionResponse = self.get_artifact(
+            name, version
+        )
+        client = Client()
+        client.delete_model_version_artifact_link(
+            model_version_id=self.id, artifact_version_id=artifact_version.id
+        )
+        if not only_link:
+            client.delete_artifact_version(
+                name_id_or_prefix=artifact_version.id,
+                delete_metadata=delete_metadata,
+                delete_from_artifact_store=delete_from_artifact_store,
+            )
+
+    def delete_all_artifacts(
+        self,
+        only_link: bool = True,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
+    ):
+        """Delete all artifacts linked to this model version.
+
+        Args:
+            only_link: Whether to only delete the link to the artifact.
+            delete_metadata: Whether to delete the metadata of the artifact.
+            delete_from_artifact_store: Whether to delete the artifact from the artifact store.
+        """
+        from zenml.client import Client
+
+        client = Client()
+
+        if not only_link:
+            mv = self._get_model_version()
+            ids = mv.data_artifact_ids
+            ids.update(mv.model_artifact_ids)
+            ids.update(mv.deployment_artifact_ids)
+
+        client.delete_all_model_version_artifact_links(self.id)
+
+        if not only_link:
+            for id_ in ids:
+                client.delete_artifact_version(
+                    name_id_or_prefix=id_,
+                    delete_metadata=delete_metadata,
+                    delete_from_artifact_store=delete_from_artifact_store,
+                )
+
     #########################
     #   Internal methods    #
     #########################

@@ -67,6 +67,12 @@ def step_metadata_logging_functional():
     assert get_step_context().model_version.metadata["foo"] == "bar"
 
 
+@step
+def simple_producer() -> str:
+    """Simple producer step."""
+    return "foo"
+
+
 class TestModelVersion:
     def test_model_created_with_warning(self, clean_client: "Client"):
         """Test if the model is created with a warning.
@@ -329,3 +335,66 @@ class TestModelVersion:
         mv = ModelVersion(name=MODEL_NAME, version="latest")
         assert len(mv.metadata) == 1
         assert mv.metadata["foo"] == "bar"
+
+    @pytest.mark.parametrize("delete_artifacts", [False, True])
+    def test_deletion_of_links(
+        self, clean_client: "Client", delete_artifacts: bool
+    ):
+        """Test that user can delete artifact links (with artifacts) from ModelVersion."""
+
+        @pipeline(
+            model_version=ModelVersion(
+                name=MODEL_NAME,
+            ),
+            enable_cache=False,
+        )
+        def _inner_pipeline():
+            simple_producer()
+            simple_producer(id="other_named_producer")
+
+        _inner_pipeline()
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        artifact_ids = mv._get_model_version().data_artifact_ids
+        assert len(artifact_ids) == 2
+
+        # delete run to enable artifacts deletion
+        run = clean_client.get_pipeline(
+            name_id_or_prefix="_inner_pipeline"
+        ).last_run
+        clean_client.delete_pipeline_run(run.id)
+
+        mv.delete_artifact(
+            only_link=not delete_artifacts,
+            name="_inner_pipeline::other_named_producer::output",
+        )
+        assert len(mv._get_model_version().data_artifact_ids) == 1
+        versions_ = artifact_ids[
+            "_inner_pipeline::other_named_producer::output"
+        ]["1"]
+        if delete_artifacts:
+            with pytest.raises(KeyError):
+                clean_client.get_artifact_version(versions_)
+        else:
+            assert clean_client.get_artifact_version(versions_).id == versions_
+
+        _inner_pipeline()
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        artifact_ids = mv._get_model_version().data_artifact_ids
+        assert len(artifact_ids) == 2
+
+        # delete run to enable artifacts deletion
+        run = clean_client.get_pipeline(
+            name_id_or_prefix="_inner_pipeline"
+        ).last_run
+        clean_client.delete_pipeline_run(run.id)
+
+        mv.delete_all_artifacts(only_link=not delete_artifacts)
+        assert len(mv._get_model_version().data_artifact_ids) == 0
+        for versions_ in artifact_ids.values():
+            for id_ in versions_.values():
+                if delete_artifacts:
+                    with pytest.raises(KeyError):
+                        clean_client.get_artifact_version(id_)
+                else:
+                    assert clean_client.get_artifact_version(id_).id == id_
