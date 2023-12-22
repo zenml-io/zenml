@@ -25,6 +25,7 @@ from sklearn.datasets import load_iris
 
 from zenml import pipeline, step
 
+# Using Annotated to name our dataset
 @step
 def training_data_loader() -> Annotated[pd.DataFrame, "iris_dataset"]:
     """Load the iris dataset as pandas dataframe."""
@@ -55,13 +56,12 @@ To list artifacts: `zenml artifacts list`
 {% endtab %}
 {% tab title="Cloud (Dashboard)" %}
 
-The ZenML Cloud dashboard offers advanced visualization features for artifact exploration.
+The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration.
 
 <figure><img src="../../.gitbook/assets/dcp_artifacts_list.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
 
 {% hint style="info" %}
-To prevent visual clutter, only artifacts with custom names are displayed in
-the ZenML dashboard by default. Thus, make sure to assign names to your most
+To prevent visual clutter, make sure to assign names to your most
 important artifacts that you would like to explore visually.
 {% endhint %}
 
@@ -74,7 +74,7 @@ ZenML automatically versions all created artifacts using auto-incremented
 numbering. I.e., if you have defined a step creating an artifact named
 `iris_dataset` as shown above, the first execution of the step will
 create an artifact with this name and version "1", the second execution will
-create version "2" and so on.
+create version "2", and so on.
 
 While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model/#zenml.model.artifact_config.DataArtifactConfig). This may come into play during critical runs like production releases.
 
@@ -102,7 +102,7 @@ you are making a particularly important pipeline run (such as a release) whose
 artifacts you want to distinguish at a glance later.
 
 {% hint style="warning" %}
-Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML Config](../advanced-guide/pipelining-features/configure-steps-pipelines.md) for artifact versioning.
+Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML Config](../production-guide/configure-pipeline.md) for artifact versioning.
 {% endhint %}
 
 After execution, `iris_dataset` and its version `raw_2023` can be seen using:
@@ -134,13 +134,13 @@ See the [artifact visualization docs](../advanced-guide/data-management/visualiz
 
 ### Passing artifacts to a downstream pipeline
 
-You don't always want to start your pipeline with a step that produces an artifact. Often times, you want to consume artifacts in other ways.
+You don't always want to start your pipeline with a step that produces an artifact. Instead you often want to consume artifacts in other ways.
 
-#### Consuming external artifacts within a pipeline
+### Consuming external artifacts within a pipeline
 
 The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitary data type.
 
-For example, let's say you have a snowflake query that produces a dataframe, or a CSV file that you need to read. External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
+For example, let's say you have a Snowflake query that produces a dataframe, or a CSV file that you need to read. External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
 
 ```python
 import numpy as np
@@ -165,9 +165,9 @@ if __name__ == "__main__":
 
 Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts/#zenml.artifacts.external_artifact.ExternalArtifact) for all available options.
 
-#### Consuming artifacts produced by other pipelines
+### Consuming artifacts produced by other pipelines
 
-Often times, there is a need to consume an artifact downstream after producing it in an upstream pipeline or step. Again, using `ExternalArtifact`, you can pass existing artifacts from other pipeline runs into your steps:
+It's also common to consume an artifact downstream after producing it in an upstream pipeline or step. Again, using `ExternalArtifact`, you can pass existing artifacts from other pipeline runs into your steps:
 
 ```python
 from uuid import UUID
@@ -213,11 +213,10 @@ Sometimes, artifacts can be produced completely outside of ZenML. A good example
 from zenml.client import Client
 from zenml import save_artifact
 
-# In this case, we are fetching the model directly from the latest run
-last_run = Client().get_pipeline("training_pipeline").last_run
-model = last_run.steps["svc_trainer"].outputs["trained_model"].load()
+# Fetch the model from a registry or a previous pipeline
+model = ...
 
-# Lets make a prediction
+# Let's make a prediction
 prediction = model.predict([[1, 1, 1, 1]])
 
 # We now store this prediction in ZenML as an artifact

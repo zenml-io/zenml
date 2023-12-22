@@ -4,7 +4,7 @@ description: Inspecting a finished pipeline run and its outputs.
 
 # Fetch runs after execution
 
-Once a pipeline run has been completed, we can access the corresponding information in code, which enables several use cases:
+Once a pipeline run has been completed, we can access the corresponding information in code, which enables the following:
 
 * Loading artifacts like models or datasets saved by previous runs
 * Accessing metadata or configurations of previous runs
@@ -211,7 +211,7 @@ storage_size_in_bytes = output_metadata["storage_size"].value
 
 #### Artifact Visualizations
 
-ZenML automatically saves visualizations for many common data types. Using the `visualize()` method you can programmatically show these visualizations in Jupyer notebooks:
+ZenML automatically saves visualizations for many common data types. Using the `visualize()` method you can programmatically show these visualizations in Jupyter notebooks:
 
 ```python
 output.visualize()
@@ -225,7 +225,7 @@ If you're not in a Jupyter notebook, you can simply view the visualizations in t
 
 ## Fetching information during run execution
 
-While most of this document has been focused on fetching objects after a pipeline run has been completed, the same logic can also be used within the context of a running pipeline.
+While most of this document has focused on fetching objects after a pipeline run has been completed, the same logic can also be used within the context of a running pipeline.
 
 This is often desirable in cases where a pipeline is running continuously over time and decisions have to be made according to older runs.
 

@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
 {% hint style="info" %}
 * **`@step`** is a decorator that converts its function into a step that can be used within a pipeline
-* **`@pipeline`** defines a function as a pipeline and within this function, the steps are called and their outputs are routed
+* **`@pipeline`** defines a function as a pipeline and within this function, the steps are called and their outputs link them together.
 {% endhint %}
 
 Copy this code into a new file and name it `run.py`. Then run it with your command line:
