@@ -74,6 +74,7 @@ from zenml.enums import (
     LoggingLevels,
     ModelStages,
     SecretScope,
+    SecretsStoreType,
     SorterOps,
     StackComponentType,
     StepRunInputArtifactType,
@@ -263,6 +264,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -705,6 +707,22 @@ class SqlZenStore(BaseZenStore):
 
     _engine: Optional[Engine] = None
     _alembic: Optional[Alembic] = None
+    _secrets_store: Optional[BaseSecretsStore] = None
+
+    @property
+    def secrets_store(self) -> "BaseSecretsStore":
+        """The secrets store associated with this store.
+
+        Returns:
+            The secrets store associated with this store.
+        """
+        if self._secrets_store is None:
+            raise NotImplementedError(
+                "No secrets store is configured. Please configure a secrets "
+                "store to create and manage ZenML secrets."
+            )
+
+        return self._secrets_store
 
     @property
     def engine(self) -> Engine:
@@ -920,6 +938,24 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+
+        secrets_store_config = self.config.secrets_store
+
+        # Initialize the secrets store
+        if (
+            secrets_store_config
+            and secrets_store_config.type != SecretsStoreType.NONE
+        ):
+            secrets_store_class = BaseSecretsStore.get_store_class(
+                secrets_store_config
+            )
+            self._secrets_store = secrets_store_class(
+                zen_store=self,
+                config=secrets_store_config,
+            )
+            # Update the config with the actual secrets store config
+            # to reflect the default values in the saved configuration
+            self.config.secrets_store = self._secrets_store.config
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""

@@ -53,7 +53,6 @@ from zenml.models import (
     UserResponse,
     WorkspaceResponse,
 )
-from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -74,7 +73,6 @@ class BaseZenStore(
     """
 
     config: StoreConfiguration
-    _secrets_store: Optional[BaseSecretsStore] = None
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -232,26 +230,6 @@ class BaseZenStore(
             **kwargs,
         )
 
-        # Initialize the secrets store only if the store is a SQL store
-        if config.type == StoreType.SQL:
-            secrets_store_config = store.config.secrets_store
-
-            # Initialize the secrets store
-            if (
-                secrets_store_config
-                and secrets_store_config.type != SecretsStoreType.NONE
-            ):
-                secrets_store_class = BaseSecretsStore.get_store_class(
-                    secrets_store_config
-                )
-                store._secrets_store = secrets_store_class(
-                    zen_store=store,
-                    config=secrets_store_config,
-                )
-                # Update the config with the actual secrets store config
-                # to reflect the default values in the saved configuration
-                store.config.secrets_store = store._secrets_store.config
-
         return store
 
     @staticmethod
@@ -298,21 +276,6 @@ class BaseZenStore(
             The type of the store.
         """
         return self.TYPE
-
-    @property
-    def secrets_store(self) -> "BaseSecretsStore":
-        """The secrets store associated with this store.
-
-        Returns:
-            The secrets store associated with this store.
-        """
-        if self._secrets_store is None:
-            raise NotImplementedError(
-                "No secrets store is configured. Please configure a secrets "
-                "store to create an manage ZenML secrets."
-            )
-
-        return self._secrets_store
 
     def validate_active_config(
         self,
@@ -415,9 +378,6 @@ class BaseZenStore(
             deployment_type=deployment_type,
             database_type=ServerDatabaseType.OTHER,
             debug=IS_DEBUG_ENV,
-            secrets_store_type=self.secrets_store.type
-            if self.secrets_store
-            else SecretsStoreType.NONE,
             auth_scheme=auth_scheme,
         )
 
