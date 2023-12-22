@@ -5,7 +5,7 @@ description: Scale compute to the cloud.
 # Scale compute
 
 {% hint style="warning" %}
-We're still working on finishing this easy-to-consume production guide for you. In the meanwhile,, please follow the provided links in this space as an interim guide.
+We're still working on finishing this easy-to-consume production guide for you. In the meanwhile, please follow the provided links in this space as an interim guide.
 {% endhint %}
 
 This section of the production guide will be about scaling compute to the cloud. Until this section is ready, here are some useful links to achieve this goal:
