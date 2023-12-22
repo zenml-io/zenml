@@ -4,17 +4,17 @@ description: Sending automated alerts to a Slack channel.
 
 # Slack Alerter
 
-The `SlackAlerter` enables you to send messages to a dedicated Slack channel 
+The `SlackAlerter` enables you to send messages to a dedicated Slack channel
 directly from within your ZenML pipelines.
 
 The `slack` integration contains the following two standard steps:
 
 * [slack\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_post\_step.slack\_alerter\_post\_step)
-  takes a string message, posts it to a Slack channel, and returns whether the 
+  takes a string message or a custom [slack block](https://api.slack.com/block-kit/building), posts it to a Slack channel, and returns whether the
   operation was successful.
 * [slack\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_ask\_step.slack\_alerter\_ask\_step)
-  also posts a message to a Slack channel, but waits for user feedback, and 
-  only returns `True` if a user explicitly approved the operation from within 
+  also posts a message or a custom [slack block](https://api.slack.com/block-kit/building) to a Slack channel, but waits for user feedback, and
+  only returns `True` if a user explicitly approved the operation from within
   Slack (e.g., by sending "approve" / "reject" to the bot in response).
 
 Interacting with Slack from within your pipelines can be very useful in practice:
@@ -112,6 +112,42 @@ def my_pipeline(...):
 
 if __name__ == "__main__":
     my_pipeline()
+```
+
+An example of adding a custom slack block to your pipeline could look like this:
+
+```python
+from typing import List, Dict
+from zenml.integrations.slack.steps.slack_alerter_ask_step import slack_alerter_post_step
+from zenml.integrations.slack.alerters.slack_alerter import SlackAlerterParameters
+from zenml import step, pipeline
+
+
+@step
+def my_custom_block_step(block_message) -> List[Dict]:
+    my_custom_block = [
+		{
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": f":tada: {block_message}",
+				"emoji": true
+			}
+		}
+	]
+    return SlackAlerterParameters(blocks = my_custom_block)
+
+
+@pipeline
+def my_pipeline(...):
+    ...
+    message_blocks = my_custom_block_step("my custom block!")
+    approved = slack_alerter_post_step(message_blocks)
+    ... # Potentially have different behavior in subsequent steps if `approved`
+
+if __name__ == "__main__":
+    my_pipeline()
+
 ```
 
 For more information and a full list of configurable attributes of the Slack alerter, check out
