@@ -1158,8 +1158,7 @@ class TestArtifact:
         assert artifact is not None
         clean_client.prune_artifacts(only_artifact=True)
         assert clean_client.get_artifact_version(artifact_id).id == artifact.id
-        with pytest.raises(FileNotFoundError):
-            os.listdir(artifact.uri)
+        assert not os.path.exists(artifact.uri)
 
 
 class TestModel:
