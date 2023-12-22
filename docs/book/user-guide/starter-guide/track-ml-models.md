@@ -136,10 +136,7 @@ def svc_trainer(
     X_train: pd.DataFrame,
     y_train: pd.Series,
     gamma: float = 0.001,
-) -> Tuple[
-    Annotated[ClassifierMixin, "trained_model"],
-    Annotated[float, "training_acc"],
-]:
+) -> Annotated[ClassifierMixin, "trained_model"]:
     # This will return the model version specified in the 
     # @pipeline decorator. In this case, the production version of 
     # the `iris_classifier` will be returned in this case.
@@ -162,7 +159,7 @@ def training_pipeline(gamma: float = 0.002):
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
 
-### Using the `ModelVersion` object
+### Logging metadata to the `ModelVersion` object
 
 Once a `ModelVersion` is fetched within a step, there are numerous use cases. For example, one can associate metadata like metrics to the model version or its associated artifacts:
 
