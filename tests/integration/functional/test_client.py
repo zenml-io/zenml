@@ -27,6 +27,7 @@ from tests.integration.functional.conftest import (
     int_plus_one_test_step,
 )
 from tests.integration.functional.utils import sample_name
+from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source
@@ -1126,6 +1127,17 @@ def test_basic_crud_for_entity(
             # This means the test already succeeded and deleted the entity,
             # nothing to do here
             pass
+
+
+class TestArtifact:
+    def test_prune(self, clean_client: "Client"):
+        """Test that artifact pruning works."""
+        artifact_id = ExternalArtifact(value="foo").upload_by_value()
+        artifact = clean_client.get_artifact_version(artifact_id)
+        assert artifact is not None
+        clean_client.prune_artifacts()
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version(artifact_id)
 
 
 class TestModel:

@@ -2677,6 +2677,43 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_artifact(artifact_id=artifact.id)
         logger.info(f"Deleted artifact '{artifact.name}'.")
 
+    def prune_artifacts(
+        self, only_artifact: bool = False, only_metadata: bool = False
+    ) -> None:
+        """Delete all unused artifacts and artifact versions.
+
+        Args:
+            only_artifact: Only delete artifacts
+            only_metadata: Only delete artifact metadata
+
+        Raises:
+            RuntimeError: If the artifact cannot be deleted.
+        """
+        unused_artifact_versions = depaginate(
+            partial(self.list_artifact_versions, only_unused=True)
+        )
+
+        if not unused_artifact_versions:
+            logger.info("No unused artifact versions found.")
+            return
+
+        for unused_artifact_version in unused_artifact_versions:
+            try:
+                self.delete_artifact_version(
+                    name_id_or_prefix=unused_artifact_version.id,
+                    delete_metadata=not only_artifact,
+                    delete_from_artifact_store=not only_metadata,
+                )
+                unused_artifact = unused_artifact_version.artifact
+                if not unused_artifact.versions and not only_artifact:
+                    self.delete_artifact(unused_artifact.id)
+
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to prune artifacts, error deleting artifact `{unused_artifact_version.id}`, error `{e}`."
+                )
+        logger.info("All unused artifacts and artifact versions deleted.")
+
     # --------------------------- Artifact Versions ---------------------------
 
     def get_artifact_version(
