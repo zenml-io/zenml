@@ -102,7 +102,7 @@ you are making a particularly important pipeline run (such as a release) whose
 artifacts you want to distinguish at a glance later.
 
 {% hint style="warning" %}
-Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML Config](../production-guide/configure-pipeline.md) for artifact versioning.
+Since custom versions cannot be duplicated, the above step can only be run once successfully. To avoid altering your code frequently, consider using a [YAML config](../production-guide/configure-pipeline.md) for artifact versioning.
 {% endhint %}
 
 After execution, `iris_dataset` and its version `raw_2023` can be seen using:
