@@ -221,7 +221,7 @@ loaded_artifact = output.load()
 
 ### Artifact Information
 
-Regardless as to how one fetches it, each artifact contains a lot of general information about the artifact as well as datatype specific metadata and visualizations.
+Regardless of how one fetches it, each artifact contains a lot of general information about the artifact as well as datatype-specific metadata and visualizations.
 
 #### Metadata
 
