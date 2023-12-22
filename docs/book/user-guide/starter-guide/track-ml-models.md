@@ -58,7 +58,8 @@ from zenml.model import ModelVersion
 
 model_version = ModelVersion(
     # The name uniquely identifies this model
-    name="iris_classifier",
+    # It usually represents the business use-case
+    name="flower_detection",
     # The version specifies the version
     # If None or an unseen version is specified, it will be created
     # Otherwise, a version will be fetched.
@@ -82,6 +83,14 @@ def training_pipeline(gamma: float = 0.002):
 
 if __name__ == "__main__":
     training_pipeline()
+
+# In the YAML the same can be done, in this case the 
+#  passing to the decorators is not needed
+# model_version: 
+  # name: flower_detection
+  # license: "Apache 2.0"
+  # description: "A classification model for the iris dataset."
+
 ```
 
 The above will estabilish a **link between all artifacts that pass through this ZenML pipeline and this model**. This includes the **technical model** which is what comes out of the `svc_trainer` step. You will be able to see all associated artifacts and pipeline runs all within one view.
