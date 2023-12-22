@@ -1138,8 +1138,7 @@ class TestArtifact:
         clean_client.prune_artifacts()
         with pytest.raises(KeyError):
             clean_client.get_artifact_version(artifact_id)
-        with pytest.raises(FileNotFoundError):
-            os.listdir(artifact.uri)
+        assert not os.path.exists(artifact.uri)
 
     def test_prune_only_metadata(self, clean_client: "Client"):
         """Test that artifact pruning works with only metadata flag."""
