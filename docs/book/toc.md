@@ -37,7 +37,7 @@
     * [How ZenML stores data](user-guide/advanced-guide/data-management/artifact-versioning.md)
     * [Logging metadata](user-guide/advanced-guide/data-management/logging-metadata.md)
     * [Handle custom data types](user-guide/advanced-guide/data-management/handle-custom-data-types.md)
-    * [Model management](user-guide/advanced-guide/artifact-management/model-management.md)
+    * [Model management](user-guide/advanced-guide/data-management/model-management.md)
     * [Visualize artifacts](user-guide/advanced-guide/data-management/visualize-artifacts.md)
   * [Environment management](user-guide/advanced-guide/environment-management/environment-management.md)
     * [Use the Client](user-guide/advanced-guide/environment-management/use-the-client.md)
