@@ -13,7 +13,7 @@ The `slack` integration contains the following two standard steps:
   takes a string message or a custom [Slack block](https://api.slack.com/block-kit/building), posts it to a Slack channel, and returns whether the
   operation was successful.
 * [slack\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-slack/#zenml.integrations.slack.steps.slack\_alerter\_ask\_step.slack\_alerter\_ask\_step)
-  also posts a message or a custom [slack block](https://api.slack.com/block-kit/building) to a Slack channel, but waits for user feedback, and
+  also posts a message or a custom [Slack block](https://api.slack.com/block-kit/building) to a Slack channel, but waits for user feedback, and
   only returns `True` if a user explicitly approved the operation from within
   Slack (e.g., by sending "approve" / "reject" to the bot in response).
 
