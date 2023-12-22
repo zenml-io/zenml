@@ -159,7 +159,7 @@ def training_pipeline(gamma: float = 0.002):
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
 
-### Logging metadata to the `ModelVersion` object
+## Logging metadata to the `ModelVersion` object
 
 Once a `ModelVersion` is fetched within a step, there are numerous use cases. For example, one can associate metadata like metrics to the model version or its associated artifacts:
 
@@ -178,8 +178,6 @@ def svc_trainer(
     model_version = get_step_context().model_version
     
 ```
-
-## Logging metadata for a model version
 
 One of the most useful way's of interacting with artifacts in ZenML is the ability
 to associate metadata with them. [As mentioned before](fetching-pipelines.md#artifact-information), artifact metadata is an arbitary dictionary of key-value pairs that are useful to understand the nature of the data.
@@ -255,9 +253,6 @@ def model_finetuner_step(
 
 For further depth, there is an [advanced metadata logging guide](../advanced-guide/data-management/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
 
-Additionally, there is a lot more to learn about artifacts within ZenML. Please read
-the [dedicated data management guide](../advanced-guide/data-management/) for more information.
-
 ## Using the stages of a model
 
 A models versions can exist in various stages. These are meant to signify their lifecycle state:
@@ -312,34 +307,6 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 
 {% endtab %}
 {% endtabs %}
-
-## Associating different types of artifacts with a model
-
-A ZenML model supports linking three types of artifacts:
-
-* `Data artifacts`: These are the default artifacts. If nothing is specified, all artifacts are grouped under this category.
-* `Model artifacts`: If there is a physical model artifact like a `.pkl` file or a model neural network weights file, it should be grouped in this category.
-* `Deployment artifacts`: These artifacts are to do with artifacts related to the endpoints and deployments of the models.
-
-In order to tell ZenML which artifact belongs to which type, one must pass in additional configuration to your artifacts:
-
-```python
-from zenml import get_step_context, step
-from zenml.model import DataArtifactConfig, ModelArtifactConfig
-
-@step
-def svc_trainer(
-    X_train: pd.DataFrame,
-    y_train: pd.Series,
-    gamma: float = 0.001,
-) -> Tuple[
-    # This third argument marks this as a Model Artifact
-    Annotated[ClassifierMixin, "trained_model", ModelArtifactConfig()],
-    # This third argument marks this as a Data Artifact
-    Annotated[float, "training_acc", DataArtifactConfig()],
-]:
-    ...
-```
 
 ## Facilitating Artifacts Exchange Between Pipelines Using MCP
 

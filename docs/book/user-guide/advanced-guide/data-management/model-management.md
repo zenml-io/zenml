@@ -292,16 +292,29 @@ specified model version.
 
 ### Artifact Configuration
 
+A ZenML model supports linking three types of artifacts:
+
+* `Data artifacts`: These are the default artifacts. If nothing is specified, all artifacts are grouped under this category.
+* `Model artifacts`: If there is a physical model artifact like a `.pkl` file or a model neural network weights file, it should be grouped in this category.
+* `Deployment artifacts`: These artifacts are to do with artifacts related to the endpoints and deployments of the models.
+
 You can also explicitly specify the linkage on a per-artifact basis by passing
 special configuration to the Annotated output:
 
 ```python
-from zenml import ArtifactConfig
+from zenml import get_step_context, step, ArtifactConfig
 
 @step
-def my_step() -> Annotated[MyArtifact, ArtifactConfig(model_name="my_model",
-                                                      name="my_artifact",
-                                                      is_model_artifact=True)]:
+def svc_trainer(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
+) -> Tuple[
+    # This third argument marks this as a Model Artifact
+    Annotated[ClassifierMixin, ArtifactConfig("trained_model"), is_model_artifact=True],
+    # This third argument marks this as a Data Artifact
+    Annotated[str, ArtifactConfig("deployment_uri"), is_deployment_artifact=True],
+]:
     ...
 ```
 
