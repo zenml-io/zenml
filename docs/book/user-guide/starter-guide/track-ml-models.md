@@ -77,7 +77,7 @@ def svc_trainer(...) -> ...:
 # This configures it for all steps within the pipeline
 @pipeline(model_version=model_version)
 def training_pipeline(gamma: float = 0.002):
-    # Now this pipeline will have the `iris_classifier` model active.
+    # Now this pipeline will have the `flower_detection` model active.
     X_train, X_test, y_train, y_test = training_data_loader()
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 
@@ -142,20 +142,20 @@ def svc_trainer(
 ]:
     # This will return the model version specified in the 
     # @pipeline decorator. In this case, the production version of 
-    # the `iris_classifier` will be returned in this case.
+    # the `flower_detection` will be returned in this case.
     model_version = get_step_context().model_version
     ...
 
 @pipeline(
     model_version=ModelVersion(
         # The name uniquely identifies this model
-        name="iris_classifier",
+        name="flower_detection",
         # Pass the stage you want to get the right model
         version="production", 
     ),
 )
 def training_pipeline(gamma: float = 0.002):
-    # Now this pipeline will have the production `iris_classifier` model active.
+    # Now this pipeline will have the production `flower_detection` model active.
     model_version = get_pipeline_context().model_version
 
     X_train, X_test, y_train, y_test = training_data_loader()
@@ -177,7 +177,7 @@ def svc_trainer(
 ) -> Annotated[ClassifierMixin, "sklearn_classifier"],:
     # This will return the model version specified in the 
     # @pipeline decorator. In this case, the production version of 
-    # the `iris_classifier` will be returned in this case.
+    # the `flower_detection` will be returned in this case.
     model_version = get_step_context().model_version
     
 ```
@@ -277,20 +277,20 @@ from zenml.model import ModelVersion
 
 # Get latest model version
 model_version = ModelVersion(
-    name="iris_classifier",
+    name="flower_detection",
     version="latest"
 )
 
 # Get a model from a version
 model_version = ModelVersion(
-    name="iris_classifier",
+    name="flower_detection",
     version="my_version",
 )
 
 # Pass the stage into the version field
 # to get the model by stage
 model_version = ModelVersion(
-    name="iris_classifier",
+    name="flower_detection",
     version="staging",
 )
 
@@ -350,7 +350,7 @@ A ZenML Model spans multiple pipelines, and is a key concept that brings dispara
 
 <figure><img src="../../.gitbook/assets/mcp_pipeline_overview.png" alt=""><figcaption><p>A simple example of two pipelines interacting between each other.</p></figcaption></figure>
 
-Each time the `train_and_promote` pipeline runs, it creates a new `iris_classifier`. However, it only promotes the created model to `production` if a certain accuracy threshold is met. The `do_predictions` pipeline simply picks up the latest promoted model and runs batch inference on it. That way these two pipelines can independently be run, but can rely on each other's output.
+Each time the `train_and_promote` pipeline runs, it creates a new `flower_detection`. However, it only promotes the created model to `production` if a certain accuracy threshold is met. The `do_predictions` pipeline simply picks up the latest promoted model and runs batch inference on it. That way these two pipelines can independently be run, but can rely on each other's output.
 
 One way of achieving this is to fetch the model directly in your step:
 
@@ -394,7 +394,7 @@ def predict(
 
 @pipeline(
     model_config=ModelVersion(
-        name="iris_classifier",
+        name="flower_detection",
         # Using the production stage
         version=ModelStages.PRODUCTION,
     ),
