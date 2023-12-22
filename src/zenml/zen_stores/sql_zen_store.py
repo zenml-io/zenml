@@ -1625,7 +1625,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_version is None:
                 raise KeyError(
                     f"Unable to get artifact version with ID "
-                    f"{artifact_version_id}: No artifact versionwith this ID "
+                    f"{artifact_version_id}: No artifact version with this ID "
                     f"found."
                 )
             return artifact_version.to_model(hydrate=hydrate)
