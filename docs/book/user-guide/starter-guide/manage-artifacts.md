@@ -132,15 +132,11 @@ When you ran your `training_pipeline` above, you will see some visualizations al
 
 See the [artifact visualization docs](../advanced-guide/data-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
 
-### Passing artifacts to a downstream pipeline
-
-You don't always want to start your pipeline with a step that produces an artifact. Instead you often want to consume artifacts in other ways.
-
 ### Consuming external artifacts within a pipeline
 
-The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitary data type.
+It is not often desirable to start a pipeline with a step that produces an artifact. Instead, it is often the case to want to consume artifacts in other ways. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitary data type.
 
-For example, let's say you have a Snowflake query that produces a dataframe, or a CSV file that you need to read. External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
+For example, let's say we have a Snowflake query that produces a dataframe, or a CSV file that we need to read. External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
 
 ```python
 import numpy as np
@@ -167,7 +163,7 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 
 ### Consuming artifacts produced by other pipelines
 
-It's also common to consume an artifact downstream after producing it in an upstream pipeline or step. Again, using `ExternalArtifact`, you can pass existing artifacts from other pipeline runs into your steps:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. Again, using `ExternalArtifact`, you can pass existing artifacts from other pipeline runs into your steps:
 
 ```python
 from uuid import UUID
@@ -286,6 +282,49 @@ this step, which can later be used to filter and organize these artifacts.
 
 To learn more about artifacts, please refer to the [Advanced section on artifact management](../advanced-guide/data-management/).
 For now, let's keep going on understanding major ZenML concepts!
+
+## Logging metadata for an artifact
+
+One of the most useful way's of interacting with artifacts in ZenML is the ability
+to associate metadata with them. Artifact metadata is an arbitary dictionary of key-value pairs that are useful to understand the nature of the data.
+
+As an example, one can associate the results of a model training alongside a model artifact,
+the shape of a table alongside a Pandas dataframe, or a size of an image alongside a PNG
+file.
+
+For some artifacts, ZenML automatically logs metadata. As an example, for `pandas.Series`
+and `pandas.Dataframe` objects, ZenML logs the shape and size of the objects:
+
+{% tabs %}
+{% tab title="Python" %}
+
+```python
+from zenml.client import Client
+
+# Get an artifact version (e.g. pd.Dataframe)
+artifact = Client().get_artifact_version('50ce903f-faa6-41f6-a95f-ff8c0ec66010')
+
+# Fetch it's metadata
+artifact.run_metadata["storage_size"].value  # Size in bytes
+artifact.run_metadata["shape"].value  # Shape e.g. (500,20)
+```
+
+{% endtab %}
+{% tab title="OSS (Dashboard)" %}
+
+The information for an artifacts metadata can be found within the DAG visualizer interface on the OSS dashboard:
+
+<figure><img src="../../.gitbook/assets/dashboard_artifact_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
+
+{% endtab %}
+{% tab title="Cloud (Dashboard)" %}
+
+The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
+
+<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
+
+{% endtab %}
+{% endtabs %}
 
 
 There is a lot more to learn about artifacts within ZenML. There is
