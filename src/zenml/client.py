@@ -2687,7 +2687,7 @@ class Client(metaclass=ClientMetaClass):
             only_metadata: Only delete artifact metadata
 
         Raises:
-            RuntimeError: If the artifact cannot be deleted.
+            RuntimeError: If any artifact cannot be deleted.
         """
         unused_artifact_versions = depaginate(
             partial(self.list_artifact_versions, only_unused=True)
