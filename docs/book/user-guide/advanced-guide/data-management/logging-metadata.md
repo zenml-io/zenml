@@ -8,29 +8,34 @@ Metadata plays a critical role in ZenML, providing context and additional inform
 
 This guide will explain how to log metadata for artifacts and model versions in ZenML and detail the types of metadata that can be logged.
 
-## Grouping Metadata in the Dashboard
+## Logging Metadata for Artifacts
 
-When logging metadata passing a dictionary of dictionaries in the `metadata` parameter will group the metadata into cards in the ZenML dashboard. This feature helps organize metadata into logical sections, making it easier to visualize and understand.
+Artifacts in ZenML are outputs of steps within a pipeline, such as datasets, models, or evaluation results. Associating metadata with artifacts can help users understand the nature and characteristics of these outputs.
 
-Here's an example of grouping metadata into cards:
+To log metadata for an artifact, you can use the `log_artifact_metadata` method. This method allows you to attach a dictionary of key-value pairs as metadata to an artifact. The metadata can be any JSON-serializable value, including custom classes such as `Uri`, `Path`, `DType`, and `StorageSize`.
+
+Here's an example of logging metadata for an artifact:
 
 ```python
-log_artifact_metadata(
-    metadata={
-        "model_metrics": {
-            "accuracy": 0.95,
-            "precision": 0.92,
-            "recall": 0.90
-        },
-        "data_details": {
-            "dataset_size": StorageSize(1500000),
-            "feature_columns": ["age", "income", "score"]
-        }
-    }
-)
-```
+from zenml import step, log_artifact_metadata
 
-In the ZenML dashboard, "model_metrics" and "data_details" would appear as separate cards, each containing their respective key-value pairs.
+@step
+def process_data_step(dataframe: pd.DataFrame) -> pd.DataFrame:
+    """Process a dataframe and log metadata about the result."""
+    # Perform processing on the dataframe...
+    processed_dataframe = ...
+
+    # Log metadata about the processed dataframe
+    log_artifact_metadata(
+        artifact_name="processed_data",
+        metadata={
+            "row_count": len(processed_dataframe),
+            "columns": list(processed_dataframe.columns),
+            "storage_size": StorageSize(processed_dataframe.memory_usage().sum())
+        }
+    )
+    return processed_dataframe
+```
 
 ## Logging Metadata for Model Versions
 
@@ -69,6 +74,30 @@ def train_model(dataset: pd.DataFrame) -> Annotated[ClassifierMixin, ArtifactCon
 ```
 
 In this example, the metadata is associated with the model version rather than the specific classifier artifact. This is particularly useful when the metadata reflects an aggregation or summary of various steps and artifacts in the pipeline.
+
+## Grouping Metadata in the Dashboard
+
+When logging metadata passing a dictionary of dictionaries in the `metadata` parameter will group the metadata into cards in the ZenML dashboard. This feature helps organize metadata into logical sections, making it easier to visualize and understand.
+
+Here's an example of grouping metadata into cards:
+
+```python
+log_artifact_metadata(
+    metadata={
+        "model_metrics": {
+            "accuracy": 0.95,
+            "precision": 0.92,
+            "recall": 0.90
+        },
+        "data_details": {
+            "dataset_size": StorageSize(1500000),
+            "feature_columns": ["age", "income", "score"]
+        }
+    }
+)
+```
+
+In the ZenML dashboard, "model_metrics" and "data_details" would appear as separate cards, each containing their respective key-value pairs.
 
 ## Examples of Special Metadata Types
 
