@@ -146,6 +146,9 @@ def save_artifact(
         materializer_class = materializer_registry[type(data)]
     materializer_object = materializer_class(uri)
 
+    # Force URIs to have forward slashes
+    materializer_object.uri = materializer_object.uri.replace("\\", "/")
+
     # Save the artifact to the artifact store
     data_type = type(data)
     materializer_object.validate_type_compatibility(data_type)
