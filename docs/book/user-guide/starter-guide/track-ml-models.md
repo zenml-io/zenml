@@ -12,9 +12,11 @@ As discussed in the [Core Concepts](../../getting-started/core-concepts.md), Zen
 
 ## What is a ZenML Model?
 
-Before diving in, let's take some time to build an understanding of what we mean when we say a `Model` in ZenML.
+Before diving in, let's take some time to build an understanding of what we mean when we say a `Model` in ZenML. A `Model` is simply an entity that groups pipelines, artifacts, metadata, and other crucial business data into a unified entity. Please note that one of the most common artifacts that is associated with a Model in ZenML is the so-called technical model, which is the actualy model file/files that holds the weight and parameters of a machine learning training result. However, this is not the only artifact that is relevant; artifacts such as the training data and the predictions this model produces in production are also linked inside a ZenML Model. In this sense, a ZenML Model is a concept that more broadly encapsulates your ML products business logic.
 
-A `Model` is simply an entity that groups pipelines, artifacts, and crucial business data into a unified entity: a `Model`. A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `production`, and decide whether the model version should be promoted based on your business rules during training.
+A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `Production``, and decide whether the Model Version should be promoted based on your business rules during training. Plus, accessing data from other Models and their Versions is just as simple.
+
+The `Model Control Plane` is how you manage your models through this unified interface. It allows you to combine the logic of your pipelines, artifacts and crucial business data along with the actual 'technical model' (e.g. a pickle file of a sklearn classifier, or a torch `pt` file)
 
 These models can be viewed within ZenML:
 
