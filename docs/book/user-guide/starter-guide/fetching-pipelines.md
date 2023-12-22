@@ -2,7 +2,7 @@
 description: Inspecting a finished pipeline run and its outputs.
 ---
 
-# Fetch runs after execution
+# Fetching pipelines
 
 Once a pipeline run has been completed, we can access the corresponding information in code, which enables the following:
 
@@ -27,7 +27,7 @@ Let us investigate how to traverse this hierarchy level-by-level:
 
 ### Get Pipeline via Client
 
-After you have run a pipeline at least once, you can also fetch the pipeline via the [`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client.get_pipeline) method.
+After you have run a pipeline at least once, you can also fetch the pipeline via the [`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.get\_pipeline) method.
 
 ```python
 from zenml.client import Client
@@ -45,7 +45,6 @@ If you're not sure which pipeline you need to fetch, you can find a list of all 
 
 {% tabs %}
 {% tab title="Python" %}
-
 You can use the [`Client.list_pipelines()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.list\_pipelines) method to get a list of all pipelines registered in ZenML:
 
 ```python
@@ -118,7 +117,7 @@ Similar to pipelines, you can query runs by either ID, name, or name prefix, and
 
 ### Run Information
 
-Each run has a collection of useful information which can help you reproduce your runs. In the following, you can find a list of some of the most useful pipeline run information, but there is much more available. See the [`PipelineRunResponseModel`](https://sdkdocs.zenml.io/latest/core_code_docs/core-models/#zenml.models.v2.core.pipeline_run.PipelineRunResponse) definition for a comprehensive list.
+Each run has a collection of useful information which can help you reproduce your runs. In the following, you can find a list of some of the most useful pipeline run information, but there is much more available. See the [`PipelineRunResponseModel`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-models/#zenml.models.v2.core.pipeline\_run.PipelineRunResponse) definition for a comprehensive list.
 
 #### Status
 
@@ -200,8 +199,7 @@ Note, the output of a step corresponds to a specific artifact version.
 
 ### Fetching artifacts directly
 
-If you'd like to fetch an artifact or an artifact version directly, it is easy
-to do so with the `Client`:
+If you'd like to fetch an artifact or an artifact version directly, it is easy to do so with the `Client`:
 
 ```python
 from zenml.client import Client
@@ -223,8 +221,7 @@ loaded_artifact = output.load()
 
 ### Artifact Information
 
-Regardless as to how one fetches it, each artifact contains a lot of general
-information about the artifact as well as datatype specific metadata and visualizations.
+Regardless as to how one fetches it, each artifact contains a lot of general information about the artifact as well as datatype specific metadata and visualizations.
 
 #### Metadata
 
@@ -245,7 +242,7 @@ ZenML automatically saves visualizations for many common data types. Using the `
 output.visualize()
 ```
 
-![output.visualize() Output](<../../.gitbook/assets/artifact\_visualization\_evidently (1).png>)
+![output.visualize() Output](<../../.gitbook/assets/artifact\_visualization\_evidently (1) (1).png>)
 
 {% hint style="info" %}
 If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml up` and clicking on the respective artifact in the pipeline run DAG instead. Checkout the [artifact visualization page](../advanced-guide/data-management/visualize-artifacts.md) to learn more about how to build and view artifact visualizations in ZenML!
