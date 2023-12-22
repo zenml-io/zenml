@@ -4,13 +4,13 @@ description: Accessing meta information in real-time within your pipeline.
 
 # Fetch metadata within steps
 
-## Using the `PipelineContext` and `StepContext`
+## Using the `StepContext`
 
 To find information about the pipeline or step that is currently running, you
-can use the `zenml.get_pipeline_context()` and `zenml.get_step_context()` function to access the `StepContext` of your pipeline and step respectively:
+can use the `zenml.get_step_context()` function to access the `StepContext` of your step:
 
 ```python
-from zenml import step, pipeline, get_step_context, get_pipeline_context
+from zenml import step, pipeline, get_step_context
 
 @step
 def my_step():
@@ -18,14 +18,6 @@ def my_step():
     pipeline_name = step_context.pipeline.name
     run_name = step_context.pipeline_run.name
     step_name = step_context.step_run.name
-
-@pipeline
-def my_pipeline():
-    pipeline_context = get_pipeline_context()
-    # Get the properties of the pipeline:
-    print(pipeline_context.settings)
-    print(pipeline.extra)
-    print(pipeline.model_version)  
 ```
 
 Furthermore, you can also use the `StepContext` to find out where the outputs
