@@ -80,6 +80,9 @@ class ModelSchema(NamedSchema, table=True):
     limitations: str = Field(sa_column=Column(TEXT, nullable=True))
     trade_offs: str = Field(sa_column=Column(TEXT, nullable=True))
     ethics: str = Field(sa_column=Column(TEXT, nullable=True))
+    save_models_to_registry: bool = Field(
+        sa_column=Column(BOOLEAN, nullable=False)
+    )
     tags: List["TagResourceSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs=dict(
@@ -122,6 +125,7 @@ class ModelSchema(NamedSchema, table=True):
             limitations=model_request.limitations,
             trade_offs=model_request.trade_offs,
             ethics=model_request.ethics,
+            save_models_to_registry=model_request.save_models_to_registry,
         )
 
     def to_model(
@@ -158,6 +162,7 @@ class ModelSchema(NamedSchema, table=True):
                 limitations=self.limitations,
                 trade_offs=self.trade_offs,
                 ethics=self.ethics,
+                save_models_to_registry=self.save_models_to_registry,
             )
 
         body = ModelResponseBody(
