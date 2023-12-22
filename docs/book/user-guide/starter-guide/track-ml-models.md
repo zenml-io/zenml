@@ -45,7 +45,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-## Utilizing a Model and its Model Versions
+## Configuring a model in a pipeline
 
 The easiest way to use a ZenML model is to pass a model version object as part of a pipeline run. This can be done easily at a pipeline or a step level, or via a 
 [YAML config](../production-guide/configure-pipeline.md).
@@ -124,7 +124,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-### Fetching the model version in a pipeline
+## Fetching the model in a pipeline
 
 When configured at the pipeline or step level, the model version will be available through the [StepContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md) or [PipelineContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md).
 
