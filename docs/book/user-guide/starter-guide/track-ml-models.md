@@ -14,7 +14,7 @@ As discussed in the [Core Concepts](../../getting-started/core-concepts.md), Zen
 
 Before diving in, let's take some time to build an understanding of what we mean when we say a `Model` in ZenML. A `Model` is simply an entity that groups pipelines, artifacts, metadata, and other crucial business data into a unified entity. Please note that one of the most common artifacts that is associated with a Model in ZenML is the so-called technical model, which is the actualy model file/files that holds the weight and parameters of a machine learning training result. However, this is not the only artifact that is relevant; artifacts such as the training data and the predictions this model produces in production are also linked inside a ZenML Model. In this sense, a ZenML Model is a concept that more broadly encapsulates your ML products business logic.
 
-A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `Production``, and decide whether the Model Version should be promoted based on your business rules during training. Plus, accessing data from other Models and their Versions is just as simple.
+A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `Production`, and decide whether the Model Version should be promoted based on your business rules during training. Plus, accessing data from other Models and their Versions is just as simple.
 
 The `Model Control Plane` is how you manage your models through this unified interface. It allows you to combine the logic of your pipelines, artifacts and crucial business data along with the actual 'technical model' (e.g. a pickle file of a sklearn classifier, or a torch `pt` file)
 
@@ -37,7 +37,8 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 
 ## Utilizing a Model and its Model Versions
 
-The easiest way to use a ZenML model is to pass a model version object as part of a pipeline run. This can be done easily at a pipeline or a step level
+The easiest way to use a ZenML model is to pass a model version object as part of a pipeline run. This can be done easily at a pipeline or a step level, or via a 
+[YAML config](../production-guide/configure-pipeline.md).
 
 ```python
 from zenml import pipeline
