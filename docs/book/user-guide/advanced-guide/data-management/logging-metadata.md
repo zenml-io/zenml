@@ -68,7 +68,9 @@ def train_model(dataset: pd.DataFrame) -> Annotated[ClassifierMixin, ArtifactCon
             }
         },
         # Omitted model_name will use the model version in the current context
+        model_name="zenml_model_name",
         # Omitted model_version will default to 'latest'
+        model_version="zenml_model_version",
     )
     return classifier
 ```
