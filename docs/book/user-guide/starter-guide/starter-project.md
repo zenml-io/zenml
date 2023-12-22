@@ -1,5 +1,5 @@
 ---
-description: Put your new knowledge in action with a simple starter project
+description: Put your new knowledge into action with a simple starter project
 ---
 
 # A starter project

@@ -10,7 +10,11 @@ As discussed in the [Core Concepts](../../getting-started/core-concepts.md), Zen
 
 ![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/mcp_walkthrough.gif)
 
-This feature empowers you to effortlessly group pipelines, artifacts, and crucial business data into a unified entity: a `Model`. A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `production`, and decide whether the model version should be promoted based on your business rules during training.
+## What is a ZenML Model?
+
+Before diving in, let's take some time to build an understanding of what we mean when we say a `Model` in ZenML.
+
+A `Model` is simply an entity that groups pipelines, artifacts, and crucial business data into a unified entity: a `Model`. A Model captures lineage information and more. Within a Model, different `Model Versions` can be staged. For example, you can rely on your predictions at a specific stage, like `production`, and decide whether the model version should be promoted based on your business rules during training.
 
 These models can be viewed within ZenML:
 
@@ -49,7 +53,7 @@ model_version = ModelVersion(
     description="A classification model for the iris dataset.",
 )
 
-# The step configuration will take precendece over the pipeline
+# The step configuration will take precedence over the pipeline
 @step(model_version=model_version)
 def svc_trainer(...) -> ...:
     ...
@@ -134,7 +138,7 @@ def training_pipeline(gamma: float = 0.002):
 
 ### Using the ModelVersion object
 
-Once a `ModelVersion` is fetched within a step, there are numerous use-cases. For example, one can associate metadata like metrics to the model version or its associated artifacts.
+Once a `ModelVersion` is fetched within a step, there are numerous use cases. For example, one can associate metadata like metrics to the model version or its associated artifacts.
 
 ```python
 # TBD
@@ -295,8 +299,8 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 
 A ZenML model supports linking three types of artifacts:
 
-* `Data artifacts`: These is the default artifacts. If nothing is specified, all artifacts are grouped under this category.
-* `Model artifacts`: If there is a physical model artifact like a pickle file or a model neural network weights file, it should be grouped in this category.
+* `Data artifacts`: These are the default artifacts. If nothing is specified, all artifacts are grouped under this category.
+* `Model artifacts`: If there is a physical model artifact like a `.pkl` file or a model neural network weights file, it should be grouped in this category.
 * `Deployment artifacts`: These artifacts are to do with artifacts related to the endpoints and deployments of the models.
 
 In order to tell ZenML which artifact belongs to which type, one must pass in additional configuration to your artifacts:
@@ -325,7 +329,7 @@ A ZenML Model spans multiple pipelines, and is a key concept that brings dispara
 
 <figure><img src="../../.gitbook/assets/mcp_pipeline_overview.png" alt=""><figcaption><p>A simple example of two pipelines interacting between each other.</p></figcaption></figure>
 
-Each time the `train_and_promote` pipeline runs, it creates a new `iris_classifier`. However, it only promotes the created model to `production` if a certain accuracy threshold is met. The `do_predictions` pipeline simply picks up the latest promoted model and runs batch inference on it. That way these two pipelines can independently be run, but can rely on each others output.
+Each time the `train_and_promote` pipeline runs, it creates a new `iris_classifier`. However, it only promotes the created model to `production` if a certain accuracy threshold is met. The `do_predictions` pipeline simply picks up the latest promoted model and runs batch inference on it. That way these two pipelines can independently be run, but can rely on each other's output.
 
 One way of achieving this is to fetch the model directly in your step:
 
