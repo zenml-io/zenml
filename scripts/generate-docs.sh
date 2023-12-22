@@ -63,16 +63,17 @@ rm docs/mkdocs/index.md || true
 # deprecated in 3.1.0 but mkdocstring depends on this method
 
 if [ -z "$SKIP_INSTALL" ]; then
-  zenml integration install -y feast
-  zenml integration install -y label_studio
-  zenml integration install -y bentoml
-  zenml integration install -y airflow
-  zenml integration install -y kserve
-  zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
+  # zenml integration install -y feast
+  # zenml integration install -y label_studio
+  # zenml integration install -y bentoml
+  # zenml integration install -y airflow
+  # zenml integration install -y kserve
+  # zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
+  # pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
+  # pip install typing-extensions --upgrade
+  # pip install feast --upgrade  # The integration feast version has unsupported googleapis-common-protos >=1.52.* requirement
+  pip install -r docs/requirements-alexej.txt
   pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs]"
-  pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
-  pip install typing-extensions --upgrade
-  pip install feast --upgrade  # The integration feast version has unsupported googleapis-common-protos >=1.52.* requirement
 fi
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################
@@ -90,16 +91,16 @@ python docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
 
 
 ################################################ Build the API docs ####################################################
-if [ -n "$PUSH" ]; then
-  if [ -n "$LATEST" ]; then
-    mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION latest
-  else
-    mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION
-  fi
-else
-  if [ -n "$LATEST" ]; then
-    mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION latest
-  else
-    mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION
-  fi
-fi
+# if [ -n "$PUSH" ]; then
+#   if [ -n "$LATEST" ]; then
+#     mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION latest
+#   else
+#     mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION
+#   fi
+# else
+#   if [ -n "$LATEST" ]; then
+#     mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION latest
+#   else
+#     mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION
+#   fi
+# fi
