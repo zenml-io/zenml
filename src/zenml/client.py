@@ -4891,6 +4891,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             model_version_id: The id of the model version holding the link.
             artifact_version_id: The id of the artifact version to be deleted.
+
+        Raises:
+            RuntimeError: If more than one artifact link is found for given filters.
         """
         artifact_links = self.list_model_version_artifact_links(
             model_version_id=model_version_id,
@@ -4903,7 +4906,7 @@ class Client(metaclass=ClientMetaClass):
                     f"`{model_version_id}` and artifact version "
                     f"`{artifact_version_id}`. This should not be happening and "
                     "might indicate a corrupted state of your ZenML database. "
-                    "Please, seek support via Slack or GitHub."
+                    "Please, seek support via Community Slack."
                 )
             self.zen_store.delete_model_version_artifact_link(
                 model_version_id=model_version_id,

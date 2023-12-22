@@ -365,26 +365,26 @@ class ModelVersion(BaseModel):
         """
         from zenml.client import Client
 
-        artifact_version: ArtifactVersionResponse = self.get_artifact(
-            name, version
-        )
-        client = Client()
-        client.delete_model_version_artifact_link(
-            model_version_id=self.id, artifact_version_id=artifact_version.id
-        )
-        if not only_link:
-            client.delete_artifact_version(
-                name_id_or_prefix=artifact_version.id,
-                delete_metadata=delete_metadata,
-                delete_from_artifact_store=delete_from_artifact_store,
+        artifact_version = self.get_artifact(name, version)
+        if isinstance(artifact_version, ArtifactVersionResponse):
+            client = Client()
+            client.delete_model_version_artifact_link(
+                model_version_id=self.id,
+                artifact_version_id=artifact_version.id,
             )
+            if not only_link:
+                client.delete_artifact_version(
+                    name_id_or_prefix=artifact_version.id,
+                    delete_metadata=delete_metadata,
+                    delete_from_artifact_store=delete_from_artifact_store,
+                )
 
     def delete_all_artifacts(
         self,
         only_link: bool = True,
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
-    ):
+    ) -> None:
         """Delete all artifacts linked to this model version.
 
         Args:
