@@ -289,7 +289,7 @@ One of the most useful way's of interacting with artifacts in ZenML is the abili
 to associate metadata with them. Artifact metadata is an arbitary dictionary of key-value pairs that are useful to understand the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact,
-the shape of a table alongside a Pandas dataframe, or a size of an image alongside a PNG
+the shape of a table alongside a `pandas` dataframe, or a size of an image alongside a PNG
 file.
 
 For some artifacts, ZenML automatically logs metadata. As an example, for `pandas.Series`
