@@ -203,7 +203,7 @@ class SlackAlerter(BaseAlerter):
                 ]
             else:
                 logger.info(
-                    "No custom blocks or payload set for slack alerter."
+                    "No custom blocks or payload set for Slack alerter."
                 )
                 return []
         else:
