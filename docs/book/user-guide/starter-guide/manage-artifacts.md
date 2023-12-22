@@ -326,7 +326,8 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualizatio
 {% endtab %}
 {% endtabs %}
 
-A user can also add metadata to an artifact within a step directly:
+A user can also add metadata to an artifact within a step directly using the
+`log_artifact_metadata` method:
 
 ```python
 from zenml import step, log_artifact_metadata
@@ -341,15 +342,18 @@ def model_finetuner_step(
     model.fit(dataset[0], dataset[1])
     accuracy = model.score(dataset[0], dataset[1])
 
+    # Pass in a dictionary of JSON-serializable values
     log_artifact_metadata(
         metadata={"accuracy": float(accuracy)}
     )
     return model
 ```
 
-There is a lot more to learn about artifacts within ZenML. There is
-a [dedicated data management guide](../advanced-guide/data-management/)
-that goes into more depth on the topic.
+For further depth, there is an [advanced metadata logging guide](../advanced-guide/data-management/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
+
+Additionally, there is a lot more to learn about artifacts within ZenML. Please read
+the [dedicated data management guide](../advanced-guide/data-management/) for more information.
+
 
 ## Code Example
 
