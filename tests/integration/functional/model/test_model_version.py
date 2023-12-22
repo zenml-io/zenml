@@ -14,6 +14,7 @@
 from unittest import mock
 
 import pytest
+from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
@@ -65,6 +66,19 @@ def step_metadata_logging_functional():
     """Functional logging using implicit ModelVersion from context."""
     log_model_version_metadata({"foo": "bar"})
     assert get_step_context().model_version.metadata["foo"] == "bar"
+
+
+@step
+def consume_from_model_version(
+    is_consume: bool,
+) -> Annotated[str, "custom_output"]:
+    """A step which can either produce string output or read and return it from model version 1."""
+    if is_consume:
+        mv_context = get_step_context().model_version
+        mv = ModelVersion(name=mv_context.name, version="1")
+        return mv.load_artifact("custom_output")
+    else:
+        return "Hello, World!"
 
 
 class TestModelVersion:
@@ -329,3 +343,24 @@ class TestModelVersion:
         mv = ModelVersion(name=MODEL_NAME, version="latest")
         assert len(mv.metadata) == 1
         assert mv.metadata["foo"] == "bar"
+
+    def test_that_artifacts_are_not_linked_to_models_outside_of_the_context(
+        self, clean_client: "Client"
+    ):
+        """Test that artifacts are linked only to model versions from the context."""
+
+        @pipeline(model_version=ModelVersion(name=MODEL_NAME))
+        def my_pipeline(is_consume: bool):
+            consume_from_model_version(is_consume)
+
+        my_pipeline(False)
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 1
+        assert len(mv._get_model_version().data_artifact_ids) == 1
+
+        my_pipeline(True)
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 2
+        assert len(mv._get_model_version().data_artifact_ids) == 1
+        mv = ModelVersion(name=MODEL_NAME, version="1")
+        assert len(mv._get_model_version().data_artifact_ids) == 1
