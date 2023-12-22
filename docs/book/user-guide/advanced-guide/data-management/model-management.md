@@ -55,9 +55,10 @@ can also associate tags with models at this point, for example, using the
 
 ### Explicit dashboard registration
 
-The Model Control Plane interface on the dashboard is currently in testing
-and will be released soon to ZenML Cloud users. Documentation for this feature
-will be available [here](./model-control-plane-dashboard.md) once it is released.
+[ZenML Cloud](https://zenml.io/cloud) can register their models directly from
+the cloud dashboard interface.
+
+<figure><img src="../../../.gitbook/assets/mcp_model_register.png" alt="ZenML Cloud Register Model."><figcaption><p>Register a model on the [ZenML Cloud](https://zenml.io/cloud) dashboard</p></figcaption></figure>
 
 ### Explicit Python SDK registration
 

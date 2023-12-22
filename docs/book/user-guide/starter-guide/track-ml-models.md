@@ -33,7 +33,7 @@ These models can be viewed within ZenML:
 {% tabs %}
 {% tab title="OSS (CLI)" %}
 
-`zenml model list` can be used to list of artifacts and their versions.
+`zenml model list` can be used to list all models.
 
 {% endtab %}
 {% tab title="Cloud (Dashboard)" %}
@@ -99,7 +99,7 @@ The following commands can be used to list the various artifacts associated with
 
 * `zenml model version data_artifacts <MODEL_NAME> <MODEL_VERSIONNAME>`
 * `zenml model version model_artifacts <MODEL_NAME> <MODEL_VERSIONNAME>`
-* `zenml model version endpoint_artifacts <MODEL_NAME> <MODEL_VERSIONNAME>`
+* `zenml model version deployment_artifacts <MODEL_NAME> <MODEL_VERSIONNAME>`
 
 {% endtab %}
 {% tab title="Cloud (Dashboard)" %}
