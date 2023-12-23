@@ -230,6 +230,10 @@ class SecretSchema(NamedSchema, table=True):
 
         Returns:
             The secret values
+
+        Raises:
+            KeyError: if no secret values for the given ID are stored in the
+                secrets store.
         """
         if not self.values:
             raise KeyError(

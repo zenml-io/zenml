@@ -235,10 +235,6 @@ class SqlSecretsStore(BaseSecretsStore):
         Args:
             secret_id: The ID of the secret to be updated.
             secret_values: The new secret values.
-
-        Raises:
-            KeyError: if no secret values for the given ID are stored in the
-                secrets store.
         """
         self.store_secret_values(secret_id, secret_values)
 
@@ -271,9 +267,6 @@ class SqlSecretsStore(BaseSecretsStore):
 
         Note that returned secrets do not include any secret values. To fetch
         the secret values, use `get_secret`.
-
-        Returns:
-            A list of all secrets.
 
         Raises:
             NotImplementedError: This method is deprecated and will be removed

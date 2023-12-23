@@ -300,8 +300,6 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
             secret_values: The new secret values.
 
         Raises:
-            KeyError: if no secret values for the given ID are stored in the
-                secrets store.
             RuntimeError: if the Azure Key Vault API returns an unexpected
                 error.
         """

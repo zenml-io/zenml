@@ -421,8 +421,6 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
             created: The AWS secret creation time.
             updated: The AWS secret last updated time.
             values: The AWS secret values encoded as a JSON string (optional).
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
 
         Returns:
             The ZenML secret.
