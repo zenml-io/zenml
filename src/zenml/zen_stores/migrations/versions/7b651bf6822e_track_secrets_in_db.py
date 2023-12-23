@@ -64,6 +64,15 @@ def upgrade() -> None:
             f"Transferring secret '{secret.name}' from the "
             f"{secrets_store.type} secrets store to the db."
         )
+        # First check if there is already a secret with the same ID in the db
+        # and delete it if there is. This can happen for example if the user has
+        # previously migrated the secrets from the db to an external secrets
+        # store and forgot to delete the secrets from the db.
+        conn.execute(
+            secrets.delete().where(
+                secrets.c.id == str(secret.id).replace("-", "")
+            )
+        )
         conn.execute(
             secrets.insert().values(
                 id=str(secret.id).replace("-", ""),
