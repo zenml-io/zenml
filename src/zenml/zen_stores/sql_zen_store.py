@@ -3899,7 +3899,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_secret)
             session.commit()
 
-            secret_model = new_secret.to_model()
+            secret_model = new_secret.to_model(hydrate=True)
 
         try:
             # Set the secret values in the configured secrets store
