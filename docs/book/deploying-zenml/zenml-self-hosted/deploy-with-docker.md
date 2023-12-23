@@ -80,7 +80,6 @@ The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to aut
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The AWS Service Connector authentication method to use (e.g. `secret-key` or `iam-role`).
 * **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The AWS Service Connector configuration, in JSON format (e.g. `{"role_arn": "arn:aws:iam::123456789012:role/MyRole"}`).
-* **ZENML\_SECRETS\_STORE\_SECRET\_LIST\_REFRESH\_TIMEOUT**: AWS' [Secrets Manager](https://aws.amazon.com/secrets-manager) has a known issue where it does not immediately reflect new and updated secrets in the `list_secrets` results. To work around this issue, you can set this refresh timeout value to a non-zero value to get the ZenML server to wait after creating or updating an AWS secret until the changes are reflected in the secrets returned by `list_secrets` or the number of seconds specified by this value has elapsed. Defaults to `0` (disabled). Should not be set to a high value as it may cause thread starvation in the ZenML server on high load.
 
 > **Note:** The remaining configuration options are deprecated and may be removed in a future release. Instead, you should set the `ZENML_SECRETS_STORE_AUTH_METHOD` and `ZENML_SECRETS_STORE_AUTH_CONFIG` variables to use the AWS Service Connector authentication method.
 

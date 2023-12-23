@@ -36,7 +36,7 @@ from google.auth.transport.requests import Request
 from google.cloud import container_v1, storage
 from google.oauth2 import credentials as gcp_credentials
 from google.oauth2 import service_account as gcp_service_account
-from pydantic import Field, SecretStr, validator
+from pydantic import Field, SecretStr, root_validator, validator
 
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
@@ -85,6 +85,28 @@ class GCPUserAccountCredentials(AuthenticationConfig):
         "user account credentials JSON. If set to False, the connector will "
         "distribute the user account credentials JSON to clients instead.",
     )
+
+    @root_validator(pre=True)
+    def validate_user_account_dict(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Convert the user account credentials to JSON if given in dict format.
+
+        Args:
+            values: The configuration values.
+
+        Returns:
+            The validated configuration values.
+
+        Raises:
+            ValueError: If the user account credentials JSON is not a valid
+                JSON object.
+        """
+        if isinstance(values.get("user_account_json"), dict):
+            values["user_account_json"] = json.dumps(
+                values["user_account_json"]
+            )
+        return values
 
     @validator("user_account_json")
     def validate_user_account_json(cls, v: SecretStr) -> SecretStr:
@@ -145,6 +167,24 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
         "service account key JSON. If set to False, the connector will "
         "distribute the service account key JSON to clients instead.",
     )
+
+    @root_validator(pre=True)
+    def validate_service_account_dict(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Convert the service account credentials to JSON if given in dict format.
+
+        Args:
+            values: The configuration values.
+
+        Returns:
+            The validated configuration values.
+        """
+        if isinstance(values.get("service_account_json"), dict):
+            values["service_account_json"] = json.dumps(
+                values["service_account_json"]
+            )
+        return values
 
     @validator("service_account_json")
     def validate_service_account_json(cls, v: SecretStr) -> SecretStr:

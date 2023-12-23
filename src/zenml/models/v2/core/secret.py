@@ -91,9 +91,8 @@ class SecretUpdate(SecretRequest):
             A dictionary with the secret values to update.
         """
         return {
-            k: v.get_secret_value()
+            k: v.get_secret_value() if v is not None else None
             for k, v in self.values.items()
-            if v is not None
         }
 
 

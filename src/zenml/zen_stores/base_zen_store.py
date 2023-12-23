@@ -369,15 +369,21 @@ class BaseZenStore(
         Returns:
             Information about the store.
         """
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+
         server_config = ServerConfiguration.get_server_config()
         deployment_type = server_config.deployment_type
         auth_scheme = server_config.auth_scheme
+        secrets_store_type = SecretsStoreType.NONE
+        if isinstance(self, SqlZenStore):
+            secrets_store_type = self.secrets_store.type
         return ServerModel(
             id=GlobalConfiguration().user_id,
             version=zenml.__version__,
             deployment_type=deployment_type,
             database_type=ServerDatabaseType.OTHER,
             debug=IS_DEBUG_ENV,
+            secrets_store_type=secrets_store_type,
             auth_scheme=auth_scheme,
         )
 

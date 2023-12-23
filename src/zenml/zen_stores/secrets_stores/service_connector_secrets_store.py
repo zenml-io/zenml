@@ -64,9 +64,19 @@ class ServiceConnectorSecretsStoreConfiguration(SecretsStoreConfiguration):
 
         Returns:
             The validated configuration values.
+
+        Raises:
+            ValueError: If the authentication configuration is not a valid
+                JSON object.
         """
         if isinstance(values.get("auth_config"), str):
-            values["auth_config"] = json.loads(values["auth_config"])
+            try:
+                values["auth_config"] = json.loads(values["auth_config"])
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"The authentication configuration is not a valid JSON "
+                    f"object: {e}"
+                )
         return values
 
 

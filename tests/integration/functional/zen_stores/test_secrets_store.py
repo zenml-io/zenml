@@ -26,14 +26,8 @@ from tests.integration.functional.zen_stores.utils import (
 )
 from zenml.client import Client
 from zenml.enums import SecretScope, SecretsStoreType, StoreType
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import SecretFilter, SecretUpdate
-
-# The AWS secrets store takes some time to reflect new and updated secrets in
-# the `list_secrets` API. This is the number of seconds to wait before making
-# `list_secrets` calls after creating/updating a secret to ensure that the
-# latest secret information is returned.
-AWS_SECRET_REFRESH_SLEEP = 10
 
 
 def _get_secrets_store_type() -> SecretsStoreType:
@@ -623,12 +617,6 @@ def test_update_scope_succeeds():
                 ),
             )
 
-        if _get_secrets_store_type() == SecretsStoreType.AWS:
-            # The AWS secrets store returns before the secret is actually
-            # updated in the backend, so we need to wait a bit before
-            # running `list_secrets`.
-            time.sleep(AWS_SECRET_REFRESH_SLEEP)
-
         assert updated_secret.name == secret.name
         assert updated_secret.scope == SecretScope.USER
 
@@ -669,12 +657,6 @@ def test_update_scope_succeeds():
                     scope=SecretScope.WORKSPACE,
                 ),
             )
-
-        if _get_secrets_store_type() == SecretsStoreType.AWS:
-            # The AWS secrets store returns before the secret is actually
-            # updated in the backend, so we need to wait a bit before
-            # running `list_secrets`.
-            time.sleep(AWS_SECRET_REFRESH_SLEEP)
 
         assert updated_secret.name == secret.name
         assert updated_secret.scope == SecretScope.WORKSPACE
@@ -1466,14 +1448,8 @@ def test_list_secrets_pagination_and_sorting():
             ),
         )
 
-        if _get_secrets_store_type() == SecretsStoreType.AWS:
-            # The AWS secrets store returns before the secret is actually
-            # updated in the backend, so we need to wait a bit before
-            # running `list_secrets`.
-            time.sleep(AWS_SECRET_REFRESH_SLEEP)
-        else:
-            assert secret_one.updated > secret_one.created
-            assert secret_two.updated > secret_two.created
+        assert secret_one.updated > secret_one.created
+        assert secret_two.updated > secret_two.created
 
         secrets = store.list_secrets(
             SecretFilter(
@@ -1618,8 +1594,8 @@ def test_secret_is_deleted_with_workspace():
                 assert len(all_workspace_secrets) == 0
 
 
-def test_secret_is_deleted_with_user():
-    """Tests that deleting a user automatically deletes all its secrets."""
+def test_delete_user_with_secrets():
+    """Tests that deleting a user is not possible while it owns secrets."""
     client = Client()
     store = client.zen_store
 
@@ -1679,9 +1655,34 @@ def test_secret_is_deleted_with_user():
                 assert len(user_secrets) == 1
                 assert other_secret.id == user_secrets[0].id
 
-        store.delete_user(user.id)
+        with pytest.raises(IllegalOperationError):
+            store.delete_user(user.id)
 
-        # New secret has been deleted at this point with the user
+        with does_not_raise():
+            store.get_secret(other_secret.id)
+
+        all_secrets = store.list_secrets(
+            SecretFilter(name=secret.name),
+        ).items
+        assert len(all_secrets) == 2
+        assert secret.id in [s.id for s in all_secrets]
+        assert other_secret.id in [s.id for s in all_secrets]
+
+        user_secrets = store.list_secrets(
+            SecretFilter(
+                name=secret.name,
+                scope=SecretScope.USER,
+                user_id=user.id,
+                workspace_id=client.active_workspace.id,
+            ),
+        ).items
+        assert len(user_secrets) == 1
+
+        # Delete the secret
+        store.delete_secret(other_secret.id)
+
+        with does_not_raise():
+            store.delete_user(user.id)
 
         with pytest.raises(KeyError):
             store.get_secret(other_secret.id)

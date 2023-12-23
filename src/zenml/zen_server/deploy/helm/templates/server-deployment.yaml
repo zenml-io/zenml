@@ -167,8 +167,6 @@ spec:
             - name: ZENML_SECRETS_STORE_REGION_NAME
               value: {{ .Values.zenml.secretsStore.aws.region_name | quote }}
             {{- end }}
-            - name: ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT
-              value: {{ .Values.zenml.secretsStore.aws.secret_list_refresh_timeout | quote }}
             {{- else if eq .Values.zenml.secretsStore.type "gcp" }}
             - name: ZENML_SECRETS_STORE_AUTH_METHOD
               value: {{ .Values.zenml.secretsStore.gcp.authMethod | quote }}
