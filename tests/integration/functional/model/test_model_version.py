@@ -482,4 +482,3 @@ class TestModelVersion:
         assert len(mv._get_model_version().data_artifact_ids) == 1
         mv = ModelVersion(name=MODEL_NAME, version="1")
         assert len(mv._get_model_version().data_artifact_ids) == 1
-
