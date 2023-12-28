@@ -1,5 +1,6 @@
 import pytest
 import yaml
+from typing_extensions import Annotated
 
 from zenml import (
     ModelVersion,
@@ -8,7 +9,9 @@ from zenml import (
     pipeline,
     step,
 )
+from zenml.artifacts.utils import log_artifact_metadata
 from zenml.client import Client
+from zenml.model.utils import log_model_version_metadata
 
 
 @step
@@ -97,3 +100,46 @@ def test_that_argument_as_get_artifact_of_model_version_in_pipeline_context_fail
     producer_pipe(False)
     with pytest.raises(RuntimeError):
         consumer_pipe()
+
+
+@step
+def producer() -> Annotated[str, "bar"]:
+    """Produce artifact with metadata and attach metadata to model version."""
+    ver = get_step_context().model_version.version
+    log_model_version_metadata(metadata={"foobar": "model_meta_" + ver})
+    log_artifact_metadata(metadata={"foobar": "artifact_meta_" + ver})
+    return "artifact_data_" + ver
+
+
+@step
+def asserter(artifact: str, artifact_metadata: str, model_metadata: str):
+    """Assert that passed in values are loaded in lazy mode, since they should not exists on compose run."""
+    ver = get_step_context().model_version.version
+    assert artifact == "artifact_data_" + ver
+    assert artifact_metadata == "artifact_meta_" + ver
+    assert model_metadata == "model_meta_" + ver
+
+
+def test_pipeline_context_can_load_model_artifacts_and_metadata_in_lazy_mode(
+    clean_client: "Client"
+):
+    """Tests that user can load model artifacts and metadata in lazy mode in pipeline codes."""
+
+    model_name = "foo"
+
+    @pipeline(model_version=ModelVersion(name=model_name), enable_cache=False)
+    def dummy():
+        producer()
+        with pytest.raises(KeyError):
+            clean_client.get_model(model_name)
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version("bar")
+        model_version = get_pipeline_context().model_version
+        artifact = model_version.get_artifact("bar")
+        artifact_metadata = artifact.run_metadata["foobar"]
+        model_metadata = model_version.run_metadata["foobar"]
+        asserter(
+            artifact, artifact_metadata, model_metadata, after=["producer"]
+        )
+
+    dummy()
