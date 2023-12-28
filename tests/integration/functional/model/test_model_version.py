@@ -65,7 +65,7 @@ class ModelContext:
 def step_metadata_logging_functional():
     """Functional logging using implicit ModelVersion from context."""
     log_model_version_metadata({"foo": "bar"})
-    assert get_step_context().model_version.run_metadata["foo"] == "bar"
+    assert get_step_context().model_version.run_metadata["foo"].value == "bar"
 
 
 @step
@@ -341,13 +341,13 @@ class TestModelVersion:
         mv.log_metadata({"foo": "bar"})
 
         assert len(mv.run_metadata) == 1
-        assert mv.run_metadata["foo"] == "bar"
+        assert mv.run_metadata["foo"].value == "bar"
 
         mv.log_metadata({"bar": "foo"})
 
         assert len(mv.run_metadata) == 2
-        assert mv.run_metadata["foo"] == "bar"
-        assert mv.run_metadata["bar"] == "foo"
+        assert mv.run_metadata["foo"].value == "bar"
+        assert mv.run_metadata["bar"].value == "foo"
 
     def test_metadata_logging_functional(self, clean_client: "Client"):
         """Test that model version can be used to track metadata from function."""
@@ -362,7 +362,7 @@ class TestModelVersion:
         )
 
         assert len(mv.run_metadata) == 1
-        assert mv.run_metadata["foo"] == "bar"
+        assert mv.run_metadata["foo"].value == "bar"
 
         with pytest.raises(ValueError):
             log_model_version_metadata({"foo": "bar"})
@@ -372,8 +372,8 @@ class TestModelVersion:
         )
 
         assert len(mv.run_metadata) == 2
-        assert mv.run_metadata["foo"] == "bar"
-        assert mv.run_metadata["bar"] == "foo"
+        assert mv.run_metadata["foo"].value == "bar"
+        assert mv.run_metadata["bar"].value == "foo"
 
     def test_metadata_logging_in_steps(self, clean_client: "Client"):
         """Test that model version can be used to track metadata from function in steps."""
@@ -391,7 +391,7 @@ class TestModelVersion:
 
         mv = ModelVersion(name=MODEL_NAME, version="latest")
         assert len(mv.run_metadata) == 1
-        assert mv.run_metadata["foo"] == "bar"
+        assert mv.run_metadata["foo"].value == "bar"
 
     def test_that_artifacts_are_not_linked_to_models_outside_of_the_context(
         self, clean_client: "Client"
