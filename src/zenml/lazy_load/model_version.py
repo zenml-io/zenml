@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Model Version Data Lazy Loader definition."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
+from pydantic import BaseModel
+
+from zenml.model.model_version import ModelVersion
 
 
-class ModelVersionDataLazyLoader:
+class ModelVersionDataLazyLoader(BaseModel):
     """Model Version Data Lazy Loader helper class.
 
     It helps the inner codes to fetch proper artifact,
@@ -27,22 +28,7 @@ class ModelVersionDataLazyLoader:
     model version during runtime time of the step.
     """
 
-    def __init__(
-        self,
-        model_version: "ModelVersion",
-        artifact_name: Optional[str] = None,
-        artifact_version: Optional[str] = None,
-        metadata_name: Optional[str] = None,
-    ):
-        """Initialize a ModelVersionDataLazyLoader.
-
-        Args:
-            model_version: The model version.
-            artifact_name: The artifact name.
-            artifact_version: The artifact version.
-            metadata_name: The metadata name.
-        """
-        self.model_version = model_version
-        self.artifact_name = artifact_name
-        self.artifact_version = artifact_version
-        self.metadata_name = metadata_name
+    model_version: ModelVersion
+    artifact_name: Optional[str] = None
+    artifact_version: Optional[str] = None
+    metadata_name: Optional[str] = None
