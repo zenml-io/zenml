@@ -142,7 +142,7 @@ jobs:
         if: contains(inputs.test_environment, 'aws')
 
       - name: Configure GCP credentials
-        uses: 'google-github-actions/auth@v1'
+        uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}'
         if: contains(inputs.test_environment, 'gcp')
@@ -229,7 +229,7 @@ jobs:
         if: contains(inputs.test_environment, 'gcp')
 
       - name: Login to Google GKE
-        uses: google-github-actions/get-gke-credentials@v0
+        uses: google-github-actions/get-gke-credentials@v2
         with:
           cluster_name: zenml-ci-cluster
           location: us-east4
