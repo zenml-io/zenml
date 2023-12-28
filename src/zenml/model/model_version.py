@@ -21,7 +21,7 @@ from typing import (
     Optional,
     Union,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, PrivateAttr, root_validator
 
@@ -30,13 +30,13 @@ from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml import ExternalArtifact
     from zenml.metadata.metadata_types import MetadataType
     from zenml.models import (
         ArtifactVersionResponse,
         ModelResponse,
         ModelVersionResponse,
         PipelineRunResponse,
+        RunMetadataResponse,
     )
 
 logger = get_logger(__name__)
@@ -181,26 +181,11 @@ class ModelVersion(BaseModel):
 
         return load_artifact(artifact.id, str(artifact.version))
 
-    def _try_get_as_external_artifact(
-        self,
-        name: str,
-        version: Optional[str] = None,
-    ) -> Optional["ExternalArtifact"]:
-        from zenml import ExternalArtifact, get_pipeline_context
-
-        try:
-            get_pipeline_context()
-        except RuntimeError:
-            return None
-
-        ea = ExternalArtifact(name=name, version=version, model_version=self)
-        return ea
-
     def get_artifact(
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the artifact linked to this model version.
 
         Args:
@@ -208,11 +193,11 @@ class ModelVersion(BaseModel):
             version: The version of the artifact to retrieve (None for latest/non-versioned)
 
         Returns:
-            Inside pipeline context: ExternalArtifact object as a lazy loader
-            Outside of pipeline context: Specific version of the artifact or None
+            Specific version of the artifact or placeholder in the design time of the pipeline.
         """
-        if response := self._try_get_as_external_artifact(name, version):
-            return response
+        if lazy := self._lazy_artifact_get(name, version):
+            return lazy
+
         return self._get_or_create_model_version().get_artifact(
             name=name,
             version=version,
@@ -222,7 +207,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the model artifact linked to this model version.
 
         Args:
@@ -230,11 +215,11 @@ class ModelVersion(BaseModel):
             version: The version of the model artifact to retrieve (None for latest/non-versioned)
 
         Returns:
-            Inside pipeline context: ExternalArtifact object as a lazy loader
-            Outside of pipeline context: Specific version of the model artifact or None
+            Specific version of the model artifact or placeholder in the design time of the pipeline.
         """
-        if response := self._try_get_as_external_artifact(name, version):
-            return response
+        if lazy := self._lazy_artifact_get(name, version):
+            return lazy
+
         return self._get_or_create_model_version().get_model_artifact(
             name=name,
             version=version,
@@ -244,7 +229,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the data artifact linked to this model version.
 
         Args:
@@ -252,11 +237,11 @@ class ModelVersion(BaseModel):
             version: The version of the data artifact to retrieve (None for latest/non-versioned)
 
         Returns:
-            Inside pipeline context: ExternalArtifact object as a lazy loader
-            Outside of pipeline context: Specific version of the data artifact or None
+            Specific version of the data artifact or placeholder in the design time of the pipeline.
         """
-        if response := self._try_get_as_external_artifact(name, version):
-            return response
+        if lazy := self._lazy_artifact_get(name, version):
+            return lazy
+
         return self._get_or_create_model_version().get_data_artifact(
             name=name,
             version=version,
@@ -266,7 +251,7 @@ class ModelVersion(BaseModel):
         self,
         name: str,
         version: Optional[str] = None,
-    ) -> Optional[Union["ArtifactVersionResponse", "ExternalArtifact"]]:
+    ) -> Optional["ArtifactVersionResponse"]:
         """Get the deployment artifact linked to this model version.
 
         Args:
@@ -274,11 +259,11 @@ class ModelVersion(BaseModel):
             version: The version of the deployment artifact to retrieve (None for latest/non-versioned)
 
         Returns:
-            Inside pipeline context: ExternalArtifact object as a lazy loader
-            Outside of pipeline context: Specific version of the deployment artifact or None
+            Specific version of the deployment artifact or placeholder in the design time of the pipeline.
         """
-        if response := self._try_get_as_external_artifact(name, version):
-            return response
+        if lazy := self._lazy_artifact_get(name, version):
+            return lazy
+
         return self._get_or_create_model_version().get_deployment_artifact(
             name=name,
             version=version,
@@ -327,24 +312,38 @@ class ModelVersion(BaseModel):
         )
 
     @property
-    def metadata(self) -> Dict[str, "MetadataType"]:
-        """Get model version metadata.
+    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+        """Get model version run metadata.
 
         Returns:
-            The model version metadata.
+            The model version run metadata.
 
         Raises:
-            RuntimeError: If the model version metadata cannot be fetched.
+            RuntimeError: If the model version run metadata cannot be fetched.
         """
+        from zenml.lazy_load.run_metadata import RunMetadataLazyGetter
+        from zenml.new.pipelines.pipeline_context import (
+            get_pipeline_context,
+        )
+
+        try:
+            context = get_pipeline_context()
+            if not context.is_runtime:
+                # avoid exposing too much of internal details by keeping the return type
+                return RunMetadataLazyGetter(  # type: ignore[return-value]
+                    self,
+                    None,
+                    None,
+                )
+        except RuntimeError:
+            pass
+
         response = self._get_or_create_model_version(hydrate=True)
         if response.run_metadata is None:
             raise RuntimeError(
                 "Failed to fetch metadata of this model version."
             )
-        return {
-            name: response.value
-            for name, response in response.run_metadata.items()
-        }
+        return response.run_metadata
 
     #########################
     #   Internal methods    #
@@ -354,6 +353,32 @@ class ModelVersion(BaseModel):
         """Config class."""
 
         smart_union = True
+
+    def _lazy_artifact_get(
+        self,
+        name: str,
+        version: Optional[str] = None,
+    ) -> Optional["ArtifactVersionResponse"]:
+        from zenml import get_pipeline_context
+        from zenml.models import ArtifactVersionResponse
+
+        try:
+            if context := get_pipeline_context():
+                if context.is_runtime:
+                    pass
+                else:
+                    return ArtifactVersionResponse(
+                        id=uuid4(),
+                        _lazy_load_name=name,
+                        _lazy_load_version=version,
+                        _lazy_load_model_version=ModelVersion(
+                            name=self.name, version=self.version or self.number
+                        ),
+                    )
+        except RuntimeError:
+            pass
+
+        return None
 
     def __eq__(self, other: object) -> bool:
         """Check two ModelVersions for equality.

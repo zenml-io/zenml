@@ -108,3 +108,4 @@ class PipelineContext:
         self.settings = pipeline_configuration.settings
         self.extra = pipeline_configuration.extra
         self.model_version = pipeline_configuration.model_version
+        self.is_runtime = pipeline_configuration.is_runtime

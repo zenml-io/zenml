@@ -39,6 +39,8 @@ def resolve_step_inputs(
     Raises:
         InputResolutionError: If input resolving failed due to a missing
             step or output.
+        ValueError: If object from model version passed into a step cannot be
+            resolved in runtime due to missing object.
 
     Returns:
         The IDs of the input artifact versions and the IDs of parent steps of
@@ -80,6 +82,43 @@ def resolve_step_inputs(
         input_artifacts[name] = Client().get_artifact_version(
             artifact_version_id
         )
+
+    for name, config_ in step.config.model_artifacts_or_metadata.items():
+        issue_found = False
+        if config_.metadata_name is None and config_.artifact_name:
+            if artifact_ := config_.model_version.get_artifact(
+                config_.artifact_name, config_.artifact_version
+            ):
+                input_artifacts[name] = artifact_
+            else:
+                issue_found = True
+        elif config_.artifact_name is None and config_.metadata_name:
+            # metadata values should go directly in parameters, as primitive types
+            step.config.parameters[name] = config_.model_version.run_metadata[
+                config_.metadata_name
+            ].value
+        elif config_.metadata_name and config_.artifact_name:
+            # metadata values should go directly in parameters, as primitive types
+            if artifact_ := config_.model_version.get_artifact(
+                config_.artifact_name, config_.artifact_version
+            ):
+                step.config.parameters[name] = artifact_.run_metadata[
+                    config_.metadata_name
+                ].value
+            else:
+                issue_found = True
+        else:
+            issue_found = True
+        if issue_found:
+            raise ValueError(
+                "Cannot fetch requested information from model "
+                f"`{config_.model_version.name}` version "
+                f"`{config_.model_version.version}` given artifact "
+                f"`{config_.artifact_name}`, artifact version "
+                f"`{config_.artifact_version}`, and metadata "
+                f"key `{config_.metadata_name}` passed into "
+                f"the step `{step.config.name}`."
+            )
 
     parent_step_ids = [
         current_run_steps[upstream_step].id

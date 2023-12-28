@@ -15,9 +15,12 @@
 
 from typing import Type, TypeVar
 
+from zenml.logger import get_logger
 from zenml.models.v2.base.base import BaseRequest
 
 T = TypeVar("T", bound="BaseRequest")
+
+logger = get_logger(__name__)
 
 
 def server_owned_request_model(_cls: Type[T]) -> Type[T]:

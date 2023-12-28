@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
     from sqlmodel import SQLModel
 
+    from zenml.model.model_version import ModelVersion
     from zenml.models.v2.core.artifact_visualization import (
         ArtifactVisualizationRequest,
         ArtifactVisualizationResponse,
@@ -167,6 +168,10 @@ class ArtifactVersionResponse(
 ):
     """Response model for artifact versions."""
 
+    _lazy_load_name: Optional[str] = None
+    _lazy_load_version: Optional[str] = None
+    _lazy_load_model_version: Optional["ModelVersion"] = None
+
     def get_hydrated_version(self) -> "ArtifactVersionResponse":
         """Get the hydrated version of this artifact version.
 
@@ -259,6 +264,22 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
+        from zenml.lazy_load.run_metadata import RunMetadataLazyGetter
+        from zenml.new.pipelines.pipeline_context import (
+            get_pipeline_context,
+        )
+
+        try:
+            context = get_pipeline_context()
+            if not context.is_runtime and self._lazy_load_model_version:
+                # avoid exposing too much of internal details by keeping the return type
+                return RunMetadataLazyGetter(  # type: ignore[return-value]
+                    self._lazy_load_model_version,
+                    self._lazy_load_name,
+                    self._lazy_load_version,
+                )
+        except RuntimeError:
+            pass
         return self.get_metadata().run_metadata
 
     @property

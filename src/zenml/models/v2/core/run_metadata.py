@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -28,6 +28,9 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
+
+if TYPE_CHECKING:
+    from zenml.model.model_version import ModelVersion
 
 # ------------------ Request Model ------------------
 
@@ -106,6 +109,11 @@ class RunMetadataResponse(
     ]
 ):
     """Response model for run metadata."""
+
+    _lazy_load_artifact_name: Optional[str] = None
+    _lazy_load_artifact_version: Optional[str] = None
+    _lazy_load_metadata_name: Optional[str] = None
+    _lazy_load_model_version: Optional["ModelVersion"] = None
 
     def get_hydrated_version(self) -> "RunMetadataResponse":
         """Get the hydrated version of this run metadata.

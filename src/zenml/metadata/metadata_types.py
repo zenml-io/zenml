@@ -13,9 +13,12 @@
 #  permissions and limitations under the License.
 """Custom types that can be used as metadata of ZenML artifacts."""
 
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Set, Tuple, Union
 
 from zenml.utils.enum_utils import StrEnum
+
+if TYPE_CHECKING:
+    pass
 
 
 class Uri(str):
