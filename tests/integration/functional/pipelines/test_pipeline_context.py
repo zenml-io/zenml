@@ -121,7 +121,7 @@ def asserter(artifact: str, artifact_metadata: str, model_metadata: str):
 
 
 def test_pipeline_context_can_load_model_artifacts_and_metadata_in_lazy_mode(
-    clean_client: "Client"
+    clean_client: "Client",
 ):
     """Tests that user can load model artifacts and metadata in lazy mode in pipeline codes."""
 
