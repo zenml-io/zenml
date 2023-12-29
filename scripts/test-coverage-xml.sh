@@ -18,13 +18,11 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 
 # The '-vv' flag enables pytest-clarity output when tests fail.
 if [ -n "$1" ]; then
-    coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
+    coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker || find ~/Library/Application\ Support/zenml-test/ -name "service.log" -exec cat {} \;
 else
-    coverage run -m pytest tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision
-    coverage run -m pytest tests/integration --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
+    coverage run -m pytest tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision || find ~/Library/Application\ Support/zenml-test/ -name "service.log" -exec cat {} \;
+    coverage run -m pytest tests/integration --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker || find ~/Library/Application\ Support/zenml-test/ -name "service.log" -exec cat {} \;
 fi
-
-find ~/Library/Application\ Support/zenml-test/ -name "service.log" -exec cat {} \;
 
 ./zen-test environment cleanup $TEST_ENVIRONMENT
 
