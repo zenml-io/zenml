@@ -246,6 +246,11 @@ jobs:
         run: |
           bash scripts/test-coverage-xml.sh integration/examples ${{ inputs.test_environment }}
 
+      - name: Print service.log on error (MacOS)
+        if: inputs.os=='macos-latest' && failure()
+        run: |
+          find ~/Library/Application\ Support/zenml-test/ -name "service.log" -exec cat {} \;
+
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
