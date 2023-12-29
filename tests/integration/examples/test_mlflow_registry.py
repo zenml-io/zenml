@@ -31,6 +31,18 @@ def test_example(request: pytest.FixtureRequest) -> None:
         MLFlowModelRegistry,
     )
 
+    try:
+        import _scproxy
+
+        # Cache the return values of _scproxy functions
+        # This avoids calling them in subprocesses
+        proxies = _scproxy._get_proxies()
+        _scproxy._get_proxies = lambda: proxies
+        proxy_settings = _scproxy._get_proxy_settings()
+        _scproxy._get_proxy_settings = lambda: proxy_settings
+    except ImportError:
+        pass
+
     with run_example(
         request=request,
         name="mlflow",
