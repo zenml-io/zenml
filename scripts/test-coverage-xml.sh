@@ -24,6 +24,8 @@ else
     coverage run -m pytest tests/integration --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
 fi
 
+find ~/Library/Application\ Support/zenml-test/ -name "service.log" -exec cat {} \;
+
 ./zen-test environment cleanup $TEST_ENVIRONMENT
 
 coverage combine
