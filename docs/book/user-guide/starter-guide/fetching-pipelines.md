@@ -25,7 +25,7 @@ Let us investigate how to traverse this hierarchy level by level:
 
 ## Pipelines
 
-### Get Pipeline via Client
+### Get a pipeline via the client
 
 After you have run a pipeline at least once, you can also fetch the pipeline via the [`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.get\_pipeline) method.
 
@@ -39,7 +39,7 @@ pipeline_model = Client().get_pipeline("first_pipeline")
 Check out the [ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md) for more information on the `Client` class and its purpose.
 {% endhint %}
 
-### Discover and List Pipelines
+### Discover and list all pipelines
 
 If you're not sure which pipeline you need to fetch, you can find a list of all registered pipelines in the ZenML dashboard, or list them programmatically either via the Client or the CLI.
 
@@ -67,7 +67,7 @@ zenml pipeline list
 
 Each pipeline can be executed many times, resulting in several **Runs**.
 
-### Get Runs of Pipeline
+### Get all runs of a pipeline
 
 You can get a list of all runs of a pipeline using the `runs` property of the pipeline:
 
@@ -81,7 +81,7 @@ The result will be a list of the most recent runs of this pipeline, ordered from
 Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](../advanced-guide/environment-management/use-the-client.md#list-of-resources) for more information.
 {% endhint %}
 
-### Get Last Run of Pipeline
+### Get the last run of a pipeline
 
 To access the most recent run of a pipeline, you can either use the `last_run` property or access it through the `runs` list:
 
@@ -93,7 +93,7 @@ last_run = pipeline_model.last_run  # OR: pipeline_model.runs[0]
 If your most recent runs have failed, and you want to find the last run that has succeeded, you can use the `last_successful_run` property instead.
 {% endhint %}
 
-### Get Last Run From Pipeline
+### Get the last run from a pipeline
 
 Calling a pipeline to run it automatically returns the last run:
 
@@ -101,7 +101,7 @@ Calling a pipeline to run it automatically returns the last run:
 last_run = training_pipeline()
 ```
 
-### Get Run via Client
+### Get a run via the client
 
 If you already know the exact run that you want to fetch (e.g., from looking at the dashboard), you can use the [`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.get\_pipeline\_run) method to fetch the run directly without having to query the pipeline first:
 
@@ -115,7 +115,7 @@ pipeline_run = Client().get_pipeline_run("first_pipeline-2023_06_20-16_20_13_274
 Similar to pipelines, you can query runs by either ID, name, or name prefix, and you can also discover runs through the Client or CLI via the [`Client.list_pipeline_runs()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.list\_pipeline\_runs) or `zenml pipeline runs list` commands.
 {% endhint %}
 
-### Run Information
+### Run information
 
 Each run has a collection of useful information which can help you reproduce your runs. In the following, you can find a list of some of the most useful pipeline run information, but there is much more available. See the [`PipelineRunResponse`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-models/#zenml.models.v2.core.pipeline\_run.PipelineRunResponse) definition for a comprehensive list.
 
@@ -136,7 +136,7 @@ pipeline_config = run.config
 pipeline_settings = run.config.settings
 ```
 
-#### Component-Specific Metadata
+#### Component-Specific metadata
 
 Depending on the stack components you use, you might have additional component-specific metadata associated with your run, such as the URL to the UI of a remote orchestrator. You can access this component-specific metadata via the `run_metadata` attribute:
 
@@ -161,7 +161,7 @@ step = run.steps["first_step"]
 If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn more about the invocation ID.
 {% endhint %}
 
-### Step Information
+### Step information
 
 Similar to the run, you can use the `step` object to access a variety of useful information:
 
@@ -218,7 +218,7 @@ output = Client().get_artifact_version('f429f94c-fb15-43b5-961d-dbea287507c5')
 loaded_artifact = output.load()
 ```
 
-### Artifact Information
+### Artifact information
 
 Regardless of how one fetches it, each artifact contains a lot of general information about the artifact as well as datatype-specific metadata and visualizations.
 
@@ -275,7 +275,7 @@ def my_step():
 As shown in the example, we can get additional information about the current run using the `StepContext`, which is explained in more detail in the [advanced docs](../advanced-guide/pipelining-features/fetch-metadata-within-steps.md).
 {% endhint %}
 
-## Code Example
+## Code example
 
 This section combines all the code from this section into one simple script that you can use to see the concepts discussed above:
 
