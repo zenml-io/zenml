@@ -68,7 +68,7 @@ important artifacts that you would like to explore visually.
 {% endtab %}
 {% endtabs %}
 
-### Versioning artifacts intentionally
+### Versioning artifacts manually
 
 ZenML automatically versions all created artifacts using auto-incremented
 numbering. I.e., if you have defined a step creating an artifact named
@@ -134,7 +134,7 @@ See the [artifact visualization docs](../advanced-guide/data-management/visualiz
 
 ### Consuming external artifacts within a pipeline
 
-While most pipelines start with a step that produces an artifact, it is often the case to want to consume artifacts external from the pipeline. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitary data type.
+While most pipelines start with a step that produces an artifact, it is often the case to want to consume artifacts external from the pipeline. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitrary data type.
 
 For example, let's say we have a Snowflake query that produces a dataframe, or a CSV file that we need to read. External artifacts can be used for this, to pass values to steps that are neither JSON serializable nor produced by an upstream step:
 
@@ -180,7 +180,7 @@ def training_pipeline():
     # Fetch by ID
     dataset_artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
 
-    # Fetch by name alone - uses latest version of this artifact
+    # Fetch by name alone - uses the latest version of this artifact
     dataset_artifact = ExternalArtifact(name="iris_dataset")
 
     # Fetch by name and version
@@ -200,7 +200,7 @@ Using an `ExternalArtifact` with input data for your step automatically disables
 
 ## Managing artifacts **not** produced by ZenML pipelines
 
-Sometimes, artifacts can be produced completely outside of ZenML. A good example of this the predictions produced by a deployed model.
+Sometimes, artifacts can be produced completely outside of ZenML. A good example of this is the predictions produced by a deployed model.
 
 ```python
 # A model is deployed, running in a FastAPI container
@@ -270,14 +270,14 @@ You can use the `zenml artifacts` CLI to add tags:
 # Tag the artifact
 zenml artifacts update iris_dataset -t sklearn
 
-# Tag the artiact version
+# Tag the artifact version
 zenml artifacts versions update iris_dataset raw_2023 -t sklearn
 ```
 
 {% endtab %}
 {% endtabs %}
 
-This will assign tags "sklearn" and "pre-training" to all artifacts created by
+This will assign tags `sklearn` and `pre-training` to all artifacts created by
 this step, which can later be used to filter and organize these artifacts.
 
 To learn more about artifacts, please refer to the [Advanced section on artifact management](../advanced-guide/data-management/).
@@ -286,12 +286,12 @@ For now, let's keep going on understanding major ZenML concepts!
 ## Logging metadata for an artifact
 
 One of the most useful ways of interacting with artifacts in ZenML is the ability
-to associate metadata with them. [As mentioned before](fetching-pipelines.md#artifact-information), artifact metadata is an arbitary dictionary of key-value pairs that are useful to understand the nature of the data.
+to associate metadata with them. [As mentioned before](fetching-pipelines.md#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
 
-As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or a size of an image alongside a PNG file.
+As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or the size of an image alongside a PNG file.
 
 For some artifacts, ZenML automatically logs metadata. As an example, for `pandas.Series`
-and `pandas.Dataframe` objects, ZenML logs the shape and size of the objects:
+and `pandas.DataFrame` objects, ZenML logs the shape and size of the objects:
 
 {% tabs %}
 {% tab title="Python" %}
@@ -299,7 +299,7 @@ and `pandas.Dataframe` objects, ZenML logs the shape and size of the objects:
 ```python
 from zenml.client import Client
 
-# Get an artifact version (e.g. pd.Dataframe)
+# Get an artifact version (e.g. pd.DataFrame)
 artifact = Client().get_artifact_version('50ce903f-faa6-41f6-a95f-ff8c0ec66010')
 
 # Fetch it's metadata
@@ -310,7 +310,7 @@ artifact.run_metadata["shape"].value  # Shape e.g. (500,20)
 {% endtab %}
 {% tab title="OSS (Dashboard)" %}
 
-The information for an artifacts metadata can be found within the DAG visualizer interface on the OSS dashboard:
+The information regarding the metadata of an artifact can be found within the DAG visualizer interface on the OSS dashboard:
 
 <figure><img src="../../.gitbook/assets/dashboard_artifact_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
 
@@ -360,7 +360,7 @@ For further depth, there is an [advanced metadata logging guide](../advanced-gui
 Additionally, there is a lot more to learn about artifacts within ZenML. Please read
 the [dedicated data management guide](../advanced-guide/data-management/) for more information.
 
-## Code Example
+## Code example
 
 This section combines all the code from this section into one simple script that you can use easily:
 
