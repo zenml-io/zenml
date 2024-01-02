@@ -195,7 +195,7 @@ Similarly, you can use the `inputs` and `input` properties to get the input arti
 Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names) to see what the output names of your steps are and how to customize them.
 {% endhint %}
 
-Note, the output of a step corresponds to a specific artifact version.
+Note that the output of a step corresponds to a specific artifact version.
 
 ### Fetching artifacts directly
 
