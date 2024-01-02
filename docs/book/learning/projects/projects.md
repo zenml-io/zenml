@@ -6,7 +6,48 @@ description: Resources to learn how to use ZenML practically.
 
 ZenML Projects are small-scale production-grade ML use cases powered by ZenML. They are fully fleshed-out, end-to-end, projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
-<table data-column-title-hidden data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Using ZenML with LLMs to analyze and version data from databases</strong></mark></td><td>Explore how ZenML can be used with large language models (LLMs) like GPT-4 to analyze and version data from databases like Supabase.</td><td><a href="../../.gitbook/assets/youtldr_summarizer_fef5163dc0.webp">youtldr_summarizer_fef5163dc0.webp</a></td><td><a href="https://github.com/zenml-io/zenml-projects/tree/main/supabase-openai-summary">https://github.com/zenml-io/zenml-projects/tree/main/supabase-openai-summary</a></td></tr><tr><td><mark style="color:purple;"><strong>Build an LLM-powered community Slack bot</strong></mark></td><td>Productionalizing LangChain and LlamaIndex with a ZenML MLOps Pipeline to Help Community Slack Support.</td><td><a href="../../.gitbook/assets/llm.png">llm.png</a></td><td><a href="https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot">https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot</a></td></tr><tr><td><mark style="color:purple;"><strong>Summarize news articles with NLP</strong></mark></td><td>A tool powered by ZenML that can automate the summarization of news sources.</td><td><a href="../../.gitbook/assets/summarize.jpeg">summarize.jpeg</a></td><td><a href="https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization">https://github.com/zenml-io/zenml-projects/tree/main/zen-news-summarization</a></td></tr><tr><td><mark style="color:purple;"><strong>Use ZenML seamlessly with GitHub Actions</strong></mark></td><td>A GitHub workflow that automates CI/CD with continuous model training and continuous model deployment to production.</td><td><a href="../../.gitbook/assets/Remote_with_git_ops.png">Remote_with_git_ops.png</a></td><td><a href="https://github.com/zenml-io/zenml-gitflow">https://github.com/zenml-io/zenml-gitflow</a></td></tr><tr><td><mark style="color:purple;"><strong>Detect sign language alphabet in real-time images using Yolov5</strong></mark></td><td>Detect and recognize the American Sign Language alphabet in real-time images using Yolov5 and ZenML.</td><td><a href="../../.gitbook/assets/pexels_shvets_production_7516363_8bec88f86d.webp">pexels_shvets_production_7516363_8bec88f86d.webp</a></td><td><a href="https://github.com/zenml-io/zenml-projects/tree/main/sign-language-detection-yolov5">https://github.com/zenml-io/zenml-projects/tree/main/sign-language-detection-yolov5</a></td></tr><tr><td><mark style="color:purple;"><strong>Forecasting wind power generation</strong></mark></td><td>Predict electricity power generation based on wind forecast In Orkney, Scotland.</td><td><a href="../../.gitbook/assets/pexels_pixabay_433308_0665b2fb5b.webp">pexels_pixabay_433308_0665b2fb5b.webp</a></td><td><a href="https://github.com/zenml-io/zenml-projects/tree/main/time-series-forecast">https://github.com/zenml-io/zenml-projects/tree/main/time-series-forecast</a></td></tr></tbody></table>
+<table data-column-title-hidden data-view="cards">
+<thead>
+  <tr>
+    <th></th>
+    <th></th>
+    <th data-hidden data-card-cover data-type="files"></th>
+    <th data-hidden data-card-target data-type="content-ref"></th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td><mark style="color:purple;"><strong>Predicting customer satisfaction</strong></mark></td>
+    <td>Analyze customer feedback to predict satisfaction levels using ZenML.</td>
+    <td><a href="../../.gitbook/assets/customer_satisfaction.png">llm.png</a></td>
+    <td><a href="https://github.com/zenml-io/zenml-projects/tree/main/customer-satisfaction">https://github.com/zenml-io/zenml-projects/tree/main/customer-satisfaction</a></td>
+  </tr>
+  <tr>
+    <td><mark style="color:purple;"><strong>Build an LLM-powered community Slack bot</strong></mark></td>
+    <td>Productionalize LangChain and LlamaIndex with a ZenML MLOps Pipeline to support community Slack channels.</td>
+    <td><a href="../../.gitbook/assets/llm.png">llm.png</a></td>
+    <td><a href="https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot">https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot</a></td>
+  </tr>
+  <tr>
+    <td><mark style="color:purple;"><strong>Use ZenML seamlessly with GitHub Actions</strong></mark></td>
+    <td>Automate machine-learning workflows with GitHub Actions and ZenML for continuous integration and deployment.</td>
+    <td><a href="../../.gitbook/assets/Remote_with_git_ops.png">Remote_with_git_ops.png</a></td>
+    <td><a href="https://github.com/zenml-io/zenml-gitflow">https://github.com/zenml-io/zenml-gitflow</a></td>
+  </tr>
+  <tr>
+    <td><mark style="color:purple;"><strong>Forecasting Time Series</strong></mark></td>
+    <td>Predict future time-series events like power generation or stock prices with the help of ZenML's pipeline.</td>
+    <td><a href="../../.gitbook/assets/pexels_pixabay_433308_0665b2fb5b.webp">pexels_pixabay_433308_0665b2fb5b.webp</a></td>
+    <td><a href="https://github.com/zenml-io/zenml-projects/tree/main/time-series-forecast">https://github.com/zenml-io/zenml-projects/tree/main/time-series-forecast</a></td>
+  </tr>
+  <tr>
+    <td><mark style="color:purple;"><strong>Detect Sign Language alphabet in real-time images using Yolov5</strong></mark></td>
+    <td>Utilize ZenML and Yolov5 to detect and recognize American Sign Language alphabets in real-time image streams.</td>
+    <td><a href="../../.gitbook/assets/pexels_shvets_production_7516363_8bec88f86d.webp">pexels_shvets_production_7516363_8bec88f86d.webp</a></td>
+    <td><a href="https://github.com/zenml-io/zenml-projects/tree/main/sign-language-detection-yolov5">https://github.com/zenml-io/zenml-projects/tree/main/sign-language-detection-yolov5</a></td>
+  </tr>
+</tbody>
+</table>
 
 ## Start working on your own projects with ZenML Templates
 
