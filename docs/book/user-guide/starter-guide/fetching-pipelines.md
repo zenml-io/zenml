@@ -170,7 +170,7 @@ Similar to the run, you can use the `step` object to access a variety of useful 
 * The step-level settings via `step.config.settings`,
 * Component-specific step metadata, such as the URL of an experiment tracker or model deployer, via `step.metadata`
 
-See the [`StepRunResponseModel`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/step\_run\_models.py) definition for a comprehensive list of available information.
+See the [`StepRunResponse`](https://github.com/zenml-io/zenml/blob/main/src/zenml/models/step\_run\_models.py) definition for a comprehensive list of available information.
 
 ## Artifacts
 
