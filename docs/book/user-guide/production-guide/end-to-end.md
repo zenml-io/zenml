@@ -13,7 +13,7 @@ In this guide, we will go over some advanced concepts:
 - [Scaling compute](scale-compute.md)
 - Setting up [pipeline configuration](configure-pipeline.md) in production
 
-We will now combine all of these concepts into an end to end MLOps project powered by ZenML.
+We will now combine all of these concepts into an end-to-end MLOps project powered by ZenML.
 
 ## Get started
 
