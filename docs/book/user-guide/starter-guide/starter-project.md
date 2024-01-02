@@ -57,11 +57,11 @@ Either way, at the end you would run three pipelines that are exemplary:
 - A training pipeline that loads the preprocessed dataset and trains a model.
 - A batch inference pipeline that runs predictions on the trained model with new data.
 
-And voilà! You're now well on your way to be a MLOps expert. As a next step, try introducing the [ZenML starter template](https://github.com/zenml-io/template-starter) to your colleagues and see the benefits of a standard MLOps framework in action!
+And voilà! You're now well on your way to be an MLOps expert. As a next step, try introducing the [ZenML starter template](https://github.com/zenml-io/template-starter) to your colleagues and see the benefits of a standard MLOps framework in action!
 
 ## Conclusion and next steps
 
-This marks the end of the first chapter of your MLOps journey with ZenML. Make sure you do your own experimentation with ZenML to master the basics. When ready, move onto the [production guide](../production-guide/), which is the next part of the series.
+This marks the end of the first chapter of your MLOps journey with ZenML. Make sure you do your own experimentation with ZenML to master the basics. When ready, move on to the [production guide](../production-guide/), which is the next part of the series.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
