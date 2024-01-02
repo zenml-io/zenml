@@ -32,9 +32,9 @@ If you are running pipelines with a Docker-based [orchestrator](../../component-
 
 ### Configuring a step/pipeline to use a custom materializer
 
-ZenML automatically scans your source code for definitions of materializers and registers them for the corresponding data type, so just having a custom materializer definition in your code is enough to enable the respective data type to be used in your pipelines.
+ZenML automatically detects if your materializer is imported in your source code and registers them for the corresponding data type (defined in `ASSOCIATED_TYPES`). Therefore, just having a custom materializer definition in your code is enough to enable the respective data type to be used in your pipelines.
 
-You can explicitly define which materializer to use for a specific step:
+However, it is best practice to explicitly define which materializer to use for a specific step and not rely on the `ASSOCIATED_TYPES` to make that connection:
 
 ```python
 class MyObj:
