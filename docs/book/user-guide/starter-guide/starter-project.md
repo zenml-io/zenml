@@ -49,7 +49,7 @@ zenml init
 
 ## What you'll learn
 
-You can either follow along in the [accompanying Jupyter notebook](https://github.com/zenml-io/zenml/blob/main/examples/starter/run.ipynb), or just keep reading the [README file for more instructions](https://github.com/zenml-io/zenml/blob/main/examples/starter/run.ipynb).
+You can either follow along in the [accompanying Jupyter notebook](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb), or just keep reading the [README file for more instructions](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md).
 
 Either way, at the end you would run three pipelines that are exemplary:
 
