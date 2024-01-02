@@ -147,7 +147,7 @@ You will need to override these methods according to how you plan to serialize y
 
 Optionally, you can override the `save_visualizations()` method to automatically save visualizations for all artifacts saved by your materializer. These visualizations are then shown next to your artifacts in the dashboard:
 
-![Evidently Artifact Visualization Example](<../../../.gitbook/assets/artifact\_visualization\_dashboard (4) (1).png>)
+![Evidently Artifact Visualization Example](<../../../.gitbook/assets/artifact_visualization_dashboard.png>)
 
 Currently, artifacts can be visualized either as CSV table, embedded HTML, image or Markdown. For more information, see [zenml.enums.VisualizationType](https://github.com/zenml-io/zenml/blob/main/src/zenml/enums.py).
 
