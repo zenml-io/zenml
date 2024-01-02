@@ -40,7 +40,7 @@ def train_model(data: dict) -> None:
 
 @pipeline
 def simple_ml_pipeline():
-    """Define a pipeline that connects the steps"""
+    """Define a pipeline that connects the steps."""
     dataset = load_data()
     train_model(dataset)
 
