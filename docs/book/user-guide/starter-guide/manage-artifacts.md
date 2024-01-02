@@ -130,7 +130,7 @@ ZenML automatically saves visualizations for many common data types, allowing yo
 
 When you ran your `training_pipeline` above, you will see some visualizations already created for your artifacts. Explore them in the dashboard!
 
-See the [artifact visualization docs](../advanced-guide/data-management/visualize-artifacts.md) for more information on how add your own visualizations for your artifacts!
+See the [artifact visualization docs](../advanced-guide/data-management/visualize-artifacts.md) for more information on how to add your own visualizations for your artifacts!
 
 ### Consuming external artifacts within a pipeline
 
