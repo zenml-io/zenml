@@ -117,7 +117,7 @@ Similar to pipelines, you can query runs by either ID, name, or name prefix, and
 
 ### Run Information
 
-Each run has a collection of useful information which can help you reproduce your runs. In the following, you can find a list of some of the most useful pipeline run information, but there is much more available. See the [`PipelineRunResponseModel`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-models/#zenml.models.v2.core.pipeline\_run.PipelineRunResponse) definition for a comprehensive list.
+Each run has a collection of useful information which can help you reproduce your runs. In the following, you can find a list of some of the most useful pipeline run information, but there is much more available. See the [`PipelineRunResponse`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-models/#zenml.models.v2.core.pipeline\_run.PipelineRunResponse) definition for a comprehensive list.
 
 #### Status
 
