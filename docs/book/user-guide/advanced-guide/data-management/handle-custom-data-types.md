@@ -30,9 +30,85 @@ If you are running pipelines with a Docker-based [orchestrator](../../component-
 
 ## Custom materializers
 
+### Configuring a step/pipeline to use a custom materializer
+
+ZenML automatically scans your source code for definitions of materializers and registers them for the corresponding data type, so just having a custom materializer definition in your code is enough to enable the respective data type to be used in your pipelines.
+
+You can explicitly define which materializer to use for a specific step:
+
+```python
+class MyObj:
+    ...
+
+class MyMaterializer(BaseMaterializer):
+    """Materializer to read data to and from MyObj."""
+
+    ASSOCIATED_TYPES = (MyObj)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+
+    # Read below to learn how to implement this materializer
+
+# You can define it at the decorator level
+@step(output_materializers=MyMaterializer)
+def my_first_step() -> MyObj:
+    return 1
+
+def my_second_step(a: MyObj):
+    print(a)
+
+# or you can use the `configure()` method of the step. E.g.:
+my_first_step.configure(output_materializers=MyMaterializer)
+```
+
+When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>: <MATERIALIZER_CLASS>}` can be supplied to the decorator or the `.configure(...)` method:
+
+```python
+class MyObj1:
+    ...
+
+class MyObj2:
+    ...
+
+class MyMaterializer1(BaseMaterializer):
+    """Materializer to read data to and from MyObj1."""
+
+    ASSOCIATED_TYPES = (MyObj1)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+
+class MyMaterializer2(BaseMaterializer):
+    """Materializer to read data to and from MyObj2."""
+
+    ASSOCIATED_TYPES = (MyObj2)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+
+@step(output_materializers={"1": MyMaterializer1, "2": MyMaterializer2})
+def my_first_step() -> Tuple[Annotated[MyObj1, "1"], Annotated[MyObj2, "2"]]:
+    return 1
+```
+
+Finally, as briefly outlined in the [configuration docs](../pipelining-features/configure-steps-pipelines.md) section, which materializer to use for the output of what step can also be configured within YAML config files.
+
+For each output of your steps, you can define custom materializers to handle the loading and saving. You can configure them like this in the config:
+
+```yaml
+...
+steps:
+  <STEP_NAME>:
+    ...
+    outputs:
+      <OUTPUT_NAME>:
+        materializer_source: run.MyMaterializer
+```
+
+Check out [this page](../../starter-guide/manage-artifacts.md) for information on your step output names and how to customize them.
+
+### Developing a custom materializer
+
+Now that we know how to configure a pipeline to use a custom materializer, let us briefly discuss how materializers in general are implemented.
+
 #### Base implementation
 
-Before we dive into how custom materializers can be built, let us briefly discuss how materializers in general are implemented. In the following, you can see the implementation of the abstract base class `BaseMaterializer`, which defines the interface of all materializers:
+In the following, you can see the implementation of the abstract base class `BaseMaterializer`, which defines the interface of all materializers:
 
 ```python
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
@@ -143,7 +219,7 @@ The `load()` and `save()` methods define the serialization and deserialization o
 
 You will need to override these methods according to how you plan to serialize your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`, then you might want to use `torch.save()` and `torch.load()` here.
 
-### (Optional) How to Visualize the Artifact
+#### (Optional) How to Visualize the Artifact
 
 Optionally, you can override the `save_visualizations()` method to automatically save visualizations for all artifacts saved by your materializer. These visualizations are then shown next to your artifacts in the dashboard:
 
@@ -159,7 +235,7 @@ To create visualizations, you need to:
 
 As an example, check out the implementation of the [zenml.materializers.NumpyMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/numpy\_materializer.py) that use matplotlib to automatically save or plot certain arrays.
 
-### (Optional) Which Metadata to Extract for the Artifact
+#### (Optional) Which Metadata to Extract for the Artifact
 
 Optionally, you can override the `extract_metadata()` method to track custom metadata for all artifacts saved by your materializer. Anything you extract here will be displayed in the dashboard next to your artifacts.
 
@@ -182,207 +258,6 @@ By default, this method will only extract the storage size of an artifact, but y
 {% hint style="info" %}
 If you would like to disable artifact metadata extraction altogether, you can set `enable_artifact_metadata` at either pipeline or step level via `@pipeline(enable_artifact_metadata=False)` or `@step(enable_artifact_metadata=False)`.
 {% endhint %}
-
-## Usage
-
-ZenML automatically scans your source code for definitions of materializers and registers them for the corresponding data type, so just having a custom materializer definition in your code is enough to enable the respective data type to be used in your pipelines.
-
-Alternatively, you can also explicitly define which materializer to use for a specific step:
-
-```python
-@step(output_materializers=MyMaterializer)
-def my_first_step(...) -> ...:
-    ...
-```
-
-or you can use the `configure()` method of the step. E.g.:
-
-```python
-my_first_step.configure(output_materializers=MyMaterializer)
-```
-
-When there are multiple outputs, a dictionary of type `{<OUTPUT_NAME>: <MATERIALIZER_CLASS>}` can be supplied to the decorator or the `.configure(...)` method.
-
-#### Configuring materializers at runtime
-
-As briefly outlined in the [Runtime Configuration](../pipelining-features/configure-steps-pipelines.md) section, which materializer to use for the output of what step can also be configured within YAML config files.
-
-For each output of your steps, you can define custom materializers to handle the loading and saving. You can configure them like this in the config:
-
-```yaml
-...
-steps:
-  <STEP_NAME>:
-    ...
-    outputs:
-      <OUTPUT_NAME>:
-        materializer_source: run.MyMaterializer
-```
-
-Check out [this page](../pipelining-features/configure-steps-pipelines.md#step-output-names) for information on your step output names and how to customize them.
-
-## Basic example
-
-Let's see how materialization works with a basic example. Let's say you have a custom class called `MyObject` that flows between two steps in a pipeline:
-
-```python
-import logging
-from zenml import step, pipeline
-
-
-class MyObj:
-    def __init__(self, name: str):
-        self.name = name
-
-
-@step
-def my_first_step() -> MyObj:
-    """Step that returns an object of type MyObj."""
-    return MyObj("my_object")
-
-
-@step
-def my_second_step(my_obj: MyObj) -> None:
-    """Step that logs the input object and returns nothing."""
-    logging.info(
-        f"The following object was passed to this step: `{my_obj.name}`"
-    )
-
-
-@pipeline
-def first_pipeline():
-    output_1 = my_first_step()
-    my_second_step(output_1)
-
-
-first_pipeline()
-```
-
-Running the above without a custom materializer will work but print the following warning:
-
-`No materializer is registered for type MyObj, so the default Pickle materializer was used. Pickle is not production ready and should only be used for prototyping as the artifacts cannot be loaded when running with a different Python version. Please consider implementing a custom materializer for type MyObj according to the instructions at https://docs.zenml.io/user-guide/advanced-guide/data-management/handle-custom-data-types`
-
-To get rid of this warning and make our pipeline more robust, we will subclass the `BaseMaterializer` class, listing `MyObj` in `ASSOCIATED_TYPES`, and overwriting `load()` and `save()`:
-
-```python
-import os
-from typing import Type
-
-from zenml.enums import ArtifactType
-from zenml.io import fileio
-from zenml.materializers.base_materializer import BaseMaterializer
-
-
-class MyMaterializer(BaseMaterializer):
-    ASSOCIATED_TYPES = (MyObj,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-
-    def load(self, data_type: Type[MyObj]) -> MyObj:
-        """Read from artifact store."""
-        with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
-            name = f.read()
-        return MyObj(name=name)
-
-    def save(self, my_obj: MyObj) -> None:
-        """Write to artifact store."""
-        with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
-            f.write(my_obj.name)
-```
-
-{% hint style="info" %}
-Pro-tip: Use the ZenML `fileio` module to ensure your materialization logic works across artifact stores (local and remote like S3 buckets).
-{% endhint %}
-
-Now, ZenML can use this materializer to handle the outputs and inputs of your customs object. Edit the pipeline as follows to see this in action:
-
-```python
-my_first_step.configure(output_materializers=MyMaterializer)
-first_pipeline()
-```
-
-{% hint style="info" %}
-Due to the typing of the inputs and outputs and the `ASSOCIATED_TYPES` attribute of the materializer, you won't necessarily have to add `.configure(output_materializers=MyMaterializer)` to the step. It should automatically be detected. It doesn't hurt to be explicit though.
-{% endhint %}
-
-This will now work as expected and yield the following output:
-
-```shell
-Creating run for pipeline: `first_pipeline`
-Cache enabled for pipeline `first_pipeline`
-Using stack `default` to run pipeline `first_pipeline`...
-Step `my_first_step` has started.
-Step `my_first_step` has finished in 0.081s.
-Step `my_second_step` has started.
-The following object was passed to this step: `my_object`
-Step `my_second_step` has finished in 0.048s.
-Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
-```
-
-<details>
-
-<summary>Code Example for Materializing Custom Objects</summary>
-
-```python
-import logging
-import os
-from typing import Type
-
-from zenml import step, pipeline
-
-from zenml.enums import ArtifactType
-from zenml.io import fileio
-from zenml.materializers.base_materializer import BaseMaterializer
-
-
-class MyObj:
-    def __init__(self, name: str):
-        self.name = name
-
-
-class MyMaterializer(BaseMaterializer):
-    ASSOCIATED_TYPES = (MyObj,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-
-    def load(self, data_type: Type[MyObj]) -> MyObj:
-        """Read from artifact store."""
-        with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
-            name = f.read()
-        return MyObj(name=name)
-
-    def save(self, my_obj: MyObj) -> None:
-        """Write to artifact store."""
-        with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
-            f.write(my_obj.name)
-
-
-@step
-def my_first_step() -> MyObj:
-    """Step that returns an object of type MyObj."""
-    return MyObj("my_object")
-
-
-my_first_step.configure(output_materializers=MyMaterializer)
-
-
-@step
-def my_second_step(my_obj: MyObj) -> None:
-    """Step that log the input object and returns nothing."""
-    logging.info(
-        f"The following object was passed to this step: `{my_obj.name}`"
-    )
-
-
-@pipeline
-def first_pipeline():
-    output_1 = my_first_step()
-    my_second_step(output_1)
-
-
-if __name__ == "__main__":
-    first_pipeline()
-```
-
-</details>
 
 ## Skipping materialization
 
@@ -612,3 +487,166 @@ class PandasMaterializer(BaseMaterializer):
 </details>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
+
+## Code example
+
+Let's see how materialization works with a basic example. Let's say you have a custom class called `MyObject` that flows between two steps in a pipeline:
+
+```python
+import logging
+from zenml import step, pipeline
+
+
+class MyObj:
+    def __init__(self, name: str):
+        self.name = name
+
+
+@step
+def my_first_step() -> MyObj:
+    """Step that returns an object of type MyObj."""
+    return MyObj("my_object")
+
+
+@step
+def my_second_step(my_obj: MyObj) -> None:
+    """Step that logs the input object and returns nothing."""
+    logging.info(
+        f"The following object was passed to this step: `{my_obj.name}`"
+    )
+
+
+@pipeline
+def first_pipeline():
+    output_1 = my_first_step()
+    my_second_step(output_1)
+
+
+first_pipeline()
+```
+
+Running the above without a custom materializer will work but print the following warning:
+
+`No materializer is registered for type MyObj, so the default Pickle materializer was used. Pickle is not production ready and should only be used for prototyping as the artifacts cannot be loaded when running with a different Python version. Please consider implementing a custom materializer for type MyObj according to the instructions at https://docs.zenml.io/user-guide/advanced-guide/data-management/handle-custom-data-types`
+
+To get rid of this warning and make our pipeline more robust, we will subclass the `BaseMaterializer` class, listing `MyObj` in `ASSOCIATED_TYPES`, and overwriting `load()` and `save()`:
+
+```python
+import os
+from typing import Type
+
+from zenml.enums import ArtifactType
+from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
+
+
+class MyMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyObj,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+
+    def load(self, data_type: Type[MyObj]) -> MyObj:
+        """Read from artifact store."""
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
+            name = f.read()
+        return MyObj(name=name)
+
+    def save(self, my_obj: MyObj) -> None:
+        """Write to artifact store."""
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
+            f.write(my_obj.name)
+```
+
+{% hint style="info" %}
+Pro-tip: Use the ZenML `fileio` module to ensure your materialization logic works across artifact stores (local and remote like S3 buckets).
+{% endhint %}
+
+Now, ZenML can use this materializer to handle the outputs and inputs of your customs object. Edit the pipeline as follows to see this in action:
+
+```python
+my_first_step.configure(output_materializers=MyMaterializer)
+first_pipeline()
+```
+
+{% hint style="info" %}
+Due to the typing of the inputs and outputs and the `ASSOCIATED_TYPES` attribute of the materializer, you won't necessarily have to add `.configure(output_materializers=MyMaterializer)` to the step. It should automatically be detected. It doesn't hurt to be explicit though.
+{% endhint %}
+
+This will now work as expected and yield the following output:
+
+```shell
+Creating run for pipeline: `first_pipeline`
+Cache enabled for pipeline `first_pipeline`
+Using stack `default` to run pipeline `first_pipeline`...
+Step `my_first_step` has started.
+Step `my_first_step` has finished in 0.081s.
+Step `my_second_step` has started.
+The following object was passed to this step: `my_object`
+Step `my_second_step` has finished in 0.048s.
+Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
+```
+
+<details>
+
+<summary>Code Example for Materializing Custom Objects</summary>
+
+```python
+import logging
+import os
+from typing import Type
+
+from zenml import step, pipeline
+
+from zenml.enums import ArtifactType
+from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
+
+
+class MyObj:
+    def __init__(self, name: str):
+        self.name = name
+
+
+class MyMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyObj,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+
+    def load(self, data_type: Type[MyObj]) -> MyObj:
+        """Read from artifact store."""
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
+            name = f.read()
+        return MyObj(name=name)
+
+    def save(self, my_obj: MyObj) -> None:
+        """Write to artifact store."""
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
+            f.write(my_obj.name)
+
+
+@step
+def my_first_step() -> MyObj:
+    """Step that returns an object of type MyObj."""
+    return MyObj("my_object")
+
+
+my_first_step.configure(output_materializers=MyMaterializer)
+
+
+@step
+def my_second_step(my_obj: MyObj) -> None:
+    """Step that log the input object and returns nothing."""
+    logging.info(
+        f"The following object was passed to this step: `{my_obj.name}`"
+    )
+
+
+@pipeline
+def first_pipeline():
+    output_1 = my_first_step()
+    my_second_step(output_1)
+
+
+if __name__ == "__main__":
+    first_pipeline()
+```
+
+</details>
