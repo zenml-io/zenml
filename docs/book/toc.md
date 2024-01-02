@@ -159,11 +159,11 @@
 ## Learning
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md)
-* [🔏 Examples](https://github.com/zenml-io/zenml/blob/main/examples/README.md)
+* [🔏 Examples](learning/examples.md)
   * [e2e Batch Inference using classical ML](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
   * [Generative Chat with LLMs](https://github.com/zenml-io/zenml/tree/main/examples/generative_chat)
   * [Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/nlp-case)
-* [🧩 Projects](learning/projects/projects.md)
+* [🧩 Projects](learning/projects.md)
   * [Predicting customer satisfaction](https://github.com/zenml-io/zenml-projects/tree/main/customer-satisfaction)
   * [Build an LLM-powered community Slack bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
   * [Use ZenML seamlessly with GitHub Actions](https://github.com/zenml-io/zenml-gitflow)

@@ -19,7 +19,7 @@ ZenML Projects are small-scale production-grade ML use cases powered by ZenML. T
   <tr>
     <td><mark style="color:purple;"><strong>Predicting customer satisfaction</strong></mark></td>
     <td>Analyze customer feedback to predict satisfaction levels using ZenML.</td>
-    <td><a href="../../.gitbook/assets/customer_satisfaction.png">llm.png</a></td>
+    <td><a href="../../.gitbook/assets/customer_satisfaction.jpg">customer_satisfaction.png</a></td>
     <td><a href="https://github.com/zenml-io/zenml-projects/tree/main/customer-satisfaction">https://github.com/zenml-io/zenml-projects/tree/main/customer-satisfaction</a></td>
   </tr>
   <tr>
