@@ -105,20 +105,19 @@ from zenml.models import (
     StackUpdate,
     StepRunFilter,
     StepRunUpdate,
+    TagFilter,
+    TagRequest,
+    TagResourceRequest,
+    TagUpdate,
     UserRequest,
     UserResponse,
     UserUpdate,
     WorkspaceFilter,
     WorkspaceUpdate,
 )
-from zenml.models.tag_models import (
-    TagFilterModel,
-    TagRequestModel,
-    TagResourceRequestModel,
-    TagUpdateModel,
-)
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
+from zenml.models.v2.core.model import ModelUpdate
 from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
@@ -3605,6 +3604,22 @@ class TestModel:
                 assert zs.get_model(created_model.id).latest_version == mv.name
                 time.sleep(1)  # thanks to MySQL again!
 
+    def test_update_name(self, clean_client: "Client"):
+        """Test that update name works, if model version exists."""
+        with ModelVersionContext() as model_:
+            zs = clean_client.zen_store
+            model = zs.get_model(model_.id)
+            assert model.name == model_.name
+
+            zs.update_model(
+                model_id=model_.id,
+                model_update=ModelUpdate(
+                    name="and yet another one",
+                ),
+            )
+            model = zs.get_model(model_.id)
+            assert model.name == "and yet another one"
+
 
 class TestModelVersion:
     def test_create_pass(self):
@@ -3809,6 +3824,35 @@ class TestModelVersion:
                 ),
             ).items[0]
             assert mv1.id == mv3.id
+
+    def test_update_name_and_description(self, clean_client: "Client"):
+        """Test that update name works, if model version exists."""
+        with ModelVersionContext() as model:
+            zs = clean_client.zen_store
+            mv1 = zs.create_model_version(
+                ModelVersionRequest(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="great one",
+                    description="this is great",
+                )
+            )
+            mv = zs.get_model_version(mv1.id)
+            assert mv.name == "great one"
+            assert mv.description == "this is great"
+
+            zs.update_model_version(
+                model_version_id=mv1.id,
+                model_version_update_model=ModelVersionUpdate(
+                    model=mv1.model.id,
+                    name="and yet another one",
+                    description="this is great and better",
+                ),
+            )
+            mv = zs.get_model_version(mv1.id)
+            assert mv.name == "and yet another one"
+            assert mv.description == "this is great and better"
 
     def test_in_stage_not_found(self):
         """Test that get in stage fails if not found."""
@@ -4426,33 +4470,29 @@ class TestModelVersionPipelineRunLinks:
 class TestTag:
     def test_create_pass(self, clean_client: "Client"):
         """Tests that tag creation passes."""
-        tag = clean_client.create_tag(TagRequestModel(name="foo"))
+        tag = clean_client.create_tag(TagRequest(name="foo"))
         assert tag.name == "foo"
         assert tag.color is not None
-        tag = clean_client.create_tag(
-            TagRequestModel(name="bar", color="yellow")
-        )
+        tag = clean_client.create_tag(TagRequest(name="bar", color="yellow"))
         assert tag.name == "bar"
         assert tag.color == ColorVariants.YELLOW.name.lower()
         with pytest.raises(ValueError):
-            clean_client.create_tag(TagRequestModel(color="yellow"))
+            clean_client.create_tag(TagRequest(color="yellow"))
 
     def test_create_bad_input(self, clean_client: "Client"):
         """Tests that tag creation fails without a name."""
         with pytest.raises(ValueError):
-            clean_client.create_tag(TagRequestModel(color="yellow"))
+            clean_client.create_tag(TagRequest(color="yellow"))
 
     def test_create_duplicate(self, clean_client: "Client"):
         """Tests that tag creation fails on duplicate."""
-        clean_client.create_tag(TagRequestModel(name="foo"))
+        clean_client.create_tag(TagRequest(name="foo"))
         with pytest.raises(EntityExistsError):
-            clean_client.create_tag(
-                TagRequestModel(name="foo", color="yellow")
-            )
+            clean_client.create_tag(TagRequest(name="foo", color="yellow"))
 
     def test_get_tag_found(self, clean_client: "Client"):
         """Tests that tag get pass if found."""
-        clean_client.create_tag(TagRequestModel(name="foo"))
+        clean_client.create_tag(TagRequest(name="foo"))
         tag = clean_client.get_tag("foo")
         assert tag.name == "foo"
         assert tag.color is not None
@@ -4464,39 +4504,37 @@ class TestTag:
 
     def test_list_tags(self, clean_client: "Client"):
         """Tests various list scenarios."""
-        tags = clean_client.list_tags(TagFilterModel())
+        tags = clean_client.list_tags(TagFilter())
         assert len(tags) == 0
-        clean_client.create_tag(TagRequestModel(name="foo", color="red"))
-        clean_client.create_tag(TagRequestModel(name="bar", color="green"))
+        clean_client.create_tag(TagRequest(name="foo", color="red"))
+        clean_client.create_tag(TagRequest(name="bar", color="green"))
 
-        tags = clean_client.list_tags(TagFilterModel())
+        tags = clean_client.list_tags(TagFilter())
         assert len(tags) == 2
         assert {t.name for t in tags} == {"foo", "bar"}
         assert {t.color for t in tags} == {"red", "green"}
 
-        tags = clean_client.list_tags(TagFilterModel(name="foo"))
+        tags = clean_client.list_tags(TagFilter(name="foo"))
         assert len(tags) == 1
         assert tags[0].name == "foo"
         assert tags[0].color == "red"
 
-        tags = clean_client.list_tags(TagFilterModel(color="green"))
+        tags = clean_client.list_tags(TagFilter(color="green"))
         assert len(tags) == 1
         assert tags[0].name == "bar"
         assert tags[0].color == "green"
 
     def test_update_tag(self, clean_client: "Client"):
         """Tests various update scenarios."""
-        clean_client.create_tag(TagRequestModel(name="foo", color="red"))
-        tag = clean_client.create_tag(
-            TagRequestModel(name="bar", color="green")
-        )
+        clean_client.create_tag(TagRequest(name="foo", color="red"))
+        tag = clean_client.create_tag(TagRequest(name="bar", color="green"))
 
-        clean_client.update_tag("foo", TagUpdateModel(name="foo2"))
+        clean_client.update_tag("foo", TagUpdate(name="foo2"))
         assert clean_client.get_tag("foo2").color == "red"
         with pytest.raises(KeyError):
             clean_client.get_tag("foo")
 
-        clean_client.update_tag(tag.id, TagUpdateModel(color="yellow"))
+        clean_client.update_tag(tag.id, TagUpdate(color="yellow"))
         assert clean_client.get_tag(tag.id).color == "yellow"
         assert clean_client.get_tag("bar").color == "yellow"
 
@@ -4506,9 +4544,9 @@ class TestTagResource:
         """Tests creating tag<>resource mapping pass."""
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
-        tag = clean_client.create_tag(TagRequestModel(name="foo", color="red"))
+        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
         mapping = clean_client.zen_store.create_tag_resource(
-            TagResourceRequestModel(
+            TagResourceRequest(
                 tag_id=tag.id,
                 resource_id=uuid4(),
                 resource_type=TaggableResourceTypes.MODEL,
@@ -4523,9 +4561,9 @@ class TestTagResource:
         """Tests creating tag<>resource mapping fails on duplicate."""
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
-        tag = clean_client.create_tag(TagRequestModel(name="foo", color="red"))
+        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
         mapping = clean_client.zen_store.create_tag_resource(
-            TagResourceRequestModel(
+            TagResourceRequest(
                 tag_id=tag.id,
                 resource_id=uuid4(),
                 resource_type=TaggableResourceTypes.MODEL,
@@ -4534,7 +4572,7 @@ class TestTagResource:
 
         with pytest.raises(EntityExistsError):
             clean_client.zen_store.create_tag_resource(
-                TagResourceRequestModel(
+                TagResourceRequest(
                     tag_id=mapping.tag_id,
                     resource_id=mapping.resource_id,
                     resource_type=TaggableResourceTypes.MODEL,
@@ -4545,10 +4583,10 @@ class TestTagResource:
         """Tests deleting tag<>resource mapping pass."""
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
-        tag = clean_client.create_tag(TagRequestModel(name="foo", color="red"))
+        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
         resource_id = uuid4()
         clean_client.zen_store.create_tag_resource(
-            TagResourceRequestModel(
+            TagResourceRequest(
                 tag_id=tag.id,
                 resource_id=resource_id,
                 resource_type=TaggableResourceTypes.MODEL,
@@ -4574,10 +4612,10 @@ class TestTagResource:
         class MockTaggableResourceTypes(StrEnum):
             APPLE = "apple"
 
-        tag = clean_client.create_tag(TagRequestModel(name="foo", color="red"))
+        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
         resource_id = uuid4()
         clean_client.zen_store.create_tag_resource(
-            TagResourceRequestModel(
+            TagResourceRequest(
                 tag_id=tag.id,
                 resource_id=resource_id,
                 resource_type=TaggableResourceTypes.MODEL,
@@ -4602,12 +4640,10 @@ class TestTagResource:
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
         with ModelVersionContext() as model:
-            tag = clean_client.create_tag(
-                TagRequestModel(name="foo", color="red")
-            )
+            tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
             fake_model_id = uuid4() if not use_model else model.id
             clean_client.zen_store.create_tag_resource(
-                TagResourceRequestModel(
+                TagResourceRequest(
                     tag_id=tag.id,
                     resource_id=fake_model_id,
                     resource_type=TaggableResourceTypes.MODEL,
@@ -4617,7 +4653,7 @@ class TestTagResource:
             # duplicate
             with pytest.raises(EntityExistsError):
                 clean_client.zen_store.create_tag_resource(
-                    TagResourceRequestModel(
+                    TagResourceRequest(
                         tag_id=tag.id,
                         resource_id=fake_model_id,
                         resource_type=TaggableResourceTypes.MODEL,
@@ -4626,13 +4662,13 @@ class TestTagResource:
             if use_tag:
                 clean_client.delete_tag(tag.id)
                 tag = clean_client.create_tag(
-                    TagRequestModel(name="foo", color="red")
+                    TagRequest(name="foo", color="red")
                 )
             else:
                 clean_client.delete_model(model.id)
             # should pass
             clean_client.zen_store.create_tag_resource(
-                TagResourceRequestModel(
+                TagResourceRequest(
                     tag_id=tag.id,
                     resource_id=fake_model_id,
                     resource_type=TaggableResourceTypes.MODEL,

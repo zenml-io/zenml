@@ -15,8 +15,7 @@ function run_tests_for_version() {
     # Initialize zenml with the appropriate template
     # hardcoded to 0.43.0 since this is the latest template-starter repo
     # release tag
-    git clone -b "release/0.43.0" https://github.com/zenml-io/template-starter
-    copier copy template-starter/ test_starter --trust --defaults
+    copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
     cd test_starter
 
     export ZENML_ANALYTICS_OPT_IN=false
@@ -48,7 +47,7 @@ if [ "$1" == "mysql" ]; then
 fi
 
 # List of versions to test
-VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0")
+VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0")
 
 # Start completely fresh
 rm -rf ~/.config/zenml
@@ -69,10 +68,15 @@ do
     # Get the major and minor version of Python
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
-    # Check if the Python version is 3.9 and VERSION is 0.47.0
-    if [[ "$PYTHON_VERSION" == "3.9" && "$VERSION" == "0.47.0" ]]; then
-        pip3 install importlib_metadata
+    # Check if the Python version is 3.9 and VERSION is > 0.47.0
+    if [[ "$PYTHON_VERSION" == "3.9" ]]; then
+        case "$VERSION" in
+            "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
+                pip3 install importlib_metadata
+                ;;
+        esac
     fi
+
 
     if [ "$1" == "mysql" ]; then
         zenml connect --url mysql://127.0.0.1/zenml --username root --password password
