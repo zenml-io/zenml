@@ -4,7 +4,7 @@ description: Put your new knowledge in action with an end to end project
 
 # An end-to-end project
 
-In this guide, we have went over some advanced concepts:
+In this guide, we will go over some advanced concepts:
 
 - The value of [deploying ZenML](connect-deployed-zenml.md)
 - Abstracting infrastructure configuration into [stacks](understand-stacks.md)
