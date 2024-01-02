@@ -64,7 +64,7 @@ to design flexible and reusable steps
 after a pipeline run has concluded
 - Best practices for implementing and running reproducible and reliable ML pipelines with ZenML
 
-Now trying sharing the [ZenML e2e template](https://github.com/zenml-io/template-e2e-batch) with your colleagues and see how they react!
+Now try sharing the [ZenML e2e template](https://github.com/zenml-io/template-e2e-batch) with your colleagues and see how they react!
 
 ## Conclusion and next steps
 
