@@ -100,6 +100,6 @@ def model_evaluator(
             "train_accuracy": float(trn_acc),
             "test_accuracy": float(tst_acc),
         },
-        artifact_name="model",
+        artifact_name="sklearn_classifier",
     )
     return float(tst_acc)

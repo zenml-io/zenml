@@ -25,7 +25,7 @@ from zenml.integrations.slack.alerters.slack_alerter import (
 
 @step
 def slack_alerter_post_step(
-    message: str,
+    message: Optional[str] = None,
     params: Optional[SlackAlerterParameters] = None,
 ) -> bool:
     """Post a message to the Slack alerter component of the active stack.

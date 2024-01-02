@@ -31,7 +31,6 @@ from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, LogicalOperators
 from zenml.logger import get_logger
-from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -40,6 +39,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -134,7 +134,7 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     data_type: Source = Field(
         title="Data type of the artifact.",
     )
-    tags: List[TagResponseModel] = Field(
+    tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
 
@@ -215,7 +215,7 @@ class ArtifactVersionResponse(
         return self.get_body().type
 
     @property
-    def tags(self) -> List[TagResponseModel]:
+    def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
         Returns:

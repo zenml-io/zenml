@@ -85,7 +85,6 @@ from zenml.models import (
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
     BaseResponse,
-    BaseResponseModel,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryResponse,
@@ -126,10 +125,10 @@ from zenml.models import (
     RunMetadataResponse,
     ScheduleFilter,
     ScheduleResponse,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountResponse,
@@ -146,10 +145,10 @@ from zenml.models import (
     StackUpdate,
     StepRunFilter,
     StepRunResponse,
-    TagFilterModel,
-    TagRequestModel,
-    TagResponseModel,
-    TagUpdateModel,
+    TagFilter,
+    TagRequest,
+    TagResponse,
+    TagUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -172,10 +171,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-AnyResponse = TypeVar(
-    "AnyResponse",
-    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
-)
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
 
 
 class ClientConfiguration(FileSyncModel):
@@ -3042,7 +3038,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         values: Dict[str, str],
         scope: SecretScope = SecretScope.WORKSPACE,
-    ) -> SecretResponseModel:
+    ) -> SecretResponse:
         """Creates a new secret.
 
         Args:
@@ -3057,7 +3053,7 @@ class Client(metaclass=ClientMetaClass):
             NotImplementedError: If centralized secrets management is not
                 enabled.
         """
-        create_secret_request = SecretRequestModel(
+        create_secret_request = SecretRequest(
             name=name,
             values=values,
             scope=scope,
@@ -3078,7 +3074,8 @@ class Client(metaclass=ClientMetaClass):
         scope: Optional[SecretScope] = None,
         allow_partial_name_match: bool = True,
         allow_partial_id_match: bool = True,
-    ) -> SecretResponseModel:
+        hydrate: bool = True,
+    ) -> SecretResponse:
         """Get a secret.
 
         Get a secret identified by a name, ID or prefix of the name or ID and
@@ -3098,6 +3095,8 @@ class Client(metaclass=ClientMetaClass):
                 outermost scope (global) until a secret is found.
             allow_partial_name_match: If True, allow partial name matches.
             allow_partial_id_match: If True, allow partial ID matches.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -3117,7 +3116,8 @@ class Client(metaclass=ClientMetaClass):
                 secret = self.zen_store.get_secret(
                     secret_id=UUID(name_id_or_prefix)
                     if isinstance(name_id_or_prefix, str)
-                    else name_id_or_prefix
+                    else name_id_or_prefix,
+                    hydrate=hydrate,
                 )
                 if scope is not None and secret.scope != scope:
                     raise KeyError(
@@ -3149,17 +3149,21 @@ class Client(metaclass=ClientMetaClass):
             id=f"startswith:{name_id_or_prefix}"
             if allow_partial_id_match
             else None,
+            hydrate=hydrate,
         )
 
         for search_scope in search_scopes:
-            partial_matches: List[SecretResponseModel] = []
+            partial_matches: List[SecretResponse] = []
             for secret in secrets.items:
                 if secret.scope != search_scope:
                     continue
                 # Exact match
                 if secret.name == name_id_or_prefix:
                     # Need to fetch the secret again to get the secret values
-                    return self.zen_store.get_secret(secret_id=secret.id)
+                    return self.zen_store.get_secret(
+                        secret_id=secret.id,
+                        hydrate=hydrate,
+                    )
                 # Partial match
                 partial_matches.append(secret)
 
@@ -3183,7 +3187,8 @@ class Client(metaclass=ClientMetaClass):
             if len(partial_matches) == 1:
                 # Need to fetch the secret again to get the secret values
                 return self.zen_store.get_secret(
-                    secret_id=partial_matches[0].id
+                    secret_id=partial_matches[0].id,
+                    hydrate=hydrate,
                 )
 
         msg = (
@@ -3208,7 +3213,8 @@ class Client(metaclass=ClientMetaClass):
         scope: Optional[SecretScope] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[SecretResponseModel]:
+        hydrate: bool = False,
+    ) -> Page[SecretResponse]:
         """Fetches all the secret models.
 
         The returned secrets do not contain the secret values. To get the
@@ -3226,6 +3232,8 @@ class Client(metaclass=ClientMetaClass):
             scope: The scope of the secret to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all the secret models without the secret values.
@@ -3234,7 +3242,7 @@ class Client(metaclass=ClientMetaClass):
             NotImplementedError: If centralized secrets management is not
                 enabled.
         """
-        secret_filter_model = SecretFilterModel(
+        secret_filter_model = SecretFilter(
             page=page,
             size=size,
             sort_by=sort_by,
@@ -3250,7 +3258,8 @@ class Client(metaclass=ClientMetaClass):
         secret_filter_model.set_scope_workspace(self.active_workspace.id)
         try:
             return self.zen_store.list_secrets(
-                secret_filter_model=secret_filter_model
+                secret_filter_model=secret_filter_model,
+                hydrate=hydrate,
             )
         except NotImplementedError:
             raise NotImplementedError(
@@ -3266,7 +3275,7 @@ class Client(metaclass=ClientMetaClass):
         new_scope: Optional[SecretScope] = None,
         add_or_update_values: Optional[Dict[str, str]] = None,
         remove_values: Optional[List[str]] = None,
-    ) -> SecretResponseModel:
+    ) -> SecretResponse:
         """Updates a secret.
 
         Args:
@@ -3292,9 +3301,10 @@ class Client(metaclass=ClientMetaClass):
             # Don't allow partial name matches, but allow partial ID matches
             allow_partial_name_match=False,
             allow_partial_id_match=True,
+            hydrate=True,
         )
 
-        secret_update = SecretUpdateModel(name=new_name or secret.name)  # type: ignore[call-arg]
+        secret_update = SecretUpdate(name=new_name or secret.name)  # type: ignore[call-arg]
 
         if new_scope:
             secret_update.scope = new_scope
@@ -3346,8 +3356,11 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_secret(secret_id=secret.id)
 
     def get_secret_by_name_and_scope(
-        self, name: str, scope: Optional[SecretScope] = None
-    ) -> SecretResponseModel:
+        self,
+        name: str,
+        scope: Optional[SecretScope] = None,
+        hydrate: bool = True,
+    ) -> SecretResponse:
         """Fetches a registered secret with a given name and optional scope.
 
         This is a version of get_secret that restricts the search to a given
@@ -3359,6 +3372,8 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name: The name of the secret to get.
             scope: The scope of the secret to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The registered secret.
@@ -3382,11 +3397,14 @@ class Client(metaclass=ClientMetaClass):
                 logical_operator=LogicalOperators.AND,
                 name=f"equals:{name}",
                 scope=search_scope,
+                hydrate=hydrate,
             )
 
             if len(secrets.items) >= 1:
                 # Need to fetch the secret again to get the secret values
-                return self.zen_store.get_secret(secret_id=secrets.items[0].id)
+                return self.zen_store.get_secret(
+                    secret_id=secrets.items[0].id, hydrate=hydrate
+                )
 
         msg = f"No secret with name '{name}' was found"
         if scope is not None:
@@ -3397,7 +3415,8 @@ class Client(metaclass=ClientMetaClass):
     def list_secrets_in_scope(
         self,
         scope: SecretScope,
-    ) -> Page[SecretResponseModel]:
+        hydrate: bool = False,
+    ) -> Page[SecretResponse]:
         """Fetches the list of secret in a given scope.
 
         The returned secrets do not contain the secret values. To get the
@@ -3405,15 +3424,15 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             scope: The secrets scope to search for.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The list of secrets in the given scope without the secret values.
         """
         logger.debug(f"Fetching the secrets in scope {scope.value}.")
 
-        return self.list_secrets(
-            scope=scope,
-        )
+        return self.list_secrets(scope=scope, hydrate=hydrate)
 
     # --------------------------- Code repositories ---------------------------
 
@@ -4432,6 +4451,7 @@ class Client(metaclass=ClientMetaClass):
         trade_offs: Optional[str] = None,
         ethics: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        save_models_to_registry: bool = True,
     ) -> ModelResponse:
         """Creates a new model in Model Control Plane.
 
@@ -4445,6 +4465,8 @@ class Client(metaclass=ClientMetaClass):
             trade_offs: The tradeoffs of the model.
             ethics: The ethical implications of the model.
             tags: Tags associated with the model.
+            save_models_to_registry: Whether to save the model to the
+                registry.
 
         Returns:
             The newly created model.
@@ -4462,6 +4484,7 @@ class Client(metaclass=ClientMetaClass):
                 tags=tags,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
+                save_models_to_registry=save_models_to_registry,
             )
         )
 
@@ -4476,6 +4499,7 @@ class Client(metaclass=ClientMetaClass):
     def update_model(
         self,
         model_name_or_id: Union[str, UUID],
+        name: Optional[str] = None,
         license: Optional[str] = None,
         description: Optional[str] = None,
         audience: Optional[str] = None,
@@ -4490,6 +4514,7 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             model_name_or_id: name or id of the model to be deleted.
+            name: The name of the model.
             license: The license under which the model is created.
             description: The description of the model.
             audience: The target audience of the model.
@@ -4508,6 +4533,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.update_model(
             model_id=model_name_or_id,  # type:ignore[arg-type]
             model_update=ModelUpdate(
+                name=name,
                 license=license,
                 description=description,
                 audience=audience,
@@ -4757,6 +4783,7 @@ class Client(metaclass=ClientMetaClass):
         stage: Optional[Union[str, ModelStages]] = None,
         force: bool = False,
         name: Optional[str] = None,
+        description: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
     ) -> ModelVersionResponse:
@@ -4769,6 +4796,7 @@ class Client(metaclass=ClientMetaClass):
             force: Whether existing model version in target stage should be
                 silently archived or an error should be raised.
             name: Target model version name to be set.
+            description: Target model version description to be set.
             add_tags: Tags to add to the model version.
             remove_tags: Tags to remove from to the model version.
 
@@ -4789,6 +4817,7 @@ class Client(metaclass=ClientMetaClass):
                 stage=stage,
                 force=force,
                 name=name,
+                description=description,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
             ),
@@ -5649,7 +5678,7 @@ class Client(metaclass=ClientMetaClass):
     # can be accessed via relevant resources
     #############################################
 
-    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+    def create_tag(self, tag: TagRequest) -> TagResponse:
         """Creates a new tag.
 
         Args:
@@ -5671,8 +5700,8 @@ class Client(metaclass=ClientMetaClass):
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        tag_update_model: TagUpdateModel,
-    ) -> TagResponseModel:
+        tag_update_model: TagUpdate,
+    ) -> TagResponse:
         """Updates an existing tag.
 
         Args:
@@ -5686,28 +5715,39 @@ class Client(metaclass=ClientMetaClass):
             tag_name_or_id=tag_name_or_id, tag_update_model=tag_update_model
         )
 
-    def get_tag(self, tag_name_or_id: Union[str, UUID]) -> TagResponseModel:
+    def get_tag(
+        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the model to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The tag of interest.
         """
-        return self.zen_store.get_tag(tag_name_or_id=tag_name_or_id)
+        return self.zen_store.get_tag(
+            tag_name_or_id=tag_name_or_id, hydrate=hydrate
+        )
 
     def list_tags(
         self,
-        tag_filter_model: TagFilterModel,
-    ) -> Page[TagResponseModel]:
+        tag_filter_model: TagFilter,
+        hydrate: bool = False,
+    ) -> Page[TagResponse]:
         """Get tags by filter.
 
         Args:
             tag_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all tags.
         """
-        return self.zen_store.list_tags(tag_filter_model=tag_filter_model)
+        return self.zen_store.list_tags(
+            tag_filter_model=tag_filter_model, hydrate=hydrate
+        )
