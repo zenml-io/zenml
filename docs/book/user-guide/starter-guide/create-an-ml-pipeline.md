@@ -19,7 +19,7 @@ from zenml import pipeline, step
 
 @step
 def load_data() -> dict:
-    """Simulates loading of training data and labels"""
+    """Simulates loading of training data and labels."""
 
     training_data = [[1, 2], [3, 4], [5, 6]]
     labels = [0, 1, 0]
