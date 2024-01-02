@@ -21,7 +21,7 @@ flowchart LR
 
 As you can see from the diagram, there are many layers of 1-to-N relationships.
 
-Let us investigate how to traverse this hierarchy level-by-level:
+Let us investigate how to traverse this hierarchy level by level:
 
 ## Pipelines
 
