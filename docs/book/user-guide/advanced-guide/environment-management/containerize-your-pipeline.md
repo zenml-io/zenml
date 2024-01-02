@@ -88,10 +88,12 @@ There are many ways in which you can supply these settings:
 ```python
 docker_settings = DockerSettings()
 
+# Either add it to the decorator
 @pipeline(settings={"docker": docker_settings})
 def my_pipeline() -> None:
     my_step()
 
+# Or configure the pipelines options
 my_pipeline = my_pipeline.with_options(
     settings={"docker": docker_settings}
 )
@@ -102,10 +104,12 @@ my_pipeline = my_pipeline.with_options(
 ```python
 docker_settings = DockerSettings()
 
+# Either add it to the decorator
 @step(settings={"docker": docker_settings})
 def my_step() -> None:
     pass
 
+# Or configure the step options
 my_step = my_step.with_options(
     settings={"docker": docker_settings}
 )
