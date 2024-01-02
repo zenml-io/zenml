@@ -79,7 +79,7 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 
 ### Explore the dashboard
 
-Once the pipeline has executed, use the `zenml up` command to view the results in the ZenML Dashboard. Using that command will open up the browser automatically.
+Once the pipeline has finished its execution, use the `zenml up` command to view the results in the ZenML Dashboard. Using that command will open up the browser automatically.
 
 <figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
 
