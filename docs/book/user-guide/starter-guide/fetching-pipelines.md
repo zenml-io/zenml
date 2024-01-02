@@ -138,13 +138,12 @@ pipeline_settings = run.config.settings
 
 #### Component-Specific Metadata
 
-Depending on the stack components you use, you might have additional component-specific metadata associated with your run, such as the URL to the UI of a remote orchestrator. You can access this component-specific metadata via the `metadata` attribute:
+Depending on the stack components you use, you might have additional component-specific metadata associated with your run, such as the URL to the UI of a remote orchestrator. You can access this component-specific metadata via the `run_metadata` attribute:
 
 ```python
-run_metadata = run.metadata
+run_metadata = run.run_metadata
 # The following only works for runs on certain remote orchestrators
 orchestrator_url = run_metadata["orchestrator_url"]
-```
 
 ## Steps
 
