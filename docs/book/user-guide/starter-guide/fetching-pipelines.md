@@ -36,7 +36,7 @@ pipeline_model = Client().get_pipeline("first_pipeline")
 ```
 
 {% hint style="info" %}
-Checkout the [ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md) for more information on the `Client` class and its purpose.
+Check out the [ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md) for more information on the `Client` class and its purpose.
 {% endhint %}
 
 ### Discover and List Pipelines
