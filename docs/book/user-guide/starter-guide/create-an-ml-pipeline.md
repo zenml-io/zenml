@@ -255,7 +255,7 @@ steps:
       gamma: 0.01
 ```
 
-Please note that this would take precendence over any parameters passed in code.
+Please note that this would take precedence over any parameters passed in the code.
 
 If you are unsure how to format this config file, you can generate a template config file from a pipeline.
 
