@@ -125,11 +125,11 @@ environments:
     mandatory_requirements:
       - airflow-local
 
-  - name: docker-server
+  - name: docker-server-mysql
     description: >-
       Server docker-compose deployment with local orchestrator and all local
-      components.
-    deployment: docker-compose-server
+      components, using a MySQL database.
+    deployment: docker-server-mysql
     requirements:
       - data-validators
       - mlflow-local-tracker
@@ -138,11 +138,11 @@ environments:
     capabilities:
       synchronized: true
 
-  - name: docker-server-docker-orchestrator
+  - name: docker-server-docker-orchestrator-mysql
     description: >-
       Server docker-compose deployment with docker orchestrator and all local
-      components.
-    deployment: docker-compose-server
+      components, using a MySQL database.
+    deployment: docker-server-mysql
     requirements:
       - data-validators
       - mlflow-local-tracker
@@ -151,11 +151,50 @@ environments:
     mandatory_requirements:
       - docker-local
 
-  - name: docker-server-airflow-orchestrator
+  - name: docker-server-airflow-orchestrator-mysql
     description: >-
       Server docker-compose deployment with local airflow orchestrator and all
-      local components.
-    deployment: docker-compose-server
+      local components, using a MySQL database.
+    deployment: docker-server-mysql
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-registry
+      - mlflow-local-deployer
+    mandatory_requirements:
+      - airflow-local
+
+  - name: docker-server-mariadb
+    description: >-
+      Server docker-compose deployment with local orchestrator and all local
+      components, using a MariaDB database.
+    deployment: docker-server-mariadb
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-registry
+      - mlflow-local-deployer
+    capabilities:
+      synchronized: true
+
+  - name: docker-server-docker-orchestrator-mariadb
+    description: >-
+      Server docker-compose deployment with docker orchestrator and all local
+      components, using a MariaDB database.
+    deployment: docker-server-mariadb
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-registry
+      - mlflow-local-deployer
+    mandatory_requirements:
+      - docker-local
+
+  - name: docker-server-airflow-orchestrator-mariadb
+    description: >-
+      Server docker-compose deployment with local airflow orchestrator and all
+      local components, using a MariaDB database.
+    deployment: docker-server-mariadb
     requirements:
       - data-validators
       - mlflow-local-tracker

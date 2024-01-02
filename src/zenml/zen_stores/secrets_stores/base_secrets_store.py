@@ -31,13 +31,13 @@ from pydantic import BaseModel
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import SecretScope, SecretsStoreType
-from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretResponseBody,
+    SecretResponseMetadata,
     UserResponse,
     WorkspaceResponse,
 )
@@ -276,9 +276,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         secrets = depaginate(
             partial(
                 self.list_secrets,
-                secret_filter_model=SecretFilterModel(
-                    workspace_id=workspace_id
-                ),
+                secret_filter_model=SecretFilter(workspace_id=workspace_id),
             )
         )
         for secret in secrets:
@@ -304,7 +302,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         secrets = depaginate(
             partial(
                 self.list_secrets,
-                secret_filter_model=SecretFilterModel(user_id=user_id),
+                secret_filter_model=SecretFilter(user_id=user_id),
             )
         )
         for secret in secrets:
@@ -340,32 +338,6 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
 
         return user, workspace
 
-    def _validate_user_and_workspace_update(
-        self,
-        secret_update: SecretUpdateModel,
-        current_user: UUID,
-        current_workspace: UUID,
-    ) -> None:
-        """Validates that a secret update does not change the user or workspace.
-
-        Args:
-            secret_update: Secret update.
-            current_user: The current user ID.
-            current_workspace: The current workspace ID.
-
-        Raises:
-            IllegalOperationError: If the user or workspace is changed.
-        """
-        if secret_update.user and current_user != secret_update.user:
-            raise IllegalOperationError("Cannot change the user of a secret.")
-        if (
-            secret_update.workspace
-            and current_workspace != secret_update.workspace
-        ):
-            raise IllegalOperationError(
-                "Cannot change the workspace of a secret."
-            )
-
     def _check_secret_scope(
         self,
         secret_name: str,
@@ -374,7 +346,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         user: UUID,
         exclude_secret_id: Optional[UUID] = None,
     ) -> Tuple[bool, str]:
-        """Checks if a secret with the given name already exists in the given scope.
+        """Checks if a secret with the given name exists in the given scope.
 
         This method enforces the following scope rules:
 
@@ -395,7 +367,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             True if a secret with the given name already exists in the given
             scope, False otherwise, and an error message.
         """
-        filter = SecretFilterModel(
+        filter = SecretFilter(
             name=secret_name,
             scope=scope,
             page=1,
@@ -460,7 +432,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         distinguish ZenML secrets from other secrets that might be stored in
         the same backend, as well as to distinguish between different ZenML
         deployments using the same backend. Its value is set to the ZenML
-        deployment ID and it should be included in all queries to the backend.
+        deployment ID, and it should be included in all queries to the backend.
 
         Args:
             secret_id: Optional secret ID to include in the metadata.
@@ -495,7 +467,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
 
     def _get_secret_metadata_for_secret(
         self,
-        secret: Union[SecretRequestModel, SecretResponseModel],
+        secret: Union[SecretRequest, SecretResponse],
         secret_id: Optional[UUID] = None,
     ) -> Dict[str, str]:
         """Get a dictionary with the secrets metadata describing a secret.
@@ -513,7 +485,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         Returns:
             Dictionary with secret metadata information.
         """
-        if isinstance(secret, SecretRequestModel):
+        if isinstance(secret, SecretRequest):
             return self._get_secret_metadata(
                 secret_id=secret_id,
                 secret_name=secret.name,
@@ -536,7 +508,8 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         created: datetime,
         updated: datetime,
         values: Optional[Dict[str, str]] = None,
-    ) -> SecretResponseModel:
+        hydrate: bool = False,
+    ) -> SecretResponse:
         """Create a ZenML secret model from metadata stored in the secrets store backend.
 
         Args:
@@ -545,6 +518,8 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             created: The secret creation time.
             updated: The secret last updated time.
             values: The secret values (optional).
+            hydrate: Flag deciding whether to hydrate the output model
+                by including metadata fields in the response.
 
         Returns:
             The ZenML secret.
@@ -593,15 +568,21 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
                 f"workspace: {e}"
             )
 
-        secret_model = SecretResponseModel(
+        secret_model = SecretResponse(
             id=secret_id,
             name=name,
-            scope=scope,
-            workspace=workspace,
-            user=user,
-            values=values if values else {},
-            created=created,
-            updated=updated,
+            body=SecretResponseBody(
+                user=user,
+                created=created,
+                updated=updated,
+                scope=scope,
+                values=values if values else {},
+            ),
+            metadata=SecretResponseMetadata(
+                workspace=workspace,
+            )
+            if hydrate
+            else None,
         )
 
         return secret_model

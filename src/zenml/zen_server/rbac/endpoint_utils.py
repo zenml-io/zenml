@@ -12,11 +12,6 @@ from zenml.models import (
     Page,
     UserScopedRequest,
 )
-from zenml.models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
-    UserScopedRequestModel,
-)
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -27,23 +22,18 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 
-AnyRequestModel = TypeVar(
-    "AnyRequestModel", bound=Union[BaseRequestModel, BaseRequest]
-)
-AnyResponseModel = TypeVar(
-    "AnyResponseModel",
-    bound=Union[BaseResponseModel, BaseResponse],  # type: ignore[type-arg]
-)
-AnyFilterModel = TypeVar("AnyFilterModel", bound=BaseFilter)
-AnyUpdateModel = TypeVar("AnyUpdateModel", bound=BaseModel)
+AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyFilter = TypeVar("AnyFilter", bound=BaseFilter)
+AnyUpdate = TypeVar("AnyUpdate", bound=BaseModel)
 UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])
 
 
 def verify_permissions_and_create_entity(
-    request_model: AnyRequestModel,
+    request_model: AnyRequest,
     resource_type: ResourceType,
-    create_method: Callable[[AnyRequestModel], AnyResponseModel],
-) -> AnyResponseModel:
+    create_method: Callable[[AnyRequest], AnyResponse],
+) -> AnyResponse:
     """Verify permissions and create the entity if authorized.
 
     Args:
@@ -58,7 +48,7 @@ def verify_permissions_and_create_entity(
     Returns:
         A model of the created entity.
     """
-    if isinstance(request_model, (UserScopedRequest, UserScopedRequestModel)):
+    if isinstance(request_model, UserScopedRequest):
         auth_context = get_auth_context()
         assert auth_context
 
@@ -74,9 +64,9 @@ def verify_permissions_and_create_entity(
 
 def verify_permissions_and_get_entity(
     id: UUIDOrStr,
-    get_method: Callable[[UUIDOrStr], AnyResponseModel],
+    get_method: Callable[[UUIDOrStr], AnyResponse],
     **get_method_kwargs: Any,
-) -> AnyResponseModel:
+) -> AnyResponse:
     """Verify permissions and fetch an entity.
 
     Args:
@@ -93,11 +83,11 @@ def verify_permissions_and_get_entity(
 
 
 def verify_permissions_and_list_entities(
-    filter_model: AnyFilterModel,
+    filter_model: AnyFilter,
     resource_type: ResourceType,
-    list_method: Callable[[AnyFilterModel], Page[AnyResponseModel]],
+    list_method: Callable[[AnyFilter], Page[AnyResponse]],
     **list_method_kwargs: Any,
-) -> Page[AnyResponseModel]:
+) -> Page[AnyResponse]:
     """Verify permissions and list entities.
 
     Args:
@@ -122,10 +112,10 @@ def verify_permissions_and_list_entities(
 
 def verify_permissions_and_update_entity(
     id: UUIDOrStr,
-    update_model: AnyUpdateModel,
-    get_method: Callable[[UUIDOrStr], AnyResponseModel],
-    update_method: Callable[[UUIDOrStr, AnyUpdateModel], AnyResponseModel],
-) -> AnyResponseModel:
+    update_model: AnyUpdate,
+    get_method: Callable[[UUIDOrStr], AnyResponse],
+    update_method: Callable[[UUIDOrStr, AnyUpdate], AnyResponse],
+) -> AnyResponse:
     """Verify permissions and update an entity.
 
     Args:
@@ -145,7 +135,7 @@ def verify_permissions_and_update_entity(
 
 def verify_permissions_and_delete_entity(
     id: UUIDOrStr,
-    get_method: Callable[[UUIDOrStr], AnyResponseModel],
+    get_method: Callable[[UUIDOrStr], AnyResponse],
     delete_method: Callable[[UUIDOrStr], None],
 ) -> None:
     """Verify permissions and delete an entity.

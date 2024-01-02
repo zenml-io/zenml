@@ -225,6 +225,8 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline = deployment.pipeline
             build = deployment.build
             schedule = deployment.schedule
+            code_reference = deployment.code_reference
+
         elif self.pipeline_configuration is not None:
             config = PipelineConfiguration.parse_raw(
                 self.pipeline_configuration
@@ -239,6 +241,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline = self.pipeline.to_model() if self.pipeline else None
             build = self.build.to_model() if self.build else None
             schedule = self.schedule.to_model() if self.schedule else None
+            code_reference = None
 
         else:
             raise RuntimeError(
@@ -254,6 +257,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline=pipeline,
             build=build,
             schedule=schedule,
+            code_reference=code_reference,
             created=self.created,
             updated=self.updated,
         )

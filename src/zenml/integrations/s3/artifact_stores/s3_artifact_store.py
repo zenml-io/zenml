@@ -85,7 +85,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 credentials.token,
             )
 
-        secret = self.get_authentication_secret(
+        secret = self.get_typed_authentication_secret(
             expected_schema_type=AWSSecretSchema
         )
         if secret:

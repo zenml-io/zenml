@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponse,
@@ -26,6 +25,7 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
 )
 from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
@@ -63,6 +63,10 @@ class ArtifactUpdate(BaseModel):
 class ArtifactResponseBody(BaseResponseBody):
     """Response body for artifacts."""
 
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the model",
+    )
+
 
 class ArtifactResponseMetadata(BaseResponseMetadata):
     """Response metadata for artifacts."""
@@ -70,9 +74,6 @@ class ArtifactResponseMetadata(BaseResponseMetadata):
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
-    )
-    tags: List[TagResponseModel] = Field(
-        title="Tags associated with the model",
     )
 
 
@@ -98,6 +99,15 @@ class ArtifactResponse(
 
     # Body and metadata properties
     @property
+    def tags(self) -> List[TagResponse]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().tags
+
+    @property
     def has_custom_name(self) -> bool:
         """The `has_custom_name` property.
 
@@ -105,15 +115,6 @@ class ArtifactResponse(
             the value of the property.
         """
         return self.get_metadata().has_custom_name
-
-    @property
-    def tags(self) -> List[TagResponseModel]:
-        """The `tags` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().tags
 
     # Helper methods
     @property

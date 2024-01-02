@@ -20,9 +20,9 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, SECRETS, VERSION_1
 from zenml.models import (
     Page,
-    SecretFilterModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretResponse,
+    SecretUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -53,21 +53,22 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[SecretResponseModel],
+    response_model=Page[SecretResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_secrets(
-    secret_filter_model: SecretFilterModel = Depends(
-        make_dependable(SecretFilterModel)
-    ),
+    secret_filter_model: SecretFilter = Depends(make_dependable(SecretFilter)),
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[SecretResponseModel]:
+) -> Page[SecretResponse]:
     """Gets a list of secrets.
 
     Args:
         secret_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of secret objects.
@@ -76,6 +77,7 @@ def list_secrets(
         filter_model=secret_filter_model,
         resource_type=ResourceType.SECRET,
         list_method=zen_store().list_secrets,
+        hydrate=hydrate,
     )
 
     # This will be `None` if the user is allowed to read secret values
@@ -99,24 +101,29 @@ def list_secrets(
 
 @router.get(
     "/{secret_id}",
-    response_model=SecretResponseModel,
+    response_model=SecretResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_secret(
     secret_id: UUID,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> SecretResponseModel:
+) -> SecretResponse:
     """Gets a specific secret using its unique id.
 
     Args:
         secret_id: ID of the secret to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific secret object.
     """
     secret = verify_permissions_and_get_entity(
-        id=secret_id, get_method=zen_store().get_secret
+        id=secret_id,
+        get_method=zen_store().get_secret,
+        hydrate=hydrate,
     )
     if not has_permissions_for_model(secret, action=Action.READ_SECRET_VALUE):
         secret.remove_secrets()
@@ -126,16 +133,16 @@ def get_secret(
 
 @router.put(
     "/{secret_id}",
-    response_model=SecretResponseModel,
+    response_model=SecretResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_secret(
     secret_id: UUID,
-    secret_update: SecretUpdateModel,
+    secret_update: SecretUpdate,
     patch_values: Optional[bool] = False,
     _: AuthContext = Security(authorize),
-) -> SecretResponseModel:
+) -> SecretResponse:
     """Updates the attribute on a specific secret using its unique id.
 
     Args:

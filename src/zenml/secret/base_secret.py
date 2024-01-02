@@ -13,52 +13,33 @@
 #  permissions and limitations under the License.
 """Implementation of the Base SecretSchema class."""
 
-from abc import ABC
-from typing import Any, ClassVar, Dict, List
+from typing import Any, Dict, List
 
 from pydantic import BaseModel
 
 
-class BaseSecretSchema(BaseModel, ABC):
+class BaseSecretSchema(BaseModel):
     """Base class for all Secret Schemas."""
-
-    name: str
-    TYPE: ClassVar[str]
-
-    @property
-    def content(self) -> Dict[str, Any]:
-        """A dictionary for the content of the SecretSchema.
-
-        The concept of SecretSchemas supports strongly typed secret schemas as
-        well as arbitrary collections of key-value pairs. This property unifies
-        all attributes into a content dictionary.
-
-        Returns:
-            A dictionary containing the content of the SecretSchema.
-        """
-        fields_dict = self.dict(exclude_none=True)
-        fields_dict.pop("name")
-        if "arbitrary_kv_pairs" in fields_dict:
-            arbitrary_kv_pairs = fields_dict.pop("arbitrary_kv_pairs")
-            fields_dict.update(arbitrary_kv_pairs)
-        return fields_dict
 
     @classmethod
     def get_schema_keys(cls) -> List[str]:
-        """Get all attribute keys that are not part of the ignored set.
+        """Get all attributes that are part of the schema.
 
         These schema keys can be used to define all required key-value pairs of
         a secret schema.
 
         Returns:
-            A list of all attribute keys that are not part of the ignored set.
+            A list of all attribute names that are part of the schema.
         """
-        ignored_keys = ["name", "arbitrary_kv_pairs"]
-        return [
-            schema_key
-            for schema_key in cls.__fields__.keys()
-            if schema_key not in ignored_keys
-        ]
+        return list(cls.__fields__.keys())
+
+    def get_values(self) -> Dict[str, Any]:
+        """Get all values of the secret schema.
+
+        Returns:
+            A dictionary of all attribute names and their corresponding values.
+        """
+        return self.dict(exclude_none=True)
 
     class Config:
         """Pydantic configuration class."""

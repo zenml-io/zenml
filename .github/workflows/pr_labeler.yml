@@ -14,10 +14,10 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-    - uses: JulienKode/team-labeler-action@v0.1.1
+    - uses: JulienKode/team-labeler-action@v1.1.0
       with:
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
 
-    - uses: TimonVS/pr-labeler-action@v3
+    - uses: TimonVS/pr-labeler-action@v4.1.1
       with:
         configuration-path: .github/branch-labels.yml
