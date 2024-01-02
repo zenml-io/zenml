@@ -13,11 +13,8 @@
 #  permissions and limitations under the License.
 """Basic Authentication Secret Schema definition."""
 
-from typing import ClassVar
 
 from zenml.secret.base_secret import BaseSecretSchema
-
-BASIC_AUTH_SCHEMA_TYPE = "basic_auth"
 
 
 class BasicAuthSecretSchema(BaseSecretSchema):
@@ -30,6 +27,3 @@ class BasicAuthSecretSchema(BaseSecretSchema):
 
     username: str
     password: str
-
-    # Class configuration
-    TYPE: ClassVar[str] = BASIC_AUTH_SCHEMA_TYPE

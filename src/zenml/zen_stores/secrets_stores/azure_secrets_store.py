@@ -20,40 +20,47 @@ import re
 import uuid
 from datetime import datetime
 from typing import (
+    Any,
     ClassVar,
     Dict,
     List,
     Optional,
     Type,
-    Union,
+    cast,
 )
 from uuid import UUID
 
+from azure.core.credentials import TokenCredential
 from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
-from azure.identity import (
-    ClientSecretCredential,
-    DefaultAzureCredential,
-)
 from azure.keyvault.secrets import SecretClient
-from pydantic import SecretStr
+from pydantic import root_validator
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
-from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.exceptions import EntityExistsError
+from zenml.integrations.azure import (
+    AZURE_CONNECTOR_TYPE,
+    AZURE_RESOURCE_TYPE,
+)
+from zenml.integrations.azure.service_connectors.azure_service_connector import (
+    AzureAuthenticationMethods,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretResponseBody,
+    SecretResponseMetadata,
+    SecretUpdate,
 )
-from zenml.zen_stores.secrets_stores.base_secrets_store import (
-    BaseSecretsStore,
+from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
+    ServiceConnectorSecretsStore,
+    ServiceConnectorSecretsStoreConfiguration,
 )
 
 logger = get_logger(__name__)
@@ -64,39 +71,62 @@ ZENML_AZURE_SECRET_CREATED_KEY = "zenml_secret_created"
 ZENML_AZURE_SECRET_UPDATED_KEY = "zenml_secret_updated"
 
 
-class AzureSecretsStoreConfiguration(SecretsStoreConfiguration):
+class AzureSecretsStoreConfiguration(
+    ServiceConnectorSecretsStoreConfiguration
+):
     """Azure secrets store configuration.
 
     Attributes:
         type: The type of the store.
         key_vault_name: Name of the Azure Key Vault that this secrets store
             will use to store secrets.
-        azure_client_id: The client ID of the Azure application service
-            principal that will be used to access the Azure Key Vault. If not
-            set, the default Azure credential chain will be used.
-        azure_client_secret: The client secret of the Azure application
-            service principal that will be used to access the Azure Key Vault.
-            If not set, the default Azure credential chain will be used.
-        azure_tenant_id: The tenant ID of the Azure application service
-            principal that will be used to access the Azure Key Vault. If not
-            set, the default Azure credential chain will be used.
     """
 
     type: SecretsStoreType = SecretsStoreType.AZURE
-
     key_vault_name: str
-    azure_client_id: Optional[SecretStr] = None
-    azure_client_secret: Optional[SecretStr] = None
-    azure_tenant_id: Optional[SecretStr] = None
+
+    @root_validator(pre=True)
+    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Populate the connector configuration from legacy attributes.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+        """
+        # Search for legacy attributes and populate the connector configuration
+        # from them, if they exist.
+        if (
+            values.get("azure_client_id")
+            and values.get("azure_client_secret")
+            and values.get("azure_tenant_id")
+        ):
+            logger.warning(
+                "The `azure_client_id`, `azure_client_secret` and "
+                "`azure_tenant_id` attributes are deprecated and will be "
+                "removed in a future version or ZenML. Please use the "
+                "`auth_method` and `auth_config` attributes instead."
+            )
+            values[
+                "auth_method"
+            ] = AzureAuthenticationMethods.SERVICE_PRINCIPAL
+            values["auth_config"] = dict(
+                client_id=values.get("azure_client_id"),
+                client_secret=values.get("azure_client_secret"),
+                tenant_id=values.get("azure_tenant_id"),
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
 
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra = "allow"
 
 
-class AzureSecretsStore(BaseSecretsStore):
+class AzureSecretsStore(ServiceConnectorSecretsStore):
     """Secrets store implementation that uses the Azure Key Vault API.
 
     This secrets store implementation uses the Azure Key Vault API to
@@ -132,20 +162,15 @@ class AzureSecretsStore(BaseSecretsStore):
     fetch all versions for every secret to get the created_on timestamp during
     a list operation. So instead we manage the `created` and `updated`
     timestamps ourselves and save them as tags in the Azure Key Vault secret.
-
-    Attributes:
-        config: The configuration of the Azure secrets store.
-        TYPE: The type of the store.
-        CONFIG_TYPE: The type of the store configuration.
     """
 
     config: AzureSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AZURE
     CONFIG_TYPE: ClassVar[
-        Type[SecretsStoreConfiguration]
+        Type[ServiceConnectorSecretsStoreConfiguration]
     ] = AzureSecretsStoreConfiguration
-
-    _client: Optional[SecretClient] = None
+    SERVICE_CONNECTOR_TYPE: ClassVar[str] = AZURE_CONNECTOR_TYPE
+    SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = AZURE_RESOURCE_TYPE
 
     @property
     def client(self) -> SecretClient:
@@ -154,39 +179,7 @@ class AzureSecretsStore(BaseSecretsStore):
         Returns:
             The Azure Key Vault client.
         """
-        if self._client is None:
-            azure_logger = logging.getLogger("azure")
-
-            # Suppress the INFO logging level of the Azure SDK if the
-            # ZenML logging level is WARNING or lower.
-            if logger.level <= logging.WARNING:
-                azure_logger.setLevel(logging.WARNING)
-            else:
-                azure_logger.setLevel(logging.INFO)
-
-            # Initialize the Azure Key Vault client with the
-            # credentials from the configuration, if provided.
-            vault_url = f"https://{self.config.key_vault_name}.vault.azure.net"
-            credential: Union[
-                ClientSecretCredential,
-                DefaultAzureCredential,
-            ]
-            if (
-                self.config.azure_client_id
-                and self.config.azure_tenant_id
-                and self.config.azure_client_secret
-            ):
-                credential = ClientSecretCredential(
-                    tenant_id=self.config.azure_tenant_id.get_secret_value(),
-                    client_id=self.config.azure_client_id.get_secret_value(),
-                    client_secret=self.config.azure_client_secret.get_secret_value(),
-                )
-            else:
-                credential = DefaultAzureCredential()
-            self._client = SecretClient(
-                vault_url=vault_url, credential=credential
-            )
-        return self._client
+        return cast(SecretClient, super().client)
 
     # ====================================
     # Secrets Store interface implementation
@@ -196,13 +189,28 @@ class AzureSecretsStore(BaseSecretsStore):
     # Initialization and configuration
     # --------------------------------
 
-    def _initialize(self) -> None:
-        """Initialize the Azure secrets store."""
-        logger.debug("Initializing AzureSecretsStore")
+    def _initialize_client_from_connector(self, client: Any) -> Any:
+        """Initialize the Azure Key Vault client from the service connector client.
 
-        # Initialize the Azure client early, just to catch any configuration or
-        # authentication errors early, before the Secrets Store is used.
-        _ = self.client
+        Args:
+            client: The authenticated client object returned by the service
+                connector.
+
+        Returns:
+            The Azure Key Vault client.
+        """
+        assert isinstance(client, TokenCredential)
+        azure_logger = logging.getLogger("azure")
+
+        # Suppress the INFO logging level of the Azure SDK if the
+        # ZenML logging level is WARNING or lower.
+        if logger.level <= logging.WARNING:
+            azure_logger.setLevel(logging.WARNING)
+        else:
+            azure_logger.setLevel(logging.INFO)
+
+        vault_url = f"https://{self.config.key_vault_name}.vault.azure.net"
+        return SecretClient(vault_url=vault_url, credential=client)
 
     # ------
     # Secrets
@@ -259,7 +267,8 @@ class AzureSecretsStore(BaseSecretsStore):
         self,
         tags: Dict[str, str],
         values: Optional[str] = None,
-    ) -> SecretResponseModel:
+        hydrate: bool = False,
+    ) -> SecretResponse:
         """Create a ZenML secret model from data stored in an Azure secret.
 
         If the Azure secret cannot be converted, the method acts as if the
@@ -269,6 +278,8 @@ class AzureSecretsStore(BaseSecretsStore):
             tags: The Azure secret tags.
             values: The Azure secret values encoded as a JSON string
                 (optional).
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The ZenML secret.
@@ -293,10 +304,11 @@ class AzureSecretsStore(BaseSecretsStore):
             created=created,
             updated=updated,
             values=json.loads(values) if values else None,
+            hydrate=hydrate,
         )
 
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
-    def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
         """Creates a new secret.
 
         The new secret is also validated against the scoping rules enforced in
@@ -363,24 +375,32 @@ class AzureSecretsStore(BaseSecretsStore):
 
         logger.debug("Created Azure secret: %s", azure_secret_id)
 
-        secret_model = SecretResponseModel(
+        secret_model = SecretResponse(
             id=secret_id,
             name=secret.name,
-            scope=secret.scope,
-            workspace=workspace,
-            user=user,
-            values=secret.secret_values,
-            created=created,
-            updated=created,
+            body=SecretResponseBody(
+                user=user,
+                created=created,
+                updated=created,
+                scope=secret.scope,
+                values=secret.secret_values,
+            ),
+            metadata=SecretResponseMetadata(
+                workspace=workspace,
+            ),
         )
 
         return secret_model
 
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -411,11 +431,12 @@ class AzureSecretsStore(BaseSecretsStore):
         return self._convert_azure_secret(
             tags=azure_secret.properties.tags,
             values=azure_secret.value,
+            hydrate=hydrate,
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
         Note that returned secrets do not include any secret values. To fetch
@@ -424,6 +445,8 @@ class AzureSecretsStore(BaseSecretsStore):
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -446,7 +469,7 @@ class AzureSecretsStore(BaseSecretsStore):
         # The metadata will always contain at least the filter criteria
         # required to exclude everything but Azure secrets that belong to the
         # current ZenML deployment.
-        results: List[SecretResponseModel] = []
+        results: List[SecretResponse] = []
 
         try:
             all_secrets = self.client.list_properties_of_secrets()
@@ -458,7 +481,7 @@ class AzureSecretsStore(BaseSecretsStore):
                     # anyway.
                     assert secret_property.tags is not None
                     secret_model = self._convert_azure_secret(
-                        tags=secret_property.tags,
+                        tags=secret_property.tags, hydrate=hydrate
                     )
                 except KeyError:
                     # The _convert_azure_secret method raises a KeyError
@@ -492,7 +515,7 @@ class AzureSecretsStore(BaseSecretsStore):
                 f"therefore is {total_pages}."
             )
 
-        return Page[SecretResponseModel](
+        return Page[SecretResponse](
             total=total,
             total_pages=total_pages,
             items=sorted_results[
@@ -505,8 +528,8 @@ class AzureSecretsStore(BaseSecretsStore):
         )
 
     def update_secret(
-        self, secret_id: UUID, secret_update: SecretUpdateModel
-    ) -> SecretResponseModel:
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
         """Updates a secret.
 
         Secret values that are specified as `None` in the update that are
@@ -538,24 +561,16 @@ class AzureSecretsStore(BaseSecretsStore):
         """
         secret = self.get_secret(secret_id)
 
-        # Prevent changes to the secret's user or workspace
-        assert secret.user is not None
-        self._validate_user_and_workspace_update(
-            secret_update=secret_update,
-            current_user=secret.user.id,
-            current_workspace=secret.workspace.id,
-        )
-
         if secret_update.name is not None:
             self._validate_azure_secret_name(secret_update.name)
             secret.name = secret_update.name
         if secret_update.scope is not None:
-            secret.scope = secret_update.scope
+            secret.get_body().scope = secret_update.scope
         if secret_update.values is not None:
             # Merge the existing values with the update values.
             # The values that are set to `None` in the update are removed from
             # the existing secret when we call `.secret_values` later.
-            secret.values.update(secret_update.values)
+            secret.get_body().values.update(secret_update.values)
 
         if secret_update.name is not None or secret_update.scope is not None:
             # Check if a secret with the same name already exists in the same
@@ -580,8 +595,12 @@ class AzureSecretsStore(BaseSecretsStore):
         # We manage the created and updated times ourselves, so we don't need to
         # rely on the Azure Key Vault API to set them.
         updated = datetime.utcnow()
-        metadata[ZENML_AZURE_SECRET_CREATED_KEY] = secret.created.isoformat()
         metadata[ZENML_AZURE_SECRET_UPDATED_KEY] = updated.isoformat()
+        metadata[ZENML_AZURE_SECRET_CREATED_KEY] = (
+            secret.created.isoformat()
+            if secret.created
+            else metadata[ZENML_AZURE_SECRET_UPDATED_KEY]
+        )
 
         try:
             self.client.set_secret(
@@ -595,15 +614,19 @@ class AzureSecretsStore(BaseSecretsStore):
 
         logger.debug("Updated Azure secret: %s", azure_secret_id)
 
-        secret_model = SecretResponseModel(
+        secret_model = SecretResponse(
             id=secret_id,
             name=secret.name,
-            scope=secret.scope,
-            workspace=secret.workspace,
-            user=secret.user,
-            values=secret.secret_values,
-            created=secret.created,
-            updated=updated,
+            body=SecretResponseBody(
+                user=secret.user,
+                created=secret.created,
+                updated=updated,
+                scope=secret.scope,
+                values=secret.secret_values,
+            ),
+            metadata=SecretResponseMetadata(
+                workspace=secret.workspace,
+            ),
         )
 
         return secret_model

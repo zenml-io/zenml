@@ -40,6 +40,8 @@ from zenml.models import (
     ArtifactVersionUpdate,
     AuthenticationMethodModel,
     BaseFilter,
+    BaseRequest,
+    BaseResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryUpdate,
@@ -62,8 +64,8 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunRequest,
     ResourceTypeModel,
-    SecretFilterModel,
-    SecretRequestModel,
+    SecretFilter,
+    SecretRequest,
     ServiceAccountRequest,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
@@ -78,7 +80,6 @@ from zenml.models import (
     WorkspaceRequest,
     WorkspaceUpdate,
 )
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
 from zenml.service_connectors.service_connector_registry import (
@@ -485,7 +486,7 @@ class SecretContext:
         self.delete = delete
 
     def __enter__(self):
-        new_secret = SecretRequestModel(
+        new_secret = SecretRequest(
             name=self.secret_name,
             scope=self.scope,
             values=self.values,
@@ -555,6 +556,7 @@ class ServiceConnectorContext:
         configuration: Optional[Dict[str, str]] = None,
         secrets: Optional[Dict[str, Optional[SecretStr]]] = None,
         expires_at: Optional[datetime] = None,
+        expires_skew_tolerance: Optional[int] = None,
         expiration_seconds: Optional[int] = None,
         user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
@@ -570,6 +572,7 @@ class ServiceConnectorContext:
         self.configuration = configuration
         self.secrets = secrets
         self.expires_at = expires_at
+        self.expires_skew_tolerance = expires_skew_tolerance
         self.expiration_seconds = expiration_seconds
         self.user_id = user_id
         self.workspace_id = workspace_id
@@ -588,6 +591,7 @@ class ServiceConnectorContext:
             configuration=self.configuration or {},
             secrets=self.secrets or {},
             expires_at=self.expires_at,
+            expires_skew_tolerance=self.expires_skew_tolerance,
             expiration_seconds=self.expiration_seconds,
             labels=self.labels or {},
             user=self.user_id or self.client.active_user.id,
@@ -838,8 +842,8 @@ class ServiceConnectorTypeContext:
                 pass
 
 
-AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
-AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
+AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)
 
 
 class CrudTestConfig:
@@ -876,7 +880,7 @@ class CrudTestConfig:
     @property
     def list_method(
         self,
-    ) -> Callable[[BaseFilter], Page[AnyResponseModel]]:
+    ) -> Callable[[BaseFilter], Page[AnyResponse]]:
         store = Client().zen_store
         if self.entity_name.endswith("y"):
             method_name = f"list_{self.entity_name[:-1]}ies"
@@ -885,7 +889,7 @@ class CrudTestConfig:
         return getattr(store, method_name)
 
     @property
-    def get_method(self) -> Callable[[uuid.UUID], AnyResponseModel]:
+    def get_method(self) -> Callable[[uuid.UUID], AnyResponse]:
         store = Client().zen_store
         return getattr(store, f"get_{self.entity_name}")
 
@@ -895,18 +899,18 @@ class CrudTestConfig:
         return getattr(store, f"delete_{self.entity_name}")
 
     @property
-    def create_method(self) -> Callable[[AnyRequestModel], AnyResponseModel]:
+    def create_method(self) -> Callable[[AnyRequest], AnyResponse]:
         store = Client().zen_store
         return getattr(store, f"create_{self.entity_name}")
 
     @property
     def update_method(
         self,
-    ) -> Callable[[uuid.UUID, BaseModel], AnyResponseModel]:
+    ) -> Callable[[uuid.UUID, BaseModel], AnyResponse]:
         store = Client().zen_store
         return getattr(store, f"update_{self.entity_name}")
 
-    def create(self) -> AnyResponseModel:
+    def create(self) -> AnyResponse:
         """Creates the entity."""
         create_model = self.create_model
 
@@ -931,17 +935,17 @@ class CrudTestConfig:
         self.id = response.id
         return response
 
-    def list(self) -> Page[AnyResponseModel]:
+    def list(self) -> Page[AnyResponse]:
         """Lists all entities."""
         return self.list_method(self.filter_model())
 
-    def get(self) -> AnyResponseModel:
+    def get(self) -> AnyResponse:
         """Gets the entity if it was already created."""
         if not self.id:
             raise ValueError("Entity not created yet.")
         return self.get_method(self.id)
 
-    def update(self) -> AnyResponseModel:
+    def update(self) -> AnyResponse:
         """Updates the entity if it was already created."""
         if not self.id:
             raise ValueError("Entity not created yet.")
@@ -1060,13 +1064,13 @@ artifact_version_crud_test_config = CrudTestConfig(
     conditional_entities={"artifact_id": deepcopy(artifact_crud_test_config)},
 )
 secret_crud_test_config = CrudTestConfig(
-    create_model=SecretRequestModel(
+    create_model=SecretRequest(
         name=sample_name("sample_secret"),
         values={"key": "value"},
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    filter_model=SecretFilterModel,
+    filter_model=SecretFilter,
     entity_name="secret",
 )
 build_crud_test_config = CrudTestConfig(
@@ -1138,6 +1142,7 @@ model_crud_test_config = CrudTestConfig(
         trade_offs="secret",
         ethics="all good",
         tags=["cool", "stuff"],
+        save_models_to_registry=True,
     ),
     update_model=ModelUpdate(
         name=sample_name("updated_sample_service_connector"),
