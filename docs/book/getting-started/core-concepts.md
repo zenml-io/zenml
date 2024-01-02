@@ -31,7 +31,7 @@ At its core, ZenML follows a pipeline-based workflow for your projects. A **pipe
 
 ![Representation of a pipeline dag.](../.gitbook/assets/01\_pipeline.png)
 
-As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
+As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step is completed before starting. This is something you can keep in mind when organizing your steps.
 
 Pipelines and steps are defined in code using Python _decorators_ or _classes_. This is where the core business logic and value of your work lives, and you will spend most of your time defining these two things.
 
