@@ -19,7 +19,7 @@ from zenml import pipeline, step
 
 @step
 def load_data() -> dict:
-    """Simulates loading of training data and labels"""
+    """Simulates loading of training data and labels."""
 
     training_data = [[1, 2], [3, 4], [5, 6]]
     labels = [0, 1, 0]
@@ -40,7 +40,7 @@ def train_model(data: dict) -> None:
 
 @pipeline
 def simple_ml_pipeline():
-    """Define a pipeline that connects the steps"""
+    """Define a pipeline that connects the steps."""
     dataset = load_data()
     train_model(dataset)
 
@@ -79,11 +79,11 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run zenml up to see y
 
 ### Explore the dashboard
 
-Once the pipeline has executed, use the `zenml up` command to view the results in the ZenML Dashboard. Using that command will open up the browser automatically.
+Once the pipeline has finished its execution, use the `zenml up` command to view the results in the ZenML Dashboard. Using that command will open up the browser automatically.
 
 <figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
 
-Usually, the dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG visualization to understand the flow of data and to ensure all steps completed successfully.
+Usually, the dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG visualization to understand the flow of data and to ensure all steps are completed successfully.
 
 <figure><img src="../../.gitbook/assets/DAGofRun.png" alt=""><figcaption><p>Diagram view of the run, with the runtime attributes of step 2.</p></figcaption></figure>
 
@@ -132,7 +132,7 @@ The `zenml integration install sklearn` command is simply doing a `pip install s
 
 ### Define a data loader with multiple outputs
 
-A typical start of a ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation.
+A typical start of an ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation.
 Additionally, you can use the `Annotated` annotation to assign
 [custom output names](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names).
 Here we load an open-source dataset and split it into a train and a test dataset.
@@ -255,7 +255,7 @@ steps:
       gamma: 0.01
 ```
 
-Please note that this would take precendence over any parameters passed in code.
+Please note that this would take precedence over any parameters passed in the code.
 
 If you are unsure how to format this config file, you can generate a template config file from a pipeline.
 

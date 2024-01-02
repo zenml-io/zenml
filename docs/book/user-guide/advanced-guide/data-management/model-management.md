@@ -298,7 +298,7 @@ A ZenML model supports linking three types of artifacts:
 * `Model artifacts`: If there is a physical model artifact like a `.pkl` file or a model neural network weights file, it should be grouped in this category.
 * `Deployment artifacts`: These artifacts are to do with artifacts related to the endpoints and deployments of the models.
 
-You can also explicitly specify the linkage on a per-artifact basis by passing
+You can also explicitly specify the linkage on a per-artifact basis by passing a
 special configuration to the Annotated output:
 
 ```python

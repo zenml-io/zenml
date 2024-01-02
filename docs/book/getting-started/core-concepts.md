@@ -31,7 +31,7 @@ At its core, ZenML follows a pipeline-based workflow for your projects. A **pipe
 
 ![Representation of a pipeline dag.](../.gitbook/assets/01\_pipeline.png)
 
-As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
+As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step is completed before starting. This is something you can keep in mind when organizing your steps.
 
 Pipelines and steps are defined in code using Python _decorators_ or _classes_. This is where the core business logic and value of your work lives, and you will spend most of your time defining these two things.
 
@@ -124,7 +124,7 @@ In order to benefit from the aforementioned core concepts to their fullest exten
 
 #### ZenML Server
 
-To use _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/production-guide/connect-deployed-zenml.md) so it can communicate with these stack components and run your pipelines. The server is also responsible for managing ZenML business entities like pipelines, steps, models etc.
+To use _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/production-guide/connect-deployed-zenml.md) so it can communicate with these stack components and run your pipelines. The server is also responsible for managing ZenML business entities like pipelines, steps, models, etc.
 
 ![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04\_architecture.png)
 
