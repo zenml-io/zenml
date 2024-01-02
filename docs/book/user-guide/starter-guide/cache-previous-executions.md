@@ -32,7 +32,7 @@ def load_data_from_external_system(...) -> ...:
 ```
 {% endhint %}
 
-## Configuring caching behavior of your pipelines
+## Configuring the caching behavior of your pipelines
 
 With caching as the default behavior, there will be times when you need to disable it.
 
