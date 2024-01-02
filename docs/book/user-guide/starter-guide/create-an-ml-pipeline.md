@@ -132,7 +132,7 @@ The `zenml integration install sklearn` command is simply doing a `pip install s
 
 ### Define a data loader with multiple outputs
 
-A typical start of a ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation.
+A typical start of an ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation.
 Additionally, you can use the `Annotated` annotation to assign
 [custom output names](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names).
 Here we load an open-source dataset and split it into a train and a test dataset.
