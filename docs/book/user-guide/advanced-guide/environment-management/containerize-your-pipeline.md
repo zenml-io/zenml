@@ -115,7 +115,19 @@ my_step = my_step.with_options(
 )
 ```
 
-* Using a YAML configuration file as described [here](../pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml).
+* Using a YAML configuration file as described [here](../pipelining-features/configure-steps-pipelines.md#method-3-configuring-with-yaml):
+
+```yaml
+settings:
+    docker:
+        ...
+
+steps:
+  step_name:
+    settings:
+        docker:
+            ...
+```
 
 Check out [this page](../pipelining-features/configure-steps-pipelines.md#hierarchy-and-precedence) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
 
