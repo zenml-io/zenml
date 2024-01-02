@@ -83,7 +83,7 @@ If you want to make sure you get all the benefits of type annotating your steps,
 
 ### Step output names
 
-By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](broken-reference).
+By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](../../starter-guide/fetching-pipelines.md).
 
 If you want to use custom output names for your steps, use the `Annotated` type annotation:
 
@@ -211,7 +211,7 @@ When an artifact is used as a step function input, the step will only be cached 
 
 ### Using a custom step invocation ID
 
-When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](broken-reference) about the invocation after the pipeline has finished running.
+When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](../../starter-guide/fetching-pipelines.md) about the invocation after the pipeline has finished running.
 
 ```python
 from zenml import pipeline, step
@@ -552,7 +552,7 @@ An example of this is if I want to tag a pipeline, I can do the following:
 ...
 ```
 
-This tag is now associated and tracked with all pipeline runs, and can be [fetched later](broken-reference):
+This tag is now associated and tracked with all pipeline runs, and can be [fetched later](../../starter-guide/fetching-pipelines.md):
 
 ```python
 from zenml.client import Client

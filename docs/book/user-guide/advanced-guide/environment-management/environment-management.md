@@ -4,10 +4,6 @@ description: Navigating multiple development environments.
 
 # Environment management
 
-{% hint style="warning" %}
-**Note:** This page is a work in progress (WIP) and is currently under development. If you have any questions or need assistance, please join our [Slack community](https://zenml.io/slack).
-{% endhint %}
-
 ZenML deployments often involve multiple environments. This guide helps you manage dependencies and configurations across these environments.
 
 Here is a visual overview of the different environments:

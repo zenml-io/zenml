@@ -211,7 +211,7 @@ To run a pipeline using the new stack:
     ```bash
     zenml stack set my_stack
     ```
-2.  Run your pipeline code (you can use the code from the [previous section](broken-reference))
+2.  Run your pipeline code (you can use the code from [this previous section](../starter-guide/create-an-ml-pipeline.md#full-code-example))
 
     ```bash
     python run.py

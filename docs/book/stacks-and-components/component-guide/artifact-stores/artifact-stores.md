@@ -56,7 +56,7 @@ zenml artifact-store register s3_store -f s3 --path s3://my_bucket
 The Artifact Store provides low-level object storage services for other ZenML mechanisms. When you develop ZenML pipelines, you normally don't even have to be aware of its existence or interact with it directly. ZenML provides higher-level APIs that can be used as an alternative to store and access artifacts:
 
 * return one or more objects from your pipeline steps to have them automatically saved in the active Artifact Store as pipeline artifacts.
-* [retrieve pipeline artifacts](broken-reference) from the active Artifact Store after a pipeline run is complete.
+* [retrieve pipeline artifacts](../../../user-guide/starter-guide/fetching-pipelines.md) from the active Artifact Store after a pipeline run is complete.
 
 You will probably need to interact with the [low-level Artifact Store API](artifact-stores.md#the-artifact-store-api) directly:
 
