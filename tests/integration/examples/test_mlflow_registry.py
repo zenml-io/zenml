@@ -32,7 +32,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         MLFlowModelRegistry,
     )
 
-    # TODO: remvoe this temporary disabling of the test for Python 3.9 and 3.10
+    # TODO: remove this temporary disabling of the test for Python 3.9 and 3.10
     #  once the MLflow issue is resolved
     if sys.platform != "Darwin" and sys.version_info[:2] not in [
         (3, 9),
