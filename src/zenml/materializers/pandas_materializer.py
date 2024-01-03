@@ -31,7 +31,7 @@ PARQUET_FILENAME = "df.parquet"
 # Get the compression type from the environment variable
 COMPRESSION_TYPE = os.getenv("ZENML_PANDAS_COMPRESSION_TYPE", "snappy")
 # Get the chunk size from the environment variable
-CHUNK_SIZE = os.getenv("ZENML_PANDAS_CHUNK_SIZE", 100000)
+CHUNK_SIZE = int(os.getenv("ZENML_PANDAS_CHUNK_SIZE", "100000"))
 
 CSV_FILENAME = "df.csv"
 
