@@ -62,7 +62,6 @@ if TYPE_CHECKING:
 class PipelineRunRequest(WorkspaceScopedRequest):
     """Request model for pipeline runs."""
 
-    id: UUID
     name: str = Field(
         title="The name of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,

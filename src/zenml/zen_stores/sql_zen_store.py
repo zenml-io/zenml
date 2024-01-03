@@ -3156,7 +3156,7 @@ class SqlZenStore(BaseZenStore):
             The created pipeline run.
 
         Raises:
-            EntityExistsError: If an identical pipeline run already exists.
+            EntityExistsError: If a run with the same name already exists.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with same name already exists.
@@ -3169,18 +3169,6 @@ class SqlZenStore(BaseZenStore):
                 raise EntityExistsError(
                     f"Unable to create pipeline run: A pipeline run with name "
                     f"'{pipeline_run.name}' already exists."
-                )
-
-            # Check if pipeline run with same ID already exists.
-            existing_id_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == pipeline_run.id
-                )
-            ).first()
-            if existing_id_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run: A pipeline run with ID "
-                    f"'{pipeline_run.id}' already exists."
                 )
 
             # Create the pipeline run
@@ -3207,6 +3195,184 @@ class SqlZenStore(BaseZenStore):
             return self._get_run_schema(
                 run_name_or_id, session=session
             ).to_model(hydrate=hydrate)
+
+    def _replace_placeholder_run(
+        self, pipeline_run: PipelineRunRequest
+    ) -> PipelineRunResponse:
+        """Replace a placeholder run with the requested pipeline run.
+
+        Args:
+            pipeline_run: Pipeline run request.
+
+        Raises:
+            KeyError: If no placeholder run exists.
+
+        Returns:
+            The run model.
+        """
+        with Session(self.engine) as session:
+            run_schema = session.exec(
+                select(PipelineRunSchema)
+                # The following line locks the row in the DB, so anyone else
+                # calling `SELECT ... FOR UPDATE` will wait until the first
+                # transaction to do so finishes. After the first transaction
+                # finishes, the subsequent queries will not be able to find a
+                # placeholder run anymore, as we already updated the
+                # orchestrator_run_id.
+                # Note: This only locks a single row if the where clause of
+                # the query is indexed (we have a unique index due to the
+                # unique constraint on those columns). Otherwise this will lock
+                # multiple rows or even the complete table which we want to
+                # avoid.
+                .with_for_update()
+                .where(
+                    PipelineRunSchema.deployment_id == pipeline_run.deployment
+                )
+                .where(
+                    PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
+                )
+            ).first()
+
+            if not run_schema:
+                raise KeyError("No placeholder run found.")
+
+            run_schema.update_placeholder(pipeline_run)
+            session.add(run_schema)
+            session.commit()
+
+            return run_schema.to_model(hydrate=True)
+
+    def _get_run_by_orchestrator_run_id(
+        self, orchestrator_run_id: str, deployment_id: UUID
+    ) -> PipelineRunResponse:
+        """Get a pipeline run based on deployment and orchestrator run ID.
+
+        Args:
+            orchestrator_run_id: The orchestrator run ID.
+            deployment_id: The deployment ID.
+
+        Raises:
+            KeyError: If no run exists for the deployment and orchestrator run
+                ID.
+
+        Returns:
+            The pipeline run.
+        """
+        with Session(self.engine) as session:
+            run_schema = session.exec(
+                select(PipelineRunSchema)
+                .where(PipelineRunSchema.deployment_id == deployment_id)
+                .where(
+                    PipelineRunSchema.orchestrator_run_id
+                    == orchestrator_run_id
+                )
+            ).first()
+
+            if not run_schema:
+                raise KeyError(
+                    f"Unable to get run for orchestrator run ID "
+                    f"{orchestrator_run_id} and deployment ID {deployment_id}."
+                )
+
+            return run_schema.to_model(hydrate=True)
+
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunRequest
+    ) -> Tuple[PipelineRunResponse, bool]:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        # noqa: DAR401
+        Raises:
+            ValueError: If the request does not contain an orchestrator run ID.
+            EntityExistsError: If a run with the same name already exists.
+            RuntimeError: If the run fetching failed unexpectedly.
+
+        Returns:
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
+        """
+        if not pipeline_run.orchestrator_run_id:
+            raise ValueError(
+                "Unable to get or create run for request with missing "
+                "orchestrator run ID."
+            )
+
+        try:
+            return (
+                self._replace_placeholder_run(pipeline_run=pipeline_run),
+                True,
+            )
+        except KeyError:
+            # We were not able to find/replace a placeholder run. This could be
+            # due to one of the following three reasons:
+            # (1) There never was a placeholder run for the deployment. This is
+            #     the case if the user ran the pipeline on a schedule.
+            # (2) There was a placeholder run, but a previous pipeline run
+            #     already used it. This is the case if users rerun a pipeline
+            #     run e.g. from the orchestrator UI, as they will use the same
+            #     deployment_id with a new orchestrator_run_id.
+            # (3) A step of the same pipeline run already replaced the
+            #     placeholder run.
+            pass
+
+        try:
+            # We now try to create a new run. The following will happen in the
+            # three cases described above:
+            # (1) The behavior depends on whether we're the first step of the
+            #     pipeline run that's trying to create the run. If yes, the
+            #     `self.create_run(...)` will succeed. If no, a run with the
+            #     same deployment_id and orchestrator_run_id already exists and
+            #     the `self.create_run(...)` call will fail due to the unique
+            #     constraint on those columns.
+            # (2) Same as (1).
+            # (3) A step of the same pipeline run replaced the placeholder
+            #     run, which now contains the deployment_id and
+            #     orchestrator_run_id of the run that we're trying to create.
+            #     -> The `self.create_run(...) call will fail due to the unique
+            #     constraint on those columns.
+            return self.create_run(pipeline_run), True
+        except (EntityExistsError, IntegrityError) as create_error:
+            # Creating the run failed with an
+            # - IntegrityError: This happens when we violated a unique
+            #   constraint, which in turn means a run with the same
+            #   deployment_id and orchestrator_run_id exists. We now fetch and
+            #   return that run.
+            # - EntityExistsError: This happens when a run with the same name
+            #   already exists. This could be either a different run (in which
+            #   case we want to fail) or a run created by a step of the same
+            #   pipeline run (in which case we want to return it).
+            # Note: The IntegrityError might also be raised when other unique
+            # constraints get violated. The only other such constraint is the
+            # primary key constraint on the run ID, which means we randomly
+            # generated an existing UUID. In this case the call below will fail,
+            # but the chance of that happening is so low we don't handle it.
+            try:
+                return (
+                    self._get_run_by_orchestrator_run_id(
+                        orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                        deployment_id=pipeline_run.deployment,
+                    ),
+                    False,
+                )
+            except KeyError:
+                if isinstance(create_error, EntityExistsError):
+                    # There was a run with the same name which does not share
+                    # the deployment_id and orchestrator_run_id -> We fail with
+                    # the error that run names must be unique.
+                    raise create_error from None
+
+                # This should never happen as the run creation failed with an
+                # IntegrityError which means a run with the deployment_id and
+                # orchestrator_run_id exists.
+                raise RuntimeError(
+                    f"Failed to get or create run: {create_error}"
+                )
 
     def list_runs(
         self,
@@ -3291,34 +3457,6 @@ class SqlZenStore(BaseZenStore):
             # Delete the pipeline run
             session.delete(existing_run)
             session.commit()
-
-    def get_or_create_run(
-        self, pipeline_run: PipelineRunRequest
-    ) -> Tuple[PipelineRunResponse, bool]:
-        """Gets or creates a pipeline run.
-
-        If a run with the same ID or name already exists, it is returned.
-        Otherwise, a new run is created.
-
-        Args:
-            pipeline_run: The pipeline run to get or create.
-
-        Returns:
-            The pipeline run, and a boolean indicating whether the run was
-            created or not.
-        """
-        # We want to have the 'create' statement in the try block since running
-        # it first will reduce concurrency issues.
-        try:
-            return self.create_run(pipeline_run), True
-        except (EntityExistsError, IntegrityError):
-            # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
-            # since either one can be raised by the database when trying
-            # to create a new pipeline run with duplicate ID or name.
-            try:
-                return self.get_run(pipeline_run.id), False
-            except KeyError:
-                return self.get_run(pipeline_run.name), False
 
     def count_runs(self, filter_model: Optional[PipelineRunFilter]) -> int:
         """Count all pipeline runs.
