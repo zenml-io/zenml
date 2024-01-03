@@ -62,7 +62,7 @@ The serialization and deserialization logic of artifacts is defined by [Material
 Models are used to represent the outputs of
 a training process along with all metadata associated with that output. In other
 words: models in ZenML are more broadly defined as the weights as well as any
-associated information. Models are a first-class citizen in ZenML and as such
+associated information. Models are first-class citizens in ZenML and as such
 viewing and using them is unified and centralized in the ZenML API, client as
 well as on the [ZenML Cloud](https://zenml.io/cloud) dashboard.
 
