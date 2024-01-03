@@ -116,7 +116,7 @@ def link_artifact_config_to_model_version(
         client.zen_store.create_model_version_artifact_link(request)
 
 
-def log_model_version_metadata(
+def log_model_metadata(
     metadata: Dict[str, "MetadataType"],
     model_name: Optional[str] = None,
     model_version: Optional[Union[ModelStages, int, str]] = None,
