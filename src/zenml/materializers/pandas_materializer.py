@@ -20,10 +20,10 @@ import pandas as pd
 
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
-from zenml.utils import io_utils
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.metadata_types import DType, MetadataType
+from zenml.utils import io_utils
 
 logger = get_logger(__name__)
 
@@ -36,7 +36,7 @@ CHUNK_SIZE = os.getenv("ZENML_PANDAS_CHUNK_SIZE", 100000)
 CSV_FILENAME = "df.csv"
 
 
-class FastPandasMaterializer(BaseMaterializer):
+class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas fast."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
@@ -89,10 +89,14 @@ class FastPandasMaterializer(BaseMaterializer):
                 dfs = []
 
                 # Read the length of the dataframe from the metadata file
-                len_df = int(io_utils.read_file_contents_as_string(self.metadata_path))
-                
+                len_df = int(
+                    io_utils.read_file_contents_as_string(self.metadata_path)
+                )
+
                 for i in range(0, len_df, CHUNK_SIZE):
-                    with fileio.open(f"{self.parquet_path}_{i//CHUNK_SIZE}", mode="rb") as f:
+                    with fileio.open(
+                        f"{self.parquet_path}_{i//CHUNK_SIZE}", mode="rb"
+                    ) as f:
                         dfs.append(pd.read_parquet(f))
 
                 # concatenate all the dataframes to one
@@ -158,13 +162,19 @@ class FastPandasMaterializer(BaseMaterializer):
 
         if self.pyarrow_exists:
             # Write the length of the dataframe to a file for later user
-            io_utils.write_file_contents_as_string(self.metadata_path, len(df))
-            
+            io_utils.write_file_contents_as_string(
+                self.metadata_path, str(len(df))
+            )
+
             # Write the dataframe to a parquet file in chunks
             for i in range(0, len(df), CHUNK_SIZE):
-                chunk = df.iloc[i:i+CHUNK_SIZE]
-                with fileio.open(f"{self.parquet_path}_{i//CHUNK_SIZE}", mode="wb") as f:
-                    chunk.to_parquet(f, compression=COMPRESSION_TYPE, engine="pyarrow")
+                chunk = df.iloc[i : i + CHUNK_SIZE]
+                with fileio.open(
+                    f"{self.parquet_path}_{i//CHUNK_SIZE}", mode="wb"
+                ) as f:
+                    chunk.to_parquet(
+                        f, compression=COMPRESSION_TYPE, engine="pyarrow"
+                    )
         else:
             with fileio.open(self.csv_path, mode="wb") as f:
                 df.to_csv(f, index=True)

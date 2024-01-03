@@ -47,6 +47,22 @@ Setting to `true` switches to developer mode:
 ZENML_DEBUG=false
 ```
 
+## Pandas materializer
+
+When using `pandas.DataFrame` or `pandas.Series` objects the default `PandasMaterializer` 
+is used. This allows the configuration with two environmnetal variables:
+
+```shell
+# The compression type (e.g. can be "gzip")
+ZENML_PANDAS_COMPRESSION_TYPE="snappy"
+# The number of rows to split the pandas dataframe into
+# while writing on disk
+ZENML_PANDAS_CHUNK_SIZE="10000"
+```
+
+Please note that these environmental variables also need to be set in the [DockerSettings](containerize-your-pipeline.md#customize-the-docker-building) to work in the case of remote
+orchestrators.
+
 ## Active stack
 
 Setting the `ZENML_ACTIVE_STACK_ID` to a specific UUID will make the 
