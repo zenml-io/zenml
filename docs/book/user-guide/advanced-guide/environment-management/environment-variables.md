@@ -50,7 +50,7 @@ ZENML_DEBUG=false
 ## Pandas materializer
 
 When using `pandas.DataFrame` or `pandas.Series` objects the default `PandasMaterializer` 
-is used. This allows configuration with two environmnetal variables:
+is used. This allows configuration with two environment variables:
 
 ```shell
 # The compression type (e.g. can be "gzip")
