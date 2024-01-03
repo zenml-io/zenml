@@ -172,9 +172,7 @@ class PandasMaterializer(BaseMaterializer):
                 with fileio.open(
                     f"{self.parquet_path}_{i//CHUNK_SIZE}", mode="wb"
                 ) as f:
-                    chunk.to_parquet(
-                        f, compression=COMPRESSION_TYPE, engine="pyarrow"
-                    )
+                    chunk.to_parquet(f, compression=COMPRESSION_TYPE)
         else:
             with fileio.open(self.csv_path, mode="wb") as f:
                 df.to_csv(f, index=True)
