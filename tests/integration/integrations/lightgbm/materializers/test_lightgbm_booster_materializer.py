@@ -26,7 +26,7 @@ from zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer imp
 
 
 @pytest.mark.skipif(
-    platform.system() == "Darwin",
+    platform.system() == "darwin",
     reason="https://github.com/microsoft/LightGBM/issues/4229",
 )
 def test_lightgbm_booster_materializer():
