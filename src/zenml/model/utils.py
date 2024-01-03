@@ -133,10 +133,6 @@ def log_model_version_metadata(
         model_version: The version of the model to log metadata for. Can
             be omitted when being called inside a step with configured
             `model_version` in decorator.
-
-    Raises:
-        ValueError: If no model name/version is provided and the function is not
-            called inside a step with configured `model_version` in decorator.
     """
     logger.warning(
         "`log_model_version_metadata` is deprecated. Please use "
