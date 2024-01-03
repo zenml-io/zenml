@@ -44,7 +44,7 @@ While artifact metadata is specific to individual outputs of steps, model versio
 Here's an example of logging metadata for a model version:
 
 ```python
-from zenml import step, log_model_version_metadata, ArtifactConfig, get_step_context
+from zenml import step, log_model_metadata, ArtifactConfig, get_step_context
 from typing import Annotated
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -59,7 +59,7 @@ def train_model(dataset: pd.DataFrame) -> Annotated[ClassifierMixin, ArtifactCon
 
     # Log metadata for the model version
     # This associates the metadata with the ZenML model version, not the artifact
-    log_model_version_metadata(
+    log_model_metadata(
         metadata={
             "evaluation_metrics": {
                 "accuracy": accuracy,

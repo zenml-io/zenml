@@ -163,10 +163,10 @@ def training_pipeline(gamma: float = 0.002):
 
 [Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), model versions too can take a dictionary
 of key-value pairs to capture their metadata. This is achieved using the 
-`log_model_version_metadata` method:
+`log_model_metadata` method:
 
 ```python
-from zenml import get_step_context, step, log_model_version_metadata 
+from zenml import get_step_context, step, log_model_metadata 
 
 @step
 def svc_trainer(
@@ -181,7 +181,7 @@ def svc_trainer(
 
     model_version = get_step_context().model_version
     
-    log_model_version_metadata(
+    log_model_metadata(
         # Model name can be omitted if specified in the step or pipeline context
         model_name="iris_classifier",
         # Passing None or omitting this will use the `latest` version
