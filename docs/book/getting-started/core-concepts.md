@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
 Artifacts represent the data that goes through your steps as inputs and outputs and they are automatically tracked and stored by ZenML in the artifact store. They are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather, when the execution of a step is completed they are written to storage, and when a new step gets executed they are loaded from storage.
 
-The serialization and deserialization logic of artifacts is defined by Materializers.
+The serialization and deserialization logic of artifacts is defined by [Materializers](../user-guide/advanced-guide/data-management/handle-custom-data-types.md).
 
 #### Models
 

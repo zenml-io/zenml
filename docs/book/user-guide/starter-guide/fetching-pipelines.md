@@ -93,11 +93,11 @@ last_run = pipeline_model.last_run  # OR: pipeline_model.runs[0]
 If your most recent runs have failed, and you want to find the last run that has succeeded, you can use the `last_successful_run` property instead.
 {% endhint %}
 
-### Get the last run from a pipeline
+### Get the latest run from a pipeline
 
-Calling a pipeline to run it automatically returns the last run:
+Calling a pipeline executes it and then returns the response of the freshly executed run.
 
-```
+```python
 last_run = training_pipeline()
 ```
 
