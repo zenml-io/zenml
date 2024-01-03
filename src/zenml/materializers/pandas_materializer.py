@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,20 +20,24 @@ import pandas as pd
 
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
+from zenml.utils import io_utils
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.metadata_types import DType, MetadataType
 
 logger = get_logger(__name__)
 
-PARQUET_FILENAME = "df.parquet.gzip"
-COMPRESSION_TYPE = "gzip"
+PARQUET_FILENAME = "df.parquet"
+# Get the compression type from the environment variable
+COMPRESSION_TYPE = os.getenv("ZENML_PANDAS_COMPRESSION_TYPE", "snappy")
+# Get the chunk size from the environment variable
+CHUNK_SIZE = os.getenv("ZENML_PANDAS_CHUNK_SIZE", 100000)
 
 CSV_FILENAME = "df.csv"
 
 
-class PandasMaterializer(BaseMaterializer):
-    """Materializer to read data to and from pandas."""
+class FastPandasMaterializer(BaseMaterializer):
+    """Materializer to read data to and from pandas fast."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
         pd.DataFrame,
@@ -62,6 +66,7 @@ class PandasMaterializer(BaseMaterializer):
                 "to automatically store the data as a `.parquet` file instead."
             )
         finally:
+            self.metadata_path = os.path.join(self.uri, "metadata.txt")
             self.parquet_path = os.path.join(self.uri, PARQUET_FILENAME)
             self.csv_path = os.path.join(self.uri, CSV_FILENAME)
 
@@ -77,7 +82,32 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        if fileio.exists(self.parquet_path):
+        # If the metadata file exists, then the data is stored as a chunked
+        #  parquet file in the latest version of the materializer
+        if fileio.exists(self.metadata_path):
+            if self.pyarrow_exists:
+                dfs = []
+
+                # Read the length of the dataframe from the metadata file
+                len_df = int(io_utils.read_file_contents_as_string(self.metadata_path))
+                
+                for i in range(0, len_df, CHUNK_SIZE):
+                    with fileio.open(f"{self.parquet_path}_{i//CHUNK_SIZE}", mode="rb") as f:
+                        dfs.append(pd.read_parquet(f))
+
+                # concatenate all the dataframes to one
+                df = pd.concat(dfs)
+            else:
+                raise ImportError(
+                    "You have an old version of a `PandasMaterializer` "
+                    "data artifact stored in the artifact store "
+                    "as a `.parquet` file, which requires `pyarrow` "
+                    "for reading, You can install `pyarrow` by running "
+                    "'`pip install pyarrow fastparquet`'."
+                )
+        # If the parquet file exists, then the data is stored as a single
+        #  parquet file in the older versions of the materializer
+        elif fileio.exists(self.parquet_path):
             if self.pyarrow_exists:
                 with fileio.open(self.parquet_path, mode="rb") as f:
                     df = pd.read_parquet(f)
@@ -89,6 +119,7 @@ class PandasMaterializer(BaseMaterializer):
                     "for reading, You can install `pyarrow` by running "
                     "'`pip install pyarrow fastparquet`'."
                 )
+        # In this case, the data is stored as a `.csv` file
         else:
             with fileio.open(self.csv_path, mode="rb") as f:
                 df = pd.read_csv(f, index_col=0, parse_dates=True)
@@ -126,8 +157,14 @@ class PandasMaterializer(BaseMaterializer):
             df = df.to_frame(name="series")
 
         if self.pyarrow_exists:
-            with fileio.open(self.parquet_path, mode="wb") as f:
-                df.to_parquet(f, compression=COMPRESSION_TYPE)
+            # Write the length of the dataframe to a file for later user
+            io_utils.write_file_contents_as_string(self.metadata_path, len(df))
+            
+            # Write the dataframe to a parquet file in chunks
+            for i in range(0, len(df), CHUNK_SIZE):
+                chunk = df.iloc[i:i+CHUNK_SIZE]
+                with fileio.open(f"{self.parquet_path}_{i//CHUNK_SIZE}", mode="wb") as f:
+                    chunk.to_parquet(f, compression=COMPRESSION_TYPE, engine="pyarrow")
         else:
             with fileio.open(self.csv_path, mode="wb") as f:
                 df.to_csv(f, index=True)
