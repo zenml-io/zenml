@@ -50,15 +50,17 @@ general guidelines that cover both:
 A friendly ping in the comment thread to the submitter or a contributor can help
 draw attention if your issue is blocking.
 
+### Good First Issues for New Contributors
+
 The best way to start is to check the
-[`good-first-issue`](https://github.com/zenml-io/zenml/labels/good%20first%20issue)
+[`good-first-issue`](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22)
 label on the issue board. The core team creates these issues as necessary
 smaller tasks that you can work on to get deeper into ZenML internals. These
 should generally require relatively simple changes, probably affecting just one
 or two files which we think are ideal for people new to ZenML.
 
 The next step after that would be to look at the
-[`good-second-issue`](https://github.com/zenml-io/zenml/labels/good%20second%20issue)
+[`good-second-issue`](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+second+issue%22)
 label on the issue board. These are a bit more complex, might involve more
 files, but should still be well-defined and achievable to people relatively new
 to ZenML.
