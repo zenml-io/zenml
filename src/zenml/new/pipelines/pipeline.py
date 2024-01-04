@@ -53,7 +53,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
@@ -65,11 +65,13 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineRequest,
     PipelineResponse,
+    PipelineRunRequest,
     PipelineRunResponse,
     ScheduleRequest,
 )
 from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.model_utils import NewModelVersionRequest
+from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
@@ -569,7 +571,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         config_path: Optional[str] = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
-    ) -> None:
+    ) -> Optional[PipelineRunResponse]:
         """Runs the pipeline on the active stack.
 
         Args:
@@ -597,6 +599,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         Raises:
             Exception: bypass any exception from pipeline up.
+
+        Returns:
+            Model of the pipeline run if running without a schedule, `None` if
+            running with a schedule.
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -609,7 +615,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 self.name,
                 constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
             )
-            return
+            return None
 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
 
@@ -734,24 +740,52 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             self.log_pipeline_deployment_metadata(deployment_model)
 
+            run = None
+            if not schedule:
+                run_request = PipelineRunRequest(
+                    name=get_run_name(
+                        run_name_template=deployment_model.run_name_template
+                    ),
+                    # We set the start time on the placeholder run already to
+                    # make it consistent with the {time} placeholder in the
+                    # run name. This means the placeholder run will usually
+                    # have longer durations than scheduled runs, as for them
+                    # the start_time is only set once the first step starts
+                    # running.
+                    start_time=datetime.utcnow(),
+                    orchestrator_run_id=None,
+                    user=Client().active_user.id,
+                    workspace=deployment_model.workspace.id,
+                    deployment=deployment_model.id,
+                    pipeline=deployment_model.pipeline.id
+                    if deployment_model.pipeline
+                    else None,
+                    status=ExecutionStatus.INITIALIZING,
+                )
+                run = Client().zen_store.create_run(run_request)
+
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
                 stack.deploy_pipeline(deployment=deployment_model)
             except Exception as e:
+                if (
+                    run
+                    and Client().get_pipeline_run(run.id).status
+                    == ExecutionStatus.INITIALIZING
+                ):
+                    # The run hasn't actually started yet, which means that we
+                    # failed during initialization -> We don't want the
+                    # placeholder run to stay in the database
+                    Client().delete_pipeline_run(run.id)
+
                 raise e
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            runs = Client().list_pipeline_runs(
-                deployment_id=deployment_model.id,
-                sort_by="desc:start_time",
-                size=1,
-            )
-
-            if runs.items:
-                run_url = dashboard_utils.get_run_url(runs[0])
+            if run:
+                run_url = dashboard_utils.get_run_url(run)
                 if run_url:
                     logger.info(f"Dashboard URL: {run_url}")
                 else:
@@ -760,14 +794,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         "Dashboard`. In order to try it locally, please run "
                         "`zenml up`."
                     )
-            else:
-                logger.warning(
-                    f"Your orchestrator '{stack.orchestrator.name}' is "
-                    f"running remotely. Note that the pipeline run will "
-                    f"only show up on the ZenML dashboard once the first "
-                    f"step has started executing on the remote "
-                    f"infrastructure.",
-                )
+
+            return run
 
     @staticmethod
     def log_pipeline_deployment_metadata(

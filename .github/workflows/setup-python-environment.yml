@@ -108,17 +108,17 @@ jobs:
           bash scripts/lint.sh
 
       - name: Spelling checker
-        uses: crate-ci/typos@v1.16.25
+        uses: crate-ci/typos@v1.16.26
         with:
           files: "."
           config: ./.typos.toml
         # Only run the spell check on ubuntu-latest and python 3.8
-        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
+        if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
 
       - name: Docstring check
         run: bash scripts/docstring.sh
         # Only run the docstring check on ubuntu-latest and python 3.8
-        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
+        if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
 
       - name: Security check
         run: bash scripts/check-security.sh
@@ -133,7 +133,7 @@ jobs:
           config-file: .github/workflows/markdown_check_config.json
         continue-on-error: true
         # Only run the markdown link check on ubuntu-latest and python 3.8
-        if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
+        if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
 
       - name: Check for alembic branch divergence
         env:
@@ -147,7 +147,7 @@ jobs:
 
       # - name: Upload coverage
       #   # only do it for python 3.8, we don't need to do it for every version
-      #   if: ${{ inputs.os == 'ubuntu-latest' && inputs.python-version == '3.8' }}
+      #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
       #   uses: codecov/codecov-action@v2
 
       - name: Setup tmate session after tests
