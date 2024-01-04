@@ -71,6 +71,7 @@ class StructuredStringMaterializer(BaseMaterializer):
             A dictionary of visualization URIs and their types.
         """
         filepath = self._get_filepath(type(data))
+        filepath = filepath.replace("\\", "/")
         visualization_type = self._get_visualization_type(type(data))
         return {filepath: visualization_type}
 
