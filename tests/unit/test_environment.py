@@ -54,7 +54,7 @@ def test_environment_platform_info_correctness():
     platform."""
     system_id = platform.system()
 
-    if system_id == "darwin":
+    if system_id == "Darwin":
         system_id = "mac"
     elif system_id not in VALID_OPERATING_SYSTEMS:
         system_id = "unknown"
