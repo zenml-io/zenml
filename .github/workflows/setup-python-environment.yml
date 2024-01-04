@@ -105,47 +105,47 @@ jobs:
           runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
 
-      # - name: Setup tmate session before tests
-      #   if: ${{ inputs.enable_tmate == 'before-tests' }}
-      #   uses: mxschmitt/action-tmate@v3.17
+      - name: Setup tmate session before tests
+        if: ${{ inputs.enable_tmate == 'before-tests' }}
+        uses: mxschmitt/action-tmate@v3.17
 
-      # # - name: Lint check
-      # #   run: |
-      # #     bash scripts/lint.sh
+      - name: Lint check
+        run: |
+          bash scripts/lint.sh
 
-      # - name: Spelling checker
-      #   uses: crate-ci/typos@v1.16.26
-      #   with:
-      #     files: "."
-      #     config: ./.typos.toml
-      #   # Only run the spell check on ubuntu-latest and python 3.8
-      #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
+      - name: Spelling checker
+        uses: crate-ci/typos@v1.16.26
+        with:
+          files: "."
+          config: ./.typos.toml
+        # Only run the spell check on ubuntu-latest and python 3.8
+        if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
 
-      # - name: Docstring check
-      #   run: bash scripts/docstring.sh
-      #   # Only run the docstring check on ubuntu-latest and python 3.8
-      #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
+      - name: Docstring check
+        run: bash scripts/docstring.sh
+        # Only run the docstring check on ubuntu-latest and python 3.8
+        if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
 
-      # - name: Security check
-      #   run: bash scripts/check-security.sh
+      - name: Security check
+        run: bash scripts/check-security.sh
 
-      # - name: Markdown link check
-      #   uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
-      #   with:
-      #     use-quiet-mode: 'yes'
-      #     use-verbose-mode: 'no'
-      #     folder-path: './examples, ./docs/book, ./src'
-      #     file-path: './README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md, CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md'
-      #     config-file: .github/workflows/markdown_check_config.json
-      #   continue-on-error: true
-      #   # Only run the markdown link check on ubuntu-latest and python 3.8
-      #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
+      - name: Markdown link check
+        uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          folder-path: './examples, ./docs/book, ./src'
+          file-path: './README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md, CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md'
+          config-file: .github/workflows/markdown_check_config.json
+        continue-on-error: true
+        # Only run the markdown link check on ubuntu-latest and python 3.8
+        if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
 
-      # - name: Check for alembic branch divergence
-      #   env:
-      #     ZENML_DEBUG: 0
-      #   run: |
-      #     bash scripts/check-alembic-branches.sh
+      - name: Check for alembic branch divergence
+        env:
+          ZENML_DEBUG: 0
+        run: |
+          bash scripts/check-alembic-branches.sh
 
       - name: Run unit tests
         env:
@@ -158,9 +158,9 @@ jobs:
       #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
       #   uses: codecov/codecov-action@v2
 
-      # - name: Setup tmate session after tests
-      #   if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-      #   uses: mxschmitt/action-tmate@v3.17
+      - name: Setup tmate session after tests
+        if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
+        uses: mxschmitt/action-tmate@v3.17
 
       - name: Verify Python Env unaffected
         run: |

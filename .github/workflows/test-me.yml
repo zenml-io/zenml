@@ -16,18 +16,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  custom-ubuntu-runners-setup-and-test-python:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-dind-runners]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
+  # custom-ubuntu-runners-setup-and-test-python:
+  #   if: github.event.pull_request.draft == false
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-dind-runners]
+  #       python-version: ["3.8", "3.9", "3.10", "3.11"]
+  #     fail-fast: false
+  #   uses: ./.github/workflows/setup-python-environment.yml
+  #   with:
+  #     python-version: ${{ matrix.python-version }}
+  #     os: ${{ matrix.os }}
+  #   secrets: inherit
 
   custom-ubuntu-runners-integration-test:
     needs:
