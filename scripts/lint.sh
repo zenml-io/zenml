@@ -14,7 +14,7 @@ ruff $SRC_NO_TESTS
 ruff $TESTS_EXAMPLES --extend-ignore D
 
 # checks for yaml formatting errors
-yamlfix --check -v .github
+yamlfix --check .github tests
 
 # autoflake replacement: checks for unused imports and variables
 ruff $SRC --select F401,F841 --exclude "__init__.py" --isolated

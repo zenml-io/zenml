@@ -14,5 +14,5 @@ ruff $SRC --select I --fix --ignore D
 ruff format $SRC
 
 # standardises / formats CI yaml files
-yamlfix .github
+yamlfix .github tests
 
