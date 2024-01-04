@@ -12,3 +12,7 @@ ruff $SRC --select F401,F841 --fix --exclude "__init__.py" --isolated
 # sorts imports
 ruff $SRC --select I --fix --ignore D
 ruff format $SRC
+
+# standardises / formats CI yaml files
+yamlfix .github
+

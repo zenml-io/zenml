@@ -13,6 +13,9 @@ ruff $SRC_NO_TESTS
 # TODO: Fix docstrings in tests and examples and remove the `--extend-ignore D` flag
 ruff $TESTS_EXAMPLES --extend-ignore D
 
+# checks for yaml formatting errors
+yamlfix --check -v .github
+
 # autoflake replacement: checks for unused imports and variables
 ruff $SRC --select F401,F841 --exclude "__init__.py" --isolated
 
