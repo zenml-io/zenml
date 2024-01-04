@@ -27,6 +27,7 @@ IAM role)
 import base64
 import datetime
 import json
+import os
 import re
 from typing import Any, Dict, List, Optional, Tuple, cast
 
@@ -1370,6 +1371,21 @@ class AWSServiceConnector(ServiceConnector):
                 all_profiles[aws_profile_name][
                     "aws_session_token"
                 ] = credentials.token
+
+            aws_credentials_path = os.path.join(
+                users_home, ".aws", "credentials"
+            )
+
+            # Ensure the .aws directory exists
+            os.makedirs(os.path.dirname(aws_credentials_path), exist_ok=True)
+
+            # Ensure the credentials file exists
+            if not os.path.isfile(aws_credentials_path):
+                open(aws_credentials_path, "a").close()
+
+            # Set the appropriate permissions for the .aws directory and credentials file
+            os.chmod(os.path.dirname(aws_credentials_path), 0o700)
+            os.chmod(aws_credentials_path, 0o600)
 
             common.rewrite_credentials_file(all_profiles, users_home)
 
