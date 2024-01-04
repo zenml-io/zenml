@@ -6,7 +6,7 @@ description: A guide on how to deploy ZenML in a self-hosted environment.
 
 A ZenML deployment typically looks like this:
 
-<figure><img src="../../../.gitbook/assets/SystemArchitectureZenMLDeployment.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/SystemArchitectureZenMLDeployment.png" alt=""><figcaption></figcaption></figure>
 
 Some of the important components at play include:
 

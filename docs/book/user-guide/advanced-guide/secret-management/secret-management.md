@@ -12,10 +12,6 @@ ZenML secrets are groupings of **key-value pairs** which are securely stored in 
 
 ## Centralized secrets store
 
-{% hint style="danger" %}
-The stack component formerly known as Secrets Managers is being deprecated in favor of [the centralized ZenML secrets store](secret-management.md#centralized-secrets-store). Going forward, it is recommended to use the ZenML secrets store instead of secrets manager stack components to configure and store secrets. [Referencing secrets in your pipelines and stacks](secret-management.md#use-the-secret-store) works the same way regardless of whether you are using a secrets manager or the centralized secrets store. If you already use secrets managers to manage your secrets, please use the provided `zenml secrets-manager secrets migrate` CLI command to migrate your secrets to the centralized secrets store.
-{% endhint %}
-
 ZenML provides a centralized secrets management system that allows you to register and manage secrets in a secure way. In a local ZenML deployment, the secrets are stored in the local SQLite database. Once you are connected to a remote ZenML server, the secrets are stored in the secrets management back-end that the server is configured to use, but all access to the secrets is done through the ZenML server API.
 
 Currently, the ZenML server can be configured to use one of the following supported secrets store back-ends:

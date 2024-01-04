@@ -43,6 +43,11 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
+from zenml.integrations.gcp import (
+    GCP_CONNECTOR_TYPE,
+    GCP_RESOURCE_TYPE,
+    GCS_RESOURCE_TYPE,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -62,10 +67,6 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-
-GCP_CONNECTOR_TYPE = "gcp"
-GCP_RESOURCE_TYPE = "gcp-generic"
-GCS_RESOURCE_TYPE = "gcs-bucket"
 GKE_KUBE_API_TOKEN_EXPIRATION = 60
 DEFAULT_IMPERSONATE_TOKEN_EXPIRATION = 3600  # 1 hour
 

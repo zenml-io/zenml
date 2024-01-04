@@ -143,10 +143,6 @@ DEFAULT_PASSWORD = ""
 DEFAULT_WORKSPACE_NAME = "default"
 DEFAULT_STACK_AND_COMPONENT_NAME = "default"
 
-# Secrets Manager
-ZENML_SCHEMA_NAME = "zenml_schema_name"
-LOCAL_SECRETS_FILENAME = "secrets.yaml"
-
 # Rich config
 ENABLE_RICH_TRACEBACK = handle_bool_env_var(
     ENV_ZENML_ENABLE_RICH_TRACEBACK, True
@@ -246,7 +242,6 @@ PIPELINE_API_TOKEN_EXPIRES_MINUTES = handle_int_env_var(
 )
 
 # Secret constants
-ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
 SECRET_VALUES = "values"
 
 # Pagination and filtering defaults

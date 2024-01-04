@@ -32,7 +32,7 @@ from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
-    from zenml.models.tag_models import TagResponseModel
+    from zenml.models.v2.core.tag import TagResponse
 
 
 # ------------------ Request Model ------------------
@@ -83,6 +83,10 @@ class ModelRequest(WorkspaceScopedRequest):
     tags: Optional[List[str]] = Field(
         title="Tags associated with the model",
     )
+    save_models_to_registry: bool = Field(
+        title="Whether to save all ModelArtifacts to Model Registry",
+        default=True,
+    )
 
 
 # ------------------ Update Model ------------------
@@ -91,6 +95,7 @@ class ModelRequest(WorkspaceScopedRequest):
 class ModelUpdate(BaseModel):
     """Update model for models."""
 
+    name: Optional[str] = None
     license: Optional[str] = None
     description: Optional[str] = None
     audience: Optional[str] = None
@@ -108,7 +113,7 @@ class ModelUpdate(BaseModel):
 class ModelResponseBody(WorkspaceScopedResponseBody):
     """Response body for models."""
 
-    tags: List["TagResponseModel"] = Field(
+    tags: List["TagResponse"] = Field(
         title="Tags associated with the model",
     )
     latest_version: Optional[str]
@@ -158,6 +163,10 @@ class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
+    save_models_to_registry: bool = Field(
+        title="Whether to save all ModelArtifacts to Model Registry",
+        default=True,
+    )
 
 
 class ModelResponse(
@@ -182,7 +191,7 @@ class ModelResponse(
 
     # Body and metadata properties
     @property
-    def tags(self) -> List["TagResponseModel"]:
+    def tags(self) -> List["TagResponse"]:
         """The `tags` property.
 
         Returns:
@@ -279,6 +288,15 @@ class ModelResponse(
             the value of the property.
         """
         return self.get_metadata().ethics
+
+    @property
+    def save_models_to_registry(self) -> bool:
+        """The `save_models_to_registry` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().save_models_to_registry
 
     # Helper functions
     @property

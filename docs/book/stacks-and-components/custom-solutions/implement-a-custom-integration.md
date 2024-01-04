@@ -14,7 +14,7 @@ _However, what if you want to make your extension of ZenML part of the main code
 
 In [the previous page](implement-a-custom-stack-component.md), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](../../../stacks-and-components/component-guide/component-guide.md) as well.
 
-Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](../../../stacks-and-components/component-guide/container-registries/container-registries.md), [artifact stores](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md), [secrets managers](../../../stacks-and-components/component-guide/secrets-managers/secrets-managers.md) etc.
+Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](../../../stacks-and-components/component-guide/container-registries/container-registries.md), [artifact stores](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md) etc.
 
 ### Step 2: Create individual stack component flavors
 
@@ -27,7 +27,7 @@ zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../../starter-guide/follow-best-practices.md) of initializing zenml at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../../user-guide/advanced-guide/best-practices/best-practices.md) of initializing zenml at the root of your repository.
 
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually it's better to not have to rely on this mechanism, and initialize zenml at the root.
 {% endhint %}

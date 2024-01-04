@@ -38,8 +38,8 @@ def list_deployments() -> None:
         deployment_cfg = deployment.config
         values = dict(
             name=deployment_cfg.name,
-            type=deployment_cfg.type.name,
-            setup=deployment_cfg.setup.name,
+            server=deployment_cfg.server.name,
+            database=deployment_cfg.database.name,
             description=deployment_cfg.description,
         )
         disabled = deployment_cfg.disabled

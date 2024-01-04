@@ -13,29 +13,6 @@
 #  permissions and limitations under the License.
 """Pydantic models for the various concepts in ZenML."""
 
-# ------------------------------------- V1 -------------------------------------
-
-from zenml.models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
-    WorkspaceScopedRequestModel,
-)
-from zenml.models.secret_models import (
-    SecretBaseModel,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
-)
-from zenml.models.tag_models import (
-    TagFilterModel,
-    TagResourceResponseModel,
-    TagResourceRequestModel,
-    TagResponseModel,
-    TagRequestModel,
-    TagUpdateModel,
-)
-
 # ------------------------------------- V2 -------------------------------------
 
 # V2 Base
@@ -224,6 +201,14 @@ from zenml.models.v2.core.schedule import (
     ScheduleResponseBody,
     ScheduleResponseMetadata,
 )
+from zenml.models.v2.core.secret import (
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretResponseBody,
+    SecretResponseMetadata,
+    SecretUpdate,
+)
 from zenml.models.v2.core.service_account import (
     ServiceAccountFilter,
     ServiceAccountResponseBody,
@@ -255,6 +240,18 @@ from zenml.models.v2.core.step_run import (
     StepRunResponse,
     StepRunResponseBody,
     StepRunResponseMetadata,
+)
+from zenml.models.v2.core.tag import (
+    TagFilter,
+    TagResponse,
+    TagResponseBody,
+    TagRequest,
+    TagUpdate,
+)
+from zenml.models.v2.core.tag_resource import (
+    TagResourceResponse,
+    TagResourceResponseBody,
+    TagResourceRequest,
 )
 from zenml.models.v2.core.user import (
     UserRequest,
@@ -311,12 +308,6 @@ from zenml.models.v2.misc.server_models import (
 
 # ----------------------------- Forward References -----------------------------
 
-# V1
-SecretResponseModel.update_forward_refs(
-    UserResponse=UserResponse,
-    WorkspaceResponse=WorkspaceResponse,
-)
-
 # V2
 APIKeyResponseBody.update_forward_refs(
     ServiceAccountResponse=ServiceAccountResponse,
@@ -356,7 +347,7 @@ FlavorResponseMetadata.update_forward_refs(
 )
 ModelResponseBody.update_forward_refs(
     UserResponse=UserResponse,
-    TagResponseModel=TagResponseModel,
+    TagResponse=TagResponse,
 )
 ModelResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
@@ -436,6 +427,12 @@ ScheduleResponseBody.update_forward_refs(
 ScheduleResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
+SecretResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+SecretResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
 ServiceConnectorResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
@@ -465,21 +462,6 @@ StepRunResponseMetadata.update_forward_refs(
 )
 
 __all__ = [
-    # V1
-    "BaseRequestModel",
-    "BaseResponseModel",
-    "SecretBaseModel",
-    "SecretFilterModel",
-    "SecretRequestModel",
-    "SecretResponseModel",
-    "SecretUpdateModel",
-    "TagFilterModel",
-    "TagResourceResponseModel",
-    "TagResourceRequestModel",
-    "TagResponseModel",
-    "TagRequestModel",
-    "TagUpdateModel",
-    "WorkspaceScopedRequestModel",
     # V2 Base
     "BaseRequest",
     "BaseResponse",
@@ -619,6 +601,12 @@ __all__ = [
     "ScheduleResponse",
     "ScheduleResponseBody",
     "ScheduleResponseMetadata",
+    "SecretFilter",
+    "SecretRequest",
+    "SecretResponse",
+    "SecretResponseBody",
+    "SecretResponseMetadata",
+    "SecretUpdate",
     "ServiceAccountFilter",
     "ServiceAccountResponseBody",
     "ServiceAccountResponseMetadata",
@@ -643,6 +631,14 @@ __all__ = [
     "StepRunResponse",
     "StepRunResponseBody",
     "StepRunResponseMetadata",
+    "TagFilter",
+    "TagResourceResponse",
+    "TagResourceResponseBody",
+    "TagResourceRequest",
+    "TagResponse",
+    "TagResponseBody",
+    "TagRequest",
+    "TagUpdate",
     "UserRequest",
     "UserUpdate",
     "UserFilter",
