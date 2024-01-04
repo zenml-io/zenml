@@ -13,3 +13,6 @@ for a machine learning problem.
 - [Metadata](logging-metadata.md) which is associated with various components of ZenML.
 
 This guide dives deeper into the management of this data.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
