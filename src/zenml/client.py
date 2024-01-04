@@ -2761,6 +2761,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             artifact_id=artifact_id,
+            name=name,
             version=str(version) if version else None,
             version_number=version_number,
             artifact_store_id=artifact_store_id,
@@ -2771,7 +2772,6 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             only_unused=only_unused,
-            name=name,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
