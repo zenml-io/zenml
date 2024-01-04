@@ -157,8 +157,8 @@ jobs:
 
       - name: Check-out fresh NLP template
         run: |
-          mkdir -p examples/e2e_nlp_use_case
-          printf 'info@zenml.io' | zenml init --path examples/e2e_nlp_use_case --template nlp --template-with-defaults
+          mkdir -p examples/e2e_nlp
+          printf 'info@zenml.io' | zenml init --path examples/e2e_nlp --template nlp --template-with-defaults
           bash scripts/format.sh
 
       - name: Check for changes
@@ -191,7 +191,7 @@ jobs:
               issue_number: ${{ github.event.pull_request.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'NLP template updates in `examples/e2e_nlp_use_case` have been pushed.'
+              body: 'NLP template updates in `examples/e2e_nlp` have been pushed.'
             })
             
 
