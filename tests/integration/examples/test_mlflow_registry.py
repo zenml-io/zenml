@@ -22,15 +22,6 @@ from zenml.client import Client
 
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the MLFlow Registry example."""
-    import mlflow
-    from mlflow.tracking import MlflowClient
-
-    from zenml.integrations.mlflow.experiment_trackers import (
-        MLFlowExperimentTracker,
-    )
-    from zenml.integrations.mlflow.model_registries import (
-        MLFlowModelRegistry,
-    )
 
     # TODO: remove this temporary disabling of the test for Python 3.9 and 3.10
     #  once the MLflow issue is resolved
@@ -38,6 +29,16 @@ def test_example(request: pytest.FixtureRequest) -> None:
         (3, 9),
         (3, 10),
     ]:
+        import mlflow
+        from mlflow.tracking import MlflowClient
+
+        from zenml.integrations.mlflow.experiment_trackers import (
+            MLFlowExperimentTracker,
+        )
+        from zenml.integrations.mlflow.model_registries import (
+            MLFlowModelRegistry,
+        )
+
         with run_example(
             request=request,
             name="mlflow",

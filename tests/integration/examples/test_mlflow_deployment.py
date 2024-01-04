@@ -24,29 +24,31 @@ from zenml.enums import ExecutionStatus
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the mlflow_deployment example."""
 
-    with run_example(
-        request=request,
-        name="mlflow",
-        example_args=["--type", "deployment"],
-        pipelines={
-            "mlflow_train_deploy_pipeline": (1, 5),
-            "mlflow_deployment_inference_pipeline": (1, 4),
-        },
-    ):
-        import mlflow
-        from mlflow.tracking import MlflowClient
+    # TODO: remove this temporary disabling of the test for Python 3.9
+    # and 3.10 once the MLflow issue is resolved
+    if sys.platform != "darwin" and sys.version_info[:2] not in [
+        (3, 9),
+        (3, 10),
+    ]:
+        with run_example(
+            request=request,
+            name="mlflow",
+            example_args=["--type", "deployment"],
+            pipelines={
+                "mlflow_train_deploy_pipeline": (1, 5),
+                "mlflow_deployment_inference_pipeline": (1, 4),
+            },
+        ):
+            import mlflow
+            from mlflow.tracking import MlflowClient
 
-        from zenml.integrations.mlflow.experiment_trackers import (
-            MLFlowExperimentTracker,
-        )
-        from zenml.integrations.mlflow.services import MLFlowDeploymentService
+            from zenml.integrations.mlflow.experiment_trackers import (
+                MLFlowExperimentTracker,
+            )
+            from zenml.integrations.mlflow.services import (
+                MLFlowDeploymentService,
+            )
 
-        # TODO: remove this temporary disabling of the test for Python 3.9
-        # and 3.10 once the MLflow issue is resolved
-        if sys.platform != "darwin" and sys.version_info[:2] not in [
-            (3, 9),
-            (3, 10),
-        ]:
             deployment_run = (
                 Client().get_pipeline("mlflow_train_deploy_pipeline").last_run
             )
