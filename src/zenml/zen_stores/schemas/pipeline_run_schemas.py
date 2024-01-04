@@ -223,8 +223,6 @@ class PipelineRunSchema(NamedSchema, table=True):
         }
 
         if self.deployment is not None:
-            steps = {s.name: s.to_model() for s in self.step_runs}
-
             deployment = self.deployment.to_model()
 
             config = deployment.pipeline_configuration
@@ -237,8 +235,6 @@ class PipelineRunSchema(NamedSchema, table=True):
             code_reference = deployment.code_reference
 
         elif self.pipeline_configuration is not None:
-            steps = {step.name: step.to_model() for step in self.step_runs}
-
             config = PipelineConfiguration.parse_raw(
                 self.pipeline_configuration
             )
@@ -274,6 +270,8 @@ class PipelineRunSchema(NamedSchema, table=True):
         )
         metadata = None
         if hydrate:
+            steps = {step.name: step.to_model() for step in self.step_runs}
+
             metadata = PipelineRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 run_metadata=run_metadata,

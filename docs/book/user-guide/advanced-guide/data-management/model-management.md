@@ -4,10 +4,9 @@ description: Managing your models with ZenML.
 
 # Model management
 
-Models are used to represent the outputs of
-a training process along with all metadata associated with that output. In other
-words: models in ZenML are more broadly defined as the weights as well as any
-associated information. Models are a first-class citizen in ZenML and as such
+A `Model` is simply an entity that groups pipelines, artifacts, metadata, and other crucial business data into a unified entity. Please note that one of the most common artifacts that is associated with a Model in ZenML is the so-called technical model, which is the actually model file/files that holds the weight and parameters of a machine learning training result. However, this is not the only artifact that is relevant; artifacts such as the training data and the predictions this model produces in production are also linked inside a ZenML Model. In this sense, a ZenML Model is a concept that more broadly encapsulates your ML products business logic.
+
+Models are first-class citizens in ZenML and as such
 viewing and using them is unified and centralized in the ZenML API, client as
 well as on the [ZenML Cloud](https://zenml.io/cloud) dashboard.
 
@@ -56,9 +55,10 @@ can also associate tags with models at this point, for example, using the
 
 ### Explicit dashboard registration
 
-The Model Control Plane interface on the dashboard is currently in testing
-and will be released soon to ZenML Cloud users. Documentation for this feature
-will be available [here](./model-control-plane-dashboard.md) once it is released.
+[ZenML Cloud](https://zenml.io/cloud) can register their models directly from
+the cloud dashboard interface.
+
+<figure><img src="../../../.gitbook/assets/mcp_model_register.png" alt="ZenML Cloud Register Model."><figcaption><p>Register a model on the [ZenML Cloud](https://zenml.io/cloud) dashboard</p></figcaption></figure>
 
 ### Explicit Python SDK registration
 
@@ -85,8 +85,8 @@ the `model_version` argument of the `@pipeline` decorator.
 As an example, here we have a training pipeline which orchestrates the training
 of a model object, storing datasets and the model object itself as links within
 a newly created Model Version. This integration is achieved by configuring the
-pipeline within a Model Context using `ModelVersion`. The name and
-`create_new_model_version` fields are specified, while other fields remain optional for this task.
+pipeline within a Model Context using `ModelVersion`. The name
+is specified, while other fields remain optional for this task.
 
 ```python
 from zenml import pipeline
@@ -292,16 +292,29 @@ specified model version.
 
 ### Artifact Configuration
 
-You can also explicitly specify the linkage on a per-artifact basis by passing
+A ZenML model supports linking three types of artifacts:
+
+* `Data artifacts`: These are the default artifacts. If nothing is specified, all artifacts are grouped under this category.
+* `Model artifacts`: If there is a physical model artifact like a `.pkl` file or a model neural network weights file, it should be grouped in this category.
+* `Deployment artifacts`: These artifacts are to do with artifacts related to the endpoints and deployments of the models.
+
+You can also explicitly specify the linkage on a per-artifact basis by passing a
 special configuration to the Annotated output:
 
 ```python
-from zenml import ArtifactConfig
+from zenml import get_step_context, step, ArtifactConfig
 
 @step
-def my_step() -> Annotated[MyArtifact, ArtifactConfig(model_name="my_model",
-                                                      name="my_artifact",
-                                                      is_model_artifact=True)]:
+def svc_trainer(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    gamma: float = 0.001,
+) -> Tuple[
+    # This third argument marks this as a Model Artifact
+    Annotated[ClassifierMixin, ArtifactConfig("trained_model"), is_model_artifact=True],
+    # This third argument marks this as a Data Artifact
+    Annotated[str, ArtifactConfig("deployment_uri"), is_deployment_artifact=True],
+]:
     ...
 ```
 
