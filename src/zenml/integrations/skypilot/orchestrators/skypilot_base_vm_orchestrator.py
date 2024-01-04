@@ -15,26 +15,25 @@
 
 import os
 import re
-import time
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
-from uuid import uuid4
 
 import sky
 
-from zenml.client import Client
-from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
+from zenml.environment import Environment
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorSettings,
+)
+from zenml.integrations.skypilot.orchestrators.skypilot_orchestrator_entrypoint_configuration import (
+    SkypilotOrchestratorEntrypointConfiguration,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     ContainerizedOrchestrator,
 )
+from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import string_utils
-
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -150,6 +149,16 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         Raises:
             Exception: If the pipeline run fails.
         """
+        # First check whether the code is running in a notebook.
+        if Environment.in_notebook():
+            raise RuntimeError(
+                "The Kubernetes orchestrator cannot run pipelines in a notebook "
+                "environment. The reason is that it is non-trivial to create "
+                "a Docker image of a notebook. Please consider refactoring "
+                "your notebook cells into separate scripts in a Python module "
+                "and run the code outside of a notebook when using this "
+                "orchestrator."
+            )
         if deployment.schedule:
             logger.warning(
                 "Skypilot Orchestrator currently does not support the"
@@ -157,30 +166,51 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        # Set up some variables for configuration
-        orchestrator_run_id = str(uuid4())
-        environment[
-            ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID
-        ] = orchestrator_run_id
-        # Set up some variables for configuration
-        orchestrator_run_id = str(uuid4())
-        environment[
-            ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID
-        ] = orchestrator_run_id
+        settings = cast(
+            SkypilotBaseOrchestratorSettings,
+            self.get_settings(deployment),
+        )
 
-        start_time = time.time()
+        pipeline_name = deployment.pipeline_configuration.name
+        orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
+
+        assert stack.container_registry
+
+        # Get Docker image for the orchestrator pod
+        try:
+            image = self.get_image(deployment=deployment)
+        except KeyError:
+            # If no generic pipeline image exists (which means all steps have
+            # custom builds) we use a random step image as all of them include
+            # dependencies for the active stack
+            pipeline_step_name = next(iter(deployment.step_configurations))
+            image = self.get_image(
+                deployment=deployment, step_name=pipeline_step_name
+            )
+
+        # Build entrypoint command and args for the orchestrator pod.
+        # This will internally also build the command/args for all step pods.
+        command = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_command()
+        entrypoint_str = " ".join(command)
+        args = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
+            run_name=orchestrator_run_name,
+            deployment_id=deployment.id,
+        )
+        arguments_str = " ".join(args)
+
+        docker_environment_str = " ".join(
+            f"-e {k}={v}" for k, v in environment.items()
+        )
+
+        instance_type = settings.instance_type or self.DEFAULT_INSTANCE_TYPE
 
         # Set up credentials
         self.setup_credentials()
 
-        # Set the service connector AWS profile ENV variable
-        self.prepare_environment_variable(set=True)
-
         # Guaranteed by stack validation
         assert stack is not None and stack.container_registry is not None
 
-        docker_creds = stack.container_registry.credentials
-        if docker_creds:
+        if docker_creds := stack.container_registry.credentials:
             docker_username, docker_password = docker_creds
             setup = (
                 f"docker login --username $DOCKER_USERNAME --password "
@@ -194,65 +224,12 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             setup = None
             task_envs = None
 
-        unique_resource_configs: Dict[str, str] = {}
-        for step_name, step in deployment.step_configurations.items():
-            settings = cast(
-                SkypilotBaseOrchestratorSettings,
-                self.get_settings(step),
-            )
-            # Handle both str and Dict[str, int] types for accelerators
-            if isinstance(settings.accelerators, dict):
-                accelerators_hashable = frozenset(
-                    settings.accelerators.items()
-                )
-            elif isinstance(settings.accelerators, str):
-                accelerators_hashable = frozenset({(settings.accelerators, 1)})
-            else:
-                accelerators_hashable = None
-            resource_config = (
-                settings.instance_type,
-                settings.cpus,
-                settings.memory,
-                settings.disk_size,  # Assuming disk_size is part of the settings
-                settings.disk_tier,  # Assuming disk_tier is part of the settings
-                settings.use_spot,
-                settings.spot_recovery,
-                settings.region,
-                settings.zone,
-                accelerators_hashable,
-            )
-            cluster_name_parts = [
-                self.sanitize_for_cluster_name(part)
-                for part in resource_config
-                if part is not None
-            ]
-            cluster_name = "cluster-" + "-".join(cluster_name_parts)
-            unique_resource_configs[step_name] = cluster_name
+        # Run the entire pipeline
 
-        # Process each unique resource configuration
-        for step_name, step in deployment.step_configurations.items():
-            cluster_name = unique_resource_configs[step_name]
-            # Process each step in the resource configuration
-            step = deployment.step_configurations[step_name]
-            settings = cast(
-                SkypilotBaseOrchestratorSettings,
-                self.get_settings(step),
-            )
-            # Use the step-specific entrypoint configuration
-            entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
-            entrypoint_str = " ".join(entrypoint)
-            arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, deployment_id=deployment.id
-            )
-            arguments_str = " ".join(arguments)
+        # Set the service connector AWS profile ENV variable
+        self.prepare_environment_variable(set=True)
 
-            # Set up docker run command
-            image = self.get_image(deployment=deployment, step_name=step_name)
-            docker_environment_str = " ".join(
-                f"-e {k}={v}" for k, v in environment.items()
-            )
-
-            # Set up the task
+        try:
             task = sky.Task(
                 run=f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}",
                 setup=setup,
@@ -261,12 +238,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             task = task.set_resources(
                 sky.Resources(
                     cloud=self.cloud,
-                    instance_type=settings.instance_type
-                    or self.DEFAULT_INSTANCE_TYPE,
+                    instance_type=instance_type,
                     cpus=settings.cpus,
                     memory=settings.memory,
-                    disk_size=settings.disk_size,
-                    disk_tier=settings.disk_tier,
                     accelerators=settings.accelerators,
                     accelerator_args=settings.accelerator_args,
                     use_spot=settings.use_spot,
@@ -274,51 +248,52 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     region=settings.region,
                     zone=settings.zone,
                     image_id=settings.image_id,
+                    disk_size=settings.disk_size,
+                    disk_tier=settings.disk_tier,
                 )
             )
 
+            # Set the cluster name
+            cluster_name = (
+                settings.cluster_name
+            )  # or self.sanitize_cluster_name(orchestrator_run_name)
+            if cluster_name is None:
+                # Find existing cluster
+                for i in sky.status(refresh=True):
+                    if isinstance(
+                        i["handle"].launched_resources.cloud, type(self.cloud)
+                    ):
+                        cluster_name = i["handle"].cluster_name
+                        logger.info(
+                            f"Found existing cluster {cluster_name}. Reusing..."
+                        )
+
             # Launch the cluster
-            try:
-                sky.launch(
-                    task,
-                    cluster_name,
-                    retry_until_up=settings.retry_until_up,
-                    idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
-                    down=settings.down,
-                    stream_logs=settings.stream_logs,
-                )
-            except Exception as e:
-                raise e
+            sky.launch(
+                task,
+                cluster_name,
+                retry_until_up=settings.retry_until_up,
+                idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
+                down=settings.down,
+                stream_logs=settings.stream_logs,
+            )
 
-            # Pop the resource configuration for this step
-            unique_resource_configs.pop(step_name)
+        except Exception as e:
+            raise e
 
-            if cluster_name in unique_resource_configs.values():
-                # If there are more steps using this configuration, skip downing the cluster
-                logger.info(
-                    f"Resource configuration for cluster '{cluster_name}' "
-                    "is used by subsequent steps. Skipping the downing of "
-                    "the cluster."
-                )
-                continue
-            else:
-                # If there are no more steps using this configuration, down the cluster
-                logger.info(
-                    f"Resource configuration for cluster '{cluster_name}' "
-                    "is not used by subsequent steps. Downing the cluster."
-                )
-                sky.down(cluster_name)
+        finally:
+            # Unset the service connector AWS profile ENV variable
+            self.prepare_environment_variable(set=False)
 
-        # Unset the service connector AWS profile ENV variable
-        self.prepare_environment_variable(set=False)
+    def sanitize_cluster_name(self, name: str) -> str:
+        """Sanitize the value to be used in a cluster name.
 
-        run_duration = time.time() - start_time
-        logger.info(
-            "Pipeline run has finished in `%s`.",
-            string_utils.get_human_readable_time(run_duration),
-        )
+        Args:
+            name: Arbitrary input cluster name.
 
-    def sanitize_for_cluster_name(self, value: Any) -> str:
-        """Sanitize the value to be used in a cluster name."""
-        # Convert to string, make lowercase, and replace invalid characters with dashes
-        return re.sub(r"[^a-z0-9]", "-", str(value).lower())
+        Returns:
+            Sanitized cluster name.
+        """
+        name = re.sub(r"[^a-z0-9-]", "-", name.lower())
+        name = re.sub(r"^[-]+", "", name)
+        return re.sub(r"[-]+", "-", name)
