@@ -45,8 +45,6 @@ Currently, there are two main options to access a deployed ZenML server:
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
-
 ## Using the ZenML CLI to connect to a deployed ZenML Server
 
 You can authenticate your clients with the ZenML Server using the ZenML CLI and the web based login. This
@@ -204,3 +202,6 @@ To keep things simple, we can summarize the steps:
 Every API key issued is a potential gateway to access your data, secrets and
 infrastructure. It's important to regularly rotate API keys and deactivate
 or delete service accounts and API keys that are no longer needed.
+
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
