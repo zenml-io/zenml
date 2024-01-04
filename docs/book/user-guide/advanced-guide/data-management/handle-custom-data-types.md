@@ -32,6 +32,8 @@ If you are running pipelines with a Docker-based [orchestrator](../../component-
 
 ### Configuring a step/pipeline to use a custom materializer
 
+#### Defining which step uses what materializer
+
 ZenML automatically detects if your materializer is imported in your source code and registers them for the corresponding data type (defined in `ASSOCIATED_TYPES`). Therefore, just having a custom materializer definition in your code is enough to enable the respective data type to be used in your pipelines.
 
 However, it is best practice to explicitly define which materializer to use for a specific step and not rely on the `ASSOCIATED_TYPES` to make that connection:
@@ -81,12 +83,13 @@ class MyMaterializer2(BaseMaterializer):
     ASSOCIATED_TYPES = (MyObj2)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
+# This is where we connect the objects to the materializer
 @step(output_materializers={"1": MyMaterializer1, "2": MyMaterializer2})
 def my_first_step() -> Tuple[Annotated[MyObj1, "1"], Annotated[MyObj2, "2"]]:
     return 1
 ```
 
-Finally, as briefly outlined in the [configuration docs](../pipelining-features/configure-steps-pipelines.md) section, which materializer to use for the output of what step can also be configured within YAML config files.
+Also, as briefly outlined in the [configuration docs](../pipelining-features/configure-steps-pipelines.md) section, which materializer to use for the output of what step can also be configured within YAML config files.
 
 For each output of your steps, you can define custom materializers to handle the loading and saving. You can configure them like this in the config:
 
@@ -101,6 +104,29 @@ steps:
 ```
 
 Check out [this page](../../starter-guide/manage-artifacts.md) for information on your step output names and how to customize them.
+
+#### Defining a materializer globally
+
+Sometimes, you would like to configure ZenML to use a custom materializer globally for all pipelines, and override the default materializers that
+come built-in with ZenML. A good example of this would be to build a materializer for a `pandas.DataFrame` to handle the reading and writing of
+that dataframe in a different way than the default mechanism.
+
+An easy way to do that is to use the internal materializer registry of ZenML and override its behavior:
+
+```python
+# Entrypoint file where we run pipelines (i.e. run.py)
+
+from zenml.materializers.materializer_registry import materializer_registry
+
+# Create a new materializer
+class FastPandasMaterializer(BaseMaterializer):
+    ...
+
+# Register the FastPandasMaterializer for pandas dataframes objects
+materializer_registry.register_and_overwrite_type(key=pd.DataFrame, type_=FastPandasMaterializer)
+
+# Run your pipelines: They will now all use the custom materializer
+```
 
 ### Developing a custom materializer
 
