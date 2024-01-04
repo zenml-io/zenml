@@ -1186,7 +1186,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         if matching_pipelines.total:
             registered_pipeline = matching_pipelines.items[0]
             logger.info(
-                "Reusing registered version: `(version: %s)`.",
+                "Reusing registered pipeline version: `(version: %s)`.",
                 registered_pipeline.version,
             )
             return registered_pipeline
