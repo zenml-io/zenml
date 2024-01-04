@@ -210,6 +210,7 @@ def seldon_custom_model_deployer_step(
         ValueError: if predict function path is not valid
         TypeError: if predict function path is not a callable function
         DoesNotExistException: if an entity does not exist raise an exception
+        RuntimeError: if the build is missing for the pipeline run
 
     Returns:
         Seldon Core deployment service
@@ -282,7 +283,16 @@ def seldon_custom_model_deployer_step(
             "Please make sure that you have registered and set a stack."
         )
 
-    image_name = context.step_run_info.get_image(key=SELDON_DOCKER_IMAGE_KEY)
+    pipeline_run = context.pipeline_run
+    if not pipeline_run.build:
+        raise RuntimeError(
+            f"Missing build for run {pipeline_run.id}. This is probably "
+            "because the build was manually deleted."
+        )
+
+    image_name = pipeline_run.build.get_image(
+        component_key=SELDON_DOCKER_IMAGE_KEY, step=step_name
+    )
 
     # copy the model files to new specific directory for the deployment
     served_model_uri = os.path.join(

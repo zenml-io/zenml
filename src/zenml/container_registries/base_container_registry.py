@@ -96,7 +96,7 @@ class BaseContainerRegistry(AuthenticationMixin):
             Tuple with username and password if this container registry
             requires authentication, `None` otherwise.
         """
-        secret = self.get_authentication_secret(
+        secret = self.get_typed_authentication_secret(
             expected_schema_type=BasicAuthSecretSchema
         )
         if secret:

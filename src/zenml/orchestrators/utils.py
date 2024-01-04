@@ -14,6 +14,7 @@
 """Utility functions for the orchestrator."""
 
 import random
+from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
@@ -30,14 +31,9 @@ from zenml.constants import (
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
 from zenml.enums import StoreType
-from zenml.logger import get_logger
-from zenml.utils import uuid_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
-    from zenml.orchestrators import BaseOrchestrator
-
-logger = get_logger(__name__)
 
 
 def get_orchestrator_run_name(pipeline_name: str) -> str:
@@ -52,23 +48,7 @@ def get_orchestrator_run_name(pipeline_name: str) -> str:
     Returns:
         The orchestrator run name.
     """
-    return f"{pipeline_name}_{random.Random().getrandbits(128):32x}"
-
-
-def get_run_id_for_orchestrator_run_id(
-    orchestrator: "BaseOrchestrator", orchestrator_run_id: str
-) -> UUID:
-    """Generates a run ID from an orchestrator run id.
-
-    Args:
-        orchestrator: The orchestrator of the run.
-        orchestrator_run_id: The orchestrator run id.
-
-    Returns:
-        The run id generated from the orchestrator run id.
-    """
-    run_id_seed = f"{orchestrator.id}-{orchestrator_run_id}"
-    return uuid_utils.generate_uuid_from_string(run_id_seed)
+    return f"{pipeline_name}_{random.Random().getrandbits(128):032x}"
 
 
 def is_setting_enabled(
@@ -172,3 +152,26 @@ def get_config_environment_vars(
     )
 
     return environment_vars
+
+
+def get_run_name(run_name_template: str) -> str:
+    """Fill out the run name template to get a complete run name.
+
+    Args:
+        run_name_template: The run name template to fill out.
+
+    Raises:
+        ValueError: If the run name is empty.
+
+    Returns:
+        The run name derived from the template.
+    """
+    date = datetime.utcnow().strftime("%Y_%m_%d")
+    time = datetime.utcnow().strftime("%H_%M_%S_%f")
+
+    run_name = run_name_template.format(date=date, time=time)
+
+    if run_name == "":
+        raise ValueError("Empty run names are not allowed.")
+
+    return run_name

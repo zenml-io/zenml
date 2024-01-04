@@ -45,19 +45,19 @@ class ModelVersionArtifactRequest(WorkspaceScopedRequest):
     model_version: UUID
     artifact_version: UUID
     is_model_artifact: bool = False
-    is_endpoint_artifact: bool = False
+    is_deployment_artifact: bool = False
 
-    @validator("is_endpoint_artifact")
+    @validator("is_deployment_artifact")
     def _validate_is_endpoint_artifact(
-        cls, is_endpoint_artifact: bool, values: Dict[str, Any]
+        cls, is_deployment_artifact: bool, values: Dict[str, Any]
     ) -> bool:
         is_model_artifact = values.get("is_model_artifact", False)
-        if is_model_artifact and is_endpoint_artifact:
+        if is_model_artifact and is_deployment_artifact:
             raise ValueError(
-                "Artifact cannot be a model artifact and endpoint artifact "
+                "Artifact cannot be a model artifact and deployment artifact "
                 "at the same time."
             )
-        return is_endpoint_artifact
+        return is_deployment_artifact
 
 
 # ------------------ Update Model ------------------
@@ -74,7 +74,7 @@ class ModelVersionArtifactResponseBody(BaseResponseBody):
     model_version: UUID
     artifact_version: "ArtifactVersionResponse"
     is_model_artifact: bool = False
-    is_endpoint_artifact: bool = False
+    is_deployment_artifact: bool = False
 
 
 class ModelVersionArtifactResponse(
@@ -120,13 +120,13 @@ class ModelVersionArtifactResponse(
         return self.get_body().is_model_artifact
 
     @property
-    def is_endpoint_artifact(self) -> bool:
-        """The `is_endpoint_artifact` property.
+    def is_deployment_artifact(self) -> bool:
+        """The `is_deployment_artifact` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().is_endpoint_artifact
+        return self.get_body().is_deployment_artifact
 
 
 # ------------------ Filter Model ------------------
@@ -141,13 +141,13 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
         "artifact_name",
         "only_data_artifacts",
         "only_model_artifacts",
-        "only_endpoint_artifacts",
+        "only_deployment_artifacts",
     ]
     CLI_EXCLUDE_FIELDS = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "only_data_artifacts",
         "only_model_artifacts",
-        "only_endpoint_artifacts",
+        "only_deployment_artifacts",
         "model_id",
         "model_version_id",
         "user_id",
@@ -177,7 +177,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
     )
     only_data_artifacts: Optional[bool] = False
     only_model_artifacts: Optional[bool] = False
-    only_endpoint_artifacts: Optional[bool] = False
+    only_deployment_artifacts: Optional[bool] = False
 
     def get_custom_filters(
         self,
@@ -217,7 +217,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
         if self.only_data_artifacts:
             data_artifact_filter = and_(
                 ModelVersionArtifactSchema.is_model_artifact.is_(False),  # type: ignore[attr-defined]
-                ModelVersionArtifactSchema.is_endpoint_artifact.is_(False),  # type: ignore[attr-defined]
+                ModelVersionArtifactSchema.is_deployment_artifact.is_(False),  # type: ignore[attr-defined]
             )
             custom_filters.append(data_artifact_filter)
 
@@ -227,10 +227,10 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
             )
             custom_filters.append(model_artifact_filter)
 
-        if self.only_endpoint_artifacts:
-            endpoint_artifact_filter = and_(
-                ModelVersionArtifactSchema.is_endpoint_artifact.is_(True),  # type: ignore[attr-defined]
+        if self.only_deployment_artifacts:
+            deployment_artifact_filter = and_(
+                ModelVersionArtifactSchema.is_deployment_artifact.is_(True),  # type: ignore[attr-defined]
             )
-            custom_filters.append(endpoint_artifact_filter)
+            custom_filters.append(deployment_artifact_filter)
 
         return custom_filters

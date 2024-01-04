@@ -14,6 +14,7 @@
 """Models representing models."""
 
 from datetime import datetime
+from functools import partial
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
 from uuid import UUID
 
@@ -27,10 +28,11 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
-    from zenml.models.tag_models import TagResponseModel
+    from zenml.models.v2.core.tag import TagResponse
 
 
 # ------------------ Request Model ------------------
@@ -81,6 +83,10 @@ class ModelRequest(WorkspaceScopedRequest):
     tags: Optional[List[str]] = Field(
         title="Tags associated with the model",
     )
+    save_models_to_registry: bool = Field(
+        title="Whether to save all ModelArtifacts to Model Registry",
+        default=True,
+    )
 
 
 # ------------------ Update Model ------------------
@@ -89,6 +95,7 @@ class ModelRequest(WorkspaceScopedRequest):
 class ModelUpdate(BaseModel):
     """Update model for models."""
 
+    name: Optional[str] = None
     license: Optional[str] = None
     description: Optional[str] = None
     audience: Optional[str] = None
@@ -106,7 +113,7 @@ class ModelUpdate(BaseModel):
 class ModelResponseBody(WorkspaceScopedResponseBody):
     """Response body for models."""
 
-    tags: List["TagResponseModel"] = Field(
+    tags: List["TagResponse"] = Field(
         title="Tags associated with the model",
     )
     latest_version: Optional[str]
@@ -156,6 +163,10 @@ class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
+    save_models_to_registry: bool = Field(
+        title="Whether to save all ModelArtifacts to Model Registry",
+        default=True,
+    )
 
 
 class ModelResponse(
@@ -180,7 +191,7 @@ class ModelResponse(
 
     # Body and metadata properties
     @property
-    def tags(self) -> List["TagResponseModel"]:
+    def tags(self) -> List["TagResponse"]:
         """The `tags` property.
 
         Returns:
@@ -278,6 +289,15 @@ class ModelResponse(
         """
         return self.get_metadata().ethics
 
+    @property
+    def save_models_to_registry(self) -> bool:
+        """The `save_models_to_registry` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().save_models_to_registry
+
     # Helper functions
     @property
     def versions(self) -> List["ModelVersion"]:
@@ -289,20 +309,13 @@ class ModelResponse(
         from zenml.client import Client
 
         client = Client()
-        model_versions = client.list_model_versions(
-            model_name_or_id=self.id, page=1
+        model_versions = depaginate(
+            partial(client.list_model_versions, model_name_or_id=self.id)
         )
-        ret = [
+        return [
             mv.to_model_version(suppress_class_validation_warnings=True)
-            for mv in model_versions.items
+            for mv in model_versions
         ]
-        for i in range(2, model_versions.total_pages + 1):
-            ret += [
-                mv.to_model_version(suppress_class_validation_warnings=True)
-                for mv in model_versions.items
-            ]
-
-        return ret
 
 
 # ------------------ Filter Model ------------------

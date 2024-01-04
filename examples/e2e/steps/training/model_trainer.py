@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import pandas as pd
 from sklearn.base import ClassifierMixin
 from typing_extensions import Annotated
 
-from zenml import ArtifactConfig, log_artifact_metadata, step
+from zenml import ArtifactConfig, get_step_context, step
 from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
@@ -103,9 +103,9 @@ def model_trainer(
     if model_registry:
         versions = model_registry.list_model_versions(name=name)
         if versions:
-            log_artifact_metadata(
-                metadata={"model_registry_version": versions[-1].version},
-                artifact_name="model",
+            model_version = get_step_context().model_version
+            model_version.log_metadata(
+                {"model_registry_version": versions[-1].version}
             )
     ### YOUR CODE ENDS HERE ###
 

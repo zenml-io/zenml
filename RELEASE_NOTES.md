@@ -1,4 +1,152 @@
 <!-- markdown-link-check-disable -->
+# 0.53.1
+
+This minor release contains a hot fix for a bug that was introduced in 0.53.0
+where the secrets manager flavors were not removed from the database
+properly. This release fixes that issue.
+
+## What's Changed
+* Remove secrets manager flavors from DB by @stefannica in https://github.com/zenml-io/zenml/pull/2182
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.53.0...0.53.1
+
+# 0.53.0
+
+This release is packed with a deeply reworked quickstart example and starter template, the removal of secret manager stack component, improved experience with Cloud Secret Stores, support for tags and metadata directly in Model Versions, some breaking changes for Model Control Plane and a few bugfixes.
+
+## Breaking changes
+
+### Secret Manager stack components sunset
+
+Upon upgrading, all Secrets Manager stack components will be removed from the Stacks that still contain them and from the database. This also implies that access to any remaining secrets managed through Secrets Manager stack components will be lost. If you still have secrets configured and managed through Secrets Manager stack components, please consider migrating all your existing secrets to the centralized secrets store *before upgrading* by means of the `zenml secrets-manager secret migrate` CLI command. Also see the `zenml secret --help` command for more information.
+
+### Renaming "endpoints" to "deployments" in Model Control Plane
+
+This is just a renaming to provide better alignment with industry standards. Though, it will affect:
+- `ArtifactConfig(..., is_endpoint_artifact=True)` now is `ArtifactConfig(..., is_deployment_artifact=True)`
+- CLI command `zenml model endpoint_artifacts ...` now is `zenml model deployment_artifacts ...`
+- `Client().list_model_version_artifact_links(..., only_endpoint_artifacts=True)` now is `Client().list_model_version_artifact_links(..., only_deployment_artifacts=True)`
+- `ModelVersion(...).get_endpoint_artifact(...)` now is `ModelVersion(...).get_deployment_artifact(...)`
+
+## Major bugfixes
+* Fix various bugs by @stefannica in https://github.com/zenml-io/zenml/pull/2147
+* Adding a link from pipeline runs to code repositories by @bcdurak in https://github.com/zenml-io/zenml/pull/2146
+* Fix Client doesn't recover from remote connection resets by @avishniakov in https://github.com/zenml-io/zenml/pull/2129
+* Bugfix: `run_metadata` value returns string instead of other types by @avishniakov in https://github.com/zenml-io/zenml/pull/2149
+* `KubernetesSparkStepOperator` imports fails by @avishniakov in https://github.com/zenml-io/zenml/pull/2159
+* Fix `get_pipeline_context().model_version.get_artifact(...)` flow by @avishniakov in https://github.com/zenml-io/zenml/pull/2162
+
+## What's Changed
+* Model Versions are taggable by @avishniakov in https://github.com/zenml-io/zenml/pull/2102
+* Adding a condition to the PR template by @bcdurak in https://github.com/zenml-io/zenml/pull/2140
+* trying local caching for custom runners by @safoinme in https://github.com/zenml-io/zenml/pull/2148
+* make template tests runs on ubuntu latest instead of custom runners by @safoinme in https://github.com/zenml-io/zenml/pull/2150
+* Fix various bugs by @stefannica in https://github.com/zenml-io/zenml/pull/2147
+* Fix `importlib` calling to `importlib.metadata` by @safoinme in https://github.com/zenml-io/zenml/pull/2160
+* Debugging `zenml clean` by @bcdurak in https://github.com/zenml-io/zenml/pull/2119
+* Add metadata to model versions by @avishniakov in https://github.com/zenml-io/zenml/pull/2109
+* Adding a link from pipeline runs to code repositories by @bcdurak in https://github.com/zenml-io/zenml/pull/2146
+* Moving tags to the body for artifacts and artifact versions by @bcdurak in https://github.com/zenml-io/zenml/pull/2138
+* Fix MLFlow test by @avishniakov in https://github.com/zenml-io/zenml/pull/2161
+* Fix Client doesn't recover from remote connection resets by @avishniakov in https://github.com/zenml-io/zenml/pull/2129
+* Bugfix: `run_metadata` value returns string instead of other types by @avishniakov in https://github.com/zenml-io/zenml/pull/2149
+* `KubernetesSparkStepOperator` imports fails by @avishniakov in https://github.com/zenml-io/zenml/pull/2159
+* Endpoint artifacts rename to deployment artifacts by @avishniakov in https://github.com/zenml-io/zenml/pull/2134
+* Fix `get_pipeline_context().model_version.get_artifact(...)` flow by @avishniakov in https://github.com/zenml-io/zenml/pull/2162
+* Add CodeRabbit config to repo base by @strickvl in https://github.com/zenml-io/zenml/pull/2165
+* Feature: use service connectors to authenticate secrets stores. by @stefannica in https://github.com/zenml-io/zenml/pull/2154
+* Add dependabot updates for Github Actions on CI by @strickvl in https://github.com/zenml-io/zenml/pull/2087
+* Run DB migration testing using MySQL alongside SQLite by @strickvl in https://github.com/zenml-io/zenml/pull/2113
+* Remove `precommit` by @strickvl in https://github.com/zenml-io/zenml/pull/2164
+* Remove support for secrets managers by @stefannica in https://github.com/zenml-io/zenml/pull/2163
+* Add MariaDB test harnesses by @christianversloot in https://github.com/zenml-io/zenml/pull/2155
+* Feature/update quickstart from template by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2157
+* Bump MLFlow to 2.9.2 by @christianversloot in https://github.com/zenml-io/zenml/pull/2156
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.52.0...0.53.0
+
+# 0.52.0
+
+This adds the ability to pass in pipeline parameters as YAML configuration and fixes a couple of minor issues affecting the W&B integration and the way expiring credentials are refreshed when service connectors are used.
+
+## Breaking Change
+
+The current pipeline YAML configurations are now being validated to ensure that configured parameters match what is available in the code. This means that if you have a pipeline that is configured with a parameter that has a different value that what is provided through code, the pipeline will fail to run. This is a breaking change, but it is a good thing as it will help you catch errors early on.
+
+This is an example of a pipeline configuration that will fail to run:
+
+```yaml
+parameters:
+    some_param: 24
+
+steps:
+  my_step:
+    parameters:
+      input_2: 42
+```
+
+```python
+# run.py
+@step
+def my_step(input_1: int, input_2: int) -> None:
+    pass
+
+@pipeline
+def my_pipeline(some_param: int):
+    # here an error will be raised since `input_2` is
+    # `42` in config, but `43` was provided in the code
+    my_step(input_1=42, input_2=43)
+
+if __name__=="__main__":
+    # here an error will be raised since `some_param` is
+    # `24` in config, but `23` was provided in the code
+    my_pipeline(23)
+```
+
+## What's Changed
+* Passing pipeline parameters as yaml config by @avishniakov in https://github.com/zenml-io/zenml/pull/2058
+* Side-effect free tests by @avishniakov in https://github.com/zenml-io/zenml/pull/2065
+* Fix various bugs by @stefannica in https://github.com/zenml-io/zenml/pull/2124
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.51.0...0.52.0
+
+# 0.51.0
+
+This release comes with a breaking change to the model version model, a new use-case example for NLP, and a range of bug fixes and enhancements to the artifact management and pipeline run management features. 
+
+## Breaking Change
+* Artifact Version Table + Artifact Tagging by @fa9r in https://github.com/zenml-io/zenml/pull/2081
+* Converting model models to use the new hydration paradigm by @bcdurak in https://github.com/zenml-io/zenml/pull/2101
+
+## New Example
+* NLP Template Example is a new example that demonstrates how to use ZenML for NLP tasks. by @safoinme in https://github.com/zenml-io/zenml/pull/2070
+
+
+## What's Changed
+* Updated to one quickstart again by @htahir1 in https://github.com/zenml-io/zenml/pull/2092
+* Fix Nightly Build workflow files by @strickvl in https://github.com/zenml-io/zenml/pull/2090
+* Make PyPi release depend on DB migration tests passing by @strickvl in https://github.com/zenml-io/zenml/pull/2088
+* Bump `mlstacks` version in ZenML extra by @strickvl in https://github.com/zenml-io/zenml/pull/2091
+* Fix SQL schema imports by @stefannica in https://github.com/zenml-io/zenml/pull/2098
+* Fix migration for unowned stacks/components by @schustmi in https://github.com/zenml-io/zenml/pull/2099
+* Polymorthic `run_metadata` by @avishniakov in https://github.com/zenml-io/zenml/pull/2064
+* Update ruff formatter (for bugfixes) by @strickvl in https://github.com/zenml-io/zenml/pull/2106
+* Lock in airflow version as higher versions will fail by @AlexejPenner in https://github.com/zenml-io/zenml/pull/2108
+* Swap contents for HTMLString and MarkdownString in docs by @christianversloot in https://github.com/zenml-io/zenml/pull/2110
+* Fix secrets list with cloud secrets stores and RBAC by @stefannica in https://github.com/zenml-io/zenml/pull/2107
+* More track events by @htahir1 in https://github.com/zenml-io/zenml/pull/2112
+* Fix pipeline run cascade deletion by @fa9r in https://github.com/zenml-io/zenml/pull/2104
+* Take integrations tests out of unit tests folder by @safoinme in https://github.com/zenml-io/zenml/pull/2100
+* Allow extra values when dehydrating response models by @schustmi in https://github.com/zenml-io/zenml/pull/2114
+* Request optimizations by @schustmi in https://github.com/zenml-io/zenml/pull/2103
+* Pagination in model versions by @avishniakov in https://github.com/zenml-io/zenml/pull/2115
+* Add `StepContext.inputs` property by @fa9r in https://github.com/zenml-io/zenml/pull/2105
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.50.0...0.51.0
+
+
 # 0.50.0
 
 In this release, we introduce key updates aimed at improving user experience and security.

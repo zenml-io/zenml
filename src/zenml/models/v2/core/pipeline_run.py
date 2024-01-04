@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
+    from zenml.models.v2.core.code_reference import CodeReferenceResponse
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_build import (
         PipelineBuildResponse,
@@ -59,7 +60,6 @@ if TYPE_CHECKING:
 class PipelineRunRequest(WorkspaceScopedRequest):
     """Request model for pipeline runs."""
 
-    id: UUID
     name: str = Field(
         title="The name of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -132,6 +132,9 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     )
     schedule: Optional["ScheduleResponse"] = Field(
         default=None, title="The schedule that was used for this run."
+    )
+    code_reference: Optional["CodeReferenceResponse"] = Field(
+        default=None, title="The code reference that was used for this run."
     )
 
 
@@ -271,6 +274,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().schedule
+
+    @property
+    def code_reference(self) -> Optional["CodeReferenceResponse"]:
+        """The `schedule` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().code_reference
 
     @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:

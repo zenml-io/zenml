@@ -27,10 +27,9 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.config.source import Source, convert_source_validator
-from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
-from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -40,6 +39,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
@@ -79,7 +79,7 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         default=None,
     )
     uri: str = Field(
-        title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
+        title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
     materializer: Source = Field(
         title="Materializer class to use for this artifact.",
@@ -124,7 +124,7 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     uri: str = Field(
-        title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
+        title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
     )
     type: ArtifactType = Field(title="Type of the artifact.")
     materializer: Source = Field(
@@ -132,6 +132,9 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     )
     data_type: Source = Field(
         title="Data type of the artifact.",
+    )
+    tags: List[TagResponse] = Field(
+        title="Tags associated with the model",
     )
 
     _convert_source = convert_source_validator("materializer", "data_type")
@@ -147,9 +150,6 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     producer_step_run_id: Optional[UUID] = Field(
         title="ID of the step run that produced this artifact.",
         default=None,
-    )
-    tags: List[TagResponseModel] = Field(
-        title="Tags associated with the model",
     )
     visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
         default=None, title="Visualizations of the artifact."
@@ -214,6 +214,15 @@ class ArtifactVersionResponse(
         return self.get_body().type
 
     @property
+    def tags(self) -> List[TagResponse]:
+        """The `tags` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().tags
+
+    @property
     def artifact_store_id(self) -> Optional[UUID]:
         """The `artifact_store_id` property.
 
@@ -230,15 +239,6 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_metadata().producer_step_run_id
-
-    @property
-    def tags(self) -> List[TagResponseModel]:
-        """The `tags` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().tags
 
     @property
     def visualizations(

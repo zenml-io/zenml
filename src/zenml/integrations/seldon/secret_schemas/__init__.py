@@ -17,18 +17,12 @@ These are secret schemas that can be used to authenticate Seldon to the
 Artifact Store used to store served ML models.
 """
 from zenml.integrations.seldon.secret_schemas.secret_schemas import (
-    SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE,
-    SELDON_GS_SECRET_SCHEMA_TYPE,
-    SELDON_S3_SECRET_SCHEMA_TYPE,
     SeldonAzureSecretSchema,
     SeldonGSSecretSchema,
     SeldonS3SecretSchema,
 )
 
 __all__ = [
-    "SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE",
-    "SELDON_GS_SECRET_SCHEMA_TYPE",
-    "SELDON_S3_SECRET_SCHEMA_TYPE",
     "SeldonAzureSecretSchema",
     "SeldonGSSecretSchema",
     "SeldonS3SecretSchema",

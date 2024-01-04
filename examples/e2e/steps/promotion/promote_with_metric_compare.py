@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -90,21 +90,17 @@ def promote_with_metric_compare(
         logger.info(f"Current model version was promoted to '{target_env}'.")
 
         # Promote in Model Registry
-        latest_version_model_registry_number = (
-            latest_version.get_model_artifact("model")
-            .run_metadata["model_registry_version"]
-            .value
-        )
+        latest_version_model_registry_number = latest_version.metadata[
+            "model_registry_version"
+        ]
         if current_version_number is None:
             current_version_model_registry_number = (
                 latest_version_model_registry_number
             )
         else:
-            current_version_model_registry_number = (
-                current_version.get_model_artifact("model")
-                .run_metadata["model_registry_version"]
-                .value
-            )
+            current_version_model_registry_number = current_version.metadata[
+                "model_registry_version"
+            ]
         promote_in_model_registry(
             latest_version=latest_version_model_registry_number,
             current_version=current_version_model_registry_number,
@@ -113,11 +109,7 @@ def promote_with_metric_compare(
         )
         promoted_version = latest_version_model_registry_number
     else:
-        promoted_version = (
-            current_version.get_model_artifact("model")
-            .run_metadata["model_registry_version"]
-            .value
-        )
+        promoted_version = current_version.metadata["model_registry_version"]
 
     logger.info(
         f"Current model version in `{target_env}` is `{promoted_version}` registered in Model Registry"

@@ -17,11 +17,15 @@ from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import validator
 
+from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryConfig,
     BaseContainerRegistryFlavor,
 )
-from zenml.integrations.aws import AWS_CONTAINER_REGISTRY_FLAVOR
+from zenml.integrations.aws import (
+    AWS_CONNECTOR_TYPE,
+    AWS_CONTAINER_REGISTRY_FLAVOR,
+)
 from zenml.models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
@@ -81,8 +85,8 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            connector_type="aws",
-            resource_type="docker-registry",
+            connector_type=AWS_CONNECTOR_TYPE,
+            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
             resource_id_attr="uri",
         )
 

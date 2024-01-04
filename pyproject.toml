@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.50.0"
+version = "0.53.1"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -62,6 +62,7 @@ pyyaml = ">=6.0.1"
 rich = { extras = ["jupyter"], version = ">=12.0.0" }
 sqlalchemy_utils = "0.38.3"
 sqlmodel = "0.0.8"
+importlib_metadata = { version = "<=7.0.0", python = "<3.10" }
 
 # Optional dependencies for the ZenServer
 fastapi = { version = ">=0.75,<0.100", optional = true }
@@ -124,7 +125,6 @@ adlfs = { version = ">=2021.10.0", optional = true }
 bandit = { version = "^1.7.5", optional = true }
 coverage = { extras = ["toml"], version = "^5.5", optional = true }
 mypy = { version = "1.7.1", optional = true }
-pre-commit = { version = "^2.14.0", optional = true }
 pyment = { version = "^0.3.3", optional = true }
 tox = { version = "^3.24.3", optional = true }
 hypothesis = { version = "^6.43.1", optional = true }
@@ -162,7 +162,7 @@ types-psutil = { version = "^5.8.13", optional = true }
 types-passlib = { version = "^1.7.7", optional = true }
 
 # mlstacks dependencies
-mlstacks = { version = "0.7.11", optional = true }
+mlstacks = { version = "0.8.0", optional = true }
 
 [tool.poetry.extras]
 server = [

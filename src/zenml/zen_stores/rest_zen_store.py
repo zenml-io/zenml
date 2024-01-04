@@ -32,6 +32,7 @@ from uuid import UUID
 import requests
 import urllib3
 from pydantic import BaseModel, root_validator, validator
+from requests.adapters import HTTPAdapter, Retry
 
 import zenml
 from zenml.analytics import source_context
@@ -109,9 +110,7 @@ from zenml.models import (
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseRequest,
-    BaseRequestModel,
     BaseResponse,
-    BaseResponseModel,
     CodeReferenceResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
@@ -184,10 +183,10 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
-    TagFilterModel,
-    TagRequestModel,
-    TagResponseModel,
-    TagUpdateModel,
+    TagFilter,
+    TagRequest,
+    TagResponse,
+    TagUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -196,7 +195,6 @@ from zenml.models import (
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceScopedRequest,
-    WorkspaceScopedRequestModel,
     WorkspaceUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
@@ -217,16 +215,11 @@ logger = get_logger(__name__)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
-AnyRequestModel = TypeVar(
-    "AnyRequestModel", bound=Union[BaseRequest, BaseRequestModel]
-)
-AnyResponseModel = TypeVar(
-    "AnyResponseModel",
-    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
-)
-AnyWorkspaceScopedRequestModel = TypeVar(
-    "AnyWorkspaceScopedRequestModel",
-    bound=Union[WorkspaceScopedRequestModel, WorkspaceScopedRequest],
+AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyWorkspaceScopedRequest = TypeVar(
+    "AnyWorkspaceScopedRequest",
+    bound=WorkspaceScopedRequest,
 )
 
 
@@ -3019,7 +3012,7 @@ class RestZenStore(BaseZenStore):
     # Tags
     #################
 
-    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+    def create_tag(self, tag: TagRequest) -> TagResponse:
         """Creates a new tag.
 
         Args:
@@ -3030,7 +3023,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=tag,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
             route=TAGS,
         )
 
@@ -3046,13 +3039,14 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(resource_id=tag_name_or_id, route=TAGS)
 
     def get_tag(
-        self,
-        tag_name_or_id: Union[str, UUID],
-    ) -> TagResponseModel:
+        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The tag of interest.
@@ -3060,32 +3054,37 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=tag_name_or_id,
             route=TAGS,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_tags(
         self,
-        tag_filter_model: TagFilterModel,
-    ) -> Page[TagResponseModel]:
+        tag_filter_model: TagFilter,
+        hydrate: bool = False,
+    ) -> Page[TagResponse]:
         """Get all tags by filter.
 
         Args:
             tag_filter_model: All filter parameters including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all tags.
         """
         return self._list_paginated_resources(
             route=TAGS,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
             filter_model=tag_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        tag_update_model: TagUpdateModel,
-    ) -> TagResponseModel:
+        tag_update_model: TagUpdate,
+    ) -> TagResponse:
         """Update tag.
 
         Args:
@@ -3100,7 +3099,7 @@ class RestZenStore(BaseZenStore):
             resource_id=tag.id,
             resource_update=tag_update_model,
             route=TAGS,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
         )
 
     # =======================
@@ -3183,6 +3182,9 @@ class RestZenStore(BaseZenStore):
                 )
 
             self._session = requests.Session()
+            retries = Retry(backoff_factor=0.1, connect=5)
+            self._session.mount("https://", HTTPAdapter(max_retries=retries))
+            self._session.mount("http://", HTTPAdapter(max_retries=retries))
             self._session.verify = self.config.verify_ssl
             token = self._get_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
@@ -3401,17 +3403,13 @@ class RestZenStore(BaseZenStore):
             **kwargs,
         )
 
-    # TODO: In the helper functions below here, there are a few ignored
-    #   mypy issues. This is mainly due to AnyResponse being bound to two
-    #   different classes. Once the 'BaseResponseModel's are replaced with
-    #   'BaseResponse's, we need to remove the ignore and reevaluate them.
     def _create_resource(
         self,
-        resource: AnyRequestModel,
-        response_model: Type[AnyResponseModel],
+        resource: AnyRequest,
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyResponseModel:
+    ) -> AnyResponse:
         """Create a new resource.
 
         Args:
@@ -3425,17 +3423,15 @@ class RestZenStore(BaseZenStore):
             The created resource.
         """
         response_body = self.post(f"{route}", body=resource, params=params)
-        return response_model.parse_obj(  # type: ignore[return-value]
-            response_body
-        )
+        return response_model.parse_obj(response_body)
 
     def _create_workspace_scoped_resource(
         self,
-        resource: AnyWorkspaceScopedRequestModel,
-        response_model: Type[AnyResponseModel],
+        resource: AnyWorkspaceScopedRequest,
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyResponseModel:
+    ) -> AnyResponse:
         """Create a new workspace scoped resource.
 
         Args:
@@ -3457,11 +3453,11 @@ class RestZenStore(BaseZenStore):
 
     def _get_or_create_resource(
         self,
-        resource: AnyRequestModel,
-        response_model: Type[AnyResponseModel],
+        resource: AnyRequest,
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[AnyResponseModel, bool]:
+    ) -> Tuple[AnyResponse, bool]:
         """Get or create a resource.
 
         Args:
@@ -3503,15 +3499,15 @@ class RestZenStore(BaseZenStore):
                 f"response from the {route}{GET_OR_CREATE} endpoint but got "
                 f"{type(was_created)} instead."
             )
-        return response_model.parse_obj(model_json), was_created  # type: ignore[return-value]
+        return response_model.parse_obj(model_json), was_created
 
     def _get_or_create_workspace_scoped_resource(
         self,
-        resource: AnyWorkspaceScopedRequestModel,
-        response_model: Type[AnyResponseModel],
+        resource: AnyWorkspaceScopedRequest,
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[AnyResponseModel, bool]:
+    ) -> Tuple[AnyResponse, bool]:
         """Get or create a workspace scoped resource.
 
         Args:
@@ -3536,9 +3532,9 @@ class RestZenStore(BaseZenStore):
         self,
         resource_id: Union[str, int, UUID],
         route: str,
-        response_model: Type[AnyResponseModel],
+        response_model: Type[AnyResponse],
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyResponseModel:
+    ) -> AnyResponse:
         """Retrieve a single resource.
 
         Args:
@@ -3551,15 +3547,15 @@ class RestZenStore(BaseZenStore):
             The retrieved resource.
         """
         body = self.get(f"{route}/{str(resource_id)}", params=params)
-        return response_model.parse_obj(body)  # type: ignore[return-value]
+        return response_model.parse_obj(body)
 
     def _list_paginated_resources(
         self,
         route: str,
-        response_model: Type[AnyResponseModel],
+        response_model: Type[AnyResponse],
         filter_model: BaseFilter,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Page[AnyResponseModel]:
+    ) -> Page[AnyResponse]:
         """Retrieve a list of resources filtered by some criteria.
 
         Args:
@@ -3583,10 +3579,10 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         # The initial page of items will be of type BaseResponseModel
-        page_of_items: Page[AnyResponseModel] = Page.parse_obj(body)
+        page_of_items: Page[AnyResponse] = Page.parse_obj(body)
         # So these items will be parsed into their correct types like here
         page_of_items.items = [
-            response_model.parse_obj(generic_item)  # type: ignore[misc]
+            response_model.parse_obj(generic_item)
             for generic_item in body["items"]
         ]
         return page_of_items
@@ -3594,9 +3590,9 @@ class RestZenStore(BaseZenStore):
     def _list_resources(
         self,
         route: str,
-        response_model: Type[AnyResponseModel],
+        response_model: Type[AnyResponse],
         **filters: Any,
-    ) -> List[AnyResponseModel]:
+    ) -> List[AnyResponse]:
         """Retrieve a list of resources filtered by some criteria.
 
         Args:
@@ -3617,16 +3613,16 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [response_model.parse_obj(entry) for entry in body]  # type: ignore[misc]
+        return [response_model.parse_obj(entry) for entry in body]
 
     def _update_resource(
         self,
         resource_id: Union[str, int, UUID],
         resource_update: BaseModel,
-        response_model: Type[AnyResponseModel],
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyResponseModel:
+    ) -> AnyResponse:
         """Update an existing resource.
 
         Args:
@@ -3644,9 +3640,7 @@ class RestZenStore(BaseZenStore):
             f"{route}/{str(resource_id)}", body=resource_update, params=params
         )
 
-        return response_model.parse_obj(  # type: ignore[return-value]
-            response_body
-        )
+        return response_model.parse_obj(response_body)
 
     def _delete_resource(
         self, resource_id: Union[str, UUID], route: str
