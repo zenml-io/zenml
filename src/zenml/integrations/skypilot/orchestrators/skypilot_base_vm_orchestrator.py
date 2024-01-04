@@ -22,7 +22,6 @@ from uuid import uuid4
 
 import sky
 
-from zenml.client import Client
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
@@ -34,7 +33,6 @@ from zenml.orchestrators import (
 )
 from zenml.stack import StackValidator
 from zenml.utils import string_utils
-
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
