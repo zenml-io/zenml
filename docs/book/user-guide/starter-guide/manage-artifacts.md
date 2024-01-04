@@ -78,7 +78,6 @@ create version "2", and so on.
 
 While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model/#zenml.model.artifact_config.DataArtifactConfig). This may come into play during critical runs like production releases.
 
-
 ```python
 from zenml import step, ArtifactConfig
 
