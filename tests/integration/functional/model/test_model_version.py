@@ -20,7 +20,7 @@ from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model_version import ModelVersion
-from zenml.model.utils import log_model_version_metadata
+from zenml.model.utils import log_model_metadata
 from zenml.models import TagRequest
 
 MODEL_NAME = "super_model"
@@ -64,7 +64,7 @@ class ModelContext:
 @step
 def step_metadata_logging_functional():
     """Functional logging using implicit ModelVersion from context."""
-    log_model_version_metadata({"foo": "bar"})
+    log_model_metadata({"foo": "bar"})
     assert get_step_context().model_version.metadata["foo"] == "bar"
 
 
@@ -357,7 +357,7 @@ class TestModelVersion:
         )
         mv._get_or_create_model_version()
 
-        log_model_version_metadata(
+        log_model_metadata(
             {"foo": "bar"}, model_name=mv.name, model_version=mv.number
         )
 
@@ -365,9 +365,9 @@ class TestModelVersion:
         assert mv.metadata["foo"] == "bar"
 
         with pytest.raises(ValueError):
-            log_model_version_metadata({"foo": "bar"})
+            log_model_metadata({"foo": "bar"})
 
-        log_model_version_metadata(
+        log_model_metadata(
             {"bar": "foo"}, model_name=mv.name, model_version="latest"
         )
 
