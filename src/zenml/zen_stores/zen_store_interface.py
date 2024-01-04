@@ -1370,7 +1370,7 @@ class ZenStoreInterface(ABC):
     def list_service_accounts(
         self,
         filter_model: ServiceAccountFilter,
-        hydrate: bool = True,
+        hydrate: bool = False,
     ) -> Page[ServiceAccountResponse]:
         """List all service accounts.
 
