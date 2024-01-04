@@ -117,6 +117,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
+from zenml.models.v2.core.model import ModelUpdate
 from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
@@ -2575,8 +2576,9 @@ def test_logs_are_recorded_properly(clean_client):
     client = Client()
     store = client.zen_store
 
-    with PipelineRunContext(2):
-        steps = store.list_run_steps(StepRunFilter())
+    run_context = PipelineRunContext(1)
+    with run_context:
+        steps = run_context.steps
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
         artifact_store = _load_artifact_store(
@@ -3603,6 +3605,22 @@ class TestModel:
                 assert zs.get_model(created_model.id).latest_version == mv.name
                 time.sleep(1)  # thanks to MySQL again!
 
+    def test_update_name(self, clean_client: "Client"):
+        """Test that update name works, if model version exists."""
+        with ModelVersionContext() as model_:
+            zs = clean_client.zen_store
+            model = zs.get_model(model_.id)
+            assert model.name == model_.name
+
+            zs.update_model(
+                model_id=model_.id,
+                model_update=ModelUpdate(
+                    name="and yet another one",
+                ),
+            )
+            model = zs.get_model(model_.id)
+            assert model.name == "and yet another one"
+
 
 class TestModelVersion:
     def test_create_pass(self):
@@ -3807,6 +3825,35 @@ class TestModelVersion:
                 ),
             ).items[0]
             assert mv1.id == mv3.id
+
+    def test_update_name_and_description(self, clean_client: "Client"):
+        """Test that update name works, if model version exists."""
+        with ModelVersionContext() as model:
+            zs = clean_client.zen_store
+            mv1 = zs.create_model_version(
+                ModelVersionRequest(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="great one",
+                    description="this is great",
+                )
+            )
+            mv = zs.get_model_version(mv1.id)
+            assert mv.name == "great one"
+            assert mv.description == "this is great"
+
+            zs.update_model_version(
+                model_version_id=mv1.id,
+                model_version_update_model=ModelVersionUpdate(
+                    model=mv1.model.id,
+                    name="and yet another one",
+                    description="this is great and better",
+                ),
+            )
+            mv = zs.get_model_version(mv1.id)
+            assert mv.name == "and yet another one"
+            assert mv.description == "this is great and better"
 
     def test_in_stage_not_found(self):
         """Test that get in stage fails if not found."""

@@ -83,6 +83,10 @@ class ModelRequest(WorkspaceScopedRequest):
     tags: Optional[List[str]] = Field(
         title="Tags associated with the model",
     )
+    save_models_to_registry: bool = Field(
+        title="Whether to save all ModelArtifacts to Model Registry",
+        default=True,
+    )
 
 
 # ------------------ Update Model ------------------
@@ -91,6 +95,7 @@ class ModelRequest(WorkspaceScopedRequest):
 class ModelUpdate(BaseModel):
     """Update model for models."""
 
+    name: Optional[str] = None
     license: Optional[str] = None
     description: Optional[str] = None
     audience: Optional[str] = None
@@ -157,6 +162,10 @@ class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The ethical implications of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
+    )
+    save_models_to_registry: bool = Field(
+        title="Whether to save all ModelArtifacts to Model Registry",
+        default=True,
     )
 
 
@@ -279,6 +288,15 @@ class ModelResponse(
             the value of the property.
         """
         return self.get_metadata().ethics
+
+    @property
+    def save_models_to_registry(self) -> bool:
+        """The `save_models_to_registry` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().save_models_to_registry
 
     # Helper functions
     @property
