@@ -4,29 +4,17 @@ description: Creating a full picture of a ML model using the Model Control Plane
 
 # Keeping track of ML models in ZenML
 
-A machine learning model undergoes many different iterations throughout its lifecycle. For example, let's say you are working on a classification model. This model will probably undergo dozens of changes until it arrives at a point when it's ready to be deployed. ZenML helps in tracking this lifecycle.
+![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/mcp_walkthrough.gif)
 
 As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many `ModelVersions` (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
 
 ## What is a ZenML Model?
-
-![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/mcp_walkthrough.gif)
 
 Before diving in, let's take some time to build an understanding of what we mean when we say `Model` in ZenML terms. A `Model` is simply an entity that groups pipelines, artifacts, metadata, and other crucial business data into a unified entity. Please note that one of the most common artifacts that is associated with a Model in ZenML is the so-called technical model, which is the actual model file/files that hold the weight and parameters of a machine learning training result. However, this is not the only artifact that is relevant; artifacts such as the training data and the predictions this model produces in production are also linked inside a ZenML Model. In this sense, a ZenML Model is a concept that more broadly encapsulates your ML product's business logic.
 
 Models are first-class citizens in ZenML and as such
 viewing and using them is unified and centralized in the ZenML API, the ZenML client as
 well as on the [ZenML Cloud](https://zenml.io/cloud) dashboard.
-
-A Model captures lineage information and more. Within a Model, different Model
-Versions can be staged. For example, you can rely on your predictions at a
-specific stage, like `Production`, and decide whether the Model Version should
-be promoted based on your business rules during training. Plus, accessing data
-from other Models and their Versions is just as simple.
-
-The Model Control Plane is how you manage your models through this unified
-interface. It allows you to combine the logic of your pipelines, artifacts, and
-crucial business data along with the actual 'technical model'.
 
 These models can be viewed within ZenML:
 
