@@ -1,12 +1,10 @@
+---
 name: Trivy ZenML (core) Scan
-
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   schedule:
-    - cron: '0 4 * * 1'  # At 04:00 on Monday
-
-
+    - cron: 0 4 * * 1  # At 04:00 on Monday
 jobs:
   trivy-scan:
     name: Trivy zenml scan & analysis
@@ -14,16 +12,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
-
       - name: zenml-Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.16.0
         with:
-            image-ref: "docker.io/zenmldocker/zenml:latest"
-            format: "sarif"
-            output: "trivy-results-zenml.sarif"
-
+          image-ref: docker.io/zenmldocker/zenml:latest
+          format: sarif
+          output: trivy-results-zenml.sarif
       - name: Upload Trivy zenml scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-            sarif_file: "trivy-results-zenml.sarif"
-
+          sarif_file: trivy-results-zenml.sarif

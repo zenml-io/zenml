@@ -1,70 +1,60 @@
+---
 name: Setup Python Environment, Lint and Unit Test
-
 on:
   workflow_call:
     inputs:
       os:
-        description: 'OS'
+        description: OS
         type: string
         required: true
       python-version:
-        description: 'Python version'
+        description: Python version
         type: string
         required: true
       enable_tmate:
-        description: 'Enable tmate session for debugging'
+        description: Enable tmate session for debugging
         type: string
         required: false
-        default: "never"
+        default: never
       install_integrations:
-        description: 'Install ZenML integrations'
+        description: Install ZenML integrations
         type: string
         required: false
         default: 'yes'
       git-ref:
-        description: 'Git branch or ref'
+        description: Git branch or ref
         type: string
         required: false
         default: ''
-
   workflow_dispatch:
     inputs:
       os:
-        description: 'OS'
+        description: OS
         type: choice
-        options: 
+        options:
           - ubuntu-latest
           - macos-latest
           - windows-latest
           - ubuntu-dind-runners
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       python-version:
-        description: 'Python version'
+        description: Python version
         type: choice
-        options:
-          - '3.8'
-          - '3.9'
-          - '3.10'
-          - '3.11'
+        options: ['3.8', '3.9', '3.10', '3.11']
         required: false
         default: '3.8'
       enable_tmate:
-        description: 'Enable tmate session for debugging'
+        description: Enable tmate session for debugging
         type: choice
-        options:
-          - 'no'
-          - 'on-failure'
-          - 'always'
-          - 'before-tests'
+        options: [no, on-failure, always, before-tests]
         required: false
         default: 'no'
       git-ref:
-        description: 'Git branch or ref'
+        description: Git branch or ref
         type: string
         required: false
         default: ''
-
 jobs:
   setup-and-test:
     name: setup-and-test
@@ -72,23 +62,20 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: 'utf-8'
+      PYTHONIOENCODING: utf-8
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
-      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     # Exit if it's a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
-
     defaults:
       run:
         shell: bash
-
     steps:
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.inputs.git-ref || github.ref }}
-
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
@@ -98,64 +85,55 @@ jobs:
           install_integrations: ${{ inputs.install_integrations }}
           runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
-
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
-
       - name: Lint check
         run: |
           bash scripts/lint.sh
-
       - name: Spelling checker
         uses: crate-ci/typos@v1.16.26
         with:
-          files: "."
+          files: .
           config: ./.typos.toml
         # Only run the spell check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
-
       - name: Docstring check
         run: bash scripts/docstring.sh
         # Only run the docstring check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
-
       - name: Security check
         run: bash scripts/check-security.sh
-
       - name: Markdown link check
         uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'no'
-          folder-path: './examples, ./docs/book, ./src'
-          file-path: './README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md, CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md'
+          folder-path: ./examples, ./docs/book, ./src
+          file-path: ./README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md,
+            CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md
           config-file: .github/workflows/markdown_check_config.json
         continue-on-error: true
         # Only run the markdown link check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
-
       - name: Check for alembic branch divergence
         env:
           ZENML_DEBUG: 0
         run: |
           bash scripts/check-alembic-branches.sh
-
       - name: Run unit tests
         run: |
           bash scripts/test-coverage-xml.sh unit
 
       # - name: Upload coverage
-      #   # only do it for python 3.8, we don't need to do it for every version
+      #  # only do it for python 3.8, we don't need to do it for every version
       #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
       #   uses: codecov/codecov-action@v2
-
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
-
       - name: Verify Python Env unaffected
-        run: |
+        run: |-
           zenml integration list
           pip list
           pip check || true
