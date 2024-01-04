@@ -32,6 +32,18 @@ use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)
 or [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) to manage our Python virtual environments.
 {% endhint %}
 
+## Nightly builds
+
+ZenML also publishes nightly builds under the [`zenml-nightly` package
+name](https://pypi.org/project/zenml-nightly/). These are built from the latest
+[`develop` branch](https://github.com/zenml-io/zenml/tree/develop) (to which
+work ready for release is published) and are not guaranteed to be stable. To
+install the nightly build, run:
+
+```shell
+pip install zenml-nightly
+```
+
 ## Verifying installations
 
 Once the installation is completed, you can check whether the installation was successful either through Bash:

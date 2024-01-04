@@ -31,11 +31,10 @@ from uuid import UUID
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import SecretStr
+from pydantic import root_validator
 
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_decorator
-from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
     GenericFilterOps,
     LogicalOperators,
@@ -43,16 +42,26 @@ from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.exceptions import EntityExistsError
+from zenml.integrations.aws import (
+    AWS_CONNECTOR_TYPE,
+    AWS_RESOURCE_TYPE,
+)
+from zenml.integrations.aws.service_connectors.aws_service_connector import (
+    AWSAuthenticationMethods,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretResponseBody,
+    SecretResponseMetadata,
+    SecretUpdate,
 )
-from zenml.zen_stores.secrets_stores.base_secrets_store import (
-    BaseSecretsStore,
+from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
+    ServiceConnectorSecretsStore,
+    ServiceConnectorSecretsStoreConfiguration,
 )
 
 logger = get_logger(__name__)
@@ -61,16 +70,11 @@ logger = get_logger(__name__)
 AWS_ZENML_SECRET_NAME_PREFIX = "zenml"
 
 
-class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
+class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
     """AWS secrets store configuration.
 
     Attributes:
         type: The type of the store.
-        region_name: The AWS region name to use.
-        aws_access_key_id: The AWS access key ID to use to authenticate.
-        aws_secret_access_key: The AWS secret access key to use to
-            authenticate.
-        aws_session_token: The AWS session token to use to authenticate.
         list_page_size: The number of secrets to fetch per page when
             listing secrets.
         secret_list_refresh_timeout: The number of seconds to wait after
@@ -86,21 +90,65 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
     """
 
     type: SecretsStoreType = SecretsStoreType.AWS
-    region_name: str
-    aws_access_key_id: Optional[SecretStr] = None
-    aws_secret_access_key: Optional[SecretStr] = None
-    aws_session_token: Optional[SecretStr] = None
     list_page_size: int = 100
     secret_list_refresh_timeout: int = 0
+
+    @property
+    def region(self) -> str:
+        """The AWS region to use.
+
+        Returns:
+            The AWS region to use.
+
+        Raises:
+            ValueError: If the region is not configured.
+        """
+        region = self.auth_config.get("region")
+        if region:
+            return str(region)
+
+        raise ValueError("AWS `region` must be specified in the auth_config.")
+
+    @root_validator(pre=True)
+    def populate_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Populate the connector configuration from legacy attributes.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+        """
+        # Search for legacy attributes and populate the connector configuration
+        # from them, if they exist.
+        if (
+            values.get("aws_access_key_id")
+            and values.get("aws_secret_access_key")
+            and values.get("region_name")
+        ):
+            logger.warning(
+                "The `aws_access_key_id`, `aws_secret_access_key` and "
+                "`region_name` AWS secrets store attributes are deprecated and "
+                "will be removed in a future version of ZenML. Please use the "
+                "`auth_method` and `auth_config` attributes instead."
+            )
+            values["auth_method"] = AWSAuthenticationMethods.SECRET_KEY
+            values["auth_config"] = dict(
+                aws_access_key_id=values.get("aws_access_key_id"),
+                aws_secret_access_key=values.get("aws_secret_access_key"),
+                region=values.get("region_name"),
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
 
         # Forbid extra attributes set in the class.
-        extra = "forbid"
+        extra = "allow"
 
 
-class AWSSecretsStore(BaseSecretsStore):
+class AWSSecretsStore(ServiceConnectorSecretsStore):
     """Secrets store implementation that uses the AWS Secrets Manager API.
 
     This secrets store implementation uses the AWS Secrets Manager API to
@@ -144,46 +192,15 @@ class AWSSecretsStore(BaseSecretsStore):
     workspace) does not update the secret's `updated` timestamp. This is a
     limitation of the AWS Secrets Manager API (updating AWS tags does not update
     the secret's `updated` timestamp).
-
-
-    Attributes:
-        config: The configuration of the AWS secrets store.
-        TYPE: The type of the store.
-        CONFIG_TYPE: The type of the store configuration.
     """
 
     config: AWSSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AWS
     CONFIG_TYPE: ClassVar[
-        Type[SecretsStoreConfiguration]
+        Type[ServiceConnectorSecretsStoreConfiguration]
     ] = AWSSecretsStoreConfiguration
-
-    _client: Optional[Any] = None
-
-    @property
-    def client(self) -> Any:
-        """Initialize and return the AWS Secrets Manager client.
-
-        Returns:
-            The AWS Secrets Manager client.
-        """
-        if self._client is None:
-            # Initialize the AWS Secrets Manager client with the
-            # credentials from the configuration, if provided.
-            self._client = boto3.client(
-                "secretsmanager",
-                region_name=self.config.region_name,
-                aws_access_key_id=self.config.aws_access_key_id.get_secret_value()
-                if self.config.aws_access_key_id
-                else None,
-                aws_secret_access_key=self.config.aws_secret_access_key.get_secret_value()
-                if self.config.aws_secret_access_key
-                else None,
-                aws_session_token=self.config.aws_session_token.get_secret_value()
-                if self.config.aws_session_token
-                else None,
-            )
-        return self._client
+    SERVICE_CONNECTOR_TYPE: ClassVar[str] = AWS_CONNECTOR_TYPE
+    SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = AWS_RESOURCE_TYPE
 
     # ====================================
     # Secrets Store interface implementation
@@ -193,13 +210,21 @@ class AWSSecretsStore(BaseSecretsStore):
     # Initialization and configuration
     # --------------------------------
 
-    def _initialize(self) -> None:
-        """Initialize the AWS secrets store."""
-        logger.debug("Initializing AWSSecretsStore")
+    def _initialize_client_from_connector(self, client: Any) -> Any:
+        """Initialize the AWS Secrets Manager client from the service connector client.
 
-        # Initialize the AWS client early, just to catch any configuration or
-        # authentication errors early, before the Secrets Store is used.
-        _ = self.client
+        Args:
+            client: The authenticated client object returned by the service
+                connector.
+
+        Returns:
+            The AWS Secrets Manager client.
+        """
+        assert isinstance(client, boto3.Session)
+        return client.client(
+            "secretsmanager",
+            region_name=self.config.region,
+        )
 
     # ------
     # Secrets
@@ -258,7 +283,8 @@ class AWSSecretsStore(BaseSecretsStore):
         created: datetime,
         updated: datetime,
         values: Optional[str] = None,
-    ) -> SecretResponseModel:
+        hydrate: bool = False,
+    ) -> SecretResponse:
         """Create a ZenML secret model from data stored in an AWS secret.
 
         If the AWS secret cannot be converted, the method acts as if the
@@ -269,6 +295,8 @@ class AWSSecretsStore(BaseSecretsStore):
             created: The AWS secret creation time.
             updated: The AWS secret last updated time.
             values: The AWS secret values encoded as a JSON string (optional).
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The ZenML secret.
@@ -281,6 +309,7 @@ class AWSSecretsStore(BaseSecretsStore):
             created=created,
             updated=updated,
             values=json.loads(values) if values else None,
+            hydrate=hydrate,
         )
 
     @staticmethod
@@ -397,7 +426,7 @@ class AWSSecretsStore(BaseSecretsStore):
             )
 
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
-    def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
         """Creates a new secret.
 
         The new secret is also validated against the scoping rules enforced in
@@ -465,24 +494,32 @@ class AWSSecretsStore(BaseSecretsStore):
 
         self._wait_for_secret_to_propagate(aws_secret_id, tags=tags)
 
-        secret_model = SecretResponseModel(
+        secret_model = SecretResponse(
             id=secret_id,
             name=secret.name,
-            scope=secret.scope,
-            workspace=workspace,
-            user=user,
-            values=secret.secret_values,
-            created=describe_secret_response["CreatedDate"],
-            updated=describe_secret_response["LastChangedDate"],
+            body=SecretResponseBody(
+                user=user,
+                created=describe_secret_response["CreatedDate"],
+                updated=describe_secret_response["LastChangedDate"],
+                scope=secret.scope,
+                values=secret.secret_values,
+            ),
+            metadata=SecretResponseMetadata(
+                workspace=workspace,
+            ),
         )
 
         return secret_model
 
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
         """Get a secret by ID.
 
         Args:
             secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret.
@@ -527,11 +564,12 @@ class AWSSecretsStore(BaseSecretsStore):
             created=describe_secret_response["CreatedDate"],
             updated=describe_secret_response["LastChangedDate"],
             values=get_secret_value_response["SecretString"],
+            hydrate=hydrate,
         )
 
     def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
         """List all secrets matching the given filter criteria.
 
         Note that returned secrets do not include any secret values. To fetch
@@ -540,6 +578,8 @@ class AWSSecretsStore(BaseSecretsStore):
         Args:
             secret_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
@@ -570,7 +610,7 @@ class AWSSecretsStore(BaseSecretsStore):
             for filter in secret_filter_model.list_of_filters:
                 # The AWS Secrets Manager API only supports prefix matching. We
                 # take advantage of this to filter as much as possible on the
-                # AWS server side and we leave the rest to the client.
+                # AWS server side, and we leave the rest to the client.
                 if filter.operation not in [
                     GenericFilterOps.EQUALS,
                     GenericFilterOps.STARTSWITH,
@@ -598,7 +638,7 @@ class AWSSecretsStore(BaseSecretsStore):
         metadata = self._get_secret_metadata(**metadata_args)
         aws_filters = self._get_aws_secret_filters(metadata)
 
-        results: List[SecretResponseModel] = []
+        results: List[SecretResponse] = []
 
         try:
             # AWS Secrets Manager API pagination is wrapped around the
@@ -625,6 +665,7 @@ class AWSSecretsStore(BaseSecretsStore):
                             tags=secret["Tags"],
                             created=secret["CreatedDate"],
                             updated=secret["LastChangedDate"],
+                            hydrate=hydrate,
                         )
                     except KeyError:
                         # The _convert_aws_secret method raises a KeyError
@@ -659,7 +700,7 @@ class AWSSecretsStore(BaseSecretsStore):
                 f"therefore is {total_pages}."
             )
 
-        return Page[SecretResponseModel](
+        return Page[SecretResponse](
             total=total,
             total_pages=total_pages,
             items=sorted_results[
@@ -672,8 +713,8 @@ class AWSSecretsStore(BaseSecretsStore):
         )
 
     def update_secret(
-        self, secret_id: UUID, secret_update: SecretUpdateModel
-    ) -> SecretResponseModel:
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
         """Updates a secret.
 
         Secret values that are specified as `None` in the update that are
@@ -705,24 +746,16 @@ class AWSSecretsStore(BaseSecretsStore):
         """
         secret = self.get_secret(secret_id)
 
-        # Prevent changes to the secret's user or workspace
-        assert secret.user is not None
-        self._validate_user_and_workspace_update(
-            secret_update=secret_update,
-            current_user=secret.user.id,
-            current_workspace=secret.workspace.id,
-        )
-
         if secret_update.name is not None:
             self._validate_aws_secret_name(secret_update.name)
             secret.name = secret_update.name
         if secret_update.scope is not None:
-            secret.scope = secret_update.scope
+            secret.get_body().scope = secret_update.scope
         if secret_update.values is not None:
             # Merge the existing values with the update values.
             # The values that are set to `None` in the update are removed from
             # the existing secret when we call `.secret_values` later.
-            secret.values.update(secret_update.values)
+            secret.get_body().values.update(secret_update.values)
 
         if secret_update.name is not None or secret_update.scope is not None:
             # Check if a secret with the same name already exists in the same
@@ -768,15 +801,19 @@ class AWSSecretsStore(BaseSecretsStore):
 
         self._wait_for_secret_to_propagate(aws_secret_id, tags=tags)
 
-        secret_model = SecretResponseModel(
+        secret_model = SecretResponse(
             id=secret_id,
             name=secret.name,
-            scope=secret.scope,
-            workspace=secret.workspace,
-            user=secret.user,
-            values=secret.secret_values,
-            created=describe_secret_response["CreatedDate"],
-            updated=describe_secret_response["LastChangedDate"],
+            body=SecretResponseBody(
+                user=secret.user,
+                created=describe_secret_response["CreatedDate"],
+                updated=describe_secret_response["LastChangedDate"],
+                scope=secret.scope,
+                values=secret.secret_values,
+            ),
+            metadata=SecretResponseMetadata(
+                workspace=secret.workspace,
+            ),
         )
 
         return secret_model

@@ -510,94 +510,6 @@ Secrets can be scoped to a workspace or a user. By default, secrets
 are scoped to the current workspace. To scope a secret to a user, use the
 `--scope user` argument in the `register` command.
 
-Secrets Management with Secrets Managers
-----------------------------------------
-
-NOTE: this is a legacy feature that is being deprecated in favor of the
-centralized ZenML secrets store. Going forward, we recommend using centralized
-ZenML secrets instead of secrets manager stack components to configure and store
-secrets.
-
-Secrets can also be managed through the secrets manager stack component in your
-active stack. To set up a local file-based secrets manager, use the following
-CLI command:
-
-```bash
-zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
-```
-
-This can then be used as part of your Stack (see below).
-
-When you use a secrets manager, ZenML secrets are managed through the secrets
-manager stack component in your active stack. This means that you can only
-use the CLI commands described here if the active stack contains a secrets
-manager. This is just one of the limitations of using secrets managers, as
-opposed to the centralized ZenML secrets store, and one of the reasons why we
-have deprecated them.
-
-Secret groupings come in different types, and certain types have predefined keys
-that should be used. For example, an AWS secret has predefined keys of
-`aws_access_key_id` and `aws_secret_access_key` (and an optional
-`aws_session_token`). If you do not have a specific secret type you wish to use,
-ZenML will use the `arbitrary` type to store your key-value pairs.
-
-To register a secret, use the `register` command and pass the key-value pairs
-as command line arguments:
-
-```bash
-zenml secrets-manager secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
-```
-
-Note that the keys and values will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `register` command instead:
-
-```shell
-zenml secrets-manager secret register SECRET_NAME -i
-```
-
-As an alternative to the interactive mode, also useful for values that
-are long or contain newline or special characters, you can also use the special
-`@` syntax to indicate to ZenML that the value needs to be read from a file:
-
-```bash
-zenml secrets-manager secret register SECRET_NAME --schema=aws \
-   --aws_access_key_id=1234567890 \
-   --aws_secret_access_key=abcdefghij \
-   --aws_session_token=@/path/to/token.txt
-```
-
-
-To list all the secrets available, use the `list` command:
-
-```bash
-zenml secrets-manager secret list
-```
-
-To get the key-value pairs for a particular secret, use the `get` command:
-
-```bash
-zenml secrets-manager secret get SECRET_NAME
-```
-
-To update a secret, use the `update` command:
-
-```bash
-zenml secrets-manager secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
-```
-
-Note that the keys and values will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `update` command instead:
-
-```shell
-zenml secrets-manager secret update SECRET_NAME -i
-```
-
-Finally, to delete a secret, use the `delete` command:
-
-```bash
-zenml secrets-manager secret delete SECRET_NAME
-```
-
 Add a Feature Store to your Stack
 ---------------------------------
 
@@ -720,8 +632,6 @@ zenml stack register STACK_NAME \
 
 Each corresponding argument should be the name, id or even the first few letters
  of the id that uniquely identify the artifact store or orchestrator.
-(If you want to use your secrets manager, you should pass its name in with the
-`-x` option flag.)
 
 If you want to immediately set this newly created stack as your active stack,
 simply pass along the `--set` flag.
@@ -798,9 +708,9 @@ zenml stack update --help
 To remove a stack component from a stack, use the following command:
 
 ```shell
-# assuming you want to remove the secrets-manager and the feature-store
+# assuming you want to remove the image builder and the feature-store
 # from your stack
-zenml stack remove-component -x -f
+zenml stack remove-component -i -f
 ```
 
 If you wish to rename your stack, use the following command:

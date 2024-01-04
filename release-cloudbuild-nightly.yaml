@@ -49,7 +49,7 @@ steps:
   - docker push --all-tags $$USERNAME/zenml
   id: push-base
   waitFor:
-  - docker-login
+  - docker-login-nightly
   entrypoint: bash
   secretEnv:
   - USERNAME
@@ -61,7 +61,7 @@ steps:
   - docker push --all-tags $$USERNAME/zenml-server
   id: push-server
   waitFor:
-  - docker-login
+  - docker-login-nightly
   entrypoint: bash
   secretEnv:
   - USERNAME

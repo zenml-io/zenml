@@ -287,8 +287,7 @@ above (the cloud storage bucket is the main one, along with any permissions and
 whatever secrets or secrets vaults you created) and the remaining ZenML
 references. If you created assets under a GCP project, or an Azure resource
 group, then the newly created assets should be easy to find. With Amazon,
-deleting the IAM rules, the secrets manager vault and the S3 bucket are what you
-need to delete.
+the IAM rules and the S3 bucket are what you need to delete.
 
 ```shell
 rm -rf zenml_examples

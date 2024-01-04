@@ -21,7 +21,6 @@ from pydantic import BaseModel, Field, PrivateAttr, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
-from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -30,6 +29,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
@@ -98,6 +98,10 @@ class ModelVersionUpdate(BaseModel):
         description="Target model version name to be set",
         default=None,
     )
+    description: Optional[str] = Field(
+        description="Target model version description to be set",
+        default=None,
+    )
     add_tags: Optional[List[str]] = Field(
         description="Tags to be added to the model version",
         default=None,
@@ -150,11 +154,7 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
         description="Pipeline runs linked to the model version",
         default={},
     )
-    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
-        description="Metadata linked to the model version",
-        default={},
-    )
-    tags: List[TagResponseModel] = Field(
+    tags: List[TagResponse] = Field(
         title="Tags associated with the model version", default=[]
     )
     created: datetime = Field(
@@ -174,8 +174,8 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
         default=None,
     )
     run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+        description="Metadata linked to the model version",
         default={},
-        title="Metadata associated with this pipeline run.",
     )
 
 
@@ -274,7 +274,7 @@ class ModelVersionResponse(
         return self.get_body().updated
 
     @property
-    def tags(self) -> List["TagResponseModel"]:
+    def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
         Returns:
