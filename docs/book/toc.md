@@ -41,7 +41,7 @@
     * [Visualize artifacts](user-guide/advanced-guide/data-management/visualize-artifacts.md)
     * [Organize data with tags](user-guide/advanced-guide/data-management/tagging.md)
     * [Model management](user-guide/advanced-guide/data-management/model-management.md)
-  * [Infrastructure management](user-guide/advanced-guide/infrastructure-management/infrastructure-management.md)
+  * [Managing infrastructure](user-guide/advanced-guide/infrastructure-management/infrastructure-management.md)
     * [Understanding environments](user-guide/advanced-guide/infrastructure-management/understanding-environments.md)
     * [Connect your git repository](user-guide/advanced-guide/infrastructure-management/connect-your-git-repository.md)
     * [Containerize your pipeline](user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md)
