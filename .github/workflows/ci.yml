@@ -80,6 +80,9 @@ jobs:
     secrets: inherit
 
   update-templates-to-examples:
+    # this doesn't work on forked repositories (i.e. outside contributors)
+    # so we disable template updates for those PRs / branches
+    if: github.repository == 'zenml-io/zenml'
     uses: ./.github/workflows/update-templates-to-examples.yml
     with:
       python-version: "3.8"
