@@ -246,7 +246,7 @@ For any runs executed on Vertex, you can get the URL to the Vertex UI in Python 
 from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
+orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 ```
 
 ### Run pipelines on a schedule

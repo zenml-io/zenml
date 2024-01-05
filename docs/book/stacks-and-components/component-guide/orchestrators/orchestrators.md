@@ -66,7 +66,7 @@ to the orchestrator UI of a specific pipeline run using the following code snipp
 from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
+orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 ```
 
 #### Specifying per-step resources

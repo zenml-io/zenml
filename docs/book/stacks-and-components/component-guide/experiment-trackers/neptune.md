@@ -184,7 +184,7 @@ from zenml.client import Client
 
 last_run = client.get_pipeline("<PIPELINE_NAME>").last_run
 trainer_step = last_run.get_step("<STEP_NAME>")
-tracking_url = trainer_step.metadata.get("experiment_tracker_url")
+tracking_url = trainer_step.run_metadata.get("experiment_tracker_url")
 print(tracking_url.value)
 ```
 
