@@ -45,7 +45,7 @@ You will be prompted to provide a name for your deployment and details like what
 In order to be able to run the `deploy` command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 {% endhint %}
 
-Reasonable defaults are in place for you already and if you wish to configure more settings, take a look at the next scenario that uses a config file.
+To learn more about different options of [deploying ZenML, visit the deployment documentation](../../deploying-zenml/why-deploy-zenml.md).
 
 ## Connecting to a deployed ZenML
 
