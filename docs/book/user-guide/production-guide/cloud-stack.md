@@ -4,7 +4,7 @@ description: Provision infrastructure on the cloud.
 
 # Deploying a Cloud Stack
 
-In order to scale our pipelines to the cloud, we need to configure a basic cloud stack in ZenML. This typically consists of three key components that we have learned about in the last section:
+The next step is to scale our pipelines to the cloud. In order to do this, we need to configure a basic cloud stack in ZenML. This typically consists of three key components that we have learned about in the last section:
 
 - The [orchestrator](../../stacks-and-components/component-guide/orchestrators/) manages the workflow and execution of your pipelines.
 - The [artifact store](../../stacks-and-components/component-guide/artifact-stores/) is where your pipeline artifacts, such as datasets and models, are stored.
