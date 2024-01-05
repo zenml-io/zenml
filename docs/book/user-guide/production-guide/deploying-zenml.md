@@ -49,5 +49,22 @@ Reasonable defaults are in place for you already and if you wish to configure mo
 
 ## Connecting to a deployed ZenML
 
+You can connect your local ZenML client with the ZenML Server using the ZenML CLI and the web based login. This
+can be executed with the command:
+
+```bash
+zenml connect --url <SERVER_URL>
+```
+
+where SERVER_URL is the host address of your ZenML deployment (e.g. `https://mydeployment.zenml.com`)
+
+This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. You can choose whether to
+mark your respective device as trusted or not. If you choose not to
+click `Trust this device`, a 24-hour token will be issued for authentication
+services. Choosing to trust the device will issue a 30-day token instead.
+Using the ZenML CLI is a secure and comfortable way to interact with your ZenML
+tenants. It's important to always ensure that only trusted devices are used to
+maintain security and privacy.
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
