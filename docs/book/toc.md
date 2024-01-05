@@ -175,6 +175,7 @@
 
 ## Reference
 
+* [🐍 Python Client](reference/python-client.md)
 * [🤷 SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [📚 How do I...?](reference/how-do-i.md)
 * [♻ Migration guide](reference/migration-guide/migration-guide.md)
