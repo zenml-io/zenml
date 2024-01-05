@@ -58,7 +58,11 @@ zenml connect --url <SERVER_URL>
 
 where SERVER_URL is the host address of your ZenML deployment (e.g. `https://mydeployment.zenml.com`)
 
-This command will start a series of steps to validate the device from where you are connecting that will happen in your browser.
+This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. After that, you're now locally connected to a remote ZenML. Nothing of your experience changes, except that all metadata that you produce will be tracked centrally in one place from now on.
+
+{% hint style="info" %}
+You can always go back to the local zenml experience by using `zenml disconnect`
+{% endhint %}
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
