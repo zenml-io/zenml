@@ -1474,7 +1474,7 @@ class Client(metaclass=ClientMetaClass):
 
             Args:
                 hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
+                    by including metadata fields in the response.
                 **kwargs: Keyword arguments to pass to `ComponentFilterModel`.
 
             Returns:
