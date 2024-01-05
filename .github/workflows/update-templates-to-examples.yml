@@ -69,6 +69,7 @@ jobs:
           rm -rf examples/e2e
           mkdir -p examples/e2e
           printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+          pip install yamlfix
           bash scripts/format.sh
       - name: Check for changes
         id: check_changes
@@ -138,6 +139,7 @@ jobs:
         run: |
           mkdir -p examples/nlp-case
           printf 'info@zenml.io' | zenml init --path examples/nlp-case --template nlp --template-with-defaults
+          pip install yamlfix
           bash scripts/format.sh
       - name: Check for changes
         id: check_changes
@@ -209,6 +211,7 @@ jobs:
           rm -rf examples/quickstart
           mkdir -p examples/quickstart
           printf 'info@zenml.io' | zenml init --path examples/quickstart --template starter --template-with-defaults
+          pip install yamlfix
           bash scripts/format.sh
       - name: Check for changes
         id: check_changes
