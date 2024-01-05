@@ -25,5 +25,7 @@ Currently, the ZenML server can be configured to use one of the following suppor
 
 Configuring the specific secrets store back-end that the ZenML server uses is done at deployment time. For more information on how to deploy a ZenML server and configure the secrets store back-end, refer to your deployment strategy inside the [deployment guide](../../../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md).
 
+If you are a [ZenML Cloud](https://zenml.io/cloud) user, you can configure your cloud backend based on your [deployment scenario](../../../deploying-zenml/zenml-cloud/cloud-system-architecture.md).
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
