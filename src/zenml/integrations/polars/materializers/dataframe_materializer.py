@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """PyCaret materializer."""
 
+import os
 import tempfile
 from typing import (
     Any,
     Type,
+    ClassVar, Tuple, Type, Union
 )
 
 import polars as pl
+import pyarrow as pa
 import pyarrow.parquet as pq
 
 from zenml.enums import ArtifactType
@@ -57,6 +60,14 @@ class PolarsMaterializer(BaseMaterializer):
             os.path.join(temp_dir.name, "dataframe.parquet").replace("\\", "/")
         )
 
+        # If the data is of type pl.Series, convert it back to a pyarrow array
+        # instead of a table.
+        if table.schema.metadata and b"zenml_is_pl_series" in table.schema.metadata:
+            isinstance_bytes = table.schema.metadata[b"zenml_is_pl_series"]
+            isinstance_series = bool.from_bytes(isinstance_bytes, "big")
+            if isinstance_series:
+                table = table.column(0)
+
         # Convert the table to a Polars data frame or series
         data = pl.from_arrow(table)
 
@@ -71,6 +82,7 @@ class PolarsMaterializer(BaseMaterializer):
         Args:
             model: Any of the supported models.
         """
+        
         # Data type check
         if not isinstance(data, self.ASSOCIATED_TYPES):
             raise TypeError(
@@ -79,7 +91,20 @@ class PolarsMaterializer(BaseMaterializer):
             )
 
         # Convert the data to an Apache Arrow Table
-        table = data.to_arrow()
+        if isinstance(data, pl.DataFrame):
+            table = data.to_arrow()
+        else:
+            # Construct a PyArrow Table with schema from the individual pl.Series
+            # array if it is a single pl.Series.
+            array = data.to_arrow()
+            table = pa.Table.from_arrays([array], names=[data.name])
+
+        # Register whether data is of type pl.Series, so that the materializer read step can
+        # convert it back appropriately.
+        isinstance_bytes = isinstance(data, pl.Series).to_bytes(1, "big")
+        table = table.replace_schema_metadata(
+            {b"zenml_is_pl_series": isinstance_bytes}
+        )
 
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
