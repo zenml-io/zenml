@@ -6,7 +6,7 @@ description: Put your new knowledge in action with an end to end project
 
 In this guide, we will go over some advanced concepts:
 
-- The value of [deploying ZenML](connect-deployed-zenml.md)
+- The value of [deploying ZenML](deploying-zenml.md)
 - Abstracting infrastructure configuration into [stacks](understand-stacks.md)
 - [Deploying an MLOps stack](cloud-stack.md) on a cloud provider of your choice
 - [Connecting a git repository](connect-code-repository.md)

@@ -10,7 +10,7 @@ The ZenML production guide builds upon the [Starter guide](../starter-guide/) an
 
 This guide will focus on shifting gears from running pipelines _locally_ on your machine, to running them in _production_ in the cloud. We'll cover:
 
-* [Connecting to a deployed ZenML server](connect-deployed-zenml.md)
+* [Deploying ZenML](deploying-zenml.md)
 * [Understanding stacks](understand-stacks.md)
 * [Deploy a cloud stack](cloud-stack.md)
 * [Configure a code repository](connect-code-repository.md)

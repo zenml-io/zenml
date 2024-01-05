@@ -16,7 +16,7 @@
   * [Track ML models](user-guide/starter-guide/track-ml-models.md)
   * [A starter project](user-guide/starter-guide/starter-project.md)
 * [🐔 Production guide](user-guide/production-guide/production-guide.md)
-  * [Connect to a deployed ZenML](user-guide/production-guide/connect-deployed-zenml.md)
+  * [Connect to a deployed ZenML](user-guide/production-guide/deploying-zenml.md)
   * [Understand stacks](user-guide/production-guide/understand-stacks.md)
   * [Deploy a cloud stack](user-guide/production-guide/cloud-stack.md)
   * [Configure a code repository](user-guide/production-guide/connect-code-repository.md)
