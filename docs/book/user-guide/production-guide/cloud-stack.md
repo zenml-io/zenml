@@ -20,7 +20,6 @@ Before we begin, ensure you have:
 - The cloud provider's CLI installed and configured with the necessary permissions.
 - The `zenml` CLI installed and configured on your local machine with the [mlstacks](https://mlstacks.zenml.io/getting-started/introduction) extra (i.e. `pip install "zenml[mlstacks]"`)
 
-
 {% tabs %}
 {% tab title="GCP" %}
 Deploying a basic stack on GCP involves setting up a Skypilot orchestrator, a Google Cloud Storage (GCS) artifact store, and a Google Container Registry (GCR). Follow these steps to deploy your stack:
