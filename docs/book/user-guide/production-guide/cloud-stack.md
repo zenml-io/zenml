@@ -14,11 +14,14 @@ In this chapter, we'll walk you through the process of deploying a basic cloud s
 
 ## Deploying on a public cloud
 
-To get a minimal cloud stack running quickly, ZenML integrates with the [mlstacks](https://mlstacks.zenml.io/getting-started/introduction) project. Before we begin, ensure you have:
+To get a minimal cloud stack running quickly, ZenML integrates with the [MLStacks](https://mlstacks.zenml.io/getting-started/introduction) project. Before we begin, ensure you have:
 
 - An account with your chosen cloud provider.
 - The cloud provider's CLI installed and configured with the necessary permissions.
-- The `zenml` CLI installed and configured on your local machine with the [mlstacks](https://mlstacks.zenml.io/getting-started/introduction) extra (i.e. `pip install "zenml[mlstacks]"`).
+- The `zenml` CLI installed and configured on your local machine with the [MLStacks](https://mlstacks.zenml.io/getting-started/introduction) extra (i.e. `pip install "zenml[mlstacks]"`).
+- MLStacks uses Terraform on the backend to manage infrastructure. You will need to have Terraform installed. Please visit [the Terraform docs](https://learn.hashicorp.com/tutorials/terraform/install-cli#install-terraform) for installation instructions.
+- MLStacks also uses Helm to deploy Kubernetes resources. You will need to have Helm installed. Please visit [the Helm docs](https://helm.sh/docs/intro/install/#from-script) for installation instructions.
+{% endhint %}
 
 Then we can start deploying infrastructure (Note that from this point on, charges will be incurred on your cloud provider):
 
