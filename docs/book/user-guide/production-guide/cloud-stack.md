@@ -14,11 +14,13 @@ In this chapter, we'll walk you through the process of deploying a basic cloud s
 
 ## Deploying on a public cloud
 
-Before we begin, ensure you have:
+To get a minimal cloud stack running quickly, ZenML integrates with the [mlstacks](https://mlstacks.zenml.io/getting-started/introduction) project. Before we begin, ensure you have:
 
 - An account with your chosen cloud provider.
 - The cloud provider's CLI installed and configured with the necessary permissions.
-- The `zenml` CLI installed and configured on your local machine with the [mlstacks](https://mlstacks.zenml.io/getting-started/introduction) extra (i.e. `pip install "zenml[mlstacks]"`)
+- The `zenml` CLI installed and configured on your local machine with the [mlstacks](https://mlstacks.zenml.io/getting-started/introduction) extra (i.e. `pip install "zenml[mlstacks]"`).
+
+Then we can start deploying infrastructure (Note that from this point on, charges will be incurred on your cloud provider):
 
 {% tabs %}
 {% tab title="GCP" %}
