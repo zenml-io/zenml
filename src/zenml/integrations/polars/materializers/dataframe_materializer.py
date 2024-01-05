@@ -17,8 +17,8 @@ import os
 import tempfile
 from typing import Any, ClassVar, Tuple, Type, Union
 
-import polars as pl
-import pyarrow as pa
+import polars as pl # type: ignore
+import pyarrow as pa # type: ignore
 import pyarrow.parquet as pq
 
 from zenml.enums import ArtifactType
