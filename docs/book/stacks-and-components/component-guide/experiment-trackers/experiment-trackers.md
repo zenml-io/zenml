@@ -73,7 +73,7 @@ from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
 step = pipeline_run.steps["<STEP_NAME>"]
-experiment_tracker_url = step.metadata["experiment_tracker_url"].value
+experiment_tracker_url = step.run_metadata["experiment_tracker_url"].value
 ```
 
 {% hint style="info" %}
