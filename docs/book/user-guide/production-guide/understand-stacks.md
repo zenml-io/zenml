@@ -2,21 +2,19 @@
 description: Learning how to switch the infrastructure backend of your code.
 ---
 
-# Understand stacks
+# Understanding stacks
 
-In the previous section, you might have already noticed the term `stack` in the logs and on the dashboard.
+As you were running [your first pipelines](../starter-guide/create-an-ml-pipeline.md), you might have already noticed the term `stack` in the logs and on the dashboard.
 
-## Stacks
-
-A `stack` is the combination of tools and infrastructure that your pipelines can run on. When you run ZenML code without configuring a stack, the pipeline will run on the so-called `default` stack.
+A `stack` is the configuration of tools and infrastructure that your pipelines can run on. When you run ZenML code without configuring a stack, the pipeline will run on the so-called `default` stack.
 
 <figure><img src="../../.gitbook/assets/02_pipeline_local_stack.png" alt=""><figcaption><p>ZenML is the translation layer that allows your code to run on any of your stacks</p></figcaption></figure>
 
-#### Separation of code from configuration and infrastructure
+### Separation of code from configuration and infrastructure
 
 As visualized in the diagram above, there are two separate domains that are connected through ZenML. The left side shows the code domain. The user's Python code is translated into a ZenML pipeline. On the right side, you can see the infrastructure domain, in this case, an instance of the `default` stack. By separating these two domains, it is easy to switch the environment that the pipeline runs on without making any changes in the code. It also allows domain experts to write code/configure infrastructure without worrying about the other domain.
 
-#### The `default` stack
+### The `default` stack
 
 {% tabs %}
 {% tab title="Dashboard" %}
@@ -216,7 +214,5 @@ To run a pipeline using the new stack:
     ```bash
     python run.py
     ```
-
-Before we can move on to using a cloud stack, we need to find out more about the ZenML server in the next section.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

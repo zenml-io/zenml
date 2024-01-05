@@ -17,7 +17,7 @@
   * [A starter project](user-guide/starter-guide/starter-project.md)
 * [🐔 Production guide](user-guide/production-guide/production-guide.md)
   * [Deploying ZenML](user-guide/production-guide/deploying-zenml.md)
-  * [Understand stacks](user-guide/production-guide/understand-stacks.md)
+  * [Understanding stacks](user-guide/production-guide/understand-stacks.md)
   * [Deploy a cloud stack](user-guide/production-guide/cloud-stack.md)
   * [Configure a code repository](user-guide/production-guide/connect-code-repository.md)
   * [Scale to the cloud](user-guide/production-guide/scale-compute.md)
