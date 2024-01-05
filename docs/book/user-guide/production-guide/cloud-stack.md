@@ -133,15 +133,12 @@ zenml init
 
 </details>
 
-### Set the stack
-
-{% tabs %}
-{% tab title="GCP" %}
+### Run the pipeline on the chosen stack
 
 Set the cloud stack active:
 
 ```shell
-zenml stack set ...
+zenml stack set NAME_OF_STACK
 ```
 
 Run the training pipeline:
@@ -149,33 +146,9 @@ Run the training pipeline:
 python run.py --training-pipeline
 ```
 
-{% endtab %}
-{% tab title="AWS" %}
-Set the cloud stack active:
+### Understanding the process
 
-```shell
-zenml stack set ...
-```
-
-Run the training pipeline:
-```shell
-python run.py --training-pipeline
-```
-{% endtab %}
-{% tab title="Other" %}
-Set the cloud stack active:
-
-```shell
-zenml stack set ...
-```
-
-Run the training pipeline:
-```shell
-python run.py --training-pipeline
-```
-{% endtab %}
-{% endtabs %}
-
+You will notice that your pipeline run will behave differently from befeore.
 Here are the broad sequence of events that just happened:
 
 1. The user runs a pipeline on the client machine
