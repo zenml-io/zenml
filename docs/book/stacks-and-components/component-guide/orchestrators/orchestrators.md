@@ -12,7 +12,7 @@ steps of your pipeline) are available.
 {% hint style="info" %}
 Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute
 your pipeline code. If you want to learn more about how Docker images are built by ZenML, check
-out [this guide](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md).
+out [this guide](/docs/book/user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md).
 {% endhint %}
 
 ### When to use it

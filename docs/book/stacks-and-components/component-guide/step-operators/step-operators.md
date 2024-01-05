@@ -65,7 +65,7 @@ described [here](/docs/book/user-guide/advanced-guide/pipelining-features/config
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use step operators to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure 
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure 
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
 give its full acceleration.
 
