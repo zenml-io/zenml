@@ -24,7 +24,7 @@ Then we can start deploying infrastructure (Note that from this point on, charge
 
 {% tabs %}
 {% tab title="GCP" %}
-Deploying a basic stack on GCP involves setting up a Skypilot orchestrator, a Google Cloud Storage (GCS) artifact store, and a Google Container Registry (GCR). Follow these steps to deploy your stack:
+Deploying a basic stack on GCP involves setting up a [Skypilot](https://skypilot.readthedocs.io/) orchestrator, a Google Cloud Storage (GCS) artifact store, and a Google Container Registry (GCR). Follow these steps to deploy your stack:
 
 1. Deploy the stack using ZenML's CLI:
 
@@ -61,7 +61,7 @@ Deploying a basic stack on GCP involves setting up a Skypilot orchestrator, a Go
 By completing these steps, you'll have a fully functional ZenML stack on GCP, ready for your production MLOps pipelines.
 {% endtab %}
 {% tab title="AWS" %}
-Deploying a basic stack on AWS involves setting up a Skypilot orchestrator, an Amazon Simple Storage Service (S3) artifact store, and an Amazon Elastic Container Registry (ECR). Follow these steps to deploy your stack:
+Deploying a basic stack on AWS involves setting up a [Skypilot](https://skypilot.readthedocs.io/), an Amazon Simple Storage Service (S3) artifact store, and an Amazon Elastic Container Registry (ECR). Follow these steps to deploy your stack:
 
 1. Deploy the stack using ZenML's CLI:
 
@@ -151,17 +151,15 @@ python run.py --training-pipeline
 You will notice that your pipeline run will behave differently from befeore.
 Here are the broad sequence of events that just happened:
 
-1. The user runs a pipeline on the client machine
-2. The client asks the server for the stack info
-3. Based on the stack info and pipeline specification, client builds and pushes image to the `container registry` (this is the so called build step)
-4. After thats done, the client pushes the pipeline to run in the `orchestrator`. 
-5. The `orchestrator` pulls the image from the `container registry` as its executing the pipeline (each step has an image)
-6. As each pipeline runs, it stores artifacts physically in the `artifact store` 
-7, As each pipeline runs, it reports status back to the zenml server, and it uses the metadata from the server to run the pipeline as well
+1. The user runs a pipeline on the client machine (in this case the training pipeline of the starter template).
+2. The client asks the server for the stack info, which returns it with the configuration of the cloud stack.
+3. Based on the stack info and pipeline specification, client builds and pushes image to the `container registry`. The image contains the environment needed to execute the pipeline and the code of the steps.
+4. The client creates a run in the `orchestrator`. In this case, we are leveraging the [Skypilot](https://skypilot.readthedocs.io/) orchestrator to create a virtual machine in the cloud and run our code on it.  
+5. The `orchestrator` pulls the appropriate image from the `container registry` as its executing the pipeline (each step has an image).
+6. As each pipeline runs, it stores artifacts physically in the `artifact store`.
+7. As each pipeline runs, it reports status back to the zenml server, and optionally queries the server for metadata.
 
-After deploying your cloud stack, set it as the active stack using the `zenml stack set` command. You can then proceed to run your pipelines, confident that your cloud infrastructure is robust and ready for production. Always monitor your cloud resources and manage access carefully to ensure security and manage costs effectively.
-
-For more detailed information on each step and additional cloud provider configurations, please refer to the [Stack deployment](../../stacks-and-components/stack-deployment/stack-deployment.md) section of the ZenML documentation.
+For more detailed information on each step and additional cloud provider configurations, please refer to the [Stack deployment](../../stacks-and-components/stack-deployment/stack-deployment.md) and [Component Guide](../../stacks-and-components/component-guide/) sections of the ZenML documentation.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
