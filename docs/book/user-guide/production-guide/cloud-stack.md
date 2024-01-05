@@ -101,7 +101,7 @@ Deploying a basic stack on AWS involves setting up a [Skypilot](https://skypilot
 By following these steps, you'll have a ZenML stack on AWS that's ready to handle your MLOps needs in the cloud.
 {% endtab %}
 {% tab title="Other Cloud" %}
-You can create a remote stack on pretty much any environment, including other cloud providers such as Azure, Lambda Cloud, Paperspace etc. A cloud agnostic stack would use the [Kubernetes](../../stacks-and-components/component-guide/orchestrators/kubernetes.md) orchestrator, a [minio](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md), and a [default container registry](../../stacks-and-components/component-guide/container-registries/default.md).
+You can create a remote stack on pretty much any environment, including other cloud providers such as Azure, Lambda Cloud, Paperspace etc. A cloud agnostic stack would use the [Kubernetes](../../stacks-and-components/component-guide/orchestrators/kubernetes.md) orchestrator, a [Minio artifact store](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md), and a [default container registry](../../stacks-and-components/component-guide/container-registries/default.md).
 
 While MLStacks does not support automated deployments for other cloud providers, it is relatively easy to configure these. Please read the [components guide](../../stacks-and-components/component-guide/component-guide.md) for more information on how to configure a remote stack with your selection of components.
 {% endtab %}
