@@ -2608,6 +2608,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        has_custom_name: Optional[bool] = None,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
 
@@ -2620,6 +2621,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the artifact to filter by.
+            has_custom_name: Filter artifact with/without custom names.
 
         Returns:
             A list of artifacts.
@@ -2633,6 +2635,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            has_custom_name=has_custom_name,
         )
         return self.zen_store.list_artifacts(artifact_filter_model)
 
