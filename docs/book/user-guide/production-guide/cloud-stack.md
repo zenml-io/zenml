@@ -99,9 +99,84 @@ By following these steps, you'll have a ZenML stack on AWS that's ready to handl
 {% endtab %}
 {% endtabs %}
 
-## Understanding the process
+## Running a pipeline on a cloud stack
 
-With the new stack deployed and configured in ZenML, running a pipeline will now behave differently. Here are the broad sequence of events that will happen:
+With the new stack deployed and configured in ZenML, running a pipeline will now behave differently. Let's use the starter project from the [previous guide](../starter-guide/starter-project.md) to see it in action. 
+
+### Get our code ready
+
+If you have not already, clone the starter template:
+
+```bash
+pip install "zenml[templates,server]" notebook
+zenml integration install sklearn -y
+mkdir zenml_starter
+cd zenml_starter
+zenml init --template starter --template-with-defaults
+
+# Just in case, we install the requirements again
+pip install -r requirements.txt
+```
+
+<details>
+
+<summary>Above doesn't work? Here is an alternative</summary>
+
+The starter template is the same as the [ZenML quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). You can clone it like so:
+
+```bash
+git clone git@github.com:zenml-io/zenml.git
+cd examples/quickstart
+pip install -r requirements.txt
+zenml init
+```
+
+</details>
+
+### Set the stack
+
+{% tabs %}
+{% tab title="GCP" %}
+
+Set the cloud stack active:
+
+```shell
+zenml stack set ...
+```
+
+Run the training pipeline:
+```shell
+python run.py --training-pipeline
+```
+
+{% endtab %}
+{% tab title="AWS" %}
+Set the cloud stack active:
+
+```shell
+zenml stack set ...
+```
+
+Run the training pipeline:
+```shell
+python run.py --training-pipeline
+```
+{% endtab %}
+{% tab title="Other" %}
+Set the cloud stack active:
+
+```shell
+zenml stack set ...
+```
+
+Run the training pipeline:
+```shell
+python run.py --training-pipeline
+```
+{% endtab %}
+{% endtabs %}
+
+Here are the broad sequence of events that just happened:
 
 1. The user runs a pipeline on the client machine
 2. The client asks the server for the stack info
