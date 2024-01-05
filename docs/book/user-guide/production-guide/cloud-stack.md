@@ -101,7 +101,7 @@ By following these steps, you'll have a ZenML stack on AWS that's ready to handl
 
 ## Running a pipeline on a cloud stack
 
-With the new stack deployed and configured in ZenML, running a pipeline will now behave differently. Let's use the starter project from the [previous guide](../starter-guide/starter-project.md) to see it in action. 
+With the new stack deployed and configured in ZenML, running a pipeline will now behave differently. Let's use the starter project from the [previous guide](../starter-guide/starter-project.md) to see it in action.
 
 ### Get our code ready
 
@@ -155,13 +155,13 @@ Here are the broad sequence of events that just happened:
 2. The client asks the server for the stack info
 3. Based on the stack info and pipeline specification, client builds and pushes image to the `container registry` (this is the so called build step)
 4. After thats done, the client pushes the pipeline to run in the `orchestrator`. 
-5. the `orchestrator` pulls the image from the `container registry` as its executing the pipeline (each step has an image)
+5. The `orchestrator` pulls the image from the `container registry` as its executing the pipeline (each step has an image)
 6. As each pipeline runs, it stores artifacts physically in the `artifact store` 
 7, As each pipeline runs, it reports status back to the zenml server, and it uses the metadata from the server to run the pipeline as well
 
 After deploying your cloud stack, set it as the active stack using the `zenml stack set` command. You can then proceed to run your pipelines, confident that your cloud infrastructure is robust and ready for production. Always monitor your cloud resources and manage access carefully to ensure security and manage costs effectively.
 
-For more detailed information on each step and additional cloud provider configurations, please refer to the [Stack deployment](../../stacks-and-components/stack-deployment/) section of the ZenML documentation.
+For more detailed information on each step and additional cloud provider configurations, please refer to the [Stack deployment](../../stacks-and-components/stack-deployment/stack-deployment.md) section of the ZenML documentation.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
