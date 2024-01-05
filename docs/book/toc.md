@@ -58,6 +58,7 @@
 
 ## Deploying ZenML
 
+* [🤔 Why deploy ZenML?](deploying-zenml/why-deploy-zenml.md)
 * [☁ ZenML Cloud](deploying-zenml/zenml-cloud/zenml-cloud.md)
   * [User Management](deploying-zenml/zenml-cloud/user-management.md)
   * [System Architecture](deploying-zenml/zenml-cloud/cloud-system-architecture.md)
