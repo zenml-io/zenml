@@ -99,6 +99,10 @@ By following these steps, you'll have a ZenML stack on AWS that's ready to handl
 {% endtab %}
 {% endtabs %}
 
+Feel free to play around with some of the configuration provided in the above commands depending your needs. Please notice that we are also creating [service connectors](../../stacks-and-components/auth-management/auth-management.md) and associating them with the stack components with the above command. While service connectors are advanced concepts, for now it is sufficient to understand that these connectors give the deployed ZenML server the same credentials as your local ones.
+
+If you would like to not give any credentials to the ZenML server for your cloud provider, you can simply ignore service connector specific commands above.
+
 ## Running a pipeline on a cloud stack
 
 With the new stack deployed and configured in ZenML, running a pipeline will now behave differently. Let's use the starter project from the [previous guide](../starter-guide/starter-project.md) to see it in action.
