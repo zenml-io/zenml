@@ -2621,7 +2621,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the artifact to filter by.
-            has_custom_name: Filter artifact with/without custom names.
+            has_custom_name: Filter artifacts with/without custom names.
 
         Returns:
             A list of artifacts.
@@ -2727,6 +2727,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
+        has_custom_name: Optional[bool] = None,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
 
@@ -2751,6 +2752,7 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
+            has_custom_name: Filter artifacts with/without custom names.
 
         Returns:
             A list of artifact versions.
@@ -2775,6 +2777,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             only_unused=only_unused,
+            has_custom_name=has_custom_name,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
@@ -4849,6 +4852,7 @@ class Client(metaclass=ClientMetaClass):
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
         only_deployment_artifacts: Optional[bool] = None,
+        has_custom_name: Optional[bool] = None,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
 
@@ -4868,6 +4872,7 @@ class Client(metaclass=ClientMetaClass):
             only_data_artifacts: Use to filter by data artifacts
             only_model_artifacts: Use to filter by model artifacts
             only_deployment_artifacts: Use to filter by deployment artifacts
+            has_custom_name: Filter artifacts with/without custom names.
 
         Returns:
             A page of all model version to artifact links.
@@ -4889,6 +4894,7 @@ class Client(metaclass=ClientMetaClass):
                 only_data_artifacts=only_data_artifacts,
                 only_model_artifacts=only_model_artifacts,
                 only_deployment_artifacts=only_deployment_artifacts,
+                has_custom_name=has_custom_name,
             )
         )
 
