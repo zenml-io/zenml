@@ -114,8 +114,6 @@ If you would like to not give any credentials to the ZenML server for your cloud
 
 With the new stack deployed and configured in ZenML, running a pipeline will now behave differently. Let's use the starter project from the [previous guide](../starter-guide/starter-project.md) to see it in action.
 
-### Get our code ready
-
 If you have not already, clone the starter template:
 
 ```bash
@@ -143,8 +141,6 @@ zenml init
 ```
 
 </details>
-
-### Run the pipeline on the chosen stack
 
 Set the cloud stack active:
 
