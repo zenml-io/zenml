@@ -39,7 +39,18 @@ components as well as whole stacks using MLStacks. These stacks will be useful f
 
 ## Installing the mlstacks extra
 
-To install `mlstacks`, either run `pip install mlstacks` or `pip install "zenml[mlstacks]"` to install it along with ZenML.
+To install `mlstacks`, either run `pip install mlstacks` or `pip install
+"zenml[mlstacks]"` to install it along with ZenML.
+
+MLStacks uses Terraform on the backend to manage infrastructure. You will need
+to have Terraform installed. Please visit [the Terraform
+docs](https://learn.hashicorp.com/tutorials/terraform/install-cli#install-terraform)
+for installation instructions.
+
+MLStacks also uses Helm to deploy Kubernetes resources. You will need to have
+Helm installed. Please visit [the Helm
+docs](https://helm.sh/docs/intro/install/#from-script) for installation
+instructions.
 
 ## Deploying a stack component
 

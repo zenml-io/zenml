@@ -19,7 +19,18 @@ stack with a single command 🚀. You can also customize your components easily 
 passing in flags (more on that later).
 
 {% hint style="info" %}
-To install `mlstacks`, either run `pip install mlstacks` or `pip install "zenml[mlstacks]"` to install it along with ZenML.
+To install `mlstacks`, either run `pip install mlstacks` or `pip install
+"zenml[mlstacks]"` to install it along with ZenML.
+
+MLStacks uses Terraform on the backend to manage infrastructure. You will need
+to have Terraform installed. Please visit [the Terraform
+docs](https://learn.hashicorp.com/tutorials/terraform/install-cli#install-terraform)
+for installation instructions.
+
+MLStacks also uses Helm to deploy Kubernetes resources. You will need to have
+Helm installed. Please visit [the Helm
+docs](https://helm.sh/docs/intro/install/#from-script) for installation
+instructions.
 {% endhint %}
 
 For example, to deploy an artifact store on a GCP account, you can run:
