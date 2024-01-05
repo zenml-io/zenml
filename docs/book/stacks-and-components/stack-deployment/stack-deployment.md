@@ -39,7 +39,7 @@ components as well as whole stacks using MLStacks. These stacks will be useful f
 
 ## Installing the mlstacks extra
 
-To install `mlstacks`, either run `pip install mlstacks` or `pip install zenml[mlstacks]` to install it along with ZenML.
+To install `mlstacks`, either run `pip install mlstacks` or `pip install "zenml[mlstacks]"` to install it along with ZenML.
 
 ## Deploying a stack component
 

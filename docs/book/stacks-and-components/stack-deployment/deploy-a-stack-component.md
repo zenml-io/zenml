@@ -19,7 +19,7 @@ stack with a single command 🚀. You can also customize your components easily 
 passing in flags (more on that later).
 
 {% hint style="info" %}
-To install `mlstacks`, either run `pip install mlstacks` or `pip install zenml[mlstacks]` to install it along with ZenML.
+To install `mlstacks`, either run `pip install mlstacks` or `pip install "zenml[mlstacks]"` to install it along with ZenML.
 {% endhint %}
 
 For example, to deploy an artifact store on a GCP account, you can run:
