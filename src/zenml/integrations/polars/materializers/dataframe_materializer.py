@@ -15,11 +15,7 @@
 
 import os
 import tempfile
-from typing import (
-    Any,
-    Type,
-    ClassVar, Tuple, Type, Union
-)
+from typing import Any, ClassVar, Tuple, Type, Union
 
 import polars as pl
 import pyarrow as pa
@@ -62,7 +58,10 @@ class PolarsMaterializer(BaseMaterializer):
 
         # If the data is of type pl.Series, convert it back to a pyarrow array
         # instead of a table.
-        if table.schema.metadata and b"zenml_is_pl_series" in table.schema.metadata:
+        if (
+            table.schema.metadata
+            and b"zenml_is_pl_series" in table.schema.metadata
+        ):
             isinstance_bytes = table.schema.metadata[b"zenml_is_pl_series"]
             isinstance_series = bool.from_bytes(isinstance_bytes, "big")
             if isinstance_series:
@@ -81,8 +80,8 @@ class PolarsMaterializer(BaseMaterializer):
 
         Args:
             model: Any of the supported models.
+            data: The data to write.
         """
-        
         # Data type check
         if not isinstance(data, self.ASSOCIATED_TYPES):
             raise TypeError(
@@ -110,8 +109,10 @@ class PolarsMaterializer(BaseMaterializer):
         temp_dir = tempfile.TemporaryDirectory()
 
         # Write the table to a Parquet file
-        path = os.path.join(temp_dir.name, "dataframe.parquet").replace("\\", "/")
-        pq.write_table(table, path) # Uses lz4 compression by default
+        path = os.path.join(temp_dir.name, "dataframe.parquet").replace(
+            "\\", "/"
+        )
+        pq.write_table(table, path)  # Uses lz4 compression by default
         io_utils.copy_dir(temp_dir.name, self.uri)
 
         # Remove the temporary directory
