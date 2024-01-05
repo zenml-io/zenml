@@ -22,8 +22,8 @@ class PolarsIntegration(Integration):
 
     NAME = POLARS
     REQUIREMENTS = [
-        "polars",
-        "pyarrow"
+        "polars>=0.19.5",
+        "pyarrow>=12.0.0"
     ]
 
     @classmethod
