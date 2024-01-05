@@ -87,3 +87,7 @@ are using a remote orchestrator, you would then have to place the updated
 versions for the dependencies in a `DockerSettings` object (described in detail
 [here](https://docs.zenml.io/advanced-guide/pipelines/containerization#how-to-install-additional-pip-dependencies-or-apt-packages))
 which will then make sure everything is working as you need.
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+
