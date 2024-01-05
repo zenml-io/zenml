@@ -4,7 +4,7 @@ description: Learning how to switch the infrastructure backend of your code.
 
 # Understanding stacks
 
-As you were running [your first pipelines](../starter-guide/create-an-ml-pipeline.md), you might have already noticed the term `stack` in the logs and on the dashboard.
+Now that we have ZenML deployed, we can take the next steps in productionalizing our machine learning workflows. As you were running [your first pipelines](../starter-guide/create-an-ml-pipeline.md), you might have already noticed the term `stack` in the logs and on the dashboard.
 
 A `stack` is the configuration of tools and infrastructure that your pipelines can run on. When you run ZenML code without configuring a stack, the pipeline will run on the so-called `default` stack.
 
