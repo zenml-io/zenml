@@ -1,5 +1,5 @@
 ---
-description: Learning about the ZenML server.
+description: Why do we need to deploy ZenML?
 ---
 
 # Why deploy ZenML?

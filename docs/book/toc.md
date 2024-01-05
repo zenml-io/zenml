@@ -43,6 +43,7 @@
     * [Model management](user-guide/advanced-guide/data-management/model-management.md)
   * [Managing infrastructure](user-guide/advanced-guide/infrastructure-management/infrastructure-management.md)
     * [Understanding environments](user-guide/advanced-guide/infrastructure-management/understanding-environments.md)
+    * [Connect to a deployed ZenML](user-guide/production-guide/connect-deployed-zenml.md)
     * [Connect your git repository](user-guide/advanced-guide/infrastructure-management/connect-your-git-repository.md)
     * [Containerize your pipeline](user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md)
     * [Scale compute to the cloud](user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md)
