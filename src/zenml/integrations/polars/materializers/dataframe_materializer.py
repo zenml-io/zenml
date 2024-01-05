@@ -28,7 +28,7 @@ from zenml.utils import io_utils
 
 
 class PolarsMaterializer(BaseMaterializer):
-    """Materializer to read/write Polar data frames."""
+    """Materializer to read/write Polars dataframes."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
         pl.DataFrame,
