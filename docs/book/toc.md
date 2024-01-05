@@ -46,6 +46,7 @@
     * [Containerize your pipeline](user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md)
     * [Scale compute to the cloud](user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md)
   * [Environment management](user-guide/advanced-guide/environment-management/environment-management.md)
+    * [Understanding environments](user-guide/advanced-guide/environment-management/understanding-environments.md)
     * [Global settings of ZenML](user-guide/advanced-guide/environment-management/global-settings-of-zenml.md)
     * [Environment Variables](user-guide/advanced-guide/environment-management/environment-variables.md)
   * [Secret management](user-guide/advanced-guide/secret-management/secret-management.md)
