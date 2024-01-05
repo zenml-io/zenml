@@ -2,21 +2,117 @@
 description: Provision infrastructure on the cloud.
 ---
 
-# Deploy a cloud stack
+# Deploying a Cloud Stack
 
-{% hint style="warning" %}
-We're still working on finishing this easy-to-consume production guide for you. In the meanwhile, please follow the provided links in this space as an interim guide.
-{% endhint %}
+When scaling machine learning operations from a local environment to the cloud, it's essential to have a robust infrastructure that can handle the increased complexity and demands of production workloads. In order to scale to the cloud, we need to configure a basic cloud stack in ZenML. This typically consists of three key components that we have learned about in the last section:
 
-This section of the production guide will be about creating your first cloud stack. This means we will be creating the following components in the cloud provider of your choice:
+- The [orchestrator](../../stacks-and-components/component-guide/orchestrators/) manages the workflow and execution of your pipelines.
+- The [artifact store](../../stacks-and-components/component-guide/artifact-stores/) is where your pipeline artifacts, such as datasets and models, are stored.
+- The [container registry](../../stacks-and-components/component-guide/container-registries/) is a storage and content delivery system that holds your Docker container images.
 
-- A [Skypilot Orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
-- An [AWS](../../stacks-and-components/component-guide/artifact-stores/s3.md), [GCP](../../stacks-and-components/component-guide/artifact-stores/gcp.md), or [Azure](../../stacks-and-components/component-guide/artifact-stores/azure.md) artifact store.
-- A [container registry](../../stacks-and-components/component-guide/container-registries/container-registries.md)
+In this chapter, we'll walk you through the process of deploying a basic cloud stack on a public cloud provider. This will enable you to run your MLOps pipelines in a cloud environment, leveraging the scalability and robustness that cloud platforms offer.
 
-A simplified [GCP guide](../../stacks-and-components/stack-deployment/cloud-stacks/minimal-gcp-stack.md) is already available. The docs also have a dedicated [Stack deployment](../../stacks-and-components/stack-deployment/) section with a lot more information!
+## Deploying on a public cloud
 
-Until this section is ready, please use the above information to configure your cloud stack!
+Before we begin, ensure you have:
+
+- An account with your chosen cloud provider.
+- The cloud provider's CLI installed and configured with the necessary permissions.
+- The `zenml` CLI installed and configured on your local machine with the [mlstacks](https://mlstacks.zenml.io/getting-started/introduction) extra (i.e. `pip install "zenml[mlstacks]"`)
+
+
+{% tabs %}
+{% tab title="GCP" %}
+Deploying a basic stack on GCP involves setting up a Skypilot orchestrator, a Google Cloud Storage (GCS) artifact store, and a Google Container Registry (GCR). Follow these steps to deploy your stack:
+
+1. Deploy the stack using ZenML's CLI:
+
+    ```bash
+    zenml stack deploy -n basic -p gcp -a -c -r us-east1 -x bucket_name=<SOME_NEW_BUCKET_NAME> -x project_id=<YOUR_GCP_PROJECT_ID> -o skypilot
+    ```
+
+    Replace `<SOME_NEW_BUCKET_NAME>` with a unique name for your GCP storage bucket and `<YOUR_GCP_PROJECT_ID>` with your GCP project ID.
+
+2. Register a service connector for GCP:
+
+    ```bash
+    zenml service-connector register gcp-generic --type gcp --auto-configure
+    ```
+
+3. Connect the artifact store to GCS:
+
+    ```bash
+    zenml artifact-store connect gcs_artifact_store --connector gcp-generic
+    ```
+
+4. Connect the orchestrator to Skypilot:
+
+    ```bash
+    zenml orchestrator connect gcp_skypilot_orchestrator --connector gcp-generic
+    ```
+
+5. Connect the container registry to GCR:
+
+    ```bash
+    zenml container-registry connect gcr_container_registry --connector gcp-generic
+    ```
+
+By completing these steps, you'll have a fully functional ZenML stack on GCP, ready for your production MLOps pipelines.
+{% endtab %}
+{% tab title="AWS" %}
+Deploying a basic stack on AWS involves setting up a Skypilot orchestrator, an Amazon Simple Storage Service (S3) artifact store, and an Amazon Elastic Container Registry (ECR). Follow these steps to deploy your stack:
+
+1. Deploy the stack using ZenML's CLI:
+
+    ```bash
+    zenml stack deploy -n basic -p aws -a -c -r us-east-1 -x bucket_name=<SOME_NEW_BUCKET_NAME> -o skypilot
+    ```
+
+    Replace `<SOME_NEW_BUCKET_NAME>` with a unique name for your AWS S3 bucket.
+
+2. Register a service connector for AWS:
+
+    ```bash
+    zenml service-connector register aws-generic --type aws --auto-configure
+    ```
+
+3. Connect the artifact store to S3:
+
+    ```bash
+    zenml artifact-store connect s3_artifact_store --connector aws-generic
+    ```
+
+4. Connect the orchestrator to Skypilot:
+
+    ```bash
+    zenml orchestrator connect aws_skypilot_orchestrator --connector aws-generic
+    ```
+
+5. Connect the container registry to AWS ECR:
+
+    ```bash
+    zenml container-registry connect aws_container_registry --connector aws-generic
+    ```
+
+By following these steps, you'll have a ZenML stack on AWS that's ready to handle your MLOps needs in the cloud.
+{% endtab %}
+{% endtabs %}
+
+## Understanding the process
+
+With the new stack deployed and configured in ZenML, running a pipeline will now behave differently. Here are the broad sequence of events that will happen:
+
+1. The user runs a pipeline on the client machine
+2. The client asks the server for the stack info
+3. Based on the stack info and pipeline specification, client builds and pushes image to the `container registry` (this is the so called build step)
+4. After thats done, the client pushes the pipeline to run in the `orchestrator`. 
+5. the `orchestrator` pulls the image from the `container registry` as its executing the pipeline (each step has an image)
+6. As each pipeline runs, it stores artifacts physically in the `artifact store` 
+7, As each pipeline runs, it reports status back to the zenml server, and it uses the metadata from the server to run the pipeline as well
+
+After deploying your cloud stack, set it as the active stack using the `zenml stack set` command. You can then proceed to run your pipelines, confident that your cloud infrastructure is robust and ready for production. Always monitor your cloud resources and manage access carefully to ensure security and manage costs effectively.
+
+For more detailed information on each step and additional cloud provider configurations, please refer to the [Stack deployment](../../stacks-and-components/stack-deployment/) section of the ZenML documentation.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
