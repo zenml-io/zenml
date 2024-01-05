@@ -41,7 +41,7 @@ from uuid import UUID
 
 import pymysql
 from pydantic import SecretStr, root_validator, validator
-from sqlalchemy import asc, desc, func, text
+from sqlalchemy import MetaData, asc, desc, func, text
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -925,9 +925,15 @@ class SqlZenStore(BaseZenStore):
 
         self._alembic = Alembic(self.engine)
 
-        self.db_backup_file_path = (
-            f"{self.config.backup_directory}/{self.engine.url.database}.sql"
-        )
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            # strip the .db from the ZENML_SQLITE_DB_NAME and
+            # add .sql to the end
+            # TODO
+            self.db_backup_file_path = os.path.join(
+                self.config.backup_directory, ZENML_SQLITE_DB_FILENAME[:-3] + ".sql"
+            )
+        else:
+            self.db_backup_file_path = os.path.join(self.config.backup_directory, f"{self.engine.url.database}.sql")
 
         if (
             not self.skip_migrations
@@ -954,22 +960,28 @@ class SqlZenStore(BaseZenStore):
     def restore_database(self) -> None:
         """Restore the database from a backup."""
         # if a backup file does not exist, return
+        assert self.db_backup_file_path is not None
         db_name = self.db_backup_file_path.split("/")[-1].split(".")[0]
         if not os.path.exists(self.db_backup_file_path):
             logger.debug("No backup found. No restore performed.")
             return
 
-        connection = self.engine.connect()
+        with self.engine.begin() as connection:
+            # drop the database if it exists
+            connection.execute(text(f"DROP DATABASE IF EXISTS {db_name}"))
+        
+            # then create the database
+            connection.execute(text(f"CREATE DATABASE {db_name}"))
 
-        # drop the database if it exists
-        connection.execute(f"DROP DATABASE IF EXISTS {db_name}")
+            # restore the database from the dump file
+            connection.execute(text(f"USE {db_name}"))
 
-        # then create the database
-        connection.execute(f"CREATE DATABASE {db_name}")
+            # read the dump file and execute it
+            with open(self.db_backup_file_path, "r") as f:
+                contents = f.read()
 
-        # restore the database from the dump file
-        connection.execute(f"USE {db_name}")
-        connection.execute(f"SOURCE {self.db_backup_file_path}")
+            connection.execute(text(contents))
+
 
         logger.debug(f"Database restored from {self.db_backup_file_path}")
 
@@ -979,26 +991,56 @@ class SqlZenStore(BaseZenStore):
     def backup_database(self) -> None:
         """Backup the database to a file."""
         db_name = self.db_backup_file_path.split("/")[-1].split(".")[0]
-        connection = self.engine.connect()
-
-        result = connection.execute(f'SHOW DATABASES LIKE "{db_name}"')
-        # TODO maybe check if result.first() is None instead
-        if result.rowcount == 0:
-            logger.debug("Database does not exist. No backup created.")
-            return
 
         # create the backup directory if it does not exist
         if not os.path.exists(self.config.backup_directory):
             os.makedirs(self.config.backup_directory)
 
-        # dump the database to a file
-        os.system(
-            f"mysqldump --set-gtid-purged=OFF -h {self.engine.url.host} -u {self.config.username} "
-            f"-p{self.config.password} --ssl-ca={self.config.ssl_ca} "
-            f"--ssl-cert={self.config.ssl_cert} --ssl-key={self.config.ssl_key} "
-            f"{db_name} > {self.db_backup_file_path}"
-        )
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            # dump the database to a file
+            os.system(
+                f"sqlite3 {self.config.database} .dump > {self.db_backup_file_path}"
+            )
 
+        # # if ssl-ca is set, we need to pass the ssl parameters to mysqldump
+        # if self.config.ssl_ca:
+        #     os.system(
+        #         f"mysqldump --default-character-set=utf8mb4 -h {self.engine.url.host} -u {self.config.username} "
+        #         f"-p{self.config.password} --ssl-ca={self.config.ssl_ca} "
+        #         f"--ssl-cert={self.config.ssl_cert} --ssl-key={self.config.ssl_key} "
+        #         f"{db_name} > {self.db_backup_file_path}"
+        #     )
+        # else:
+        #     os.system(
+        #         f"mysqldump --default-character-set=utf8mb4 -h {self.engine.url.host} -u {self.config.username} "
+        #         f"-p{self.config.password} {db_name} > {self.db_backup_file_path}"
+        #     )
+
+        metadata = MetaData()
+        metadata.reflect(bind=self.engine)
+        from sqlalchemy.schema import CreateTable
+
+        assert self.db_backup_file_path is not None
+
+        output = []
+        for table in metadata.tables.values():
+            # write the table creation statement
+            output.append(str(CreateTable(table)).strip())
+
+            with self.engine.connect() as conn:
+                # write the table data
+                for row in conn.execute(table.select()):
+                    # checked manually that converting to string isn't a problem
+                    # if the column is of type int and i pass, say, '5', it still
+                    # takes 5 as the value in the table's row.
+                    row_values = [str(row[c.name]) for c in table.columns if row[c.name] is not None]
+                    values = ', '.join(row_values)
+                    insert_stmt = f"INSERT INTO {table.name} VALUES ({values})"
+                    output.append(insert_stmt)
+        
+        with open(self.db_backup_file_path, "w") as f:
+            f.write(";\n".join(output))
+                        
         logger.debug(f"Database backed up to {self.db_backup_file_path}")
 
     def _initialize_database(self) -> None:
@@ -1070,15 +1112,21 @@ class SqlZenStore(BaseZenStore):
                     "database migration problem. Please raise an issue on "
                     "GitHub if you encounter this."
                 )
+
+            logger.debug("Current revisions: %s", current_revisions)
+            logger.debug("Head revisions: %s", head_revisions)
             # if the current revision and head revision don't match, run a dump
             if current_revisions[0] != head_revisions[0]:
                 try:
-                    self.backup_database(self.db_backup_file_path)
+                    logger.info("Backing up the database")
+                    self.backup_database()
                 except Exception as e:
                     logger.exception(
                         "Failed to backup the database. Please check the logs "
                         "for more details."
                     )
+                    # TODO catch exception when the directory doesn't exist
+                    # write permissions etc.
                     raise e
             # Case 3: the database has been migrated with alembic before. Just
             # upgrade to the latest revision.
@@ -1113,7 +1161,8 @@ class SqlZenStore(BaseZenStore):
                 # if the current revision and head revision don't match, run a dump
                 if current_revisions[0] != head_revisions[0]:
                     try:
-                        self.backup_database(self.db_backup_file_path)
+                        logger.info("Backing up the database 2")
+                        self.backup_database()
                     except Exception as e:
                         logger.exception(
                             "Failed to backup the database. Please check the logs "
