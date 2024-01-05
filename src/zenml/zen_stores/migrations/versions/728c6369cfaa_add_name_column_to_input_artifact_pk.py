@@ -14,10 +14,6 @@ down_revision = "0.36.0"
 branch_labels = None
 depends_on = None
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision.
@@ -133,8 +129,8 @@ def _disable_primary_key_requirement_if_necessary() -> None:
     engine = op.get_bind().engine
     engine_name = engine.name
     server_version_info = engine.dialect.server_version_info
-    logger.info(f"Detected database engine: {engine_name}")
-    logger.info(f"Detected database version: {server_version_info}")
+    print(f"Detected database engine: {engine_name}")
+    print(f"Detected database version: {server_version_info}")
 
     if engine_name == "mysql" and server_version_info >= (8, 0, 13):
         potential_session_var = engine.execute(
