@@ -79,8 +79,10 @@ class PolarsMaterializer(BaseMaterializer):
         """Writes Polars data to the artifact store.
 
         Args:
-            model: Any of the supported models.
             data: The data to write.
+
+        Raises:
+            TypeError: If the data is not of type pl.DataFrame or pl.Series.
         """
         # Data type check
         if not isinstance(data, self.ASSOCIATED_TYPES):
