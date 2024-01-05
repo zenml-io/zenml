@@ -153,8 +153,6 @@ Run the training pipeline:
 python run.py --training-pipeline
 ```
 
-### Understanding the process
-
 You will notice that your pipeline run will behave differently from befeore.
 Here are the broad sequence of events that just happened:
 
