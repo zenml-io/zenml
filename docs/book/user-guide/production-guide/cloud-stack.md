@@ -100,6 +100,11 @@ Deploying a basic stack on AWS involves setting up a [Skypilot](https://skypilot
 
 By following these steps, you'll have a ZenML stack on AWS that's ready to handle your MLOps needs in the cloud.
 {% endtab %}
+{% tab title="Other Cloud" %}
+You can create a remote stack on pretty much any environment, including other cloud providers such as Azure, Lambda Cloud, Paperspace etc. A cloud agnostic stack would use the [Kubernetes](../../stacks-and-components/component-guide/orchestrators/kubernetes.md) orchestrator, a [minio](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md), and a [default container registry](../../stacks-and-components/component-guide/container-registries/default.md).
+
+While MLStacks does not support automated deployments for other cloud providers, it is relatively easy to configure these. Please read the [components guide](../../stacks-and-components/component-guide/component-guide.md) for more information on how to configure a remote stack with your selection of components.
+{% endtab %}
 {% endtabs %}
 
 {% hint style="info" %}
@@ -157,7 +162,6 @@ You will notice that your pipeline run will behave differently from befeore.
 Here are the broad sequence of events that just happened:
 
 <figure><img src="../../.gitbook/assets/remote_pipeline_run.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack.</p></figcaption></figure>
-
 
 1. The user runs a pipeline on the client machine (in this case the training pipeline of the starter template).
 2. The client asks the server for the stack info, which returns it with the configuration of the cloud stack.
