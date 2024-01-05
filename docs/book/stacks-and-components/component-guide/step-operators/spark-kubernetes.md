@@ -366,7 +366,7 @@ each pipeline step when running `kubectl get pods -n $KUBERNETES_NAMESPACE`.
 
 {% hint style="info" %}
 Instead of hardcoding a step operator name, you can also use the 
-[Client](../../advanced-guide/environment-management/client.md) to dynamically
+[Client](../../advanced-guide/configuring-zenml/client.md) to dynamically
 use the step operator of your active stack:
 
 ```python
