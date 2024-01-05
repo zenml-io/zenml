@@ -12,13 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import datetime
 
 import polars
 from polars import testing as polars_testing
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.polars.materializers.dataframe_materializer import PolarsMaterializer
+from zenml.integrations.polars.materializers.dataframe_materializer import (
+    PolarsMaterializer,
+)
 
 
 def test_polars_materializer():
