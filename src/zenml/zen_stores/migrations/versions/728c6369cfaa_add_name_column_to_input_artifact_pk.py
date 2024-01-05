@@ -49,9 +49,7 @@ def upgrade() -> None:
         )
 
         # Update the PK
-        batch_op.drop_constraint(
-            constraint_name=constraint_name, type_="primary"
-        )
+        batch_op.drop_constraint(constraint_name=constraint_name, type_="primary")
         batch_op.create_primary_key(
             constraint_name="pk_step_run_input_artifact",
             columns=["step_id", "artifact_id", "name"],
@@ -139,7 +137,7 @@ def _disable_primary_key_requirement_if_necessary() -> None:
         if potential_session_var and potential_session_var[1] == "ON":
             # Temporarily disable this MySQL setting for primary key modification
             op.execute("SET SESSION sql_require_primary_key = 0;")
-    elif engine_name == "mariadb":
+    elif engine_name == "InnoDB":
         # MariaDB does not require a similar setting, so skip this step
         pass
     else:

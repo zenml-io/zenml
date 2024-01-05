@@ -88,7 +88,7 @@ do
     if [ "$1" == "mysql" ]; then
         zenml connect --url mysql://127.0.0.1/zenml --username root --password password
     elif [ "$1" == "mariadb" ]; then
-        zenml connect --url mariadb+mariadbconnector://127.0.0.1/zenml --username root --password password
+        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
     fi
 
     # Run the tests for this version
