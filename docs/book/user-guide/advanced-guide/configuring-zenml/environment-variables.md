@@ -92,3 +92,7 @@ export ZENML_SUPPRESS_LOGS=false
 For more information on server configuration, see the [ZenML Server
 documentation](../../../deploying-zenml/zenml-self-hosted/deploy-with-docker.md)
 for more, especially the section entitled "ZenML server configuration options".
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+
