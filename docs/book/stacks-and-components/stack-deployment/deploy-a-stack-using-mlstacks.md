@@ -31,6 +31,10 @@ To answer this question, here are some pros and cons in comparison to [the stack
 {% endtab %}
 {% endtabs %}
 
+## Installing the mlstacks extra
+
+To install `mlstacks`, either run `pip install mlstacks` or `pip install zenml[mlstacks]` to install it along with ZenML.
+
 ## Deploying a stack
 
 A simple stack deployment can be done using the following command:

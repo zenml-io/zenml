@@ -14,12 +14,19 @@ Commands like these assume that you already have the stack component deployed. I
 
 We took inspiration from this design to build something that feels natural to use and is also sufficiently powerful to take care of the deployment of the respective stack components for you. This is where the \<STACK\_COMPONENT> `deploy` CLI comes in!
 
-The `deploy` command allows you to deploy individual components of your MLOps stack with a single command 🚀. You can also customize your components easily by passing in flags (more on that later).
+The `deploy` command allows you to deploy individual components of your MLOps
+stack with a single command 🚀. You can also customize your components easily by
+passing in flags (more on that later).
+
+{% hint style="info" %}
+To install `mlstacks`, either run `pip install mlstacks` or `pip install zenml[mlstacks]` to install it along with ZenML.
+{% endhint %}
 
 For example, to deploy an artifact store on a GCP account, you can run:
 
 {% code overflow="wrap" %}
 ```bash
+# after installing mlstacks
 zenml artifact-store deploy -f gcp -p gcp -r us-east1 -x project_id=zenml my_store
 ```
 {% endcode %}

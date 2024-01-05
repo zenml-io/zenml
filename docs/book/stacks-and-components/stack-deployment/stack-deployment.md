@@ -37,6 +37,10 @@ components as well as whole stacks using MLStacks. These stacks will be useful f
   different tools.
 - You are looking for guidelines for production-grade deployments.
 
+## Installing the mlstacks extra
+
+To install `mlstacks`, either run `pip install mlstacks` or `pip install zenml[mlstacks]` to install it along with ZenML.
+
 ## Deploying a stack component
 
 The ZenML CLI allows you to deploy individual stack components using the
