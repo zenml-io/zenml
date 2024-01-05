@@ -26,16 +26,10 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorSettings,
 )
-
-# from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (
     ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID,
     SkypilotBaseOrchestrator,
 )
-
-# from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
-#    build_pod_manifest,
-# )
 from zenml.logger import get_logger
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.orchestrators.utils import get_config_environment_vars
@@ -77,7 +71,10 @@ def main() -> None:
     active_stack = Client().active_stack
 
     orchestrator = active_stack.orchestrator
-    assert isinstance(orchestrator, SkypilotBaseOrchestrator)
+    if not isinstance(orchestrator, SkypilotBaseOrchestrator):
+        raise TypeError(
+            "The active stack's orchestrator is not an instance of SkypilotBaseOrchestrator."
+        )
 
     # Set up credentials
     orchestrator.setup_credentials()
@@ -87,7 +84,8 @@ def main() -> None:
 
     # get active container registry
     container_registry = active_stack.container_registry
-    assert container_registry is not None
+    if container_registry is None:
+        raise ValueError("Container registry cannot be None.")
 
     if docker_creds := container_registry.credentials:
         docker_username, docker_password = docker_creds
@@ -133,7 +131,9 @@ def main() -> None:
             for part in resource_config
             if part is not None
         ]
-        cluster_name = f"cluster-{orchestrator_run_id}" + "-".join(cluster_name_parts)
+        cluster_name = f"cluster-{orchestrator_run_id}" + "-".join(
+            cluster_name_parts
+        )
         unique_resource_configs[step_name] = cluster_name
 
     def run_step_on_skypilot_vm(step_name: str) -> None:
@@ -166,8 +166,10 @@ def main() -> None:
         )
 
         # Set up the task
+        run_command = f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+        logger.info(f"Running step `{step_name}` with command: {run_command}")
         task = sky.Task(
-            run=f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}",
+            run=run_command,
             setup=setup,
             envs=task_envs,
         )
@@ -190,18 +192,14 @@ def main() -> None:
             )
         )
 
-        # Launch the cluster
-        try:
-            sky.launch(
-                task,
-                cluster_name,
-                retry_until_up=settings.retry_until_up,
-                idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
-                down=settings.down,
-                stream_logs=settings.stream_logs,
-            )
-        except Exception as e:
-            raise e
+        sky.launch(
+            task,
+            cluster_name,
+            retry_until_up=settings.retry_until_up,
+            idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
+            down=settings.down,
+            stream_logs=settings.stream_logs,
+        )
 
         # Pop the resource configuration for this step
         unique_resource_configs.pop(step_name)

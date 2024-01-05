@@ -152,7 +152,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         # First check whether the code is running in a notebook.
         if Environment.in_notebook():
             raise RuntimeError(
-                "The Kubernetes orchestrator cannot run pipelines in a notebook "
+                "The Skypilot orchestrator cannot run pipelines in a notebook "
                 "environment. The reason is that it is non-trivial to create "
                 "a Docker image of a notebook. Please consider refactoring "
                 "your notebook cells into separate scripts in a Python module "

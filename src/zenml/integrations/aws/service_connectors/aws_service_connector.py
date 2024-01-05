@@ -1381,7 +1381,8 @@ class AWSServiceConnector(ServiceConnector):
 
             # Ensure the credentials file exists
             if not os.path.isfile(aws_credentials_path):
-                open(aws_credentials_path, "a").close()
+                with open(aws_credentials_path, "a"):
+                    pass  # The file is automatically closed when exiting the with block
 
             # Set the appropriate permissions for the .aws directory and credentials file
             os.chmod(os.path.dirname(aws_credentials_path), 0o700)
