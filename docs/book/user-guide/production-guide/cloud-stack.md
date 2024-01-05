@@ -43,19 +43,19 @@ Deploying a basic stack on GCP involves setting up a [Skypilot](https://skypilot
     zenml service-connector register gcp-generic --type gcp --auto-configure
     ```
 
-3. Connect the artifact store to GCS:
+3. Connect the service connector to the artifact store:
 
     ```bash
     zenml artifact-store connect gcs_artifact_store --connector gcp-generic
     ```
 
-4. Connect the orchestrator to Skypilot:
+4. Connect the service connector to the orchestrator:
 
     ```bash
     zenml orchestrator connect gcp_skypilot_orchestrator --connector gcp-generic
     ```
 
-5. Connect the container registry to GCR:
+5. Connect the service connector to the container registry:
 
     ```bash
     zenml container-registry connect gcr_container_registry --connector gcp-generic
@@ -80,19 +80,19 @@ Deploying a basic stack on AWS involves setting up a [Skypilot](https://skypilot
     zenml service-connector register aws-generic --type aws --auto-configure
     ```
 
-3. Connect the artifact store to S3:
+3. Connect the service connector to the artifact store:
 
     ```bash
     zenml artifact-store connect s3_artifact_store --connector aws-generic
     ```
 
-4. Connect the orchestrator to Skypilot:
+4. Connect the service connector to the orchestrator:
 
     ```bash
     zenml orchestrator connect aws_skypilot_orchestrator --connector aws-generic
     ```
 
-5. Connect the container registry to AWS ECR:
+5. Connect the service connector to the container registry:
 
     ```bash
     zenml container-registry connect aws_container_registry --connector aws-generic
