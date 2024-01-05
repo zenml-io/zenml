@@ -133,7 +133,7 @@ def main() -> None:
             for part in resource_config
             if part is not None
         ]
-        cluster_name = f"{orchestrator_run_id}" + "-".join(cluster_name_parts)
+        cluster_name = f"cluster-{orchestrator_run_id}" + "-".join(cluster_name_parts)
         unique_resource_configs[step_name] = cluster_name
 
     def run_step_on_skypilot_vm(step_name: str) -> None:
