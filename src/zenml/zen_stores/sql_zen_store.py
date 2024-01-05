@@ -973,15 +973,20 @@ class SqlZenStore(BaseZenStore):
             # then create the database
             connection.execute(text(f"CREATE DATABASE {db_name}"))
 
-            # restore the database from the dump file
             connection.execute(text(f"USE {db_name}"))
 
+        with self.engine.begin() as connection:
             # read the dump file and execute it
             with open(self.db_backup_file_path, "r") as f:
                 contents = f.read()
 
-            connection.execute(text(contents))
-
+            # remove any escaped characters like \n and \t and split based on ; but keep the ; at the end of each sentence
+            contents = contents.replace("\\n", "").replace("\\t", "").split(";")
+            
+            # execute each statement
+            for statement in contents:
+                if statement.strip() != "":
+                    connection.execute(text(statement + ";"))
 
         logger.debug(f"Database restored from {self.db_backup_file_path}")
 
@@ -1034,7 +1039,7 @@ class SqlZenStore(BaseZenStore):
                     # if the column is of type int and i pass, say, '5', it still
                     # takes 5 as the value in the table's row.
                     row_values = [str(row[c.name]) for c in table.columns if row[c.name] is not None]
-                    values = ', '.join(row_values)
+                    values = ', '.join(f"'{item}'" for item in row_values)
                     insert_stmt = f"INSERT INTO {table.name} VALUES ({values})"
                     output.append(insert_stmt)
         
