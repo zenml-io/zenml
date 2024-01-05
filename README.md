@@ -84,12 +84,14 @@
     ·
     <a href="https://zenml.io/discussion">Vote New Features</a>
     ·
-    <a href="https://blog.zenml.io/">Read Blog</a>
+    <a href="https://www.zenml.io/blog">Read Blog</a>
+    ·
+    <a href="https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22">Contribute to Open Source</a>
     ·
     <a href="https://www.zenml.io/company#team">Meet the Team</a>
     <br />
     <br />
-    🎉 Version 0.53.0 is out. Check out the release notes
+    🎉 Version 0.53.1 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
@@ -277,9 +279,10 @@ and you can directly influence the roadmap as follows:
 
 # 🙌 Contributing and Community
 
-We would love to develop ZenML together with our community! Best way to get
+We would love to develop ZenML together with our community! The best way to get
 started is to select any issue from the [`good-first-issue`
-label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you
+label](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22)
+and open up a Pull Request! If you
 would like to contribute, please review our [Contributing
 Guide](CONTRIBUTING.md) for all relevant details.
 

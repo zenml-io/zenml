@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,9 @@ def inference(random_state: str, target: str):
         target: Name of target column in dataset.
     """
     # Get the production model artifact
-    model = get_pipeline_context().model_version.get_artifact("model")
+    model = get_pipeline_context().model_version.get_artifact(
+        "sklearn_classifier"
+    )
 
     # Get the preprocess pipeline artifact associated with this version
     preprocess_pipeline = get_pipeline_context().model_version.get_artifact(

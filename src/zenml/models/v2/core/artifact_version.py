@@ -20,7 +20,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Type,
     Union,
 )
 from uuid import UUID
@@ -29,9 +28,9 @@ from pydantic import BaseModel, Field
 
 from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactType, LogicalOperators
+from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
-from zenml.models.tag_models import TagResponseModel
+from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -40,10 +39,10 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
-    from sqlmodel import SQLModel
 
     from zenml.models.v2.core.artifact_visualization import (
         ArtifactVisualizationRequest,
@@ -134,7 +133,7 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     data_type: Source = Field(
         title="Data type of the artifact.",
     )
-    tags: List[TagResponseModel] = Field(
+    tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
 
@@ -215,7 +214,7 @@ class ArtifactVersionResponse(
         return self.get_body().type
 
     @property
-    def tags(self) -> List[TagResponseModel]:
+    def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
         Returns:
@@ -403,35 +402,50 @@ class ArtifactVersionFilter(WorkspaceScopedFilter):
         default=False, description="Filter only for unused artifacts"
     )
 
-    def generate_filter(
-        self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Generate the filter for the query.
-
-        Args:
-            table: The Table that is being queried from.
+    def get_custom_filters(
+        self,
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom filters.
 
         Returns:
-            The filter expression for the query.
+            A list of custom filters.
         """
-        from sqlalchemy import and_, or_
+        custom_filters = super().get_custom_filters()
 
-        from zenml.zen_stores.schemas import (
+        from sqlalchemy import and_
+        from sqlmodel import select
+
+        from zenml.zen_stores.schemas.artifact_schemas import (
             ArtifactSchema,
             ArtifactVersionSchema,
         )
-
-        base_filter = super().generate_filter(table)
-
-        operator = (
-            or_ if self.logical_operator == LogicalOperators.OR else and_
+        from zenml.zen_stores.schemas.step_run_schemas import (
+            StepRunInputArtifactSchema,
+            StepRunOutputArtifactSchema,
         )
 
         if self.name:
-            artifact_name_filter = and_(  # type: ignore[type-var]
-                ArtifactSchema.name == self.name,
-                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+            value, filter_operator = self._resolve_operator(self.name)
+            filter_ = StrFilter(
+                operation=GenericFilterOps(filter_operator),
+                column="name",
+                value=value,
             )
-            base_filter = operator(base_filter, artifact_name_filter)
+            artifact_name_filter = and_(  # type: ignore[type-var]
+                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                filter_.generate_query_conditions(ArtifactSchema),
+            )
+            custom_filters.append(artifact_name_filter)
 
-        return base_filter
+        if self.only_unused:
+            unused_filter = and_(
+                ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
+                    select(StepRunOutputArtifactSchema.artifact_id)
+                ),
+                ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
+                    select(StepRunInputArtifactSchema.artifact_id)
+                ),
+            )
+            custom_filters.append(unused_filter)
+
+        return custom_filters
