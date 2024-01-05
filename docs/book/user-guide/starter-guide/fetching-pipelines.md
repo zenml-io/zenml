@@ -36,7 +36,7 @@ pipeline_model = Client().get_pipeline("first_pipeline")
 ```
 
 {% hint style="info" %}
-Check out the [ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md) for more information on the `Client` class and its purpose.
+Check out the [ZenML Client Documentation](../../reference/python-client.md) for more information on the `Client` class and its purpose.
 {% endhint %}
 
 ### Discover and list all pipelines
@@ -78,7 +78,7 @@ runs = pipeline_model.runs
 The result will be a list of the most recent runs of this pipeline, ordered from newest to oldest.
 
 {% hint style="info" %}
-Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](../advanced-guide/environment-management/use-the-client.md#list-of-resources) for more information.
+Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](../../reference/python-client.md#list-of-resources) for more information.
 {% endhint %}
 
 ### Get the last run of a pipeline
