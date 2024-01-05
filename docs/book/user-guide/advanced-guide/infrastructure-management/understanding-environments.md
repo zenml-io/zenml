@@ -10,21 +10,25 @@ Here is a visual overview of the different environments:
 
 <figure><img src="../../../.gitbook/assets/SystemArchitecture.png" alt=""><figcaption><p>Left box is the client environment, middle is the zenml server environment, and the right most contains the build environments</p></figcaption></figure>
 
-## Client Environment
+## Client Environment (or the Runner environment)
 
-The client environment is where the ZenML pipelines are _started_, i.e., where you call the pipeline function (typically in a `run.py` script). There are different types of client environments:
+The client environment (sometimes known as the runner enviornment) is where the ZenML pipelines are _compiled_, i.e., where you call the pipeline function (typically in a `run.py` script). There are different types of client environments:
 
 * A local development environment
 * A CI runner in production.
+* A [ZenML Cloud](../../../deploying-zenml/zenml-cloud/) runner.
 * A `runner` image orchestrated by the ZenML server to start pipelines.
 
 In all the environments, you should use your preferred package manager (e.g., `pip` or `poetry`) to manage dependencies. Ensure you install the ZenML package and any required [integrations](../../../stacks-and-components/component-guide/component-guide.md).
 
 The client environment typically follows these key steps when starting a pipeline:
 
-1. Generating an intermediate pipeline representation.
+1. Compiling an intermediate pipeline representation via the `@pipeline` function.
 2. Creating or triggering [pipeline and step build environments](understanding-environments.md#image-builder-environment) if running remotely.
 3. Triggering a run in the [orchestrator](../../../stacks-and-components/component-guide/orchestrators/orchestrators.md).
+
+Please note that the `@pipeline` function in your code is **only ever called** in this environment. Therefore, any computational logic that is executed in the pipeline function needs to be relevant to
+this so-called *compile time*, rather than at *execution* time, which happens later.
 
 ## ZenML Server Environment
 

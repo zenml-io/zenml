@@ -4,7 +4,7 @@ description: Manage various components of your MLOps workflow.
 
 # Infrastructure management
 
-While usually development [starts locally with ZenML](../../starter-guide/starter-guide.md), very quickly it is desirable to deploy workloads into production outside the local development machine. Therefore, many other infrastructure components come into play.
+While development usually [starts locally with ZenML](../../starter-guide/starter-guide.md), very quickly it is desirable to deploy workloads into production outside the local development machine. Therefore, many other infrastructure components come into play.
 
 This guide helps builds an understanding of such components:
 
