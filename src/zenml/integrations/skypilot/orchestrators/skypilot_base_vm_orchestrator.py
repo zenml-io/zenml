@@ -271,7 +271,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             # Launch the cluster
             sky.launch(
                 task,
-                cluster_name,
+                cluster_name
+                or self.sanitize_cluster_name(
+                    f"{pipeline_name}-{orchestrator_run_name}"
+                ),
                 retry_until_up=settings.retry_until_up,
                 idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
                 down=settings.down,

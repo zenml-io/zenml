@@ -59,11 +59,11 @@ def main() -> None:
 
     orchestrator_run_id = socket.gethostname()
 
-    deployment_config = Client().get_deployment(args.deployment_id)
+    deployment = Client().get_deployment(args.deployment_id)
 
     pipeline_dag = {
         step_name: step.spec.upstream_steps
-        for step_name, step in deployment_config.step_configurations.items()
+        for step_name, step in deployment.step_configurations.items()
     }
     step_command = StepEntrypointConfiguration.get_entrypoint_command()
     entrypoint_str = " ".join(step_command)
@@ -102,7 +102,7 @@ def main() -> None:
         task_envs = None
 
     unique_resource_configs: Dict[str, str] = {}
-    for step_name, step in deployment_config.step_configurations.items():
+    for step_name, step in deployment.step_configurations.items():
         settings = cast(
             SkypilotBaseOrchestratorSettings,
             orchestrator.get_settings(step),
@@ -145,19 +145,22 @@ def main() -> None:
         cluster_name = unique_resource_configs[step_name]
 
         image = SkypilotBaseOrchestrator.get_image(
-            deployment=deployment_config, step_name=step_name
+            deployment=deployment, step_name=step_name
         )
 
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_name, deployment_id=deployment_config.id
+            step_name=step_name, deployment_id=deployment.id
         )
         arguments_str = " ".join(step_args)
 
-        step_config = deployment_config.step_configurations[step_name].config
-        settings = SkypilotBaseOrchestratorSettings.parse_obj(
-            step_config.settings.get("orchestrator.skypilot", {})
+        step = deployment.step_configurations[step_name]
+        settings = cast(
+            SkypilotBaseOrchestratorSettings,
+            orchestrator.get_settings(step),
         )
-
+        # settings = SkypilotBaseOrchestratorSettings.parse_obj(
+        #    step_config.settings.get("orchestrator.skypilot", {})
+        # )
         env = get_config_environment_vars()
         env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
@@ -167,7 +170,6 @@ def main() -> None:
 
         # Set up the task
         run_command = f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}"
-        logger.info(f"Running step `{step_name}` with command: {run_command}")
         task = sky.Task(
             run=run_command,
             setup=setup,
@@ -199,6 +201,8 @@ def main() -> None:
             idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
             down=settings.down,
             stream_logs=settings.stream_logs,
+            detach_setup=True,
+            detach_run=True,
         )
 
         # Pop the resource configuration for this step
@@ -219,11 +223,11 @@ def main() -> None:
             )
             sky.down(cluster_name)
 
-        logger.info(f"Pod of step `{step_name}` completed.")
+        logger.info(f"VM of step `{step_name}` completed.")
 
     ThreadedDagRunner(dag=pipeline_dag, run_fn=run_step_on_skypilot_vm).run()
 
-    logger.info("Orchestration pod completed.")
+    logger.info("Orchestration VM completed.")
 
 
 if __name__ == "__main__":
