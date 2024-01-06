@@ -254,9 +254,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             )
 
             # Set the cluster name
-            cluster_name = (
-                settings.cluster_name
-            )
+            cluster_name = settings.cluster_name
             if cluster_name is None:
                 # Find existing cluster
                 for i in sky.status(refresh=True):
@@ -297,6 +295,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         Returns:
             Sanitized cluster name.
         """
-        name = re.sub(r"[^a-z0-9-]", "-", name.lower()) # replaces any character that is not a lowercase letter, digit, or hyphen with a hyphen
-        name = re.sub(r"^[-]+", "", name) # trim leading hyphens
-        name = re.sub(r"[-]+$", "", name) # trim trailing hyphens
+        name = re.sub(
+            r"[^a-z0-9-]", "-", name.lower()
+        )  # replaces any character that is not a lowercase letter, digit, or hyphen with a hyphen
+        name = re.sub(r"^[-]+", "", name)  # trim leading hyphens
+        name = re.sub(r"[-]+$", "", name)  # trim trailing hyphens
