@@ -49,7 +49,7 @@ zenml orchestrator flavor list
 ### How to use it
 
 You don't need to directly interact with any ZenML orchestrator in your code. As long as the orchestrator that you want
-to use is part of your active [ZenML stack](/docs/book/user-guide/starter-guide/understand-stacks.md), using the
+to use is part of your active [ZenML stack](/docs/book/user-guide/production-guide/understand-stacks.md), using the
 orchestrator is as simple as executing a Python file
 that [runs a ZenML pipeline](/docs/book/user-guide/starter-guide/starter-guide.md):
 
@@ -66,7 +66,7 @@ to the orchestrator UI of a specific pipeline run using the following code snipp
 from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
+orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 ```
 
 #### Specifying per-step resources
