@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -209,17 +209,17 @@ def main() -> None:
         unique_resource_configs.pop(step_name)
 
         if cluster_name in unique_resource_configs.values():
-            # If there are more steps using this configuration, skip downing the cluster
+            # If there are more steps using this configuration, skip deprovisioning the cluster
             logger.info(
                 f"Resource configuration for cluster '{cluster_name}' "
-                "is used by subsequent steps. Skipping the downing of "
+                "is used by subsequent steps. Skipping the deprovisioning of "
                 "the cluster."
             )
         else:
             # If there are no more steps using this configuration, down the cluster
             logger.info(
                 f"Resource configuration for cluster '{cluster_name}' "
-                "is not used by subsequent steps. Downing the cluster."
+                "is not used by subsequent steps. deprovisioning the cluster."
             )
             sky.down(cluster_name)
 
@@ -227,7 +227,7 @@ def main() -> None:
 
     ThreadedDagRunner(dag=pipeline_dag, run_fn=run_step_on_skypilot_vm).run()
 
-    logger.info("Orchestration VM completed.")
+    logger.info("Orchestration VM provisioned.")
 
 
 if __name__ == "__main__":
