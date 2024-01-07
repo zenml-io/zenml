@@ -158,9 +158,6 @@ def main() -> None:
             SkypilotBaseOrchestratorSettings,
             orchestrator.get_settings(step),
         )
-        # settings = SkypilotBaseOrchestratorSettings.parse_obj(
-        #    step_config.settings.get("orchestrator.skypilot", {})
-        # )
         env = get_config_environment_vars()
         env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = orchestrator_run_id
 
