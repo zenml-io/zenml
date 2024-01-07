@@ -223,7 +223,7 @@ def main() -> None:
             )
             sky.down(cluster_name)
 
-        logger.info(f"VM of step `{step_name}` completed.")
+        logger.info(f"Running step `{step_name}` on a VM is completed.")
 
     ThreadedDagRunner(dag=pipeline_dag, run_fn=run_step_on_skypilot_vm).run()
 
