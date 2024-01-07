@@ -1,7 +1,7 @@
 """add save_models_to_registry [5cc3f41cf048].
 
 Revision ID: 5cc3f41cf048
-Revises: 0.52.0
+Revises: 0.53.1
 Create Date: 2023-12-12 15:29:58.694643
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5cc3f41cf048"
-down_revision = "0.52.0"
+down_revision = "0.53.1"
 branch_labels = None
 depends_on = None
 

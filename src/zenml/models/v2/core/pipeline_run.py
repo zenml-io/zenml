@@ -21,7 +21,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Type,
     Union,
 )
 from uuid import UUID
@@ -30,7 +29,7 @@ from pydantic import BaseModel, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus, LogicalOperators
+from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -41,7 +40,6 @@ from zenml.models.v2.base.scoped import (
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
-    from sqlmodel import SQLModel
 
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.code_reference import CodeReferenceResponse
@@ -62,7 +60,6 @@ if TYPE_CHECKING:
 class PipelineRunRequest(WorkspaceScopedRequest):
     """Request model for pipeline runs."""
 
-    id: UUID
     name: str = Field(
         title="The name of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -418,33 +415,17 @@ class PipelineRunFilter(WorkspaceScopedFilter):
     )
     unlisted: Optional[bool] = None
 
-    def generate_filter(
-        self, table: Type["SQLModel"]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Generate the filter for the query.
-
-        Args:
-            table: The Table that is being queried from.
+    def get_custom_filters(
+        self,
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom filters.
 
         Returns:
-            The filter expression for the query.
+            A list of custom filters.
         """
+        custom_filters = super().get_custom_filters()
+
         from sqlalchemy import and_
-        from sqlmodel import or_
-
-        base_filter = super().generate_filter(table)
-
-        operator = (
-            or_ if self.logical_operator == LogicalOperators.OR else and_
-        )
-
-        if self.unlisted is not None:
-            if self.unlisted is True:
-                unlisted_filter = getattr(table, "pipeline_id").is_(None)
-            else:
-                unlisted_filter = getattr(table, "pipeline_id").is_not(None)
-
-            base_filter = operator(base_filter, unlisted_filter)
 
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
@@ -455,6 +436,13 @@ class PipelineRunFilter(WorkspaceScopedFilter):
             StackSchema,
         )
 
+        if self.unlisted is not None:
+            if self.unlisted is True:
+                unlisted_filter = PipelineRunSchema.pipeline_id.is_(None)  # type: ignore[union-attr]
+            else:
+                unlisted_filter = PipelineRunSchema.pipeline_id.is_not(None)  # type: ignore[union-attr]
+            custom_filters.append(unlisted_filter)
+
         if self.code_repository_id:
             code_repo_filter = and_(  # type: ignore[type-var]
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
@@ -463,7 +451,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
                 CodeReferenceSchema.code_repository_id
                 == self.code_repository_id,
             )
-            base_filter = operator(base_filter, code_repo_filter)
+            custom_filters.append(code_repo_filter)
 
         if self.stack_id:
             stack_filter = and_(  # type: ignore[type-var]
@@ -471,7 +459,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
                 PipelineDeploymentSchema.stack_id == StackSchema.id,
                 StackSchema.id == self.stack_id,
             )
-            base_filter = operator(base_filter, stack_filter)
+            custom_filters.append(stack_filter)
 
         if self.schedule_id:
             schedule_filter = and_(  # type: ignore[type-var]
@@ -479,7 +467,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
                 PipelineDeploymentSchema.schedule_id == ScheduleSchema.id,
                 ScheduleSchema.id == self.schedule_id,
             )
-            base_filter = operator(base_filter, schedule_filter)
+            custom_filters.append(schedule_filter)
 
         if self.build_id:
             pipeline_build_filter = and_(  # type: ignore[type-var]
@@ -487,6 +475,6 @@ class PipelineRunFilter(WorkspaceScopedFilter):
                 PipelineDeploymentSchema.build_id == PipelineBuildSchema.id,
                 PipelineBuildSchema.id == self.build_id,
             )
-            base_filter = operator(base_filter, pipeline_build_filter)
+            custom_filters.append(pipeline_build_filter)
 
-        return base_filter
+        return custom_filters

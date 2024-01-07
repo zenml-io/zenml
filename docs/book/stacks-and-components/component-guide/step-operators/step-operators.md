@@ -45,7 +45,7 @@ zenml step-operator flavor list
 ### How to use it
 
 You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you
-want to use is part of your active [ZenML stack](/docs/book/user-guide/starter-guide/understand-stacks.md), you can simply
+want to use is part of your active [ZenML stack](/docs/book/user-guide/production-guide/understand-stacks.md), you can simply
 specify it in the `@step` decorator of your step.
 
 ```python

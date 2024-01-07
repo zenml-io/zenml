@@ -1,6 +1,0 @@
-pytorch_lightning
-evaluate
-transformers
-datasets
-scikit-learn
-accelerate>=0.20.1

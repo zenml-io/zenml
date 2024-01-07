@@ -2576,8 +2576,9 @@ def test_logs_are_recorded_properly(clean_client):
     client = Client()
     store = client.zen_store
 
-    with PipelineRunContext(2):
-        steps = store.list_run_steps(StepRunFilter())
+    run_context = PipelineRunContext(1)
+    with run_context:
+        steps = run_context.steps
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
         artifact_store = _load_artifact_store(
