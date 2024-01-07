@@ -56,10 +56,24 @@ class VisualizationType(StrEnum):
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 
+    INITIALIZING = "initializing"
     FAILED = "failed"
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
+
+    @property
+    def is_finished(self) -> bool:
+        """Whether the execution status refers to a finished execution.
+
+        Returns:
+            Whether the execution status refers to a finished execution.
+        """
+        return self in {
+            ExecutionStatus.FAILED,
+            ExecutionStatus.COMPLETED,
+            ExecutionStatus.CACHED,
+        }
 
 
 class LoggingLevels(Enum):

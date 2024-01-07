@@ -672,12 +672,15 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> UserResponse:
         """Gets a user.
 
         Args:
             name_id_or_prefix: The name or ID of the user.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The User
@@ -687,6 +690,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_users,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
     def list_users(
@@ -704,6 +708,7 @@ class Client(metaclass=ClientMetaClass):
         email: Optional[str] = None,
         active: Optional[bool] = None,
         email_opted_in: Optional[bool] = None,
+        hydrate: bool = False,
     ) -> Page[UserResponse]:
         """List all users.
 
@@ -721,6 +726,8 @@ class Client(metaclass=ClientMetaClass):
             email: Use the user email for filtering
             active: User the user active status for filtering
             email_opted_in: Use the user opt in status for filtering
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The User
@@ -740,7 +747,8 @@ class Client(metaclass=ClientMetaClass):
                 email=email,
                 active=active,
                 email_opted_in=email_opted_in,
-            )
+            ),
+            hydrate=hydrate,
         )
 
     def update_user(
@@ -827,12 +835,15 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Optional[Union[UUID, str]],
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> WorkspaceResponse:
         """Gets a workspace.
 
         Args:
             name_id_or_prefix: The name or ID of the workspace.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The workspace
@@ -844,6 +855,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_workspaces,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
     def list_workspaces(
@@ -856,6 +868,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        hydrate: bool = False,
     ) -> Page[WorkspaceResponse]:
         """List all workspaces.
 
@@ -868,6 +881,8 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the workspace name for filtering
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             Page of workspaces
@@ -882,7 +897,8 @@ class Client(metaclass=ClientMetaClass):
                 created=created,
                 updated=updated,
                 name=name,
-            )
+            ),
+            hydrate=hydrate,
         )
 
     def update_workspace(
@@ -1026,6 +1042,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Optional[Union[UUID, str]] = None,
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> StackResponse:
         """Get a stack by name, ID or prefix.
 
@@ -1034,6 +1051,8 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, ID or prefix of the stack.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The stack.
@@ -1044,6 +1063,7 @@ class Client(metaclass=ClientMetaClass):
                 list_method=self.list_stacks,
                 name_id_or_prefix=name_id_or_prefix,
                 allow_name_prefix_match=allow_name_prefix_match,
+                hydrate=hydrate,
             )
         else:
             return self.active_stack_model
@@ -1062,6 +1082,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[StackResponse]:
         """Lists all stacks.
 
@@ -1078,6 +1099,8 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
             name: The name of the stack to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of stacks.
@@ -1097,7 +1120,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
         )
         stack_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_stacks(stack_filter_model)
+        return self.zen_store.list_stacks(stack_filter_model, hydrate=hydrate)
 
     def update_stack(
         self,
@@ -1408,6 +1431,7 @@ class Client(metaclass=ClientMetaClass):
         component_type: StackComponentType,
         name_id_or_prefix: Optional[Union[str, UUID]] = None,
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> ComponentResponse:
         """Fetches a registered stack component.
 
@@ -1419,6 +1443,8 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the component to fetch
             name_id_or_prefix: The id of the component to fetch.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The registered stack component.
@@ -1441,11 +1467,14 @@ class Client(metaclass=ClientMetaClass):
 
         # Else, try to fetch the component with an explicit type filter
         def type_scoped_list_method(
+            hydrate: bool = False,
             **kwargs: Any,
         ) -> Page[ComponentResponse]:
             """Call `zen_store.list_stack_components` with type scoping.
 
             Args:
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
                 **kwargs: Keyword arguments to pass to `ComponentFilterModel`.
 
             Returns:
@@ -1460,6 +1489,7 @@ class Client(metaclass=ClientMetaClass):
             )
             return self.zen_store.list_stack_components(
                 component_filter_model=component_filter_model,
+                hydrate=hydrate,
             )
 
         return self._get_entity_by_id_or_name_or_prefix(
@@ -1467,6 +1497,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=type_scoped_list_method,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
     def list_stack_components(
@@ -1779,6 +1810,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: str,
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> FlavorResponse:
         """Get a stack component flavor.
 
@@ -1786,6 +1818,8 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, ID or prefix to the id of the flavor
                 to get.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The stack component flavor.
@@ -1795,6 +1829,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_flavors,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
     def list_flavors(
@@ -1934,6 +1969,7 @@ class Client(metaclass=ClientMetaClass):
         docstring: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[PipelineResponse]:
         """List all pipelines.
 
@@ -1951,6 +1987,8 @@ class Client(metaclass=ClientMetaClass):
             docstring: The docstring of the pipeline to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page with Pipeline fitting the filter description
@@ -1972,13 +2010,15 @@ class Client(metaclass=ClientMetaClass):
         )
         pipeline_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_pipelines(
-            pipeline_filter_model=pipeline_filter_model
+            pipeline_filter_model=pipeline_filter_model,
+            hydrate=hydrate,
         )
 
     def get_pipeline(
         self,
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
+        hydrate: bool = True,
     ) -> PipelineResponse:
         """Get a pipeline by name, id or prefix.
 
@@ -1986,6 +2026,8 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
             version: The pipeline version. If not specified, the latest
                 version is returned.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The pipeline.
@@ -1995,6 +2037,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_pipelines,
             name_id_or_prefix=name_id_or_prefix,
             version=version,
+            hydrate=hydrate,
         )
 
     def delete_pipeline(
@@ -2017,12 +2060,16 @@ class Client(metaclass=ClientMetaClass):
     # -------------------------------- Builds ----------------------------------
 
     def get_build(
-        self, id_or_prefix: Union[str, UUID]
+        self,
+        id_or_prefix: Union[str, UUID],
+        hydrate: bool = True,
     ) -> PipelineBuildResponse:
         """Get a build by id or prefix.
 
         Args:
             id_or_prefix: The id or id prefix of the build.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The build.
@@ -2039,10 +2086,13 @@ class Client(metaclass=ClientMetaClass):
             if not isinstance(id_or_prefix, UUID):
                 id_or_prefix = UUID(id_or_prefix, version=4)
 
-            return self.zen_store.get_build(id_or_prefix)
+            return self.zen_store.get_build(
+                id_or_prefix,
+                hydrate=hydrate,
+            )
 
         entity = self.list_builds(
-            id=f"startswith:{id_or_prefix}",
+            id=f"startswith:{id_or_prefix}", hydrate=hydrate
         )
 
         # If only a single entity is found, return it.
@@ -2083,6 +2133,7 @@ class Client(metaclass=ClientMetaClass):
         zenml_version: Optional[str] = None,
         python_version: Optional[str] = None,
         checksum: Optional[str] = None,
+        hydrate: bool = False,
     ) -> Page[PipelineBuildResponse]:
         """List all builds.
 
@@ -2103,6 +2154,8 @@ class Client(metaclass=ClientMetaClass):
             zenml_version: The version of ZenML to filter by.
             python_version: The Python version to filter by.
             checksum: The build checksum to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page with builds fitting the filter description
@@ -2127,7 +2180,8 @@ class Client(metaclass=ClientMetaClass):
         )
         build_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_builds(
-            build_filter_model=build_filter_model
+            build_filter_model=build_filter_model,
+            hydrate=hydrate,
         )
 
     def delete_build(self, id_or_prefix: str) -> None:
@@ -2141,11 +2195,17 @@ class Client(metaclass=ClientMetaClass):
 
     # ------------------------------ Deployments -------------------------------
 
-    def get_deployment(self, id_or_prefix: str) -> PipelineDeploymentResponse:
+    def get_deployment(
+        self,
+        id_or_prefix: str,
+        hydrate: bool = True,
+    ) -> PipelineDeploymentResponse:
         """Get a deployment by id or prefix.
 
         Args:
             id_or_prefix: The id or id prefix of the build.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The deployment.
@@ -2159,10 +2219,14 @@ class Client(metaclass=ClientMetaClass):
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            return self.zen_store.get_deployment(UUID(id_or_prefix))
+            return self.zen_store.get_deployment(
+                UUID(id_or_prefix),
+                hydrate=hydrate,
+            )
 
         entity = self.list_deployments(
             id=f"startswith:{id_or_prefix}",
+            hydrate=hydrate,
         )
 
         # If only a single entity is found, return it.
@@ -2199,6 +2263,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[PipelineDeploymentResponse]:
         """List all deployments.
 
@@ -2215,6 +2280,8 @@ class Client(metaclass=ClientMetaClass):
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
             build_id: The id of the build to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page with deployments fitting the filter description
@@ -2235,7 +2302,8 @@ class Client(metaclass=ClientMetaClass):
         )
         deployment_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_deployments(
-            deployment_filter_model=deployment_filter_model
+            deployment_filter_model=deployment_filter_model,
+            hydrate=hydrate,
         )
 
     def delete_deployment(self, id_or_prefix: str) -> None:
@@ -2253,12 +2321,15 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> ScheduleResponse:
         """Get a schedule by name, id or prefix.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the schedule.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The schedule.
@@ -2268,6 +2339,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_schedules,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
     def list_schedules(
@@ -2290,6 +2362,7 @@ class Client(metaclass=ClientMetaClass):
         end_time: Optional[Union[datetime, str]] = None,
         interval_second: Optional[int] = None,
         catchup: Optional[Union[str, bool]] = None,
+        hydrate: bool = False,
     ) -> Page[ScheduleResponse]:
         """List schedules.
 
@@ -2312,6 +2385,8 @@ class Client(metaclass=ClientMetaClass):
             end_time: Use to filter by end time.
             interval_second: Use to filter by interval second.
             catchup: Use to filter by catchup.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of schedules.
@@ -2338,7 +2413,8 @@ class Client(metaclass=ClientMetaClass):
         )
         schedule_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_schedules(
-            schedule_filter_model=schedule_filter_model
+            schedule_filter_model=schedule_filter_model,
+            hydrate=hydrate,
         )
 
     def delete_schedule(self, name_id_or_prefix: Union[str, UUID]) -> None:
@@ -2364,12 +2440,15 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> PipelineRunResponse:
         """Gets a pipeline run by name, ID, or prefix.
 
         Args:
             name_id_or_prefix: Name, ID, or prefix of the pipeline run.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The pipeline run.
@@ -2379,6 +2458,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_pipeline_runs,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
     def list_pipeline_runs(
@@ -2405,6 +2485,7 @@ class Client(metaclass=ClientMetaClass):
         end_time: Optional[Union[datetime, str]] = None,
         num_steps: Optional[Union[int, str]] = None,
         unlisted: Optional[bool] = None,
+        hydrate: bool = False,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -2431,6 +2512,8 @@ class Client(metaclass=ClientMetaClass):
             end_time: The end_time for the pipeline run
             num_steps: The number of steps for the pipeline run
             unlisted: If the runs should be unlisted or not.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -2460,7 +2543,10 @@ class Client(metaclass=ClientMetaClass):
             unlisted=unlisted,
         )
         runs_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_runs(runs_filter_model=runs_filter_model)
+        return self.zen_store.list_runs(
+            runs_filter_model=runs_filter_model,
+            hydrate=hydrate,
+        )
 
     def list_runs(self, **kwargs: Any) -> Page[PipelineRunResponse]:
         """(Deprecated) List all pipeline runs.
@@ -2493,16 +2579,25 @@ class Client(metaclass=ClientMetaClass):
 
     # -------------------------------- Step run --------------------------------
 
-    def get_run_step(self, step_run_id: UUID) -> StepRunResponse:
+    def get_run_step(
+        self,
+        step_run_id: UUID,
+        hydrate: bool = True,
+    ) -> StepRunResponse:
         """Get a step run by ID.
 
         Args:
             step_run_id: The ID of the step run to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The step run.
         """
-        return self.zen_store.get_run_step(step_run_id)
+        return self.zen_store.get_run_step(
+            step_run_id,
+            hydrate=hydrate,
+        )
 
     def list_run_steps(
         self,
@@ -2525,6 +2620,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         num_outputs: Optional[Union[int, str]] = None,
+        hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
 
@@ -2548,6 +2644,8 @@ class Client(metaclass=ClientMetaClass):
             cache_key: The cache_key of the run to filter by.
             status: The name of the run to filter by.
             num_outputs: The number of outputs for the step run
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page with Pipeline fitting the filter description
@@ -2575,7 +2673,8 @@ class Client(metaclass=ClientMetaClass):
         )
         step_run_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_steps(
-            step_run_filter_model=step_run_filter_model
+            step_run_filter_model=step_run_filter_model,
+            hydrate=hydrate,
         )
 
     # ------------------------------- Artifacts -------------------------------
@@ -2583,11 +2682,14 @@ class Client(metaclass=ClientMetaClass):
     def get_artifact(
         self,
         name_id_or_prefix: Union[str, UUID],
+        hydrate: bool = False,
     ) -> ArtifactResponse:
         """Get an artifact by name, id or prefix.
 
         Args:
             name_id_or_prefix: The name, ID or prefix of the artifact to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The artifact.
@@ -2596,6 +2698,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_artifact,
             list_method=self.list_artifacts,
             name_id_or_prefix=name_id_or_prefix,
+            hydrate=hydrate,
         )
 
     def list_artifacts(
@@ -2608,6 +2711,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        hydrate: bool = False,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
 
@@ -2620,6 +2724,8 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the artifact to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of artifacts.
@@ -2634,7 +2740,10 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
         )
-        return self.zen_store.list_artifacts(artifact_filter_model)
+        return self.zen_store.list_artifacts(
+            artifact_filter_model,
+            hydrate=hydrate,
+        )
 
     def update_artifact(
         self,
@@ -2683,6 +2792,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
+        hydrate: bool = True,
     ) -> ArtifactVersionResponse:
         """Get an artifact version by ID or artifact name.
 
@@ -2692,6 +2802,8 @@ class Client(metaclass=ClientMetaClass):
             version: The version of the artifact to get. Only used if
                 `name_id_or_prefix` is the name of the artifact. If not
                 specified, the latest version is returned.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The artifact version.
@@ -2701,6 +2813,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_artifact_versions,
             name_id_or_prefix=name_id_or_prefix,
             version=version,
+            hydrate=hydrate,
         )
 
     def list_artifact_versions(
@@ -2724,6 +2837,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
+        hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
 
@@ -2748,6 +2862,8 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of artifact versions.
@@ -2761,6 +2877,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             artifact_id=artifact_id,
+            name=name,
             version=str(version) if version else None,
             version_number=version_number,
             artifact_store_id=artifact_store_id,
@@ -2771,13 +2888,13 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             only_unused=only_unused,
-            name=name,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
         )
         return self.zen_store.list_artifact_versions(
-            artifact_version_filter_model
+            artifact_version_filter_model,
+            hydrate=hydrate,
         )
 
     def update_artifact_version(
@@ -2987,6 +3104,7 @@ class Client(metaclass=ClientMetaClass):
         key: Optional[str] = None,
         value: Optional["MetadataType"] = None,
         type: Optional[str] = None,
+        hydrate: bool = False,
     ) -> Page[RunMetadataResponse]:
         """List run metadata.
 
@@ -3007,6 +3125,8 @@ class Client(metaclass=ClientMetaClass):
             key: The key of the metadata.
             value: The value of the metadata.
             type: The type of the metadata.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The run metadata.
@@ -3029,7 +3149,10 @@ class Client(metaclass=ClientMetaClass):
             type=type,
         )
         metadata_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_run_metadata(metadata_filter_model)
+        return self.zen_store.list_run_metadata(
+            metadata_filter_model,
+            hydrate=hydrate,
+        )
 
     # -------------------------------- Secrets ---------------------------------
 
@@ -3491,12 +3614,15 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> CodeRepositoryResponse:
         """Get a code repository by name, id or prefix.
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the code repository.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The code repository.
@@ -3506,6 +3632,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_code_repositories,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
     def list_code_repositories(
@@ -3520,6 +3647,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[CodeRepositoryResponse]:
         """List all code repositories.
 
@@ -3534,6 +3662,8 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the code repository to filter by.
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of code repositories matching the filter description.
@@ -3551,7 +3681,10 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
         )
         filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_code_repositories(filter_model=filter_model)
+        return self.zen_store.list_code_repositories(
+            filter_model=filter_model,
+            hydrate=hydrate,
+        )
 
     def update_code_repository(
         self,
@@ -3826,6 +3959,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
         load_secrets: bool = False,
+        hydrate: bool = True,
     ) -> ServiceConnectorResponse:
         """Fetches a registered service connector.
 
@@ -3833,17 +3967,22 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The id of the service connector to fetch.
             allow_name_prefix_match: If True, allow matching by name prefix.
             load_secrets: If True, load the secrets for the service connector.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The registered service connector.
         """
 
         def scoped_list_method(
+            hydrate: bool = False,
             **kwargs: Any,
         ) -> Page[ServiceConnectorResponse]:
             """Call `zen_store.list_service_connectors` with workspace scoping.
 
             Args:
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
                 **kwargs: Keyword arguments to pass to
                     `ServiceConnectorFilterModel`.
 
@@ -3854,6 +3993,7 @@ class Client(metaclass=ClientMetaClass):
             filter_model.set_scope_workspace(self.active_workspace.id)
             return self.zen_store.list_service_connectors(
                 filter_model=filter_model,
+                hydrate=hydrate,
             )
 
         connector = self._get_entity_by_id_or_name_or_prefix(
@@ -3861,6 +4001,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=scoped_list_method,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
         if load_secrets and connector.secret_id:
@@ -3900,6 +4041,7 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         secret_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
     ) -> Page[ServiceConnectorResponse]:
         """Lists all registered service connectors.
 
@@ -3923,6 +4065,8 @@ class Client(metaclass=ClientMetaClass):
             labels: The labels of the service connector to filter by.
             secret_id: Filter by the id of the secret that is referenced by the
                 service connector.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of service connectors.
@@ -3947,7 +4091,8 @@ class Client(metaclass=ClientMetaClass):
         )
         connector_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_service_connectors(
-            filter_model=connector_filter_model
+            filter_model=connector_filter_model,
+            hydrate=hydrate,
         )
 
     def update_service_connector(
@@ -4451,6 +4596,7 @@ class Client(metaclass=ClientMetaClass):
         trade_offs: Optional[str] = None,
         ethics: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        save_models_to_registry: bool = True,
     ) -> ModelResponse:
         """Creates a new model in Model Control Plane.
 
@@ -4464,6 +4610,8 @@ class Client(metaclass=ClientMetaClass):
             trade_offs: The tradeoffs of the model.
             ethics: The ethical implications of the model.
             tags: Tags associated with the model.
+            save_models_to_registry: Whether to save the model to the
+                registry.
 
         Returns:
             The newly created model.
@@ -4481,6 +4629,7 @@ class Client(metaclass=ClientMetaClass):
                 tags=tags,
                 user=self.active_user.id,
                 workspace=self.active_workspace.id,
+                save_models_to_registry=save_models_to_registry,
             )
         )
 
@@ -4495,6 +4644,7 @@ class Client(metaclass=ClientMetaClass):
     def update_model(
         self,
         model_name_or_id: Union[str, UUID],
+        name: Optional[str] = None,
         license: Optional[str] = None,
         description: Optional[str] = None,
         audience: Optional[str] = None,
@@ -4509,6 +4659,7 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             model_name_or_id: name or id of the model to be deleted.
+            name: The name of the model.
             license: The license under which the model is created.
             description: The description of the model.
             audience: The target audience of the model.
@@ -4527,6 +4678,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.update_model(
             model_id=model_name_or_id,  # type:ignore[arg-type]
             model_update=ModelUpdate(
+                name=name,
                 license=license,
                 description=description,
                 audience=audience,
@@ -4539,16 +4691,25 @@ class Client(metaclass=ClientMetaClass):
             ),
         )
 
-    def get_model(self, model_name_or_id: Union[str, UUID]) -> ModelResponse:
+    def get_model(
+        self,
+        model_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> ModelResponse:
         """Get an existing model from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model of interest.
         """
-        return self.zen_store.get_model(model_name_or_id=model_name_or_id)
+        return self.zen_store.get_model(
+            model_name_or_id=model_name_or_id,
+            hydrate=hydrate,
+        )
 
     def list_models(
         self,
@@ -4559,6 +4720,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        hydrate: bool = False,
     ) -> Page[ModelResponse]:
         """Get models by filter from Model Control Plane.
 
@@ -4570,6 +4732,8 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the model to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page object with all models.
@@ -4584,7 +4748,10 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
         )
 
-        return self.zen_store.list_models(model_filter_model=filter)
+        return self.zen_store.list_models(
+            model_filter_model=filter,
+            hydrate=hydrate,
+        )
 
     #################
     # Model Versions
@@ -4641,6 +4808,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_name_or_number_or_id: Optional[
             Union[str, int, ModelStages, UUID]
         ] = None,
+        hydrate: bool = True,
     ) -> ModelVersionResponse:
         """Get an existing model version from Model Control Plane.
 
@@ -4650,6 +4818,8 @@ class Client(metaclass=ClientMetaClass):
             model_version_name_or_number_or_id: name, id, stage or number of
                 the model version to be retrieved. If skipped - latest version
                 is retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model version of interest.
@@ -4663,7 +4833,8 @@ class Client(metaclass=ClientMetaClass):
 
         if isinstance(model_version_name_or_number_or_id, UUID):
             return self.zen_store.get_model_version(
-                model_version_id=model_version_name_or_number_or_id
+                model_version_id=model_version_name_or_number_or_id,
+                hydrate=hydrate,
             )
         elif isinstance(model_version_name_or_number_or_id, int):
             model_versions = self.zen_store.list_model_versions(
@@ -4671,6 +4842,7 @@ class Client(metaclass=ClientMetaClass):
                 model_version_filter_model=ModelVersionFilter(
                     number=model_version_name_or_number_or_id,
                 ),
+                hydrate=hydrate,
             ).items
         elif isinstance(model_version_name_or_number_or_id, str):
             if model_version_name_or_number_or_id == ModelStages.LATEST:
@@ -4679,6 +4851,7 @@ class Client(metaclass=ClientMetaClass):
                     model_version_filter_model=ModelVersionFilter(
                         sort_by=f"{SorterOps.DESCENDING}:number"
                     ),
+                    hydrate=hydrate,
                 ).items
 
                 if len(model_versions) > 0:
@@ -4691,6 +4864,7 @@ class Client(metaclass=ClientMetaClass):
                     model_version_filter_model=ModelVersionFilter(
                         stage=model_version_name_or_number_or_id
                     ),
+                    hydrate=hydrate,
                 ).items
             else:
                 model_versions = self.zen_store.list_model_versions(
@@ -4698,6 +4872,7 @@ class Client(metaclass=ClientMetaClass):
                     model_version_filter_model=ModelVersionFilter(
                         name=model_version_name_or_number_or_id
                     ),
+                    hydrate=hydrate,
                 ).items
         else:
             raise RuntimeError(
@@ -4733,7 +4908,8 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
-    ) -> Page["ModelVersionResponse"]:
+        hydrate: bool = False,
+    ) -> Page[ModelVersionResponse]:
         """Get model versions by filter from Model Control Plane.
 
         Args:
@@ -4748,6 +4924,8 @@ class Client(metaclass=ClientMetaClass):
             name: name or id of the model version.
             number: number of the model version.
             stage: stage of the model version.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page object with all model versions.
@@ -4767,6 +4945,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.list_model_versions(
             model_name_or_id=model_name_or_id,
             model_version_filter_model=model_version_filter_model,
+            hydrate=hydrate,
         )
 
     def update_model_version(
@@ -4776,6 +4955,7 @@ class Client(metaclass=ClientMetaClass):
         stage: Optional[Union[str, ModelStages]] = None,
         force: bool = False,
         name: Optional[str] = None,
+        description: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
     ) -> ModelVersionResponse:
@@ -4788,6 +4968,7 @@ class Client(metaclass=ClientMetaClass):
             force: Whether existing model version in target stage should be
                 silently archived or an error should be raised.
             name: Target model version name to be set.
+            description: Target model version description to be set.
             add_tags: Tags to add to the model version.
             remove_tags: Tags to remove from to the model version.
 
@@ -4808,6 +4989,7 @@ class Client(metaclass=ClientMetaClass):
                 stage=stage,
                 force=force,
                 name=name,
+                description=description,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
             ),
@@ -4836,6 +5018,7 @@ class Client(metaclass=ClientMetaClass):
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
         only_deployment_artifacts: Optional[bool] = None,
+        hydrate: bool = False,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
 
@@ -4855,6 +5038,8 @@ class Client(metaclass=ClientMetaClass):
             only_data_artifacts: Use to filter by data artifacts
             only_model_artifacts: Use to filter by model artifacts
             only_deployment_artifacts: Use to filter by deployment artifacts
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to artifact links.
@@ -4876,7 +5061,8 @@ class Client(metaclass=ClientMetaClass):
                 only_data_artifacts=only_data_artifacts,
                 only_model_artifacts=only_model_artifacts,
                 only_deployment_artifacts=only_deployment_artifacts,
-            )
+            ),
+            hydrate=hydrate,
         )
 
     #################################################
@@ -4899,6 +5085,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_id: Optional[Union[UUID, str]] = None,
         pipeline_run_id: Optional[Union[UUID, str]] = None,
         pipeline_run_name: Optional[str] = None,
+        hydrate: bool = False,
     ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
 
@@ -4915,6 +5102,8 @@ class Client(metaclass=ClientMetaClass):
             model_version_id: Use the model version id for filtering
             pipeline_run_id: Use the pipeline run id for filtering
             pipeline_run_name: Use the pipeline run name for filtering
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response
 
         Returns:
             A page of all model version to pipeline run links.
@@ -4933,7 +5122,8 @@ class Client(metaclass=ClientMetaClass):
                 model_version_id=model_version_id,
                 pipeline_run_id=pipeline_run_id,
                 pipeline_run_name=pipeline_run_name,
-            )
+            ),
+            hydrate=hydrate,
         )
 
     # --------------------------- Authorized Devices ---------------------------
@@ -4953,6 +5143,7 @@ class Client(metaclass=ClientMetaClass):
         trusted_device: Union[bool, str, None] = None,
         failed_auth_attempts: Union[int, str, None] = None,
         last_login: Optional[Union[datetime, str, None]] = None,
+        hydrate: bool = False,
     ) -> Page[OAuthDeviceResponse]:
         """List all authorized devices.
 
@@ -4970,6 +5161,8 @@ class Client(metaclass=ClientMetaClass):
             trusted_device: Use the trusted device flag for filtering.
             failed_auth_attempts: Use the failed auth attempts for filtering.
             last_login: Use the last login date for filtering.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of authorized devices matching the filter.
@@ -4990,19 +5183,23 @@ class Client(metaclass=ClientMetaClass):
             last_login=last_login,
         )
         return self.zen_store.list_authorized_devices(
-            filter_model=filter_model
+            filter_model=filter_model,
+            hydrate=hydrate,
         )
 
     def get_authorized_device(
         self,
         id_or_prefix: Union[UUID, str],
         allow_id_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> OAuthDeviceResponse:
         """Get an authorized device by id or prefix.
 
         Args:
             id_or_prefix: The ID or ID prefix of the authorized device.
             allow_id_prefix_match: If True, allow matching by ID prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The requested authorized device.
@@ -5021,12 +5218,15 @@ class Client(metaclass=ClientMetaClass):
                         f"'{id_or_prefix}'."
                     )
         if isinstance(id_or_prefix, UUID):
-            return self.zen_store.get_authorized_device(id_or_prefix)
+            return self.zen_store.get_authorized_device(
+                id_or_prefix, hydrate=hydrate
+            )
         return self._get_entity_by_prefix(
             get_method=self.zen_store.get_authorized_device,
             list_method=self.list_authorized_devices,
             partial_id_or_name=id_or_prefix,
             allow_name_prefix_match=False,
+            hydrate=hydrate,
         )
 
     def update_authorized_device(
@@ -5076,6 +5276,7 @@ class Client(metaclass=ClientMetaClass):
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> AnyResponse:
         """Fetches an entity using the id, name, or partial id/name.
 
@@ -5085,6 +5286,8 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The id, name or partial id of the entity to
                 fetch.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The entity with the given name, id or partial id.
@@ -5099,11 +5302,14 @@ class Client(metaclass=ClientMetaClass):
 
         # First interpret as full UUID
         if is_valid_uuid(name_id_or_prefix):
-            return get_method(name_id_or_prefix)
+            return get_method(name_id_or_prefix, hydrate=hydrate)
 
         # If not a UUID, try to find by name
         assert not isinstance(name_id_or_prefix, UUID)
-        entity = list_method(name=f"equals:{name_id_or_prefix}")
+        entity = list_method(
+            name=f"equals:{name_id_or_prefix}",
+            hydrate=hydrate,
+        )
 
         # If only a single entity is found, return it
         if entity.total == 1:
@@ -5116,6 +5322,7 @@ class Client(metaclass=ClientMetaClass):
                 list_method=list_method,
                 partial_id_or_name=name_id_or_prefix,
                 allow_name_prefix_match=allow_name_prefix_match,
+                hydrate=hydrate,
             )
 
         # If more than one entity with the same name is found, raise an error.
@@ -5140,6 +5347,7 @@ class Client(metaclass=ClientMetaClass):
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str],
+        hydrate: bool = True,
     ) -> "AnyResponse":
         from zenml.utils.uuid_utils import is_valid_uuid
 
@@ -5155,7 +5363,7 @@ class Client(metaclass=ClientMetaClass):
             if not isinstance(name_id_or_prefix, UUID):
                 name_id_or_prefix = UUID(name_id_or_prefix, version=4)
 
-            return get_method(name_id_or_prefix)
+            return get_method(name_id_or_prefix, hydrate=hydrate)
 
         assert not isinstance(name_id_or_prefix, UUID)
         exact_name_matches = list_method(
@@ -5163,6 +5371,7 @@ class Client(metaclass=ClientMetaClass):
             sort_by="desc:created",
             name=name_id_or_prefix,
             version=version,
+            hydrate=hydrate,
         )
 
         if len(exact_name_matches) == 1:
@@ -5170,7 +5379,10 @@ class Client(metaclass=ClientMetaClass):
             # or fallback to the latest if not given
             return exact_name_matches.items[0]
 
-        partial_id_matches = list_method(id=f"startswith:{name_id_or_prefix}")
+        partial_id_matches = list_method(
+            id=f"startswith:{name_id_or_prefix}",
+            hydrate=hydrate,
+        )
         if partial_id_matches.total == 1:
             if version:
                 logger.warning(
@@ -5200,6 +5412,7 @@ class Client(metaclass=ClientMetaClass):
         list_method: Callable[..., Page[AnyResponse]],
         partial_id_or_name: str,
         allow_name_prefix_match: bool,
+        hydrate: bool = True,
     ) -> AnyResponse:
         """Fetches an entity using a partial ID or name.
 
@@ -5208,6 +5421,8 @@ class Client(metaclass=ClientMetaClass):
             list_method: The method to use to fetch all entities.
             partial_id_or_name: The partial ID or name of the entity to fetch.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The entity with the given partial ID or name.
@@ -5220,6 +5435,7 @@ class Client(metaclass=ClientMetaClass):
         list_method_args: Dict[str, Any] = {
             "logical_operator": LogicalOperators.OR,
             "id": f"startswith:{partial_id_or_name}",
+            "hydrate": hydrate,
         }
         if allow_name_prefix_match:
             list_method_args["name"] = f"startswith:{partial_id_or_name}"
@@ -5293,12 +5509,15 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> ServiceAccountResponse:
         """Gets a service account.
 
         Args:
             name_id_or_prefix: The name or ID of the service account.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The ServiceAccount
@@ -5308,6 +5527,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_service_accounts,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
     def list_service_accounts(
@@ -5322,6 +5542,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         description: Optional[str] = None,
         active: Optional[bool] = None,
+        hydrate: bool = False,
     ) -> Page[ServiceAccountResponse]:
         """List all service accounts.
 
@@ -5336,6 +5557,8 @@ class Client(metaclass=ClientMetaClass):
             name: Use the service account name for filtering
             description: Use the service account description for filtering
             active: Use the service account active status for filtering
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The list of service accounts matching the filter description.
@@ -5352,7 +5575,8 @@ class Client(metaclass=ClientMetaClass):
                 name=name,
                 description=description,
                 active=active,
-            )
+            ),
+            hydrate=hydrate,
         )
 
     def update_service_account(
@@ -5478,6 +5702,7 @@ class Client(metaclass=ClientMetaClass):
         active: Optional[bool] = None,
         last_login: Optional[Union[datetime, str]] = None,
         last_rotated: Optional[Union[datetime, str]] = None,
+        hydrate: bool = False,
     ) -> Page[APIKeyResponse]:
         """List all API keys.
 
@@ -5496,6 +5721,8 @@ class Client(metaclass=ClientMetaClass):
             active: Whether the API key is active or not.
             last_login: The last time the API key was used.
             last_rotated: The last time the API key was rotated.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of API keys matching the filter description.
@@ -5519,7 +5746,9 @@ class Client(metaclass=ClientMetaClass):
             last_rotated=last_rotated,
         )
         return self.zen_store.list_api_keys(
-            service_account_id=service_account.id, filter_model=filter_model
+            service_account_id=service_account.id,
+            filter_model=filter_model,
+            hydrate=hydrate,
         )
 
     def get_api_key(
@@ -5527,6 +5756,7 @@ class Client(metaclass=ClientMetaClass):
         service_account_name_id_or_prefix: Union[str, UUID],
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
     ) -> APIKeyResponse:
         """Get an API key by name, id or prefix.
 
@@ -5535,6 +5765,8 @@ class Client(metaclass=ClientMetaClass):
                 service account to get the API key for.
             name_id_or_prefix: The name, ID or ID prefix of the API key.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The API key.
@@ -5544,17 +5776,22 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        def get_api_key_method(api_key_name_or_id: str) -> APIKeyResponse:
+        def get_api_key_method(
+            api_key_name_or_id: str, hydrate: bool = True
+        ) -> APIKeyResponse:
             return self.zen_store.get_api_key(
                 service_account_id=service_account.id,
                 api_key_name_or_id=api_key_name_or_id,
+                hydrate=hydrate,
             )
 
         def list_api_keys_method(
+            hydrate: bool = True,
             **filter_args: Any,
         ) -> Page[APIKeyResponse]:
             return self.list_api_keys(
                 service_account_name_id_or_prefix=service_account.id,
+                hydrate=hydrate,
                 **filter_args,
             )
 
@@ -5563,6 +5800,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=list_api_keys_method,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
         )
 
     def update_api_key(

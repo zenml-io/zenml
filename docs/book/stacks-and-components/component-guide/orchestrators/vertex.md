@@ -246,7 +246,7 @@ For any runs executed on Vertex, you can get the URL to the Vertex UI in Python 
 from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
+orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 ```
 
 ### Run pipelines on a schedule
@@ -262,7 +262,7 @@ following is the sequence of events that happen when running a pipeline on Verte
   above [containerization](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md)).
 * The Vertex AI pipeline JSON file is copied to
   the [Artifact Store](../artifact-stores/artifact-stores.md) specified in
-  your [Stack](/docs/book/user-guide/starter-guide/understand-stacks.md)
+  your [Stack](/docs/book/user-guide/production-guide/understand-stacks.md)
 * Cloud Function is created that creates the Vertex Pipeline job when triggered.
 * A Cloud Scheduler job is created that triggers the Cloud Function on the defined schedule.
 

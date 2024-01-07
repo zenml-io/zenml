@@ -14,12 +14,13 @@
 from unittest import mock
 
 import pytest
+from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model_version import ModelVersion
-from zenml.model.utils import log_model_version_metadata
+from zenml.model.utils import log_model_metadata
 from zenml.models import TagRequest
 
 MODEL_NAME = "super_model"
@@ -63,8 +64,21 @@ class ModelContext:
 @step
 def step_metadata_logging_functional():
     """Functional logging using implicit ModelVersion from context."""
-    log_model_version_metadata({"foo": "bar"})
+    log_model_metadata({"foo": "bar"})
     assert get_step_context().model_version.metadata["foo"] == "bar"
+
+
+@step
+def consume_from_model_version(
+    is_consume: bool,
+) -> Annotated[str, "custom_output"]:
+    """A step which can either produce string output or read and return it from model version 1."""
+    if is_consume:
+        mv_context = get_step_context().model_version
+        mv = ModelVersion(name=mv_context.name, version="1")
+        return mv.load_artifact("custom_output")
+    else:
+        return "Hello, World!"
 
 
 class TestModelVersion:
@@ -213,7 +227,6 @@ class TestModelVersion:
         mv = ModelVersion(
             name=MODEL_NAME,
             tags=["foo", "bar"],
-            delete_new_version_on_failure=False,
         )
 
         # run 2 times to first create, next get
@@ -231,7 +244,6 @@ class TestModelVersion:
         mv = ModelVersion(
             name=MODEL_NAME,
             tags=["foo", "bar"],
-            delete_new_version_on_failure=False,
         )
         model_id = mv._get_or_create_model_version().model.id
 
@@ -269,6 +281,57 @@ class TestModelVersion:
         assert len(model_version.tags) == 2
         assert {t.name for t in model_version.tags} == {"foo", "bar"}
 
+    def test_model_config_differs_from_db_warns(self, clean_client: "Client"):
+        """Test that model context warns if model config differs from db."""
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            tags=["foo", "bar"],
+        )
+        mv._get_or_create_model()
+
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            tags=["bar", "new"],
+            license="NEW",
+            save_models_to_registry=False,
+        )
+        with mock.patch("zenml.model.model_version.logger.warning") as logger:
+            mv._get_or_create_model()
+            logger.assert_called_once()
+
+            warning = logger.call_args[0][0]
+            assert "license" in warning
+            assert "save_models_to_registry" in warning
+
+    def test_model_version_config_differs_from_db_warns(
+        self, clean_client: "Client"
+    ):
+        """Test that model version context warns if model version config differs from db."""
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            version="1.0.0",
+            tags=["foo", "bar"],
+        )
+        mv._get_or_create_model_version()
+
+        mv = ModelVersion(
+            name=MODEL_NAME,
+            version="1.0.0",
+            tags=["bar", "new"],
+            license="NEW",
+            description="NEW",
+            save_models_to_registry=False,
+        )
+        with mock.patch("zenml.model.model_version.logger.warning") as logger:
+            mv._get_or_create_model_version()
+            logger.assert_called()
+            assert logger.call_count == 2  # for model and model version
+
+            warning = logger.call_args_list[1][0][0]
+            assert "tags added" in warning
+            assert "tags removed" in warning
+            assert "description" in warning
+
     def test_metadata_logging(self, clean_client: "Client"):
         """Test that model version can be used to track metadata from object."""
         mv = ModelVersion(
@@ -294,7 +357,7 @@ class TestModelVersion:
         )
         mv._get_or_create_model_version()
 
-        log_model_version_metadata(
+        log_model_metadata(
             {"foo": "bar"}, model_name=mv.name, model_version=mv.number
         )
 
@@ -302,9 +365,9 @@ class TestModelVersion:
         assert mv.metadata["foo"] == "bar"
 
         with pytest.raises(ValueError):
-            log_model_version_metadata({"foo": "bar"})
+            log_model_metadata({"foo": "bar"})
 
-        log_model_version_metadata(
+        log_model_metadata(
             {"bar": "foo"}, model_name=mv.name, model_version="latest"
         )
 
@@ -329,3 +392,24 @@ class TestModelVersion:
         mv = ModelVersion(name=MODEL_NAME, version="latest")
         assert len(mv.metadata) == 1
         assert mv.metadata["foo"] == "bar"
+
+    def test_that_artifacts_are_not_linked_to_models_outside_of_the_context(
+        self, clean_client: "Client"
+    ):
+        """Test that artifacts are linked only to model versions from the context."""
+
+        @pipeline(model_version=ModelVersion(name=MODEL_NAME))
+        def my_pipeline(is_consume: bool):
+            consume_from_model_version(is_consume)
+
+        my_pipeline(False)
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 1
+        assert len(mv._get_model_version().data_artifact_ids) == 1
+
+        my_pipeline(True)
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 2
+        assert len(mv._get_model_version().data_artifact_ids) == 1
+        mv = ModelVersion(name=MODEL_NAME, version="1")
+        assert len(mv._get_model_version().data_artifact_ids) == 1
