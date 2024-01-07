@@ -789,12 +789,27 @@ class BaseFilter(BaseModel):
             filters.append(
                 column_filter.generate_query_conditions(table=table)
             )
+        for custom_filter in self.get_custom_filters():
+            filters.append(custom_filter)
         if self.logical_operator == LogicalOperators.OR:
             return or_(False, *filters)
         elif self.logical_operator == LogicalOperators.AND:
             return and_(True, *filters)
         else:
             raise RuntimeError("No valid logical operator was supplied.")
+
+    def get_custom_filters(
+        self,
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom filters.
+
+        This can be overridden by subclasses to define custom filters that are
+        not based on the columns of the underlying table.
+
+        Returns:
+            A list of custom filters.
+        """
+        return []
 
     def apply_filter(
         self,

@@ -65,6 +65,7 @@ class FacetsMaterializer(BaseMaterializer):
         html = io_utils.read_file_contents_as_string(template)
         html = html.replace("protostr", protostr)
         visualization_path = os.path.join(self.uri, VISUALIZATION_FILENAME)
+        visualization_path = visualization_path.replace("\\", "/")
         with fileio.open(visualization_path, "w") as f:
             f.write(html)
         return {visualization_path: VisualizationType.HTML}
