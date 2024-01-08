@@ -49,7 +49,7 @@ jobs:
         python-version: "3.9"
 
     - name: Test migrations across versions
-      run: bash scripts/test-migrations.sh mysql
+      run: bash scripts/test-migrations-mysql.sh mysql
 
   sqlite-db-migration-testing:
     runs-on: ubuntu-dind-runners
@@ -64,7 +64,7 @@ jobs:
         python-version: "3.9"
 
     - name: Test migrations across versions
-      run: bash scripts/test-migrations.sh sqlite
+      run: bash scripts/test-migrations-mysql.sh sqlite
 
   mariadb-db-migration-testing:
     runs-on: ubuntu-dind-runners
@@ -79,7 +79,7 @@ jobs:
         python-version: "3.9"
 
     - name: Test migrations across versions
-      run: bash scripts/test-migrations.sh mariadb
+      run: bash scripts/test-migrations-mariadb.sh
 
   publish-python-package:
     needs: [setup-and-test, mlstacks-compatibility-check, sqlite-db-migration-testing, mysql-db-migration-testing]
