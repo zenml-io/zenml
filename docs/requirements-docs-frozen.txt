@@ -604,7 +604,7 @@ tox==3.28.0
 tqdm==4.66.1
 trace-updater==0.0.9.1
 traitlets==5.9.0
-transformers==4.31.0
+transformers==4.36.0
 triton==2.0.0
 tritonclient==2.36.0
 tsdownsample==0.1.2
