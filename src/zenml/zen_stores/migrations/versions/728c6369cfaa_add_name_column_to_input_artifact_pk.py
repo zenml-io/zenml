@@ -49,9 +49,7 @@ def upgrade() -> None:
         )
 
         # Update the PK
-        batch_op.drop_constraint(
-            constraint_name=constraint_name, type_="primary"
-        )
+        batch_op.drop_constraint(constraint_name=constraint_name, type_="primary")
         batch_op.create_primary_key(
             constraint_name="pk_step_run_input_artifact",
             columns=["step_id", "artifact_id", "name"],
@@ -125,20 +123,22 @@ def downgrade() -> None:
 
 
 def _disable_primary_key_requirement_if_necessary() -> None:
-    """Disables MySQL primary key requirement if necessary."""
-    if op.get_bind().engine.name == "mysql":
-        server_version_info = op.get_bind().engine.dialect.server_version_info
-        if server_version_info and server_version_info >= (8, 0, 13):
-            potential_session_var = (
-                op.get_bind()
-                .execute(
-                    text(
-                        'SHOW SESSION VARIABLES LIKE "sql_require_primary_key";'
-                    )
-                )
-                .fetchone()
-            )
-            if potential_session_var and potential_session_var[1] == "ON":
-                # Temporarily disable this MySQL setting so we can update the
-                # primary key
-                op.execute("SET SESSION sql_require_primary_key = 0;")
+    """Adjusts settings based on database engine requirements."""
+    engine = op.get_bind().engine
+    engine_name = engine.name
+    server_version_info = engine.dialect.server_version_info
+    print(f"Detected database engine: {engine_name}")
+    print(f"Detected database version: {server_version_info}")
+
+    if engine_name == "mysql" and server_version_info >= (8, 0, 13):
+        potential_session_var = engine.execute(
+            text('SHOW SESSION VARIABLES LIKE "sql_require_primary_key";')
+        ).fetchone()
+        if potential_session_var and potential_session_var[1] == "ON":
+            # Temporarily disable this MySQL setting for primary key modification
+            op.execute("SET SESSION sql_require_primary_key = 0;")
+    elif engine_name == "InnoDB" or engine_name.lower() == "mariadb":
+        # MariaDB does not require a similar setting, so skip this step
+        pass
+    else:
+        raise NotImplementedError(f"Unsupported engine: {engine_name}")
