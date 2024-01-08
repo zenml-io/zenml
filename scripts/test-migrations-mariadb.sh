@@ -1,13 +1,7 @@
 #!/bin/bash
 
-DB="sqlite"
+DB="mariadb"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
-
-if [ -z "$1" ]; then
-  echo "No argument passed, using default: $DB"
-else
-  DB="$1"
-fi
 
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
@@ -39,22 +33,14 @@ function run_tests_for_version() {
     echo "===== Finished testing version $VERSION ====="
 }
 
-if [ "$1" == "mysql" ]; then
-    echo "===== Testing MySQL ====="
-    # run a mysql instance in docker
-    docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:latest
-    # mysql takes a while to start up
-    sleep $DB_STARTUP_DELAY
-elif [ "$1" == "mariadb" ]; then
-    echo "===== Testing MariaDB ====="
-    # run a mariadb instance in docker
-    docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:10.6
-    # mariadb takes a while to start up
-    sleep $DB_STARTUP_DELAY
-fi
+echo "===== Testing MariaDB ====="
+# run a mariadb instance in docker
+docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:10.6
+# mariadb takes a while to start up
+sleep $DB_STARTUP_DELAY
 
 # List of versions to test
-VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0")
+VERSIONS=("0.53.2")
 
 # Start completely fresh
 rm -rf ~/.config/zenml
@@ -69,35 +55,14 @@ do
     # Install the specific version
     pip3 install -U pip setuptools wheel
     pip3 install "zenml[templates,server]==$VERSION"
-    # handles unpinned sqlmodel dependency in older versions
-    pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
 
-    # Get the major and minor version of Python
-    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-
-    # Check if the Python version is 3.9 and VERSION is > 0.47.0
-    if [[ "$PYTHON_VERSION" == "3.9" ]]; then
-        case "$VERSION" in
-            "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
-                pip3 install importlib_metadata
-                ;;
-        esac
-    fi
-
-
-    if [ "$1" == "mysql" ]; then
-        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
-    elif [ "$1" == "mariadb" ]; then
-        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
-    fi
+    zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 
     # Run the tests for this version
     run_tests_for_version $VERSION
 
-    if [ "$1" == "mysql" ]; then
-        zenml disconnect
-        sleep 5
-    fi
+    zenml disconnect
+    sleep 5
 
     deactivate
 done
@@ -112,21 +77,11 @@ pip3 install -U pip setuptools wheel
 pip3 install -e ".[templates,server]"
 pip3 install importlib_metadata
 
-if [ "$1" == "mysql" ]; then
-    zenml connect --url mysql://127.0.0.1/zenml --username root --password password
-elif [ "$1" == "mariadb" ]; then
-    zenml connect --url mysql://127.0.0.1/zenml --username root --password password
-fi
+zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 
 run_tests_for_version current_branch_mysql
 
-if [ "$1" == "mysql" ]; then
-    zenml disconnect
-    docker rm -f mysql
-elif [ "$1" == "mariadb" ]; then
-    zenml disconnect
-    docker rm -f mariadb
-fi
+zenml disconnect
+docker rm -f mariadb
 
 deactivate
-
