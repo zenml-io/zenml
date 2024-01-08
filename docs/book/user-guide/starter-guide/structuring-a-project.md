@@ -25,7 +25,7 @@ No matter how you design these pipelines, one thing stays consistent: you will o
 
 Let's say we have a feature engineering pipeline and a training pipeline. The feature engineering pipeline is like a factory, pumping out many different datasets. Only a few of these datasets should be selected to be sent to the training pipeline to train an actual model.
 
-<figure><img src="../../.gitbook/assets/artifact_exchange.png" alt=""><figcaption><p>A simple artifact exchange between two pipeines</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/artifact_exchange.png" alt=""><figcaption><p>A simple artifact exchange between two pipelines</p></figcaption></figure>
 
 In this scenario, the [ExternalArtifact](manage-artifacts.md#consuming-artifacts-produced-by-other-pipelines) can be used to facilitate such an exchange:
 
