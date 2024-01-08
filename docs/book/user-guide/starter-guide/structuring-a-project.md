@@ -1,25 +1,25 @@
 ---
-description: Structuring a MLOps project
+description: Structuring an MLOps project
 ---
 
-# Structuring a MLOps project
+# Structuring an MLOps project
 
-Now that we've learned about managing [artifacts](manage-artifacts.md) and [models](track-ml-models.md), we can shift our attention again on the thing that brings them together: [Pipelines](create-an-ml-pipeline.md). This trifecta together will then inform how we structure our project.
+Now that we've learned about managing [artifacts](manage-artifacts.md) and [models](track-ml-models.md), we can shift our attention again to the thing that brings them together: [Pipelines](create-an-ml-pipeline.md). This trifecta together will then inform how we structure our project.
 
 {% hint style="info" %}
 In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](../advanced-guide/best-practices/best-practices.md) section.
 {% endhint %}
 
-So far in this guide, we have been focusing on the idea of a "training pipeline". In the real world, a MLOps project can often be broken down into many different pipelines. For example:
+So far in this guide, we have been focusing on the idea of a "training pipeline". In the real world, an MLOps project can often be broken down into many different pipelines. For example:
 
 - A feature engineering pipeline that prepares raw data into a format ready to get trained.
 - A training pipeline that takes input data from a feature engineering pipeline and trains a models on it.
 - An inference pipeline that runs batch predictions on the trained model and often takes pre-processing from the training pipeline.
-- A deployment pipeline that deploys a trained model into a production end-point.
+- A deployment pipeline that deploys a trained model into a production endpoint.
 
-Often times, the lines between these pipelines can get blurry: Some use-cases call for these pipelines to be merged into one big pipeline. Others go further and break the pipeline down into even smaller chunks. Ultimately, the decision of how to structure your pipelines depend on the use-case and requirements of the project.
+The lines between these pipelines can often get blurry: Some use cases call for these pipelines to be merged into one big pipeline. Others go further and break the pipeline down into even smaller chunks. Ultimately, the decision of how to structure your pipelines depends on the use case and requirements of the project.
 
-No matter how you design these pipelines, one thing stays consistent: There is often a case of exchanging information (in particular artifacts, models, and metadata) between pipelines. Here are some common patterns that you can use to help you facilitate such an exchange:
+No matter how you design these pipelines, one thing stays consistent: you will often need to transfer or share information (in particular artifacts, models, and metadata) between pipelines. Here are some common patterns that you can use to help facilitate such an exchange:
 
 ## Pattern 1: Artifact exchange between pipelines through `ExternalArtifact`
 
@@ -58,11 +58,11 @@ You will learn more about different environments in a [later chapter](../advance
 
 ## Pattern 2: Artifact exchange between pipelines through a `Model`
 
-While passing around artifacts with ID's or names is very useful, often times it is desirable to use the `ZenML Model` be the point of reference instead. 
+While passing around artifacts with IDs or names is very useful, it is often desirable to have the ZenML Model be the point of reference instead. 
 
-For example, let's say we have a training pipeline called `train_and_promote` and an inference pipeline called `do_predictions`. The training pipeline produces many different model artifacts, all of which are collected within a [ZenML Model](track-ml-models.md). Each time the `train_and_promote` pipeline runs, it creates a new `iris_classifier`. However, it only promotes the Model Version to `production` if a certain accuracy threshold is met. The promotion can be also be done manually with human intervention
+For example, let's say we have a training pipeline called `train_and_promote` and an inference pipeline called `do_predictions`. The training pipeline produces many different model artifacts, all of which are collected within a [ZenML Model](track-ml-models.md). Each time the `train_and_promote` pipeline runs, it creates a new `iris_classifier`. However, it only promotes the Model Version to `production` if a certain accuracy threshold is met. The promotion can be also be done manually with human intervention, or it can be automated through setting a particular threshold.
 
-On the other side, the `do_predictions` pipeline simply picks up the latest promoted model and runs batch inference on it. It need not know of the ID's or names of any of the artifacts produced by the training pipeline's many runs. This way these two pipelines can independently be run, but can rely on each other's output.
+On the other side, the `do_predictions` pipeline simply picks up the latest promoted model and runs batch inference on it. It need not know of the IDs or names of any of the artifacts produced by the training pipeline's many runs. This way these two pipelines can independently be run, but can rely on each other's output.
 
 <figure><img src="../../.gitbook/assets/mcp_pipeline_overview.png" alt=""><figcaption><p>A simple artifact exchange between pipelines through the Model Control Plane.</p></figcaption></figure>
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     do_predictions()
 ```
 
-Ultimately, both approaches are fine. Users should decide which one to use based on their own preferences.
+Ultimately, both approaches are fine. You should decide which one to use based on your own preferences.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
