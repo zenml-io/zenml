@@ -15,7 +15,7 @@ altair==4.2.0
 analytics-python==1.4.post1
 ansi2html==1.8.0
 anyio==3.7.1
-apache-airflow==2.4.3
+apache-airflow==2.8.0
 apache-airflow-providers-common-sql==1.7.0
 apache-airflow-providers-ftp==3.5.0
 apache-airflow-providers-http==4.5.0
