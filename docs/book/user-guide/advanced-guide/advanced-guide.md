@@ -2,6 +2,11 @@
 description: Taking your ZenML workflow to the next level.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # 🍗 Advanced guide
 
 The aim of this section is to provide you with detailed explanations and documentation regarding specific cases, problems, and solutions frequently encountered in ML workflows.
