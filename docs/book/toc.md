@@ -21,8 +21,11 @@
   * [Understanding stacks](user-guide/production-guide/understand-stacks.md)
   * [Deploy a cloud stack](user-guide/production-guide/cloud-stack.md)
   * [Configure your pipeline](user-guide/production-guide/configure-pipeline.md)
+<<<<<<< HEAD
   * [Scale up (cpu, memory, and gpu)](user-guide/production-guide/scale-compute.md)
   * [Configure a code repository](user-guide/production-guide/connect-code-repository.md)
+=======
+>>>>>>> origin/develop
   * [An end-to-end project](user-guide/production-guide/end-to-end.md)
 * [🍗 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
