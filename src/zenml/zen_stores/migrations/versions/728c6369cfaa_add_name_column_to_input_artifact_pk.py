@@ -125,7 +125,11 @@ def downgrade() -> None:
 
 
 def _disable_primary_key_requirement_if_necessary() -> None:
-    """Adjusts settings based on database engine requirements."""
+    """Adjusts settings based on database engine requirements.
+
+    Raises:
+        NotImplementedError: If the database engine is not MySQL or mariadb.
+    """
     engine = op.get_bind().engine
     engine_name = engine.name.lower()
 
