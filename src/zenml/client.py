@@ -2711,6 +2711,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
@@ -2724,6 +2725,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the artifact to filter by.
+            has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2739,6 +2741,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            has_custom_name=has_custom_name,
         )
         return self.zen_store.list_artifacts(
             artifact_filter_model,
@@ -2837,6 +2840,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
+        has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
@@ -2862,6 +2866,7 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
+            has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2888,6 +2893,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             only_unused=only_unused,
+            has_custom_name=has_custom_name,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
@@ -5018,6 +5024,7 @@ class Client(metaclass=ClientMetaClass):
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
         only_deployment_artifacts: Optional[bool] = None,
+        has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
@@ -5038,6 +5045,7 @@ class Client(metaclass=ClientMetaClass):
             only_data_artifacts: Use to filter by data artifacts
             only_model_artifacts: Use to filter by model artifacts
             only_deployment_artifacts: Use to filter by deployment artifacts
+            has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -5061,6 +5069,7 @@ class Client(metaclass=ClientMetaClass):
                 only_data_artifacts=only_data_artifacts,
                 only_model_artifacts=only_model_artifacts,
                 only_deployment_artifacts=only_deployment_artifacts,
+                has_custom_name=has_custom_name,
             ),
             hydrate=hydrate,
         )
