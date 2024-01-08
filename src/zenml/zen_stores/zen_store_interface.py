@@ -235,7 +235,10 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_api_key(
-        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
     ) -> APIKeyResponse:
         """Get an API key for a service account.
 
@@ -243,6 +246,8 @@ class ZenStoreInterface(ABC):
             service_account_id: The ID of the service account for which to fetch
                 the API key.
             api_key_name_or_id: The name or ID of the API key to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The API key with the given ID.
@@ -254,7 +259,10 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_api_keys(
-        self, service_account_id: UUID, filter_model: APIKeyFilter
+        self,
+        service_account_id: UUID,
+        filter_model: APIKeyFilter,
+        hydrate: bool = False,
     ) -> Page[APIKeyResponse]:
         """List all API keys for a service account matching the given filter criteria.
 
@@ -262,7 +270,9 @@ class ZenStoreInterface(ABC):
             service_account_id: The ID of the service account for which to list
                 the API keys.
             filter_model: All filter parameters including pagination
-                params
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all API keys matching the filter criteria.
@@ -1339,12 +1349,15 @@ class ZenStoreInterface(ABC):
     def get_service_account(
         self,
         service_account_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
     ) -> ServiceAccountResponse:
         """Gets a specific service account.
 
         Args:
             service_account_name_or_id: The name or ID of the service account to
                 get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The requested service account, if it was found.
@@ -1355,13 +1368,17 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_service_accounts(
-        self, filter_model: ServiceAccountFilter
+        self,
+        filter_model: ServiceAccountFilter,
+        hydrate: bool = False,
     ) -> Page[ServiceAccountResponse]:
         """List all service accounts.
 
         Args:
             filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of filtered service accounts.
