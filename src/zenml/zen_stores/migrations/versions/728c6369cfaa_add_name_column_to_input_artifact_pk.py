@@ -49,7 +49,9 @@ def upgrade() -> None:
         )
 
         # Update the PK
-        batch_op.drop_constraint(constraint_name=constraint_name, type_="primary")
+        batch_op.drop_constraint(
+            constraint_name=constraint_name, type_="primary"
+        )
         batch_op.create_primary_key(
             constraint_name="pk_step_run_input_artifact",
             columns=["step_id", "artifact_id", "name"],
