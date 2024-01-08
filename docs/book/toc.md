@@ -22,6 +22,7 @@
   * [Configure a code repository](user-guide/production-guide/connect-code-repository.md)
   * [Scale to the cloud](user-guide/production-guide/scale-compute.md)
   * [Configure your pipeline](user-guide/production-guide/configure-pipeline.md)
+  * [Structuring a project](user-guide/starter-guide/structuring-a-project.md)
   * [An end-to-end project](user-guide/production-guide/end-to-end.md)
 * [🍗 Advanced guide](user-guide/advanced-guide/advanced-guide.md)
   * [Pipelining features](user-guide/advanced-guide/pipelining-features/pipelining-features.md)
