@@ -14,6 +14,7 @@
   * [Fetching pipelines](user-guide/starter-guide/fetching-pipelines.md)
   * [Manage artifacts](user-guide/starter-guide/manage-artifacts.md)
   * [Track ML models](user-guide/starter-guide/track-ml-models.md)
+  * [Structuring a project](user-guide/starter-guide/structuring-a-project.md)
   * [A starter project](user-guide/starter-guide/starter-project.md)
 * [🐔 Production guide](user-guide/production-guide/production-guide.md)
   * [Connect to a deployed ZenML](user-guide/production-guide/connect-deployed-zenml.md)
