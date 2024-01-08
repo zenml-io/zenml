@@ -125,20 +125,18 @@ def downgrade() -> None:
 def _disable_primary_key_requirement_if_necessary() -> None:
     """Adjusts settings based on database engine requirements."""
     engine = op.get_bind().engine
-    engine_name = engine.name
+    engine_name = engine.name.lower()
     server_version_info = engine.dialect.server_version_info
-    print(f"Detected database engine: {engine_name}")
-    print(f"Detected database version: {server_version_info}")
 
     if engine_name == "mysql" and server_version_info >= (8, 0, 13):
         potential_session_var = engine.execute(
             text('SHOW SESSION VARIABLES LIKE "sql_require_primary_key";')
         ).fetchone()
         if potential_session_var and potential_session_var[1] == "ON":
-            # Temporarily disable this MySQL setting for primary key modification
+            # Temporarily disable this MySQL setting
+            # for primary key modification
             op.execute("SET SESSION sql_require_primary_key = 0;")
-    elif engine_name == "InnoDB" or engine_name.lower() == "mariadb":
-        # MariaDB does not require a similar setting, so skip this step
-        pass
+    elif engine_name == "mariadb":
+        op.execute("SET SESSION innodb_force_primary_key = 0;")
     else:
         raise NotImplementedError(f"Unsupported engine: {engine_name}")
