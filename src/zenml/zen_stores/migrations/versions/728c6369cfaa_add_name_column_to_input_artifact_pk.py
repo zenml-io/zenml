@@ -137,7 +137,7 @@ def _disable_primary_key_requirement_if_necessary() -> None:
         if potential_session_var and potential_session_var[1] == "ON":
             # Temporarily disable this MySQL setting for primary key modification
             op.execute("SET SESSION sql_require_primary_key = 0;")
-    elif engine_name == "InnoDB":
+    elif engine_name == "InnoDB" or engine_name.lower() == "mariadb":
         # MariaDB does not require a similar setting, so skip this step
         pass
     else:
