@@ -49,7 +49,9 @@ def upgrade() -> None:
         )
 
         # Update the PK
-        batch_op.drop_constraint(constraint_name=constraint_name, type_="primary")
+        batch_op.drop_constraint(
+            constraint_name=constraint_name, type_="primary"
+        )
         batch_op.create_primary_key(
             constraint_name="pk_step_run_input_artifact",
             columns=["step_id", "artifact_id", "name"],
@@ -137,6 +139,7 @@ def _disable_primary_key_requirement_if_necessary() -> None:
             # for primary key modification
             op.execute("SET SESSION sql_require_primary_key = 0;")
     elif engine_name == "mariadb":
-        op.execute("SET SESSION innodb_force_primary_key = 0;")
+        # mariadb doesn't support session-based scoping for this setting
+        op.execute("SET GLOBAL innodb_force_primary_key = 0;")
     else:
         raise NotImplementedError(f"Unsupported engine: {engine_name}")
