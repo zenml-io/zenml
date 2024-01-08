@@ -15,4 +15,15 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh mariadb
+        run: bash scripts/test-migrations-mariadb.sh
+  mysql-db-migration-testing:
+    runs-on: ubuntu-dind-runners
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4.8.0
+        with:
+          python-version: '3.9'
+      - name: Test migrations across versions
+        run: bash scripts/test-migrations-mysql.sh
