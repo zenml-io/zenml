@@ -182,7 +182,7 @@ from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
 deployer_step = pipeline_run.steps["<NAME_OF_MODEL_DEPLOYER_STEP>"]
-deployed_model_url = deployer_step.metadata["deployed_model_url"].value
+deployed_model_url = deployer_step.run_metadata["deployed_model_url"].value
 ```
 
 Services can be passed through steps like any other object, and used to interact with the external systems that they
