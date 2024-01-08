@@ -23,6 +23,9 @@ import datetime
 import json
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
 import google.api_core.exceptions
@@ -1026,6 +1029,7 @@ class GCPServiceConnector(ServiceConnector):
             NotImplementedError: If the connector instance does not support
                 local configuration for the configured resource type or
                 authentication method.registry
+            AuthorizationException: If the local client configuration fails.
         """
         resource_type = self.resource_type
 
@@ -1034,16 +1038,8 @@ class GCPServiceConnector(ServiceConnector):
 
             # There is no way to configure the local gcloud CLI to use
             # temporary OAuth 2.0 tokens. However, we can configure it to use
-            # the user account credentials or service account credentials
-            if self.auth_method == GCPAuthenticationMethods.USER_ACCOUNT:
-                assert isinstance(self.config, GCPUserAccountConfig)
-                # Use the user account credentials JSON to configure the
-                # local gcloud CLI
-                gcloud_config_json = (
-                    self.config.user_account_json.get_secret_value()
-                )
-
-            elif self.auth_method == GCPAuthenticationMethods.SERVICE_ACCOUNT:
+            # the service account credentials
+            if self.auth_method == GCPAuthenticationMethods.SERVICE_ACCOUNT:
                 assert isinstance(self.config, GCPServiceAccountConfig)
                 # Use the service account credentials JSON to configure the
                 # local gcloud CLI
@@ -1054,7 +1050,65 @@ class GCPServiceConnector(ServiceConnector):
             if gcloud_config_json:
                 from google.auth import _cloud_sdk
 
-                # Dump the user account or service account credentials JSON to
+                if not shutil.which("gcloud"):
+                    raise AuthorizationException(
+                        "The local gcloud CLI is not installed. Please "
+                        "install the gcloud CLI to use this feature."
+                    )
+
+                # Write the credentials JSON to a temporary file
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".json", delete=True
+                ) as f:
+                    f.write(gcloud_config_json)
+                    f.flush()
+                    adc_path = f.name
+
+                    try:
+                        # Run the gcloud CLI command to configure the local
+                        # gcloud CLI to use the credentials JSON
+                        subprocess.run(
+                            [
+                                "gcloud",
+                                "auth",
+                                "login",
+                                "--cred-file",
+                                adc_path,
+                            ],
+                            check=True,
+                            stderr=subprocess.STDOUT,
+                            stdout=subprocess.PIPE,
+                        )
+                    except subprocess.CalledProcessError as e:
+                        raise AuthorizationException(
+                            f"Failed to configure the local gcloud CLI to use "
+                            f"the credentials JSON: {e}\n"
+                            f"{e.stdout.decode()}"
+                        )
+
+                try:
+                    # Run the gcloud CLI command to configure the local gcloud
+                    # CLI to use the credentials project ID
+                    subprocess.run(
+                        [
+                            "gcloud",
+                            "config",
+                            "set",
+                            "project",
+                            self.config.project_id,
+                        ],
+                        check=True,
+                        stderr=subprocess.STDOUT,
+                        stdout=subprocess.PIPE,
+                    )
+                except subprocess.CalledProcessError as e:
+                    raise AuthorizationException(
+                        f"Failed to configure the local gcloud CLI to use "
+                        f"the project ID: {e}\n"
+                        f"{e.stdout.decode()}"
+                    )
+
+                # Dump the service account credentials JSON to
                 # the local gcloud application default credentials file
                 adc_path = (
                     _cloud_sdk.get_application_default_credentials_path()
@@ -1063,8 +1117,8 @@ class GCPServiceConnector(ServiceConnector):
                     f.write(gcloud_config_json)
 
                 logger.info(
-                    f"Updated the local gcloud default application "
-                    f"credentials file at '{adc_path}'"
+                    "Updated the local gcloud CLI and application default "
+                    f"credentials file ({adc_path})."
                 )
 
                 return
@@ -1072,7 +1126,6 @@ class GCPServiceConnector(ServiceConnector):
             raise NotImplementedError(
                 f"Local gcloud client configuration for resource type "
                 f"{resource_type} is only supported if the "
-                f"'{GCPAuthenticationMethods.USER_ACCOUNT}' or "
                 f"'{GCPAuthenticationMethods.SERVICE_ACCOUNT}' authentication "
                 f"method is used and only if the generation of temporary OAuth "
                 f"2.0 tokens is disabled by setting the "
@@ -1221,13 +1274,27 @@ class GCPServiceConnector(ServiceConnector):
                     "GOOGLE_APPLICATION_CREDENTIALS"
                 )
                 if service_account_json_file is None:
-                    # Shouldn't happen since google.auth.default() should
-                    # already have loaded the credentials from the environment
+                    # No explicit service account JSON file was specified in the
+                    # environment, meaning that the credentials were loaded from
+                    # the GCP application default credentials (ADC) file.
+                    from google.auth import _cloud_sdk
+
+                    # Use the location of the gcloud application default
+                    # credentials file
+                    service_account_json_file = (
+                        _cloud_sdk.get_application_default_credentials_path()
+                    )
+
+                if not service_account_json_file or not os.path.isfile(
+                    service_account_json_file
+                ):
                     raise AuthorizationException(
-                        "No GCP service account credentials found in the "
-                        "environment. Please set the "
-                        "GOOGLE_APPLICATION_CREDENTIALS environment variable "
-                        "to the path of the service account JSON file."
+                        "No GCP service account credentials were found in the "
+                        "environment or the application default credentials"
+                        "path. Please set the GOOGLE_APPLICATION_CREDENTIALS "
+                        "environment variable to the path of the service "
+                        "account JSON file or run 'gcloud auth application-"
+                        "default login' to generate a new ADC file."
                     )
                 with open(service_account_json_file, "r") as f:
                     service_account_json = f.read()
