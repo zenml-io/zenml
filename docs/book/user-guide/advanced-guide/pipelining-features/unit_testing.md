@@ -493,7 +493,9 @@ Each test method covers typical use cases (e.g., sum, average, and median calcul
 By considering different scenarios, including edge cases and boundary conditions, this test suite ensures thorough coverage of the DataProcessor class, addressing both typical use cases and scenarios where the behavior might break.
 
 
-- Use Mocks and Stubs: Employ mocking libraries to simulate external dependencies, APIs, or complex systems. This helps isolate the unit under test and ensures predictable behavior.
+### Use Mocks and Stubs: 
+Employ mocking libraries to simulate external dependencies, APIs, or complex systems. This helps isolate the unit under test and ensures predictable behavior.
+
 ```Python
 import unittest
 from unittest.mock import MagicMock
