@@ -4344,7 +4344,7 @@ class TestModelVersionArtifactLinks:
             )
             assert (
                 mv.get_deployment_artifact(artifacts[2].name, "1")
-                == mv.endpoint_artifacts[artifacts[2].name]["1"]
+                == mv.deployment_artifacts[artifacts[2].name]["1"]
             )
 
 
