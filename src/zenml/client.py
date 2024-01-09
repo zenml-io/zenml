@@ -5112,7 +5112,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             model_version_id: The id of the model version holding the link.
         """
-        self.zen_store.delete_all_model_version_artifact_link(model_version_id)
+        self.zen_store.delete_all_model_version_artifact_links(
+            model_version_id
+        )
 
     #################################################
     # Model Versions Pipeline Runs

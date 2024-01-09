@@ -4226,7 +4226,7 @@ class TestModelVersionArtifactLinks:
                         artifact_version=artifact.id,
                     )
                 )
-            zs.delete_all_model_version_artifact_link(
+            zs.delete_all_model_version_artifact_links(
                 model_version_id=model_version.id,
             )
             mvls = zs.list_model_version_artifact_links(
