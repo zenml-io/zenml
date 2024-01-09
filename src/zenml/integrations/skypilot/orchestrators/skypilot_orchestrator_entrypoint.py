@@ -15,6 +15,7 @@
 
 import argparse
 import socket
+import time
 from typing import Dict, cast
 
 import sky
@@ -23,6 +24,7 @@ from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
+from zenml.enums import ExecutionStatus
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorSettings,
 )
@@ -136,6 +138,15 @@ def main() -> None:
         )
         unique_resource_configs[step_name] = cluster_name
 
+    run = Client().list_pipeline_runs(
+        sort_by="asc:created",
+        size=1,
+        deployment_id=args.deployment_id,
+        status=ExecutionStatus.INITIALIZING,
+    )[0]
+
+    logger.info("Fetching pipeline run: %s", run.id)
+
     def run_step_on_skypilot_vm(step_name: str) -> None:
         """Run a pipeline step in a separate Skypilot VM.
 
@@ -167,10 +178,12 @@ def main() -> None:
 
         # Set up the task
         run_command = f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+        task_name = f"{deployment.id}-{step_name}-{time.time()}"
         task = sky.Task(
             run=run_command,
             setup=setup,
             envs=task_envs,
+            name=task_name,
         )
         task = task.set_resources(
             sky.Resources(
@@ -201,6 +214,23 @@ def main() -> None:
             detach_setup=True,
             detach_run=True,
         )
+
+        # Wait for pod to finish.
+        logger.info(f"Waiting for pod of step `{step_name}` to start...")
+
+        current_run = Client().get_pipeline_run(run.id)
+
+        step_is_finished = False
+        while not step_is_finished:
+            time.sleep(10)
+            current_run = Client().get_pipeline_run(run.id)
+            try:
+                step_is_finished = current_run.steps[
+                    step_name
+                ].status.is_finished
+            except KeyError:
+                # Step is not yet in the run, so we wait for it to appear
+                continue
 
         # Pop the resource configuration for this step
         unique_resource_configs.pop(step_name)

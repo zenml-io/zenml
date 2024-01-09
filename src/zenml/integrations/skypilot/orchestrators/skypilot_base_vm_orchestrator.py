@@ -268,7 +268,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                         new_cluster = False
             if cluster_name is None:
                 cluster_name = self.sanitize_cluster_name(
-                    f"{pipeline_name}-{orchestrator_run_name}"
+                    f"{orchestrator_run_name}"
                 )
                 new_cluster = True
 
