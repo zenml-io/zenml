@@ -6,12 +6,12 @@ DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to star
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
-    local MIN_VERSION="0.43.0"
+    local PRE_TEMPLATE_VERSIONS=("0.40.0" "0.40.3" "0.41.0")
 
     echo "===== Testing version $VERSION ====="
 
-    # Compare semantic versions
-    if [[ $(printf "%s\n%s" "$VERSION" "$MIN_VERSION" | sort -V | head -n1) = "$MIN_VERSION" ]]; then
+    # Check if VERSION is in VALID_VERSIONS
+    if printf '%s\n' "${PRE_TEMPLATE_VERSIONS[@]}" | grep -q "^$VERSION$"; then
         copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
     else
         mkdir test_starter
