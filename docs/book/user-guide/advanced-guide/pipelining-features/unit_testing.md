@@ -172,13 +172,13 @@ if __name__ == '__main__':
     unittest.main()
 
 ```
-We created a `TestCustomDatasource` class inheriting from unittest.TestCase. The `test_custom_datasource_behavior` function tests the behavior of a custom datasource class,assuming a method fetch_data() is responsible for fetching data. Using MagicMock, we mock any external dependencies or connections that the custom datasourcemight have, ensuring isolation from these external components.
-Within the test function, we call the fetch_data() method and perform assertions based onexpected behavior.
+We created a `TestCustomDatasource` class inheriting from unittest.TestCase. The `test_custom_datasource_behavior` function tests the behavior of a custom datasource class,assuming a `method fetch_data()` is responsible for fetching data. Using MagicMock, we mock any external dependencies or connections that the custom datasourcemight have, ensuring isolation from these external components. Within the test function, we call the `fetch_data()` method and perform assertions based onexpected behavior.
 
 This approach ensures that the test is focused on the behavior of the specific component (CustomDatasource in this case) and doesn't rely on real external connections or dependencies. It verifies the functionality of a single function or method within the CustomDatasource class, maintaining the principles of true unit testing in ZenML.
 
 
 - Fast : It is crucial to have fast running unit test as a project can have thousands of unit tests or may be even more, in that slow running sluggish unit tests can frustate tester. Sometime being frustated tester may skip them.
+
 ```Python
 import unittest
 from zenml.core.steps.trainer.tf_trainer import TFTrainer
@@ -198,7 +198,6 @@ class TestTFTrainer(unittest.TestCase):
                             training_data=self.training_data_mock,
                             training_args=self.training_args_mock)
         
-        # Assuming train() method trains the model
         # Measure the time taken for training
         import time
         start_time = time.time()
@@ -218,16 +217,17 @@ if __name__ == '__main__':
 
 ```
 
-    The TestTFTrainer class contains a test method test_tf_trainer_speed that measures the time taken by the train() method of the TFTrainer class to ensure it executes within an acceptable threshold.
-    In the setUp method, necessary dependencies for the TFTrainer instance are mocked using MagicMock. This ensures that the test focuses solely on the speed of the training process rather than the actual training with real data, which might take longer.
-    It uses time.time() to measure the start and end times of the train() method and compares the execution time against a predefined maximum allowed time (max_allowed_time).
-    The assertLessEqual() method checks whether the execution time is within the specified threshold. If the training process exceeds the threshold, the test will fail, indicating that the training process might be too slow.
+The TestTFTrainer class contains a test method test_tf_trainer_speed that measures the time taken by the train() method of the TFTrainer class to ensure it executes within an acceptable threshold.
+In the setUp method, necessary dependencies for the TFTrainer instance are mocked using MagicMock. This ensures that the test focuses solely on the speed of the training process rather than the actual training with real data, which might take longer.
+It uses time.time() to measure the start and end times of the train() method and compares the execution time against a predefined maximum allowed time (max_allowed_time).
+The assertLessEqual() method checks whether the execution time is within the specified threshold. If the training process exceeds the threshold, the test will fail, indicating that the training process might be too slow.
 
 By focusing on testing specific functionalities related to speed and mocking external dependencies, these tests can execute quickly, ensuring that they do not frustrate testers or developers due to excessive execution times. Adjust the max_allowed_time as needed based on your performance expectations.
  
 
 
-- Clarity and Readability: Write clear, descriptive test names that explain the purpose of the test. Use comments and docstrings to describe complex scenarios or the expected behavior being tested.
+### Clarity and Readability: 
+Write clear, descriptive test names that explain the purpose of the test. Use comments and docstrings to describe complex scenarios or the expected behavior being tested.
 
 ```Python
 import unittest
@@ -697,11 +697,11 @@ if __name__ == '__main__':
 
 ```
 
-    Tests are organized efficiently, each focusing on a specific functionality of the DataProcessor class (calculate_sum, calculate_average, calculate_median).
-    The setUp method initializes necessary resources for each test method, preventing unnecessary repetitive setup.
-    The tearDown method cleans up resources after each test, ensuring a clean state for subsequent tests.
-    Assertions (self.assertEqual, self.assertAlmostEqual) are used to verify the expected behavior of the DataProcessor class.
-    By focusing on testing specific functionalities and avoiding excessive setup/teardown or unnecessary complexity, these tests are designed to execute quickly, promoting frequent execution during development without slowing down the cycle.
+Tests are organized efficiently, each focusing on a specific functionality of the DataProcessor class (calculate_sum, calculate_average, calculate_median).
+The setUp method initializes necessary resources for each test method, preventing unnecessary repetitive setup.
+The tearDown method cleans up resources after each test, ensuring a clean state for subsequent tests.
+Assertions (self.assertEqual, self.assertAlmostEqual) are used to verify the expected behavior of the DataProcessor class.
+By focusing on testing specific functionalities and avoiding excessive setup/teardown or unnecessary complexity, these tests are designed to execute quickly, promoting frequent execution during development without slowing down the cycle.
 
 
 - Maintainability: Regularly review and refactor tests to keep them up to date with code changes. Remove redundant or obsolete tests to maintain a manageable test suite.
@@ -758,9 +758,12 @@ if __name__ == '__main__':
 
 - Documentation and Reporting: Provide clear instructions on how to run tests, interpret results, and generate reports. Document the purpose and scope of each test suite or test case.
 
-- Avoid logic in tests: Unit test should be simple, succint and easy to understand, Writing logic in tests increases chances of having bugs in your unit test's code. If logic in a test cases seems, try spliting tests in two or more different tests.
+### Avoid logic in tests: 
+Unit test should be simple, succint and easy to understand, Writing logic in tests increases chances of having bugs in your unit test's code. If logic in a test cases seems, try spliting tests in two or more different tests.
 
-- Keep your tests away from too much implementation details: Your unit tests should rarely fail when slightest change in implemented code is done, or else it will be difficult to maintain. The optimal approach is to steer clear of implementation details to avoid the need for rewriting tests repeatedly. Coupling tests with implementation specifics diminishes the efficacy of the tests.
+### Keep your tests away from too much implementation details: 
+Your unit tests should rarely fail when slightest change in implemented code is done, or else it will be difficult to maintain. The optimal approach is to steer clear of implementation details to avoid the need for rewriting tests repeatedly. Coupling tests with implementation specifics diminishes the efficacy of the tests.
+
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
