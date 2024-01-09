@@ -108,7 +108,7 @@ jobs:
           bash scripts/lint.sh
 
       - name: Spelling checker
-        uses: crate-ci/typos@v1.16.26
+        uses: crate-ci/typos@v1.17.0
         with:
           files: "."
           config: ./.typos.toml

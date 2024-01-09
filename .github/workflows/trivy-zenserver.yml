@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4.1.1
 
       - name: zenserver-Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.16.0
+        uses: aquasecurity/trivy-action@0.16.1
         with:
           image-ref: "docker.io/zenmldocker/zenml-server:latest"
           format: "sarif"
