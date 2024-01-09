@@ -31,7 +31,16 @@
 """Implementation of the Kubeflow orchestrator."""
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 import kfp
@@ -81,30 +90,37 @@ KFP_POD_LABELS = {
 ENV_KFP_RUN_ID = "KFP_RUN_ID"
 
 
-class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
-    """KFP client initialized from a Kubernetes client.
+class ZenMLKFPClient(kfp.Client):  # type: ignore[misc]
+    """KFP client linked to a ZenML Kubeflow orchestrator.
 
     This is a workaround for the fact that the native KFP client does not
-    support initialization from an existing Kubernetes client.
+    support initialization and refresh from an existing Kubernetes client
+    (extracted in our case from the Kubernetes service connector associated
+    with the orchestrator).
     """
 
     def __init__(
-        self, client: k8s_client.ApiClient, *args: Any, **kwargs: Any
+        self,
+        orchestrator: "KubeflowOrchestrator",
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """Initializes the KFP client from a Kubernetes client.
 
         Args:
-            client: pre-configured Kubernetes client.
+            orchestrator: The Kubeflow orchestrator.
             args: standard KFP client positional arguments.
             kwargs: standard KFP client keyword arguments.
         """
-        self._k8s_client = client
+        self._orchestrator = orchestrator
         super().__init__(*args, **kwargs)
 
     def _load_config(self, *args: Any, **kwargs: Any) -> Any:
         """Loads the KFP configuration.
 
-        Initializes the KFP configuration from the Kubernetes client.
+        ZenML overrides this method to initialize the KFP configuration from the
+        Kubernetes client provided by the linked service connector instead of
+        creating a new Kubernetes client based on the local kubeconfig file.
 
         Args:
             args: standard KFP client positional arguments.
@@ -112,10 +128,27 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
 
         Returns:
             The KFP configuration.
+
+        Raises:
+            RuntimeError: If the Kubernetes client associated with the service
+                connector is not a k8s_client.ApiClient instance.
         """
         from kfp_server_api.configuration import Configuration
 
-        kube_config = self._k8s_client.configuration
+        # This call generates a new Kubernetes client or refreshes the existing
+        # one if the token has expired.
+        connector = self._orchestrator.get_connector()
+        # It's guaranteed that the connector is linked (otherwise this class
+        # would not be instantiated)
+        assert connector is not None
+
+        kube_client = connector.connect()
+        if not isinstance(kube_client, k8s_client.ApiClient):
+            raise RuntimeError(
+                f"Expected a k8s_client.ApiClient while trying to use the "
+                f"linked connector, but got {type(kube_client)}."
+            )
+        kube_config = kube_client.configuration
 
         host = (
             kube_config.host
@@ -123,6 +156,9 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
             + self.KUBE_PROXY_PATH.format(kwargs.get("namespace", "kubeflow"))
         )
 
+        # Construct a new kube client configuration with the information
+        # extracted from the Kubernetes client associated with the service
+        # connector.
         config = Configuration(
             host=host,
             api_key=kube_config.api_key,
@@ -139,6 +175,13 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
                 setattr(config, key, getattr(kube_config, key))
 
         return config
+
+    def _refresh_api_client_token(self) -> None:
+        """Refreshes the existing token associated with the kfp_api_client."""
+        # Get a new configuration with fresh credentials
+        new_config = self._load_config()
+        # Update the existing configuration in place with the new credentials
+        self._existing_config.api_key.update(new_config.api_key)
 
 
 class KubeflowOrchestrator(ContainerizedOrchestrator):
@@ -785,12 +828,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             A KFP client instance.
-
-        Raises:
-            RuntimeError: If the linked Kubernetes connector behaves
-                unexpectedly.
         """
-        connector = self.get_connector()
         client_args = settings.client_args.copy()
 
         # The kube_context, host and namespace are stack component
@@ -798,20 +836,14 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         # these overwritten on a run by run basis by user settings
         client_args["namespace"] = self.config.kubeflow_namespace
 
-        if connector:
-            client = connector.connect()
-            if not isinstance(client, k8s_client.ApiClient):
-                raise RuntimeError(
-                    f"Expected a k8s_client.ApiClient while trying to use the "
-                    f"linked connector, but got {type(client)}."
-                )
-
-            kfp_client = KubeClientKFPClient(
-                client=client,
+        if self.connector:
+            # If a service connector is linked, we use a custom KFP client
+            # that is initialized and refreshed from the Kubernetes client
+            # associated with the connector.
+            return ZenMLKFPClient(
+                orchestrator=self,
                 **client_args,
             )
-
-            return kfp_client
 
         elif self.config.kubernetes_context:
             client_args["kube_context"] = self.config.kubernetes_context

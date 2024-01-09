@@ -35,7 +35,7 @@ import datetime
 import enum
 import re
 import time
-from typing import Any, Callable, Optional, TypeVar, cast
+from typing import Any, Callable, Optional, TypeVar, Union, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -169,7 +169,7 @@ def get_pod(
 
 
 def wait_pod(
-    core_api: k8s_client.CoreV1Api,
+    core_api: Union[k8s_client.CoreV1Api, Callable[[], k8s_client.CoreV1Api]],
     pod_name: str,
     namespace: str,
     exit_condition_lambda: Callable[[k8s_client.V1Pod], bool],
@@ -180,7 +180,10 @@ def wait_pod(
     """Wait for a pod to meet an exit condition.
 
     Args:
-        core_api: Client of `CoreV1Api` of Kubernetes API.
+        core_api: Kubernetes `CoreV1Api` client or a callable used to fetch one.
+            If a callable is provided, it will be called periodically to get
+            a new client. This is useful in long running jobs if the client
+            needs to be regularly updated (e.g. to handle token expiration).
         pod_name: The name of the pod.
         namespace: The namespace of the pod.
         exit_condition_lambda: A lambda
@@ -210,12 +213,17 @@ def wait_pod(
     logged_lines = 0
 
     while True:
-        resp = get_pod(core_api, pod_name, namespace)
+        if callable(core_api):
+            kube_client = core_api()
+        else:
+            kube_client = core_api
+
+        resp = get_pod(kube_client, pod_name, namespace)
 
         # Stream logs to `zenml.logger.info()`.
         # TODO: can we do this without parsing all logs every time?
         if stream_logs and pod_is_not_pending(resp):
-            response = core_api.read_namespaced_pod_log(
+            response = kube_client.read_namespaced_pod_log(
                 name=pod_name,
                 namespace=namespace,
             )

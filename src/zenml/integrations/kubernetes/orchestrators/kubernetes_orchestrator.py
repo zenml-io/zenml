@@ -440,7 +440,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if settings.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
-                core_api=self._k8s_core_api,
+                # We pass the k8s client through a lambda instead of directly to
+                # allow the client to be refreshed if the connector has expired.
+                core_api=lambda: self._k8s_core_api,
                 pod_name=pod_name,
                 namespace=self.config.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,
