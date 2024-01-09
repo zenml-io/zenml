@@ -6,18 +6,11 @@ DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to star
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
-    local PRE_TEMPLATE_VERSIONS=("0.40.0" "0.40.3" "0.41.0")
 
     echo "===== Testing version $VERSION ====="
 
-    # Check if VERSION is in VALID_VERSIONS
-    if printf '%s\n' "${PRE_TEMPLATE_VERSIONS[@]}" | grep -q "^$VERSION$"; then
-        copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
-    else
-        mkdir test_starter
-        zenml init --template starter --path test_starter --template-with-defaults
-    fi
-
+    mkdir test_starter
+    zenml init --template starter --path test_starter --template-with-defaults
     cd test_starter
 
     export ZENML_ANALYTICS_OPT_IN=false
@@ -35,7 +28,7 @@ function run_tests_for_version() {
     zenml pipeline runs list
 
     cd ..
-    rm -rf test_starter template-starter
+    rm -rf test_starter
     echo "===== Finished testing version $VERSION ====="
 }
 
@@ -73,8 +66,8 @@ do
     deactivate
 done
 
-
-# Test the most recent migration with MySQL
+# Test the most recent migration with MariaDB
+echo "===== TESTING CURRENT BRANCH ====="
 set -e
 python3 -m venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
@@ -85,7 +78,7 @@ pip3 install importlib_metadata
 
 zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 
-run_tests_for_version current_branch_mysql
+run_tests_for_version current_branch_mariadb
 
 zenml disconnect
 docker rm -f mariadb

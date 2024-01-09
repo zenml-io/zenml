@@ -16,7 +16,7 @@ function run_tests_for_version() {
 
     echo "===== Testing version $VERSION ====="
 
-    # Check if VERSION is in VALID_VERSIONS
+    # Check if VERSION is in PRE_TEMPLATE_VERSIONS
     if printf '%s\n' "${PRE_TEMPLATE_VERSIONS[@]}" | grep -q "^$VERSION$"; then
         copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
     else
@@ -104,6 +104,7 @@ done
 
 
 # Test the most recent migration with MySQL
+echo "===== TESTING CURRENT BRANCH ====="
 set -e
 python3 -m venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
