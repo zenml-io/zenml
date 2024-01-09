@@ -1,4 +1,88 @@
 <!-- markdown-link-check-disable -->
+# 0.54.0
+
+This release brings a range of new features, bug fixes and documentation
+updates. The Model Control Plane has received a number of small bugfixes and
+improvements, notably the ability to change model and model version names.
+
+We've also added a whole new starter guide that walks you through
+how to get started with ZenML, from creating your first pipeline to fetching
+objects once your pipelines have run and much more. Be sure to [check it out](https://docs.zenml.io/user-guide/starter-guide) if
+you're new to ZenML!
+
+Speaking of documentation improvements, the Model Control Plane now has [its own
+dedicated documentation section](https://docs.zenml.io/user-guide/advanced-guide/data-management/model-management) introducing the concepts and features of the
+Model Control Plane.
+
+As always, this release comes with number of bug fixes, docs additions and
+smaller improvements to our internal processes.
+
+## Breaking Change
+
+This PR introduces breaking changes in the areas of the REST API concerning secrets and tags. As a consequence, the ZenML Client running the previous ZenML version is no longer compatible with a ZenML Server running the new version and vice-versa. To address this, simply ensure that all your ZenML clients use the same version as the server(s) they connect to.
+
+## 🥳 Community Contributions 🥳
+
+We'd like to give a special thanks to @christianversloot for two PRs he
+contributed to this release. One of them [fixes a bug](https://github.com/zenml-io/zenml/pull/2195) that prevented ZenML from
+running on Windows and the other one [adds a new materializer for the Polars library](https://github.com/zenml-io/zenml/pull/2229).
+
+Also many thanks to @sean-hickey-wf for his contribution of [an improvement to
+the Slack Alerter stack component](https://github.com/zenml-io/zenml/pull/2153)
+which allows you to define custom blocks for the Slack message.
+
+## What's Changed
+* Completing the hydration story with the remaining models by @bcdurak in https://github.com/zenml-io/zenml/pull/2151
+* Remove secrets manager flavors from DB by @stefannica in https://github.com/zenml-io/zenml/pull/2182
+* Prepare 0.53.1 release by @stefannica in https://github.com/zenml-io/zenml/pull/2183
+* Update package name for nightly build by @strickvl in https://github.com/zenml-io/zenml/pull/2172
+* Remove space saver action + upgrade other actions by @strickvl in https://github.com/zenml-io/zenml/pull/2174
+* mutable names in Model and MV by @avishniakov in https://github.com/zenml-io/zenml/pull/2185
+* Fix image building for nightly container builds by @strickvl in https://github.com/zenml-io/zenml/pull/2189
+* Test that artifacts not get linked to model version not from context by @avishniakov in https://github.com/zenml-io/zenml/pull/2188
+* Warn if Model(Version) config fluctuates from DB state by @avishniakov in https://github.com/zenml-io/zenml/pull/2144
+* Add blocks field to SlackAlerterParameters for custom slack blocks by @sean-hickey-wf in https://github.com/zenml-io/zenml/pull/2153
+* Model control plane technical documentation by @strickvl in https://github.com/zenml-io/zenml/pull/2111
+* Alembic branching issue fix by @avishniakov in https://github.com/zenml-io/zenml/pull/2197
+* Bump github/codeql-action from 2 to 3 by @dependabot in https://github.com/zenml-io/zenml/pull/2201
+* Bump google-github-actions/get-gke-credentials from 0 to 2 by @dependabot in https://github.com/zenml-io/zenml/pull/2202
+* Bump google-github-actions/auth from 1 to 2 by @dependabot in https://github.com/zenml-io/zenml/pull/2203
+* Bump aws-actions/amazon-ecr-login from 1 to 2 by @dependabot in https://github.com/zenml-io/zenml/pull/2200
+* Bump crate-ci/typos from 1.16.25 to 1.16.26 by @dependabot in https://github.com/zenml-io/zenml/pull/2207
+* Fix unreliable test behaviour when using hypothesis by @strickvl in https://github.com/zenml-io/zenml/pull/2208
+* Added more pod spec properties for k8s orchestrator by @htahir1 in https://github.com/zenml-io/zenml/pull/2097
+* Fix API docs environment setup by @strickvl in https://github.com/zenml-io/zenml/pull/2190
+* Use placeholder runs to show pipeline runs in the dashboard without delay by @schustmi in https://github.com/zenml-io/zenml/pull/2048
+* Update README and CONTRIBUTING.md docs with links to good first issues for contribution by @strickvl in https://github.com/zenml-io/zenml/pull/2220
+* Bump supported `mlstacks` version to 0.8.0 by @strickvl in https://github.com/zenml-io/zenml/pull/2196
+* Misc cleanup by @schustmi in https://github.com/zenml-io/zenml/pull/2126
+* Refactor pipeline run updates by @schustmi in https://github.com/zenml-io/zenml/pull/2117
+* Rename log_model_version_metadata to log_model_metadata by @htahir1 in https://github.com/zenml-io/zenml/pull/2215
+* Update starter and create new production guide by @htahir1 in https://github.com/zenml-io/zenml/pull/2143
+* Fix typo by @strickvl in https://github.com/zenml-io/zenml/pull/2223
+* Consolidate Custom Filter Logic by @fa9r in https://github.com/zenml-io/zenml/pull/2116
+* Force forward slashes when saving artifacts by @christianversloot in https://github.com/zenml-io/zenml/pull/2195
+* Temporarily disable two MLflow tests for MacOS with Python 3.9 and 3.10 by @strickvl in https://github.com/zenml-io/zenml/pull/2186
+* Disable template updates for forked repositories by @strickvl in https://github.com/zenml-io/zenml/pull/2222
+* Remove Label Studio text annotation example by @strickvl in https://github.com/zenml-io/zenml/pull/2225
+* Add scarf checker script and CI workflow by @strickvl in https://github.com/zenml-io/zenml/pull/2227
+* Add `mlstacks` installation instructions to docs by @strickvl in https://github.com/zenml-io/zenml/pull/2228
+* Adding the `hydrate` flag to the client methods by @bcdurak in https://github.com/zenml-io/zenml/pull/2120
+* Fixing the remaining docs pages for `run_metadata` by @bcdurak in https://github.com/zenml-io/zenml/pull/2230
+* Fix CI check to disallow template testing on forked repositories by @strickvl in https://github.com/zenml-io/zenml/pull/2231
+* Fix fork check syntax by @strickvl in https://github.com/zenml-io/zenml/pull/2237
+* Add missing annotations section to zenml service account by @wjayesh in https://github.com/zenml-io/zenml/pull/2234
+* Allow filtering artifacts with/without custom names by @schustmi in https://github.com/zenml-io/zenml/pull/2226
+* Adjust migration settings based on database engine by @strickvl in https://github.com/zenml-io/zenml/pull/2236
+* Added one more chapter to starter guide by @htahir1 in https://github.com/zenml-io/zenml/pull/2238
+* Add Polars materializer by @christianversloot in https://github.com/zenml-io/zenml/pull/2229
+
+## New Contributors
+* @sean-hickey-wf made their first contribution in https://github.com/zenml-io/zenml/pull/2153
+* @dependabot 🤖 made their first contribution in https://github.com/zenml-io/zenml/pull/2201
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.53.1...0.54.0
+
 # 0.53.1
 
 This minor release contains a hot fix for a bug that was introduced in 0.53.0
