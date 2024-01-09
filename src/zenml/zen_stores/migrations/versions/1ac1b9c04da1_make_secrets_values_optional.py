@@ -1,7 +1,7 @@
 """make secrets values optional [1ac1b9c04da1].
 
 Revision ID: 1ac1b9c04da1
-Revises: 6917bce75069
+Revises: 0.54.0
 Create Date: 2023-12-22 23:06:32.466128
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1ac1b9c04da1"
-down_revision = "6917bce75069"
+down_revision = "0.54.0"
 branch_labels = None
 depends_on = None
 
