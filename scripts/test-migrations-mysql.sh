@@ -12,12 +12,19 @@ fi
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
+    local MIN_VERSION="0.43.0"
 
     echo "===== Testing version $VERSION ====="
-    # Initialize zenml with the appropriate template
-    # hardcoded to 0.43.0 since this is the latest template-starter repo
-    # release tag
-    copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
+
+    # Compare semantic versions
+    if [[ $(printf "%s\n%s" "$VERSION" "$MIN_VERSION" | sort -V | head -n1) = "$MIN_VERSION" ]]; then
+        copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
+    else
+        mkdir test_starter
+        zenml init --template starter --path test_starter --template-with-defaults
+        cd test_starter
+    fi
+
     cd test_starter
 
     export ZENML_ANALYTICS_OPT_IN=false
@@ -38,6 +45,7 @@ function run_tests_for_version() {
     rm -rf test_starter template-starter
     echo "===== Finished testing version $VERSION ====="
 }
+
 
 if [ "$1" == "mysql" ]; then
     echo "===== Testing MySQL ====="
