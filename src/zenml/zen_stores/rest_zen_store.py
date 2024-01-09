@@ -2836,11 +2836,11 @@ class RestZenStore(BaseZenStore):
             route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
         )
 
-    def delete_all_model_version_artifact_link(
+    def delete_all_model_version_artifact_links(
         self,
         model_version_id: UUID,
     ) -> None:
-        """Deletes all model version to artifact links.
+        """Deletes all links between model version and an artifact.
 
         Args:
             model_version_id: ID of the model version containing the link.

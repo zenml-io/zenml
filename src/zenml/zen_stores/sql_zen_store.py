@@ -6827,7 +6827,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(model_version_artifact_link)
             session.commit()
 
-    def delete_all_model_version_artifact_link(
+    def delete_all_model_version_artifact_links(
         self,
         model_version_id: UUID,
     ) -> None:

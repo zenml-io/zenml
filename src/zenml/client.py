@@ -5095,7 +5095,7 @@ class Client(metaclass=ClientMetaClass):
                     f"`{model_version_id}` and artifact version "
                     f"`{artifact_version_id}`. This should not be happening and "
                     "might indicate a corrupted state of your ZenML database. "
-                    "Please, seek support via Community Slack."
+                    "Please seek support via Community Slack."
                 )
             self.zen_store.delete_model_version_artifact_link(
                 model_version_id=model_version_id,

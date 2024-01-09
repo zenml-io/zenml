@@ -261,7 +261,7 @@ def delete_model_version_artifact_link(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_all_model_version_artifact_link(
+def delete_all_model_version_artifact_links(
     model_version_id: UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
@@ -273,7 +273,7 @@ def delete_all_model_version_artifact_link(
     model_version = zen_store().get_model_version(model_version_id)
     verify_permission_for_model(model_version, action=Action.UPDATE)
 
-    zen_store().delete_all_model_version_artifact_link(model_version_id)
+    zen_store().delete_all_model_version_artifact_links(model_version_id)
 
 
 ##############################

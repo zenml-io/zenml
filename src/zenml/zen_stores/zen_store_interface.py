@@ -2200,7 +2200,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_all_model_version_artifact_link(
+    def delete_all_model_version_artifact_links(
         self,
         model_version_id: UUID,
     ) -> None:
