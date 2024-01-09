@@ -97,10 +97,6 @@ class GCPUserAccountCredentials(AuthenticationConfig):
 
         Returns:
             The validated configuration values.
-
-        Raises:
-            ValueError: If the user account credentials JSON is not a valid
-                JSON object.
         """
         if isinstance(values.get("user_account_json"), dict):
             values["user_account_json"] = json.dumps(
