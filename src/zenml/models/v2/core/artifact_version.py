@@ -356,6 +356,7 @@ class ArtifactVersionFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "name",
         "only_unused",
+        "has_custom_name",
     ]
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -400,6 +401,10 @@ class ArtifactVersionFilter(WorkspaceScopedFilter):
     )
     only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"
+    )
+    has_custom_name: Optional[bool] = Field(
+        default=None,
+        description="Filter only artifacts with/without custom names.",
     )
 
     def get_custom_filters(
@@ -447,5 +452,12 @@ class ArtifactVersionFilter(WorkspaceScopedFilter):
                 ),
             )
             custom_filters.append(unused_filter)
+
+        if self.has_custom_name is not None:
+            custom_name_filter = and_(  # type: ignore[type-var]
+                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                ArtifactSchema.has_custom_name == self.has_custom_name,
+            )
+            custom_filters.append(custom_name_filter)
 
         return custom_filters
