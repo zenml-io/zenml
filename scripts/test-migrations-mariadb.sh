@@ -16,7 +16,6 @@ function run_tests_for_version() {
     else
         mkdir test_starter
         zenml init --template starter --path test_starter --template-with-defaults
-        cd test_starter
     fi
 
     cd test_starter
