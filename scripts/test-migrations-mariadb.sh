@@ -10,7 +10,8 @@ function run_tests_for_version() {
     echo "===== Testing version $VERSION ====="
 
     mkdir test_starter
-    zenml init --template starter --path test_starter --template-with-defaults
+    zenml config analytics opt-out
+    zenml init --template starter --path test_starter --template-with-defaults --test
     cd test_starter
 
     export ZENML_ANALYTICS_OPT_IN=false
