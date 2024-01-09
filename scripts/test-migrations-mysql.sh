@@ -12,6 +12,8 @@ fi
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
+    # versions pre-templates and pre-init test flag
+    # (zenml init --test allows for a non-interactive init)
     local PRE_TEMPLATE_VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0")
 
     echo "===== Testing version $VERSION ====="
