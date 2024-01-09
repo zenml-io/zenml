@@ -770,9 +770,9 @@ Your unit tests should rarely fail when slightest change in implemented code is 
 
 ## Acknowledgments
 
-Special thanks to FussyLab ,MindGPT for valuable and exemplary approach in testing ZenML steps. The insights and practical examples from their project have greatly influenced and enriched this documentation on unit testing. Their dedication to fostering best practices in testing within the ZenML community is commendable.
+Special thanks to FussyLab ,MindGPT for valuable and exemplary approach in testing. The insights and practical examples from their project have greatly influenced and enriched this documentation on unit testing. Their dedication to fostering best practices in testing within the community is commendable.
 
-If you have further inquiries or wish to explore their approach in detail, you can refer to [FussyLab's MindGPT project](link_to_project) for insightful examples.
+If you have further inquiries or wish to explore their approach in detail, you can refer to [FussyLab's MindGPT project](https://github.com/fuzzylabs/MindGPT/tree/develop/tests/test_steps) for insightful examples.
 
 
 <!-- For scarf -->
