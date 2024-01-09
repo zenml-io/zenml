@@ -300,7 +300,7 @@ def test_pipeline_config_from_file_works_with_pipeline_parameters_on_conflict_wi
     clean_workspace, tmp_path
 ):
     """Test that the pipeline will not fail with error.
-    
+
     If configured with parameters from a yaml file for the steps
     and same parameters are set with some defaults in the code.
     """
