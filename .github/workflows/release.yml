@@ -67,6 +67,7 @@ jobs:
       - mlstacks-compatibility-check
       - sqlite-db-migration-testing
       - mysql-db-migration-testing
+      - mariadb-db-migration-testing
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
   wait-for-package-release:
