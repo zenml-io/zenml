@@ -299,8 +299,10 @@ def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_wi
 def test_pipeline_config_from_file_works_with_pipeline_parameters_on_conflict_with_default_parameters(
     clean_workspace, tmp_path
 ):
-    """Test that the pipeline will not fail with error, if configured with parameters
-    from a yaml file for the steps and same parameters are set with some defaults in the code.
+    """Test that the pipeline will not fail with error.
+    
+    If configured with parameters from a yaml file for the steps
+    and same parameters are set with some defaults in the code.
     """
     config_path = tmp_path / "config.yaml"
     file_config = {
