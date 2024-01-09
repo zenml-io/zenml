@@ -246,21 +246,18 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     sample_pipeline_run_request_model.deployment = deployment_response.id
     sample_step_request_model.deployment = deployment_response.id
 
-    clean_client.zen_store.create_run(sample_pipeline_run_request_model)
-    sample_step_request_model.pipeline_run_id = (
-        sample_pipeline_run_request_model.id
-    )
+    run = clean_client.zen_store.create_run(sample_pipeline_run_request_model)
+    sample_step_request_model.pipeline_run_id = run.id
     response_1 = clean_client.zen_store.create_run_step(
         sample_step_request_model
     )
 
     # Create another pipeline run and step run, with the same cache key
-    sample_pipeline_run_request_model.id = uuid4()
     sample_pipeline_run_request_model.name = "new_run_name"
-    clean_client.zen_store.create_run(sample_pipeline_run_request_model)
-    sample_step_request_model.pipeline_run_id = (
-        sample_pipeline_run_request_model.id
+    new_run = clean_client.zen_store.create_run(
+        sample_pipeline_run_request_model
     )
+    sample_step_request_model.pipeline_run_id = new_run.id
     response_2 = clean_client.zen_store.create_run_step(
         sample_step_request_model
     )

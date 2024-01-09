@@ -13,16 +13,19 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and artifacts."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field, validator
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
+from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
     BaseResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
+from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -139,6 +142,20 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
         "only_data_artifacts",
         "only_model_artifacts",
         "only_deployment_artifacts",
+        "has_custom_name",
+    ]
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        "only_data_artifacts",
+        "only_model_artifacts",
+        "only_deployment_artifacts",
+        "has_custom_name",
+        "model_id",
+        "model_version_id",
+        "user_id",
+        "workspace_id",
+        "updated",
+        "id",
     ]
 
     workspace_id: Optional[Union[UUID, str]] = Field(
@@ -163,16 +180,69 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
     only_data_artifacts: Optional[bool] = False
     only_model_artifacts: Optional[bool] = False
     only_deployment_artifacts: Optional[bool] = False
+    has_custom_name: Optional[bool] = None
 
-    CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
-        "only_data_artifacts",
-        "only_model_artifacts",
-        "only_deployment_artifacts",
-        "model_id",
-        "model_version_id",
-        "user_id",
-        "workspace_id",
-        "updated",
-        "id",
-    ]
+    def get_custom_filters(
+        self,
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters()
+
+        from sqlalchemy import and_
+
+        from zenml.zen_stores.schemas.artifact_schemas import (
+            ArtifactSchema,
+            ArtifactVersionSchema,
+        )
+        from zenml.zen_stores.schemas.model_schemas import (
+            ModelVersionArtifactSchema,
+        )
+
+        if self.artifact_name:
+            value, filter_operator = self._resolve_operator(self.artifact_name)
+            filter_ = StrFilter(
+                operation=GenericFilterOps(filter_operator),
+                column="name",
+                value=value,
+            )
+            artifact_name_filter = and_(  # type: ignore[type-var]
+                ModelVersionArtifactSchema.artifact_version_id
+                == ArtifactVersionSchema.id,
+                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                filter_.generate_query_conditions(ArtifactSchema),
+            )
+            custom_filters.append(artifact_name_filter)
+
+        if self.only_data_artifacts:
+            data_artifact_filter = and_(
+                ModelVersionArtifactSchema.is_model_artifact.is_(False),  # type: ignore[attr-defined]
+                ModelVersionArtifactSchema.is_deployment_artifact.is_(False),  # type: ignore[attr-defined]
+            )
+            custom_filters.append(data_artifact_filter)
+
+        if self.only_model_artifacts:
+            model_artifact_filter = and_(
+                ModelVersionArtifactSchema.is_model_artifact.is_(True),  # type: ignore[attr-defined]
+            )
+            custom_filters.append(model_artifact_filter)
+
+        if self.only_deployment_artifacts:
+            deployment_artifact_filter = and_(
+                ModelVersionArtifactSchema.is_deployment_artifact.is_(True),  # type: ignore[attr-defined]
+            )
+            custom_filters.append(deployment_artifact_filter)
+
+        if self.has_custom_name is not None:
+            custom_name_filter = and_(  # type: ignore[type-var]
+                ModelVersionArtifactSchema.artifact_version_id
+                == ArtifactVersionSchema.id,
+                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                ArtifactSchema.has_custom_name == self.has_custom_name,
+            )
+            custom_filters.append(custom_name_filter)
+
+        return custom_filters

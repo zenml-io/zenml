@@ -88,6 +88,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
             A dictionary of visualization URIs and their types.
         """
         visualization_path = os.path.join(self.uri, HTML_FILENAME)
+        visualization_path = visualization_path.replace("\\", "/")
         with fileio.open(visualization_path, "w") as f:
             result.save_as_html(f)
         return {visualization_path: VisualizationType.HTML}

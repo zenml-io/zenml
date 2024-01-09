@@ -21,7 +21,6 @@ from uuid import uuid4
 
 import sky
 
-from zenml.client import Client
 from zenml.entrypoints import PipelineEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
@@ -31,7 +30,6 @@ from zenml.logger import get_logger
 from zenml.orchestrators import (
     ContainerizedOrchestrator,
 )
-from zenml.orchestrators import utils as orchestrator_utils
 from zenml.stack import StackValidator
 from zenml.utils import string_utils
 
@@ -264,12 +262,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             self.prepare_environment_variable(set=False)
 
         run_duration = time.time() - start_time
-        run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
-            orchestrator=self, orchestrator_run_id=orchestrator_run_id
-        )
-        run_model = Client().zen_store.get_run(run_id)
         logger.info(
-            "Pipeline run `%s` has finished in `%s`.\n",
-            run_model.name,
+            "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
         )

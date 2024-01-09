@@ -1,75 +1,62 @@
+---
 name: Run tests on templates
-
 on:
   workflow_call:
     inputs:
       os:
-        description: 'OS'
+        description: OS
         type: string
         required: true
       python-version:
-        description: 'Python version'
+        description: Python version
         type: string
         required: true
-
   workflow_dispatch:
     inputs:
       os:
-        description: 'OS'
+        description: OS
         type: choice
-        options: 
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
+        options: [ubuntu-latest, macos-latest, windows-latest]
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       python-version:
-        description: 'Python version'
+        description: Python version
         type: choice
-        options:
-          - '3.8'
-          - '3.9'
-          - '3.10'
-          - '3.11'
+        options: ['3.8', '3.9', '3.10', '3.11']
         required: false
         default: '3.8'
-
 jobs:
   all-template-tests:
     name: all-template-tests
     runs-on: ${{ inputs.os }}
     strategy:
-        matrix:
-            stack-name: [local]
-            template-repo: [
-              {repo: zenml-io/zenml-project-templates, path: .github/actions/starter_template_test},
-              {repo: zenml-io/template-e2e-batch, path: .github/actions/e2e_template_test},
-              {repo: zenml-io/template-nlp, path: .github/actions/nlp_template_test}
-            ]
-        fail-fast: false
+      matrix:
+        stack-name: [local]
+        template-repo:
+          - {repo: zenml-io/zenml-project-templates, path: .github/actions/starter_template_test}
+          - {repo: zenml-io/template-e2e-batch, path: .github/actions/e2e_template_test}
+          - {repo: zenml-io/template-nlp, path: .github/actions/nlp_template_test}
+      fail-fast: false
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: "utf-8"
-      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+      PYTHONIOENCODING: utf-8
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
-
     defaults:
       run:
         shell: bash
-
     steps:
       - name: Run template tests for ${{ matrix.template-repo.repo }}
         uses: jenseng/dynamic-uses@v1
         with:
           uses: ${{ matrix.template-repo.repo }}/${{ matrix.template-repo.path }}@main
-          with: '{ "python-version": "${{ inputs.python-version }}", "stack-name": "${{ matrix.stack-name }}", "ref-zenml": "${{ github.ref }}" }'
-
+          with: '{ "python-version": "${{ inputs.python-version }}", "stack-name":
+            "${{ matrix.stack-name }}", "ref-zenml": "${{ github.ref }}" }'
       - name: message-on-error
         if: failure()
-        run: |
+        run: |-
           echo "::error title=${{ matrix.template-repo.repo }} project template testing failed with new version of ZenML core!::\
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in ${{ matrix.template-repo.repo }} compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-

@@ -1,40 +1,34 @@
+---
 name: Auto-update all templates
-
 on:
   workflow_call:
     inputs:
       os:
-        description: 'OS'
+        description: OS
         type: string
         required: true
       python-version:
-        description: 'Python version'
+        description: Python version
         type: string
         required: true
-
   workflow_dispatch:
     inputs:
       os:
-        description: 'OS'
+        description: OS
         type: choice
-        options: 
+        options:
           - ubuntu-latest
           - macos-latest
           - windows-latest
           - ubuntu-dind-runners
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       python-version:
-        description: 'Python version'
+        description: Python version
         type: choice
-        options:
-          - '3.8'
-          - '3.9'
-          - '3.10'
-          - '3.11'
+        options: ['3.8', '3.9', '3.10', '3.11']
         required: false
         default: '3.8'
-
 jobs:
   update-e2e-batch-template-to-examples:
     name: update-e2e-batch-template-to-examples
@@ -42,14 +36,13 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: "utf-8"
-      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
-    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message, 'GitBook:')
-
+      PYTHONIOENCODING: utf-8
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
+    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
+      'GitBook:')
     defaults:
       run:
         shell: bash
-
     steps:
       - name: Run template tests for zenml-io/template-e2e-batch
         uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
@@ -62,7 +55,6 @@ jobs:
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
-
       - name: message-on-error
         if: failure()
         run: |
@@ -70,18 +62,16 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-e2e-batch compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-
       - name: Check-out fresh E2E template
         run: |
           rm -rf examples/e2e
           mkdir -p examples/e2e
           printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+          pip install yamlfix
           bash scripts/format.sh
-
       - name: Check for changes
         id: check_changes
         run: |
@@ -92,7 +82,6 @@ jobs:
             echo "Active Git changes found."
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
-          
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
         run: |
@@ -101,7 +90,6 @@ jobs:
           git add .
           git commit -am "Auto-update of E2E template"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
-
       - name: Create PR comment
         if: steps.check_changes.outputs.changes == 'true'
         uses: actions/github-script@v7.0.1
@@ -114,22 +102,19 @@ jobs:
               repo: context.repo.repo,
               body: 'E2E template updates in `examples/e2e` have been pushed.'
             })
-
-
   update-nlp-template-to-examples:
     name: update-nlp-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: "utf-8"
-      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
-    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message, 'GitBook:')
-
+      PYTHONIOENCODING: utf-8
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
+    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
+      'GitBook:')
     defaults:
       run:
         shell: bash
-
     steps:
       - name: Run template tests for zenml-io/template-nlp
         uses: zenml-io/template-nlp/.github/actions/nlp_template_test@main
@@ -137,12 +122,10 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: '0.45.0' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
-      
+          ref-template: 0.45.0  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
-
       - name: message-on-error
         if: failure()
         run: |
@@ -150,17 +133,15 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-nlp compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-
       - name: Check-out fresh NLP template
         run: |
           mkdir -p examples/nlp-case
           printf 'info@zenml.io' | zenml init --path examples/nlp-case --template nlp --template-with-defaults
+          pip install yamlfix
           bash scripts/format.sh
-
       - name: Check for changes
         id: check_changes
         run: |
@@ -171,7 +152,6 @@ jobs:
             echo "Active Git changes found."
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
-          
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
         run: |
@@ -180,7 +160,6 @@ jobs:
           git add .
           git commit -am "Auto-update of NLP template"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
-
       - name: Create PR comment
         if: steps.check_changes.outputs.changes == 'true'
         uses: actions/github-script@v7.0.1
@@ -193,22 +172,19 @@ jobs:
               repo: context.repo.repo,
               body: 'NLP template updates in `examples/nlp-case` have been pushed.'
             })
-            
-
   update-starter-template-to-examples:
     name: update-starter-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: "utf-8"
-      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
-    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message, 'GitBook:')
-
+      PYTHONIOENCODING: utf-8
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
+    if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
+      'GitBook:')
     defaults:
       run:
         shell: bash
-
     steps:
       - name: Run template tests for zenml-io/template-starter
         uses: zenml-io/template-starter/.github/actions/starter_template_test@main
@@ -216,12 +192,10 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: '2023.12.18' # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
-
+          ref-template: 2023.12.18  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
-
       - name: message-on-error
         if: failure()
         run: |
@@ -230,18 +204,16 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-starter compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-
       - name: Check-out fresh Starter template
         run: |
           rm -rf examples/quickstart
           mkdir -p examples/quickstart
           printf 'info@zenml.io' | zenml init --path examples/quickstart --template starter --template-with-defaults
+          pip install yamlfix
           bash scripts/format.sh
-
       - name: Check for changes
         id: check_changes
         run: |
@@ -252,7 +224,6 @@ jobs:
             echo "Active Git changes found."
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
-
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
         run: |
@@ -261,7 +232,6 @@ jobs:
           git add .
           git commit -am "Auto-update of Starter template"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
-
       - name: Create PR comment
         if: steps.check_changes.outputs.changes == 'true'
         uses: actions/github-script@v7.0.1
