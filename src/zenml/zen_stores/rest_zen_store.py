@@ -2839,13 +2839,18 @@ class RestZenStore(BaseZenStore):
     def delete_all_model_version_artifact_links(
         self,
         model_version_id: UUID,
+        only_links: bool = True,
     ) -> None:
         """Deletes all links between model version and an artifact.
 
         Args:
             model_version_id: ID of the model version containing the link.
+            only_links: Flag deciding whether to delete only links or all.
         """
-        self.delete(f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}")
+        self.delete(
+            f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
+            params={"only_links": only_links},
+        )
 
     # ---------------------- Model Versions Pipeline Runs ----------------------
 

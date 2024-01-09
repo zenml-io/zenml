@@ -50,7 +50,7 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, SQLModel, create_engine, delete, or_, select
+from sqlmodel import Session, SQLModel, col, create_engine, delete, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -6830,20 +6830,38 @@ class SqlZenStore(BaseZenStore):
     def delete_all_model_version_artifact_links(
         self,
         model_version_id: UUID,
+        only_links: bool = True,
     ) -> None:
         """Deletes all model version to artifact links.
 
         Args:
             model_version_id: ID of the model version containing the link.
+            only_links: Whether to only delete the link to the artifact.
         """
         with Session(self.engine) as session:
-            model_version = self.get_model_version(model_version_id)
+            if not only_links:
+                artifact_version_ids = session.execute(
+                    select(
+                        ModelVersionArtifactSchema.artifact_version_id
+                    ).where(
+                        ModelVersionArtifactSchema.model_version_id
+                        == model_version_id
+                    )
+                ).fetchall()
+                session.execute(
+                    delete(ArtifactVersionSchema).where(
+                        col(ArtifactVersionSchema.id).in_(
+                            [a[0] for a in artifact_version_ids]
+                        )
+                    ),
+                )
             session.execute(
                 delete(ModelVersionArtifactSchema).where(
                     ModelVersionArtifactSchema.model_version_id
-                    == model_version.id
+                    == model_version_id
                 )
             )
+
             session.commit()
 
     # ---------------------- Model Versions Pipeline Runs ----------------------

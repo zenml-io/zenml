@@ -5105,15 +5105,16 @@ class Client(metaclass=ClientMetaClass):
             )
 
     def delete_all_model_version_artifact_links(
-        self, model_version_id: UUID
+        self, model_version_id: UUID, only_links: bool
     ) -> None:
         """Delete all model version to artifact links in Model Control Plane.
 
         Args:
             model_version_id: The id of the model version holding the link.
+            only_links: If true, only delete the link to the artifact.
         """
         self.zen_store.delete_all_model_version_artifact_links(
-            model_version_id
+            model_version_id, only_links
         )
 
     #################################################
