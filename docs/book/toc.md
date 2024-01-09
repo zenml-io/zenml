@@ -56,6 +56,7 @@
     * [Project templates](user-guide/advanced-guide/best-practices/using-project-templates.md)
     * [Handling dependencies](user-guide/advanced-guide/best-practices/handling-dependencies.md)
     * [Debug and solve issues](user-guide/advanced-guide/best-practices/debug-and-solve-issues.md)
+    * [Testing ZenML pipelines](user-guide\advanced-guide\best-practices\unit_testing.md)
 
 ## Deploying ZenML
 
