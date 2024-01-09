@@ -33,7 +33,6 @@
     * [Fetch metadata during pipeline composition](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md)
     * [Use failure/success hooks](user-guide/advanced-guide/pipelining-features/use-failure-success-hooks.md)
     * [Hyperparameter tuning](user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
-    * [Unit testing](user-guide/advanced-guide/pipelining-features/unit_testing.md)
   * [Data management](user-guide/advanced-guide/data-management/data-management.md)
     * [How ZenML stores data](user-guide/advanced-guide/data-management/artifact-versioning.md)
     * [Logging metadata](user-guide/advanced-guide/data-management/logging-metadata.md)
@@ -56,6 +55,7 @@
     * [Project templates](user-guide/advanced-guide/best-practices/using-project-templates.md)
     * [Handling dependencies](user-guide/advanced-guide/best-practices/handling-dependencies.md)
     * [Debug and solve issues](user-guide/advanced-guide/best-practices/debug-and-solve-issues.md)
+    * [Unit testing](user-guide/advanced-guide/best-practices/unit_testing.md)
 
 ## Deploying ZenML
 

@@ -2,6 +2,8 @@
 description: Integrating unit testing in your ZenML pipeline.
 ---
 
+acknowledgement: [Fussylabs MindGPT](https://github.com/fuzzylabs/MindGPT/tree/develop/tests/test_steps)
+
 # Write unit testing
 In ZenML, unit testing plays a crucial role in ensuring the robustness and reliability of machine learning pipelines. Sometimes, it can be beneficial to extract common functionalities into separate functions to prevent code duplication and streamline the pipeline development process. This approach not only enhances code readability but also simplifies the testing phase by isolating specific functionalities for testing.
 
@@ -765,6 +767,12 @@ Unit test should be simple, succint and easy to understand, Writing logic in tes
 
 ### Keep your tests away from too much implementation details: 
 Your unit tests should rarely fail when slightest change in implemented code is done, or else it will be difficult to maintain. The optimal approach is to steer clear of implementation details to avoid the need for rewriting tests repeatedly. Coupling tests with implementation specifics diminishes the efficacy of the tests.
+
+## Acknowledgments
+
+Special thanks to FussyLab from MindGPT for their valuable contributions and exemplary approach in testing ZenML steps. The insights and practical examples from their project have greatly influenced and enriched this documentation on unit testing. Their dedication to fostering best practices in testing within the ZenML community is commendable.
+
+If you have further inquiries or wish to explore their approach in detail, you can refer to [FussyLab's MindGPT project](link_to_project) for insightful examples.
 
 
 <!-- For scarf -->
