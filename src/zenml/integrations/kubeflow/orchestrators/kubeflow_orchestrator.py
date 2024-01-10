@@ -72,6 +72,7 @@ from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
+from zenml.stack.stack_component import StackComponent
 from zenml.utils import io_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -91,28 +92,30 @@ ENV_KFP_RUN_ID = "KFP_RUN_ID"
 
 
 class ZenMLKFPClient(kfp.Client):  # type: ignore[misc]
-    """KFP client linked to a ZenML Kubeflow orchestrator.
+    """KFP client linked to a ZenML service connector.
 
     This is a workaround for the fact that the native KFP client does not
     support initialization and refresh from an existing Kubernetes client
     (extracted in our case from the Kubernetes service connector associated
-    with the orchestrator).
+    with the stack component).
     """
 
     def __init__(
         self,
-        orchestrator: "KubeflowOrchestrator",
+        stack_component: StackComponent,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         """Initializes the KFP client from a Kubernetes client.
 
         Args:
-            orchestrator: The Kubeflow orchestrator.
+            stack_component: The stack component linked to the Kubernetes
+                service connector that will be used to initialize and refresh
+                the KFP client credentials.
             args: standard KFP client positional arguments.
             kwargs: standard KFP client keyword arguments.
         """
-        self._orchestrator = orchestrator
+        self.stack_component = stack_component
         super().__init__(*args, **kwargs)
 
     def _load_config(self, *args: Any, **kwargs: Any) -> Any:
@@ -137,7 +140,7 @@ class ZenMLKFPClient(kfp.Client):  # type: ignore[misc]
 
         # This call generates a new Kubernetes client or refreshes the existing
         # one if the token has expired.
-        connector = self._orchestrator.get_connector()
+        connector = self.stack_component.get_connector()
         # It's guaranteed that the connector is linked (otherwise this class
         # would not be instantiated)
         assert connector is not None
