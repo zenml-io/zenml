@@ -12,7 +12,8 @@ This guide will focus on shifting gears from running pipelines _locally_ on your
 
 * [Deploying ZenML](deploying-zenml.md)
 * [Understanding stacks](understand-stacks.md)
-* [Deploy a cloud stack](cloud-stack.md)
+* [Connecting remote storage](remote-storage.md)
+* [Orchestrating on the cloud](cloud-orchestration.md)
 * [Configure a code repository](connect-code-repository.md)
 * [Scale compute to the cloud](scale-compute.md)
 * [Configuring your pipeline](configure-pipeline.md)
