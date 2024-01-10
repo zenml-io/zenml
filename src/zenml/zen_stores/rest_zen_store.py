@@ -817,6 +817,19 @@ class RestZenStore(BaseZenStore):
             resource_id=artifact_version_id, route=ARTIFACT_VERSIONS
         )
 
+    def prune_artifact_versions(
+        self,
+        only_versions: bool = True,
+    ) -> None:
+        """Prunes unused artifact versions and their artifacts.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+        """
+        self.delete(
+            path=ARTIFACT_VERSIONS, params={"only_versions": only_versions}
+        )
+
     # ------------------------ Artifact Visualizations ------------------------
 
     def get_artifact_visualization(

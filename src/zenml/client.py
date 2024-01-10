@@ -2790,40 +2790,26 @@ class Client(metaclass=ClientMetaClass):
         logger.info(f"Deleted artifact '{artifact.name}'.")
 
     def prune_artifacts(
-        self, only_artifact: bool = False, only_metadata: bool = False
+        self,
+        only_versions: bool = True,
+        delete_from_artifact_store: bool = False,
     ) -> None:
         """Delete all unused artifacts and artifact versions.
 
         Args:
-            only_artifact: Only delete artifacts
-            only_metadata: Only delete artifact metadata
-
-        Raises:
-            RuntimeError: If any artifact cannot be deleted.
+            only_versions: Only delete artifact versions, keeping artifacts
+            delete_from_artifact_store: Delete data from artifact metadata
         """
-        unused_artifact_versions = depaginate(
-            partial(self.list_artifact_versions, only_unused=True)
-        )
-
-        if not unused_artifact_versions:
-            logger.info("No unused artifact versions found.")
-            return
-
-        for unused_artifact_version in unused_artifact_versions:
-            try:
-                self.delete_artifact_version(
-                    name_id_or_prefix=unused_artifact_version.id,
-                    delete_metadata=not only_artifact,
-                    delete_from_artifact_store=not only_metadata,
+        if delete_from_artifact_store:
+            unused_artifact_versions = depaginate(
+                partial(self.list_artifact_versions, only_unused=True)
+            )
+            for unused_artifact_version in unused_artifact_versions:
+                self._delete_artifact_from_artifact_store(
+                    unused_artifact_version
                 )
-                unused_artifact = unused_artifact_version.artifact
-                if not unused_artifact.versions and not only_artifact:
-                    self.delete_artifact(unused_artifact.id)
 
-            except Exception as e:
-                raise RuntimeError(
-                    f"Failed to prune artifacts, error deleting artifact `{unused_artifact_version.id}`, error `{e}`."
-                )
+        self.zen_store.prune_artifact_versions(only_versions)
         logger.info("All unused artifacts and artifact versions deleted.")
 
     # --------------------------- Artifact Versions ---------------------------

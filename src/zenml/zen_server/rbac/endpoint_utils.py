@@ -148,3 +148,19 @@ def verify_permissions_and_delete_entity(
     model = get_method(id)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id)
+
+
+def verify_permissions_and_prune_entities(
+    resource_type: ResourceType,
+    prune_method: Callable[[AnyRequest], AnyResponse],
+    **kwargs,
+) -> None:
+    """Verify permissions and prune entities of certain type.
+
+    Args:
+        resource_type: The resource type of the entities to prune.
+        prune_method: The method to prune the entities.
+        kwargs: Keyword arguments to pass to the prune method.
+    """
+    verify_permission(resource_type=resource_type, action=Action.PRUNE)
+    prune_method(**kwargs)

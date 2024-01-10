@@ -50,7 +50,16 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, SQLModel, create_engine, or_, select
+from sqlmodel import (
+    Session,
+    SQLModel,
+    and_,
+    col,
+    create_engine,
+    delete,
+    or_,
+    select,
+)
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -1729,6 +1738,56 @@ class SqlZenStore(BaseZenStore):
                     "found."
                 )
             session.delete(artifact_version)
+            session.commit()
+
+    def prune_artifact_versions(
+        self,
+        only_versions: bool = True,
+    ) -> None:
+        """Prunes unused artifact versions and their artifacts.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+        """
+        with Session(self.engine) as session:
+            unused_artifact_versions = [
+                a[0]
+                for a in session.execute(
+                    select(ArtifactVersionSchema.id).where(
+                        and_(
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(StepRunOutputArtifactSchema.artifact_id)
+                            ),
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(StepRunInputArtifactSchema.artifact_id)
+                            ),
+                        )
+                    )
+                ).fetchall()
+            ]
+            session.execute(
+                delete(ArtifactVersionSchema).where(
+                    col(ArtifactVersionSchema.id).in_(
+                        unused_artifact_versions
+                    ),
+                )
+            )
+            if not only_versions:
+                unused_artifacts = [
+                    a[0]
+                    for a in session.execute(
+                        select(ArtifactSchema.id).where(
+                            col(ArtifactSchema.id).notin_(
+                                select(ArtifactVersionSchema.artifact_id)
+                            )
+                        )
+                    ).fetchall()
+                ]
+                session.execute(
+                    delete(ArtifactSchema).where(
+                        col(ArtifactSchema.id).in_(unused_artifacts)
+                    )
+                )
             session.commit()
 
     # ------------------------ Artifact Visualizations ------------------------
