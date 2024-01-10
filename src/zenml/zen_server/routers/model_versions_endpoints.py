@@ -240,7 +240,7 @@ def delete_model_version_artifact_link(
     model_version_artifact_link_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Deletes a model version link.
+    """Deletes a model version to artifact link.
 
     Args:
         model_version_id: ID of the model version containing the link.
@@ -253,6 +253,30 @@ def delete_model_version_artifact_link(
     zen_store().delete_model_version_artifact_link(
         model_version_id,
         model_version_artifact_link_name_or_id,
+    )
+
+
+@router.delete(
+    "/{model_version_id}" + ARTIFACTS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_all_model_version_artifact_links(
+    model_version_id: UUID,
+    only_links: bool = True,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Deletes all model version to artifact links.
+
+    Args:
+        model_version_id: ID of the model version containing links.
+        only_links: Whether to only delete the link to the artifact.
+    """
+    model_version = zen_store().get_model_version(model_version_id)
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
+    zen_store().delete_all_model_version_artifact_links(
+        model_version_id, only_links
     )
 
 
