@@ -23,7 +23,7 @@ def step_2(input_one: str, input_two: str) -> None:
     return combined_str
 ```
 
-This is a ZenML step, and ensuring its proper functionality is crucial. In case it fails, you want to detect this issue early to prevent potential disasters. To achieve this, writing unit tests for each function is necessary. While you have the flexibility to structure functions based on your needs, it's advisable to follow a one-test-case-per-function approach. This practice aligns with the principles of unit testing, focusing on individual functionalities rather than integration. When running these unit test functions, the terminal displays the count of passed test cases.
+As this is a step within a pipeline, ensuring its proper functionality is crucial. In case it fails, we want to detect early to prevent potential disasters. It's advisable to follow a one-test-case-per-function approach. This practice aligns with the principles of unit testing, focusing on individual functionalities.
 
 So, here is the unit testing for your ZenML step code written above.
 
