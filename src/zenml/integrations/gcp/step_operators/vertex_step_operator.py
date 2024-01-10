@@ -187,7 +187,6 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
         Raises:
             RuntimeError: If the run fails.
-            ConnectionError: If the run fails due to a connection error.
         """
         resource_settings = info.config.resource_settings
         if resource_settings.cpu_count or resource_settings.memory:
@@ -317,11 +316,14 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                         credentials=credentials, client_options=client_options
                     )
                 else:
-                    logger.error(
+                    logger.exception(
                         "Request failed after %s retries.",
                         CONNECTION_ERROR_RETRY_LIMIT,
                     )
-                    raise
+                    raise RuntimeError(
+                        f"Request failed after {CONNECTION_ERROR_RETRY_LIMIT} "
+                        f"retries: {err}"
+                    )
             if response.state in VERTEX_JOB_STATES_FAILED:
                 err_msg = (
                     "Job '{}' did not succeed.  Detailed response {}.".format(
