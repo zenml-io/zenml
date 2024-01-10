@@ -265,12 +265,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                         logger.info(
                             f"Found existing cluster {cluster_name}. Reusing..."
                         )
-                        new_cluster = False
             if cluster_name is None:
                 cluster_name = self.sanitize_cluster_name(
                     f"{orchestrator_run_name}"
                 )
-                new_cluster = True
 
             # Launch the cluster
             sky.launch(
@@ -287,11 +285,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             raise e
 
         finally:
-            if new_cluster:
-                # If the cluster was created for this run, shut it down
-                logger.info(
-                    f"Shutting down the new created cluster {cluster_name}..."
-                )
             # Unset the service connector AWS profile ENV variable
             self.prepare_environment_variable(set=False)
 
