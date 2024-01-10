@@ -8,6 +8,8 @@ description: Connect your git repository with ZenML
 We're still working on finishing this easy-to-consume production guide for you. In the meanwhile, please follow the provided links in this space as an interim guide.
 {% endhint %}
 
+<figure><img src="../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
+
 This section of the production guide will be about connecting your git code repository. Until this section is ready, here are some useful links to achieve this goal:
 
 - [The ZenML Git Integration](../advanced-guide/infrastructure-management/connect-your-git-repository.md)

@@ -161,7 +161,7 @@ python run.py --training-pipeline
 You will notice that your pipeline run will behave differently from befeore.
 Here are the broad sequence of events that just happened:
 
-<figure><img src="../../.gitbook/assets/remote_pipeline_run.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/cloud_orchestration_run.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack.</p></figcaption></figure>
 
 1. The user runs a pipeline on the client machine (in this case the training pipeline of the starter template).
 2. The client asks the server for the stack info, which returns it with the configuration of the cloud stack.
