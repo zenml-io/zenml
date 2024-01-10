@@ -175,9 +175,12 @@ def main() -> None:
         docker_environment_str = " ".join(
             f"-e {k}={v}" for k, v in env.items()
         )
+        custom_run_args = " ".join(settings.docker_run_args)
+        if custom_run_args:
+            custom_run_args += " "
 
         # Set up the task
-        run_command = f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+        run_command = f"docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
         task_name = f"{deployment.id}-{step_name}-{time.time()}"
         task = sky.Task(
             run=run_command,
