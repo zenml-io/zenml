@@ -13,7 +13,7 @@ Unit testing is essential for ensuring the reliability and correctness of indivi
 ## How to unit test ZenML steps?
 Unit testing in ZenML can be carried out by writing test cases using frameworks like Pytest. These test cases focus on individual units, such as steps within pipelines, to validate their functionality in isolation. Test functions are created to check specific behaviors or inputs and ensure expected outputs. Mocking and patching are often used to simulate dependencies or external interactions, allowing thorough testing without affecting the actual environment. Continuous integration and deployment (CI/CD) pipelines further automate the execution of these tests, running them regularly to guarantee ongoing code stability and reliability in ZenML's development cycle.
 
-For more practical view, this is our ZenML step code:
+For a more practical view, let's say this is out ZenML step:
 
 ```python
 @step(enable_cache=False)
