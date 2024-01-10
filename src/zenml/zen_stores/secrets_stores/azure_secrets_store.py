@@ -15,13 +15,10 @@
 
 import json
 import logging
-from datetime import datetime
 from typing import (
     Any,
     ClassVar,
     Dict,
-    List,
-    Optional,
     Type,
     cast,
 )
@@ -43,9 +40,6 @@ from zenml.integrations.azure.service_connectors.azure_service_connector import 
     AzureAuthenticationMethods,
 )
 from zenml.logger import get_logger
-from zenml.models import (
-    SecretResponse,
-)
 from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
@@ -55,8 +49,6 @@ logger = get_logger(__name__)
 
 
 AZURE_ZENML_SECRET_NAME_PREFIX = "zenml"
-ZENML_AZURE_SECRET_CREATED_KEY = "zenml_secret_created"
-ZENML_AZURE_SECRET_UPDATED_KEY = "zenml_secret_updated"
 
 
 class AzureSecretsStoreConfiguration(
@@ -347,87 +339,3 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
             )
 
         logger.debug(f"Deleted Azure secret: {azure_secret_id}")
-
-    # ------------------------------------------------
-    # Deprecated - kept only for migration from 0.53.0
-    # ------------------------------------------------
-
-    def _convert_azure_secret(
-        self,
-        tags: Dict[str, str],
-        values: Optional[str] = None,
-    ) -> SecretResponse:
-        """Create a ZenML secret model from data stored in an Azure secret.
-
-        If the Azure secret cannot be converted, the method acts as if the
-        secret does not exist and raises a KeyError.
-
-        Args:
-            tags: The Azure secret tags.
-            values: The Azure secret values encoded as a JSON string
-                (optional).
-
-        Returns:
-            The ZenML secret.
-
-        Raises:
-            KeyError: if the Azure secret cannot be converted.
-        """
-        try:
-            created = datetime.fromisoformat(
-                tags[ZENML_AZURE_SECRET_CREATED_KEY],
-            )
-            updated = datetime.fromisoformat(
-                tags[ZENML_AZURE_SECRET_UPDATED_KEY],
-            )
-        except KeyError as e:
-            raise KeyError(
-                f"Secret could not be retrieved: missing required metadata: {e}"
-            )
-
-        return self._create_secret_from_metadata(
-            metadata=tags,
-            created=created,
-            updated=updated,
-            values=json.loads(values) if values else None,
-        )
-
-    def list_secrets(self) -> List[SecretResponse]:
-        """List all secrets.
-
-        Note that returned secrets do not include any secret values. To fetch
-        the secret values, use `get_secret`.
-
-        Returns:
-            A list of all secrets.
-
-        Raises:
-            RuntimeError: If the Azure Key Vault API returns an unexpected
-                error.
-        """
-        results: List[SecretResponse] = []
-
-        try:
-            all_secrets = self.client.list_properties_of_secrets()
-            for secret_property in all_secrets:
-                try:
-                    # NOTE: we do not include the secret values in the
-                    # response. We would need a separate API call to fetch
-                    # them for each secret, which would be very inefficient
-                    # anyway.
-                    assert secret_property.tags is not None
-                    secret_model = self._convert_azure_secret(
-                        tags=secret_property.tags,
-                    )
-                except KeyError:
-                    # The _convert_azure_secret method raises a KeyError
-                    # if the secret is tied to a workspace or user that no
-                    # longer exists or if it is otherwise not valid. Here we
-                    # pretend that the secret does not exist.
-                    continue
-
-                results.append(secret_model)
-        except HttpResponseError as e:
-            raise RuntimeError(f"Error listing Azure Key Vault secrets: {e}")
-
-        return results

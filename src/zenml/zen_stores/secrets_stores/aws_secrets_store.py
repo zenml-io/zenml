@@ -14,13 +14,11 @@
 """AWS Secrets Store implementation."""
 
 import json
-from datetime import datetime
 from typing import (
     Any,
     ClassVar,
     Dict,
     List,
-    Optional,
     Type,
 )
 from uuid import UUID
@@ -40,9 +38,6 @@ from zenml.integrations.aws.service_connectors.aws_service_connector import (
     AWSAuthenticationMethods,
 )
 from zenml.logger import get_logger
-from zenml.models import (
-    SecretResponse,
-)
 from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
@@ -399,133 +394,3 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
             )
 
         logger.debug(f"Deleted AWS secret: {aws_secret_id}")
-
-    # ------------------------------------------------
-    # Deprecated - kept only for migration from 0.53.0
-    # ------------------------------------------------
-
-    def _convert_aws_secret(
-        self,
-        tags: List[Dict[str, str]],
-        created: datetime,
-        updated: datetime,
-        values: Optional[str] = None,
-    ) -> SecretResponse:
-        """Create a ZenML secret model from data stored in an AWS secret.
-
-        If the AWS secret cannot be converted, the method acts as if the
-        secret does not exist and raises a KeyError.
-
-        Args:
-            tags: The AWS secret tags.
-            created: The AWS secret creation time.
-            updated: The AWS secret last updated time.
-            values: The AWS secret values encoded as a JSON string (optional).
-
-        Returns:
-            The ZenML secret.
-        """
-        # Convert the AWS secret tags to a metadata dictionary.
-        metadata: Dict[str, str] = {tag["Key"]: tag["Value"] for tag in tags}
-
-        return self._create_secret_from_metadata(
-            metadata=metadata,
-            created=created,
-            updated=updated,
-            values=json.loads(values) if values else None,
-        )
-
-    @staticmethod
-    def _get_aws_secret_filters(
-        metadata: Dict[str, str],
-    ) -> List[Dict[str, str]]:
-        """Convert ZenML secret metadata to AWS secret filters.
-
-        Args:
-            metadata: The ZenML secret metadata.
-
-        Returns:
-            The AWS secret filters.
-        """
-        aws_filters: List[Dict[str, Any]] = []
-        for k, v in metadata.items():
-            aws_filters.append(
-                {
-                    "Key": "tag-key",
-                    "Values": [
-                        k,
-                    ],
-                }
-            )
-            aws_filters.append(
-                {
-                    "Key": "tag-value",
-                    "Values": [
-                        str(v),
-                    ],
-                }
-            )
-
-        return aws_filters
-
-    def list_secrets(
-        self,
-    ) -> List[SecretResponse]:
-        """List all secrets.
-
-        Note that returned secrets do not include any secret values. To fetch
-        the secret values, use `get_secret`.
-
-        Returns:
-            A list of all secrets.
-
-        Raises:
-            RuntimeError: If the AWS Secrets Manager API returns an unexpected
-                error.
-        """
-        # The metadata will always contain at least the filter criteria
-        # required to exclude everything but AWS secrets that belong to the
-        # current ZenML deployment.
-        metadata = self._get_secret_metadata()
-        aws_filters = self._get_aws_secret_filters(metadata)
-
-        results: List[SecretResponse] = []
-
-        try:
-            # AWS Secrets Manager API pagination is wrapped around the
-            # `list_secrets` method call. We use it because we need to fetch all
-            # secrets matching the (partial) filter that we set up. Note that
-            # the pagination used here has nothing to do with the pagination
-            # that we do for the method caller.
-            paginator = self.client.get_paginator("list_secrets")
-            pages = paginator.paginate(
-                Filters=aws_filters,
-                PaginationConfig={
-                    "PageSize": 100,
-                },
-            )
-
-            for page in pages:
-                for secret in page["SecretList"]:
-                    try:
-                        # NOTE: we do not include the secret values in the
-                        # response. We would need a separate API call to fetch
-                        # them for each secret, which would be very inefficient
-                        # anyway.
-                        secret_model = self._convert_aws_secret(
-                            tags=secret["Tags"],
-                            created=secret["CreatedDate"],
-                            updated=secret["LastChangedDate"],
-                        )
-                    except KeyError:
-                        # The _convert_aws_secret method raises a KeyError
-                        # if the secret is tied to a workspace or user that no
-                        # longer exists. Here we pretend that the secret does
-                        # not exist.
-                        continue
-
-                    results.append(secret_model)
-        except ClientError as e:
-            raise RuntimeError(f"Error listing AWS secrets: {e}")
-
-        return results

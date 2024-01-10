@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base Secrets Store implementation."""
 from abc import ABC
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -27,13 +26,8 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
-from zenml.enums import SecretScope, SecretsStoreType
+from zenml.enums import SecretsStoreType
 from zenml.logger import get_logger
-from zenml.models import (
-    SecretResponse,
-    SecretResponseBody,
-    SecretResponseMetadata,
-)
 from zenml.utils import source_utils
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
@@ -47,9 +41,6 @@ if TYPE_CHECKING:
 ZENML_SECRET_LABEL = "zenml"
 ZENML_SECRET_ID_LABEL = "zenml_secret_id"
 ZENML_SECRET_NAME_LABEL = "zenml_secret_name"
-ZENML_SECRET_SCOPE_LABEL = "zenml_secret_scope"
-ZENML_SECRET_USER_LABEL = "zenml_secret_user"
-ZENML_SECRET_WORKSPACE_LABEL = "zenml_secret_workspace"
 
 
 class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
@@ -304,89 +295,6 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
                 f"Secret could not be retrieved: secret ID mismatch: "
                 f"expected {secret_id}, got {stored_secret_id}"
             )
-
-    # ------------------------------------------------
-    # Deprecated - kept only for migration from 0.53.0
-    # ------------------------------------------------
-
-    def _create_secret_from_metadata(
-        self,
-        metadata: Dict[str, str],
-        created: datetime,
-        updated: datetime,
-        values: Optional[Dict[str, str]] = None,
-    ) -> SecretResponse:
-        """Create a ZenML secret model from metadata stored in the secrets store backend.
-
-        Args:
-            metadata: ZenML secret metadata collected from the backend secret
-                (e.g. from secret tags/labels).
-            created: The secret creation time.
-            updated: The secret last updated time.
-            values: The secret values (optional).
-
-        Returns:
-            The ZenML secret.
-
-        Raises:
-            KeyError: If the secret does not have the required metadata, if it
-                is not managed by this ZenML instance or if it is linked to a
-                user or workspace that no longer exists.
-        """
-        # Double-check that the secret is managed by this ZenML instance.
-        if metadata.get(ZENML_SECRET_LABEL) != str(
-            self.zen_store.get_store_info().id
-        ):
-            raise KeyError("Secret is not managed by this ZenML instance")
-
-        # Recover the ZenML secret fields from the input secret metadata.
-        try:
-            secret_id = UUID(metadata[ZENML_SECRET_ID_LABEL])
-            name = metadata[ZENML_SECRET_NAME_LABEL]
-            scope = SecretScope(metadata[ZENML_SECRET_SCOPE_LABEL])
-            workspace_id = UUID(metadata[ZENML_SECRET_WORKSPACE_LABEL])
-            user_id = UUID(metadata[ZENML_SECRET_USER_LABEL])
-        except KeyError as e:
-            raise KeyError(
-                f"Secret could not be retrieved: missing required metadata: {e}"
-            )
-
-        try:
-            user = self.zen_store.get_user(user_id)
-            workspace = self.zen_store.get_workspace(workspace_id)
-        except KeyError as e:
-            # The user or workspace associated with the secret no longer
-            # exists. This can happen if the user or workspace is being
-            # deleted nearly at the same time as this call. In this case, we
-            # raise a KeyError exception. The caller should handle this
-            # exception by assuming that the secret no longer exists.
-            logger.warning(
-                f"Secret with ID {secret_id} is associated with a "
-                f"non-existent user or workspace. Silently ignoring the "
-                f"secret: {e}"
-            )
-            raise KeyError(
-                f"Secret with ID {secret_id} could not be retrieved: "
-                f"the secret is associated with a non-existent user or "
-                f"workspace: {e}"
-            )
-
-        secret_model = SecretResponse(
-            id=secret_id,
-            name=name,
-            body=SecretResponseBody(
-                user=user,
-                created=created,
-                updated=updated,
-                scope=scope,
-                values=values if values else {},
-            ),
-            metadata=SecretResponseMetadata(
-                workspace=workspace,
-            ),
-        )
-
-        return secret_model
 
     class Config:
         """Pydantic configuration class."""

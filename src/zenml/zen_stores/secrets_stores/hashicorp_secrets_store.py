@@ -13,13 +13,9 @@
 #  permissions and limitations under the License.
 """HashiCorp Vault Secrets Store implementation."""
 
-import logging
-from datetime import datetime
 from typing import (
-    Any,
     ClassVar,
     Dict,
-    List,
     Optional,
     Type,
 )
@@ -37,9 +33,6 @@ from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.logger import get_logger
-from zenml.models import (
-    SecretResponse,
-)
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -50,8 +43,6 @@ logger = get_logger(__name__)
 HVAC_ZENML_SECRET_NAME_PREFIX = "zenml"
 ZENML_VAULT_SECRET_VALUES_KEY = "zenml_secret_values"
 ZENML_VAULT_SECRET_METADATA_KEY = "zenml_secret_metadata"
-ZENML_VAULT_SECRET_CREATED_KEY = "zenml_secret_created"
-ZENML_VAULT_SECRET_UPDATED_KEY = "zenml_secret_updated"
 
 
 class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
@@ -339,118 +330,3 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             )
 
         logger.debug(f"Deleted HashiCorp Vault secret: {vault_secret_id}")
-
-    # ------------------------------------------------
-    # Deprecated - kept only for migration from 0.53.0
-    # ------------------------------------------------
-
-    def _convert_vault_secret(
-        self,
-        vault_secret: Dict[str, Any],
-        hydrate: bool = False,
-    ) -> SecretResponse:
-        """Create a ZenML secret model from data stored in an HashiCorp Vault secret.
-
-        If the HashiCorp Vault secret cannot be converted, the method acts as if
-        the secret does not exist and raises a KeyError.
-
-        Args:
-            vault_secret: The HashiCorp Vault secret in JSON form.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The ZenML secret.
-
-        Raises:
-            KeyError: if the HashiCorp Vault secret cannot be converted.
-        """
-        try:
-            metadata = vault_secret[ZENML_VAULT_SECRET_METADATA_KEY]
-            values = vault_secret[ZENML_VAULT_SECRET_VALUES_KEY]
-            created = datetime.fromisoformat(
-                vault_secret[ZENML_VAULT_SECRET_CREATED_KEY],
-            )
-            updated = datetime.fromisoformat(
-                vault_secret[ZENML_VAULT_SECRET_UPDATED_KEY],
-            )
-        except (KeyError, ValueError) as e:
-            raise KeyError(
-                f"Secret could not be retrieved: missing required metadata: {e}"
-            )
-
-        return self._create_secret_from_metadata(
-            metadata=metadata,
-            created=created,
-            updated=updated,
-            values=values,
-        )
-
-    def list_secrets(self) -> List[SecretResponse]:
-        """List all secrets.
-
-        Note that returned secrets do not include any secret values. To fetch
-        the secret values, use `get_secret`.
-
-        Returns:
-            A list of all secrets.
-
-        Raises:
-            RuntimeError: If the HashiCorp Vault API returns an unexpected
-                error.
-        """
-        results: List[SecretResponse] = []
-
-        try:
-            # List all ZenML secrets in the Vault
-            all_secrets = (
-                self.client.secrets.kv.v2.list_secrets(
-                    path=HVAC_ZENML_SECRET_NAME_PREFIX
-                )
-                .get("data", {})
-                .get("keys", [])
-            )
-        except InvalidPath:
-            # no secrets created yet
-            pass
-        except VaultError as e:
-            raise RuntimeError(f"Error listing HashiCorp Vault secrets: {e}")
-        else:
-            # Convert the Vault secrets to ZenML secrets
-            for secret_uuid in all_secrets:
-                vault_secret_id = (
-                    f"{HVAC_ZENML_SECRET_NAME_PREFIX}/{secret_uuid}"
-                )
-                try:
-                    vault_secret = (
-                        self.client.secrets.kv.v2.read_secret(
-                            path=vault_secret_id
-                        )
-                        .get("data", {})
-                        .get("data", {})
-                    )
-                except (InvalidPath, VaultError) as e:
-                    logging.warning(
-                        f"Error fetching secret with ID {vault_secret_id}: {e}",
-                    )
-                    continue
-
-                try:
-                    secret_model = self._convert_vault_secret(
-                        vault_secret,
-                    )
-                except KeyError as e:
-                    # The _convert_vault_secret method raises a KeyError
-                    # if the secret is tied to a workspace or user that no
-                    # longer exists or if it is otherwise not valid. Here we
-                    # pretend that the secret does not exist.
-                    logging.warning(
-                        f"Error fetching secret with ID {vault_secret_id}: {e}",
-                    )
-                    continue
-
-                # Remove the secret values from the response
-                secret_model.get_body().values = {}
-                results.append(secret_model)
-
-        return results

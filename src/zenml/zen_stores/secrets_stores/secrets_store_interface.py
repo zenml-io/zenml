@@ -13,12 +13,8 @@
 #  permissions and limitations under the License.
 """ZenML secrets store interface."""
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Dict
 from uuid import UUID
-
-from zenml.models import (
-    SecretResponse,
-)
 
 
 class SecretsStoreInterface(ABC):
@@ -98,19 +94,4 @@ class SecretsStoreInterface(ABC):
         Raises:
             KeyError: if no secret values for the given ID are stored in the
                 secrets store.
-        """
-
-    # ------------------------------------------------
-    # Deprecated - kept only for migration from 0.53.0
-    # ------------------------------------------------
-
-    @abstractmethod
-    def list_secrets(self) -> List[SecretResponse]:
-        """List all secrets.
-
-        Note that returned secrets do not include any secret values. To fetch
-        the secret values, use `get_secret`.
-
-        Returns:
-            A list of all secrets.
         """

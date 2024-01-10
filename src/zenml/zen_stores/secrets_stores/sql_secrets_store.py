@@ -18,7 +18,6 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    List,
     Optional,
     Type,
 )
@@ -37,9 +36,6 @@ from zenml.exceptions import (
     IllegalOperationError,
 )
 from zenml.logger import get_logger
-from zenml.models import (
-    SecretResponse,
-)
 from zenml.zen_stores.schemas import (
     SecretSchema,
 )
@@ -257,22 +253,3 @@ class SqlSecretsStore(BaseSecretsStore):
                 session.commit()
             except NoResultFound:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
-
-    # ------------------------------------------------
-    # Deprecated - kept only for migration from 0.53.0
-    # ------------------------------------------------
-
-    def list_secrets(self) -> List[SecretResponse]:
-        """List all secrets.
-
-        Note that returned secrets do not include any secret values. To fetch
-        the secret values, use `get_secret`.
-
-        Raises:
-            NotImplementedError: This method is deprecated and will be removed
-                in a future version.
-        """
-        # We don't need to implement this method for the SQL ZenML store.
-        raise NotImplementedError(
-            "This method is deprecated and will be removed in a future version."
-        )

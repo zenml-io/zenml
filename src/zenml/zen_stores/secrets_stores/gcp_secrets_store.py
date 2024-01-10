@@ -16,12 +16,10 @@
 
 import json
 import os
-from datetime import datetime
 from typing import (
     Any,
     ClassVar,
     Dict,
-    List,
     Optional,
     Type,
     cast,
@@ -43,9 +41,6 @@ from zenml.integrations.gcp.service_connectors.gcp_service_connector import (
     GCPAuthenticationMethods,
 )
 from zenml.logger import get_logger
-from zenml.models import (
-    SecretResponse,
-)
 from zenml.zen_stores.secrets_stores.service_connector_secrets_store import (
     ServiceConnectorSecretsStore,
     ServiceConnectorSecretsStoreConfiguration,
@@ -57,9 +52,6 @@ logger = get_logger(__name__)
 GCP_ZENML_SECRET_NAME_PREFIX = "zenml"
 ZENML_GROUP_KEY = "zenml-group-key"
 ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR = "-"
-ZENML_GCP_DATE_FORMAT_STRING = "%Y-%m-%d-%H-%M-%S"
-ZENML_GCP_SECRET_CREATED_KEY = "zenml-secret-created"
-ZENML_GCP_SECRET_UPDATED_KEY = "zenml-secret-updated"
 
 
 class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
@@ -382,88 +374,3 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
             raise RuntimeError(f"Failed to delete secret: {str(e)}") from e
 
         logger.debug(f"Deleted GCP secret: {gcp_secret_name}")
-
-    # ------------------------------------------------
-    # Deprecated - kept only for migration from 0.53.0
-    # ------------------------------------------------
-
-    def _convert_gcp_secret(
-        self,
-        labels: Dict[str, str],
-        values: Optional[Dict[str, str]] = None,
-    ) -> SecretResponse:
-        """Create a ZenML secret model from data stored in an GCP secret.
-
-        If the GCP secret cannot be converted, the method acts as if the
-        secret does not exist and raises a KeyError.
-
-        Args:
-            labels: The GCP secret labels.
-            values: The GCP secret values.
-
-        Returns:
-            The ZenML secret model.
-
-        Raises:
-            KeyError: if the GCP secret cannot be converted.
-        """
-        # Recover the ZenML secret metadata from the AWS secret tags.
-
-        # The GCP secret labels do not really behave like a dictionary: when
-        # a key is not found, it does not raise a KeyError, but instead
-        # returns an empty string. That's why we make this conversion.
-        label_dict = dict(labels)
-
-        try:
-            created = datetime.strptime(
-                label_dict[ZENML_GCP_SECRET_CREATED_KEY],
-                ZENML_GCP_DATE_FORMAT_STRING,
-            )
-            updated = datetime.strptime(
-                label_dict[ZENML_GCP_SECRET_UPDATED_KEY],
-                ZENML_GCP_DATE_FORMAT_STRING,
-            )
-        except KeyError as e:
-            raise KeyError(
-                f"Invalid GCP secret: missing required tag '{e}'"
-            ) from e
-
-        return self._create_secret_from_metadata(
-            metadata=label_dict,
-            created=created,
-            updated=updated,
-            values=values,
-        )
-
-    def list_secrets(self) -> List[SecretResponse]:
-        """List all secrets.
-
-        Note that returned secrets do not include any secret values. To fetch
-        the secret values, use `get_secret`.
-
-        Returns:
-            A list of all secrets.
-
-        Raises:
-            RuntimeError: if the GCP Secrets Manager API returns an unexpected
-                error.
-        """
-        try:
-            # get all the secrets and their labels from GCP
-            secrets = []
-            for secret in self.client.list_secrets(
-                request={
-                    "parent": self.parent_name,
-                    "filter": "",
-                }
-            ):
-                try:
-                    secrets.append(self._convert_gcp_secret(secret.labels))
-                except KeyError:
-                    # keep going / ignore if this secret version doesn't exist
-                    # or isn't a ZenML secret
-                    continue
-        except Exception as e:
-            raise RuntimeError(f"Error listing GCP secrets: {e}") from e
-
-        return secrets
