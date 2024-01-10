@@ -1,16 +1,14 @@
 ---
-description: Provision infrastructure on the cloud.
+description: Transitioning to remote artifact storage.
 ---
 
-# Deploying a Cloud Stack
+# Chapter 3: Connecting Remote Storage
 
-The next step is to scale our pipelines to the cloud. In order to do this, we need to configure a basic cloud stack in ZenML. This typically consists of three key components that we have learned about in the last section:
+After deploying ZenML and understanding the concept of stacks, it's time to ensure that our pipeline artifacts are stored securely and accessibly in the cloud.
 
-- The [orchestrator](../../stacks-and-components/component-guide/orchestrators/) manages the workflow and execution of your pipelines.
-- The [artifact store](../../stacks-and-components/component-guide/artifact-stores/) is where your pipeline artifacts, such as datasets and models, are stored.
-- The [container registry](../../stacks-and-components/component-guide/container-registries/) is a storage and content delivery system that holds your Docker container images.
+In the previous chapters, we've been working with artifacts stored locally on our machines. This setup is fine for individual experiments, but as we move towards a collaborative and production-ready environment, we need a solution that is more robust, shareable, and scalable. Enter remote storage.
 
-In this chapter, we'll walk you through the process of deploying a basic cloud stack on a public cloud provider. This will enable you to run your MLOps pipelines in a cloud environment, leveraging the scalability and robustness that cloud platforms offer.
+Remote storage allows us to store our artifacts in the cloud, which means they're accessible from anywhere and by anyone with the right permissions. This is essential for team collaboration and for managing the larger datasets and models that come with production workloads.
 
 ## Deploying on a public cloud
 
@@ -161,7 +159,7 @@ python run.py --training-pipeline
 You will notice that your pipeline run will behave differently from befeore.
 Here are the broad sequence of events that just happened:
 
-<figure><img src="../../.gitbook/assets/local_run_with_remote_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/cloud_orchestration_run.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack.</p></figcaption></figure>
 
 1. The user runs a pipeline on the client machine (in this case the training pipeline of the starter template).
 2. The client asks the server for the stack info, which returns it with the configuration of the cloud stack.
@@ -172,6 +170,13 @@ Here are the broad sequence of events that just happened:
 7. As each pipeline runs, it reports status back to the zenml server, and optionally queries the server for metadata.
 
 For more detailed information on each step and additional cloud provider configurations, please refer to the [Stack deployment](../../stacks-and-components/stack-deployment/stack-deployment.md) and [Component Guide](../../stacks-and-components/component-guide/) sections of the ZenML documentation.
+
+With your remote Artifact Store configured and connected, you can set it as part of a new stack or update an existing stack. When you run your pipelines, ZenML will automatically store the artifacts in the specified remote storage, ensuring that they are preserved and accessible for future runs and by your team members.
+
+
+By connecting remote storage, you're taking a significant step towards building a collaborative and scalable MLOps workflow. Your artifacts are no longer tied to a single machine but are now part of a cloud-based ecosystem, ready to be shared and built upon.
+
+In the next chapter, we'll dive deeper into orchestrating our pipelines in the cloud, leveraging the full potential of our newly established remote storage capabilities.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
