@@ -91,7 +91,7 @@ We need first to install the SkyPilot integration for AWS and the AWS connectors
 
   ```shell
     pip install "zenml[connectors-aws]"
-    zenml integration install aws vm_aws 
+    zenml integration install aws skypilot_aws 
   ```
 
 To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](../../../stacks-and-components/auth-management/aws-service-connector.md).
@@ -141,7 +141,7 @@ We need first to install the SkyPilot integration for GCP and the GCP extra for 
 
   ```shell
     pip install "zenml[connectors-gcp]"
-    zenml integration install gcp vm_gcp
+    zenml integration install gcp skypilot_gcp
   ```
 
 To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](../../../stacks-and-components/auth-management/gcp-service-connector.md)
@@ -199,7 +199,7 @@ We need first to install the SkyPilot integration for Azure and the Azure extra 
 
   ```shell
     pip install "zenml[connectors-azure]"
-    zenml integration install azure vm_azure 
+    zenml integration install azure skypilot_azure 
   ```
 
 To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](../../../stacks-and-components/auth-management/azure-service-connector.md)

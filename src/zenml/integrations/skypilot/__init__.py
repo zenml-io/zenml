@@ -34,7 +34,7 @@ class SkypilotGCPIntegration(Integration):
     """Definition of Skypilot Integration for ZenML."""
 
     NAME = SKYPILOT_GCP
-    REQUIREMENTS = ["skypilot[gcp]<=0.4.1"]
+    REQUIREMENTS = ["skypilot[aws,gcp,azure]<=0.4.1"]
     APT_PACKAGES = ["openssh-client","rsync"]
 
     @classmethod
@@ -54,7 +54,7 @@ class SkypilotAWSIntegration(Integration):
     """Definition of Skypilot AWS Integration for ZenML."""
 
     NAME = SKYPILOT_AWS
-    REQUIREMENTS = ["skypilot[aws]<=0.4.1"]
+    REQUIREMENTS = ["skypilot[aws,gcp,azure]<=0.4.1"]
     APT_PACKAGES = ["openssh-client","rsync"]
 
     @classmethod
@@ -74,7 +74,7 @@ class SkypilotAzureIntegration(Integration):
     """Definition of Skypilot Integration for ZenML."""
 
     NAME = SKYPILOT_AZURE
-    REQUIREMENTS = ["skypilot[azure]<=0.4.1"]
+    REQUIREMENTS = ["skypilot[aws,gcp,azure]<=0.4.1"]
     APT_PACKAGES = ["openssh-client","rsync"]
 
     @classmethod
