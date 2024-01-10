@@ -401,6 +401,14 @@ def my_resource_intensive_step():
     pass
 ```
 
+{% hint style="warning" %}
+When configuring pipeline or step-specific resources, you can use the `settings`
+parameter to specifically target the orchestrator flavor you want to use
+`orchestrator.STACK_COMPONENT_FLAVOR` and not orchestrator component name
+`orchestrator.STACK_COMPONENT_NAME`. For example, if you want to configure
+resources for the `vm_gcp` flavor, you can use `settings={"orchestrator.vm_gcp": ...}`.
+{% endhint %}
+
 By using the `settings` parameter, you can tailor the resources for each step according to its specific needs. This flexibility allows you to optimize your pipeline execution for both performance and cost.
 
 Check out
