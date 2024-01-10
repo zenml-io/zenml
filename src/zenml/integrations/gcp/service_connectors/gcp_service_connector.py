@@ -1077,6 +1077,7 @@ class GCPServiceConnector(ServiceConnector):
                             ],
                             check=True,
                             stderr=subprocess.STDOUT,
+                            encoding="utf-8",
                             stdout=subprocess.PIPE,
                         )
                     except subprocess.CalledProcessError as e:
