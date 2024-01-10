@@ -2971,7 +2971,7 @@ class Client(metaclass=ClientMetaClass):
         database, not the actual object stored in the artifact store.
 
         Args:
-            name_id_or_prefix: The ID or name or prefix of the artifact to
+            name_id_or_prefix: The ID of artifact version or name or prefix of the artifact to
                 delete.
             version: The version of the artifact to delete.
             delete_metadata: If True, delete the metadata of the artifact
@@ -5026,8 +5026,6 @@ class Client(metaclass=ClientMetaClass):
 
     #################################################
     # Model Versions Artifacts
-    #
-    # Only view capabilities are exposed via client.
     #################################################
 
     def list_model_version_artifact_links(
@@ -5095,6 +5093,51 @@ class Client(metaclass=ClientMetaClass):
                 has_custom_name=has_custom_name,
             ),
             hydrate=hydrate,
+        )
+
+    def delete_model_version_artifact_link(
+        self, model_version_id: UUID, artifact_version_id: UUID
+    ) -> None:
+        """Delete model version to artifact link in Model Control Plane.
+
+        Args:
+            model_version_id: The id of the model version holding the link.
+            artifact_version_id: The id of the artifact version to be deleted.
+
+        Raises:
+            RuntimeError: If more than one artifact link is found for given filters.
+        """
+        artifact_links = self.list_model_version_artifact_links(
+            model_version_id=model_version_id,
+            artifact_version_id=artifact_version_id,
+        )
+        if artifact_links.items:
+            if artifact_links.total > 1:
+                raise RuntimeError(
+                    "More than one artifact link found for give model version "
+                    f"`{model_version_id}` and artifact version "
+                    f"`{artifact_version_id}`. This should not be happening and "
+                    "might indicate a corrupted state of your ZenML database. "
+                    "Please seek support via Community Slack."
+                )
+            self.zen_store.delete_model_version_artifact_link(
+                model_version_id=model_version_id,
+                model_version_artifact_link_name_or_id=artifact_links.items[
+                    0
+                ].id,
+            )
+
+    def delete_all_model_version_artifact_links(
+        self, model_version_id: UUID, only_links: bool
+    ) -> None:
+        """Delete all model version to artifact links in Model Control Plane.
+
+        Args:
+            model_version_id: The id of the model version holding the link.
+            only_links: If true, only delete the link to the artifact.
+        """
+        self.zen_store.delete_all_model_version_artifact_links(
+            model_version_id, only_links
         )
 
     #################################################
