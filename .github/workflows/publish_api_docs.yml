@@ -3,9 +3,6 @@ name: Publish SDK Docs
 on:
   push:
     branches: [release/**]
-  #TODO: FOR TESTING ONLY. WILL REMOVE
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
 jobs:
   publish:
     name: Build 🔨 and publish 📰 the api docs 📁 to gh-pages

@@ -95,17 +95,17 @@ rm -rf src/zenml/zen_stores/migrations/script.py.mako
 python docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
 
 
-############################################### Build the API docs ####################################################
-# if [ -n "$PUSH" ]; then
-#   if [ -n "$LATEST" ]; then
-#     mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION latest
-#   else
-#     mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION
-#   fi
-# else
-#   if [ -n "$LATEST" ]; then
-#     mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION latest
-#   else
-#     mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION
-#   fi
-# fi
+############################################## Build the API docs ####################################################
+if [ -n "$PUSH" ]; then
+  if [ -n "$LATEST" ]; then
+    mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION latest
+  else
+    mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION
+  fi
+else
+  if [ -n "$LATEST" ]; then
+    mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION latest
+  else
+    mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION
+  fi
+fi
