@@ -1,4 +1,5 @@
-enhancement: 'feature/*'
-bug: ['bugfix/*', 'bug/*']
-backport: 'backport/*'
-documentation: ['documentation/*', 'docs/*']
+---
+enhancement: feature/*
+bug: [bugfix/*, bug/*]
+backport: backport/*
+documentation: [documentation/*, docs/*]
