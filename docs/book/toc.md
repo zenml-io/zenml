@@ -158,19 +158,12 @@
   * [Implement a custom stack component](stacks-and-components/custom-solutions/implement-a-custom-stack-component.md)
   * [Implement a custom integration](stacks-and-components/custom-solutions/implement-a-custom-integration.md)
 
-## Learning
+## Examples
 
-* [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md)
-* [🔏 Examples](learning/examples.md)
-  * [e2e Batch Inference using classical ML](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
-  * [Generative Chat with LLMs](https://github.com/zenml-io/zenml/tree/main/examples/generative_chat)
-  * [Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/nlp-case)
-* [🧩 Projects](learning/projects.md)
-  * [Predicting customer satisfaction](https://github.com/zenml-io/zenml-projects/tree/main/customer-satisfaction)
-  * [Build an LLM-powered community Slack bot](https://github.com/zenml-io/zenml-projects/tree/main/langchain-llamaindex-slackbot)
-  * [Use ZenML seamlessly with GitHub Actions](https://github.com/zenml-io/zenml-gitflow)
-  * [Forecasting Time Series](https://github.com/zenml-io/zenml-projects/tree/main/time-series-forecast)
-  * [Detect Sign Language alphabet in real-time images using Yolov5](https://github.com/zenml-io/zenml-projects/tree/main/sign-language-detection-yolov5)
+* [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
+* [🔏 End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
+* [📚 Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/nlp-case)
+* [🧩 More Projects...](https://github.com/zenml-io/zenml-projects)
 
 ## Reference
 
