@@ -1,39 +1,43 @@
-# ZenML Use Cases
+# ZenML Examples
 
-This folder contains examples of ZenML pipelines. These are more involved use
-cases with production-ready pipelines, with the exception of
-some that will be indicated in the table below.
+Welcome to the `examples` folder of ZenML! This directory contains a collection 
+of examples that demonstrate the use of ZenML in various settings. Whether 
+you're a beginner looking to explore ZenML's capabilities or an experienced 
+user seeking inspiration, these examples cover a range of scenarios to help 
+you get started quickly.
 
-These core demonstrations of ZenML showcase the power of the framework in real
-scenarios that use cloud infrastructure or other cloud components.
-Explanations for how to use and run the use cases can be found in the README
-associated with each sub-folder.
+## Structure
 
-{% hint style="info" %}
-This directory previously contained examples of ZenML integrations and how to
-use them. These have been ingested into the core library as integration tests.
-It is therefore still possible to view the code at
-[`/tests/integration/examples`](https://github.com/zenml-io/zenml/tree/main/tests/integration/examples)
-but for explanations on how to use them, please refer to our dedicated [Component
-guide](https://docs.zenml.io/stacks-and-components/component-guide) in our
-documentation which has been updated with all the latest information.
-{% endhint %}
+Each project in this folder is organized in a standardized structure to 
+showcase ZenML's best practices. Moreover, each example listed below is a 
+materialized form of one of our project templates. If you like any of the 
+examples here, and you want to set up something similar, just grab the template 
+and kickstart your own example. It's that simple!
 
-Note that our full use cases are all implemented as templates so you can start
-with our code and then adapt the specifics to your individual needs. To learn
-more about how to do this, please [visit our dedicated documentation
-page](https://docs.zenml.io/user-guide/starter-guide/using-project-templates) on
-this.
+Here's a brief overview of the featured examples:
 
-| Name | Description | Integrations | Core Project |
-| ---- | ----------- | ------------ | ------------ |
-| quickstart | This is our quickstart example showcasing basic functionality and a workflow to get you started with the ZenML framework | mlflow | ✅ |
-| e2e | Trains one or more scikit-learn classification models to make predictions on tabular classification datasets | scikit-learn | ✅ |
-| generative_chat | LEGACY: constructs a vector store to be used by a LLM-based chatbot based on documentation and data from a variety of sources | langchain, llama-index, slack |   |
-| label_studio_annotation | LEGACY: shows how to use the Label Studio integration for annotation in a computer-vision use case and series of pipelines | label_studio, pillow |   |
+| Name                                                   | Description                                                                                                                  | Template                                                         |
+|--------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| **[Quickstart](quickstart)**                           | Our quickstart example showcasing the basic functionality and a workflow to get you started with the ZenML framework.        | [starter-template](https://github.com/zenml-io/template-starter) |
+| **[End-to-End Training with Batch Predictions](e2e)**  | A comprehensive supervised ML project to train scikit-learn classification models and make predictions on tabular datasets.  | [e2e-batch](https://github.com/zenml-io/template-e2e-batch)      |
+| **[NLP Training, Promotion and Deployment](nlp-case)** | An NLP pipeline that walks through tokenization, training, HP tuning, evaluation and deployment.                             | [nlp](https://github.com/zenml-io/template-nlp)                  |
 
-## ❓ Questions / Further Assistance
+## More Projects & Practical Examples
 
-If you have any questions about how to get going with these use cases, or if
-you're wondering how you can adapt them to your particular needs, please do
+If you're eager to discover more projects leveraging ZenML, you can check out 
+our [zenml-projects](https://github.com/zenml-io/zenml-projects) repository. 
+It hosts a wide variety of projects that showcase the practical application 
+of ZenML pipelines in different real-world examples.
+
+Furthermore, if you are interested in targeted examples featuring a particular integration, 
+you can check out the [component guide](https://docs.zenml.io/stacks-and-components/component-guide)
+in our docs or the [integration tests](https://github.com/zenml-io/zenml/tree/main/tests/integration/examples)
+in our repository.
+
+## Support & Feedback
+
+If you have questions or need assistance with any of the examples, feel free to 
 [reach out to us on Slack](https://zenml.io/slack-invite/)!
+
+Happy experimenting with ZenML!
+
