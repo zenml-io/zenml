@@ -282,7 +282,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             )
 
         except Exception as e:
-            raise e
+            logger.error(f"Pipeline run failed: {e}")
+            raise
 
         finally:
             # Unset the service connector AWS profile ENV variable
