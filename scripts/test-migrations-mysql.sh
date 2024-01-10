@@ -1,6 +1,8 @@
 #!/bin/bash
 
 DB="sqlite"
+DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
+
 if [ -z "$1" ]; then
   echo "No argument passed, using default: $DB"
 else
@@ -10,12 +12,20 @@ fi
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
+    # versions pre-templates and pre-init test flag
+    # (zenml init --test allows for a non-interactive init)
+    local PRE_TEMPLATE_VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0")
 
     echo "===== Testing version $VERSION ====="
-    # Initialize zenml with the appropriate template
-    # hardcoded to 0.43.0 since this is the latest template-starter repo
-    # release tag
-    copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
+
+    # Check if VERSION is in PRE_TEMPLATE_VERSIONS
+    if printf '%s\n' "${PRE_TEMPLATE_VERSIONS[@]}" | grep -q "^$VERSION$"; then
+        copier copy -l --trust -r release/0.43.0 https://github.com/zenml-io/template-starter.git test_starter
+    else
+        mkdir test_starter
+        zenml init --template starter --path test_starter --template-with-defaults --test
+    fi
+
     cd test_starter
 
     export ZENML_ANALYTICS_OPT_IN=false
@@ -37,17 +47,18 @@ function run_tests_for_version() {
     echo "===== Finished testing version $VERSION ====="
 }
 
+
+
 if [ "$1" == "mysql" ]; then
     echo "===== Testing MySQL ====="
     # run a mysql instance in docker
     docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:latest
-
     # mysql takes a while to start up
-    sleep 30
+    sleep $DB_STARTUP_DELAY
 fi
 
 # List of versions to test
-VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0")
+VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0")
 
 # Start completely fresh
 rm -rf ~/.config/zenml
@@ -95,6 +106,7 @@ done
 
 
 # Test the most recent migration with MySQL
+echo "===== TESTING CURRENT BRANCH ====="
 set -e
 python3 -m venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
