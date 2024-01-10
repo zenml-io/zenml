@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator base config and settings."""
 
-from typing import Dict, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -106,6 +106,8 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     idle_minutes_to_autostop: Optional[int] = 30
     down: bool = True
     stream_logs: bool = True
+
+    docker_run_args: List[str] = []
 
 
 class SkypilotBaseOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
