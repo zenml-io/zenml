@@ -30,33 +30,11 @@ SKYPILOT_AWS_ORCHESTRATOR_FLAVOR = "vm_aws"
 SKYPILOT_GCP_ORCHESTRATOR_FLAVOR = "vm_gcp"
 SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR = "vm_azure"
 
-
-class SkypilotAWSIntegration(Integration):
-    """Definition of Skypilot AWS Integration for ZenML."""
-
-    NAME = SKYPILOT_AWS
-    REQUIREMENTS = ["skypilot[aws]"]
-    APT_PACKAGES = ["openssh-client","rsync"]
-
-    @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Skypilot AWS integration.
-
-        Returns:
-            List of stack component flavors for this integration.
-        """
-        from zenml.integrations.skypilot.flavors import (
-            SkypilotAWSOrchestratorFlavor,
-        )
-
-        return [SkypilotAWSOrchestratorFlavor]
-
-
 class SkypilotGCPIntegration(Integration):
     """Definition of Skypilot Integration for ZenML."""
 
     NAME = SKYPILOT_GCP
-    REQUIREMENTS = ["skypilot[gcp]"]
+    REQUIREMENTS = ["skypilot[gcp]<=0.4.1"]
     APT_PACKAGES = ["openssh-client","rsync"]
 
     @classmethod
@@ -72,12 +50,31 @@ class SkypilotGCPIntegration(Integration):
 
         return [SkypilotGCPOrchestratorFlavor]
 
+class SkypilotAWSIntegration(Integration):
+    """Definition of Skypilot AWS Integration for ZenML."""
+
+    NAME = SKYPILOT_AWS
+    REQUIREMENTS = ["skypilot[aws]<=0.4.1"]
+    APT_PACKAGES = ["openssh-client","rsync"]
+
+    @classmethod
+    def flavors(cls) -> List[Type[Flavor]]:
+        """Declare the stack component flavors for the Skypilot AWS integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
+        from zenml.integrations.skypilot.flavors import (
+            SkypilotAWSOrchestratorFlavor,
+        )
+
+        return [SkypilotAWSOrchestratorFlavor]
 
 class SkypilotAzureIntegration(Integration):
     """Definition of Skypilot Integration for ZenML."""
 
     NAME = SKYPILOT_AZURE
-    REQUIREMENTS = ["skypilot[azure]"]
+    REQUIREMENTS = ["skypilot[azure]<=0.4.1"]
     APT_PACKAGES = ["openssh-client","rsync"]
 
     @classmethod
