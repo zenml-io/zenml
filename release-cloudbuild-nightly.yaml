@@ -5,7 +5,7 @@ steps:
   - '-c'
   - |
     docker build \
-      --build-arg ZENML_VERSION=$TAG_NAME-nightly \
+      --build-arg ZENML_VERSION=$TAG_NAME \
       --build-arg PYTHON_VERSION=3.10 \
       --target base \
       -f docker/base.Dockerfile . \
@@ -24,7 +24,7 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args:
   - '-c'
-  - "docker build \\\n--build-arg ZENML_VERSION=$TAG_NAME-nightly \\\n--build-arg PYTHON_VERSION=3.8 \\\n-f docker/base.Dockerfile . \\\n-t $$USERNAME/zenml-server:$TAG_NAME-nightly\n  #magic___^_^___line\n# use latest tags only for official releases"
+  - "docker build \\\n--build-arg ZENML_VERSION=$TAG_NAME \\\n--build-arg PYTHON_VERSION=3.8 \\\n-f docker/base.Dockerfile . \\\n-t $$USERNAME/zenml-server:$TAG_NAME-nightly\n  #magic___^_^___line\n# use latest tags only for official releases"
   id: build-server-nightly
   waitFor: ['-']
   entrypoint: bash
@@ -36,7 +36,7 @@ steps:
   args:
   - '-c'
   - docker login --username=$$USERNAME --password=$$PASSWORD
-  id: docker-login-nightly
+  id: docker-login
   entrypoint: bash
   secretEnv:
   - USERNAME
@@ -49,7 +49,8 @@ steps:
   - docker push --all-tags $$USERNAME/zenml
   id: push-base
   waitFor:
-  - docker-login-nightly
+  - docker-login
+  - build-base-3.10-nightly
   entrypoint: bash
   secretEnv:
   - USERNAME
@@ -61,7 +62,8 @@ steps:
   - docker push --all-tags $$USERNAME/zenml-server
   id: push-server
   waitFor:
-  - docker-login-nightly
+  - docker-login
+  - build-server-nightly
   entrypoint: bash
   secretEnv:
   - USERNAME
