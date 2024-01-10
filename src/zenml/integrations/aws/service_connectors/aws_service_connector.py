@@ -1376,18 +1376,17 @@ class AWSServiceConnector(ServiceConnector):
                 users_home, ".aws", "credentials"
             )
 
-            # Ensure the .aws directory exists
-            os.makedirs(os.path.dirname(aws_credentials_path), exist_ok=True)
+            # Create the file as well as the parent dir if needed.
+            dirname = os.path.split(aws_credentials_path)[0]
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            with os.fdopen(
+                os.open(aws_credentials_path, os.O_WRONLY | os.O_CREAT, 0o600),
+                "w",
+            ):
+                pass
 
-            # Ensure the credentials file exists
-            if not os.path.isfile(aws_credentials_path):
-                with open(aws_credentials_path, "a"):
-                    pass  # The file is automatically closed when exiting the with block
-
-            # Set the appropriate permissions for the .aws directory and credentials file
-            os.chmod(os.path.dirname(aws_credentials_path), 0o700)
-            os.chmod(aws_credentials_path, 0o600)
-
+            # Write the credentials to the file
             common.rewrite_credentials_file(all_profiles, users_home)
 
             logger.info(
