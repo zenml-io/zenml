@@ -152,8 +152,8 @@ def verify_permissions_and_delete_entity(
 
 def verify_permissions_and_prune_entities(
     resource_type: ResourceType,
-    prune_method: Callable[[AnyRequest], AnyResponse],
-    **kwargs,
+    prune_method: Callable[..., None],
+    **kwargs: Any,
 ) -> None:
     """Verify permissions and prune entities of certain type.
 
