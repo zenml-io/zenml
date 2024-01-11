@@ -92,7 +92,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.lazy_load.model_version import ModelVersionDataLazyLoader
+    from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model_version import ModelVersion
 
     StepConfigurationUpdateOrDict = Union[

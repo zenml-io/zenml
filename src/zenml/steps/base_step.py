@@ -70,7 +70,7 @@ if TYPE_CHECKING:
         StepConfiguration,
         StepConfigurationUpdate,
     )
-    from zenml.lazy_load.model_version import ModelVersionDataLazyLoader
+    from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model_version import ModelVersion
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
@@ -460,7 +460,7 @@ class BaseStep(metaclass=BaseStepMeta):
             The artifacts, external artifacts, model version artifacts/metadata and parameters for the step.
         """
         from zenml.artifacts.external_artifact import ExternalArtifact
-        from zenml.lazy_load.model_version import ModelVersionDataLazyLoader
+        from zenml.model.lazy_load import ModelVersionDataLazyLoader
         from zenml.models import ArtifactVersionResponse, RunMetadataResponse
 
         signature = get_step_entrypoint_signature(step=self)

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Dict, Set
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.step_configurations import StepConfiguration
-    from zenml.lazy_load.model_version import ModelVersionDataLazyLoader
+    from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.new.pipelines.pipeline import Pipeline
     from zenml.steps import BaseStep
     from zenml.steps.entrypoint_function_utils import StepArtifact
