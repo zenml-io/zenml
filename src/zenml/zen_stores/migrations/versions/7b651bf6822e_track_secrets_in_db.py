@@ -561,7 +561,11 @@ class HashiCorpVaultSecretsStoreBackend(BaseSecretsStoreBackend):
 
 
 def upgrade() -> None:
-    """Upgrade database schema and/or data, creating a new revision."""
+    """Upgrade database schema and/or data, creating a new revision.
+
+    Raises:
+        NotImplementedError: If the secrets store type is not supported.
+    """
     from zenml.config.global_config import GlobalConfiguration
     from zenml.enums import SecretsStoreType
     from zenml.zen_stores.sql_zen_store import SqlZenStore
