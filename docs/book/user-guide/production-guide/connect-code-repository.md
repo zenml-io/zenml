@@ -24,7 +24,7 @@ By connecting a Git repository, you avoid redundant builds and make your MLOps p
 
 ## Creating a GitHub Repository
 
-While ZenML supports [many different flavors of git repositories](../advanced-guide/infrastructure-management/connect-your-git-repository.md), this guide will focus on [Github](https://github.com). To create a repository on GitHub:
+While ZenML supports [many different flavors of git repositories](../advanced-guide/infrastructure-management/connect-your-git-repository.md), this guide will focus on [GitHub](https://github.com). To create a repository on GitHub:
 
 1. Sign in to [GitHub](https://github.com/).
 2. Click the "+" icon and select "New repository."
