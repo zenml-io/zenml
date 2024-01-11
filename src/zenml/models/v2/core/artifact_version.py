@@ -270,7 +270,7 @@ class ArtifactVersionResponse(
 
         try:
             context = get_pipeline_context()
-            if not context.is_runtime and self._lazy_load_model_version:
+            if context.is_compiling and self._lazy_load_model_version:
                 # avoid exposing too much of internal details by keeping the return type
                 return RunMetadataLazyGetter(  # type: ignore[return-value]
                     self._lazy_load_model_version,

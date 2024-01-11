@@ -328,7 +328,7 @@ class ModelVersion(BaseModel):
 
         try:
             context = get_pipeline_context()
-            if not context.is_runtime:
+            if context.is_compiling:
                 # avoid exposing too much of internal details by keeping the return type
                 return RunMetadataLazyGetter(  # type: ignore[return-value]
                     self,
@@ -427,7 +427,7 @@ class ModelVersion(BaseModel):
 
         try:
             if context := get_pipeline_context():
-                if context.is_runtime:
+                if not context.is_compiling:
                     pass
                 else:
                     return ArtifactVersionResponse(

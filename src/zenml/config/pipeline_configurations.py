@@ -54,7 +54,7 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
 
-    _runtime_state: List[bool] = [True]
+    _compiling_now: List[bool] = [False]
 
     @validator("name")
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
@@ -91,21 +91,21 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
         return DockerSettings.parse_obj(model_or_dict)
 
     @contextmanager
-    def in_design_time(self) -> Iterator[None]:
-        """Context manager to mark a pipeline as being in design time.
+    def in_compilation(self) -> Iterator[None]:
+        """Context manager to mark a pipeline as being in compilation.
 
         Yields:
             Nothing.
         """
-        self._runtime_state[0] = False
+        self._compiling_now[0] = True
         yield
-        self._runtime_state[0] = True
+        self._compiling_now[0] = False
 
     @property
-    def is_runtime(self) -> bool:
-        """Returns whether the pipeline is in runtime.
+    def is_compiling(self) -> bool:
+        """Returns whether the pipeline is being compiled.
 
         Returns:
-            Whether the pipeline is in runtime.
+            Whether the pipeline is is being compiled.
         """
-        return self._runtime_state[0]
+        return self._compiling_now[0]

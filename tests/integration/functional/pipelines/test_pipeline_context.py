@@ -36,13 +36,9 @@ def assert_pipeline_context_in_pipeline():
     context = get_pipeline_context()
     assert (
         context.name == "assert_pipeline_context_in_pipeline"
-    ), "Not accessible inside composition of pipeline"
-    assert (
-        context.enable_cache is False
-    ), "Not accessible inside composition of pipeline"
-    assert context.extra == {
-        "foo": "bar"
-    }, "Not accessible inside composition of pipeline"
+    ), "Not accessible inside pipeline"
+    assert context.enable_cache is False, "Not accessible inside pipeline"
+    assert context.extra == {"foo": "bar"}, "Not accessible inside pipeline"
     assert_pipeline_context_in_step()
 
 
@@ -113,7 +109,10 @@ def producer() -> Annotated[str, "bar"]:
 
 @step
 def asserter(artifact: str, artifact_metadata: str, model_metadata: str):
-    """Assert that passed in values are loaded in lazy mode, since they should not exists on compose run."""
+    """Assert that passed in values are loaded in lazy mode.
+
+    They do not exists before actual run of the pipeline.
+    """
     ver = get_step_context().model_version.version
     assert artifact == "artifact_data_" + ver
     assert artifact_metadata == "artifact_meta_" + ver

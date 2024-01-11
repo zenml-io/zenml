@@ -20,10 +20,10 @@ if TYPE_CHECKING:
 
 
 def get_pipeline_context() -> "PipelineContext":
-    """Get the context of the currently composing pipeline.
+    """Get the context of the current pipeline.
 
     Returns:
-        The context of the currently composing pipeline.
+        The context of the current pipeline.
 
     Raises:
         RuntimeError: If no active pipeline is found.
@@ -50,7 +50,7 @@ def get_pipeline_context() -> "PipelineContext":
 
 
 class PipelineContext:
-    """Provides pipeline configuration during it's composition.
+    """Provides pipeline configuration context.
 
     Usage example:
 
@@ -90,7 +90,7 @@ class PipelineContext:
     """
 
     def __init__(self, pipeline_configuration: "PipelineConfiguration"):
-        """Initialize the context of the currently composing pipeline.
+        """Initialize the context of the current pipeline.
 
         Args:
             pipeline_configuration: The configuration of the pipeline derived
@@ -108,4 +108,4 @@ class PipelineContext:
         self.settings = pipeline_configuration.settings
         self.extra = pipeline_configuration.extra
         self.model_version = pipeline_configuration.model_version
-        self.is_runtime = pipeline_configuration.is_runtime
+        self.is_compiling = pipeline_configuration.is_compiling
