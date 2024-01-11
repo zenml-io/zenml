@@ -1291,7 +1291,7 @@ class GCPServiceConnector(ServiceConnector):
                 ):
                     raise AuthorizationException(
                         "No GCP service account credentials were found in the "
-                        "environment or the application default credentials"
+                        "environment or the application default credentials "
                         "path. Please set the GOOGLE_APPLICATION_CREDENTIALS "
                         "environment variable to the path of the service "
                         "account JSON file or run 'gcloud auth application-"
