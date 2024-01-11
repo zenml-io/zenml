@@ -3592,7 +3592,8 @@ class TestModel:
         """Test that latest version can be properly fetched."""
         with ModelVersionContext() as created_model:
             zs = Client().zen_store
-            assert zs.get_model(created_model.id).latest_version is None
+            assert zs.get_model(created_model.id).latest_version_name is None
+            assert zs.get_model(created_model.id).latest_version_id is None
             for name in ["great one", "yet another one"]:
                 mv = zs.create_model_version(
                     ModelVersionRequest(
@@ -3602,7 +3603,13 @@ class TestModel:
                         name=name,
                     )
                 )
-                assert zs.get_model(created_model.id).latest_version == mv.name
+                assert (
+                    zs.get_model(created_model.id).latest_version_name
+                    == mv.name
+                )
+                assert (
+                    zs.get_model(created_model.id).latest_version_id == mv.id
+                )
                 time.sleep(1)  # thanks to MySQL again!
 
     def test_update_name(self, clean_client: "Client"):
