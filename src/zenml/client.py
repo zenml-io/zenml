@@ -2711,6 +2711,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
@@ -2724,6 +2725,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the artifact to filter by.
+            has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2739,6 +2741,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            has_custom_name=has_custom_name,
         )
         return self.zen_store.list_artifacts(
             artifact_filter_model,
@@ -2837,6 +2840,7 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
+        has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
@@ -2862,6 +2866,7 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
+            has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2888,6 +2893,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             user_id=user_id,
             only_unused=only_unused,
+            has_custom_name=has_custom_name,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
@@ -2942,7 +2948,7 @@ class Client(metaclass=ClientMetaClass):
         database, not the actual object stored in the artifact store.
 
         Args:
-            name_id_or_prefix: The ID or name or prefix of the artifact to
+            name_id_or_prefix: The ID of artifact version or name or prefix of the artifact to
                 delete.
             version: The version of the artifact to delete.
             delete_metadata: If True, delete the metadata of the artifact
@@ -4997,8 +5003,6 @@ class Client(metaclass=ClientMetaClass):
 
     #################################################
     # Model Versions Artifacts
-    #
-    # Only view capabilities are exposed via client.
     #################################################
 
     def list_model_version_artifact_links(
@@ -5018,6 +5022,7 @@ class Client(metaclass=ClientMetaClass):
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
         only_deployment_artifacts: Optional[bool] = None,
+        has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
@@ -5038,6 +5043,7 @@ class Client(metaclass=ClientMetaClass):
             only_data_artifacts: Use to filter by data artifacts
             only_model_artifacts: Use to filter by model artifacts
             only_deployment_artifacts: Use to filter by deployment artifacts
+            has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -5061,8 +5067,54 @@ class Client(metaclass=ClientMetaClass):
                 only_data_artifacts=only_data_artifacts,
                 only_model_artifacts=only_model_artifacts,
                 only_deployment_artifacts=only_deployment_artifacts,
+                has_custom_name=has_custom_name,
             ),
             hydrate=hydrate,
+        )
+
+    def delete_model_version_artifact_link(
+        self, model_version_id: UUID, artifact_version_id: UUID
+    ) -> None:
+        """Delete model version to artifact link in Model Control Plane.
+
+        Args:
+            model_version_id: The id of the model version holding the link.
+            artifact_version_id: The id of the artifact version to be deleted.
+
+        Raises:
+            RuntimeError: If more than one artifact link is found for given filters.
+        """
+        artifact_links = self.list_model_version_artifact_links(
+            model_version_id=model_version_id,
+            artifact_version_id=artifact_version_id,
+        )
+        if artifact_links.items:
+            if artifact_links.total > 1:
+                raise RuntimeError(
+                    "More than one artifact link found for give model version "
+                    f"`{model_version_id}` and artifact version "
+                    f"`{artifact_version_id}`. This should not be happening and "
+                    "might indicate a corrupted state of your ZenML database. "
+                    "Please seek support via Community Slack."
+                )
+            self.zen_store.delete_model_version_artifact_link(
+                model_version_id=model_version_id,
+                model_version_artifact_link_name_or_id=artifact_links.items[
+                    0
+                ].id,
+            )
+
+    def delete_all_model_version_artifact_links(
+        self, model_version_id: UUID, only_links: bool
+    ) -> None:
+        """Delete all model version to artifact links in Model Control Plane.
+
+        Args:
+            model_version_id: The id of the model version holding the link.
+            only_links: If true, only delete the link to the artifact.
+        """
+        self.zen_store.delete_all_model_version_artifact_links(
+            model_version_id, only_links
         )
 
     #################################################
