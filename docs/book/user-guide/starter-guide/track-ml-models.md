@@ -42,9 +42,9 @@ Once you configure a pipeline this way, **all** artifacts generated during pipel
 
 ```python
 from zenml import pipeline
-from zenml.model import ModelVersion
+from zenml.model import Model
 
-model_version = ModelVersion(
+model = Model(
     # The name uniquely identifies this model
     # It usually represents the business use case
     name="iris_classifier",
@@ -58,12 +58,12 @@ model_version = ModelVersion(
 )
 
 # The step configuration will take precedence over the pipeline
-@step(model_version=model_version)
+@step(model=model)
 def svc_trainer(...) -> ...:
     ...
 
 # This configures it for all steps within the pipeline
-@pipeline(model_version=model_version)
+@pipeline(model=model)
 def training_pipeline(gamma: float = 0.002):
     # Now this pipeline will have the `iris_classifier` model active.
     X_train, X_test, y_train, y_test = training_data_loader()
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
 # In the YAML the same can be done; in this case, the 
 #  passing to the decorators is not needed
-# model_version: 
+# model: 
   # name: iris_classifier
   # license: "Apache 2.0"
   # description: "A classification model for the iris dataset."
@@ -128,11 +128,11 @@ def svc_trainer(
     # This will return the model version specified in the 
     # @pipeline decorator. In this case, the production version of 
     # the `iris_classifier` will be returned in this case.
-    model_version = get_step_context().model_version
+    model = get_step_context().model
     ...
 
 @pipeline(
-    model_version=ModelVersion(
+    model=Model(
         # The name uniquely identifies this model
         name="iris_classifier",
         # Pass the stage you want to get the right model
@@ -141,13 +141,13 @@ def svc_trainer(
 )
 def training_pipeline(gamma: float = 0.002):
     # Now this pipeline will have the production `iris_classifier` model active.
-    model_version = get_pipeline_context().model_version
+    model = get_pipeline_context().model
 
     X_train, X_test, y_train, y_test = training_data_loader()
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
 
-## Logging metadata to the `ModelVersion` object
+## Logging metadata to the `Model` object
 
 [Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), model versions too can take a dictionary
 of key-value pairs to capture their metadata. This is achieved using the 
@@ -167,7 +167,7 @@ def svc_trainer(
     model.fit(dataset[0], dataset[1])
     accuracy = model.score(dataset[0], dataset[1])
 
-    model_version = get_step_context().model_version
+    model = get_step_context().model
     
     log_model_metadata(
         # Model name can be omitted if specified in the step or pipeline context
@@ -221,29 +221,29 @@ A model's versions can exist in various stages. These are meant to signify their
 {% tabs %}
 {% tab title="Python SDK" %}
 ```python
-from zenml.model import ModelVersion
+from zenml.model import Model
 
 # Get the latest model version
-model_version = ModelVersion(
+model = Model(
     name="iris_classifier",
     version="latest"
 )
 
 # Get a model from a version
-model_version = ModelVersion(
+model = Model(
     name="iris_classifier",
     version="my_version",
 )
 
 # Pass the stage into the version field
 # to get the model by stage
-model_version = ModelVersion(
+model = Model(
     name="iris_classifier",
     version="staging",
 )
 
 # This will set this version to production
-model_version.set_stage(stage="production", force=True)
+model.set_stage(stage="production", force=True)
 ```
 {% endtab %}
 

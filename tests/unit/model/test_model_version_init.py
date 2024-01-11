@@ -19,7 +19,7 @@ from zenml.model.model import Model
     ],
 )
 def test_init_warns(version_name, logger):
-    with patch(f"zenml.model.model_version.logger.{logger}") as logger:
+    with patch(f"zenml.model.model.logger.{logger}") as logger:
         Model(
             name="foo",
             version=version_name,

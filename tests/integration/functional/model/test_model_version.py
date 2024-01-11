@@ -63,7 +63,7 @@ class ModelContext:
 
 @step
 def step_metadata_logging_functional():
-    """Functional logging using implicit ModelVersion from context."""
+    """Functional logging using implicit Model from context."""
     log_model_metadata({"foo": "bar"})
     assert get_step_context().model.metadata["foo"] == "bar"
 
@@ -96,7 +96,7 @@ class TestModelVersion:
         """
         with ModelContext(clean_client, create_model=False):
             mv = Model(name=MODEL_NAME)
-            with mock.patch("zenml.model.model_version.logger.info") as logger:
+            with mock.patch("zenml.model.model.logger.info") as logger:
                 model = mv._get_or_create_model()
                 logger.assert_called_once()
             assert model.name == MODEL_NAME
@@ -105,9 +105,7 @@ class TestModelVersion:
         """Test if model fetched fine, if exists."""
         with ModelContext(clean_client) as model:
             mv = Model(name=MODEL_NAME)
-            with mock.patch(
-                "zenml.model.model_version.logger.warning"
-            ) as logger:
+            with mock.patch("zenml.model.model.logger.warning") as logger:
                 model2 = mv._get_or_create_model()
                 logger.assert_not_called()
             assert model.name == model2.name
@@ -117,7 +115,7 @@ class TestModelVersion:
         """Test if model and version are created, not existing before."""
         with ModelContext(clean_client, create_model=False):
             mv = Model(name=MODEL_NAME, tags=["tag1", "tag2"])
-            with mock.patch("zenml.model.model_version.logger.info") as logger:
+            with mock.patch("zenml.model.model.logger.info") as logger:
                 mv = mv._get_or_create_model_version()
                 logger.assert_called()
             assert mv.name == str(mv.number)
@@ -150,9 +148,7 @@ class TestModelVersion:
         """Test model and model version retrieval by exact version number."""
         with ModelContext(clean_client, model_version="1.0.0") as (model, mv):
             mv = Model(name=MODEL_NAME, version="1.0.0")
-            with mock.patch(
-                "zenml.model.model_version.logger.warning"
-            ) as logger:
+            with mock.patch("zenml.model.model.logger.warning") as logger:
                 mv_test = mv._get_or_create_model_version()
                 logger.assert_not_called()
             assert mv_test.id == mv.id
@@ -175,9 +171,7 @@ class TestModelVersion:
             clean_client, model_version="1.0.0", stage=ModelStages.PRODUCTION
         ) as (model, mv):
             mv = Model(name=MODEL_NAME, version=ModelStages.PRODUCTION)
-            with mock.patch(
-                "zenml.model.model_version.logger.warning"
-            ) as logger:
+            with mock.patch("zenml.model.model.logger.warning") as logger:
                 mv_test = mv._get_or_create_model_version()
                 logger.assert_not_called()
             assert mv_test.id == mv.id
@@ -204,7 +198,7 @@ class TestModelVersion:
 
     def test_init_stage_logic(self, clean_client: "Client"):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
-        with mock.patch("zenml.model.model_version.logger.info") as logger:
+        with mock.patch("zenml.model.model.logger.info") as logger:
             mv = Model(
                 name=MODEL_NAME,
                 version=ModelStages.PRODUCTION.value,
@@ -301,7 +295,7 @@ class TestModelVersion:
             license="NEW",
             save_models_to_registry=False,
         )
-        with mock.patch("zenml.model.model_version.logger.warning") as logger:
+        with mock.patch("zenml.model.model.logger.warning") as logger:
             mv._get_or_create_model()
             logger.assert_called_once()
 
@@ -328,7 +322,7 @@ class TestModelVersion:
             description="NEW",
             save_models_to_registry=False,
         )
-        with mock.patch("zenml.model.model_version.logger.warning") as logger:
+        with mock.patch("zenml.model.model.logger.warning") as logger:
             mv._get_or_create_model_version()
             logger.assert_called()
             assert logger.call_count == 2  # for model and model version
@@ -385,7 +379,7 @@ class TestModelVersion:
         """Test that model version can be used to track metadata from function in steps."""
 
         @pipeline(
-            model_version=Model(
+            model=Model(
                 name=MODEL_NAME,
             ),
             enable_cache=False,
@@ -403,10 +397,10 @@ class TestModelVersion:
     def test_deletion_of_links(
         self, clean_client: "Client", delete_artifacts: bool
     ):
-        """Test that user can delete artifact links (with artifacts) from ModelVersion."""
+        """Test that user can delete artifact links (with artifacts) from Model."""
 
         @pipeline(
-            model_version=Model(
+            model=Model(
                 name=MODEL_NAME,
             ),
             enable_cache=False,
@@ -467,7 +461,7 @@ class TestModelVersion:
     ):
         """Test that artifacts are linked only to model versions from the context."""
 
-        @pipeline(model_version=Model(name=MODEL_NAME))
+        @pipeline(model=Model(name=MODEL_NAME))
         def my_pipeline(is_consume: bool):
             consume_from_model_version(is_consume)
 

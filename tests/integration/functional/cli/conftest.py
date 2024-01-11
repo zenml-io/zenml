@@ -91,7 +91,7 @@ def step_2() -> (
 
 
 @pipeline(
-    model_version=Model(name=NAME),
+    model=Model(name=NAME),
     name=NAME,
 )
 def pipeline():

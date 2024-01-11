@@ -39,5 +39,5 @@ class PipelineRunConfiguration(
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
-    model_version: Optional[Model] = None
+    model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None

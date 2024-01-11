@@ -20,7 +20,7 @@ from pydantic import BaseModel, PrivateAttr
 from zenml.model.model import Model
 
 
-class NewModelVersionRequest(BaseModel):
+class NewModelRequest(BaseModel):
     """Request to create a new model version."""
 
     class Requester(BaseModel):
@@ -38,10 +38,10 @@ class NewModelVersionRequest(BaseModel):
             return f"{self.source}::{self.name}"
 
     requesters: List[Requester] = []
-    _model_version: Optional[Model] = PrivateAttr(default=None)
+    _model: Optional[Model] = PrivateAttr(default=None)
 
     @property
-    def model_version(self) -> Model:
+    def model(self) -> Model:
         """Model version getter.
 
         Returns:
@@ -50,23 +50,23 @@ class NewModelVersionRequest(BaseModel):
         Raises:
             RuntimeError: If the model version is not set.
         """
-        if self._model_version is None:
+        if self._model is None:
             raise RuntimeError("Model version is not set.")
-        return self._model_version
+        return self._model
 
     def update_request(
         self,
-        model_version: Model,
-        requester: "NewModelVersionRequest.Requester",
+        model: Model,
+        requester: "NewModelRequest.Requester",
     ) -> None:
-        """Update from `ModelVersion` in place.
+        """Update from `Model` in place.
 
         Args:
-            model_version: `ModelVersion` to use.
+            model: `Model` to use.
             requester: Requester of a new model version.
         """
         self.requesters.append(requester)
-        if self._model_version is None:
-            self._model_version = model_version
+        if self._model is None:
+            self._model = model
 
-        self._model_version._merge(model_version)
+        self._model._merge(model)

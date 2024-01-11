@@ -66,7 +66,7 @@ from zenml import step, pipeline, get_step_context
 @step
 def my_step():
     # Get active step context
-    mv = get_step_context().model_version
+    mv = get_step_context().model
 
     # Get metadata
     print(mv.run_metadata["some_value"].value)

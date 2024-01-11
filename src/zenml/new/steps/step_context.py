@@ -182,7 +182,7 @@ class StepContext(metaclass=SingletonMetaClass):
             model = self.pipeline_run.config.model
         else:
             raise StepContextError(
-                f"Unable to get ModelVersion in step '{self.step_name}' of pipeline "
+                f"Unable to get Model in step '{self.step_name}' of pipeline "
                 f"run '{self.pipeline_run.id}': it was not set in `@step` or `@pipeline`."
             )
 

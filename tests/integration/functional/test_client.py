@@ -1556,7 +1556,7 @@ class TestModelVersion:
         return client.create_model_version(
             model_name_or_id=model.id,
             name=model_version_name,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
 
     def test_get_by_latest(self, clean_client: "Client"):
         """Test that model version can be retrieved with latest."""
@@ -1566,17 +1566,17 @@ class TestModelVersion:
         mv2 = clean_client.get_model_version(
             model_name_or_id=mv1.model_id,
             model_version_name_or_number_or_id=ModelStages.LATEST,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
         assert mv2 == mv1
 
         # after second model version, latest should point to it
         mv3 = clean_client.create_model_version(
             model_name_or_id=mv1.model_id, name="2.0.0"
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
         mv4 = clean_client.get_model_version(
             model_name_or_id=mv1.model_id,
             model_version_name_or_number_or_id=ModelStages.LATEST,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
         assert mv4 != mv1
         assert mv4 == mv3
 
@@ -1594,7 +1594,7 @@ class TestModelVersion:
         mv2 = clean_client.get_model_version(
             model_name_or_id=mv1.model_id,
             model_version_name_or_number_or_id=ModelStages.STAGING,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
 
         assert mv1 == mv2
 

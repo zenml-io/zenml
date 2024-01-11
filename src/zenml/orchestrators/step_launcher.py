@@ -310,7 +310,7 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
-        model_version = (
+        model = (
             self._deployment.step_configurations[step_run.name].config.model
             or self._deployment.pipeline_configuration.model
         )
@@ -361,7 +361,7 @@ class StepLauncher:
                     for output_name, artifact in cached_outputs.items()
                 }
                 self._link_cached_artifacts_to_model_version(
-                    model_version_from_context=model_version,
+                    model_from_context=model,
                     step_run=step_run,
                 )
                 step_run.status = ExecutionStatus.CACHED
@@ -371,13 +371,13 @@ class StepLauncher:
 
     def _link_cached_artifacts_to_model_version(
         self,
-        model_version_from_context: Optional["Model"],
+        model_from_context: Optional["Model"],
         step_run: StepRunRequest,
     ) -> None:
         """Links the output artifacts of the cached step to the model version in Control Plane.
 
         Args:
-            model_version_from_context: The model version of the current step.
+            model_from_context: The model version of the current step.
             step_run: The step to run.
         """
         from zenml.artifacts.artifact_config import ArtifactConfig
@@ -403,7 +403,7 @@ class StepLauncher:
 
                 link_artifact_config_to_model_version(
                     artifact_config=artifact_config_,
-                    model_version=model_version_from_context,
+                    model=model_from_context,
                     artifact_version_id=output_id,
                 )
 

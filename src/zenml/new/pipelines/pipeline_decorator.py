@@ -62,7 +62,7 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_version: Optional["Model"] = None,
+    model: Optional["Model"] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -81,7 +81,7 @@ def pipeline(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
-        model_version: configuration of the model version in the Model Control Plane.
+        model: configuration of the model version in the Model Control Plane.
 
     Returns:
         A pipeline instance.
@@ -99,7 +99,7 @@ def pipeline(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model_version=model_version,
+            model=model,
             entrypoint=func,
         )
 

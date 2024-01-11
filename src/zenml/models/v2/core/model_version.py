@@ -311,12 +311,12 @@ class ModelVersionResponse(
         return Client().zen_store.get_model_version(self.id)
 
     # Helper functions
-    def to_model_version(
+    def to_model_class(
         self,
         was_created_in_this_run: bool = False,
         suppress_class_validation_warnings: bool = False,
     ) -> "Model":
-        """Convert response model to ModelVersion object.
+        """Convert response model to Model object.
 
         Args:
             was_created_in_this_run: Whether model version was created during
@@ -325,7 +325,7 @@ class ModelVersionResponse(
                 repeated warnings.
 
         Returns:
-            ModelVersion object
+            Model object
         """
         from zenml.model.model import Model
 

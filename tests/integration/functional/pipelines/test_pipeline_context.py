@@ -73,25 +73,25 @@ def asserter_step(i: int):
     assert i == 1
 
 
-@pipeline(model_version=Model(name="foo"))
+@pipeline(model=Model(name="foo"))
 def producer_pipe(do_promote: bool):
     promoter_step(do_promote)
 
 
-@pipeline(model_version=Model(name="foo", version="production"))
+@pipeline(model=Model(name="foo", version="production"))
 def consumer_pipe():
     mv = get_pipeline_context().model
     asserter_step(mv.get_artifact("producer_pipe::promoter_step::output"))
 
 
-def test_that_argument_can_be_a_get_artifact_of_model_version_in_pipeline_context(
+def test_that_argument_can_be_a_get_artifact_of_model_in_pipeline_context(
     clean_client: "Client",
 ):
     producer_pipe(True)
     consumer_pipe()
 
 
-def test_that_argument_as_get_artifact_of_model_version_in_pipeline_context_fails_if_not_found(
+def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not_found(
     clean_client: "Client",
 ):
     producer_pipe(False)

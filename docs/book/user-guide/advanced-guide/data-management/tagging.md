@@ -48,23 +48,23 @@ Note that [ZenML Cloud](https://zenml.io/cloud) users can tag artifacts directly
 
 Just like artifacts, you can also tag your models and model versions to organize them semantically. Here's how to use tags with models in the ZenML Python SDK and CLI (or in the [ZenML Cloud Dashboard directly](https://zenml.io/cloud)).
 
-When creating a model using the `ModelVersion` object, you can specify tags as key-value pairs that will be attached to the model version upon creation:
+When creating a model using the `Model` object, you can specify tags as key-value pairs that will be attached to the model version upon creation:
 
 ```python
-from zenml.models import ModelVersion
+from zenml.models import Model
 
 # Define tags to be added to the model
 tags = ["experiment", "v1", "classification-task"]
 
 # Create a model version with tags
-model_version = ModelVersion(
+model = Model(
     name="iris_classifier",
     version="1.0.0",
     tags=tags,
 )
 
 # Use this tagged model version in your steps and pipelines as needed
-@pipeline(model_version=model_version)
+@pipeline(model=model)
 def my_pipeline(...):
     ...
 ```
@@ -72,7 +72,7 @@ def my_pipeline(...):
 You can also assign tags when creating or updating models with the Python SDK:
 
 ```python
-from zenml.models import ModelVersion
+from zenml.models import Model
 from zenml.client import Client
 
 # Create or register a new model with tags

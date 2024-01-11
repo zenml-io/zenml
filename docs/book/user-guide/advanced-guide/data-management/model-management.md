@@ -65,7 +65,7 @@ the cloud dashboard interface.
 You can register a model using the Python SDK as follows:
 
 ```python
-from zenml.models import ModelVersion
+from zenml.models import Model
 from zenml import Client
 
 Client().create_model(
@@ -79,22 +79,22 @@ Client().create_model(
 ### Implicit registration by ZenML
 
 The most common use case for registering models is to do so implicitly as part
-of a pipeline run. This is done by specifying a `ModelVersion` object as part of
-the `model_version` argument of the `@pipeline` decorator.
+of a pipeline run. This is done by specifying a `Model` object as part of
+the `model` argument of the `@pipeline` decorator.
 
 As an example, here we have a training pipeline which orchestrates the training
 of a model object, storing datasets and the model object itself as links within
 a newly created Model Version. This integration is achieved by configuring the
-pipeline within a Model Context using `ModelVersion`. The name
+pipeline within a Model Context using `Model`. The name
 is specified, while other fields remain optional for this task.
 
 ```python
 from zenml import pipeline
-from zenml.model import ModelVersion
+from zenml.model import Model
 
 @pipeline(
     enable_cache=False,
-    model_version=ModelVersion(
+    model=Model(
         name="demo",
         license="Apache",
         description="Show case Model Control Plane.",
@@ -126,24 +126,24 @@ model versions explicitly.
 ### Explicitly name your model version
 
 If you want to explicitly name your model version, you can do so by passing in
-the `version` argument to the `ModelVersion` object. If you don't do this, ZenML
+the `version` argument to the `Model` object. If you don't do this, ZenML
 will automatically generate a version number for you.
 
 ```python
-from zenml.model import ModelVersion
+from zenml.model import Model
 
-model_version = ModelVersion(
+model= Model(
     name="my_model",
     version="1.0.5"
 )
 
 # The step configuration will take precedence over the pipeline
-@step(model_version=model_version)
+@step(model=model)
 def svc_trainer(...) -> ...:
     ...
 
 # This configures it for all steps within the pipeline
-@pipeline(model_version=model_version)
+@pipeline(model=model)
 def training_pipeline( ... ):
     # training happens here
 ```
@@ -154,20 +154,20 @@ the pipeline as a whole.
 ### Autonumbering of versions
 
 ZenML automatically numbers your model versions for you. If you don't specify a version number, or if you pass `None` into the `version`
-argument of the `ModelVersion` object, ZenML will automatically generate a
+argument of the `Model` object, ZenML will automatically generate a
 version number (or a new version, if you already have a version) for you. For
 example if we had a model version `really_good_version` for model `my_model` and
 we wanted to create a new version of this model, we could do so as follows:
 
 ```python
-from zenml import ModelVersion, step
+from zenml import Model, step
 
-model_version = ModelVersion(
+model = Model(
     name="my_model",
     version="even_better_version"
 )
 
-@step(model_version=model_version)
+@step(model=model)
 def svc_trainer(...) -> ...:
     ...
 ```
@@ -178,12 +178,12 @@ in the iteration sequence of the models using the `number` property. If
 `even_better_version` will be the 6th version of `my_model`.
 
 ```python
-earlier_version = ModelVersion(
+earlier_version = Model(
     name="my_model",
     version="really_good_version"
 ).number # == 5
 
-updated_version = ModelVersion(
+updated_version = Model(
     name="my_model",
     version="even_better_version"
 ).number # == 6
@@ -235,13 +235,13 @@ from zenml import Client
 MODEL_NAME = "iris_logistic_regression"
 from zenml.enum import ModelStages
 
-model_version = ModelVersion(name=MODEL_NAME, version="1.2.3")
-model_version.set_stage(stage=ModelStages.PRODUCTION)
+model = Model(name=MODEL_NAME, version="1.2.3")
+model.set_stage(stage=ModelStages.PRODUCTION)
 
 # get Latest Model Version and set it as Staging
 # (if there is current Staging version it will get Archived)
-latest_model_version = ModelVersion(name=MODEL_NAME, version=ModelStages.LATEST)
-latest_model_version.set_stage(stage=ModelStages.STAGING)
+latest_model = Model(name=MODEL_NAME, version=ModelStages.LATEST)
+latest_model.set_stage(stage=ModelStages.STAGING)
 ```
 
 Within a pipeline context, you would get the model version from the step context
@@ -253,8 +253,8 @@ from zenml.enums import ModelStages
 
 @step
 def promote_to_staging():
-    model_version = get_step_context().model_version
-    model_version.set_stage(ModelStages.STAGING, force=True)
+    model = get_step_context().model
+    model.set_stage(ModelStages.STAGING, force=True)
 
 @pipeline(
     ...
@@ -272,17 +272,17 @@ There are a few ways to link artifacts:
 
 ### Configuring the Model
 
-The easiest way is to configure the `model_version` parameter on the `@pipeline` decorator or `@step` decorator:
+The easiest way is to configure the `model` parameter on the `@pipeline` decorator or `@step` decorator:
 
 ```python
-from zenml.model import ModelVersion 
+from zenml.model import Model
 
-model_version = ModelVersion(
+model = Model(
     name="my_model",
     version="1.0.0"
 )
 
-@pipeline(model_version=model_version)
+@pipeline(model=model)
 def my_pipeline():
     ...
 ```
@@ -329,8 +329,8 @@ Finally, artifacts can be linked to an existing model version manually using the
 SDK:
 
 ```python
-model_version = ModelVersion(name="my_model", version="1.0.0")
-model_version.link_artifact(my_artifact, name="new_artifact")
+model = Model(name="my_model", version="1.0.0")
+model.link_artifact(my_artifact, name="new_artifact")
 ```
 
 The `link_artifact` method handles creating this connection.

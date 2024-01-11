@@ -77,10 +77,10 @@ def predict(
     data: pd.DataFrame,
 ) -> Annotated[pd.Series, "predictions"]:
     # model_name and model_version derived from pipeline context
-    model_version = get_step_context().model_version
+    model = get_step_context().model
 
     # Fetch the model directly from the model control plane
-    model = model_version.get_model_artifact("trained_model")
+    model = model.get_model_artifact("trained_model")
 
     # Make predictions
     predictions = pd.Series(model.predict(data))
@@ -93,7 +93,7 @@ However, this approach has the downside that if the step is cached, then it coul
 from typing_extensions import Annotated
 from zenml import get_pipeline_context, pipeline, ExternalArtifact
 from zenml.enums import ModelStages
-from zenml.model import ModelVersion
+from zenml.model import Model
 import pandas as pd
 from sklearn.base import ClassifierMixin
 
@@ -107,7 +107,7 @@ def predict(
     return predictions
 
 @pipeline(
-    model_config=ModelVersion(
+    model_config=Model(
         name="iris_classifier",
         # Using the production stage
         version=ModelStages.PRODUCTION,
@@ -115,11 +115,11 @@ def predict(
 )
 def do_predictions():
     # model_name and model_version derived from pipeline context
-    model_version = get_pipeline_context().model_version
+    model = get_pipeline_context().model
     inference_data = load_data()
     predict(
         # Here, we load in the `trained_model` from a trainer step
-        model=model_version.get_model_artifact("trained_model"),  
+        model=model.get_model_artifact("trained_model"),  
         data=inference_data,
     )
 

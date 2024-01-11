@@ -313,7 +313,7 @@ class ModelResponse(
             partial(client.list_model_versions, model_name_or_id=self.id)
         )
         return [
-            mv.to_model_version(suppress_class_validation_warnings=True)
+            mv.to_model_class(suppress_class_validation_warnings=True)
             for mv in model_versions
         ]
 

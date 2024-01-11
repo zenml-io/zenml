@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ModelVersion user facing interface to pass into pipeline or step."""
+"""Model user facing interface to pass into pipeline or step."""
 
 from typing import (
     TYPE_CHECKING,
@@ -193,7 +193,7 @@ class Model(BaseModel):
         except RuntimeError:
             return None
 
-        ea = ExternalArtifact(name=name, version=version, model_version=self)
+        ea = ExternalArtifact(name=name, version=version, model=self)
         return ea
 
     def get_artifact(
@@ -690,21 +690,21 @@ class Model(BaseModel):
         self._number = model_version.number
         return model_version
 
-    def _merge(self, model_version: "Model") -> None:
-        self.license = self.license or model_version.license
-        self.description = self.description or model_version.description
-        self.audience = self.audience or model_version.audience
-        self.use_cases = self.use_cases or model_version.use_cases
-        self.limitations = self.limitations or model_version.limitations
-        self.trade_offs = self.trade_offs or model_version.trade_offs
-        self.ethics = self.ethics or model_version.ethics
-        if model_version.tags is not None:
+    def _merge(self, model: "Model") -> None:
+        self.license = self.license or model.license
+        self.description = self.description or model.description
+        self.audience = self.audience or model.audience
+        self.use_cases = self.use_cases or model.use_cases
+        self.limitations = self.limitations or model.limitations
+        self.trade_offs = self.trade_offs or model.trade_offs
+        self.ethics = self.ethics or model.ethics
+        if model.tags is not None:
             self.tags = list(
-                {t for t in self.tags or []}.union(set(model_version.tags))
+                {t for t in self.tags or []}.union(set(model.tags))
             )
 
     def __hash__(self) -> int:
-        """Get hash of the `ModelVersion`.
+        """Get hash of the `Model`.
 
         Returns:
             Hash function results
