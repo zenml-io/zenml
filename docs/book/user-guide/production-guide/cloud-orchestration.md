@@ -13,9 +13,9 @@ In order to do this, we need to get familiar with two more stack components:
 
 These, along with with [remote storage](remote-storage.md) completes a basic cloud stack where our pipeline is entirely running on the cloud.
 
-## Provisioning and registering a Skypilot orchestrator alongisde a container registry
+## Provisioning and registering a Skypilot orchestrator alongside a container registry
 
-The easiest cloud orchestrator to start with is the [Skypilot](https://skypilot.readthedocs.io/) orchestrator running on a public cloud. The The [ZenML Skypilot](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md)
+The easiest cloud orchestrator to start with is the [Skypilot](https://skypilot.readthedocs.io/) orchestrator running on a public cloud. The advantage of Skypilot is that it simply provisions a VM on your cloud provider, which is the simplest way to get started on the cloud. 
 
 {% tabs %}
 {% tab title="GCP" %}

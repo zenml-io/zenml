@@ -107,7 +107,7 @@ It is also relatively simple to create a [custom stack component flavor](../../s
 Having trouble with setting up infrastructure? Join the [ZenML community](https://zenml.io/slack) and ask for help!
 {% endhint %}
 
-Please note that for now your local client needs have the 
+Please note that for now your local client needs to be authenticated to the cloud CLI, and have sufficient permissions to write to your desired artifact storage, before you run your pipelines.
 
 ## Running a pipeline on a cloud stack
 
