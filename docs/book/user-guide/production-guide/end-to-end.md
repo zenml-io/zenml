@@ -27,8 +27,8 @@ zenml integration install sklearn -y
 We will then use [ZenML templates](../advanced-guide/best-practices/using-project-templates.md) to help us get the code we need for the project:
 
 ```bash
-mkdir zenml_starter
-cd zenml_starter
+mkdir zenml_batch_e2e
+cd zenml_batch_e2e
 zenml init --template e2e_batch --template-with-defaults
 
 # Just in case, we install the requirements again
@@ -52,19 +52,11 @@ zenml init
 
 ## What you'll learn
 
-The e2e project is a comprehensive project template to cover major use cases of ZenML: a collection of steps and pipelines and, to top it all off, a simple but useful CLI. It showcases the core ZenML concepts for supervised ML with batch predictions:
+The e2e project is a comprehensive project template to cover major use cases of ZenML: a collection of steps and pipelines and, to top it all off, a simple but useful CLI. It showcases the core ZenML concepts for supervised ML with batch predictions. It builds on top of the [starter project](../starter-guide/starter-project.md) with more advanced concepts.
 
-- Designing [ZenML pipeline steps](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline)
-- Using [step parameterization](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline#parametrizing-a-step)
- and [step caching](https://docs.zenml.io/user-guide/starter-guide/cache-previous-executions#caching-at-a-step-level)
-to design flexible and reusable steps
-- Using [custom data types for your artifacts and writing materializers for them](https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types)
-- Constructing and running a [ZenML pipeline](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline)
-- Accessing ZenML pipeline run artifacts in [the post-execution phase](https://docs.zenml.io/user-guide/starter-guide/fetch-runs-after-execution)
-after a pipeline run has concluded
-- Best practices for implementing and running reproducible and reliable ML pipelines with ZenML
+As you progress through the e2e batch template, try running the pipelines on a [remote cloud stack](cloud-orchestration.md) on a tracked [git repository](connect-code-repository.md) to practice some of the concepts we have learned in this guide.
 
-Now try sharing the [ZenML e2e template](https://github.com/zenml-io/template-e2e-batch) with your colleagues and see how they react!
+At the end, don't forget to share [ZenML e2e template](https://github.com/zenml-io/template-e2e-batch) with your colleagues and see how they react!
 
 ## Conclusion and next steps
 
