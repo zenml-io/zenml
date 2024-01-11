@@ -16,11 +16,11 @@ and kickstart your own example. It's that simple!
 
 Here's a brief overview of the featured examples:
 
-| Name                                                  | Description                                                                                                                  | Template                                                         |
-|-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| **[Quickstart](quickstart)**                          | Our quickstart example showcasing the basic functionality and a workflow to get you started with the ZenML framework.        | [starter-template](https://github.com/zenml-io/template-starter) |
-| **[End-to-End Training with Batch Predictions](e2e)** | A comprehensive supervised ML project to train scikit-learn classification models and make predictions on tabular datasets.  | [e2e-batch](https://github.com/zenml-io/template-e2e-batch)      |
-| **[NLP Training, Promotion and Deployment](e2e_nlp)** | An NLP pipeline that walks through tokenization, training, HP tuning, evaluation and deployment.                             | [nlp](https://github.com/zenml-io/template-nlp)                  |
+| Name                                                  | Description                                                                                                                  | Template                                                    |
+|-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| **[Quickstart](quickstart)**                          | Our quickstart example showcasing the basic functionality and a workflow to get you started with the ZenML framework.        | [starter](https://github.com/zenml-io/template-starter)     |
+| **[End-to-End Training with Batch Predictions](e2e)** | A comprehensive supervised ML project to train scikit-learn classification models and make predictions on tabular datasets.  | [e2e-batch](https://github.com/zenml-io/template-e2e-batch) |
+| **[NLP Training, Promotion and Deployment](e2e_nlp)** | An NLP pipeline that walks through tokenization, training, HP tuning, evaluation and deployment.                             | [nlp](https://github.com/zenml-io/template-nlp)             |
 
 ## More Projects & Practical Examples
 
