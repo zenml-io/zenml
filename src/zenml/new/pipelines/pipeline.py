@@ -1260,6 +1260,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         input_artifacts: Dict[str, StepArtifact],
         external_artifacts: Dict[str, "ExternalArtifact"],
         parameters: Dict[str, Any],
+        default_parameters: Dict[str, Any],
         upstream_steps: Set[str],
         custom_id: Optional[str] = None,
         allow_id_suffix: bool = True,
@@ -1271,6 +1272,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             input_artifacts: The input artifacts for the invocation.
             external_artifacts: The external artifacts for the invocation.
             parameters: The parameters for the invocation.
+            default_parameters: The default parameters for the invocation.
             upstream_steps: The upstream steps for the invocation.
             custom_id: Custom ID to use for the invocation.
             allow_id_suffix: Whether a suffix can be appended to the invocation
@@ -1306,6 +1308,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
             parameters=parameters,
+            default_parameters=default_parameters,
             upstream_steps=upstream_steps,
             pipeline=self,
         )
