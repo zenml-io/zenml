@@ -12,6 +12,9 @@ This section of the production guide will be about best practices on how to conf
 
 - [Settings in ZenML](../advanced-guide/pipelining-features/configure-steps-pipelines.md)
 - [Using a YAML configuration](../advanced-guide/pipelining-features/configure-steps-pipelines.md#settings-in-zenml)
+- [The step operator in ZenML](../../stacks-and-components/component-guide/step-operators/step-operators.md)
+- [Containerization of a pipeline](../advanced-guide/infrastructure-management/containerize-your-pipeline.md)
+- [Specify resource requirements for steps](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md)
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

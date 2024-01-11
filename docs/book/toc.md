@@ -21,7 +21,7 @@
   * [Understanding stacks](user-guide/production-guide/understand-stacks.md)
   * [Connecting remote storage](user-guide/production-guide/remote-storage.md)
   * [Orchestrate on the cloud](user-guide/production-guide/cloud-orchestration.md)
-  * [Configure your pipeline](user-guide/production-guide/configure-pipeline.md)
+  * [Configure your pipeline to add compute](user-guide/production-guide/configure-pipeline.md)
   * [Scale up (cpu, memory, and gpu)](user-guide/production-guide/scale-compute.md)
   * [Configure a code repository](user-guide/production-guide/connect-code-repository.md)
   * [An end-to-end project](user-guide/production-guide/end-to-end.md)
