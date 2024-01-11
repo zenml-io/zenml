@@ -164,12 +164,12 @@ With the artifact store created, we can now create a new stack with this artifac
 
 {% tab title="CLI" %}
 ```bash
-zenml stack register my_stack -o default -a my_artifact_store
+zenml stack register a_new_local_stack -o default -a my_artifact_store
 ```
 
 * `stack` : This is the CLI group that enables interactions with the stacks
 * `register`: Here we want to register a new stack. Explore other operations with`zenml stack --help`.
-* `my_stack` : This is the unique name that the stack will have.
+* `a_new_local_stack` : This is the unique name that the stack will have.
 * `--orchestrator` or `-o` are used to specify which orchestrator to use for the stack
 * `--artifact-store` or `-a` are used to specify which artifact store to use for the stack
 
@@ -178,13 +178,13 @@ The output for the command should look something like this:
 ```bash
 Using the default local database.
 Running with active workspace: 'default' (repository)
-Stack 'my_stack' successfully registered!
+Stack 'a_new_local_stack' successfully registered!
 ```
 
 You can inspect the stack with the following command:
 
 ```bash
- zenml stack describe my_stack
+ zenml stack describe a_new_local_stack
 ```
 
 Which will give you an output like this:
@@ -198,23 +198,57 @@ Which will give you an output like this:
 ┠────────────────┼───────────────────┨
 ┃ ARTIFACT_STORE │ my_artifact_store ┃
 ┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┛
-           'my_stack' stack           
-Stack 'my_stack' with id '...' is owned by user default and is 'private'.
+           'a_new_local_stack' stack           
+Stack 'a_new_local_stack' with id '...' is owned by user default and is 'private'.
 ```
 {% endtab %}
 {% endtabs %}
+
+### Run a pipeline on the new local stack
+
+Let's use the pipeline in our starter project from the [previous guide](../starter-guide/starter-project.md) to see it in action.
+
+If you have not already, clone the starter template:
+
+```bash
+pip install "zenml[templates,server]" notebook
+zenml integration install sklearn -y
+mkdir zenml_starter
+cd zenml_starter
+zenml init --template starter --template-with-defaults
+
+# Just in case, we install the requirements again
+pip install -r requirements.txt
+```
+
+<details>
+
+<summary>Above doesn't work? Here is an alternative</summary>
+
+The starter template is the same as the [ZenML quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). You can clone it like so:
+
+```bash
+git clone git@github.com:zenml-io/zenml.git
+cd examples/quickstart
+pip install -r requirements.txt
+zenml init
+```
+
+</details>
 
 To run a pipeline using the new stack:
 
 1.  Set the stack as active on your client
 
     ```bash
-    zenml stack set my_stack
+    zenml stack set a_new_local_stack
     ```
-2.  Run your pipeline code (you can use the code from [this previous section](../starter-guide/create-an-ml-pipeline.md#full-code-example))
+2.  Run your pipeline code:
 
     ```bash
-    python run.py
+    python run.py --training-pipeline
     ```
+
+Keep this code handy as we'll be using it the next chapters!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

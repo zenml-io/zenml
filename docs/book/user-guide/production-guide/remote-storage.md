@@ -96,49 +96,35 @@ It is also relatively simple to create a [custom stack component flavor](../../s
 {% endtabs %}
 
 {% hint style="info" %}
-Having trouble with deployment? Try reading the [stack deployment](../../stacks-and-components/stack-deployment/) section of the docs to troubleshoot. If it still doesn't work, join the [ZenML community](https://zenml.io/slack) and post your traceback!
+Having trouble with setting up infrastructure? Join the [ZenML community](https://zenml.io/slack) and ask for help!
 {% endhint %}
 
-Feel free to play around with some of the configuration provided in the above commands depending your needs. Please notice that we are also creating [service connectors](../../stacks-and-components/auth-management/auth-management.md) and associating them with the stack components with the above command. While service connectors are advanced concepts, for now it is sufficient to understand that these connectors give the deployed ZenML server the same credentials as your local ones.
+Please notice that we are also creating [service connectors](../../stacks-and-components/auth-management/auth-management.md) and associating them with the stack components with the above command. While service connectors are advanced concepts, for now it is sufficient to understand that these connectors give the deployed ZenML server the same credentials as your local ones.
 
 If you would like to not give any credentials to the ZenML server for your cloud provider, you can simply ignore service connector specific commands above.
 
 ## Running a pipeline on a cloud stack
 
-With the new stack deployed and configured in ZenML, running a pipeline will now behave differently. Let's use the starter project from the [previous guide](../starter-guide/starter-project.md) to see it in action.
+Now that we have our remote artifact store registered, we can [register a new stack](understand-stacks.md#registering-a-stack) with it, just like we did in the previous chapter:
 
-If you have not already, clone the starter template:
-
+{% tabs %}
+{% tab title="CLI" %}
 ```bash
-pip install "zenml[templates,server]" notebook
-zenml integration install sklearn -y
-mkdir zenml_starter
-cd zenml_starter
-zenml init --template starter --template-with-defaults
-
-# Just in case, we install the requirements again
-pip install -r requirements.txt
+zenml stack register local_with_remote_storage -o default -a my_artifact_store
 ```
+{% endtab %}
+{% tab title="Dashboard" %}
+<figure><img src="../../.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
+{% endtab %}
+{% endtabs %}
 
-<details>
-
-<summary>Above doesn't work? Here is an alternative</summary>
-
-The starter template is the same as the [ZenML quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). You can clone it like so:
-
-```bash
-git clone git@github.com:zenml-io/zenml.git
-cd examples/quickstart
-pip install -r requirements.txt
-zenml init
-```
-
-</details>
+Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipeline-on-the-new-local-stack), we run a training
+pipeline:
 
 Set the cloud stack active:
 
 ```shell
-zenml stack set NAME_OF_STACK
+zenml stack set local_with_remote_storage
 ```
 
 Run the training pipeline:
@@ -146,22 +132,10 @@ Run the training pipeline:
 python run.py --training-pipeline
 ```
 
-1. The user runs a pipeline on the client machine (in this case the training pipeline of the starter template).
-2. The client asks the server for the stack info, which returns it with the configuration of the cloud stack.
-3. Based on the stack info and pipeline specification, client builds and pushes image to the `container registry`. The image contains the environment needed to execute the pipeline and the code of the steps.
-4. The client creates a run in the `orchestrator`. In this case, we are leveraging the [Skypilot](https://skypilot.readthedocs.io/) orchestrator to create a virtual machine in the cloud and run our code on it.  
-5. The `orchestrator` pulls the appropriate image from the `container registry` as its executing the pipeline (each step has an image).
-6. As each pipeline runs, it stores artifacts physically in the `artifact store`.
-7. As each pipeline runs, it reports status back to the zenml server, and optionally queries the server for metadata.
-
-For more detailed information on each step and additional cloud provider configurations, please refer to the [Stack deployment](../../stacks-and-components/stack-deployment/stack-deployment.md) and [Component Guide](../../stacks-and-components/component-guide/) sections of the ZenML documentation.
-
-With your remote Artifact Store configured and connected, you can set it as part of a new stack or update an existing stack. When you run your pipelines, ZenML will automatically store the artifacts in the specified remote storage, ensuring that they are preserved and accessible for future runs and by your team members.
-
+When you run that pipeline, ZenML will automatically store the artifacts in the specified remote storage, ensuring that they are preserved and accessible for future runs and by your team members. You can ask your colleagues to connect to the same [ZenML server](deploying-zenml.md), and you will notice that
+if they run the same pipeline, the pipeline would be partially cached, **even if they have not run the pipeline themselves before**.
 
 By connecting remote storage, you're taking a significant step towards building a collaborative and scalable MLOps workflow. Your artifacts are no longer tied to a single machine but are now part of a cloud-based ecosystem, ready to be shared and built upon.
-
-In the next chapter, we'll dive deeper into orchestrating our pipelines in the cloud, leveraging the full potential of our newly established remote storage capabilities.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
