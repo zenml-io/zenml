@@ -44,7 +44,7 @@ settings:
       - pyarrow
 ```
 
-The first section is the so called `settings` of the pipeline. This section has a `docker` key, which controls the [containerization process](cloud-orchestration.md#orchestrating-pipelines-on-the-cloud). Here, we are simply telling ZenML that we need `pyarrow` as a pip requirement, and we want to enable to `sklearn` integration of ZenML, which will in turn install the `scikit-learn` library. This docker section can be populated with many different options, and correspond to the [DockerSettings](https://sdkdocs.zenml.io/0.54.0/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) class in the Python SDK.
+The first section is the so called `settings` of the pipeline. This section has a `docker` key, which controls the [containerization process](cloud-orchestration.md#orchestrating-pipelines-on-the-cloud). Here, we are simply telling ZenML that we need `pyarrow` as a pip requirement, and we want to enable to `sklearn` integration of ZenML, which will in turn install the `scikit-learn` library. This docker section can be populated with many different options, and correspond to the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) class in the Python SDK.
 
 ### Associating a ZenML Model
 
@@ -96,8 +96,28 @@ So you can see that the YAML config is fairly easy to use, and is an important p
 
 ## Scale compute on the cloud
 
-- [Settings in ZenML](../advanced-guide/pipelining-features/configure-steps-pipelines.md)
-- [Specify resource requirements for steps](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md)
+When we ran our pipeline with the above config, ZenML used some sane defaults to pick the resource requirements for that pipeline. However, in the real world, you might want to add more memory, CPU, or even a GPU depending on the pipeline at hand.
+
+This is as easy as adding the following section to the YAML config:
+
+```yaml
+# These are the resources for the entire pipeline, i.e., each step
+settings:
+    resources:
+        cpu_count: 4
+        memory: "32GB"
+        
+    
+steps:
+    model_trainer:
+        settings:
+            resources:
+                gpu_count: 1
+```
+
+The `settings.resources` key corresponds to the [`ResourceSettings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.resource_settings.ResourceSettings) class in the Python SDK. Here we are asking
+
+Read more about how to specify resource requirements for pipelines and steps [in the dedicated section in the docs](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
