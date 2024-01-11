@@ -115,7 +115,9 @@ steps:
                 gpu_count: 1
 ```
 
-The `settings.resources` key corresponds to the [`ResourceSettings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.resource_settings.ResourceSettings) class in the Python SDK. Here we are asking
+The `settings.resources` key corresponds to the [`ResourceSettings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.resource_settings.ResourceSettings) class in the Python SDK. Here we are configuring the entire pipeline with a certain amount of CPUs and memory, while for the trainer step we are configuring 
+
+TBD: Add gpu type in orchestrator settings
 
 Read more about how to specify resource requirements for pipelines and steps [in the dedicated section in the docs](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md).
 
