@@ -632,7 +632,7 @@ class Model(BaseModel):
                     # model version for current model was already
                     # created in the current run, not to create
                     # new model versions
-                    pipeline_mv = context.pipeline_run.config.model_version
+                    pipeline_mv = context.pipeline_run.config.model
                     if (
                         pipeline_mv
                         and pipeline_mv.was_created_in_this_run
@@ -642,7 +642,7 @@ class Model(BaseModel):
                         self.version = pipeline_mv.version
                     else:
                         for step in context.pipeline_run.steps.values():
-                            step_mv = step.config.model_version
+                            step_mv = step.config.model
                             if (
                                 step_mv
                                 and step_mv.was_created_in_this_run

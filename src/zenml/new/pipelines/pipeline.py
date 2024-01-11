@@ -914,10 +914,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         other_model_versions: Set["Model"] = set()
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
-            step_model_version = step.config.model_version
+            step_model_version = step.config.model
             all_steps_have_own_config = (
-                all_steps_have_own_config
-                and step.config.model_version is not None
+                all_steps_have_own_config and step.config.model is not None
             )
             if step_model_version:
                 self._update_new_requesters(

@@ -311,9 +311,7 @@ class StepLauncher:
             well as the response model of the registered step run.
         """
         model_version = (
-            self._deployment.step_configurations[
-                step_run.name
-            ].config.model_version
+            self._deployment.step_configurations[step_run.name].config.model
             or self._deployment.pipeline_configuration.model
         )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
