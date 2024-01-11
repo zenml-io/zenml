@@ -89,6 +89,8 @@ jobs:
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
       - name: Lint check
+        env:
+          OS: ${{ inputs.os }}
         run: |
           bash scripts/lint.sh
       - name: Spelling checker

@@ -133,7 +133,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         self,
         run_name: str,
         tags: List[str],
-        settings: Union["Settings", Dict[str, Any], None] = None,  # type: ignore
+        settings: Union["Settings", Dict[str, Any], None] = None,
     ) -> None:
         """Initializes a wandb run.
 
