@@ -151,6 +151,7 @@ The [ZenML Cloud](https://zenml.io/cloud) features an [Artifact Control Plane](.
 {% endtab %}
 {% endtabs %}
 
+You will notice above that some artifacts are stored locally, while others are stored in a remote storage location.
 
 By connecting remote storage, you're taking a significant step towards building a collaborative and scalable MLOps workflow. Your artifacts are no longer tied to a single machine but are now part of a cloud-based ecosystem, ready to be shared and built upon.
 
