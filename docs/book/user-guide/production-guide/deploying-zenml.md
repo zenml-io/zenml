@@ -8,7 +8,7 @@ When you first get started with ZenML, it is based on the following architecture
 
 ![Scenario 1: ZenML default local configuration](../../.gitbook/assets/Scenario1.png)
 
-The SQLite database that you can see in this diagram is used to store all the metadata we produced in the previous guide (pipelines, models, artifacts) etc.
+The SQLite database that you can see in this diagram is used to store all the metadata we produced in the previous guide (pipelines, models, artifacts, etc).
 
 In order to move into production, you will need to deploy this server somewhere centrally outside of your machine. This allows different infrastructure components to interact with, alongside enabling you to collaborate with your team members:
 
