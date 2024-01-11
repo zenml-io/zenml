@@ -162,7 +162,7 @@
 
 * [🚀 Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
 * [🔏 End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
-* [📚 Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/nlp-case)
+* [📚 Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp)
 * [🧩 More Projects...](https://github.com/zenml-io/zenml-projects)
 
 ## Reference
