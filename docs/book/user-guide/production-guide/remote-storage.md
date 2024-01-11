@@ -37,6 +37,8 @@ With the URI to your S3 bucket known, registering an S3 Artifact Store can be do
 # Register the S3 artifact-store
 zenml artifact-store register remote_artifact_store -f s3 --path=s3://bucket-name
 ```
+
+For more information, read the [dedicated S3 artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/s3.md).
 {% endtab %}
 {% tab title="GCP" %}
 The Google Cloud Storage Artifact Store flavor is provided by the [GCP ZenML integration](../../stacks-and-components/component-guide/artifact-stores/gcp.md), you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
@@ -58,6 +60,8 @@ With the URI to your GCS bucket known, registering a GCS Artifact Store can be d
 # Register the GCS artifact store
 zenml artifact-store register remote_artifact_store -f gcp --path=gs://bucket-name
 ```
+
+For more information, read the [dedicated GCS artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/gcp.md).
 {% endtab %}
 {% tab title="Azure" %}
 The Microsoft Azure Artifact Store flavor is provided by the [Azure ZenML integration](../../stacks-and-components/component-guide/artifact-stores/azure.md), you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
@@ -81,6 +85,8 @@ With the URI to your Azure Blob Storage container known, registering an Azure Ar
 # Register the Azure artifact store
 zenml artifact-store register remote_artifact_store -f azure --path=az://container-name
 ```
+
+For more information, read the [dedicated Azure artfaict store flavor guide](../../stacks-and-components/component-guide/artifact-stores/azure.md).
 {% endtab %}
 {% tab title="Other" %}
 You can create a remote artifact store on pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md).
