@@ -18,89 +18,101 @@ These, along with with [remote storage](remote-storage.md) completes a basic clo
 The easiest cloud orchestrator to start with is the [Skypilot](https://skypilot.readthedocs.io/) orchestrator running on a public cloud. The advantage of Skypilot is that it simply provisions a VM on your cloud provider, which is the simplest way to get started on the cloud. 
 
 {% tabs %}
-{% tab title="GCP" %}
-Deploying a basic stack on GCP involves setting up a [Skypilot](https://skypilot.readthedocs.io/) orchestrator, a Google Cloud Storage (GCS) artifact store, and a Google Container Registry (GCR). Follow these steps to deploy your stack:
-
-1. Deploy the stack using ZenML's CLI:
-
-    ```bash
-    zenml stack deploy -n basic -p gcp -a -c -r us-east1 -x bucket_name=<SOME_NEW_BUCKET_NAME> -x project_id=<YOUR_GCP_PROJECT_ID> -o skypilot
-    ```
-
-    Replace `<SOME_NEW_BUCKET_NAME>` with a unique name for your GCP storage bucket and `<YOUR_GCP_PROJECT_ID>` with your GCP project ID.
-
-2. Register a service connector for GCP:
-
-    ```bash
-    zenml service-connector register gcp-generic --type gcp --auto-configure
-    ```
-
-3. Connect the service connector to the artifact store:
-
-    ```bash
-    zenml artifact-store connect gcs_artifact_store --connector gcp-generic
-    ```
-
-4. Connect the service connector to the orchestrator:
-
-    ```bash
-    zenml orchestrator connect gcp_skypilot_orchestrator --connector gcp-generic
-    ```
-
-5. Connect the service connector to the container registry:
-
-    ```bash
-    zenml container-registry connect gcr_container_registry --connector gcp-generic
-    ```
-
-By completing these steps, you'll have a fully functional ZenML stack on GCP, ready for your production MLOps pipelines.
-{% endtab %}
 {% tab title="AWS" %}
-Deploying a basic stack on AWS involves setting up a [Skypilot](https://skypilot.readthedocs.io/), an Amazon Simple Storage Service (S3) artifact store, and an Amazon Elastic Container Registry (ECR). Follow these steps to deploy your stack:
+You will need to install and set up the AWS CLI on your machine as a
+prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before
+you register the S3 Artifact Store.
 
-1. Deploy the stack using ZenML's CLI:
+The Amazon Web Services S3 Artifact Store flavor is provided by the [S3 ZenML integration](../../stacks-and-components/component-guide/artifact-stores/s3.md), you need to install it on your local machine to be able to register an S3 Artifact Store and add it to your stack:
 
-    ```bash
-    zenml stack deploy -n basic -p aws -a -c -r us-east-1 -x bucket_name=<SOME_NEW_BUCKET_NAME> -o skypilot
-    ```
+```shell
+zenml integration install s3 -y
+```
 
-    Replace `<SOME_NEW_BUCKET_NAME>` with a unique name for your AWS S3 bucket.
+{% hint style="info" %}
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements s3`.
+{% endhint %}
 
-2. Register a service connector for AWS:
+The only configuration parameter mandatory for registering an S3 Artifact Store is the root path URI, which needs to point to an S3 bucket and take the form `s3://bucket-name`. In order to create a S3 bucket, refer to the [AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html).
 
-    ```bash
-    zenml service-connector register aws-generic --type aws --auto-configure
-    ```
+With the URI to your S3 bucket known, registering an S3 Artifact Store can be done as follows:
 
-3. Connect the service connector to the artifact store:
+```shell
+# Register the S3 artifact-store
+zenml artifact-store register remote_artifact_store -f s3 --path=s3://bucket-name
+```
 
-    ```bash
-    zenml artifact-store connect s3_artifact_store --connector aws-generic
-    ```
-
-4. Connect the service connector to the orchestrator:
-
-    ```bash
-    zenml orchestrator connect aws_skypilot_orchestrator --connector aws-generic
-    ```
-
-5. Connect the service connector to the container registry:
-
-    ```bash
-    zenml container-registry connect aws_container_registry --connector aws-generic
-    ```
-
-By following these steps, you'll have a ZenML stack on AWS that's ready to handle your MLOps needs in the cloud.
+For more information, read the [dedicated S3 artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/s3.md).
 {% endtab %}
-{% tab title="Other Cloud" %}
-You can create a remote stack on pretty much any environment, including other cloud providers such as Azure, Lambda Cloud, Paperspace etc. A cloud agnostic stack would use the [Kubernetes](../../stacks-and-components/component-guide/orchestrators/kubernetes.md) orchestrator, a [Minio artifact store](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md), and a [default container registry](../../stacks-and-components/component-guide/container-registries/default.md).
+{% tab title="GCP" %}
+You will need to install and set up the Google Cloud CLI on your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk) , before you register the GCS Artifact Store.
 
-While MLStacks does not support automated deployments for other cloud providers, it is relatively easy to configure these. Please read the [components guide](../../stacks-and-components/component-guide/component-guide.md) for more information on how to configure a remote stack with your selection of components.
+The Google Cloud Storage Artifact Store flavor is provided by the [GCP ZenML integration](../../stacks-and-components/component-guide/artifact-stores/gcp.md), you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
+
+```shell
+zenml integration install gcp -y
+```
+
+{% hint style="info" %}
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements gcp`.
+{% endhint %}
+
+The only configuration parameter mandatory for registering a GCS Artifact Store is the root path URI, which needs to point to a GCS bucket and take the form `gs://bucket-name`. Please
+read [the Google Cloud Storage documentation](https://cloud.google.com/storage/docs/creating-buckets) on how to provision a GCS bucket.
+
+With the URI to your GCS bucket known, registering a GCS Artifact Store can be done as follows:
+
+```shell
+# Register the GCS artifact store
+zenml artifact-store register remote_artifact_store -f gcp --path=gs://bucket-name
+```
+
+For more information, read the [dedicated GCS artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/gcp.md).
+{% endtab %}
+{% tab title="Azure" %}
+You will need to install and set up the Azure CLI on your machine as a prerequisite, as covered in [the Azure documentation](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli), before you register the Azure Artifact Store.
+
+The Microsoft Azure Artifact Store flavor is provided by the [Azure ZenML integration](../../stacks-and-components/component-guide/artifact-stores/azure.md), you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
+
+```shell
+zenml integration install azure -y
+```
+
+{% hint style="info" %}
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements azure`.
+{% endhint %}
+
+The only configuration parameter mandatory for registering an Azure Artifact Store is the root path URI, which needs to
+point to an Azure Blog Storage container and take the form `az://container-name` or `abfs://container-name`. Please
+read [the Azure Blob Storage documentation](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal)
+on how to provision an Azure Blob Storage container.
+
+With the URI to your Azure Blob Storage container known, registering an Azure Artifact Store can be done as follows:
+
+```shell
+# Register the Azure artifact store
+zenml artifact-store register remote_artifact_store -f azure --path=az://container-name
+```
+
+For more information, read the [dedicated Azure artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/azure.md).
+{% endtab %}
+{% tab title="Other" %}
+You can create a remote stack on pretty much any environment, including other cloud providers such as Lambda Cloud, Paperspace etc. A cloud agnostic stack would use the [Kubernetes](../../stacks-and-components/component-guide/orchestrators/kubernetes.md) orchestrator, a [Minio artifact store](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md), and a [default container registry](../../stacks-and-components/component-guide/container-registries/default.md).
+
+It is also relatively simple to create a [custom orchestrator flavor](../../stacks-and-components/custom-solutions/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}
 {% endtabs %}
 
 {% hint style="info" %}
-Having trouble with deployment? Try reading the [stack deployment](../../stacks-and-components/stack-deployment/) section of the docs to troubleshoot. If it still doesn't work, join the [ZenML community](https://zenml.io/slack) and post your traceback!
+Having trouble with setting up infrastructure? Try reading the [stack deployment](../../stacks-and-components/stack-deployment/) section of the docs to gain more insight. If it still doesn't work, join the [ZenML community](https://zenml.io/slack) and ask!
+{% endhint %}
+
+Please note that your local client needs to be authenticated to the cloud CLI, and have sufficient permissions to push a container to your container registry , and deploy a VM using Skypilot. However, it is no longer neccessary to have direct access to the remote artifact storage, as the pipeline executes in a VM on the cloud. Of course, that means the provisioned VM now needs access to the remote storage instead!
+
+It is important to understand at the infrastructure level how services authenticate with each other. This can get quite complex, and ZenML has a concept called [Service Connectors](../../stacks-and-components/auth-management/auth-management.md) that simplifies this. If you're curious, read that section of the docs!
+
+{% hint style="info" %}
+
 {% endhint %}
 
 Feel free to play around with some of the configuration provided in the above commands depending your needs. Please notice that we are also creating [service connectors](../../stacks-and-components/auth-management/auth-management.md) and associating them with the stack components with the above command. While service connectors are advanced concepts, for now it is sufficient to understand that these connectors give the deployed ZenML server the same credentials as your local ones.
