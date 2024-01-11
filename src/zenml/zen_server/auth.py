@@ -19,7 +19,7 @@ from typing import Callable, Optional, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
-import requests
+import requests, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import (
     HTTPBasic,
@@ -533,7 +533,19 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
 
     if 200 <= auth_response.status_code < 300:
         try:
-            payload = auth_response.json()
+            content_type = auth_response.headers["Content-Type"].split("/").pop()
+
+            # A jwt token is returned when the content type is application/jwt and is decoded differently than a token with am application/json content type
+            if content_type == "jwt":
+                authorization_token = auth_response.text
+
+                decoded_token = jwt.decode(authorization_token, options={"verify_signature": False})
+
+                print(decoded_token)
+            else:
+                decoded_token = auth_response.json()
+
+                print(decoded_token)
         except requests.exceptions.JSONDecodeError:
             logger.exception(
                 "Error decoding JSON response from external authenticator."
@@ -544,7 +556,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
 
         if isinstance(payload, dict):
             try:
-                external_user = ExternalUserModel.parse_obj(payload)
+                external_user = ExternalUserModel.parse_obj(decoded_token)
             except Exception as e:
                 logger.exception(
                     f"Error parsing user information from external "
