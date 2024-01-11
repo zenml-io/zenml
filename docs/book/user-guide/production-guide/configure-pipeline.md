@@ -1,5 +1,5 @@
 ---
-description: Configure your pipeline.
+description: Add more resources to your pipeline configuration.
 ---
 
 # Configure your pipeline
