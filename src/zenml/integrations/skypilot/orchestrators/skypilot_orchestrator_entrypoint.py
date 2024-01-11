@@ -52,7 +52,20 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """Entrypoint of the Skypilot master/orchestrator VM."""
+    """Entrypoint of the Skypilot master/orchestrator VM.
+
+    This is the entrypoint of the Skypilot master/orchestrator VM. It is
+    responsible for provisioning the VM and running the pipeline steps in
+    separate VMs.
+
+    The VM is provisioned using the `sky` library. The pipeline steps are run
+    using the `sky` library as well.
+
+    Raises:
+        TypeError: If the active stack's orchestrator is not an instance of
+            SkypilotBaseOrchestrator.
+        ValueError: If the active stack's container registry is None.
+    """
     # Log to the container's stdout so it can be streamed by the client.
     logger.info("Skypilot orchestrator VM started.")
 

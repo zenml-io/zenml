@@ -148,6 +148,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             Exception: If the pipeline run fails.
+            RuntimeError: If the code is running in a notebook.
         """
         # First check whether the code is running in a notebook.
         if Environment.in_notebook():
