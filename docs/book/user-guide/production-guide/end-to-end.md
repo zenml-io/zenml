@@ -8,11 +8,10 @@ In this guide, we learned some advanced production concepts:
 
 - The value of [deploying ZenML](deploying-zenml.md)
 - Abstracting infrastructure configuration into [stacks](understand-stacks.md)
-* [Connecting remote storage](remote-storage.md)
-* [Orchestrating on the cloud](cloud-orchestration.md)
+- [Connecting remote storage](remote-storage.md)
+- [Orchestrating on the cloud](cloud-orchestration.md)
+- [Configuring the pipeline to scale compute](configure-pipeline.md)
 - [Connecting a git repository](connect-code-repository.md)
-- [Scaling compute](scale-compute.md)
-- Setting up [pipeline configuration](configure-pipeline.md) in production
 
 We will now combine all of these concepts into an end-to-end MLOps project powered by ZenML.
 
