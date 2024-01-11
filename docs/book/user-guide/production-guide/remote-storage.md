@@ -127,7 +127,7 @@ zenml stack register local_with_remote_storage -o default -a cloud_artifact_stor
 Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipeline-on-the-new-local-stack), we run a training
 pipeline:
 
-Set the cloud stack active:
+Set our `local_with_remote_storage` stack active:
 
 ```shell
 zenml stack set local_with_remote_storage

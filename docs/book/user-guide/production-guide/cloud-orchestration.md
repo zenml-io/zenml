@@ -136,7 +136,7 @@ Now that we have our remote artifact store registered, we can [register a new st
 {% tabs %}
 {% tab title="CLI" %}
 ```shell
-zenml stack register local_with_remote_storage -o skypilot -c cloud_container_registry -a cloud_artifact_store
+zenml stack register miminal_cloud_stack -o skypilot -c cloud_container_registry -a cloud_artifact_store
 ```
 {% endtab %}
 {% tab title="Dashboard" %}
@@ -147,10 +147,10 @@ zenml stack register local_with_remote_storage -o skypilot -c cloud_container_re
 Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipeline-on-the-new-local-stack), we run a training
 pipeline:
 
-Set the cloud stack active:
+Set the minimal cloud stack active:
 
 ```shell
-zenml stack set local_with_remote_storage
+zenml stack set miminal_cloud_stack
 ```
 
 Run the training pipeline:
