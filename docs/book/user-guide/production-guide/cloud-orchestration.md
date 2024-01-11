@@ -131,48 +131,32 @@ It is important to understand at the infrastructure level how services authentic
 
 ## Running a pipeline on a cloud stack
 
-With the new stack deployed and configured in ZenML, running a pipeline will now behave differently. Let's use the starter project from the [previous guide](../starter-guide/starter-project.md) to see it in action.
+Now that we have our remote artifact store registered, we can [register a new stack](understand-stacks.md#registering-a-stack) with it, just like we did in the previous chapter:
 
-If you have not already, clone the starter template:
-
-```bash
-pip install "zenml[templates,server]" notebook
-zenml integration install sklearn -y
-mkdir zenml_starter
-cd zenml_starter
-zenml init --template starter --template-with-defaults
-
-# Just in case, we install the requirements again
-pip install -r requirements.txt
+{% tabs %}
+{% tab title="CLI" %}
+```shell
+zenml stack register local_with_remote_storage -o default -a my_artifact_store
 ```
+{% endtab %}
+{% tab title="Dashboard" %}
+<figure><img src="../../.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
+{% endtab %}
+{% endtabs %}
 
-<details>
-
-<summary>Above doesn't work? Here is an alternative</summary>
-
-The starter template is the same as the [ZenML quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). You can clone it like so:
-
-```bash
-git clone git@github.com:zenml-io/zenml.git
-cd examples/quickstart
-pip install -r requirements.txt
-zenml init
-```
-
-</details>
+Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipeline-on-the-new-local-stack), we run a training
+pipeline:
 
 Set the cloud stack active:
 
 ```shell
-zenml stack set NAME_OF_STACK
+zenml stack set local_with_remote_storage
 ```
 
 Run the training pipeline:
 ```shell
 python run.py --training-pipeline
 ```
-
-
 
 For more detailed information on each step and additional cloud provider configurations, please refer to the [Stack deployment](../../stacks-and-components/stack-deployment/stack-deployment.md) and [Component Guide](../../stacks-and-components/component-guide/) sections of the ZenML documentation.
 
