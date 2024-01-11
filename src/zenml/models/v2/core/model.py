@@ -210,7 +210,7 @@ class ModelResponse(
         return self.get_body().latest_version_name
 
     @property
-    def latest_version_id(self) -> Optional[str]:
+    def latest_version_id(self) -> Optional[UUID]:
         """The `latest_version_id` property.
 
         Returns:
