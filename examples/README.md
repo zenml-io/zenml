@@ -31,7 +31,6 @@ this.
 | e2e | Trains one or more scikit-learn classification models to make predictions on tabular classification datasets | scikit-learn | ✅ |
 | generative_chat | LEGACY: constructs a vector store to be used by a LLM-based chatbot based on documentation and data from a variety of sources | langchain, llama-index, slack |   |
 | label_studio_annotation | LEGACY: shows how to use the Label Studio integration for annotation in a computer-vision use case and series of pipelines | label_studio, pillow |   |
-| label_studio_text_annotation | LEGACY: shows how to use the Label Studio integration in a NLP / text-based use case and series of pipelines | label_studio |   |
 
 ## ❓ Questions / Further Assistance
 

@@ -1,16 +1,14 @@
+---
 codecov:
   branch: main
-
-comment: false          # don't comment on PRs
+comment: false  # don't comment on PRs
 github_checks: false
-
 coverage:
   status:
     project:
       default:
-        threshold: 1%   # allow coverage to drop by 1% before failing the PR
-
-    patch: off
+        threshold: 1%  # allow coverage to drop by 1% before failing the PR
+    patch: false
 
     # do not run coverage on changes
-    changes: off
+    changes: false
