@@ -19,3 +19,9 @@
 from .save_model import save_model_to_deploy
 
 from .local_deployment import deploy_locally
+
+
+from .huggingface_deployment import deploy_to_huggingface
+
+
+from .skypilot_deployment import deploy_to_skypilot

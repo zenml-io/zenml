@@ -19,6 +19,8 @@ from typing import List, Optional
 
 from steps import (
     deploy_locally,
+    deploy_to_huggingface,
+    deploy_to_skypilot,
     notify_on_failure,
     notify_on_success,
     save_model_to_deploy,
@@ -87,7 +89,16 @@ def nlp_use_case_deploy_pipeline(
         tokenizer_name_or_path=tokenizer_name_or_path,
         after=["save_model_to_deploy"],
     )
-    last_step_name = "deploy_locally"
+    ########## Deploy to HuggingFace ##########
+    deploy_to_huggingface(
+        repo_name=repo_name,
+        after=["save_model_to_deploy"],
+    )
+    ########## Deploy to Skypilot ##########
+    deploy_to_skypilot(
+        after=["save_model_to_deploy"],
+    )
+    last_step_name = "deploy_to_skypilot"
 
     notify_on_success(after=[last_step_name])
     ### YOUR CODE ENDS HERE ###
