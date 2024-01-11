@@ -210,7 +210,9 @@ class Compiler:
 
         for invocation_id in config.steps:
             if invocation_id not in pipeline.invocations:
-                raise KeyError(f"Configuration for step {invocation_id} cannot be applied to any pipeline step. Make sure that all configured steps are present in your pipeline.")
+                raise KeyError(
+                    f"Configuration for step {invocation_id} cannot be applied to any pipeline step. Make sure that all configured steps are present in your pipeline."
+                )
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
