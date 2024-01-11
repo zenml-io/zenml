@@ -23,7 +23,7 @@ While there are many options on how to [deploy ZenML](../../deploying-zenml/), t
 [ZenML Cloud](https://zenml.io/cloud) is a managed SaaS solution that offers a one-click deployment for your ZenML server.
 Click [here](https://cloud.zenml.io) to start a free trial.
 
-On top of the one-click experience, ZenML Cloud also comes built in with additional features and a new dashboard, that might be beneficial to follow for this guide. You can always go back to self-hosting after your learning journey is complete.
+On top of the one-click experience, ZenML Cloud also comes built-in with additional features and a new dashboard, that might be beneficial to follow for this guide. You can always go back to self-hosting after your learning journey is complete.
 
 ### Option 2: Self-host ZenML on your cloud provider
 
@@ -45,11 +45,11 @@ You will be prompted to provide a name for your deployment and details like what
 In order to be able to run the `deploy` command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 {% endhint %}
 
-To learn more about different options of [deploying ZenML, visit the deployment documentation](../../deploying-zenml/why-deploy-zenml.md).
+To learn more about different options for [deploying ZenML, visit the deployment documentation](../../deploying-zenml/why-deploy-zenml.md).
 
 ## Connecting to a deployed ZenML
 
-You can connect your local ZenML client with the ZenML Server using the ZenML CLI and the web based login. This
+You can connect your local ZenML client with the ZenML Server using the ZenML CLI and the web-based login. This
 can be executed with the command:
 
 ```bash

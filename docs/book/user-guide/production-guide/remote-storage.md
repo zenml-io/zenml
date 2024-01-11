@@ -4,7 +4,7 @@ description: Transitioning to remote artifact storage.
 
 # Chapter 3: Connecting Remote Storage
 
-In the previous chapters, we've been working with artifacts stored locally on our machines. This setup is fine for individual experiments, but as we move towards a collaborative and production-ready environment, we need a solution that is more robust, shareable, and scalable. Enter remote storage.
+In the previous chapters, we've been working with artifacts stored locally on our machines. This setup is fine for individual experiments, but as we move towards a collaborative and production-ready environment, we need a solution that is more robust, shareable, and scalable. Enter remote storage!
 
 Remote storage allows us to store our artifacts in the cloud, which means they're accessible from anywhere and by anyone with the right permissions. This is essential for team collaboration and for managing the larger datasets and models that come with production workloads.
 
@@ -30,7 +30,7 @@ zenml integration install s3 -y
 ```
 
 {% hint style="info" %}
-Having trouble with this this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements s3`.
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements s3`.
 {% endhint %}
 
 The only configuration parameter mandatory for registering an S3 Artifact Store is the root path URI, which needs to point to an S3 bucket and take the form `s3://bucket-name`. In order to create a S3 bucket, refer to the [AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html).
@@ -54,7 +54,7 @@ zenml integration install gcp -y
 ```
 
 {% hint style="info" %}
-Having trouble with this this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements gcp`.
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements gcp`.
 {% endhint %}
 
 The only configuration parameter mandatory for registering a GCS Artifact Store is the root path URI, which needs to point to a GCS bucket and take the form `gs://bucket-name`. Please
@@ -79,7 +79,7 @@ zenml integration install azure -y
 ```
 
 {% hint style="info" %}
-Having trouble with this this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements azure`.
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements azure`.
 {% endhint %}
 
 The only configuration parameter mandatory for registering an Azure Artifact Store is the root path URI, which needs to
@@ -94,12 +94,12 @@ With the URI to your Azure Blob Storage container known, registering an Azure Ar
 zenml artifact-store register remote_artifact_store -f azure --path=az://container-name
 ```
 
-For more information, read the [dedicated Azure artfaict store flavor guide](../../stacks-and-components/component-guide/artifact-stores/azure.md).
+For more information, read the [dedicated Azure artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/azure.md).
 {% endtab %}
 {% tab title="Other" %}
-You can create a remote artifact store on pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md).
+You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md).
 
-It is also relatively simple to create a [custom stack component flavor](../../stacks-and-components/custom-solutions/implement-a-custom-stack-component.md) for your use-case.
+It is also relatively simple to create a [custom stack component flavor](../../stacks-and-components/custom-solutions/implement-a-custom-stack-component.md) for your use case.
 {% endtab %}
 {% endtabs %}
 

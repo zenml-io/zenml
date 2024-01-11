@@ -4,7 +4,7 @@ description: Learning how to switch the infrastructure backend of your code.
 
 # Understanding stacks
 
-Now that we have ZenML deployed, we can take the next steps in productionalizing our machine learning workflows. As you were running [your first pipelines](../starter-guide/create-an-ml-pipeline.md), you might have already noticed the term `stack` in the logs and on the dashboard.
+Now that we have ZenML deployed, we can take the next steps in making sure that our machine learning workflows are production-ready. As you were running [your first pipelines](../starter-guide/create-an-ml-pipeline.md), you might have already noticed the term `stack` in the logs and on the dashboard.
 
 A `stack` is the configuration of tools and infrastructure that your pipelines can run on. When you run ZenML code without configuring a stack, the pipeline will run on the so-called `default` stack.
 
@@ -111,7 +111,7 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 
 There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](../../stacks-and-components/component-guide/component-guide.md)
 
-Perhaps the most important one after the orchestrator and the artifact store is the [container registry](../../stacks-and-components/component-guide/container-registries/). A container registry is the component that stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
+Perhaps the most important one after the orchestrator and the artifact store is the [container registry](../../stacks-and-components/component-guide/container-registries/). A container registry is a component that stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
 
 ## Registering a stack
 
