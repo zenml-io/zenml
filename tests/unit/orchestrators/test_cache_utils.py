@@ -39,6 +39,7 @@ def _compile_step(step: BaseStep) -> Step:
         external_artifacts={},
         model_artifacts_or_metadata={},
         parameters={},
+        default_parameters={},
         upstream_steps=set(),
         pipeline=pipeline,
     )

@@ -1263,6 +1263,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         external_artifacts: Dict[str, "ExternalArtifact"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         parameters: Dict[str, Any],
+        default_parameters: Dict[str, Any],
         upstream_steps: Set[str],
         custom_id: Optional[str] = None,
         allow_id_suffix: bool = True,
@@ -1276,6 +1277,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             model_artifacts_or_metadata: The model artifacts or metadata for
                 the invocation.
             parameters: The parameters for the invocation.
+            default_parameters: The default parameters for the invocation.
             upstream_steps: The upstream steps for the invocation.
             custom_id: Custom ID to use for the invocation.
             allow_id_suffix: Whether a suffix can be appended to the invocation
@@ -1312,6 +1314,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             external_artifacts=external_artifacts,
             model_artifacts_or_metadata=model_artifacts_or_metadata,
             parameters=parameters,
+            default_parameters=default_parameters,
             upstream_steps=upstream_steps,
             pipeline=self,
         )

@@ -2789,6 +2789,29 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_artifact(artifact_id=artifact.id)
         logger.info(f"Deleted artifact '{artifact.name}'.")
 
+    def prune_artifacts(
+        self,
+        only_versions: bool = True,
+        delete_from_artifact_store: bool = False,
+    ) -> None:
+        """Delete all unused artifacts and artifact versions.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+            delete_from_artifact_store: Delete data from artifact metadata
+        """
+        if delete_from_artifact_store:
+            unused_artifact_versions = depaginate(
+                partial(self.list_artifact_versions, only_unused=True)
+            )
+            for unused_artifact_version in unused_artifact_versions:
+                self._delete_artifact_from_artifact_store(
+                    unused_artifact_version
+                )
+
+        self.zen_store.prune_artifact_versions(only_versions)
+        logger.info("All unused artifacts and artifact versions deleted.")
+
     # --------------------------- Artifact Versions ---------------------------
 
     def get_artifact_version(

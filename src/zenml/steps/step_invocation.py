@@ -34,6 +34,7 @@ class StepInvocation:
         external_artifacts: Dict[str, "ExternalArtifact"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         parameters: Dict[str, Any],
+        default_parameters: Dict[str, Any],
         upstream_steps: Set[str],
         pipeline: "Pipeline",
     ) -> None:
@@ -47,6 +48,7 @@ class StepInvocation:
             model_artifacts_or_metadata: The model artifacts or metadata for
                 the invocation.
             parameters: The parameters for the invocation.
+            default_parameters: The default parameters for the invocation.
             upstream_steps: The upstream steps for the invocation.
             pipeline: The parent pipeline of the invocation.
         """
@@ -56,6 +58,7 @@ class StepInvocation:
         self.external_artifacts = external_artifacts
         self.model_artifacts_or_metadata = model_artifacts_or_metadata
         self.parameters = parameters
+        self.default_parameters = default_parameters
         self.invocation_upstream_steps = upstream_steps
         self.pipeline = pipeline
 
@@ -134,6 +137,14 @@ class StepInvocation:
             for key, value in self.parameters.items()
             if key not in parameters_to_ignore
         }
+        parameters_to_apply.update(
+            {
+                key: value
+                for key, value in self.default_parameters.items()
+                if key not in parameters_to_ignore
+                and key not in parameters_to_apply
+            }
+        )
         self.step.configure(parameters=parameters_to_apply)
 
         external_artifacts: Dict[str, ExternalArtifactConfiguration] = {}

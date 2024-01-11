@@ -445,6 +445,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Dict[str, "ExternalArtifact"],
         Dict[str, "ModelVersionDataLazyLoader"],
         Dict[str, Any],
+        Dict[str, Any],
     ]:
         """Parses the call args for the step entrypoint.
 
@@ -475,6 +476,7 @@ class BaseStep(metaclass=BaseStepMeta):
         external_artifacts = {}
         model_artifacts_or_metadata = {}
         parameters = {}
+        default_parameters = {}
 
         for key, value in bound_args.arguments.items():
             self.entrypoint_definition.validate_input(key=key, value=value)
@@ -536,13 +538,14 @@ class BaseStep(metaclass=BaseStepMeta):
                 and key not in model_artifacts_or_metadata
                 and key not in self.configuration.parameters
             ):
-                parameters[key] = value
+                default_parameters[key] = value
 
         return (
             artifacts,
             external_artifacts,
             model_artifacts_or_metadata,
             parameters,
+            default_parameters,
         )
 
     def __call__(
@@ -580,6 +583,7 @@ class BaseStep(metaclass=BaseStepMeta):
             external_artifacts,
             model_artifacts_or_metadata,
             parameters,
+            default_parameters,
         ) = self._parse_call_args(*args, **kwargs)
 
         upstream_steps = {
@@ -596,6 +600,7 @@ class BaseStep(metaclass=BaseStepMeta):
             external_artifacts=external_artifacts,
             model_artifacts_or_metadata=model_artifacts_or_metadata,
             parameters=parameters,
+            default_parameters=default_parameters,
             upstream_steps=upstream_steps,
             custom_id=id,
             allow_id_suffix=not id,
