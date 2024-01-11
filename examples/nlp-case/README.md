@@ -1,11 +1,14 @@
 # ZenML NLP project
 
 This is a comprehensive supervised ML project built with the
-ZenML framework and its integration. The project trains one or more
-scikit-learn classification models to make predictions on the tabular
-classification datasets provided by the scikit-learn library. The project was
-generated from the [NLP ZenML project template](https://github.com/zenml-io/template-nlp).
+ZenML framework and its integration. The project will be 
+a comprehensive starting point for anyone looking to build
+and deploy NLP models using the ZenML framework by streamlining
+the process of training, promoting, and deploying NLP models
+with a focus on reproducibility, scalability, and ease of use.
+The project was generated from the [NLP ZenML project template](https://github.com/zenml-io/template-nlp).
 with the following properties:
+
 - Project name: ZenML NLP project
 - Technical Name: nlp_use_case
 - Version: `0.0.1`
@@ -179,22 +182,5 @@ The project loosely follows [the recommended ZenML project structure](https://do
 ├── README.md                 # this file
 ├── requirements.txt          # extra Python dependencies
 ├── config.yaml               # ZenML configuration file
-└── run.py                    # CLI tool to run pipelines on ZenML Stack
-```
-
-
-
-
-
-
-
-
-
-
-
-
-integrations
-├── README.md                 # this file
-├── requirements.txt          # extra Python dependencies 
 └── run.py                    # CLI tool to run pipelines on ZenML Stack
 ```
