@@ -109,7 +109,7 @@ Now that we have our remote artifact store registered, we can [register a new st
 
 {% tabs %}
 {% tab title="CLI" %}
-```bash
+```shell
 zenml stack register local_with_remote_storage -o default -a my_artifact_store
 ```
 {% endtab %}
@@ -133,7 +133,24 @@ python run.py --training-pipeline
 ```
 
 When you run that pipeline, ZenML will automatically store the artifacts in the specified remote storage, ensuring that they are preserved and accessible for future runs and by your team members. You can ask your colleagues to connect to the same [ZenML server](deploying-zenml.md), and you will notice that
-if they run the same pipeline, the pipeline would be partially cached, **even if they have not run the pipeline themselves before**.
+if they run the same pipeline, the pipeline would be partially cached, **even if they have not run the pipeline themselves before**. 
+
+You can list your artifact versions as follows:
+
+
+{% tabs %}
+{% tab title="CLI" %}
+```shell
+# This will give you the artifacts from the last 15 minutes
+zenml artifact version list --created="gte:$(date -d '15 minutes ago' '+%Y-%m-%d %H:%M:%S')"
+```
+{% endtab %}
+{% tab title="Cloud Dashboard" %}
+The [ZenML Cloud](https://zenml.io/cloud) features an [Artifact Control Plane](../starter-guide/manage-artifacts.md) to visualize artifact versions:
+<figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>See artifact versions in the cloud.</p></figcaption></figure>
+{% endtab %}
+{% endtabs %}
+
 
 By connecting remote storage, you're taking a significant step towards building a collaborative and scalable MLOps workflow. Your artifacts are no longer tied to a single machine but are now part of a cloud-based ecosystem, ready to be shared and built upon.
 
