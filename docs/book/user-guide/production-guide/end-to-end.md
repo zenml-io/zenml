@@ -4,7 +4,7 @@ description: Put your new knowledge in action with an end to end project
 
 # An end-to-end project
 
-In this guide, we learned some advanced production concepts:
+That was awesome! We learned so many advanced MLOps production concepts:
 
 - The value of [deploying ZenML](deploying-zenml.md)
 - Abstracting infrastructure configuration into [stacks](understand-stacks.md)
