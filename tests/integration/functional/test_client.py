@@ -1310,6 +1310,19 @@ class TestModel:
         model = clean_client.get_model(model.id)
         assert model.name == "bar"
 
+    def test_latest_version_retrieval(self, clean_client: "Client"):
+        """Test that model response has proper latest version in it."""
+        model = clean_client.create_model(name=self.MODEL_NAME)
+        mv1 = clean_client.create_model_version(model.id, name="foo")
+        model_ = clean_client.get_model(model.id)
+        assert model_.latest_version_name == mv1.name
+        assert model_.latest_version_id == mv1.id
+
+        mv2 = clean_client.create_model_version(model.id, name="bar")
+        model_ = clean_client.get_model(model.id)
+        assert model_.latest_version_name == mv2.name
+        assert model_.latest_version_id == mv2.id
+
 
 class TestModelVersion:
     MODEL_NAME = "foo"

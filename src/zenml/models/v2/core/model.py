@@ -116,7 +116,8 @@ class ModelResponseBody(WorkspaceScopedResponseBody):
     tags: List["TagResponse"] = Field(
         title="Tags associated with the model",
     )
-    latest_version: Optional[str]
+    latest_version_name: Optional[str]
+    latest_version_id: Optional[UUID]
     created: datetime = Field(
         title="The timestamp when this component was created."
     )
@@ -200,13 +201,22 @@ class ModelResponse(
         return self.get_body().tags
 
     @property
-    def latest_version(self) -> Optional[str]:
-        """The `latest_version` property.
+    def latest_version_name(self) -> Optional[str]:
+        """The `latest_version_name` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().latest_version
+        return self.get_body().latest_version_name
+
+    @property
+    def latest_version_id(self) -> Optional[str]:
+        """The `latest_version_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().latest_version_id
 
     @property
     def created(self) -> datetime:

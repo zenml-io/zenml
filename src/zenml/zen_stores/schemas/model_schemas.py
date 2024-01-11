@@ -145,11 +145,12 @@ class ModelSchema(NamedSchema, table=True):
 
         if self.model_versions:
             version_numbers = [mv.number for mv in self.model_versions]
-            latest_version = self.model_versions[
-                version_numbers.index(max(version_numbers))
-            ].name
+            latest_version_idx = version_numbers.index(max(version_numbers))
+            latest_version_name = self.model_versions[latest_version_idx].name
+            latest_version_id = self.model_versions[latest_version_idx].id
         else:
-            latest_version = None
+            latest_version_name = None
+            latest_version_id = None
 
         metadata = None
         if hydrate:
@@ -171,7 +172,8 @@ class ModelSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             tags=tags,
-            latest_version=latest_version,
+            latest_version_name=latest_version_name,
+            latest_version_id=latest_version_id,
         )
 
         return ModelResponse(
