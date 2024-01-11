@@ -20,7 +20,7 @@
   * [Deploying ZenML](user-guide/production-guide/deploying-zenml.md)
   * [Understanding stacks](user-guide/production-guide/understand-stacks.md)
   * [Connecting remote storage](user-guide/production-guide/remote-storage.md)
-  * [Orchestrate on the cloud](user-guide/production-guide/cloud-orchestrate.md)
+  * [Orchestrate on the cloud](user-guide/production-guide/cloud-orchestration.md)
   * [Configure your pipeline](user-guide/production-guide/configure-pipeline.md)
   * [Scale up (cpu, memory, and gpu)](user-guide/production-guide/scale-compute.md)
   * [Configure a code repository](user-guide/production-guide/connect-code-repository.md)
