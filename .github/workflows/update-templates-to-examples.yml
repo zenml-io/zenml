@@ -169,7 +169,7 @@ jobs:
               issue_number: ${{ github.event.pull_request.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'NLP template updates in `examples/nlp-case` have been pushed.'
+              body: 'NLP template updates in `examples/e2e_nlp` have been pushed.'
             })
   update-starter-template-to-examples:
     name: update-starter-template-to-examples
