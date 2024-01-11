@@ -27,6 +27,7 @@ from tests.integration.functional.conftest import (
     int_plus_one_test_step,
 )
 from tests.integration.functional.utils import sample_name
+from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source
@@ -1126,6 +1127,59 @@ def test_basic_crud_for_entity(
             # This means the test already succeeded and deleted the entity,
             # nothing to do here
             pass
+
+
+class TestArtifact:
+    def test_prune_full(self, clean_client: "Client"):
+        """Test that artifact pruning works."""
+        artifact_id = ExternalArtifact(value="foo").upload_by_value()
+        artifact = clean_client.get_artifact_version(artifact_id)
+        assert artifact is not None
+        clean_client.prune_artifacts(
+            only_versions=False, delete_from_artifact_store=True
+        )
+        # artifact version, artifact and data are deleted
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version(artifact_id)
+        with pytest.raises(KeyError):
+            assert (
+                clean_client.get_artifact(artifact.artifact.id).id
+                == artifact.artifact.id
+            )
+        assert not os.path.exists(artifact.uri)
+
+    def test_prune_data_and_version(self, clean_client: "Client"):
+        """Test that artifact pruning works with delete_from_artifact_store flag."""
+        artifact_id = ExternalArtifact(value="foo").upload_by_value()
+        artifact = clean_client.get_artifact_version(artifact_id)
+        assert artifact is not None
+        clean_client.prune_artifacts(
+            only_versions=False, delete_from_artifact_store=False
+        )
+        # artifact version and artifact are deleted, data is kept
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version(artifact_id)
+        with pytest.raises(KeyError):
+            assert (
+                clean_client.get_artifact(artifact.artifact.id).id
+                == artifact.artifact.id
+            )
+        assert os.path.exists(artifact.uri)
+
+    def test_prune_only_artifact_version(self, clean_client: "Client"):
+        """Test that artifact pruning works with only versions flag."""
+        artifact_id = ExternalArtifact(value="foo").upload_by_value()
+        artifact = clean_client.get_artifact_version(artifact_id)
+        assert artifact is not None
+        clean_client.prune_artifacts(only_versions=True)
+        # artifact version is deleted, rest kept
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version(artifact_id)
+        assert (
+            clean_client.get_artifact(artifact.artifact.id).id
+            == artifact.artifact.id
+        )
+        assert os.path.exists(artifact.uri)
 
 
 class TestModel:

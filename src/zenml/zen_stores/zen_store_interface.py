@@ -508,6 +508,17 @@ class ZenStoreInterface(ABC):
             KeyError: if the artifact version doesn't exist.
         """
 
+    @abstractmethod
+    def prune_artifact_versions(
+        self,
+        only_versions: bool = True,
+    ) -> None:
+        """Prunes unused artifact versions and their artifacts.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+        """
+
     # -------------------- Artifact Visualization --------------------
 
     @abstractmethod
@@ -2316,6 +2327,19 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: specified ID or name not found.
+        """
+
+    @abstractmethod
+    def delete_all_model_version_artifact_links(
+        self,
+        model_version_id: UUID,
+        only_links: bool = True,
+    ) -> None:
+        """Deletes all model version to artifact links.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+            only_links: Flag deciding whether to delete only links or all.
         """
 
     # -------------------- Model Versions Pipeline Runs --------------------

@@ -4228,6 +4228,32 @@ class TestModelVersionArtifactLinks:
             )
             assert len(mvls) == 0
 
+    def test_link_delete_all(self):
+        with ModelVersionContext(True, create_artifacts=2) as (
+            model_version,
+            artifacts,
+        ):
+            zs = Client().zen_store
+            for artifact in artifacts:
+                zs.create_model_version_artifact_link(
+                    ModelVersionArtifactRequest(
+                        user=model_version.user.id,
+                        workspace=model_version.workspace.id,
+                        model=model_version.model.id,
+                        model_version=model_version.id,
+                        artifact_version=artifact.id,
+                    )
+                )
+            zs.delete_all_model_version_artifact_links(
+                model_version_id=model_version.id,
+            )
+            mvls = zs.list_model_version_artifact_links(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
+                    model_version_id=model_version.id
+                ),
+            )
+            assert len(mvls) == 0
+
     def test_link_delete_not_found(self):
         with ModelVersionContext(True) as model_version:
             zs = Client().zen_store
@@ -4336,7 +4362,7 @@ class TestModelVersionArtifactLinks:
             )
             assert (
                 mv.get_deployment_artifact(artifacts[2].name, "1")
-                == mv.endpoint_artifacts[artifacts[2].name]["1"]
+                == mv.deployment_artifacts[artifacts[2].name]["1"]
             )
 
 

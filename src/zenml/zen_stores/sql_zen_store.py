@@ -50,7 +50,16 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, SQLModel, create_engine, or_, select
+from sqlmodel import (
+    Session,
+    SQLModel,
+    and_,
+    col,
+    create_engine,
+    delete,
+    or_,
+    select,
+)
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -1665,7 +1674,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_version is None:
                 raise KeyError(
                     f"Unable to get artifact version with ID "
-                    f"{artifact_version_id}: No artifact versionwith this ID "
+                    f"{artifact_version_id}: No artifact version with this ID "
                     f"found."
                 )
             return artifact_version.to_model(hydrate=hydrate)
@@ -1770,6 +1779,56 @@ class SqlZenStore(BaseZenStore):
                     "found."
                 )
             session.delete(artifact_version)
+            session.commit()
+
+    def prune_artifact_versions(
+        self,
+        only_versions: bool = True,
+    ) -> None:
+        """Prunes unused artifact versions and their artifacts.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+        """
+        with Session(self.engine) as session:
+            unused_artifact_versions = [
+                a[0]
+                for a in session.execute(
+                    select(ArtifactVersionSchema.id).where(
+                        and_(
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(StepRunOutputArtifactSchema.artifact_id)
+                            ),
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(StepRunInputArtifactSchema.artifact_id)
+                            ),
+                        )
+                    )
+                ).fetchall()
+            ]
+            session.execute(
+                delete(ArtifactVersionSchema).where(
+                    col(ArtifactVersionSchema.id).in_(
+                        unused_artifact_versions
+                    ),
+                )
+            )
+            if not only_versions:
+                unused_artifacts = [
+                    a[0]
+                    for a in session.execute(
+                        select(ArtifactSchema.id).where(
+                            col(ArtifactSchema.id).notin_(
+                                select(ArtifactVersionSchema.artifact_id)
+                            )
+                        )
+                    ).fetchall()
+                ]
+                session.execute(
+                    delete(ArtifactSchema).where(
+                        col(ArtifactSchema.id).in_(unused_artifacts)
+                    )
+                )
             session.commit()
 
     # ------------------------ Artifact Visualizations ------------------------
@@ -7204,6 +7263,43 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(model_version_artifact_link)
+            session.commit()
+
+    def delete_all_model_version_artifact_links(
+        self,
+        model_version_id: UUID,
+        only_links: bool = True,
+    ) -> None:
+        """Deletes all model version to artifact links.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+            only_links: Whether to only delete the link to the artifact.
+        """
+        with Session(self.engine) as session:
+            if not only_links:
+                artifact_version_ids = session.execute(
+                    select(
+                        ModelVersionArtifactSchema.artifact_version_id
+                    ).where(
+                        ModelVersionArtifactSchema.model_version_id
+                        == model_version_id
+                    )
+                ).fetchall()
+                session.execute(
+                    delete(ArtifactVersionSchema).where(
+                        col(ArtifactVersionSchema.id).in_(
+                            [a[0] for a in artifact_version_ids]
+                        )
+                    ),
+                )
+            session.execute(
+                delete(ModelVersionArtifactSchema).where(
+                    ModelVersionArtifactSchema.model_version_id
+                    == model_version_id
+                )
+            )
+
             session.commit()
 
     # ---------------------- Model Versions Pipeline Runs ----------------------

@@ -1,3 +1,4 @@
+---
 # A list of ZenML deployments, either local or remote (external), that
 # can be included in test environments to be used to run automated tests or
 # passed to pytest directly using the `--deployment` command line argument.
@@ -61,19 +62,16 @@
 #   value indicates that it doesn't.
 #
 deployments:
-
   - name: default
     description: >-
       Default deployment.
     server: none
     database: sqlite
-
   - name: client-mysql
     description: >-
       Local client connected directly to MySQL running in container.
     server: none
     database: mysql
-
   - name: client-mariadb
     description: >-
       Local client connected directly to MariaDB running in container.
@@ -92,7 +90,6 @@ deployments:
     database: sqlite
     capabilities:
       server: true
-
   - name: docker-server
     description: >-
       Local ZenML server running in docker using the default SQLite database.
@@ -100,7 +97,6 @@ deployments:
     database: sqlite
     capabilities:
       server: true
-
   - name: docker-server-mysql
     description: >-
       Local ZenML server and MySQL both running in docker with docker-compose.
@@ -108,7 +104,6 @@ deployments:
     database: mysql
     capabilities:
       server: true
-
   - name: docker-server-mariadb
     description: >-
       Local ZenML server and MariaDB both running in docker with docker-compose.
