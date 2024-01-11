@@ -64,15 +64,15 @@ To connect your GitHub repository to ZenML, you'll need a GitHub Personal Access
 2. Select "Personal access tokens" and click on "Generate new token".
 3.  Give your token a name and a description.
 
-    ![](../../../.gitbook/assets/github-fine-grained-token-name.png)
+    ![](../../.gitbook/assets/github-fine-grained-token-name.png)
 4.  We recommend selecting the specific repository and then giving `contents` read-only access.
 
-    ![](../../../.gitbook/assets/github-token-set-permissions.png)
+    ![](../../.gitbook/assets/github-token-set-permissions.png)
 
-    ![](../../../.gitbook/assets/github-token-permissions-overview.png)
+    ![](../../.gitbook/assets/github-token-permissions-overview.png)
 5.  Click on "Generate token" and copy the token to a safe place.
 
-    ![](../../../.gitbook/assets/copy-github-fine-grained-token.png)
+    ![](../../.gitbook/assets/copy-github-fine-grained-token.png)
 
 </details>
 
