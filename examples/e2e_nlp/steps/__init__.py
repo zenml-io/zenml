@@ -36,4 +36,6 @@ from .training import model_trainer
 from .deploying import (
     save_model_to_deploy,
     deploy_locally,
+    deploy_to_huggingface,
+    deploy_to_skypilot,
 )
