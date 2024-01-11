@@ -94,32 +94,40 @@ def training_pipeline(model_type: str):
 
 So you can see that the YAML config is fairly easy to use, and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [advanced guide](../advanced-guide/pipelining-features/configure-steps-pipelines.md), but for now, we can move on to scaling our pipeline.
 
-## Scale compute on the cloud
+## Scaling compute on the cloud
 
 When we ran our pipeline with the above config, ZenML used some sane defaults to pick the resource requirements for that pipeline. However, in the real world, you might want to add more memory, CPU, or even a GPU depending on the pipeline at hand.
 
-This is as easy as adding the following section to the YAML config:
+This is as easy as adding the following section to your local `training_rf.yaml` file:
 
 ```yaml
 # These are the resources for the entire pipeline, i.e., each step
-settings:
-    resources:
-        cpu_count: 4
-        memory: "32GB"
+settings:    
+  ...
+
+  resources:
+    memory: "32GB"
         
-    
+...    
 steps:
-    model_trainer:
-        settings:
-            resources:
-                gpu_count: 1
+  model_trainer:
+    settings:
+      resources:
+        cpu_count: 8
 ```
 
-The `settings.resources` key corresponds to the [`ResourceSettings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.resource_settings.ResourceSettings) class in the Python SDK. Here we are configuring the entire pipeline with a certain amount of CPUs and memory, while for the trainer step we are configuring 
+The `settings.resources` key corresponds to the [`ResourceSettings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.resource_settings.ResourceSettings) class in the Python SDK. Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores.
 
-TBD: Add gpu type in orchestrator settings
+Now let's run the pipeline again:
 
-Read more about how to specify resource requirements for pipelines and steps [in the dedicated section in the docs](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md).
+```python
+python run.py --training-pipeline
+```
+
+Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
+
+Bare in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md), including the ability to [attach a GPU](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings)
+
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
