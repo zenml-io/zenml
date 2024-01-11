@@ -263,7 +263,7 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        from zenml.lazy_load.run_metadata import RunMetadataLazyGetter
+        from zenml.metadata.lazy_load import RunMetadataLazyGetter
         from zenml.new.pipelines.pipeline_context import (
             get_pipeline_context,
         )
