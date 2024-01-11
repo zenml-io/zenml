@@ -19,6 +19,10 @@ Out of the box, ZenML ships with [many different supported artifact store flavor
 
 {% tabs %}
 {% tab title="AWS" %}
+You will need to install and set up the AWS CLI on your machine as a
+prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before
+you register the S3 Artifact Store.
+
 The Amazon Web Services S3 Artifact Store flavor is provided by the [S3 ZenML integration](../../stacks-and-components/component-guide/artifact-stores/s3.md), you need to install it on your local machine to be able to register an S3 Artifact Store and add it to your stack:
 
 ```shell
@@ -41,6 +45,8 @@ zenml artifact-store register remote_artifact_store -f s3 --path=s3://bucket-nam
 For more information, read the [dedicated S3 artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/s3.md).
 {% endtab %}
 {% tab title="GCP" %}
+You will need to install and set up the Google Cloud CLI on your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk) , before you register the GCS Artifact Store.
+
 The Google Cloud Storage Artifact Store flavor is provided by the [GCP ZenML integration](../../stacks-and-components/component-guide/artifact-stores/gcp.md), you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
 
 ```shell
@@ -64,6 +70,8 @@ zenml artifact-store register remote_artifact_store -f gcp --path=gs://bucket-na
 For more information, read the [dedicated GCS artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/gcp.md).
 {% endtab %}
 {% tab title="Azure" %}
+You will need to install and set up the Azure CLI on your machine as a prerequisite, as covered in [the Azure documentation](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli), before you register the Azure Artifact Store.
+
 The Microsoft Azure Artifact Store flavor is provided by the [Azure ZenML integration](../../stacks-and-components/component-guide/artifact-stores/azure.md), you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
 
 ```shell
@@ -99,9 +107,7 @@ It is also relatively simple to create a [custom stack component flavor](../../s
 Having trouble with setting up infrastructure? Join the [ZenML community](https://zenml.io/slack) and ask for help!
 {% endhint %}
 
-Please notice that we are also creating [service connectors](../../stacks-and-components/auth-management/auth-management.md) and associating them with the stack components with the above command. While service connectors are advanced concepts, for now it is sufficient to understand that these connectors give the deployed ZenML server the same credentials as your local ones.
-
-If you would like to not give any credentials to the ZenML server for your cloud provider, you can simply ignore service connector specific commands above.
+Please note that for now your local client needs have the 
 
 ## Running a pipeline on a cloud stack
 

@@ -1,29 +1,21 @@
 ---
-description: Provision infrastructure on the cloud.
+description: Orchestrate using cloud resources.
 ---
 
-# Deploying a Cloud Stack
+# Orchestrating pipelines on the cloud
 
-The next step is to scale our pipelines to the cloud. In order to do this, we need to configure a basic cloud stack in ZenML. This typically consists of three key components that we have learned about in the last section:
+Until now, we've only run pipelines locally. The next step is get free from our local machines, and transition our pipelines to execute on the cloud. This will enable you to run your MLOps pipelines in a cloud environment, leveraging the scalability and robustness that cloud platforms offer.
+
+In order to do this, we need to get familiar with two more stack components: 
 
 - The [orchestrator](../../stacks-and-components/component-guide/orchestrators/) manages the workflow and execution of your pipelines.
-- The [artifact store](../../stacks-and-components/component-guide/artifact-stores/) is where your pipeline artifacts, such as datasets and models, are stored.
 - The [container registry](../../stacks-and-components/component-guide/container-registries/) is a storage and content delivery system that holds your Docker container images.
 
-In this chapter, we'll walk you through the process of deploying a basic cloud stack on a public cloud provider. This will enable you to run your MLOps pipelines in a cloud environment, leveraging the scalability and robustness that cloud platforms offer.
+These, along with with [remote storage](remote-storage.md) completes a basic cloud stack where our pipeline is entirely running on the cloud.
 
-## Deploying on a public cloud
+## Provisioning and registering a Skypilot orchestrator alongisde a container registry
 
-To get a minimal cloud stack running quickly, ZenML integrates with the [MLStacks](https://mlstacks.zenml.io/getting-started/introduction) project. Before we begin, ensure you have:
-
-- An account with your chosen cloud provider.
-- The cloud provider's CLI installed and configured with the necessary permissions.
-- The `zenml` CLI installed and configured on your local machine with the [MLStacks](https://mlstacks.zenml.io/getting-started/introduction) extra (i.e. `pip install "zenml[mlstacks]"`).
-- MLStacks uses Terraform on the backend to manage infrastructure. You will need to have Terraform installed. Please visit [the Terraform docs](https://learn.hashicorp.com/tutorials/terraform/install-cli#install-terraform) for installation instructions.
-- MLStacks also uses Helm to deploy Kubernetes resources. You will need to have Helm installed. Please visit [the Helm docs](https://helm.sh/docs/intro/install/#from-script) for installation instructions.
-{% endhint %}
-
-Then we can start deploying infrastructure (Note that from this point on, charges will be incurred on your cloud provider):
+The easiest cloud orchestrator to start with is the [Skypilot](https://skypilot.readthedocs.io/) orchestrator running on a public cloud. The The [ZenML Skypilot](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md)
 
 {% tabs %}
 {% tab title="GCP" %}
