@@ -634,7 +634,7 @@ class StepRunner:
 
     def _prepare_model_context_for_step(self) -> None:
         try:
-            model_version = get_step_context().model_version
+            model_version = get_step_context().model
             model_version._get_or_create_model_version()
         except StepContextError:
             return
@@ -680,7 +680,7 @@ class StepRunner:
             Set of tuples of (model_id, model_version_id).
         """
         try:
-            mc = get_step_context().model_version
+            mc = get_step_context().model
             model_version = mc._get_or_create_model_version()
             return {(model_version.model.id, model_version.id)}
         except StepContextError:

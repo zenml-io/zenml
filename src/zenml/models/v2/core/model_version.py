@@ -32,7 +32,7 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
@@ -315,7 +315,7 @@ class ModelVersionResponse(
         self,
         was_created_in_this_run: bool = False,
         suppress_class_validation_warnings: bool = False,
-    ) -> "ModelVersion":
+    ) -> "Model":
         """Convert response model to ModelVersion object.
 
         Args:
@@ -327,9 +327,9 @@ class ModelVersionResponse(
         Returns:
             ModelVersion object
         """
-        from zenml.model.model_version import ModelVersion
+        from zenml.model.model import Model
 
-        mv = ModelVersion(
+        mv = Model(
             name=self.model.name,
             license=self.model.license,
             description=self.description,

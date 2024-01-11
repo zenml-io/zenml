@@ -42,8 +42,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ModelVersion(BaseModel):
-    """ModelVersion class to pass into pipeline or step to set it into a model context.
+class Model(BaseModel):
+    """Model class to pass into pipeline or step to set it into a model context.
 
     name: The name of the model.
     license: The license under which the model is created.
@@ -427,7 +427,7 @@ class ModelVersion(BaseModel):
         Returns:
             True, if equal, False otherwise.
         """
-        if not isinstance(other, ModelVersion):
+        if not isinstance(other, Model):
             return NotImplemented
         if self.name != other.name:
             return False
@@ -690,7 +690,7 @@ class ModelVersion(BaseModel):
         self._number = model_version.number
         return model_version
 
-    def _merge(self, model_version: "ModelVersion") -> None:
+    def _merge(self, model_version: "Model") -> None:
         self.license = self.license or model_version.license
         self.description = self.description or model_version.description
         self.audience = self.audience or model_version.audience

@@ -18,7 +18,7 @@ from uuid import UUID
 from pydantic import BaseModel, root_validator
 
 from zenml.logger import get_logger
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 
 logger = get_logger(__name__)
@@ -33,7 +33,7 @@ class ExternalArtifactConfiguration(BaseModel):
     id: Optional[UUID] = None
     name: Optional[str] = None
     version: Optional[str] = None
-    model_version: Optional[ModelVersion] = None
+    model_version: Optional[Model] = None
 
     @root_validator
     def _validate_all_eac(cls, values: Dict[str, Any]) -> Dict[str, Any]:

@@ -47,7 +47,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 from zenml.models import (
     ComponentResponse,
     PipelineBuildRequest,
@@ -1549,7 +1549,7 @@ class TestModelVersion:
         client: Client,
         model_name: str = "aria_cat_supermodel",
         model_version_name: str = "1.0.0",
-    ) -> ModelVersion:
+    ) -> Model:
         model = client.create_model(
             name=model_name,
         )

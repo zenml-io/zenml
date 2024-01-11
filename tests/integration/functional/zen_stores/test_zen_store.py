@@ -4750,12 +4750,10 @@ class TestRunMetadata:
                 )
             )
         elif type_ == MetadataResourceTypes.MODEL_VERSION:
-            from zenml import ModelVersion
+            from zenml import Model
 
             model_name = sample_name("foo")
-            resource = ModelVersion(
-                name=model_name
-            )._get_or_create_model_version()
+            resource = Model(name=model_name)._get_or_create_model_version()
 
         elif (
             type_ == MetadataResourceTypes.PIPELINE_RUN

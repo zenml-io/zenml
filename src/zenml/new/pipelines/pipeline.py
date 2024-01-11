@@ -92,7 +92,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -125,7 +125,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_version: Optional["ModelVersion"] = None,
+        model_version: Optional["Model"] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -304,7 +304,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_version: Optional["ModelVersion"] = None,
+        model_version: Optional["Model"] = None,
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
     ) -> T:
@@ -871,11 +871,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def _update_new_requesters(
         self,
         requester_name: str,
-        model_version: "ModelVersion",
+        model_version: "Model",
         new_versions_requested: Dict[
             Tuple[str, Optional[str]], NewModelVersionRequest
         ],
-        other_model_versions: Set["ModelVersion"],
+        other_model_versions: Set["Model"],
     ) -> None:
         key = (
             model_version.name,
@@ -911,7 +911,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         new_versions_requested: Dict[
             Tuple[str, Optional[str]], NewModelVersionRequest
         ] = defaultdict(NewModelVersionRequest)
-        other_model_versions: Set["ModelVersion"] = set()
+        other_model_versions: Set["Model"] = set()
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
             step_model_version = step.config.model_version
@@ -927,9 +927,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     other_model_versions=other_model_versions,
                 )
         if not all_steps_have_own_config:
-            pipeline_model_version = (
-                deployment.pipeline_configuration.model_version
-            )
+            pipeline_model_version = deployment.pipeline_configuration.model
             if pipeline_model_version:
                 self._update_new_requesters(
                     model_version=pipeline_model_version,
@@ -937,7 +935,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     new_versions_requested=new_versions_requested,
                     other_model_versions=other_model_versions,
                 )
-        elif deployment.pipeline_configuration.model_version is not None:
+        elif deployment.pipeline_configuration.model is not None:
             logger.warning(
                 f"ModelConfig of pipeline `{self.name}` is overridden in all "
                 f"steps. "
@@ -1401,11 +1399,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                         "model_version"
                     ] = self._from_config_file["model_version"]
                 else:
-                    from zenml.model.model_version import ModelVersion
+                    from zenml.model.model import Model
 
-                    _from_config_file[
-                        "model_version"
-                    ] = ModelVersion.parse_obj(
+                    _from_config_file["model_version"] = Model.parse_obj(
                         _from_config_file["model_version"]
                     )
         self._from_config_file = _from_config_file

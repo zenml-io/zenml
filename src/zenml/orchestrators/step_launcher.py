@@ -53,7 +53,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -314,7 +314,7 @@ class StepLauncher:
             self._deployment.step_configurations[
                 step_run.name
             ].config.model_version
-            or self._deployment.pipeline_configuration.model_version
+            or self._deployment.pipeline_configuration.model
         )
         input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step,
@@ -373,7 +373,7 @@ class StepLauncher:
 
     def _link_cached_artifacts_to_model_version(
         self,
-        model_version_from_context: Optional["ModelVersion"],
+        model_version_from_context: Optional["Model"],
         step_run: StepRunRequest,
     ) -> None:
         """Links the output artifacts of the cached step to the model version in Control Plane.

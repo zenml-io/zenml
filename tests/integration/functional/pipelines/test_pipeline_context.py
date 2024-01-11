@@ -2,7 +2,7 @@ import pytest
 import yaml
 
 from zenml import (
-    ModelVersion,
+    Model,
     get_pipeline_context,
     get_step_context,
     pipeline,
@@ -64,7 +64,7 @@ def test_pipeline_context_available_as_config_yaml(tmp_path):
 @step(enable_cache=False)
 def promoter_step(do_promote: bool) -> int:
     if do_promote:
-        get_step_context().model_version.set_stage("production")
+        get_step_context().model.set_stage("production")
     return 1
 
 
@@ -73,14 +73,14 @@ def asserter_step(i: int):
     assert i == 1
 
 
-@pipeline(model_version=ModelVersion(name="foo"))
+@pipeline(model_version=Model(name="foo"))
 def producer_pipe(do_promote: bool):
     promoter_step(do_promote)
 
 
-@pipeline(model_version=ModelVersion(name="foo", version="production"))
+@pipeline(model_version=Model(name="foo", version="production"))
 def consumer_pipe():
-    mv = get_pipeline_context().model_version
+    mv = get_pipeline_context().model
     asserter_step(mv.get_artifact("producer_pipe::promoter_step::output"))
 
 

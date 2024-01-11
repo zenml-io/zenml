@@ -17,7 +17,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, PrivateAttr
 
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 
 
 class NewModelVersionRequest(BaseModel):
@@ -38,10 +38,10 @@ class NewModelVersionRequest(BaseModel):
             return f"{self.source}::{self.name}"
 
     requesters: List[Requester] = []
-    _model_version: Optional[ModelVersion] = PrivateAttr(default=None)
+    _model_version: Optional[Model] = PrivateAttr(default=None)
 
     @property
-    def model_version(self) -> ModelVersion:
+    def model_version(self) -> Model:
         """Model version getter.
 
         Returns:
@@ -56,7 +56,7 @@ class NewModelVersionRequest(BaseModel):
 
     def update_request(
         self,
-        model_version: ModelVersion,
+        model_version: Model,
         requester: "NewModelVersionRequest.Requester",
     ) -> None:
         """Update from `ModelVersion` in place.

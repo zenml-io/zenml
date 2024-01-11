@@ -22,7 +22,7 @@ from zenml.logger import get_logger
 from zenml.new.steps.step_context import get_step_context
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
 
 
 logger = get_logger(__name__)
@@ -88,14 +88,14 @@ class ArtifactConfig(BaseModel):
         smart_union = True
 
     @property
-    def _model_version(self) -> Optional["ModelVersion"]:
+    def _model_version(self) -> Optional["Model"]:
         """The model version linked to this artifact.
 
         Returns:
             The model version or None if the model version cannot be determined.
         """
         try:
-            model_version = get_step_context().model_version
+            model_version = get_step_context().model
         except (StepContextError, RuntimeError):
             model_version = None
         # Check if another model name was specified
@@ -103,9 +103,9 @@ class ArtifactConfig(BaseModel):
             model_version is None or model_version.name != self.model_name
         ):
             # Create a new ModelConfig instance with the provided model name and version
-            from zenml.model.model_version import ModelVersion
+            from zenml.model.model import Model
 
-            on_the_fly_config = ModelVersion(
+            on_the_fly_config = Model(
                 name=self.model_name, version=self.model_version
             )
             return on_the_fly_config

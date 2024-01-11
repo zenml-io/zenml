@@ -24,14 +24,14 @@ from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.enums import ModelStages
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 
 
 @step
 def _assert_that_model_version_set(name="foo"):
     """Step asserting that passed model name and version is in model context."""
-    assert get_step_context().model_version.name == name
-    assert get_step_context().model_version.version == "1"
+    assert get_step_context().model.name == name
+    assert get_step_context().model.version == "1"
 
 
 def test_model_version_passed_to_step_context_via_step(clean_client: "Client"):
@@ -40,7 +40,7 @@ def test_model_version_passed_to_step_context_via_step(clean_client: "Client"):
     @pipeline(name="bar", enable_cache=False)
     def _simple_step_pipeline():
         _assert_that_model_version_set.with_options(
-            model_version=ModelVersion(name="foo"),
+            model_version=Model(name="foo"),
         )()
 
     _simple_step_pipeline()
@@ -53,7 +53,7 @@ def test_model_version_passed_to_step_context_via_pipeline(
 
     @pipeline(
         name="bar",
-        model_version=ModelVersion(name="foo"),
+        model_version=Model(name="foo"),
         enable_cache=False,
     )
     def _simple_step_pipeline():
@@ -69,12 +69,12 @@ def test_model_version_passed_to_step_context_via_step_and_pipeline(
 
     @pipeline(
         name="bar",
-        model_version=ModelVersion(name="bar"),
+        model_version=Model(name="bar"),
         enable_cache=False,
     )
     def _simple_step_pipeline():
         _assert_that_model_version_set.with_options(
-            model_version=ModelVersion(name="foo"),
+            model_version=Model(name="foo"),
         )()
 
     _simple_step_pipeline()
@@ -87,25 +87,25 @@ def test_model_version_passed_to_step_context_and_switches(
 
     @pipeline(
         name="bar",
-        model_version=ModelVersion(name="bar"),
+        model_version=Model(name="bar"),
         enable_cache=False,
     )
     def _simple_step_pipeline():
         # this step will use ModelVersion from itself
         _assert_that_model_version_set.with_options(
-            model_version=ModelVersion(name="foo"),
+            model_version=Model(name="foo"),
         )()
         # this step will use ModelVersion from pipeline
         _assert_that_model_version_set(name="bar")
         # and another switch of context
         _assert_that_model_version_set.with_options(
-            model_version=ModelVersion(name="foobar"),
+            model_version=Model(name="foobar"),
         )(name="foobar")
 
     _simple_step_pipeline()
 
 
-@step(model_version=ModelVersion(name="foo"))
+@step(model_version=Model(name="foo"))
 def _this_step_creates_a_version():
     return 1
 
@@ -121,7 +121,7 @@ def test_create_new_versions_both_pipeline_and_step(clean_client: "Client"):
 
     @pipeline(
         name="bar",
-        model_version=ModelVersion(name="bar", description=desc),
+        model_version=Model(name="bar", description=desc),
         enable_cache=False,
     )
     def _this_pipeline_creates_a_version():
@@ -177,7 +177,7 @@ def test_create_new_version_only_in_pipeline(clean_client: "Client"):
 
     @pipeline(
         name="bar",
-        model_version=ModelVersion(name="bar"),
+        model_version=Model(name="bar"),
         enable_cache=False,
     )
     def _this_pipeline_creates_a_version():
@@ -203,7 +203,7 @@ def _this_step_produces_output() -> Annotated[int, "data"]:
 
 @step
 def _this_step_tries_to_recover(run_number: int):
-    mv = get_step_context().model_version._get_or_create_model_version()
+    mv = get_step_context().model._get_or_create_model_version()
     assert (
         len(mv.data_artifact_ids["data"]) == run_number
     ), "expected AssertionError"
@@ -214,19 +214,17 @@ def _this_step_tries_to_recover(run_number: int):
 @pytest.mark.parametrize(
     "model_version",
     [
-        ModelVersion(
+        Model(
             name="foo",
         ),
-        ModelVersion(
+        Model(
             name="foo",
             version="test running version",
         ),
     ],
     ids=["default_running_name", "custom_running_name"],
 )
-def test_recovery_of_steps(
-    clean_client: "Client", model_version: ModelVersion
-):
+def test_recovery_of_steps(clean_client: "Client", model_version: Model):
     """Test that model version can recover states after previous fails."""
 
     @pipeline(
@@ -263,7 +261,7 @@ def test_recovery_of_steps(
     assert len(mv.data_artifact_ids["data"]) == 3
 
 
-@step(model_version=ModelVersion(name="foo"))
+@step(model_version=Model(name="foo"))
 def _new_version_step():
     return 1
 
@@ -275,7 +273,7 @@ def _no_model_version_step():
 
 @pipeline(
     enable_cache=False,
-    model_version=ModelVersion(name="foo"),
+    model_version=Model(name="foo"),
 )
 def _new_version_pipeline_overridden_warns():
     _new_version_step()
@@ -283,7 +281,7 @@ def _new_version_pipeline_overridden_warns():
 
 @pipeline(
     enable_cache=False,
-    model_version=ModelVersion(name="foo"),
+    model_version=Model(name="foo"),
 )
 def _new_version_pipeline_not_warns():
     _no_model_version_step()
@@ -302,7 +300,7 @@ def _no_new_version_pipeline_warns_on_steps():
 
 @pipeline(
     enable_cache=False,
-    model_version=ModelVersion(name="foo"),
+    model_version=Model(name="foo"),
 )
 def _new_version_pipeline_warns_on_steps():
     _new_version_step()
@@ -374,14 +372,14 @@ def test_pipeline_run_link_attached_from_pipeline_context(
     run_name_1 = f"bar_run_{uuid4()}"
     pipeline.with_options(
         run_name=run_name_1,
-        model_version=ModelVersion(
+        model_version=Model(
             name="foo",
         ),
     )()
     run_name_2 = f"bar_run_{uuid4()}"
     pipeline.with_options(
         run_name=run_name_2,
-        model_version=ModelVersion(name="foo", version=ModelStages.LATEST),
+        model_version=Model(name="foo", version=ModelStages.LATEST),
     )()
 
     mv = clean_client.get_model_version(
@@ -398,14 +396,14 @@ def test_pipeline_run_link_attached_from_pipeline_context(
 
 @pipeline(name="bar", enable_cache=False)
 def _pipeline_run_link_attached_from_step_context_single_step(
-    mv: ModelVersion,
+    mv: Model,
 ):
     _this_step_produces_output.with_options(model_version=mv)()
 
 
 @pipeline(name="bar", enable_cache=False)
 def _pipeline_run_link_attached_from_step_context_multiple_step(
-    mv: ModelVersion,
+    mv: Model,
 ):
     _this_step_produces_output.with_options(model_version=mv)()
     _this_step_produces_output.with_options(model_version=mv)()
@@ -427,14 +425,14 @@ def test_pipeline_run_link_attached_from_step_context(
     pipeline.with_options(
         run_name=run_name_1,
     )(
-        ModelVersion(
+        Model(
             name="foo",
         )
     )
     run_name_2 = f"bar_run_{uuid4()}"
     pipeline.with_options(
         run_name=run_name_2,
-    )(ModelVersion(name="foo", version=ModelStages.LATEST))
+    )(Model(name="foo", version=ModelStages.LATEST))
 
     mv = clean_client.get_model_version(
         model_name_or_id="foo",
@@ -483,30 +481,30 @@ def _pipeline_run_link_attached_from_artifact_context_multiple_step():
 
 @pipeline(
     enable_cache=False,
-    model_version=ModelVersion(name="pipeline", version=ModelStages.LATEST),
+    model_version=Model(name="pipeline", version=ModelStages.LATEST),
 )
 def _pipeline_run_link_attached_from_mixed_context_single_step():
     _this_step_has_model_version_on_artifact_level()
     _this_step_produces_output()
     _this_step_produces_output.with_options(
-        model_version=ModelVersion(name="step", version=ModelStages.LATEST),
+        model_version=Model(name="step", version=ModelStages.LATEST),
     )()
 
 
 @pipeline(
     enable_cache=False,
-    model_version=ModelVersion(name="pipeline", version=ModelStages.LATEST),
+    model_version=Model(name="pipeline", version=ModelStages.LATEST),
 )
 def _pipeline_run_link_attached_from_mixed_context_multiple_step():
     _this_step_has_model_version_on_artifact_level()
     _this_step_produces_output()
     _this_step_produces_output.with_options(
-        model_version=ModelVersion(name="step", version=ModelStages.LATEST),
+        model_version=Model(name="step", version=ModelStages.LATEST),
     )()
     _this_step_has_model_version_on_artifact_level()
     _this_step_produces_output()
     _this_step_produces_output.with_options(
-        model_version=ModelVersion(name="step", version=ModelStages.LATEST),
+        model_version=Model(name="step", version=ModelStages.LATEST),
     )()
 
 
@@ -583,7 +581,7 @@ def _consumer_step(a: int, b: int):
     assert a == b
 
 
-@step(model_version=ModelVersion(name="step"))
+@step(model_version=Model(name="step"))
 def _producer_step() -> (
     Tuple[
         Annotated[int, "output_0"],
@@ -597,11 +595,11 @@ def _producer_step() -> (
 @pipeline
 def _consumer_pipeline_with_step_context():
     _consumer_step.with_options(
-        model_version=ModelVersion(name="step", version=ModelStages.LATEST)
+        model_version=Model(name="step", version=ModelStages.LATEST)
     )(ExternalArtifact(name="output_0"), 1)
 
 
-@pipeline(model_version=ModelVersion(name="step", version=ModelStages.LATEST))
+@pipeline(model_version=Model(name="step", version=ModelStages.LATEST))
 def _consumer_pipeline_with_pipeline_context():
     _consumer_step(
         ExternalArtifact(name="output_2"),
@@ -649,13 +647,11 @@ def test_that_if_some_steps_request_new_version_but_cached_new_version_is_still_
 ):
     """Test that if one of the steps requests a new version but was cached a new version is still created for other steps."""
 
-    @pipeline(
-        model_version=ModelVersion(name="step", version=ModelStages.LATEST)
-    )
+    @pipeline(model_version=Model(name="step", version=ModelStages.LATEST))
     def _inner_pipeline():
         # this step requests a new version, but can be cached
         _this_step_produces_output.with_options(
-            model_version=ModelVersion(name="step")
+            model_version=Model(name="step")
         )()
         # this is an always run step
         _this_step_produces_output.with_options(enable_cache=False)()
@@ -690,12 +686,12 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline_run(
     """Test that if pipeline run gets deleted - it is removed from model version."""
 
     @pipeline(
-        model_version=ModelVersion(name="step", version=ModelStages.LATEST),
+        model_version=Model(name="step", version=ModelStages.LATEST),
         enable_cache=False,
     )
     def _inner_pipeline():
         _this_step_produces_output.with_options(
-            model_version=ModelVersion(name="step")
+            model_version=Model(name="step")
         )()
 
     run_1 = f"run_{uuid4()}"
@@ -721,13 +717,13 @@ def test_that_pipeline_run_is_removed_on_deletion_of_pipeline(
     """Test that if pipeline gets deleted - runs are removed from model version."""
 
     @pipeline(
-        model_version=ModelVersion(name="step", version=ModelStages.LATEST),
+        model_version=Model(name="step", version=ModelStages.LATEST),
         enable_cache=False,
         name="test_that_pipeline_run_is_removed_on_deletion_of_pipeline",
     )
     def _inner_pipeline():
         _this_step_produces_output.with_options(
-            model_version=ModelVersion(name="step")
+            model_version=Model(name="step")
         )()
 
     run_1 = f"run_{uuid4()}"
@@ -757,12 +753,12 @@ def test_that_artifact_is_removed_on_deletion(
     """Test that if artifact gets deleted - it is removed from model version."""
 
     @pipeline(
-        model_version=ModelVersion(name="step", version=ModelStages.LATEST),
+        model_version=Model(name="step", version=ModelStages.LATEST),
         enable_cache=False,
     )
     def _inner_pipeline():
         _this_step_produces_output.with_options(
-            model_version=ModelVersion(name="step")
+            model_version=Model(name="step")
         )()
 
     run_1 = f"run_{uuid4()}"
@@ -792,7 +788,7 @@ def test_that_artifact_is_removed_on_deletion(
 @step
 def _this_step_asserts_context_with_artifact(artifact: str):
     """Assert given arg with model_version number."""
-    assert artifact == str(get_step_context().model_version.id)
+    assert artifact == str(get_step_context().model.id)
 
 
 @step
@@ -800,7 +796,7 @@ def _this_step_produces_output_model_version() -> (
     Annotated[str, ArtifactConfig(name="artifact")]
 ):
     """This step produces artifact with model_version number."""
-    return str(get_step_context().model_version.id)
+    return str(get_step_context().model.id)
 
 
 def test_pipeline_context_pass_artifact_from_model_and_link_run(
@@ -808,24 +804,18 @@ def test_pipeline_context_pass_artifact_from_model_and_link_run(
 ):
     """Test that ExternalArtifact from pipeline context is matched to proper version and run is linked."""
 
-    @pipeline(model_version=ModelVersion(name="pipeline"), enable_cache=False)
+    @pipeline(model_version=Model(name="pipeline"), enable_cache=False)
     def _producer(do_promote: bool):
         _this_step_produces_output_model_version()
         if do_promote:
-            get_pipeline_context().model_version.set_stage(
-                ModelStages.PRODUCTION
-            )
+            get_pipeline_context().model.set_stage(ModelStages.PRODUCTION)
 
     @pipeline(
-        model_version=ModelVersion(
-            name="pipeline", version=ModelStages.PRODUCTION
-        ),
+        model_version=Model(name="pipeline", version=ModelStages.PRODUCTION),
         enable_cache=False,
     )
     def _consumer():
-        artifact = get_pipeline_context().model_version.get_artifact(
-            "artifact"
-        )
+        artifact = get_pipeline_context().model.get_artifact("artifact")
         _this_step_asserts_context_with_artifact(artifact)
 
     _producer.with_options(run_name="run_1")(True)

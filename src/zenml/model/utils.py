@@ -26,7 +26,7 @@ from zenml.enums import ModelStages
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 from zenml.models import ModelVersionArtifactRequest
 from zenml.new.steps.step_context import get_step_context
 
@@ -52,7 +52,7 @@ def link_step_artifacts_to_model(
             "step."
         )
     try:
-        model_version = step_context.model_version
+        model_version = step_context.model
     except StepContextError:
         model_version = None
         logger.debug("No model context found, unable to auto-link artifacts.")
@@ -81,7 +81,7 @@ def link_step_artifacts_to_model(
 def link_artifact_config_to_model_version(
     artifact_config: ArtifactConfig,
     artifact_version_id: UUID,
-    model_version: Optional["ModelVersion"] = None,
+    model_version: Optional["Model"] = None,
 ) -> None:
     """Link an artifact config to its model version.
 
@@ -94,9 +94,9 @@ def link_artifact_config_to_model_version(
 
     # If the artifact config specifies a model itself then always use that
     if artifact_config.model_name is not None:
-        from zenml.model.model_version import ModelVersion
+        from zenml.model.model import Model
 
-        model_version = ModelVersion(
+        model_version = Model(
             name=artifact_config.model_name,
             version=artifact_config.model_version,
         )
@@ -168,7 +168,7 @@ def log_model_metadata(
     mv = None
     try:
         step_context = get_step_context()
-        mv = step_context.model_version
+        mv = step_context.model
     except RuntimeError:
         step_context = None
 
@@ -178,8 +178,8 @@ def log_model_metadata(
             "called inside a step with configured `model_version` in decorator."
         )
     if mv is None:
-        from zenml import ModelVersion
+        from zenml import Model
 
-        mv = ModelVersion(name=model_name, version=model_version)
+        mv = Model(name=model_name, version=model_version)
 
     mv.log_metadata(metadata)
