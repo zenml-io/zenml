@@ -33,6 +33,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
+    verify_permissions_and_prune_entities,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
@@ -191,6 +192,27 @@ def delete_artifact_version(
         id=artifact_version_id,
         get_method=zen_store().get_artifact_version,
         delete_method=zen_store().delete_artifact_version,
+    )
+
+
+@artifact_version_router.delete(
+    "/",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def prune_artifact_versions(
+    only_versions: bool = True,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Prunes unused artifact versions and their artifacts.
+
+    Args:
+        only_versions: Only delete artifact versions, keeping artifacts
+    """
+    verify_permissions_and_prune_entities(
+        resource_type=ResourceType.ARTIFACT_VERSION,
+        prune_method=zen_store().prune_artifact_versions,
+        only_versions=only_versions,
     )
 
 
