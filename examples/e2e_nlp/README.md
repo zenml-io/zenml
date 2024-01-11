@@ -19,6 +19,8 @@ Settings of your project are:
 - Accelerator: `cpu`
 - Trained model promotion to `staging` based on accuracy metric vs currently deployed model
 - Local deployment enabled
+- Deployment to HuggingFace Hub enabled
+- Deployment to SkyPilot enabled
 - Dataset: `airline_reviews`
 - Model: `distilbert-base-uncased`
 - Notifications about failures enabled
