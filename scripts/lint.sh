@@ -15,14 +15,18 @@ ruff $SRC_NO_TESTS
 ruff $TESTS_EXAMPLES --extend-ignore D
 
 # Flag check for skipping yamlfix
-SKIP_YAMLFIX=false
-for arg in "$@"
-do
-    if [ "$arg" = "--no-yamlfix" ]; then
-        SKIP_YAMLFIX=true
-        break
-    fi
-done
+if [ "$OS" = "windows-latest" ]; then
+    SKIP_YAMLFIX=true
+else
+    SKIP_YAMLFIX=false
+    for arg in "$@"
+    do
+        if [ "$arg" = "--no-yamlfix" ]; then
+            SKIP_YAMLFIX=true
+            break
+        fi
+    done
+fi
 
 # checks for yaml formatting errors
 if [ "$SKIP_YAMLFIX" = false ]; then
