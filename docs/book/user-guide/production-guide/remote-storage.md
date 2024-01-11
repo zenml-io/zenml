@@ -11,7 +11,7 @@ Remote storage allows us to store our artifacts in the cloud, which means they'r
 When using a stack with remote storage, nothing changes except the fact that the artifacts
 get materialized in a central, remote, storage location. This diagram explains the flow:
 
-<figure><img src="../../.gitbook/assets/local_run_with_remote_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote artifact store.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/local_run_with_cloud_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote artifact store.</p></figcaption></figure>
 
 ## Provisioning and registering a remote artifact store
 
@@ -39,7 +39,7 @@ With the URI to your S3 bucket known, registering an S3 Artifact Store can be do
 
 ```shell
 # Register the S3 artifact-store
-zenml artifact-store register remote_artifact_store -f s3 --path=s3://bucket-name
+zenml artifact-store register cloud_artifact_store -f s3 --path=s3://bucket-name
 ```
 
 For more information, read the [dedicated S3 artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/s3.md).
@@ -64,7 +64,7 @@ With the URI to your GCS bucket known, registering a GCS Artifact Store can be d
 
 ```shell
 # Register the GCS artifact store
-zenml artifact-store register remote_artifact_store -f gcp --path=gs://bucket-name
+zenml artifact-store register cloud_artifact_store -f gcp --path=gs://bucket-name
 ```
 
 For more information, read the [dedicated GCS artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/gcp.md).
@@ -91,7 +91,7 @@ With the URI to your Azure Blob Storage container known, registering an Azure Ar
 
 ```shell
 # Register the Azure artifact store
-zenml artifact-store register remote_artifact_store -f azure --path=az://container-name
+zenml artifact-store register cloud_artifact_store -f azure --path=az://container-name
 ```
 
 For more information, read the [dedicated Azure artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/azure.md).
@@ -116,7 +116,7 @@ Now that we have our remote artifact store registered, we can [register a new st
 {% tabs %}
 {% tab title="CLI" %}
 ```shell
-zenml stack register local_with_remote_storage -o default -a my_artifact_store
+zenml stack register local_with_remote_storage -o default -a cloud_artifact_store
 ```
 {% endtab %}
 {% tab title="Dashboard" %}
