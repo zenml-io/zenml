@@ -29,14 +29,74 @@ The `with_options` command that points to a YAML config is only one way to confi
 However, it is best to not mix configuration from code to ensure seperation of concerns in our codebase.
 {% endhint %}
 
-## Important settings of a pipeline
+## Breaking down our configuration YAML
 
-This section of the production guide will be about best practices on how to configure a pipeline in production. Until this section is ready, here are some useful links to achieve this goal:
+The YAML configuration of a ZenML pipeline can be very simple, as in this case. Let's break it down and go through each section one by one:
+
+### The docker settings
+
+```yaml
+settings:
+  docker:
+    required_integrations:
+      - sklearn
+    requirements:
+      - pyarrow
+```
+
+The first section is the so called `settings` of the pipeline. This section has a `docker` key, which controls the [containerization process](cloud-orchestration.md#orchestrating-pipelines-on-the-cloud). Here, we are simply telling ZenML that we need `pyarrow` as a pip requirement, and we want to enable to `sklearn` integration of ZenML, which will in turn install the `scikit-learn` library. This docker section can be populated with many different options, and correspond to the [DockerSettings](https://sdkdocs.zenml.io/0.54.0/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) class in the Python SDK.
+
+### Associating a ZenML Model
+
+The next section is about associating a [ZenML Model](../starter-guide/track-ml-models.md) with this pipeline.
+
+```yaml
+# Configuration of the Model Control Plane
+model_version:
+  name: breast_cancer_classifier
+  version: rf
+  license: Apache 2.0
+  description: A breast cancer classifier
+  tags: ["breast_cancer", "classifier"]
+```
+
+You will see that this configuration lines up with the model created after executing these pipelines:
+
+{% tabs %}
+{% tab title="CLI" %}
+```shell
+# List all versions of the breast_cancer_classifier
+zenml model version list breast_cancer_classifier
+```
+{% endtab %}
+{% tab title="Dashboard" %}
+The ZenML Cloud ships with a Model Control Plane dashboard where you can visualize all the versions:
+
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt=""><figcaption><p>All model versions listed</p></figcaption></figure>
+{% endtab %}
+{% endtabs %}
+
+### Passing parameters
+
+```yaml
+# Configure the pipeline
+parameters:
+  model_type: "rf"  # Choose between rf/sgd
+```
+
+The last part of the config YAML is the `parameters` key. This parameters key aligns with the parameters that the pipeline expects. In this case, the pipeline expects a string called `model_type` that will inform it which type of model to use:
+
+```python
+@pipeline
+def training_pipeline(model_type: str):
+    ...
+```
+
+So you can see that the YAML config is fairly easy to use, and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [advanced guide](../advanced-guide/pipelining-features/configure-steps-pipelines.md), but for now, we can move on to scaling our pipeline.
+
+## Scale compute on the cloud
 
 - [Settings in ZenML](../advanced-guide/pipelining-features/configure-steps-pipelines.md)
-- [Using a YAML configuration](../advanced-guide/pipelining-features/configure-steps-pipelines.md#settings-in-zenml)
-- [The step operator in ZenML](../../stacks-and-components/component-guide/step-operators/step-operators.md)
-- [Containerization of a pipeline](../advanced-guide/infrastructure-management/containerize-your-pipeline.md)
 - [Specify resource requirements for steps](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md)
 
 <!-- For scarf -->
