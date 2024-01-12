@@ -3,15 +3,9 @@ name: Slow CI
 on:
   workflow_dispatch:
   workflow_call:
-  # TODO: enable this with an issue_comment
-  # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#issue_comment
-  # TODO: disable this after tests show it works
-  push:
-    branches: [main]
-    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
-    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+  # TODO: Fix this following testing
+  # issue_comment:
+  #   types: [created]
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -157,7 +151,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql
