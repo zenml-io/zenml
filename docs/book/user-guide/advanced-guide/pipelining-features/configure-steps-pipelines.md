@@ -381,21 +381,25 @@ Note that `parameters` are different from `artifacts`. Parameters are JSON-seria
 
 ### Setting the `run_name`
 
+To change the name for a run, pass `run_name` as a parameter. This can be a dynamic value as well. Read [here for details.](../../starter-guide/create-an-ml-pipeline.md).
+
 ### Real-time `settings`
 
-Read more in the [dedicated section on settings](pipeline-settings.md).
+Settings are special runtime configuration of a pipeline or a step that require a [dedicated section](pipeline-settings.md). In short, they define a whole bunch of execution configuration such as docker building and resource settings.
+
+### `failure_hook_source` and `success_hook_source`
+
+The `source` of the [failure and success hooks](../pipelining-features/use-failure-success-hooks.md).
 
 ### Step-specific configuration
 
 A lot of pipeline-level configuration can also be applied at a step level (as we already seen with the `enable_cache` flag). However, there is some configuration that is step-specific, meaning it cannot be applied at a pipeline level, but only at a step level.
 
-* `experiment_tracker`
-* `step_operator`
-* `failure_hook_source`
-* `outputs`
-* `success_hook_source`
+* `experiment_tracker`: Name of the [experiment_tracker](../../../stacks-and-components/component-guide/experiment-trackers/experiment-trackers.md) to enable for this step. This experiment_tracker should be defined in the active stack with the same name. 
+* `step_operator`: Name of the [step_operator](../../../stacks-and-components/component-guide/step-operators/step-operators.md) to enable for this step. This step_operator should be defined in the active stack with the same name. 
+* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](managing-steps.md#step-output-names)). The most interesting configuration here is the `materializer_source`, which is UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../data-management/handle-custom-data-types.md).
 
-Read more in the [dedicated section on managing steps](managing-steps.md).
+Learn more about step configuration in the [dedicated section on managing steps](managing-steps.md).
 
 ## Hierarchy and precedence
 
