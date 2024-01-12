@@ -509,7 +509,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
     # Use the external access token to extract the user information and
     # permissions
     
-    # Due to the possibility of token substitution attacks (see Section 16.11 OpenID Connect),
+    # OpenID Connect 5.3.2. Due to the possibility of token substitution attacks (see Section 16.11 OpenID Connect),
     # the UserInfo Response is not guaranteed to be about the End-User identified
     # by the sub (subject) element of the ID Token. The sub Claim in the UserInfo Response MUST
     # be verified to exactly match the sub Claim in the ID Token; if they do not match,
