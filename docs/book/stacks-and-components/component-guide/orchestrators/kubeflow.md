@@ -336,7 +336,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow\_orchestrator\_flavor.KubeflowOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for more
 information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware

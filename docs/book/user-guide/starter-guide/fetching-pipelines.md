@@ -158,7 +158,7 @@ step = run.steps["first_step"]
 ```
 
 {% hint style="info" %}
-If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn more about the invocation ID.
+If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../advanced-guide/pipelining-features/managing-steps.md#using-a-custom-step-invocation-id) to learn more about the invocation ID.
 {% endhint %}
 
 ### Step information
@@ -191,7 +191,7 @@ my_pytorch_model = output.load()
 Similarly, you can use the `inputs` and `input` properties to get the input artifacts of a step instead.
 
 {% hint style="info" %}
-Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names) to see what the output names of your steps are and how to customize them.
+Check out [this page](../advanced-guide/pipelining-features/managing-steps.md#step-output-names) to see what the output names of your steps are and how to customize them.
 {% endhint %}
 
 Note that the output of a step corresponds to a specific artifact version.

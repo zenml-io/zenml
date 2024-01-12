@@ -254,7 +254,7 @@ They can then be applied to a step as follows:
 For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all
 steps will use it except for the step above, which will use `ml.t3.medium` with 30GB additional storage.
 
-Check out [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more information on
+Check out [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for more information on
 how to
 specify settings in general.
 

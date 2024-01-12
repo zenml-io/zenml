@@ -373,7 +373,7 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
 
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_flavor.SkypilotBaseOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for more
 information on how to specify settings.
 
 <!-- For scarf -->

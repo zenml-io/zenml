@@ -211,7 +211,7 @@ The username will always be `admin`.
 For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or
 running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow\_orchestrator\_flavor.AirflowOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for
 more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
@@ -294,7 +294,7 @@ the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/inte
 . For this reason, we suggest starting by copying the original and modifying it according to your needs.
 
 Check out our docs on how to apply settings to your
-pipelines [here](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
+pipelines [here](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
 
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow\_orchestrator.AirflowOrchestrator)

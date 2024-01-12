@@ -129,7 +129,7 @@ steps:
             ...
 ```
 
-Check out [this page](../pipelining-features/configure-steps-pipelines.md#hierarchy-and-precedence) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
+Check out [this page](../pipelining-features/pipeline-settings.md#hierarchy-and-precedence) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
 
 ### Handling source files
 

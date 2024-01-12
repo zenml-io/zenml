@@ -371,7 +371,7 @@ def my_step():
 
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_orchestrator\_flavor.VertexOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for
 more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Vertex orchestrator, check out
