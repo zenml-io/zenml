@@ -107,7 +107,53 @@ It is also relatively simple to create a [custom stack component flavor](../../s
 Having trouble with setting up infrastructure? Join the [ZenML community](https://zenml.io/slack) and ask for help!
 {% endhint %}
 
-Please note that for now your local client needs to be authenticated to the cloud CLI, and have sufficient permissions to write to your desired artifact storage before you run your pipelines.
+## Configuring permissions with your first service connector
+
+While you can go ahead and [run your pipeline on your stack](#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](../../stacks-and-components/auth-management/auth-management.md) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](../../stacks-and-components/auth-management/auth-management.md) on them) - but we're going to be starting with a very basic approach.
+
+First, let's understand what a service connector does. In simple words, a service connector contains credentials that grant stack components access to cloud infrastructure. These credentials are stored in the form a [secret](../advanced-guide/secret-management/secret-management.md), and are available to the ZenML server to use. Using these credentials, the service connector brokers a short-lived token and grants temporary permissions to the stack component to access that infrastructure. This diagram represents this process:
+
+<figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
+
+There are [many ways of creating a service connector](../../stacks-and-components/auth-management/auth-management.md), but the easiest way is to use the `auto-configure`:
+
+{% tabs %}
+{% tab title="AWS" %}
+```shell
+zenml service-connector register local_service_connector --type aws --auto-configure
+```
+{% hint style="info" %}
+Having trouble with this command? You can read more about the AWS service connectors [here](../../stacks-and-components/auth-management/aws-service-connector.md).
+{% endhint %}
+{% endtab %}
+{% tab title="GCP" %}
+```shell
+zenml service-connector register local_service_connector --type gcp --auto-configure
+```
+{% hint style="info" %}
+Having trouble with this command? You can read more about the GCP service connectors [here](../../stacks-and-components/auth-management/gcp-service-connector.md).
+{% endhint %}
+{% endtab %}
+{% tab title="Azure" %}
+```shell
+zenml service-connector register local_service_connector --type azure --auto-configure
+```
+{% hint style="info" %}
+Having trouble with this command? You can read more about the Azure service connectors [here](../../stacks-and-components/auth-management/azure-service-connector.md).
+{% endhint %}
+{% endtab %}
+{% endtabs %}
+
+The auto-configure mechanism simply copies your local client credentials and configures a service connector. Therefore, your local credentials
+should have permission to access the artifact store defined in the previous step.
+
+Once we have our service connector, we can now attach it to stack components. In this case, we are going to connect it to our remote artifact store:
+
+```shell
+zenml artifact-store connect cloud_artifact_store --connector aws-generic
+```
+
+Now, every time you (or anyone else with access) uses the `cloud_artifact_store`, they will be granted a temporary token that will grant them access to the remote storage. Therefore, your colleagues don't need to worry about setting up credentials and installing clients locally!
 
 ## Running a pipeline on a cloud stack
 
