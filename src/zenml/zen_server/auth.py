@@ -550,7 +550,7 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 "Unknown external authenticator error"
             )
 
-        if isinstance(payload, dict):
+        if isinstance(decoded_token, dict):
             try:
                 external_user = ExternalUserModel.parse_obj(decoded_token)
             except Exception as e:
