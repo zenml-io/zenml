@@ -8,6 +8,11 @@ This page aims to quickly set up a minimal production stack on GCP. With just a
 few simple steps you will set up a service account with specifically-scoped 
 permissions that ZenML can use to authenticate with the relevant GCP resources.
 
+{% hint style="warning" %}
+While this guide focuses on Google Cloud, we are seeking for contributers to create a
+similar guide for other cloud providers. If you are interested, please create a 
+[pull request over on GitHub](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md).
+{% endhint %}
 
 ### 1) Choose a GCP project&#x20;
 
