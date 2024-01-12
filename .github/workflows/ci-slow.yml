@@ -5,6 +5,13 @@ on:
   workflow_call:
   # TODO: enable this with an issue_comment
   # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#issue_comment
+  # TODO: disable this after tests show it works
+  push:
+    branches: [main]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}

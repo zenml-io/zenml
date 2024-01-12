@@ -56,7 +56,7 @@ on:
         required: false
         default: ''
 jobs:
-  setup-and-test:
+  unit-test:
     name: setup-and-test
     runs-on: ${{ inputs.os }}
     env:
