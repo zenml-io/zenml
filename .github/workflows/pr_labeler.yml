@@ -1,9 +1,9 @@
+---
 # https://github.com/marketplace/actions/team-labeler-action
 # https://github.com/TimonVS/pr-labeler-action
 on:
   pull_request:
     types: [opened]
-
 name: pr-label
 jobs:
   pr-labeler:
@@ -12,12 +12,10 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
-    - uses: JulienKode/team-labeler-action@v1.1.0
-      with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
-
-    - uses: TimonVS/pr-labeler-action@v4.1.1
-      with:
-        configuration-path: .github/branch-labels.yml
+      - uses: JulienKode/team-labeler-action@v1.1.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: TimonVS/pr-labeler-action@v4.1.1
+        with:
+          configuration-path: .github/branch-labels.yml

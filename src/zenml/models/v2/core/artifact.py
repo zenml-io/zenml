@@ -136,4 +136,5 @@ class ArtifactResponse(
 class ArtifactFilter(BaseFilter):
     """Model to enable advanced filtering of artifacts."""
 
-    name: Optional[str]
+    name: Optional[str] = None
+    has_custom_name: Optional[bool] = None

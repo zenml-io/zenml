@@ -1,13 +1,13 @@
+---
 name: Bug Report
 description: File a bug report
-title: "[BUG]: "
-labels: ["bug"]
+title: '[BUG]: '
+labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
-
   - type: input
     id: contact
     attributes:
@@ -16,16 +16,16 @@ body:
       placeholder: your@awesome.com
     validations:
       required: false
-
   - type: textarea
     id: system-information
     attributes:
       label: System Information
       description: zenml info -a -s
-      placeholder: "Copy paste the output of the above command here. If using ZenML < 0.36.0, then remove the `-s` flag above. If using ZenML version < 0.8.0, then paste in Python version, OS, ZenML version, and installed integrations."
+      placeholder: Copy paste the output of the above command here. If using ZenML
+        < 0.36.0, then remove the `-s` flag above. If using ZenML version < 0.8.0,
+        then paste in Python version, OS, ZenML version, and installed integrations.
     validations:
       required: true
-
   - type: textarea
     id: what-happened
     attributes:
@@ -34,12 +34,12 @@ body:
       placeholder: A clear and concise description of what the bug is.
     validations:
       required: true
-
   - type: textarea
     id: reproduce
     attributes:
       label: Reproduction steps
-      description: "How do you trigger this bug? Please walk us through it step by step."
+      description: How do you trigger this bug? Please walk us through it step by
+        step.
       value: |
         1.
         2.
@@ -47,14 +47,13 @@ body:
         ...
     validations:
       required: false
-
   - type: textarea
     id: logs
     attributes:
       label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      description: Please copy and paste any relevant log output. This will be automatically
+        formatted into code, so no need for backticks.
       render: shell
-
   - type: checkboxes
     id: terms
     attributes:

@@ -388,7 +388,7 @@ class ModelVersionResponse(
         }
 
     @property
-    def endpoint_artifacts(
+    def deployment_artifacts(
         self,
     ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
         """Get all deployment artifacts linked to this model version.
