@@ -35,7 +35,6 @@
     * [Fetch metadata within steps](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-steps.md)
     * [Fetch metadata during pipeline composition](user-guide/advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md)
     * [Use failure/success hooks](user-guide/advanced-guide/pipelining-features/use-failure-success-hooks.md)
-    * [Use the Hub](user-guide/advanced-guide/pipelining-features/use-the-hub.md)
     * [Hyperparameter tuning](user-guide/advanced-guide/pipelining-features/hyper-parameter-tuning.md)
   * [Data management](user-guide/advanced-guide/data-management/data-management.md)
     * [How ZenML stores data](user-guide/advanced-guide/data-management/artifact-versioning.md)
