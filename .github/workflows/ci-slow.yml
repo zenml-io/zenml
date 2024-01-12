@@ -5,14 +5,33 @@ on:
   workflow_call:
   issue_comment:
     types: [created]
+env:
+  TEAM_MEMBERS: '["@htahir1", "@hamza-zenml", "@bcdurak", "@baris-zenml", "@michael-zenml",
+    "@schustmi", "@strickvl"]'
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  check-membership:
+    runs-on: ubuntu-latest
+    outputs:
+      member_check: ${{ steps.is_member.outputs.member_check }}
+    steps:
+      - name: Check if commenter is a team member
+        id: is_member
+        run: |
+          if echo ${{ env.TEAM_MEMBERS }} | grep -q "${{ github.event.comment.user.login }}"; then
+            echo "::set-output name=member_check::true"
+          else
+            echo "::set-output name=member_check::false"
+          fi
   docstring-check:
-    if: github.event.pull_request.draft == false && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/fulltest')
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest')
     runs-on: ubuntu-dind-runners
     steps:
       - name: Checkout code
@@ -26,8 +45,11 @@ jobs:
       - name: Check docstrings
         run: bash scripts/docstring.sh
   small-checks:
-    if: github.event.pull_request.draft == false && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/fulltest')
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -65,8 +87,11 @@ jobs:
           pip install alembic
           bash scripts/check-alembic-branches.sh
   spellcheck:
-    if: github.event.pull_request.draft == false && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/fulltest')
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest')
     runs-on: ubuntu-dind-runners
     steps:
       - name: Checkout code
@@ -77,19 +102,24 @@ jobs:
           files: .
           config: ./.typos.toml
   update-templates-to-examples:
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest') && github.event.pull_request.head.repo.full_name == github.repository
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft
-      == false && github.event.issue.pull_request && contains(github.event.comment.body,
-      '/fulltest')
     uses: ./.github/workflows/update-templates-to-examples.yml
     with:
       python-version: '3.8'
       os: ubuntu-latest
     secrets: inherit
   custom-ubuntu-unit-test:
-    if: github.event.pull_request.draft == false && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/fulltest')
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest')
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
@@ -101,8 +131,11 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-unit-test:
-    if: github.event.pull_request.draft == false && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/fulltest')
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest')
     strategy:
       matrix:
         os: [windows-latest]
@@ -114,8 +147,11 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   macos-unit-test:
-    if: github.event.pull_request.draft == false && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/fulltest')
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest')
     strategy:
       matrix:
         os: [macos-latest]
@@ -127,8 +163,11 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-integration-test:
-    if: github.event.pull_request.draft == false && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/fulltest')
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest')
     strategy:
       matrix:
         os: [windows-latest]
@@ -142,8 +181,11 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
   macos-integration-test:
-    if: github.event.pull_request.draft == false && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/fulltest')
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest')
     strategy:
       matrix:
         os: [macos-latest]
@@ -156,9 +198,12 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
-  custom-ubuntu-runners-integration-test:
-    if: github.event.pull_request.draft == false && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/fulltest')
+  custom-ubuntu-integration-test:
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest')
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
