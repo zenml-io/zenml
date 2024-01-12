@@ -10,7 +10,7 @@ We have already learned about some basics of [configuration in the production gu
 
 ## How to apply configuration
 
-Before we learn about all the different configuration, let's briefly look at *how* configuration can be applied to a step or a pipeline. We start with the simplest configuration, a boolean flag called `enable_cache`, that specifies whether caching should be enabled or disabled. There are essentially three ways on you could configure this:
+Before we learn about all the different configuration options, let's briefly look at *how* configuration can be applied to a step or a pipeline. We start with the simplest configuration, a boolean flag called `enable_cache`, that specifies whether caching should be enabled or disabled. There are essentially three ways you could configure this:
 
 ### Method 1: Directly on the decorator
 
