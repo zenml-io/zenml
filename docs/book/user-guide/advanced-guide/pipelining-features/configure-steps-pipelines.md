@@ -403,11 +403,9 @@ Learn more about step configuration in the [dedicated section on managing steps]
 
 ## Hierarchy and precedence
 
-Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. The next section explains in more detail how the step-level settings will be merged with pipeline settings.
+Some things can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. 
 
-## Merging settings on instance/run:
-
-When a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
+When an object is configured, ZenML merges the values with previously configured keys. E.g.:
 
 ```python
 from zenml.config import ResourceSettings
@@ -426,7 +424,7 @@ my_step.configuration.settings["resources"]
 # cpu_count: 2, gpu_count=1, memory="2GB"
 ```
 
-In the above example, the two settings were automatically merged.
+In the above example, the two settings configurations were automatically merged.
 
 
 ## Fetching configuration

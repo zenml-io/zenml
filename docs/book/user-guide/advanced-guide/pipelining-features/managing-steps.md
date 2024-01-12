@@ -4,15 +4,7 @@ description: Managing steps in ZenML
 
 # Managing steps in ZenML
 
-To define a step, all you need to do is decorate your Python functions with ZenML's `@step` decorator:
-
-```python
-from zenml import step
-
-@step
-def my_function():
-    ...
-```
+We have learned a lot about [step configurations](configure-steps-pipelines.md) in the last section. Here we go into even further detail on how to manage step and their configuration in ZenML.
 
 ## Type annotations
 

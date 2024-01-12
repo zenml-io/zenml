@@ -4,9 +4,7 @@ description: Using settings to configure runtime configuration.
 
 # Controlling settings of your pipeline
 
-## Settings in ZenML
-
-Settings in ZenML allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
+As we saw before, one special type of configuration is called `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
 * The [resources](../infrastructure-management/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
 * Configuring the [containerization](../infrastructure-management/containerize-your-pipeline.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
@@ -57,52 +55,7 @@ settings = {'docker': {'requirements': ['pandas']}}
 
 ### Utilizing the settings
 
-#### Method 1: Directly on the decorator
-
-The most basic way to set settings is through the `settings` variable that exists in both `@step` and `@pipeline` decorators:
-
-```python
-@step(settings=...)
-
-
-...
-
-
-@pipeline(settings=...)
-
-
-...
-```
-
-{% hint style="info" %}
-Once you set settings on a pipeline, they will be applied to all steps with some exceptions. See the [later section on precedence for more details](configure-steps-pipelines.md#hierarchy-and-precedence).
-{% endhint %}
-
-#### Method 2: On the step/pipeline instance
-
-This is exactly the same as passing it through the decorator, but if you prefer you can also pass it in the `configure` methods of the pipeline and step instances:
-
-```python
-@step
-def my_step() -> None:
-    print("my step")
-
-
-@pipeline
-def my_pipeline():
-    my_step()
-
-
-# Same as passing it in the step decorator
-my_step.configure(settings=...)
-
-# Same as passing it in the pipeline decorator
-my_pipeline.configure(settings=...)
-```
-
-#### Method 3: Configuring with YAML
-
-As all settings can be passed through as a dictionary, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
+Settings can be configured in the same way as any [other configuration](configure-steps-pipelines.md). For example, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
 
 To use a YAML file, you must pass it to the `with_options(...)` method of a pipeline:
 
@@ -124,150 +77,38 @@ my_pipeline = my_pipeline.with_options(config_path='/local/path/to/config.yaml')
 The format of a YAML config file is exactly the same as the configurations you would pass in Python in the above two sections. Step-specific configurations can be passed by using the [step invocation ID](configure-steps-pipelines.md#using-a-custom-step-invocation-id) inside the `steps` dictionary. Here is a rough skeleton of a valid YAML config. All keys are optional.
 
 ```yaml
-enable_cache: True
-enable_artifact_metadata: True
-enable_artifact_visualization: True
-extra:
-  tags: production
-run_name: my_run
-schedule: { }
-settings: { }  # same as pipeline settings
+# Pipeline level settings
+settings: 
+  docker:
+    build_context_root: .
+    build_options: Mapping[str, Any]
+    source_files: str
+    copy_global_config: bool
+    dockerfile: Optional[str]
+    dockerignore: Optional[str]
+    environment: Mapping[str, Any]
+    install_stack_requirements: bool
+    parent_image: Optional[str]
+    replicate_local_python_environment: Optional
+    required_integrations: List[str]
+    requirements:
+      - pandas
+  resources:
+    cpu_count: 1
+    gpu_count: 1
+    memory: "1GB"
+    
 steps:
   step_invocation_id:
-    settings: { }  # same as step settings
+    settings: { }  # overrides pipeline settings
   other_step_invocation_id:
     settings: { }
   ...
 ```
 
-You can also use the following method to generate a config template (at path `/local/path/to/config.yaml`) that includes all configuration options for this specific pipeline and your active stack:
+### Hierarchy and precedence
 
-```python
-my_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
-```
-
-Here is an example of a YAML config file generated from the above method:
-
-<details>
-
-<summary>An example of a YAML config</summary>
-
-Some configuration is commented out as it is not needed.
-
-```yaml
-enable_cache: True
-enable_artifact_metadata: True
-enable_artifact_visualization: True
-extra:
-  tags: production
-run_name: my_run
-# schedule:
-#   catchup: bool
-#   cron_expression: Optional[str]
-#   end_time: Optional[datetime]
-#   interval_second: Optional[timedelta]
-#   start_time: Optional[datetime]
-settings:
-  docker:
-    build_context_root: .
-    # build_options: Mapping[str, Any]
-    # source_files: str
-    # copy_global_config: bool
-    # dockerfile: Optional[str]
-    # dockerignore: Optional[str]
-    # environment: Mapping[str, Any]
-    # install_stack_requirements: bool
-    # parent_image: Optional[str]
-    # replicate_local_python_environment: Optional
-    # required_integrations: List[str]
-    requirements:
-      - pandas
-    # target_repository: str
-    # user: Optional[str]
-  resources:
-    cpu_count: 1
-    gpu_count: 1
-    memory: "1GB"
-steps:
-  get_first_num:
-    enable_cache: false
-    experiment_tracker: mlflow_tracker
-#     extra: Mapping[str, Any]
-#     outputs:
-#       first_num:
-#         artifact_source: Optional[str]
-#         materializer_source: Optional[str]
-#     parameters: {}
-#     settings:
-#       resources:
-#         cpu_count: Optional[PositiveFloat]
-#         gpu_count: Optional[PositiveInt]
-#         memory: Optional[ConstrainedStrValue]
-#     step_operator: Optional[str]
-#   get_random_int:
-#     enable_cache: Optional[bool]
-#     experiment_tracker: Optional[str]
-#     extra: Mapping[str, Any]
-#     outputs:
-#       random_num:
-#         artifact_source: Optional[str]
-#         materializer_source: Optional[str]
-#     parameters: {}
-#     settings:
-#       resources:
-#         cpu_count: Optional[PositiveFloat]
-#         gpu_count: Optional[PositiveInt]
-#         memory: Optional[ConstrainedStrValue]
-#     step_operator: Optional[str]
-#   subtract_numbers:
-#     enable_cache: Optional[bool]
-#     experiment_tracker: Optional[str]
-#     extra: Mapping[str, Any]
-#     outputs:
-#       result:
-#         artifact_source: Optional[str]
-#         materializer_source: Optional[str]
-#     parameters: {}
-#     settings:
-#       resources:
-#         cpu_count: Optional[PositiveFloat]
-#         gpu_count: Optional[PositiveInt]
-#         memory: Optional[ConstrainedStrValue]
-#     step_operator: Optional[str]
-```
-
-</details>
-
-#### The `extra` dict
-
-You might have noticed another dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of.
-
-An example of this is if I want to tag a pipeline, I can do the following:
-
-```python
-@pipeline(name='my_pipeline', extra={'tag': 'production'})
-
-
-...
-```
-
-This tag is now associated and tracked with all pipeline runs, and can be [fetched later](../../starter-guide/fetching-pipelines.md):
-
-```python
-from zenml.client import Client
-
-pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-
-# print out the extra
-print(pipeline_run.config.extra)
-# {'tag': 'production'}
-```
-
-#### Hierarchy and precedence
-
-Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. The next section explains in more detail how the step-level settings will be merged with pipeline settings.
-
-#### Merging settings on instance/run:
+Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence.
 
 When a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
 
