@@ -78,13 +78,15 @@ The ZenML Cloud ships with a Model Control Plane dashboard where you can visuali
 
 ### Passing parameters
 
+The last part of the config YAML is the `parameters` key:
+
 ```yaml
 # Configure the pipeline
 parameters:
   model_type: "rf"  # Choose between rf/sgd
 ```
 
-The last part of the config YAML is the `parameters` key. This parameters key aligns with the parameters that the pipeline expects. In this case, the pipeline expects a string called `model_type` that will inform it which type of model to use:
+This parameters key aligns with the parameters that the pipeline expects. In this case, the pipeline expects a string called `model_type` that will inform it which type of model to use:
 
 ```python
 @pipeline

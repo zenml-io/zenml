@@ -1,5 +1,5 @@
 ---
-description: Put your new knowledge in action with an end to end project
+description: Put your new knowledge in action with an end-to-end project
 ---
 
 # An end-to-end project
