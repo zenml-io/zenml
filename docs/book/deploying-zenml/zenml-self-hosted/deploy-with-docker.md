@@ -76,11 +76,35 @@ These configuration options are only relevant if you're using the AWS Secrets Ma
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `aws` in order to set this type of secret store.
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API. The following configuration options are supported:
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
+
+The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "ZenMLSecretsStore",
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:CreateSecret",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:PutSecretValue",
+                "secretsmanager:TagResource",
+                "secretsmanager:DeleteSecret"
+            ],
+            "Resource": "arn:aws:secretsmanager:<AWS-region>:<AWS-account-id>:secret:zenml/*"
+        }
+    ]
+}
+```
+
+The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The AWS Service Connector authentication method to use (e.g. `secret-key` or `iam-role`).
 * **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The AWS Service Connector configuration, in JSON format (e.g. `{"role_arn": "arn:aws:iam::123456789012:role/MyRole"}`).
-* **ZENML\_SECRETS\_STORE\_SECRET\_LIST\_REFRESH\_TIMEOUT**: AWS' [Secrets Manager](https://aws.amazon.com/secrets-manager) has a known issue where it does not immediately reflect new and updated secrets in the `list_secrets` results. To work around this issue, you can set this refresh timeout value to a non-zero value to get the ZenML server to wait after creating or updating an AWS secret until the changes are reflected in the secrets returned by `list_secrets` or the number of seconds specified by this value has elapsed. Defaults to `0` (disabled). Should not be set to a high value as it may cause thread starvation in the ZenML server on high load.
 
 > **Note:** The remaining configuration options are deprecated and may be removed in a future release. Instead, you should set the `ZENML_SECRETS_STORE_AUTH_METHOD` and `ZENML_SECRETS_STORE_AUTH_CONFIG` variables to use the AWS Service Connector authentication method.
 
@@ -93,6 +117,40 @@ The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to aut
 These configuration options are only relevant if you're using the GCP Secrets Manager as the secrets store backend.
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `gcp` in order to set this type of secret store.
+
+The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
+
+* `secretmanager.secrets.create` for the target GCP project (i.e. no condition on the name prefix)
+* `secretmanager.secrets.get`, `secretmanager.secrets.update`, `secretmanager.versions.access`, `secretmanager.versions.add` and `secretmanager.secrets.delete` for the target GCP project and for secrets that have a name starting with `zenml-`
+
+This can be achieved by creating two custom IAM roles and attaching them to the principal (e.g. user or service account) that will be used to access the GCP Secrets Manager API with a condition configured when attaching the second role to limit access to secrets with a name prefix of `zenml-`. The following `gcloud` CLI command examples can be used as a starting point:
+
+```bash
+gcloud iam roles create ZenMLServerSecretsStoreCreator \
+  --project <your GCP project ID> \
+  --title "ZenML Server Secrets Store Creator" \
+  --description "Allow the ZenML Server to create new secrets" \
+  --stage GA \
+  --permissions "secretmanager.secrets.create"
+
+gcloud iam roles create ZenMLServerSecretsStoreEditor \
+  --project <your GCP project ID> \
+  --title "ZenML Server Secrets Store Editor" \
+  --description "Allow the ZenML Server to manage its secrets" \
+  --stage GA \
+  --permissions "secretmanager.secrets.get,secretmanager.secrets.update,secretmanager.versions.access,secretmanager.versions.add,secretmanager.secrets.delete"
+
+gcloud projects add-iam-policy-binding <your GCP project ID> \
+  --member serviceAccount:<your GCP service account email> \
+  --role projects/<your GCP project ID>/roles/ZenMLServerSecretsStoreCreator \
+  --condition None
+
+# NOTE: use the GCP project NUMBER, not the project ID in the condition
+gcloud projects add-iam-policy-binding <your GCP project ID> \
+  --member serviceAccount:<your GCP service account email> \
+  --role projects/<your GCP project ID>/roles/ZenMLServerSecretsStoreEditor \
+  --condition 'title=limit_access_zenml,description="Limit access to secrets with prefix zenml-",expression=resource.name.startsWith("projects/<your GCP project NUMBER>/secrets/zenml-")'
+```
 
 The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API. The following configuration options are supported:
 
