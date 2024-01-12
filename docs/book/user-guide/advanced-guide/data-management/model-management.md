@@ -323,17 +323,5 @@ artifact, and you specify whether it's for a model or deployment by using the
 `is_model_artifact` and `is_deployment_artifact` flags (as shown above) else it
 will be assumed to be a data artifact.
 
-### Manual Linkage
-
-Finally, artifacts can be linked to an existing model version manually using the
-SDK:
-
-```python
-model = Model(name="my_model", version="1.0.0")
-model.link_artifact(my_artifact, name="new_artifact")
-```
-
-The `link_artifact` method handles creating this connection.
-
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

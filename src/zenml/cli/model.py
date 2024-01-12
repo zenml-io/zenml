@@ -38,7 +38,7 @@ def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
     return {
         "id": model.id,
         "name": model.name,
-        "latest_version": model.latest_version,
+        "latest_version": model.latest_version_name,
         "description": model.description,
         "tags": [t.name for t in model.tags],
         "use_cases": model.use_cases,

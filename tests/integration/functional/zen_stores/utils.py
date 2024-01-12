@@ -496,12 +496,15 @@ class SecretContext:
         self.created_secret = self.store.create_secret(new_secret)
         return self.created_secret
 
+    def cleanup(self):
+        try:
+            self.store.delete_secret(self.created_secret.id)
+        except KeyError:
+            pass
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
-            try:
-                self.store.delete_secret(self.created_secret.id)
-            except KeyError:
-                pass
+            self.cleanup()
 
 
 class CodeRepositoryContext:
