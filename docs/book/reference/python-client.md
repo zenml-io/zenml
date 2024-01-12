@@ -42,7 +42,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.
 * **Schedules**: Metadata about the schedules that you have used to [schedule pipeline runs](../pipelining-features/schedule-pipeline-runs.md).
 * **Builds**: The pipeline-specific Docker images that were created when [containerizing your pipeline](containerize-your-pipeline.md).
-* **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](connect-your-git-repository.md) for more information.
+* **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](../user-guide/production-guide/connect-code-repository.md) for more information.
 
 {% hint style="info" %}
 Checkout the [documentation on fetching runs](../../starter-guide/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
