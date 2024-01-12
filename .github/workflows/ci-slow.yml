@@ -3,18 +3,28 @@ name: Slow CI
 on:
   workflow_dispatch:
   workflow_call:
-  push:
-    branches: [main]
-    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
-    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+  # TODO: enable this with an issue_comment
+  # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#issue_comment
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  mlstacks-compatibility-check:
+  docstring-check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-dind-runners
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+      - name: Set up Python
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.10'
+      - name: Install current package as editable
+        run: pip install -U darglint
+      - name: Check docstrings
+        run: bash scripts/docstring.sh
+  small-checks:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
@@ -32,42 +42,31 @@ jobs:
         run: pip install mlstacks
       - name: Check for broken dependencies
         run: pip check
-  custom-ubuntu-runners-setup-and-test-python:
+      - name: Markdown link check
+        uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          folder-path: ./examples, ./docs/book, ./src
+          file-path: ./README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md,
+            CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md
+          config-file: .github/workflows/markdown_check_config.json
+        continue-on-error: true
+      - name: Security check
+        run: bash scripts/check-security.sh
+      - name: Check for alembic branch divergence
+        env:
+          ZENML_DEBUG: 0
+        run: bash scripts/check-alembic-branches.sh
+  spellcheck:
     if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-dind-runners]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  windows-setup-and-test-python:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  macos-setup-and-test-python:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
+    runs-on: ubuntu-dind-runners
+    steps:
+      - name: Spelling checker
+        uses: crate-ci/typos@v1.17.0
+        with:
+          files: .
+          config: ./.typos.toml
   update-templates-to-examples:
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
@@ -77,8 +76,44 @@ jobs:
       python-version: '3.8'
       os: ubuntu-latest
     secrets: inherit
+  custom-ubuntu-unit-test:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [ubuntu-dind-runners]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  windows-unit-test:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  macos-unit-test:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   windows-integration-test:
-    needs: [windows-setup-and-test-python]
+    needs: [windows-unit-test]
     strategy:
       matrix:
         os: [windows-latest]
@@ -92,7 +127,7 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
   macos-integration-test:
-    needs: [macos-setup-and-test-python]
+    needs: [macos-unit-test]
     strategy:
       matrix:
         os: [macos-latest]
@@ -106,7 +141,7 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
   custom-ubuntu-runners-integration-test:
-    needs: [custom-ubuntu-runners-setup-and-test-python]
+    needs: [custom-ubuntu-unit-test]
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
