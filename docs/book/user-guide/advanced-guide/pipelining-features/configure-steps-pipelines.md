@@ -336,7 +336,7 @@ The UUID of the [`build`](../infrastructure-management/containerize-your-pipelin
 
 ### `extra` dict
 
-This is just a dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of. See an example in [this section](#fetching-configuration).
+This is a dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of. See an example in [this section](#fetching-configuration).
 
 ### Configuring the `model_version`
 
