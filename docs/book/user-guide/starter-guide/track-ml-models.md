@@ -83,16 +83,7 @@ if __name__ == "__main__":
 
 The above will establish a **link between all artifacts that pass through this ZenML pipeline and this model**. This includes the **technical model** which is what comes out of the `svc_trainer` step. You will be able to see all associated artifacts and pipeline runs, all within one view.
 
-Further, this pipeline run and all other pipeline runs that are configured with this model version will be linked to this model as well. 
-
-{% hint style="info" %}
-Artifacts can be linked to an existing model version manually using the SDK:
-
-```python
-model_version.link_artifact(my_artifact, name="new_artifact")
-```
-You can use this to link artifacts that are not produced by the currently executing pipeline.
-{% endhint %}
+Furthermore, this pipeline run and all other pipeline runs that are configured with this model version will be linked to this model as well.
 
 You can see all versions of a model, and associated artifacts and run like this:
 
