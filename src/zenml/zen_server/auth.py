@@ -19,7 +19,8 @@ from typing import Callable, Optional, Union
 from urllib.parse import urlencode
 from uuid import UUID
 
-import requests, jwt
+import jwt
+import requests
 from fastapi import Depends, HTTPException, status
 from fastapi.security import (
     HTTPBasic,
