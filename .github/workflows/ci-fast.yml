@@ -14,6 +14,20 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  docstring-check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-dind-runners
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+      - name: Set up Python
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.8'
+      - name: Install current package as editable
+        run: pip install -U darglint
+      - name: Check docstrings
+        run: bash scripts/docstring.sh
   mlstacks-compatibility-check:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
