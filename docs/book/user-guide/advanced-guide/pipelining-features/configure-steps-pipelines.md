@@ -323,7 +323,7 @@ The generated config contains most configuration available for this pipeline. Le
 
 ### `enable_XXX` parameters
 
-These are boolean flags for various configuration:
+These are boolean flags for various configurations:
 
 * `enable_artifact_metadata`: Whether to [associate metadata with artifacts or not](../data-management/handle-custom-data-types.md#optional-which-metadata-to-extract-for-the-artifact).
 * `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](../data-management/visualize-artifacts.md).
