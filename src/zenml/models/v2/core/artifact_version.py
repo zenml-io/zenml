@@ -167,10 +167,6 @@ class ArtifactVersionResponse(
 ):
     """Response model for artifact versions."""
 
-    _lazy_load_name: Optional[str] = None
-    _lazy_load_version: Optional[str] = None
-    _lazy_load_model_version: Optional["ModelVersion"] = None
-
     def get_hydrated_version(self) -> "ArtifactVersionResponse":
         """Get the hydrated version of this artifact version.
 
@@ -263,22 +259,6 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        from zenml.metadata.lazy_load import RunMetadataLazyGetter
-        from zenml.new.pipelines.pipeline_context import (
-            get_pipeline_context,
-        )
-
-        try:
-            context = get_pipeline_context()
-            if context.is_compiling and self._lazy_load_model_version:
-                # avoid exposing too much of internal details by keeping the return type
-                return RunMetadataLazyGetter(  # type: ignore[return-value]
-                    self._lazy_load_model_version,
-                    self._lazy_load_name,
-                    self._lazy_load_version,
-                )
-        except RuntimeError:
-            pass
         return self.get_metadata().run_metadata
 
     @property
@@ -482,3 +462,52 @@ class ArtifactVersionFilter(WorkspaceScopedFilter):
             custom_filters.append(custom_name_filter)
 
         return custom_filters
+
+
+# -------------------- Lazy Loader --------------------
+
+
+class LazyArtifactVersionResponse(ArtifactVersionResponse):
+    """Lazy artifact version response.
+
+    Used if the artifact version is accessed from the model in
+    a pipeline context available only during pipeline compilation.
+    """
+
+    id: Optional[UUID] = None  # type: ignore[assignment]
+    _lazy_load_name: Optional[str] = None
+    _lazy_load_version: Optional[str] = None
+    _lazy_load_model_version: "ModelVersion"
+
+    def get_body(self) -> None:  # type: ignore[override]
+        """Protects from misuse of the lazy loader.
+
+        Raises:
+            RuntimeError: always
+        """
+        raise RuntimeError("Cannot access artifact body before pipeline runs.")
+
+    def get_metadata(self) -> None:  # type: ignore[override]
+        """Protects from misuse of the lazy loader.
+
+        Raises:
+            RuntimeError: always
+        """
+        raise RuntimeError(
+            "Cannot access artifact metadata before pipeline runs."
+        )
+
+    @property
+    def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
+        """The `metadata` property in lazy loading mode.
+
+        Returns:
+            getter of lazy responses for internal use.
+        """
+        from zenml.metadata.lazy_load import RunMetadataLazyGetter
+
+        return RunMetadataLazyGetter(  # type: ignore[return-value]
+            self._lazy_load_model_version,
+            self._lazy_load_name,
+            self._lazy_load_version,
+        )

@@ -110,11 +110,6 @@ class RunMetadataResponse(
 ):
     """Response model for run metadata."""
 
-    _lazy_load_artifact_name: Optional[str] = None
-    _lazy_load_artifact_version: Optional[str] = None
-    _lazy_load_metadata_name: Optional[str] = None
-    _lazy_load_model_version: Optional["ModelVersion"] = None
-
     def get_hydrated_version(self) -> "RunMetadataResponse":
         """Get the hydrated version of this run metadata.
 
@@ -192,3 +187,40 @@ class RunMetadataFilter(WorkspaceScopedFilter):
     stack_component_id: Optional[Union[str, UUID]] = None
     key: Optional[str] = None
     type: Optional[Union[str, MetadataTypeEnum]] = None
+
+
+# -------------------- Lazy Loader --------------------
+
+
+class LazyRunMetadataResponse(RunMetadataResponse):
+    """Lazy run metadata response.
+
+    Used if the run metadata is accessed from the model in
+    a pipeline context available only during pipeline compilation.
+    """
+
+    id: Optional[UUID] = None  # type: ignore[assignment]
+    _lazy_load_artifact_name: Optional[str] = None
+    _lazy_load_artifact_version: Optional[str] = None
+    _lazy_load_metadata_name: Optional[str] = None
+    _lazy_load_model_version: "ModelVersion"
+
+    def get_body(self) -> None:  # type: ignore[override]
+        """Protects from misuse of the lazy loader.
+
+        Raises:
+            RuntimeError: always
+        """
+        raise RuntimeError(
+            "Cannot access run metadata body before pipeline runs."
+        )
+
+    def get_metadata(self) -> None:  # type: ignore[override]
+        """Protects from misuse of the lazy loader.
+
+        Raises:
+            RuntimeError: always
+        """
+        raise RuntimeError(
+            "Cannot access run metadata metadata before pipeline runs."
+        )

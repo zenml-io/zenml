@@ -14,7 +14,6 @@
 """Run Metadata Lazy Loader definition."""
 
 from typing import TYPE_CHECKING, Optional
-from uuid import uuid4
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
@@ -55,10 +54,9 @@ class RunMetadataLazyGetter:
         Returns:
             The metadata lazy loader wrapper for the given key.
         """
-        from zenml.models import RunMetadataResponse
+        from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
 
-        return RunMetadataResponse(
-            id=uuid4(),
+        return LazyRunMetadataResponse(
             _lazy_load_model_version=self._lazy_load_model_version,
             _lazy_load_artifact_name=self._lazy_load_artifact_name,
             _lazy_load_artifact_version=self._lazy_load_artifact_version,

@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from pydantic import validator
 
@@ -54,8 +53,6 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
 
-    _compiling_now: List[bool] = [False]
-
     @validator("name")
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
         """Ensures the pipeline name is allowed.
@@ -89,23 +86,3 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
             DOCKER_SETTINGS_KEY, {}
         )
         return DockerSettings.parse_obj(model_or_dict)
-
-    @contextmanager
-    def in_compilation(self) -> Iterator[None]:
-        """Context manager to mark a pipeline as being in compilation.
-
-        Yields:
-            Nothing.
-        """
-        self._compiling_now[0] = True
-        yield
-        self._compiling_now[0] = False
-
-    @property
-    def is_compiling(self) -> bool:
-        """Returns whether the pipeline is being compiled.
-
-        Returns:
-            Whether the pipeline is is being compiled.
-        """
-        return self._compiling_now[0]

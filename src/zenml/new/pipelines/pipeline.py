@@ -484,8 +484,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             # Enter the context manager, so we become the active pipeline. This
             # means that all steps that get called while the entrypoint function
             # is executed will be added as invocation to this pipeline instance.
-            with self.configuration.in_compilation():
-                self._call_entrypoint(*args, **kwargs)
+            self._call_entrypoint(*args, **kwargs)
 
     def register(self) -> "PipelineResponse":
         """Register the pipeline in the server.

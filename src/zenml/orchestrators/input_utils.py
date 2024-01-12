@@ -85,30 +85,36 @@ def resolve_step_inputs(
 
     for name, config_ in step.config.model_artifacts_or_metadata.items():
         issue_found = False
-        if config_.metadata_name is None and config_.artifact_name:
-            if artifact_ := config_.model_version.get_artifact(
-                config_.artifact_name, config_.artifact_version
-            ):
-                input_artifacts[name] = artifact_
-            else:
-                issue_found = True
-        elif config_.artifact_name is None and config_.metadata_name:
-            # metadata values should go directly in parameters, as primitive types
-            step.config.parameters[name] = config_.model_version.run_metadata[
-                config_.metadata_name
-            ].value
-        elif config_.metadata_name and config_.artifact_name:
-            # metadata values should go directly in parameters, as primitive types
-            if artifact_ := config_.model_version.get_artifact(
-                config_.artifact_name, config_.artifact_version
-            ):
-                step.config.parameters[name] = artifact_.run_metadata[
+        try:
+            if config_.metadata_name is None and config_.artifact_name:
+                if artifact_ := config_.model_version.get_artifact(
+                    config_.artifact_name, config_.artifact_version
+                ):
+                    input_artifacts[name] = artifact_
+                else:
+                    issue_found = True
+            elif config_.artifact_name is None and config_.metadata_name:
+                # metadata values should go directly in parameters, as primitive types
+                step.config.parameters[
+                    name
+                ] = config_.model_version.run_metadata[
                     config_.metadata_name
                 ].value
+            elif config_.metadata_name and config_.artifact_name:
+                # metadata values should go directly in parameters, as primitive types
+                if artifact_ := config_.model_version.get_artifact(
+                    config_.artifact_name, config_.artifact_version
+                ):
+                    step.config.parameters[name] = artifact_.run_metadata[
+                        config_.metadata_name
+                    ].value
+                else:
+                    issue_found = True
             else:
                 issue_found = True
-        else:
+        except KeyError:
             issue_found = True
+
         if issue_found:
             raise ValueError(
                 "Cannot fetch requested information from model "

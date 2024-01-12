@@ -21,7 +21,7 @@ from typing import (
     Optional,
     Union,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, root_validator
 
@@ -327,14 +327,13 @@ class ModelVersion(BaseModel):
         )
 
         try:
-            context = get_pipeline_context()
-            if context.is_compiling:
-                # avoid exposing too much of internal details by keeping the return type
-                return RunMetadataLazyGetter(  # type: ignore[return-value]
-                    self,
-                    None,
-                    None,
-                )
+            get_pipeline_context()
+            # avoid exposing too much of internal details by keeping the return type
+            return RunMetadataLazyGetter(  # type: ignore[return-value]
+                self,
+                None,
+                None,
+            )
         except RuntimeError:
             pass
 
@@ -423,21 +422,19 @@ class ModelVersion(BaseModel):
         version: Optional[str] = None,
     ) -> Optional["ArtifactVersionResponse"]:
         from zenml import get_pipeline_context
-        from zenml.models import ArtifactVersionResponse
+        from zenml.models.v2.core.artifact_version import (
+            LazyArtifactVersionResponse,
+        )
 
         try:
-            if context := get_pipeline_context():
-                if not context.is_compiling:
-                    pass
-                else:
-                    return ArtifactVersionResponse(
-                        id=uuid4(),
-                        _lazy_load_name=name,
-                        _lazy_load_version=version,
-                        _lazy_load_model_version=ModelVersion(
-                            name=self.name, version=self.version or self.number
-                        ),
-                    )
+            get_pipeline_context()
+            return LazyArtifactVersionResponse(
+                _lazy_load_name=name,
+                _lazy_load_version=version,
+                _lazy_load_model_version=ModelVersion(
+                    name=self.name, version=self.version or self.number
+                ),
+            )
         except RuntimeError:
             pass
 

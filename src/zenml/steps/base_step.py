@@ -461,7 +461,10 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         from zenml.artifacts.external_artifact import ExternalArtifact
         from zenml.model.lazy_load import ModelVersionDataLazyLoader
-        from zenml.models import ArtifactVersionResponse, RunMetadataResponse
+        from zenml.models.v2.core.artifact_version import (
+            LazyArtifactVersionResponse,
+        )
+        from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
 
         signature = get_step_entrypoint_signature(step=self)
 
@@ -500,26 +503,20 @@ class BaseStep(metaclass=BaseStepMeta):
                         "steps. Future releases will introduce hashing of "
                         "artifacts which will improve this behavior."
                     )
-            elif isinstance(value, ArtifactVersionResponse):
-                if value._lazy_load_model_version:
-                    model_artifacts_or_metadata[
-                        key
-                    ] = ModelVersionDataLazyLoader(
-                        model_version=value._lazy_load_model_version,
-                        artifact_name=value._lazy_load_name,
-                        artifact_version=value._lazy_load_version,
-                        metadata_name=None,
-                    )
-            elif isinstance(value, RunMetadataResponse):
-                if value._lazy_load_model_version:
-                    model_artifacts_or_metadata[
-                        key
-                    ] = ModelVersionDataLazyLoader(
-                        model_version=value._lazy_load_model_version,
-                        artifact_name=value._lazy_load_artifact_name,
-                        artifact_version=value._lazy_load_artifact_version,
-                        metadata_name=value._lazy_load_metadata_name,
-                    )
+            elif isinstance(value, LazyArtifactVersionResponse):
+                model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
+                    model_version=value._lazy_load_model_version,
+                    artifact_name=value._lazy_load_name,
+                    artifact_version=value._lazy_load_version,
+                    metadata_name=None,
+                )
+            elif isinstance(value, LazyRunMetadataResponse):
+                model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
+                    model_version=value._lazy_load_model_version,
+                    artifact_name=value._lazy_load_artifact_name,
+                    artifact_version=value._lazy_load_artifact_version,
+                    metadata_name=value._lazy_load_metadata_name,
+                )
             else:
                 parameters[key] = value
 
