@@ -105,18 +105,24 @@ This is as easy as adding the following section to your local `training_rf.yaml`
 settings:    
   ...
 
-  resources:
-    memory: "32GB"
+  # Adapt this to vm_azure or vm_gcp accordingly
+  orchestrator.vm_aws:
+    memory: 32 # in GB
         
 ...    
 steps:
   model_trainer:
     settings:
-      resources:
-        cpu_count: 8
+      orchestrator.vm_aws:
+        cpus: 8
 ```
 
-The `settings.resources` key corresponds to the [`ResourceSettings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.resource_settings.ResourceSettings) class in the Python SDK. Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores.
+The `orchestrator.vm_aws` key corresponds to the [`SkypilotBaseOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config.SkypilotBaseOrchestratorSettings) class in the Python SDK. Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores.
+
+{% hint style="info" %}
+Read more about settings in ZenML [here](../advanced-guide/pipelining-features/pipeline-settings.md).
+{% endhint %}
+
 
 Now let's run the pipeline again:
 
