@@ -323,22 +323,61 @@ The generated config contains most configuration available for this pipeline. Le
 
 ### `enable_XXX` parameters
 
-enable_artifact_metadata: Optional[bool]
-enable_artifact_visualization: Optional[bool]
-enable_cache: Optional[bool]
-enable_step_logs: Optional[bool]
+These are boolean flags for various configuration:
+
+* `enable_artifact_metadata`: Whether to [associate metadata with artifacts or not](../data-management/handle-custom-data-types.md#optional-which-metadata-to-extract-for-the-artifact).
+* `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](../data-management/visualize-artifacts.md).
+* `enable_cache`: Utilize [caching](../../starter-guide/cache-previous-executions.md) or not.
+* `enable_step_logs`: Enable tracking [step logs](managing-steps.md#enable-or-disable-logs-storing).
 
 ### `build` ID
 
+The UUID of the [`build`](../infrastructure-management/containerize-your-pipeline.md) to use for this pipeline. If specified, docker image building is skipped for remote orchestrators, and the docker image specified in this build is used.
+
 ### `extra` dict
 
-You might have noticed another dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of.
-
-An example of this is if I want to tag a pipeline, I can do the following:
+This is just a dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of. See an example in [this section](#fetching-configuration).
 
 ### Configuring the `model_version`
 
+Specifies the ZenML [Model](../../starter-guide/track-ml-models.md) to use for this pipeline.
+
 ### Pipeline and step `parameters`
+
+A dictionary of JSON-serializable [parameters](managing-steps.md#parameters-for-your-steps) specified at the pipeline or step level. For example:
+
+```yaml
+parameters:
+    gamma: 0.01
+
+steps:
+    trainer:
+        parameters:
+            gamma: 0.001
+```
+
+Corresponds to:
+
+```python
+@step
+def trainer(gamma: float):
+    # Use gamma as normal
+    print(gamma)
+
+@pipeline
+def my_pipeline(gamma: float)
+    # use gamma or pass it into the step
+    print(0.01)
+    trainer(gamma=gamma)
+```
+
+Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always take precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](#hierarchy-and-precedence).
+
+Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined. If a parameter is defined 
+
+{% hint style="info" %}
+Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../data-management/handle-custom-data-types.md) handle their persistence in the [artifact store](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md)).
+{% endhint %}
 
 ### Setting the `run_name`
 
