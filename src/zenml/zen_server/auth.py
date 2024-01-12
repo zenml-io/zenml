@@ -540,12 +540,8 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
                 authorization_token = auth_response.text
 
                 decoded_token = jwt.decode(authorization_token, options={"verify_signature": False})
-
-                print(decoded_token)
             else:
                 decoded_token = auth_response.json()
-
-                print(decoded_token)
         except requests.exceptions.JSONDecodeError:
             logger.exception(
                 "Error decoding JSON response from external authenticator."
