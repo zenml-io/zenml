@@ -133,15 +133,10 @@ class StoreType(StrEnum):
 
 
 class SecretsStoreType(StrEnum):
-    """Secrets Store Backend Types.
+    """Secrets Store Backend Types."""
 
-    NOTE: this is a superset of the StoreType values because the set of secrets
-    store backends includes all the backends supported for zen stores.
-    """
-
-    NONE = "none"  # indicates that the secrets store is disabled
-    SQL = StoreType.SQL.value
-    REST = StoreType.REST.value
+    NONE = "none"  # indicates that no secrets store is used
+    SQL = "sql"
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"

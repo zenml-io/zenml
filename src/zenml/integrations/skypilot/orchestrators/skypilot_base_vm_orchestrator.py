@@ -14,24 +14,26 @@
 """Implementation of the Skypilot base VM orchestrator."""
 
 import os
-import time
+import re
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
-from uuid import uuid4
 
 import sky
 
-from zenml.entrypoints import PipelineEntrypointConfiguration
 from zenml.enums import StackComponentType
+from zenml.environment import Environment
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorSettings,
+)
+from zenml.integrations.skypilot.orchestrators.skypilot_orchestrator_entrypoint_configuration import (
+    SkypilotOrchestratorEntrypointConfiguration,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     ContainerizedOrchestrator,
 )
+from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -136,7 +138,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
-        """Runs all pipeline steps in Skypilot containers.
+        """Runs each pipeline step in a separate Skypilot container.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
@@ -146,7 +148,18 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             Exception: If the pipeline run fails.
+            RuntimeError: If the code is running in a notebook.
         """
+        # First check whether the code is running in a notebook.
+        if Environment.in_notebook():
+            raise RuntimeError(
+                "The Skypilot orchestrator cannot run pipelines in a notebook "
+                "environment. The reason is that it is non-trivial to create "
+                "a Docker image of a notebook. Please consider refactoring "
+                "your notebook cells into separate scripts in a Python module "
+                "and run the code outside of a notebook when using this "
+                "orchestrator."
+            )
         if deployment.schedule:
             logger.warning(
                 "Skypilot Orchestrator currently does not support the"
@@ -154,31 +167,41 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        # Set up some variables for configuration
-        orchestrator_run_id = str(uuid4())
-        environment[
-            ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID
-        ] = orchestrator_run_id
-
         settings = cast(
             SkypilotBaseOrchestratorSettings,
             self.get_settings(deployment),
         )
 
-        entrypoint = PipelineEntrypointConfiguration.get_entrypoint_command()
-        entrypoint_str = " ".join(entrypoint)
-        arguments = PipelineEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id=deployment.id
-        )
-        arguments_str = " ".join(arguments)
+        pipeline_name = deployment.pipeline_configuration.name
+        orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
 
-        # Set up docker run command
-        image = self.get_image(deployment=deployment)
+        assert stack.container_registry
+
+        # Get Docker image for the orchestrator pod
+        try:
+            image = self.get_image(deployment=deployment)
+        except KeyError:
+            # If no generic pipeline image exists (which means all steps have
+            # custom builds) we use a random step image as all of them include
+            # dependencies for the active stack
+            pipeline_step_name = next(iter(deployment.step_configurations))
+            image = self.get_image(
+                deployment=deployment, step_name=pipeline_step_name
+            )
+
+        # Build entrypoint command and args for the orchestrator pod.
+        # This will internally also build the command/args for all step pods.
+        command = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_command()
+        entrypoint_str = " ".join(command)
+        args = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
+            run_name=orchestrator_run_name,
+            deployment_id=deployment.id,
+        )
+        arguments_str = " ".join(args)
+
         docker_environment_str = " ".join(
             f"-e {k}={v}" for k, v in environment.items()
         )
-
-        start_time = time.time()
 
         instance_type = settings.instance_type or self.DEFAULT_INSTANCE_TYPE
 
@@ -188,8 +211,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         # Guaranteed by stack validation
         assert stack is not None and stack.container_registry is not None
 
-        docker_creds = stack.container_registry.credentials
-        if docker_creds:
+        if docker_creds := stack.container_registry.credentials:
             docker_username, docker_password = docker_creds
             setup = (
                 f"docker login --username $DOCKER_USERNAME --password "
@@ -232,6 +254,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 )
             )
 
+            # Set the cluster name
             cluster_name = settings.cluster_name
             if cluster_name is None:
                 # Find existing cluster
@@ -243,6 +266,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                         logger.info(
                             f"Found existing cluster {cluster_name}. Reusing..."
                         )
+            if cluster_name is None:
+                cluster_name = self.sanitize_cluster_name(
+                    f"{orchestrator_run_name}"
+                )
 
             # Launch the cluster
             sky.launch(
@@ -252,17 +279,29 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 idle_minutes_to_autostop=settings.idle_minutes_to_autostop,
                 down=settings.down,
                 stream_logs=settings.stream_logs,
+                detach_setup=True,
             )
 
         except Exception as e:
-            raise e
+            logger.error(f"Pipeline run failed: {e}")
+            raise
 
         finally:
             # Unset the service connector AWS profile ENV variable
             self.prepare_environment_variable(set=False)
 
-        run_duration = time.time() - start_time
-        logger.info(
-            "Pipeline run has finished in `%s`.",
-            string_utils.get_human_readable_time(run_duration),
-        )
+    def sanitize_cluster_name(self, name: str) -> str:
+        """Sanitize the value to be used in a cluster name.
+
+        Args:
+            name: Arbitrary input cluster name.
+
+        Returns:
+            Sanitized cluster name.
+        """
+        name = re.sub(
+            r"[^a-z0-9-]", "-", name.lower()
+        )  # replaces any character that is not a lowercase letter, digit, or hyphen with a hyphen
+        name = re.sub(r"^[-]+", "", name)  # trim leading hyphens
+        name = re.sub(r"[-]+$", "", name)  # trim trailing hyphens
+        return name
