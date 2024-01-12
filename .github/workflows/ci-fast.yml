@@ -3,7 +3,6 @@ name: Fast CI
 on:
   workflow_dispatch:
   workflow_call:
-  # TODO: Reenable once stable
   push:
     branches: [main]
     paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
