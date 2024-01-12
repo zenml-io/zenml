@@ -196,6 +196,17 @@ def assert_input_params(bar: str):
     assert bar == "bar"
 
 
+@step
+def assert_input_params_with_defaults(
+    bar: str,
+    foo: str = "some default value",
+    this_will_be_default: str = "bar",
+):
+    assert bar == "bar"
+    assert foo == "bar"
+    assert this_will_be_default == "bar"
+
+
 def test_pipeline_config_from_file_works_with_pipeline_parameters(
     clean_workspace, tmp_path
 ):
@@ -283,3 +294,31 @@ def test_pipeline_config_from_file_fails_with_pipeline_parameters_on_conflict_wi
         "`assert_input_params_pipe` conflict with parameter passed in runtime",
     ):
         p(foo="foo")
+
+
+def test_pipeline_config_from_file_works_with_pipeline_parameters_on_conflict_with_default_parameters(
+    clean_workspace, tmp_path
+):
+    """Test that the pipeline will not fail with error.
+
+    If configured with parameters from a yaml file for the steps
+    and same parameters are set with some defaults in the code.
+    """
+    config_path = tmp_path / "config.yaml"
+    file_config = {
+        "steps": {
+            "assert_input_params_with_defaults": {
+                "parameters": {"foo": "bar", "bar": "bar"}
+            }
+        },
+        "enable_cache": False,
+    }
+    config_path.write_text(yaml.dump(file_config))
+
+    @pipeline(enable_cache=False)
+    def assert_input_params_pipe():
+        assert_input_params_with_defaults()
+
+    p = assert_input_params_pipe.with_options(config_path=str(config_path))
+
+    p()
