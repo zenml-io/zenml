@@ -11,7 +11,7 @@ Remote storage allows us to store our artifacts in the cloud, which means they'r
 When using a stack with remote storage, nothing changes except the fact that the artifacts
 get materialized in a central, remote, storage location. This diagram explains the flow:
 
-<figure><img src="../../.gitbook/assets/local_run_with_cloud_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote artifact store.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/local_run_with_remote_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote artifact store.</p></figcaption></figure>
 
 ## Provisioning and registering a remote artifact store
 
