@@ -1,304 +1,414 @@
 ---
-description: Managing steps in ZenML
+description: Understanding how to configure a ZenML pipeline
 ---
 
-# Managing steps in ZenML
+# Configuring a step and a pipeline
 
-To define a step, all you need to do is decorate your Python functions with ZenML's `@step` decorator:
+The configuration of a step and/or a pipeline determines various details of how a run is executed. It is an important aspect of running workloads in production, and as such deserves a dedicated section in these docs.
 
-```python
-from zenml import step
+We have already learned about some basics of [configuration in the production guide](../../production-guide/configure-pipeline.md). Here we go into more depth.
 
-@step
-def my_function():
-    ...
-```
+## How to apply configuration
 
-## Type annotations
+Before we learn about all the different configuration, let's briefly look at *how* configuration can be applied to a step or a pipeline. We start with the simplest configuration, a boolean flag called `enable_cache`, that specifies whether caching should be enabled or disabled. There are essentially three ways on you could configure this:
 
-Your functions will work as ZenML steps even if you don't provide any type annotations for their inputs and outputs. However, adding type annotations to your step functions gives you lots of additional benefits:
+### Method 1: Directly on the decorator
 
-* **Type validation of your step inputs**: ZenML makes sure that your step functions receive an object of the correct type from the upstream steps in your pipeline.
-* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](../../../getting-started/core-concepts.md#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](../data-management/handle-custom-data-types.md).
+The most basic way to configure a step or a pipeline `@step` and `@pipeline` decorators:
 
 ```python
-from typing import Tuple
-from zenml import step
+@step(enable_cache=...)
+...
 
-@step
-def square_root(number: int) -> float:
-    return number ** 0.5
-
-# To define a step with multiple outputs, use a `Tuple` type annotation
-@step
-def divide(a: int, b: int) -> Tuple[int, int]:
-    return a // b, a % b
+@pipeline(enable_cache=...)
+...
 ```
 
 {% hint style="info" %}
-It is impossible for ZenML to detect whether you want your step to have a single output artifact of type `Tuple` or multiple output artifacts just by looking at the type annotation.
-
-We use the following convention to differentiate between the two: When the `return` statement is followed by a tuple literal (e.g. `return 1, 2` or `return (value_1, value_2)`) we treat it as a step with multiple outputs. All other cases are treated as a step with a single output of type `Tuple`.
-
-```python
-# Single output artifact
-@step
-def my_step() -> Tuple[int, int]:
-    output_value = (0, 1)
-    return output_value
-
-# Single output artifact with variable length
-@step
-def my_step(condition) -> Tuple[int, ...]:
-    if condition:
-        output_value = (0, 1)
-    else:
-        output_value = (0, 1, 2)
-
-    return output_value
-
-# Single output artifact using the `Annotated` annotation
-@step
-def my_step() -> Annotated[Tuple[int, ...], "my_output"]:
-    return 0, 1
-
-
-# Multiple output artifacts
-@step
-def my_step() -> Tuple[int, int]:
-    return 0, 1
-
-
-# Not allowed: Variable length tuple annotation when using
-# multiple output artifacts
-@step
-def my_step() -> Tuple[int, ...]:
-    return 0, 1
-```
+Once you set configuration on a pipeline, they will be applied to all steps with some exceptions. See the [later section on precedence for more details](configure-steps-pipelines.md#hierarchy-and-precedence).
 {% endhint %}
 
-If you want to make sure you get all the benefits of type annotating your steps, you can set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`. ZenML will then raise an exception in case one of the steps you're trying to run is missing a type annotation.
+### Method 2: On the step/pipeline instance
 
-## Step output names
-
-By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](../../starter-guide/fetching-pipelines.md).
-
-If you want to use custom output names for your steps, use the `Annotated` type annotation:
-
-```python
-from typing_extensions import Annotated  # or `from typing import Annotated on Python 3.9+
-from typing import Tuple
-from zenml import step
-
-@step
-def square_root(number: int) -> Annotated[float, "custom_output_name"]:
-    return number ** 0.5
-
-@step
-def divide(a: int, b: int) -> Tuple[
-    Annotated[int, "quotient"],
-    Annotated[int, "remainder"]
-]:
-    return a // b, a % b
-```
-
-{% hint style="info" %}
-If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the [documentation on artifact versioning and configuration](../../starter-guide/manage-artifacts.md) for more information.
-{% endhint %}
-
-## Parameters for your steps
-
-When calling a step in a pipeline, the inputs provided to the step function can either be an **artifact** or a **parameter**. An artifact represents the output of another step that was executed as part of the same pipeline and serves as a means to share data between steps. Parameters, on the other hand, are values provided explicitly when invoking a step. They are not dependent on the output of other steps and allow you to parameterize the behavior of your steps.
-
-{% hint style="info" %}
-In order to allow the configuration of your steps using a configuration file, only values that can be serialized to JSON using Pydantic can be passed as parameters. If you want to pass other non-JSON-serializable objects such as NumPy arrays to your steps, use [External Artifacts](../../starter-guide/manage-artifacts.md#passing-artifacts-to-a-downstream-pipeline) instead.
-{% endhint %}
+This is exactly the same as passing it through the decorator, but if you prefer you can also pass it in the `configure` methods of the pipeline and step instances:
 
 ```python
 @step
-def my_step(input_1: int, input_2: int) -> None:
-    pass
+def my_step() -> None:
+    print("my step")
 
 
 @pipeline
 def my_pipeline():
-    int_artifact = some_other_step()
-    # We supply the value of `input_1` as an artifact and
-    # `input_2` as a parameter
-    my_step(input_1=int_artifact, input_2=42)
-    # We could also call the step with two artifacts or two
-    # parameters instead:
-    # my_step(input_1=int_artifact, input_2=int_artifact)
-    # my_step(input_1=1, input_2=2)
+    my_step()
+
+
+# Same as passing it in the step decorator
+my_step.configure(enable_cache=...)
+
+# Same as passing it in the pipeline decorator
+my_pipeline.configure(enable_cache=...)
 ```
 
-Parameters of steps and pipelines can also be passed in using YAML configuration files. Following configuration file and python code can work together and give you the flexibility to update configuration only in YAML file, once needed:
-```yaml
-# config.yaml
+#### Method 3: Configuring with YAML
 
-# these are parameters of the pipeline
-parameters:
-  environment: production
+As all settings can be passed through as a dictionary, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
 
-steps:
-  my_step:
-    # these are parameters of the step `my_step`
-    parameters:
-      input_2: 42
-```
+To use a YAML file, you must pass it to the `with_options(...)` method of a pipeline:
 
 ```python
 @step
-def my_step(input_1: int, input_2: int) -> None:
-    pass
+def my_step() -> None:
+    print("my step")
 
-# input `environment` will come from the configuration file
-# and it is evaluated to `production`
+
 @pipeline
-def my_pipeline(environment: str):
-    # We supply value of `environment` from pipeline inputs
-    int_artifact = some_other_step(environment=environment)
-    # We supply the value of `input_1` as an artifact and
-    # `input_2` is coming from the configuration file
-    my_step(input_1=int_artifact)
+def my_pipeline():
+    my_step()
 
-if __name__=="__main__":
-    my_pipeline.with_options(config_paths="config.yaml")()
+
+# Pass in a config file
+my_pipeline = my_pipeline.with_options(config_path='/local/path/to/config.yaml')
 ```
-{% hint style="warning" %}
-There might be conflicting settings for step or pipeline inputs, while working with YAML configuration files. Such situations happen when you define a step or a pipeline parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instruction on how to fix.
-Example of such a conflict:
+
+The format of a YAML config file is exactly the same as the configurations you would pass in Python in the above two sections. Step-specific configurations can be passed by using the [step invocation ID](managing-steps.md#using-a-custom-step-invocation-id) inside the `steps` dictionary. All keys are optional. Here is an example:
+
 ```yaml
-# config.yaml
-parameters:
-    some_param: 24
+# This is equal to @pipeline(enable_cache=True)
+enable_cache: True
 
 steps:
-  my_step:
-    parameters:
-      input_2: 42
+  step_invocation_id:
+    enable_cache: False  # same as @step(enable_cache=False)
+  other_step_invocation_id:
+    enable_cache: False  # same as @step(enable_cache=False)
+  ...
 ```
-```python
-# run.py
-@step
-def my_step(input_1: int, input_2: int) -> None:
-    pass
 
-@pipeline
-def my_pipeline(some_param: int):
-    # here an error will be raised since `input_2` is
-    # `42` in config, but `43` was provided in the code
-    my_step(input_1=42, input_2=43)
+The YAML method is the recommended method on how to apply configuration in production. It has the benefit of being declarative and decoupled from the codebase.
 
-if __name__=="__main__":
-    # here an error will be raised since `some_param` is
-    # `24` in config, but `23` was provided in the code
-    my_pipeline(23)
-```
+{% hint style="info" %}
+It is best practice to put all config files in a `configs` directory at the root of your repository and check them into git history. This way, the tracked commit hash of a pipeline run links back to your config YAML.
 {% endhint %}
 
-**Parameters and caching**
+## Breaking configuration down
 
-When an input is passed as a parameter, the step will only be cached if all parameter values are exactly the same as for previous executions of the step.
+Now that we understand how to apply configuration, let's see all the various ways we can configure a ZenML pipeline. We will use the YAML configuration for this, but as [seen in the section above](#how-to-apply-configuration), you can use the information here to configure your steps and pipelines any way you choose.
 
-**Artifacts and caching**
-
-When an artifact is used as a step function input, the step will only be cached if all the artifacts are exactly the same as for previous executions of the step. This means that if any of the upstream steps that produce the input artifacts for a step were not cached, the step itself will always be executed.
-
-## Using a custom step invocation ID
-
-When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](configure-steps-pipelines.md#control-the-execution-order) of your pipeline steps or use it to [fetch information](../../starter-guide/fetching-pipelines.md) about the invocation after the pipeline has finished running.
+First, let's create a simple pipeline:
 
 ```python
-from zenml import pipeline, step
+% run.py
+from zenml import step, pipeline
 
 @step
+def generate_number() -> int:
+    return 1
+
+@step
+def add_two_numbers(num1: int, num2: int) -> int:
+    return num1 + num2
+
+@pipeline
+def addition_pipeline():
+    generated = generate_number()
+    result = add_two_numbers(num1=2, num2=generated)
+
+# Executable trigger for the pipeline if running this python script directly.
+if __name__=="__main__":
+    # This function writes 
+    addition_pipeline.write_run_configuration_template(path='run.yaml')
+    addition_pipeline()
+```
+
+The method `write_run_configuration_template` genreates a config template (at path `run.yaml` in this case) that includes all configuration options for this specific pipeline and your active stack. Let's run the pipeline:
+
+```python
+python run.py
+```
+
+<details>
+
+<summary>An example of a generated YAML configuration template</summary>
+
+```yaml
+build: Union[PipelineBuildBase, UUID, NoneType]
+enable_artifact_metadata: Optional[bool]
+enable_artifact_visualization: Optional[bool]
+enable_cache: Optional[bool]
+enable_step_logs: Optional[bool]
+extra: Mapping[str, Any]
+model_version:
+  audience: Optional[str]
+  description: Optional[str]
+  ethics: Optional[str]
+  license: Optional[str]
+  limitations: Optional[str]
+  name: str
+  save_models_to_registry: bool
+  suppress_class_validation_warnings: bool
+  tags: Optional[List[str]]
+  trade_offs: Optional[str]
+  use_cases: Optional[str]
+  version: Union[ModelStages, int, str, NoneType]
+  was_created_in_this_run: bool
+parameters: Optional[Mapping[str, Any]]
+run_name: Optional[str]
+schedule:
+  catchup: bool
+  cron_expression: Optional[str]
+  end_time: Optional[datetime]
+  interval_second: Optional[timedelta]
+  name: Optional[str]
+  start_time: Optional[datetime]
+settings:
+  docker:
+    apt_packages: List[str]
+    build_context_root: Optional[str]
+    build_options: Mapping[str, Any]
+    copy_files: bool
+    copy_global_config: bool
+    dockerfile: Optional[str]
+    dockerignore: Optional[str]
+    environment: Mapping[str, Any]
+    install_stack_requirements: bool
+    parent_image: Optional[str]
+    replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
+      NoneType]
+    required_hub_plugins: List[str]
+    required_integrations: List[str]
+    requirements: Union[NoneType, str, List[str]]
+    skip_build: bool
+    source_files: SourceFileMode
+    target_repository: str
+    user: Optional[str]
+  resources:
+    cpu_count: Optional[PositiveFloat]
+    gpu_count: Optional[NonNegativeInt]
+    memory: Optional[ConstrainedStrValue]
+steps:
+  add_two_numbers:
+    enable_artifact_metadata: Optional[bool]
+    enable_artifact_visualization: Optional[bool]
+    enable_cache: Optional[bool]
+    enable_step_logs: Optional[bool]
+    experiment_tracker: Optional[str]
+    extra: Mapping[str, Any]
+    failure_hook_source:
+      attribute: Optional[str]
+      module: str
+      type: SourceType
+    model_version:
+      audience: Optional[str]
+      description: Optional[str]
+      ethics: Optional[str]
+      license: Optional[str]
+      limitations: Optional[str]
+      name: str
+      save_models_to_registry: bool
+      suppress_class_validation_warnings: bool
+      tags: Optional[List[str]]
+      trade_offs: Optional[str]
+      use_cases: Optional[str]
+      version: Union[ModelStages, int, str, NoneType]
+      was_created_in_this_run: bool
+    name: Optional[str]
+    outputs:
+      output:
+        default_materializer_source:
+          attribute: Optional[str]
+          module: str
+          type: SourceType
+        materializer_source: Optional[Tuple[Source, ...]]
+    parameters: {}
+    settings:
+      docker:
+        apt_packages: List[str]
+        build_context_root: Optional[str]
+        build_options: Mapping[str, Any]
+        copy_files: bool
+        copy_global_config: bool
+        dockerfile: Optional[str]
+        dockerignore: Optional[str]
+        environment: Mapping[str, Any]
+        install_stack_requirements: bool
+        parent_image: Optional[str]
+        replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
+          NoneType]
+        required_hub_plugins: List[str]
+        required_integrations: List[str]
+        requirements: Union[NoneType, str, List[str]]
+        skip_build: bool
+        source_files: SourceFileMode
+        target_repository: str
+        user: Optional[str]
+      resources:
+        cpu_count: Optional[PositiveFloat]
+        gpu_count: Optional[NonNegativeInt]
+        memory: Optional[ConstrainedStrValue]
+    step_operator: Optional[str]
+    success_hook_source:
+      attribute: Optional[str]
+      module: str
+      type: SourceType
+  generate_number:
+    enable_artifact_metadata: Optional[bool]
+    enable_artifact_visualization: Optional[bool]
+    enable_cache: Optional[bool]
+    enable_step_logs: Optional[bool]
+    experiment_tracker: Optional[str]
+    extra: Mapping[str, Any]
+    failure_hook_source:
+      attribute: Optional[str]
+      module: str
+      type: SourceType
+    model_version:
+      audience: Optional[str]
+      description: Optional[str]
+      ethics: Optional[str]
+      license: Optional[str]
+      limitations: Optional[str]
+      name: str
+      save_models_to_registry: bool
+      suppress_class_validation_warnings: bool
+      tags: Optional[List[str]]
+      trade_offs: Optional[str]
+      use_cases: Optional[str]
+      version: Union[ModelStages, int, str, NoneType]
+      was_created_in_this_run: bool
+    name: Optional[str]
+    outputs:
+      output:
+        default_materializer_source:
+          attribute: Optional[str]
+          module: str
+          type: SourceType
+        materializer_source: Optional[Tuple[Source, ...]]
+    parameters: {}
+    settings:
+      docker:
+        apt_packages: List[str]
+        build_context_root: Optional[str]
+        build_options: Mapping[str, Any]
+        copy_files: bool
+        copy_global_config: bool
+        dockerfile: Optional[str]
+        dockerignore: Optional[str]
+        environment: Mapping[str, Any]
+        install_stack_requirements: bool
+        parent_image: Optional[str]
+        replicate_local_python_environment: Union[List[str], PythonEnvironmentExportMethod,
+          NoneType]
+        required_hub_plugins: List[str]
+        required_integrations: List[str]
+        requirements: Union[NoneType, str, List[str]]
+        skip_build: bool
+        source_files: SourceFileMode
+        target_repository: str
+        user: Optional[str]
+      resources:
+        cpu_count: Optional[PositiveFloat]
+        gpu_count: Optional[NonNegativeInt]
+        memory: Optional[ConstrainedStrValue]
+    step_operator: Optional[str]
+    success_hook_source:
+      attribute: Optional[str]
+      module: str
+      type: SourceType
+```
+
+</details>
+
+The generated config contains most configuration available for this pipeline. Let's walk through it section by section: 
+
+### `enable_XXX` parameters
+
+enable_artifact_metadata: Optional[bool]
+enable_artifact_visualization: Optional[bool]
+enable_cache: Optional[bool]
+enable_step_logs: Optional[bool]
+
+### `build` ID
+
+### `extra` dict
+
+You might have noticed another dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of.
+
+An example of this is if I want to tag a pipeline, I can do the following:
+
+### Configuring the `model_version`
+
+### Pipeline and step `parameters`
+
+### Setting the `run_name`
+
+### Real-time `settings`
+
+Read more in the [dedicated section on settings](pipeline-settings.md).
+
+### Step-specific configuration
+
+A lot of pipeline-level configuration can also be applied at a step level (as we already seen with the `enable_cache` flag). However, there is some configuration that is step-specific, meaning it cannot be applied at a pipeline level, but only at a step level.
+
+* `experiment_tracker`
+* `step_operator`
+* `failure_hook_source`
+* `outputs`
+* `success_hook_source`
+
+Read more in the [dedicated section on managing steps](managing-steps.md).
+
+## Hierarchy and precedence
+
+Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. The next section explains in more detail how the step-level settings will be merged with pipeline settings.
+
+## Merging settings on instance/run:
+
+When a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
+
+```python
+from zenml.config import ResourceSettings
+
+
+@step(settings={"resources": ResourceSettings(cpu_count=2, memory="1GB")})
 def my_step() -> None:
     ...
 
-@pipeline
-def example_pipeline():
-    # When calling a step for the first time inside a pipeline,
-    # the invocation ID will be equal to the step name -> `my_step`.
-    my_step()
-    # When calling the same step again, the suffix `_2`, `_3`, ... will
-    # be appended to the step name to generate a unique invocation ID.
-    # For this call, the invocation ID would be `my_step_2`.
-    my_step()
-    # If you want to use a custom invocation ID when calling a step, you can
-    # do so by passing it like this. If you pass a custom ID, it needs to be
-    # unique for all the step invocations that happen as part of this pipeline.
-    my_step(id="my_custom_invocation_id")
+
+my_step.configure(
+    settings={"resources": ResourceSettings(gpu_count=1, memory="2GB")}
+)
+
+my_step.configuration.settings["resources"]
+# cpu_count: 2, gpu_count=1, memory="2GB"
 ```
 
-## Control the execution order
+In the above example, the two settings were automatically merged.
 
-By default, ZenML uses the data flowing between steps of your pipeline to determine the order in which steps get executed.
 
-The following example shows a pipeline in which `step_3` depends on the outputs of `step_1` and `step_2`. This means that ZenML can execute both `step_1` and `step_2` in parallel but needs to wait until both are finished before `step_3` can be started.
+## Fetching configuration
+
+Any configuration can be fetched using the [client from the Python SDK](../../../reference/python-client.md). For example, say we use the `extra` parameter to tag a pipeline:
 
 ```python
-from zenml import pipeline
+@pipeline(name='my_pipeline', extra={'tag': 'production'})
 
-@pipeline
-def example_pipeline():
-    step_1_output = step_1()
-    step_2_output = step_2()
-    step_3(step_1_output, step_2_output)
+
+...
 ```
 
-If you have additional constraints on the order in which steps get executed, you can specify non-data dependencies by passing the invocation IDs of steps that should run before your step like this: `my_step(after="other_step")`. If you want to define multiple upstream steps, you can also pass a list for the `after` argument when calling your step: `my_step(after=["other_step", "other_step_2"])`.
-
-{% hint style="info" %}
-Check out the [previous section](configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn about the invocation ID and how to use a custom one for your steps.
-{% endhint %}
+This tag is now associated and tracked with all pipeline runs, and can be [fetched later](../../starter-guide/fetching-pipelines.md):
 
 ```python
-from zenml import pipeline
+from zenml.client import Client
 
-@pipeline
-def example_pipeline():
-    step_1_output = step_1(after="step_2")
-    step_2_output = step_2()
-    step_3(step_1_output, step_2_output)
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
+
+# print out the extra
+print(pipeline_run.config.extra)
+# {'tag': 'production'}
 ```
 
-This pipeline is similar to the one explained above, but this time ZenML will make sure to only start `step_1` after `step_2` has finished.
-
-## Enable or disable logs storing
-
-By default, ZenML uses a special logging handler to capture the logs that occur during the execution of a step. These logs are stored within the respective artifact store of your stack.
-
-```python
-import logging
-
-from zenml import step
-
-@step 
-def my_step() -> None:
-    logging.warning("`Hello`")  # You can use the regular `logging` module.
-    print("World.")  # You can utilize `print` statements as well. 
-```
-
-You can display the logs in the dashboard as follows:
-
-![Displaying step logs on the dashboard](../../../.gitbook/assets/zenml\_step\_logs.png)
-
-If you do not want to store the logs in your artifact store, you can:
-
-1.  Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
-
-    ```python
-    from zenml import pipeline, step
-
-    @step(enable_step_logs=False)  # disables logging for this step
-    def my_step() -> None:
-        ...
-
-    @pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
-    def my_pipeline():
-        ...
-    ```
-2. Disable it by using the environmental variable `ZENML_DISABLE_STEP_LOGS_STORAGE`. This environmental variable takes precedence over the parameters mentioned above.
+The configuration is also displayed in the dashboard in the pipeline run details page.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
