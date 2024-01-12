@@ -3891,7 +3891,25 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The updated values.
         """
-        existing_values = self._get_secret_values(secret_id=secret_id)
+        try:
+            existing_values = self._get_secret_values(secret_id=secret_id)
+        except KeyError:
+            logger.error(
+                f"Unable to update secret values for secret with ID "
+                f"{secret_id}: No secret with this ID found in the secrets "
+                f"store back-end. Creating a new secret instead."
+            )
+            # If no secret values are yet stored in the secrets store,
+            # we simply treat this as a create operation. This is to account
+            # for cases in which secrets are manually deleted in the secrets
+            # store backend or when the secrets store backend is reconfigured to
+            # a different account, provider, region etc. without migrating
+            # the actual existing secrets themselves.
+            new_values: Dict[str, str] = {
+                k: v for k, v in values.items() if v is not None
+            }
+            self._set_secret_values(secret_id=secret_id, values=new_values)
+            return new_values
 
         for k, v in values.items():
             if v is not None:
