@@ -4,7 +4,7 @@ description: Using settings to configure runtime configuration.
 
 # Controlling settings of your pipeline
 
-As we saw before, one special type of configuration is called `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
+As we [saw before](configure-steps-pipelines.md#real-time-settings), one special type of configuration is called `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
 * The [resources](../infrastructure-management/scale-compute-to-the-cloud.md#specify-resource-requirements-for-steps) required for a step
 * Configuring the [containerization](../infrastructure-management/containerize-your-pipeline.md) process of a pipeline (e.g. What requirements get installed in the Docker image)

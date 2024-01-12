@@ -52,7 +52,7 @@ my_pipeline.configure(enable_cache=...)
 
 #### Method 3: Configuring with YAML
 
-As all settings can be passed through as a dictionary, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
+As all configuration can be passed through as a dictionary, users have the option to send all configurations in via a YAML file. This is useful in situations where code changes are not desirable.
 
 To use a YAML file, you must pass it to the `with_options(...)` method of a pipeline:
 
