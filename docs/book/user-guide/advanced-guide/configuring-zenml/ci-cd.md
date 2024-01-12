@@ -24,7 +24,7 @@ A data scientist wants to make improvements to the ML pipeline. They clone the
 repository, create a new branch, and experiment with new models or data 
 processing steps on their local machine.
 
-<img src="../../../.gitbook/assets/ci_cd_local.png" alt="Pipeline with local stack" width="500"/>
+<img src="../../../.gitbook/assets/ci_cd_local.png" alt="Pipeline with local stack"/>
 
 
 Once the data scientist thinks they have improved the pipeline, they create a 
@@ -36,7 +36,7 @@ cannot be  merged. The pipeline also generates a set of metrics and test results
 that are automatically published to the PR, where they can be peer-reviewed to
 decide if the changes should be merged.
 
-<img src="../../../.gitbook/assets/ci_cd_staging.png" alt="Pipeline with staging stack" width="500"/>
+<img src="../../../.gitbook/assets/ci_cd_staging.png" alt="Pipeline with staging stack"/>
 
 Once the PR has been reviewed and passes all checks, the branch is merged into 
 main. This automatically triggers another GitHub Action that now runs a 
@@ -45,7 +45,7 @@ production data, runs some checks to compare its performance with the model
 currently served in production and then, if all checks pass, automatically
 deploys the new model.
 
-<img src="../../../.gitbook/assets/ci_cd_prod.png" alt="Pipeline with production stack" width="500"/>
+<img src="../../../.gitbook/assets/ci_cd_prod.png" alt="Pipeline with production stack"/>
 
 To see this in action, check out the [ZenML Gitflow Repository](https://github.com/zenml-io/zenml-gitflow/).
 This repository showcases how ZenML can be used for machine learning with a
