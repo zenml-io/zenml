@@ -123,7 +123,6 @@ The `orchestrator.vm_aws` key corresponds to the [`SkypilotBaseOrchestratorSetti
 Read more about settings in ZenML [here](../advanced-guide/pipelining-features/pipeline-settings.md).
 {% endhint %}
 
-
 Now let's run the pipeline again:
 
 ```python
