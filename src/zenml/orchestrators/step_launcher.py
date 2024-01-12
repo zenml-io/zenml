@@ -360,7 +360,7 @@ class StepLauncher:
                     output_name: artifact.id
                     for output_name, artifact in cached_outputs.items()
                 }
-                self._link_cached_artifacts_to_model_version(
+                self._link_cached_artifacts_to_model(
                     model_from_context=model,
                     step_run=step_run,
                 )
@@ -369,7 +369,7 @@ class StepLauncher:
 
         return execution_needed, step_run
 
-    def _link_cached_artifacts_to_model_version(
+    def _link_cached_artifacts_to_model(
         self,
         model_from_context: Optional["Model"],
         step_run: StepRunRequest,

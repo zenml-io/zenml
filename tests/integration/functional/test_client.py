@@ -1557,7 +1557,7 @@ class TestModelVersion:
         with pytest.raises(KeyError):
             client_with_model.delete_model_version(uuid4())
 
-    def _create_some_model_version(
+    def _create_some_model(
         self,
         client: Client,
         model_name: str = "aria_cat_supermodel",
@@ -1572,8 +1572,8 @@ class TestModelVersion:
         ).to_model_class(suppress_class_validation_warnings=True)
 
     def test_get_by_latest(self, clean_client: "Client"):
-        """Test that model version can be retrieved with latest."""
-        mv1 = self._create_some_model_version(client=clean_client)
+        """Test that model can be retrieved with latest."""
+        mv1 = self._create_some_model(client=clean_client)
 
         # latest returns the only model
         mv2 = clean_client.get_model_version(
@@ -1594,8 +1594,8 @@ class TestModelVersion:
         assert mv4 == mv3
 
     def test_get_by_stage(self, clean_client: "Client"):
-        """Test that model version can be retrieved by stage."""
-        mv1 = self._create_some_model_version(client=clean_client)
+        """Test that model can be retrieved by stage."""
+        mv1 = self._create_some_model(client=clean_client)
 
         clean_client.update_model_version(
             version_name_or_id=mv1.id,
@@ -1612,8 +1612,8 @@ class TestModelVersion:
         assert mv1 == mv2
 
     def test_stage_not_found(self, clean_client: "Client"):
-        """Test that attempting to get model version fails if none at the given stage."""
-        mv1 = self._create_some_model_version(client=clean_client)
+        """Test that attempting to get model fails if none at the given stage."""
+        mv1 = self._create_some_model(client=clean_client)
 
         with pytest.raises(KeyError):
             clean_client.get_model_version(
