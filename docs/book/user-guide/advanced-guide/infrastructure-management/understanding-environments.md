@@ -12,7 +12,7 @@ Here is a visual overview of the different environments:
 
 ## Client Environment (or the Runner environment)
 
-The client environment (sometimes known as the runner enviornment) is where the ZenML pipelines are _compiled_, i.e., where you call the pipeline function (typically in a `run.py` script). There are different types of client environments:
+The client environment (sometimes known as the runner environment) is where the ZenML pipelines are _compiled_, i.e., where you call the pipeline function (typically in a `run.py` script). There are different types of client environments:
 
 * A local development environment
 * A CI runner in production.

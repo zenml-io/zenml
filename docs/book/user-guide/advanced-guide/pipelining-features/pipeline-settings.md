@@ -39,7 +39,7 @@ Stack Component Config vs Settings in ZenML
 
 **Using objects or dicts**
 
-Settings can be passed in directly as BaseSettings-subclassed objects, or a dictionary representation of the object. For example, a Docker configuration can be passed in as follows:
+Settings can be passed in directly as `BaseSettings`-subclassed objects, or a dictionary representation of the object. For example, a Docker configuration can be passed in as follows:
 
 ```python
 from zenml.config import DockerSettings

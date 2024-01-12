@@ -1,10 +1,10 @@
 ---
-description: Managing steps in ZenML
+description: Managing steps in ZenML.
 ---
 
 # Managing steps in ZenML
 
-We have learned a lot about [step configurations](configure-steps-pipelines.md) in the last section. Here we go into even further detail on how to manage step and their configuration in ZenML.
+We have learned a lot about [step configurations](configure-steps-pipelines.md) in the last section. Here we go into even further detail on how to manage steps and their configuration in ZenML.
 
 ## Type annotations
 
@@ -124,7 +124,7 @@ def my_pipeline():
     # my_step(input_1=1, input_2=2)
 ```
 
-Parameters of steps and pipelines can also be passed in using YAML configuration files. Following configuration file and python code can work together and give you the flexibility to update configuration only in YAML file, once needed:
+Parameters of steps and pipelines can also be passed in using YAML configuration files. The following configuration file and Python code can work together and give you the flexibility to update configuration only in YAML file, once needed:
 ```yaml
 # config.yaml
 
@@ -158,7 +158,7 @@ if __name__=="__main__":
     my_pipeline.with_options(config_paths="config.yaml")()
 ```
 {% hint style="warning" %}
-There might be conflicting settings for step or pipeline inputs, while working with YAML configuration files. Such situations happen when you define a step or a pipeline parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instruction on how to fix.
+There might be conflicting settings for step or pipeline inputs, while working with YAML configuration files. Such situations happen when you define a step or a pipeline parameter in the configuration file and override it from the code later on. Don't worry - once it happens you will be informed with details and instructions how to fix.
 Example of such a conflict:
 ```yaml
 # config.yaml
