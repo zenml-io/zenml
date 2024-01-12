@@ -23,65 +23,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
-          python-version: '3.8'
+          python-version: '3.10'
       - name: Install current package as editable
         run: pip install -U darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
-  mlstacks-compatibility-check:
+  spellcheck:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-dind-runners
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
-      - name: Set up Python
-        uses: actions/setup-python@v5.0.0
+      - name: Spelling checker
+        uses: crate-ci/typos@v1.17.0
         with:
-          python-version: '3.8'
-      - name: Install current package as editable
-        run: |
-          pip install -U pip
-          pip install -e .
-      - name: Install mlstacks package
-        run: pip install mlstacks
-      - name: Check for broken dependencies
-        run: pip check
-  custom-ubuntu-runners-setup-and-test-python:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-dind-runners]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  windows-setup-and-test-python:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  macos-setup-and-test-python:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
+          files: .
+          config: ./.typos.toml
   update-templates-to-examples:
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
@@ -91,64 +46,15 @@ jobs:
       python-version: '3.8'
       os: ubuntu-latest
     secrets: inherit
-  windows-integration-test:
-    needs: [windows-setup-and-test-python]
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-        test_environment: [default]
-      fail-fast: false
-    uses: ./.github/workflows/integration-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
-  macos-integration-test:
-    needs: [macos-setup-and-test-python]
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-        test_environment: [default]
-      fail-fast: false
-    uses: ./.github/workflows/integration-test.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
-  custom-ubuntu-runners-integration-test:
-    needs: [custom-ubuntu-runners-setup-and-test-python]
+  custom-ubuntu-runners-setup-and-test-python:
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
-        # Disabled temporarily while CI is overhauled
-        python-version: ['3.8', '3.9', '3.10']
-        # python-version: ["3.8", "3.9", "3.10", "3.11"]
-        test_environment:
-          - default
-          - docker-server-docker-orchestrator-mysql
-          - docker-server-docker-orchestrator-mariadb
-        exclude:
-          # docker is time-consuming to run, so we only run it on 3.8
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.9'
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.11'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.9'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.11'
+        python-version: ['3.10']
       fail-fast: false
-    uses: ./.github/workflows/integration-test.yml
+    uses: ./.github/workflows/setup-python-environment.yml
     with:
-      os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
+      os: ${{ matrix.os }}
     secrets: inherit
