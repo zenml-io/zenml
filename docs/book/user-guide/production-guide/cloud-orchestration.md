@@ -4,7 +4,7 @@ description: Orchestrate using cloud resources.
 
 # Orchestrating pipelines on the cloud
 
-Until now, we've only run pipelines locally. The next step is get free from our local machines, and transition our pipelines to execute on the cloud. This will enable you to run your MLOps pipelines in a cloud environment, leveraging the scalability and robustness that cloud platforms offer.
+Until now, we've only run pipelines locally. The next step is to get free from our local machines and transition our pipelines to execute on the cloud. This will enable you to run your MLOps pipelines in a cloud environment, leveraging the scalability and robustness that cloud platforms offer.
 
 In order to do this, we need to get familiar with two more stack components: 
 
@@ -17,7 +17,7 @@ These, along with with [remote storage](remote-storage.md) completes a basic clo
 
 The easiest cloud orchestrator to start with is the [Skypilot](https://skypilot.readthedocs.io/) orchestrator running on a public cloud. The advantage of Skypilot is that it simply provisions a VM to execute the pipeline on your cloud provider.
 
-Coupled with Skypilot, we need a mechanism to package your code and ship it to the cloud for Skypilot to do its thing. ZenML uses [Docker](https://www.docker.com/) to achieve this. Every time you run a pipeline with a remote orchestrator, [ZenML builds an image](../advanced-guide/infrastructure-management/connect-your-git-repository.md) for the entire pipeline (and optionally each step of a pipeline depending on your [configuration](../advanced-guide/infrastructure-management/containerize-your-pipeline.md)). This image contains the code, requirements, and everything else needed to run the steps of the pipeline in any environment. ZenML then pushes this image to the container registry configured in your stack, and the orchestrator pulls the image when its ready to execute a step.
+Coupled with Skypilot, we need a mechanism to package your code and ship it to the cloud for Skypilot to do its thing. ZenML uses [Docker](https://www.docker.com/) to achieve this. Every time you run a pipeline with a remote orchestrator, [ZenML builds an image](../advanced-guide/infrastructure-management/connect-your-git-repository.md) for the entire pipeline (and optionally each step of a pipeline depending on your [configuration](../advanced-guide/infrastructure-management/containerize-your-pipeline.md)). This image contains the code, requirements, and everything else needed to run the steps of the pipeline in any environment. ZenML then pushes this image to the container registry configured in your stack, and the orchestrator pulls the image when it's ready to execute a step.
 
 To summarize, here is the broad sequence of events that happen when you run a pipeline with such a cloud stack:
 
@@ -25,15 +25,15 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 
 1. The user runs a pipeline on the client machine. This executes the `run.py` script where ZenML reads the `@pipeline` function and understands what steps need to be executed.
 2. The client asks the server for the stack info, which returns it with the configuration of the cloud stack.
-3. Based on the stack info and pipeline specification, client builds and pushes image to the `container registry`. The image contains the environment needed to execute the pipeline and the code of the steps.
+3. Based on the stack info and pipeline specification, the client builds and pushes an image to the `container registry`. The image contains the environment needed to execute the pipeline and the code of the steps.
 4. The client creates a run in the `orchestrator`. For example, in the case of the [Skypilot](https://skypilot.readthedocs.io/) orchestrator, it creates a virtual machine in the cloud with some commands to pull and run a docker image from the specified container registry.  
-5. The `orchestrator` pulls the appropriate image from the `container registry` as its executing the pipeline (each step has an image).
+5. The `orchestrator` pulls the appropriate image from the `container registry` as it's executing the pipeline (each step has an image).
 6. As each pipeline runs, it stores artifacts physically in the `artifact store`. Of course, this artifact store needs to be some form of cloud storage.
-7. As each pipeline runs, it reports status back to the zenml server, and optionally queries the server for metadata.
+7. As each pipeline runs, it reports status back to the zenml server and optionally queries the server for metadata.
 
 ## Provisioning and registering a Skypilot orchestrator alongside a container registry
 
-While there are detaled docs on [how to setup a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../stacks-and-components/component-guide/container-registries/container-registries.md) on each public cloud, we have put the most relevant details here for convenience:
+While there are detailed docs on [how to set up a Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) and a [container registry](../../stacks-and-components/component-guide/container-registries/container-registries.md) on each public cloud, we have put the most relevant details here for convenience:
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -125,7 +125,7 @@ It is also relatively simple to create a [custom orchestrator flavor](../../stac
 Having trouble with setting up infrastructure? Try reading the [stack deployment](../../stacks-and-components/stack-deployment/) section of the docs to gain more insight. If that still doesn't work, join the [ZenML community](https://zenml.io/slack) and ask!
 {% endhint %}
 
-Please note that your local client needs to be authenticated to the cloud CLI, and have sufficient permissions to push a container to your container registry , and deploy a VM using Skypilot. However, it is no longer neccessary to have direct access to the remote artifact storage, as the pipeline executes in a VM on the cloud. Of course, that means the provisioned VM now needs access to the remote storage instead!
+Please note that your local client needs to be authenticated to the cloud CLI, and have sufficient permissions to push a container to your container registry, and deploy a VM using Skypilot. However, it is no longer necessary to have direct access to the remote artifact storage, as the pipeline executes in a VM on the cloud. Of course, that means the provisioned VM now needs access to the remote storage instead!
 
 It is important to understand at the infrastructure level how services authenticate with each other. This can get quite complex, and ZenML has a concept called [Service Connectors](../../stacks-and-components/auth-management/auth-management.md) that simplifies this. If you're curious, read that section of the docs!
 
@@ -158,7 +158,7 @@ Run the training pipeline:
 python run.py --training-pipeline
 ```
  
-You will notice this time your pipeline behaves differently. After it has built the docker image with all your code, it will push that image, and run a VM on the cloud. Here is where your pipeline will execute, and the logs will be streamed back to you. So with a few commands we were able to ship our entire code to the cloud!
+You will notice this time your pipeline behaves differently. After it has built the docker image with all your code, it will push that image, and run a VM on the cloud. Here is where your pipeline will execute, and the logs will be streamed back to you. So with a few commands, we were able to ship our entire code to the cloud!
 
 Curious to see what other stacks you can create? The [Component Guide](../../stacks-and-components/component-guide/) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
 

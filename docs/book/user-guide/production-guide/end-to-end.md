@@ -56,7 +56,7 @@ The e2e project is a comprehensive project template to cover major use cases of 
 
 As you progress through the e2e batch template, try running the pipelines on a [remote cloud stack](cloud-orchestration.md) on a tracked [git repository](connect-code-repository.md) to practice some of the concepts we have learned in this guide.
 
-At the end, don't forget to share [ZenML e2e template](https://github.com/zenml-io/template-e2e-batch) with your colleagues and see how they react!
+At the end, don't forget to share the [ZenML e2e template](https://github.com/zenml-io/template-e2e-batch) with your colleagues and see how they react!
 
 ## Conclusion and next steps
 

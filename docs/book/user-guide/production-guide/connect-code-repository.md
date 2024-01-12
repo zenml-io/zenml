@@ -5,15 +5,15 @@ description: >-
 
 # Connect your code repository
 
-Throughout the lifecycle of a MLOps pipeline, it can get quite tiresome to always wait for a docker build everytime after running a pipeline (even if the local Docker cache is used). However, there is a way to just have one pipeline build and keep reusing it until a change to the pipeline environment is made: by connecting a code repository.
+Throughout the lifecycle of a MLOps pipeline, it can get quite tiresome to always wait for a docker build every time after running a pipeline (even if the local Docker cache is used). However, there is a way to just have one pipeline build and keep reusing it until a change to the pipeline environment is made: by connecting a code repository.
 
-With ZenML, connecting to a Git repository optimizes Docker build processes. It also has the added bonus of being a better way of managing repository changes and enabling better code collaboration. Here is how are flow changes when running a pipeline:
+With ZenML, connecting to a Git repository optimizes the Docker build processes. It also has the added bonus of being a better way of managing repository changes and enabling better code collaboration. Here is how the flow changes when running a pipeline:
 
 <figure><img src="../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
 
 1. You trigger a pipeline run on your local machine. ZenML parses the `@pipeline` function to determine the necessary steps.
 2. The local client requests stack information from the ZenML server, which responds with the cloud stack configuration.
-3. The local client detects that we're using a connected a code repository and requests the information from the git repo.
+3. The local client detects that we're using a code repository and requests the information from the git repo.
 4. Instead of building a new Docker image, the client checks if an existing image can be reused based on the current Git commit hash and other environment metadata.
 5. The client initiates a run in the orchestrator, which sets up the execution environment in the cloud, such as a VM.
 6. The orchestrator downloads the code directly from the Git repository and uses the existing Docker image to run the pipeline steps.

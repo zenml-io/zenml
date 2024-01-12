@@ -5,7 +5,7 @@ description: Add more resources to your pipeline configuration.
 # Configure your pipeline
 
 Now that we have our pipeline up and running in the cloud, you might be wondering how ZenML figured out what sort of dependencies to install
-in the docker image that we just ran on the VM. The answer lies in the [runner script we executed (i.e. run.py)](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py#L215), in particular these lines:
+in the docker image that we just ran on the VM. The answer lies in the [runner script we executed (i.e. run.py)](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py#L215), in particular, these lines:
 
 ```python
 pipeline_args["config_path"] = os.path.join(
@@ -26,7 +26,7 @@ The `with_options` command that points to a YAML config is only one way to confi
 @pipeline(settings=...)
 ```
 
-However, it is best to not mix configuration from code to ensure seperation of concerns in our codebase.
+However, it is best to not mix configuration from code to ensure separation of concerns in our codebase.
 {% endhint %}
 
 ## Breaking down our configuration YAML
@@ -44,7 +44,7 @@ settings:
       - pyarrow
 ```
 
-The first section is the so called `settings` of the pipeline. This section has a `docker` key, which controls the [containerization process](cloud-orchestration.md#orchestrating-pipelines-on-the-cloud). Here, we are simply telling ZenML that we need `pyarrow` as a pip requirement, and we want to enable to `sklearn` integration of ZenML, which will in turn install the `scikit-learn` library. This docker section can be populated with many different options, and correspond to the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) class in the Python SDK.
+The first section is the so-called `settings` of the pipeline. This section has a `docker` key, which controls the [containerization process](cloud-orchestration.md#orchestrating-pipelines-on-the-cloud). Here, we are simply telling ZenML that we need `pyarrow` as a pip requirement, and we want to enable the `sklearn` integration of ZenML, which will in turn install the `scikit-learn` library. This docker section can be populated with many different options, and correspond to the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) class in the Python SDK.
 
 ### Associating a ZenML Model
 
@@ -131,7 +131,7 @@ python run.py --training-pipeline
 
 Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
 
-Bare in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md), including the ability to [attach a GPU](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings)
+Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md), including the ability to [attach a GPU](../advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
