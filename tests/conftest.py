@@ -20,7 +20,7 @@ from typing import Generator, Tuple
 from uuid import uuid4
 
 import pytest
-from py._builtin import execfile
+from pytest import File
 from pytest_mock import MockerFixture
 
 from tests.harness.environment import TestEnvironment
@@ -130,17 +130,13 @@ def auto_environment(
     # If no environment is specified, create an ad-hoc environment
     # consisting of the supplied deployment (or the default one) and
     # the supplied test requirements (if present).
-    deployment_name = request.config.getoption(
-        "deployment", DEFAULT_ENVIRONMENT_NAME
-    )
+    deployment_name = request.config.getoption("deployment", DEFAULT_ENVIRONMENT_NAME)
     requirements_names = request.config.getoption("requirements")
 
     with environment_session(
         environment_name=environment_name,
         deployment_name=deployment_name,
-        requirements_names=requirements_names.split(",")
-        if requirements_names
-        else [],
+        requirements_names=requirements_names.split(",") if requirements_names else [],
         no_provision=no_provision,
         no_teardown=no_teardown,
         no_deprovision=no_cleanup,
@@ -325,9 +321,7 @@ def virtualenv(
                 "tests"
             )
 
-        execfile(
-            str(activate_this_file), dict(__file__=str(activate_this_file))
-        )
+        File(str(activate_this_file), dict(__file__=str(activate_this_file)))
 
         # Set new system executable
         sys.executable = tmp_path / env_bin_dir / "python"
@@ -346,7 +340,7 @@ def virtualenv(
                 "your virtual environment to run integration "
                 "tests"
             )
-        execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
+        File(str(activate_this_f), dict(__file__=str(activate_this_f)))
 
     else:
         yield ""
