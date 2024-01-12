@@ -478,10 +478,18 @@ def test_delete_user_with_resources_fails():
         zen_store.delete_user(user.id)
 
     with UserContext(delete=False, login=login) as user:
-        with SecretContext(user_id=user.id, delete=False):
+        secret_context = SecretContext(user_id=user.id, delete=False)
+        with secret_context:
+            # We only use the context as a shortcut to create the resource
             pass
 
-    # Secrets are deleted when the user is deleted
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
+
+    secret_context.cleanup()
+
+    # Can delete because owned resources have been removed
     with does_not_raise():
         zen_store.delete_user(user.id)
 
@@ -815,10 +823,20 @@ def test_delete_service_account_with_resources_fails():
         zen_store.delete_service_account(service_account.id)
 
     with ServiceAccountContext(delete=False, login=login) as service_account:
-        with SecretContext(user_id=service_account.id, delete=False):
+        secret_context = SecretContext(
+            user_id=service_account.id, delete=False
+        )
+        with secret_context:
+            # We only use the context as a shortcut to create the resource
             pass
 
-    # Secrets are deleted when the service_account is deleted
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
+
+    secret_context.cleanup()
+
+    # Can delete because owned resources have been removed
     with does_not_raise():
         zen_store.delete_service_account(service_account.id)
 
