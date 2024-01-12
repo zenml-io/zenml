@@ -69,6 +69,8 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-dind-runners
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
       - name: Spelling checker
         uses: crate-ci/typos@v1.17.0
         with:
@@ -148,13 +150,10 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
   custom-ubuntu-runners-integration-test:
-    needs: [custom-ubuntu-unit-test]
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
-        # Disabled temporarily while CI is overhauled
-        python-version: ['3.8', '3.9', '3.10']
-        # python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql

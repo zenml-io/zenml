@@ -79,7 +79,6 @@ jobs:
       os: ubuntu-latest
     secrets: inherit
   windows-integration-test:
-    needs: [windows-setup-and-test-python]
     strategy:
       matrix:
         os: [windows-latest]
@@ -93,7 +92,6 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
   macos-integration-test:
-    needs: [macos-setup-and-test-python]
     strategy:
       matrix:
         os: [macos-latest]
