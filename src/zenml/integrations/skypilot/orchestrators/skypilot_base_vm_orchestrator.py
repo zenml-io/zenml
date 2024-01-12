@@ -20,9 +20,11 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 
 import sky
 
+from zenml.entrypoints import PipelineEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
+    SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
 )
 from zenml.integrations.skypilot.orchestrators.skypilot_orchestrator_entrypoint_configuration import (
@@ -110,6 +112,15 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             )
 
     @property
+    def config(self) -> SkypilotBaseOrchestratorConfig:
+        """Returns the `SkypilotBaseOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(SkypilotBaseOrchestratorConfig, self._config)
+
+    @property
     @abstractmethod
     def cloud(self) -> sky.clouds.Cloud:
         """The type of sky cloud to use.
@@ -189,14 +200,21 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 deployment=deployment, step_name=pipeline_step_name
             )
 
-        # Build entrypoint command and args for the orchestrator pod.
-        # This will internally also build the command/args for all step pods.
-        command = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_command()
+        if self.config.configure_step_resources:
+            # Run each step in a separate VM if configured.
+            # Build entrypoint command and args for the orchestrator VM.
+            # This will internally also build the command/args for all step pods.
+            command = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_command()
+            args = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
+                run_name=orchestrator_run_name,
+                deployment_id=deployment.id,
+            )
+        else:
+            command = PipelineEntrypointConfiguration.get_entrypoint_command()
+            args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
+                deployment_id=deployment.id
+            )
         entrypoint_str = " ".join(command)
-        args = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
-            run_name=orchestrator_run_name,
-            deployment_id=deployment.id,
-        )
         arguments_str = " ".join(args)
 
         docker_environment_str = " ".join(
