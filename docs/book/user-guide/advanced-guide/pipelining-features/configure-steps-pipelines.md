@@ -319,7 +319,7 @@ steps:
 
 </details>
 
-The generated config contains most configuration available for this pipeline. Let's walk through it section by section: 
+The generated config contains most of the available configuration options for this pipeline. Let's walk through it section by section: 
 
 ### `enable_XXX` parameters
 
