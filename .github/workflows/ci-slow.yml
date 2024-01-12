@@ -60,11 +60,15 @@ jobs:
           config-file: .github/workflows/markdown_check_config.json
         continue-on-error: true
       - name: Security check
-        run: bash scripts/check-security.sh
+        run: |
+          pip install bandit
+          bash scripts/check-security.sh
       - name: Check for alembic branch divergence
         env:
           ZENML_DEBUG: 0
-        run: bash scripts/check-alembic-branches.sh
+        run: |
+          pip install alembic
+          bash scripts/check-alembic-branches.sh
   spellcheck:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-dind-runners
