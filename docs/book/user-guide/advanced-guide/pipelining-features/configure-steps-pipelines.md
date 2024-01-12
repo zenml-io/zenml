@@ -373,7 +373,7 @@ def my_pipeline(gamma: float)
 
 Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always take precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](#hierarchy-and-precedence).
 
-Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined. If a parameter is defined 
+Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined.
 
 {% hint style="info" %}
 Note that `parameters` are different from `artifacts`. Parameters are JSON-serializable values that are passed in the runtime configuration of a pipeline. Artifacts are inputs and outputs of a step, and need not always be JSON-serializable ([materializers](../data-management/handle-custom-data-types.md) handle their persistence in the [artifact store](../../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md)).
