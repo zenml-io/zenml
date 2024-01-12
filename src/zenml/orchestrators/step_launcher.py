@@ -212,8 +212,8 @@ class StepLauncher:
                     execution_needed, step_run = self._prepare(
                         step_run=step_run
                     )
-                except:  # noqa: E722
-                    logger.error(
+                except:
+                    logger.exception(
                         f"Failed preparing run step `{self._step_name}`."
                     )
                     step_run.status = ExecutionStatus.FAILED
