@@ -7,7 +7,8 @@ on:
     types: [created]
 env:
   TEAM_MEMBERS: '["@htahir1", "@hamza-zenml", "@bcdurak", "@baris-zenml", "@michael-zenml",
-    "@schustmi", "@strickvl"]'
+    "@schustmi", "@strickvl", "@alex-zenml", "@alexej-zenml", "@AlexejPenner", "@stefannica",
+    "@wjayesh", "@safoinme", "@Cahllagerfeld", "@avishniakov", "atzin-escandia"]'
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
