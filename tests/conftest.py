@@ -130,13 +130,17 @@ def auto_environment(
     # If no environment is specified, create an ad-hoc environment
     # consisting of the supplied deployment (or the default one) and
     # the supplied test requirements (if present).
-    deployment_name = request.config.getoption("deployment", DEFAULT_ENVIRONMENT_NAME)
+    deployment_name = request.config.getoption(
+        "deployment", DEFAULT_ENVIRONMENT_NAME
+    )
     requirements_names = request.config.getoption("requirements")
 
     with environment_session(
         environment_name=environment_name,
         deployment_name=deployment_name,
-        requirements_names=requirements_names.split(",") if requirements_names else [],
+        requirements_names=requirements_names.split(",")
+        if requirements_names
+        else [],
         no_provision=no_provision,
         no_teardown=no_teardown,
         no_deprovision=no_cleanup,
