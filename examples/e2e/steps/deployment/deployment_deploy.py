@@ -60,14 +60,12 @@ def deployment_deploy() -> (
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     if Client().active_stack.orchestrator.flavor == "local":
-        model_version = get_step_context().model_version
+        model = get_step_context().model
 
         # deploy predictor service
         deployment_service = mlflow_model_registry_deployer_step.entrypoint(
-            registry_model_name=model_version.name,
-            registry_model_version=model_version.metadata[
-                "model_registry_version"
-            ],
+            registry_model_name=model.name,
+            registry_model_version=model.metadata["model_registry_version"],
             replace_existing=True,
         )
     else:

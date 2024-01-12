@@ -103,8 +103,8 @@ def model_trainer(
     if model_registry:
         versions = model_registry.list_model_versions(name=name)
         if versions:
-            model_version = get_step_context().model_version
-            model_version.log_metadata(
+            model_ = get_step_context().model
+            model_.log_metadata(
                 {"model_registry_version": versions[-1].version}
             )
     ### YOUR CODE ENDS HERE ###
