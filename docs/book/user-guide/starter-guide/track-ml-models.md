@@ -42,7 +42,7 @@ Once you configure a pipeline this way, **all** artifacts generated during pipel
 
 ```python
 from zenml import pipeline
-from zenml.model import ModelVersion
+from zenml import ModelVersion
 
 model_version = ModelVersion(
     # The name uniquely identifies this model
