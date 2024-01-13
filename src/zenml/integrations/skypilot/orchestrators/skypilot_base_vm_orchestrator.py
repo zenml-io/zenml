@@ -200,20 +200,39 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 deployment=deployment, step_name=pipeline_step_name
             )
 
-        if self.config.configure_step_resources:
+        if self.config.disable_step_based_settings:
+            # Run the entire pipeline in one VM
+            command = PipelineEntrypointConfiguration.get_entrypoint_command()
+            args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
+                deployment_id=deployment.id
+            )
+        else:
+            for step_name, step in deployment.step_configurations.items():
+                step_settings = cast(
+                    SkypilotBaseOrchestratorSettings,
+                    self.get_settings(step),
+                )
+                if step_settings != settings:
+                    logger.info(
+                        "At least one step has different settings than the "
+                        "pipeline. The step with different settings will be "
+                        "run in a separate VM.\n"
+                        "You can configure the orchestrator to disable this "
+                        "behavior by updating the `disable_step_based_settings` "
+                        "in your orchestrator configuration."
+                        "By running the following command: "
+                        "`zenml orchestrator update --disable-step-based-settings=True`"
+                    )
+                    break
             # Run each step in a separate VM if configured.
             # Build entrypoint command and args for the orchestrator VM.
-            # This will internally also build the command/args for all step pods.
+            # This will internally also build the command/args for all step VMs.
             command = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_command()
             args = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 run_name=orchestrator_run_name,
                 deployment_id=deployment.id,
             )
-        else:
-            command = PipelineEntrypointConfiguration.get_entrypoint_command()
-            args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
-                deployment_id=deployment.id
-            )
+
         entrypoint_str = " ".join(command)
         arguments_str = " ".join(args)
 
