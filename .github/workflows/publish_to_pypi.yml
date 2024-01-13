@@ -1,8 +1,7 @@
+---
 name: Publish Pypi package
-
 on:
   workflow_call:
-
 jobs:
   publish_to_pypi:
     name: Publish Python 🐍 package 📦 to PyPI
@@ -10,36 +9,29 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: 'utf-8'
-
+      PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v4.1.1
-
       - name: Get the version from the github tag ref
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-        
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.8'
-          
       - name: Install Poetry
         uses: snok/install-poetry@v1.3.4
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
-
       - name: Include latest dashboard
         run: bash scripts/install-dashboard.sh
-
       - name: publish
         env:
           PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: |
+        run: |-
           if [ "$(cat src/zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ];
           then ./scripts/publish.sh;
           else echo "Version mismatch between src/zenml/VERSION and branch tag" && exit 1;
           fi
-

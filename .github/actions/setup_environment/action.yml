@@ -1,81 +1,75 @@
-name: "Install ZenML"
-description: "Install ZenML, most integrations, loads/uploads cached venv and pip download cache if applicable"
+---
+name: Install ZenML
+description: Install ZenML, most integrations, loads/uploads cached venv and pip download
+  cache if applicable
 inputs:
   cache_version:
-    description: 'Value gets appended to the cache key and will therefore invalidate the cache if it changes'
+    description: Value gets appended to the cache key and will therefore invalidate
+      the cache if it changes
     required: true
   python-version:
-    description: 'Python version'
+    description: Python version
     type: string
     required: true
   os:
-    description: 'OS'
+    description: OS
     type: string
     required: true
   install_integrations:
-    description: 'Install ZenML integrations'
+    description: Install ZenML integrations
     type: string
     required: false
     default: 'yes'
   runners_cache_access_key_id:
-    description: 'Runner cache AWS access key ID'
+    description: Runner cache AWS access key ID
     required: true
   runners_cache_secret_access_key:
-    description: 'Runner cache AWS secret access key'
+    description: Runner cache AWS secret access key
     required: true
-
-
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Set up Python
       uses: actions/setup-python@v5.0.0
       with:
         python-version: ${{ inputs.python-version }}
-
     - name: Delete error-causing bash
       shell: bash
       if: ${{ inputs.os == 'windows-latest' }}
       run: rm.exe "C:/WINDOWS/system32/bash.EXE"
-
     - name: Set path to bash for example runner
       shell: bash
       if: ${{ inputs.os == 'windows-latest' }}
       run: |
         echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
-
     - name: Configure git (non-Windows)
       if: ${{ inputs.os != 'windows-latest' }}
       shell: bash
       run: |
         git config --global user.email "info@zenml.io"
         git config --global user.name "ZenML GmbH"
-
     - name: Configure git (Windows)
       if: ${{ inputs.os == 'windows-latest' }}
       shell: bash
       run: |
         "C:\Program Files\Git\bin\git.exe" config --global user.email "info@zenml.io"
         "C:\Program Files\Git\bin\git.exe" config --global user.name "ZenML GmbH"
-
     - name: Get current week
       shell: bash
       id: date
       run: echo "::set-output name=week::$(date +'calendar-week-%W')"
-
-
     - uses: syphar/restore-virtualenv@v1
-      if : ${{ inputs.os != 'ubuntu-dind-runners' }}
+      if: ${{ inputs.os != 'ubuntu-dind-runners' }}
       id: cache-virtualenv
       with:
-        requirement_files: 'pyproject.toml'
+        requirement_files: pyproject.toml
         # The virtualenv cache is invalidated when:
         # - manually triggered by means of a custom cache version token
         # - on a weekly basis
         # - any of the integration requirements change (a hash of the
         # __init__.py files is included in the cache key)
-        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-
+        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{
+          hashFiles('src/zenml/integrations/*/__init__.py') }}
     - uses: tespkg/actions-cache@v1
       if: ${{ inputs.os == 'ubuntu-dind-runners' }}
       id: custom-cache-pip
@@ -84,10 +78,12 @@ runs:
         AWS_SECRET_ACCESS_KEY: ${{ inputs.runners_cache_secret_access_key }}
       with:
         endpoint: minio-service.minio.svc.cluster.local  # optional
-        insecure: true # optional, use http instead of https. default false
-        bucket: "caching" # required
-        use-fallback: false # optional, use github actions cache fallback, default false
-        key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        insecure: true  # optional, use http instead of https. default false
+        bucket: caching  # required
+        use-fallback: false  # optional, use github actions cache fallback, default false
+        key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version
+          }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py')
+          }}
         path: |
           ~/.cache/pip
         restore-keys: |
@@ -97,38 +93,36 @@ runs:
     # - uses: syphar/restore-pip-download-cache@v1
     #   with:
     #     requirement_files: 'pyproject.toml'
-    #     # The pip download cache can be updated on a weekly basis as new packages
-    #     # don't appear that often
+    #  # The pip download cache can be updated on a weekly basis as new packages
+    #  # don't appear that often
     #     custom_cache_key_element: ${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}
-
     - name: Install Terraform (Windows)
       if: ${{ inputs.os == 'windows-latest' }}
       shell: bash
       run: choco install terraform -y
-
     - name: Install Terraform (Mac)
       if: ${{ inputs.os == 'macos-latest' }}
       shell: bash
       run: |
         brew tap hashicorp/tap
         brew install hashicorp/tap/terraform
-
     - name: Install ZenML and dependencies
-      if: steps.cache-virtualenv.outputs.cache-hit != 'true' && steps.custom-cache-pip.outputs.cache-hit != 'true'
+      if: steps.cache-virtualenv.outputs.cache-hit != 'true' && steps.custom-cache-pip.outputs.cache-hit
+        != 'true'
       shell: bash
       run: |
         scripts/install-zenml-dev.sh --integrations ${{ inputs.install_integrations }}
 
       # if using a cached virtualenv, just refresh the ZenML installation 
     - name: Refresh ZenML installation
-      if: steps.cache-virtualenv.outputs.cache-hit == 'true' || steps.custom-cache-pip.outputs.cache-hit == 'true'
+      if: steps.cache-virtualenv.outputs.cache-hit == 'true' || steps.custom-cache-pip.outputs.cache-hit
+        == 'true'
       shell: bash
       run: |
         scripts/install-zenml-dev.sh --integrations ${{ inputs.install_integrations }}
-
     - name: Check Python environment
       shell: bash
-      run: |
+      run: |-
         zenml integration list
         pip list
         pip check || true

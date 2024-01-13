@@ -1,3 +1,4 @@
+---
 # Environments couple together a deployment with an optional set of
 # requirements to be configured on the deployment. The deployment entry
 # can be a reference to a global deployment entry by name or an inline
@@ -34,7 +35,6 @@
 #   inherited from environment requirements.
 #
 environments:
-
   - name: default
     description: >-
       Default deployment with local orchestrator and all local
@@ -47,7 +47,6 @@ environments:
       - mlflow-local-deployer
     capabilities:
       synchronized: true
-
   - name: default-docker-orchestrator
     description: >-
       Default deployment with docker orchestrator and all local
@@ -58,9 +57,7 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-    mandatory_requirements:
-      - docker-local
-
+    mandatory_requirements: [docker-local]
   - name: default-airflow-orchestrator
     description: >-
       Default server deployment with airflow local orchestrator and all local
@@ -122,9 +119,7 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-    mandatory_requirements:
-      - airflow-local
-
+    mandatory_requirements: [airflow-local]
   - name: docker-server-mysql
     description: >-
       Server docker-compose deployment with local orchestrator and all local
@@ -137,7 +132,6 @@ environments:
       - mlflow-local-deployer
     capabilities:
       synchronized: true
-
   - name: docker-server-docker-orchestrator-mysql
     description: >-
       Server docker-compose deployment with docker orchestrator and all local
@@ -148,9 +142,7 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-    mandatory_requirements:
-      - docker-local
-
+    mandatory_requirements: [docker-local]
   - name: docker-server-airflow-orchestrator-mysql
     description: >-
       Server docker-compose deployment with local airflow orchestrator and all
@@ -161,9 +153,7 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-    mandatory_requirements:
-      - airflow-local
-
+    mandatory_requirements: [airflow-local]
   - name: docker-server-mariadb
     description: >-
       Server docker-compose deployment with local orchestrator and all local
@@ -176,7 +166,6 @@ environments:
       - mlflow-local-deployer
     capabilities:
       synchronized: true
-
   - name: docker-server-docker-orchestrator-mariadb
     description: >-
       Server docker-compose deployment with docker orchestrator and all local
@@ -187,9 +176,7 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-    mandatory_requirements:
-      - docker-local
-
+    mandatory_requirements: [docker-local]
   - name: docker-server-airflow-orchestrator-mariadb
     description: >-
       Server docker-compose deployment with local airflow orchestrator and all
@@ -200,5 +187,4 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-    mandatory_requirements:
-      - airflow-local
+    mandatory_requirements: [airflow-local]

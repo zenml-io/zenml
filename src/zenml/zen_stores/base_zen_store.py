@@ -16,10 +16,7 @@ import os
 from abc import ABC
 from typing import (
     Any,
-    Callable,
     ClassVar,
-    Dict,
-    List,
     Optional,
     Tuple,
     Type,
@@ -56,12 +53,6 @@ from zenml.models import (
     UserResponse,
     WorkspaceResponse,
 )
-from zenml.utils.proxy_utils import make_proxy_class
-from zenml.zen_stores.enums import StoreEvent
-from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
-from zenml.zen_stores.secrets_stores.secrets_store_interface import (
-    SecretsStoreInterface,
-)
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -70,11 +61,9 @@ from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 logger = get_logger(__name__)
 
 
-@make_proxy_class(SecretsStoreInterface, "_secrets_store")
 class BaseZenStore(
     BaseModel,
     ZenStoreInterface,
-    SecretsStoreInterface,
     ABC,
 ):
     """Base class for accessing and persisting ZenML core objects.
@@ -84,8 +73,6 @@ class BaseZenStore(
     """
 
     config: StoreConfiguration
-    _secrets_store: Optional[BaseSecretsStore] = None
-    _event_handlers: Dict[StoreEvent, List[Callable[..., Any]]] = {}
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -243,23 +230,6 @@ class BaseZenStore(
             **kwargs,
         )
 
-        secrets_store_config = store.config.secrets_store
-
-        # Initialize the secrets store
-        if (
-            secrets_store_config
-            and secrets_store_config.type != SecretsStoreType.NONE
-        ):
-            secrets_store_class = BaseSecretsStore.get_store_class(
-                secrets_store_config
-            )
-            store._secrets_store = secrets_store_class(
-                zen_store=store,
-                config=secrets_store_config,
-            )
-            # Update the config with the actual secrets store config
-            # to reflect the default values in the saved configuration
-            store.config.secrets_store = store._secrets_store.config
         return store
 
     @staticmethod
@@ -306,15 +276,6 @@ class BaseZenStore(
             The type of the store.
         """
         return self.TYPE
-
-    @property
-    def secrets_store(self) -> Optional["BaseSecretsStore"]:
-        """The secrets store associated with this store.
-
-        Returns:
-            The secrets store associated with this store.
-        """
-        return self._secrets_store
 
     def validate_active_config(
         self,
@@ -408,18 +369,21 @@ class BaseZenStore(
         Returns:
             Information about the store.
         """
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+
         server_config = ServerConfiguration.get_server_config()
         deployment_type = server_config.deployment_type
         auth_scheme = server_config.auth_scheme
+        secrets_store_type = SecretsStoreType.NONE
+        if isinstance(self, SqlZenStore):
+            secrets_store_type = self.secrets_store.type
         return ServerModel(
             id=GlobalConfiguration().user_id,
             version=zenml.__version__,
             deployment_type=deployment_type,
             database_type=ServerDatabaseType.OTHER,
             debug=IS_DEBUG_ENV,
-            secrets_store_type=self.secrets_store.type
-            if self.secrets_store
-            else SecretsStoreType.NONE,
+            secrets_store_type=secrets_store_type,
             auth_scheme=auth_scheme,
         )
 
@@ -486,42 +450,6 @@ class BaseZenStore(
                 f"No default stack found in workspace {workspace_id}."
             )
         return default_stacks.items[0]
-
-    # --------------
-    # Event Handlers
-    # --------------
-
-    def register_event_handler(
-        self,
-        event: StoreEvent,
-        handler: Callable[..., Any],
-    ) -> None:
-        """Register an external event handler.
-
-        The handler will be called when the store event is triggered.
-
-        Args:
-            event: The event to register the handler for.
-            handler: The handler function to register.
-        """
-        self._event_handlers.setdefault(event, []).append(handler)
-
-    def _trigger_event(self, event: StoreEvent, **kwargs: Any) -> None:
-        """Trigger an event and call all registered handlers.
-
-        Args:
-            event: The event to trigger.
-            **kwargs: The event arguments.
-        """
-        for handler in self._event_handlers.get(event, []):
-            try:
-                handler(event, **kwargs)
-            except Exception as e:
-                logger.error(
-                    f"Silently ignoring error caught while triggering event "
-                    f"store handler for event {event.value}: {e}",
-                    exc_info=True,
-                )
 
     def get_external_user(self, user_id: UUID) -> UserResponse:
         """Get a user by external ID.

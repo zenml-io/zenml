@@ -314,6 +314,29 @@ This method requires you to configure a DNS service like AWS Route 53 or Google 
 
 Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the AWS Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the AWS credentials needed to access the AWS Secrets Manager API.
 
+The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "ZenMLSecretsStore",
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:CreateSecret",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:PutSecretValue",
+                "secretsmanager:TagResource",
+                "secretsmanager:DeleteSecret"
+            ],
+            "Resource": "arn:aws:secretsmanager:<AWS-region>:<AWS-account-id>:secret:zenml/*"
+        }
+    ]
+}
+```
+
 The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API:
 
 
@@ -347,12 +370,48 @@ The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to aut
         aws_access_key_id: <your AWS access key ID>
         aws_secret_access_key: <your AWS secret access key>
 ```
+
+
 {% endtab %}
 
 {% tab title="GCP" %}
 #### Using the GCP Secrets Manager as a secrets store backend
 
 Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the GCP Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the GCP credentials needed to access the GCP Secrets Manager API.
+
+The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
+
+* `secretmanager.secrets.create` for the target GCP project (i.e. no condition on the name prefix)
+* `secretmanager.secrets.get`, `secretmanager.secrets.update`, `secretmanager.versions.access`, `secretmanager.versions.add` and `secretmanager.secrets.delete` for the target GCP project and for secrets that have a name starting with `zenml-`
+
+This can be achieved by creating two custom IAM roles and attaching them to the principal (e.g. user or service account) that will be used to access the GCP Secrets Manager API with a condition configured when attaching the second role to limit access to secrets with a name prefix of `zenml-`. The following `gcloud` CLI command examples can be used as a starting point:
+
+```bash
+gcloud iam roles create ZenMLServerSecretsStoreCreator \
+  --project <your GCP project ID> \
+  --title "ZenML Server Secrets Store Creator" \
+  --description "Allow the ZenML Server to create new secrets" \
+  --stage GA \
+  --permissions "secretmanager.secrets.create"
+
+gcloud iam roles create ZenMLServerSecretsStoreEditor \
+  --project <your GCP project ID> \
+  --title "ZenML Server Secrets Store Editor" \
+  --description "Allow the ZenML Server to manage its secrets" \
+  --stage GA \
+  --permissions "secretmanager.secrets.get,secretmanager.secrets.update,secretmanager.versions.access,secretmanager.versions.add,secretmanager.secrets.delete"
+
+gcloud projects add-iam-policy-binding <your GCP project ID> \
+  --member serviceAccount:<your GCP service account email> \
+  --role projects/<your GCP project ID>/roles/ZenMLServerSecretsStoreCreator \
+  --condition None
+
+# NOTE: use the GCP project NUMBER, not the project ID in the condition
+gcloud projects add-iam-policy-binding <your GCP project ID> \
+  --member serviceAccount:<your GCP service account email> \
+  --role projects/<your GCP project ID>/roles/ZenMLServerSecretsStoreEditor \
+  --condition 'title=limit_access_zenml,description="Limit access to secrets with prefix zenml-",expression=resource.name.startsWith("projects/<your GCP project NUMBER>/secrets/zenml-")'
+```
 
 The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API:
 
@@ -408,6 +467,8 @@ The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to aut
      iam.gke.io/gcp-service-account: <SERVICE_ACCOUNT_NAME>@<PROJECT_NAME>.iam.gserviceaccount.com
 
 ```
+
+
 {% endtab %}
 
 {% tab title="Azure" %}

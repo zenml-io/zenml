@@ -1,3 +1,4 @@
+---
 # Test configurations specify which requirements are needed for the test to run.
 # These requirements refer to both software packages and ZenML stack components.
 #
@@ -40,73 +41,56 @@
 #              flavor: seldon
 #  ```
 tests:
-
   - module: tests.integration.functional.test_zen_server_api
     requirements:
       - capabilities:
           server: true
-
   - module: tests.integration.examples.test_deepchecks
     requirements:
-      - integrations:
-          - sklearn
+      - integrations: [sklearn]
         stacks:
           - type: data_validator
             flavor: deepchecks
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_evidently
     requirements:
-      - integrations:
-          - sklearn
-        packages:
-          - pyarrow
+      - integrations: [sklearn]
+        packages: [pyarrow]
         stacks:
           - type: data_validator
             flavor: evidently
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_great_expectations
     requirements:
-      - integrations:
-          - sklearn
+      - integrations: [sklearn]
         stacks:
           - type: data_validator
             flavor: great_expectations
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_tensorflow
     requirements:
-      - integrations:
-          - tensorflow
-          - tensorboard
+      - integrations: [tensorflow, tensorboard]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_sklearn
     requirements:
-      - integrations:
-          - sklearn
+      - integrations: [sklearn]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_mlflow_tracking
     requirements:
-      - integrations:
-          - tensorflow
+      - integrations: [tensorflow]
         stacks:
           - type: experiment_tracker
             flavor: mlflow
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_mlflow_registry
     requirements:
-      - integrations:
-          - tensorflow
+      - integrations: [tensorflow]
         stacks:
           - type: experiment_tracker
             flavor: mlflow
@@ -116,78 +100,54 @@ tests:
             flavor: mlflow
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_neural_prophet
     requirements:
-      - integrations:
-          - neural_prophet
+      - integrations: [neural_prophet]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_pytorch
     requirements:
-      - integrations:
-          - pytorch
-        packages:
-          - torchvision
+      - integrations: [pytorch]
+        packages: [torchvision]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_whylogs
     requirements:
-      - integrations:
-          - sklearn
+      - integrations: [sklearn]
         stacks:
           - type: data_validator
             flavor: whylogs
-        system_os:
-           - linux
-           - macos
+        system_os: [linux, macos]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_xgboost
     requirements:
-      - integrations:
-          - xgboost
+      - integrations: [xgboost]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_huggingface
     requirements:
-      - integrations:
-          - huggingface
-          - tensorflow
+      - integrations: [huggingface, tensorflow]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_lightgbm
     requirements:
-      - integrations:
-          - lightgbm
+      - integrations: [lightgbm]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_scipy
     requirements:
-      - integrations:
-          - sklearn
+      - integrations: [sklearn]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_facets
     requirements:
-      - integrations:
-          - facets
-          - sklearn
+      - integrations: [facets, sklearn]
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_mlflow_deployment
     requirements:
-      - integrations:
-          - tensorflow
-          - mlflow
+      - integrations: [tensorflow, mlflow]
         stacks:
           - type: experiment_tracker
             flavor: mlflow
@@ -195,13 +155,9 @@ tests:
             flavor: mlflow
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_slack
     requirements:
-      - integrations:
-          - sklearn
-          - mlflow
-          - slack
+      - integrations: [sklearn, mlflow, slack]
         stacks:
           - type: experiment_tracker
             flavor: mlflow
@@ -211,12 +167,9 @@ tests:
             flavor: slack
       - capabilities:
           synchronized: true
-
   - module: tests.integration.examples.test_seldon
     requirements:
-      - integrations:
-          - sklearn
-          - tensorflow
+      - integrations: [sklearn, tensorflow]
         stacks:
           - type: model_deployer
             flavor: seldon
