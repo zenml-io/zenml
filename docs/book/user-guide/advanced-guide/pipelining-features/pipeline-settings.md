@@ -64,7 +64,7 @@ Or in a YAML like this:
 ```yaml
 settings:
   docker:
-    requrements:
+    requirements:
       - pandas
 ```
 

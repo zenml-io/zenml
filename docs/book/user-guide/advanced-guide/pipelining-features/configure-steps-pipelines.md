@@ -121,7 +121,7 @@ if __name__=="__main__":
     addition_pipeline()
 ```
 
-The method `write_run_configuration_template` genreates a config template (at path `run.yaml` in this case) that includes all configuration options for this specific pipeline and your active stack. Let's run the pipeline:
+The method `write_run_configuration_template` generates a config template (at path `run.yaml` in this case) that includes all configuration options for this specific pipeline and your active stack. Let's run the pipeline:
 
 ```python
 python run.py
