@@ -38,7 +38,7 @@ decide if the changes should be merged.
 <img src="../../../.gitbook/assets/ci_cd_staging.png" alt="Pipeline with staging stack"/>
 
 Once the PR has been reviewed and passes all checks, the branch is merged into 
-main. This automatically triggers another GitHub Action that now runs a 
+`main`. This automatically triggers another GitHub Action that now runs a 
 pipeline in the production environment, which trains the same model on 
 production data, runs some checks to compare its performance with the model
 currently served in production and then, if all checks pass, automatically
