@@ -4150,23 +4150,52 @@ class SqlZenStore(BaseZenStore):
             secret_id: The ID of the secret for which to delete the values.
             delete_backup: Whether to delete the backup values of the secret
                 from the backup secrets store, if configured.
-        """
-        try:
-            self.secrets_store.delete_secret_values(secret_id=secret_id)
-        except Exception:
-            logger.exception(
-                f"Failed to delete secret values for secret with ID "
-                f"{secret_id} from the primary secrets store. "
-            )
 
-        if delete_backup and self.backup_secrets_store:
+        # noqa: DAR401
+        """
+
+        def do_delete_backup() -> bool:
+            """Deletes the backup values of a secret in the configured backup secrets store.
+
+            Returns:
+                True if the backup deletion succeeded, False otherwise.
+            """
+            if not delete_backup or not self.backup_secrets_store:
+                return False
+
+            logger.info(
+                f"Deleting secret {secret_id} from the backup secrets store."
+            )
             try:
                 self._delete_backup_secret_values(secret_id=secret_id)
+            except KeyError:
+                # If the secret doesn't exist in the backup secrets store, we
+                # consider this a success.
+                return True
             except Exception:
                 logger.exception(
                     f"Failed to delete secret values for secret with ID "
                     f"{secret_id} from the backup secrets store. "
                 )
+                return False
+
+            return True
+
+        try:
+            self.secrets_store.delete_secret_values(secret_id=secret_id)
+        except KeyError:
+            # If the secret doesn't exist in the primary secrets store, we
+            # consider this a success.
+            do_delete_backup()
+        except Exception:
+            logger.exception(
+                f"Failed to delete secret values for secret with ID "
+                f"{secret_id} from the primary secrets store. "
+            )
+            if not do_delete_backup():
+                raise
+        else:
+            do_delete_backup()
 
     def _delete_backup_secret_values(
         self,
