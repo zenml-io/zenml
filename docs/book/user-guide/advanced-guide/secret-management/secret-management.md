@@ -48,9 +48,7 @@ Using the same location for both the primary and backup Secrets Store will not p
 {% endhint %}
 
 
-When a backup secrets store is in use, the ZenML Server will always attempt to read secret values from the primary Secrets Store first. If the primary Secrets Store is unreachable, if the secret values are not found there or any otherwise unexpected error occurs, the ZenML Server will attempt to fetch the secret values from the backup Secrets Store. Only if the backup Secrets Store is also not available, the ZenML Server will return an error.
-
-Newly created secrets and updates to existing secrets are always written to both the primary and backup Secrets Stores. The only operation that will results in an error if the primary Secrets Store is not available is updating an existing secret. This limitation is in place to maximize consistency between the primary and backup Secrets Stores even after periods of downtime of the primary Secrets Store.
+When a backup secrets store is in use, the ZenML Server will always attempt to read and write secret values from/to the primary Secrets Store first while ensuring to keep the backup Secrets Store in sync. If the primary Secrets Store is unreachable, if the secret values are not found there or any otherwise unexpected error occurs, the ZenML Server falls back to reading and writing from/to the backup Secrets Store. Only if the backup Secrets Store is also unavailable, the ZenML Server will return an error.
 
 In addition to the hidden backup operations, users can also explicitly trigger a backup operation by using the `zenml secret backup` CLI command. This command will attempt to read all secrets from the primary Secrets Store and write them to the backup Secrets Store. Similarly, the `zenml secret restore` CLI command can be used to restore secrets from the backup Secrets Store to the primary Secrets Store. These CLI commands are useful for migrating secrets from one Secrets Store to another.
 
@@ -67,7 +65,7 @@ The secrets migration process makes use of the fact that [a secondary Secrets St
 
 1. Re-configure the ZenML server to use _Secrets Store B_ as the secondary Secrets Store.
 2. Re-deploy the ZenML server.
-3. Use the `zenml secret backup` CLI command to backup all secrets from _Secrets Store A_ to _Secrets Store B_. You don't have to worry about secrets that are created or updated by users during or after this process, as they will be automatically backed up to _Secrets Store B_.
+3. Use the `zenml secret backup` CLI command to backup all secrets from _Secrets Store A_ to _Secrets Store B_. You don't have to worry about secrets that are created or updated by users during or after this process, as they will be automatically backed up to _Secrets Store B_. If you also wish to delete secrets from _Secrets Store A_ after they are successfully backed up to _Secrets Store B_, you should run `zenml secret backup --delete-secrets` instead.
 4. Re-configure the ZenML server to use _Secrets Store B_ as the primary Secrets Store and remove _Secrets Store A_ as the secondary Secrets Store.
 5. Re-deploy the ZenML server.
 

@@ -3896,22 +3896,44 @@ class SqlZenStore(BaseZenStore):
             values: The values to set.
             backup: Whether to back up the values in the backup secrets store,
                 if configured.
+
+        # noqa: DAR401
         """
+
+        def do_backup() -> bool:
+            """Backs up the values of a secret in the configured backup secrets store.
+
+            Returns:
+                True if the backup succeeded, False otherwise.
+            """
+            if not backup or not self.backup_secrets_store:
+                return False
+            logger.info(
+                f"Storing secret {secret_id} in the backup secrets store. "
+            )
+            try:
+                self._backup_secret_values(secret_id=secret_id, values=values)
+            except Exception:
+                logger.exception(
+                    f"Failed to store secret values for secret with ID "
+                    f"{secret_id} in the backup secrets store. "
+                )
+                return False
+            return True
+
         try:
             self.secrets_store.store_secret_values(
                 secret_id=secret_id, secret_values=values
             )
-        finally:
-            if backup and self.backup_secrets_store:
-                try:
-                    self._backup_secret_values(
-                        secret_id=secret_id, values=values
-                    )
-                except Exception:
-                    logger.exception(
-                        f"Failed to store secret values for secret with ID "
-                        f"{secret_id} in the backup secrets store. "
-                    )
+        except Exception:
+            logger.exception(
+                f"Failed to store secret values for secret with ID "
+                f"{secret_id} in the primary secrets store. "
+            )
+            if not do_backup():
+                raise
+        else:
+            do_backup()
 
     def _backup_secret_values(
         self, secret_id: UUID, values: Dict[str, str]
@@ -4039,6 +4061,8 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated values.
+
+        # noqa: DAR401
         """
         try:
             existing_values = self._get_secret_values(
@@ -4076,25 +4100,42 @@ class SqlZenStore(BaseZenStore):
                 if v is None and k in existing_values:
                     del existing_values[k]
 
-        self.secrets_store.update_secret_values(
-            secret_id=secret_id, secret_values=existing_values
-        )
-        if backup and self.backup_secrets_store:
-            # NOTE: we don't back up the updated values if the primary secrets
-            # store update fails, because we don't want to end up with
-            # inconsistent values in the primary and backup secrets stores.
-            # The backup secrets store can still be used as a fallback to
-            # retrieve and store new values if the primary secrets store fails
-            # to do so. It's just the update operation that won't work.
+        def do_backup() -> bool:
+            """Backs up the values of a secret in the configured backup secrets store.
+
+            Returns:
+                True if the backup succeeded, False otherwise.
+            """
+            if not backup or not self.backup_secrets_store:
+                return False
+            logger.info(
+                f"Storing secret {secret_id} in the backup secrets store. "
+            )
             try:
                 self._backup_secret_values(
                     secret_id=secret_id, values=existing_values
                 )
             except Exception:
                 logger.exception(
-                    f"Failed to update secret values for secret with ID "
+                    f"Failed to store secret values for secret with ID "
                     f"{secret_id} in the backup secrets store. "
                 )
+                return False
+            return True
+
+        try:
+            self.secrets_store.update_secret_values(
+                secret_id=secret_id, secret_values=existing_values
+            )
+        except Exception:
+            logger.exception(
+                f"Failed to update secret values for secret with ID "
+                f"{secret_id} in the primary secrets store. "
+            )
+            if not do_backup():
+                raise
+        else:
+            do_backup()
 
         return existing_values
 
@@ -4112,15 +4153,20 @@ class SqlZenStore(BaseZenStore):
         """
         try:
             self.secrets_store.delete_secret_values(secret_id=secret_id)
-        finally:
-            if delete_backup and self.backup_secrets_store:
-                try:
-                    self._delete_backup_secret_values(secret_id=secret_id)
-                except Exception:
-                    logger.exception(
-                        f"Failed to delete secret values for secret with ID "
-                        f"{secret_id} from the backup secrets store. "
-                    )
+        except Exception:
+            logger.exception(
+                f"Failed to delete secret values for secret with ID "
+                f"{secret_id} from the primary secrets store. "
+            )
+
+        if delete_backup and self.backup_secrets_store:
+            try:
+                self._delete_backup_secret_values(secret_id=secret_id)
+            except Exception:
+                logger.exception(
+                    f"Failed to delete secret values for secret with ID "
+                    f"{secret_id} from the backup secrets store. "
+                )
 
     def _delete_backup_secret_values(
         self,
