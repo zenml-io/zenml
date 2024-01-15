@@ -138,6 +138,7 @@ pytest-randomly = { version = "^3.10.1", optional = true }
 pytest-mock = { version = "^3.6.1", optional = true }
 pytest-clarity = { version = "^1.0.1", optional = true }
 pytest-shard = { version = "^0.1.2", optional = true }
+pytest-split = { version = "^0.8.1", optional = true }
 
 # mkdocs including plugins
 mkdocs = { version = "^1.2.3", optional = true }
@@ -291,6 +292,8 @@ exclude = [
     "__pypackages__",
     "_build",
     "buck-out",
+    "integration_test_durations",
+    "unit_test_durations",
     "build",
     "dist",
     "node_modules",
