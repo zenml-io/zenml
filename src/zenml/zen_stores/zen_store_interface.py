@@ -2166,6 +2166,7 @@ class ZenStoreInterface(ABC):
         self,
         model_filter_model: ModelFilter,
         hydrate: bool = False,
+        tags: Optional[List[str]] = [],
     ) -> Page[ModelResponse]:
         """Get all models by filter.
 
@@ -2174,6 +2175,7 @@ class ZenStoreInterface(ABC):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tags: List of tags to filter on.
 
         Returns:
             A page of all models.

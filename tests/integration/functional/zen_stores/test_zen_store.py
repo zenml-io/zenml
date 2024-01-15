@@ -117,7 +117,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
-from zenml.models.v2.core.model import ModelUpdate
+from zenml.models.v2.core.model import ModelFilter, ModelUpdate
 from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
@@ -3645,6 +3645,28 @@ class TestModel:
             )
             model = zs.get_model(model_.id)
             assert model.name == "and yet another one"
+
+    def test_list_by_tag(self, clean_client: "Client"):
+        """Test that listing works with tag filters."""
+        with ModelVersionContext() as model_:
+            zs = clean_client.zen_store
+            model = zs.get_model(model_.id)
+
+            ms = zs.list_models(model_filter_model=ModelFilter(), tags=[])
+            assert len(ms) == 1
+
+            ms = zs.list_models(model_filter_model=ModelFilter(), tags=["foo"])
+            assert len(ms) == 1
+
+            ms = zs.list_models(
+                model_filter_model=ModelFilter(), tags=["foo", "bar"]
+            )
+            assert len(ms) == 1
+
+            ms = zs.list_models(
+                model_filter_model=ModelFilter(), tags=["foobar"]
+            )
+            assert len(ms) == 0
 
 
 class TestModelVersion:

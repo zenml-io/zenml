@@ -23,6 +23,7 @@ from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
+    ModelFilter,
     ModelResponse,
     ModelVersionArtifactFilter,
     ModelVersionFilter,
@@ -83,21 +84,26 @@ def model() -> None:
     """Interact with models and model versions in the Model Control Plane."""
 
 
+@cli_utils.list_options(ModelFilter)
 @click.option(
-    "--name",
-    "-n",
-    help="The name of the model.",
+    "--tag",
+    "-t",
+    help="Tags to search for.",
     type=str,
     required=False,
+    multiple=True,
 )
 @model.command("list", help="List models with filter.")
-def list_models(name: str) -> None:
+def list_models(tag: Optional[List[str]], **kwargs: Any) -> None:
     """List models with filter in the Model Control Plane.
 
     Args:
-        name: The name filter for models.
+        tag: Tags to search for.
+        **kwargs: Keyword arguments to filter models.
     """
-    models = Client().list_models(name=name)
+    models = Client().zen_store.list_models(
+        model_filter_model=ModelFilter(**kwargs), tags=tag or []
+    )
 
     if not models:
         cli_utils.declare("No models found.")

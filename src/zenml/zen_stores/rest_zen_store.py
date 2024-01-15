@@ -2750,6 +2750,7 @@ class RestZenStore(BaseZenStore):
         self,
         model_filter_model: ModelFilter,
         hydrate: bool = False,
+        tags: Optional[List[str]] = [],
     ) -> Page[ModelResponse]:
         """Get all models by filter.
 
@@ -2758,6 +2759,7 @@ class RestZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tags: List of tags to filter on.
 
         Returns:
             A page of all models.
@@ -2766,7 +2768,7 @@ class RestZenStore(BaseZenStore):
             route=MODELS,
             response_model=ModelResponse,
             filter_model=model_filter_model,
-            params={"hydrate": hydrate},
+            params={"hydrate": hydrate, "tags": tags},
         )
 
     # ----------------------------- Model Versions -----------------------------
