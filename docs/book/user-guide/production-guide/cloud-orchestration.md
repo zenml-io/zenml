@@ -174,16 +174,15 @@ zenml stack register miminal_cloud_stack -o skypilot_orchestrator -a cloud_artif
 {% endtab %}
 {% endtabs %}
 
-Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipeline-on-the-new-local-stack), we run a training
-pipeline:
-
-Set the minimal cloud stack active:
+Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipeline-on-the-new-local-stack), 
+we can run a training pipeline. First, set the minimal cloud stack active:
 
 ```shell
 zenml stack set miminal_cloud_stack
 ```
 
-Run the training pipeline:
+and then, run the training pipeline:
+
 ```shell
 python run.py --training-pipeline
 ```
