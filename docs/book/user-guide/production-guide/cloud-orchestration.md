@@ -56,17 +56,17 @@ if you haven't already created a service connector in the last section yet:
 ```shell
 zenml service-connector register aws_connector --type aws --auth-method implicit
 ```
-Once the step connector is set up, we can register the 
-[Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
+Once the service connector is set up, we can register [a
+Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
 using the connection:
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_aws -c aws_connector
 ```
 
-The next step is to register an [AWS ECR container registry](../../stacks-and-components/component-guide/container-registries/aws.md). 
+The next step is to register [an AWS container registry](../../stacks-and-components/component-guide/container-registries/aws.md). 
 Similar to the orchestrator, we will use our connector as we are setting up the 
-container registry.
+container registry:
 
 ```shell
 zenml container-registry register cloud_container_registry -f aws --uri=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com -c aws_connector
@@ -80,7 +80,7 @@ zenml stack register cloud_stack -o skypilot_orchestrator -a cloud_artifact_stor
 
 Amazing, everything is set up. You can now go ahead and run your pipeline. 
 As mentioned above, this will build an image, push it to your registry and 
-the Skypilot orchestrator will use the image to run the pipeline on a VM.
+the Skypilot orchestrator will use the image to run the pipeline on a VM:
 
 ```shell
 python run.py --training-pipeline
@@ -108,17 +108,17 @@ if you haven't already created a service connector in the last section yet:
 ```shell
 zenml service-connector register gcp_connector --type gcp --auth-method implicit --auto-configure
 ```
-Once the step connector is set up, we can register the 
-[Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
+Once the service connector is set up, we can register [a 
+Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
 using the connection:
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_gcp -c gcp_connector
 ```
 
-The next step is to register an [GCP container registry](../../stacks-and-components/component-guide/container-registries/gcp.md). 
+The next step is to register [a GCP container registry](../../stacks-and-components/component-guide/container-registries/gcp.md). 
 Similar to the orchestrator, we will use our connector as we are setting up the 
-container registry.
+container registry:
 
 ```shell
 zenml container-registry register cloud-container-registry -f gcp --uri=gcr.io/<PROJECT_ID> -c gcp_connector
@@ -132,11 +132,12 @@ zenml stack register cloud_stack -o skypilot_orchestrator -a cloud_artifact_stor
 
 Amazing, everything is set up. You can now go ahead and run your pipeline. 
 As mentioned above, this will build an image, push it to your registry and 
-the Skypilot orchestrator will use the image to run the pipeline on a VM.
+the Skypilot orchestrator will use the image to run the pipeline on a VM:
 
 ```shell
 python run.py --training-pipeline
 ```
+
 For more information, read the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 {% tab title="Azure" %}
@@ -159,15 +160,15 @@ if you haven't already created a service connector in the last section yet:
 ```shell
 zenml service-connector register azure_connector --type azure --auth-method implicit --auto-configure
 ```
-Once the step connector is set up, we can register the 
-[Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
+Once the service connector is set up, we can register [a 
+Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
 using the connection:
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_azure -c azure_connector
 ```
 
-The next step is to register an [Azure container registry](../../stacks-and-components/component-guide/container-registries/azure.md). 
+The next step is to register [an Azure container registry](../../stacks-and-components/component-guide/container-registries/azure.md). 
 Similar to the orchestrator, we will use our connector as we are setting up the 
 container registry.
 
