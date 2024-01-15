@@ -10,21 +10,25 @@ Here is a visual overview of the different environments:
 
 <figure><img src="../../../.gitbook/assets/SystemArchitecture.png" alt=""><figcaption><p>Left box is the client environment, middle is the zenml server environment, and the right most contains the build environments</p></figcaption></figure>
 
-## Client Environment
+## Client Environment (or the Runner environment)
 
-The client environment is where the ZenML pipelines are _started_, i.e., where you call the pipeline function (typically in a `run.py` script). There are different types of client environments:
+The client environment (sometimes known as the runner environment) is where the ZenML pipelines are _compiled_, i.e., where you call the pipeline function (typically in a `run.py` script). There are different types of client environments:
 
 * A local development environment
 * A CI runner in production.
+* A [ZenML Cloud](../../../deploying-zenml/zenml-cloud/) runner.
 * A `runner` image orchestrated by the ZenML server to start pipelines.
 
 In all the environments, you should use your preferred package manager (e.g., `pip` or `poetry`) to manage dependencies. Ensure you install the ZenML package and any required [integrations](../../../stacks-and-components/component-guide/component-guide.md).
 
 The client environment typically follows these key steps when starting a pipeline:
 
-1. Generating an intermediate pipeline representation.
-2. Creating or triggering [pipeline and step build environments](environment-management.md#image-builder-environment) if running remotely.
+1. Compiling an intermediate pipeline representation via the `@pipeline` function.
+2. Creating or triggering [pipeline and step build environments](understanding-environments.md#image-builder-environment) if running remotely.
 3. Triggering a run in the [orchestrator](../../../stacks-and-components/component-guide/orchestrators/orchestrators.md).
+
+Please note that the `@pipeline` function in your code is **only ever called** in this environment. Therefore, any computational logic that is executed in the pipeline function needs to be relevant to
+this so-called *compile time*, rather than at *execution* time, which happens later.
 
 ## ZenML Server Environment
 
@@ -40,7 +44,7 @@ The execution environments do not need to be built each time a pipeline is run -
 
 ## Image Builder Environment
 
-By default, execution environments are created locally in the [client environment](environment-management.md#client-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](../../../stacks-and-components/component-guide/image-builders/image-builders.md), a special [stack component](../../production-guide/understand-stacks.md), allowing users to build and push docker images in a different specialized _image builder environment_.
+By default, execution environments are created locally in the [client environment](understanding-environments.md#client-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](../../../stacks-and-components/component-guide/image-builders/image-builders.md), a special [stack component](../../production-guide/understand-stacks.md), allowing users to build and push docker images in a different specialized _image builder environment_.
 
 Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](../../../stacks-and-components/component-guide/image-builders/local.md) to retain consistency across all builds. In this case, the image builder environment is the same as the client environment.
 

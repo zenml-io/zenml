@@ -113,7 +113,16 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
 class SkypilotBaseOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseOrchestratorConfig, SkypilotBaseOrchestratorSettings
 ):
-    """Skypilot orchestrator base config."""
+    """Skypilot orchestrator base config.
+
+    Attributes:
+        disable_step_based_settings: whether to disable step-based settings.
+            If True, the orchestrator will run all steps with the pipeline
+            settings in one single VM. If False, the orchestrator will run
+            each step with its own settings in separate VMs if provided.
+    """
+
+    disable_step_based_settings: bool = False
 
     @property
     def is_local(self) -> bool:

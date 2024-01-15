@@ -1,8 +1,35 @@
 #!/bin/sh -e
 set -x
 
-# Default source directories
-SRC=${1:-"src/zenml tests examples docs/mkdocstrings_helper.py scripts"}
+# Initialize default source directories
+default_src="src/zenml tests examples docs/mkdocstrings_helper.py scripts"
+# Initialize SRC as an empty string
+SRC=""
+
+# Initialize SKIP_YAMLFIX as false
+SKIP_YAMLFIX=false
+
+# Process arguments
+for arg in "$@"
+do
+    # Check for the --no-yamlfix flag
+    if [ "$arg" = "--no-yamlfix" ]; then
+        SKIP_YAMLFIX=true
+    else
+        # If it's not the flag, treat it as a source directory
+        # Append the argument to SRC, separated by space
+        if [ -z "$SRC" ]; then
+            SRC="$arg"
+        else
+            SRC="$SRC $arg"
+        fi
+    fi
+done
+
+# If no source directories were provided, use the default
+if [ -z "$SRC" ]; then
+    SRC="$default_src"
+fi
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
@@ -14,19 +41,9 @@ ruff $SRC --select F401,F841 --fix --exclude "__init__.py" --isolated
 ruff $SRC --select I --fix --ignore D
 ruff format $SRC
 
-# Flag check for skipping yamlfix
-SKIP_YAMLFIX=false
-for arg in "$@"
-do
-    if [ "$arg" = "--no-yamlfix" ]; then
-        SKIP_YAMLFIX=true
-        break
-    fi
-done
-
 # standardises / formats CI yaml files
 if [ "$SKIP_YAMLFIX" = false ]; then
-    yamlfix .github tests
+    yamlfix .github tests --exclude "dependabot.yml"
 fi
 
 set +x
