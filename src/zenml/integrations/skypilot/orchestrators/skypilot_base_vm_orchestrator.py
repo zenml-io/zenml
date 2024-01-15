@@ -219,8 +219,8 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                         "run in a separate VM.\n"
                         "You can configure the orchestrator to disable this "
                         "behavior by updating the `disable_step_based_settings` "
-                        "in your orchestrator configuration."
-                        "By running the following command: "
+                        "in your orchestrator configuration "
+                        "by running the following command: "
                         "`zenml orchestrator update --disable-step-based-settings=True`"
                     )
                     break
