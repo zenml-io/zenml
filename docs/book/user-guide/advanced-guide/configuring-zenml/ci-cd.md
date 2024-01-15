@@ -1,6 +1,6 @@
 ---
 description: >-
-  Managing the lifecycle of a ZenML pipeline with Continous Integration and Delivery
+  Managing the lifecycle of a ZenML pipeline with Continuous Integration and Delivery
 ---
 
 # CI/CD with ZenML pipelines

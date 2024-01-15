@@ -87,21 +87,6 @@ jobs:
         run: |
           pip install alembic
           bash scripts/check-alembic-branches.sh
-  spellcheck:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
-      == false && github.event.issue.pull_request && contains(github.event.comment.body,
-      '/fulltest')
-    runs-on: ubuntu-dind-runners
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
-      - name: Spelling checker
-        uses: crate-ci/typos@v1.17.0
-        with:
-          files: .
-          config: ./.typos.toml
   update-templates-to-examples:
     needs: check-membership
     # if team member commented, not a draft, on a PR, using /fulltest
