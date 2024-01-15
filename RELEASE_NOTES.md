@@ -1,4 +1,45 @@
 <!-- markdown-link-check-disable -->
+
+# 0.54.1
+
+Release 0.54.1, includes a mix of updates and new additions and bug fixes. The most notable changes are the new production guide,
+allowing multi step VMs for the Skypilot orchestrator which allows you to configure a step to run on a specific VM or run the entire pipeline on a single VM,
+and some improvements to the Model Control Plane.
+
+## What's Changed
+* Bump aquasecurity/trivy-action from 0.16.0 to 0.16.1 by @dependabot in https://github.com/zenml-io/zenml/pull/2244
+* Bump crate-ci/typos from 1.16.26 to 1.17.0 by @dependabot in https://github.com/zenml-io/zenml/pull/2245
+* Add YAML formatting standardisation to formatting & linting scripts by @strickvl in https://github.com/zenml-io/zenml/pull/2224
+* Remove text annotation by @strickvl in https://github.com/zenml-io/zenml/pull/2246
+* Add MariaDB migration testing by @strickvl in https://github.com/zenml-io/zenml/pull/2170
+* Delete artifact links from model version via Client, ModelVersion and API by @avishniakov in https://github.com/zenml-io/zenml/pull/2191
+* Default/Non-Default step params produce conflict with yaml ones as defaults are set in code by @avishniakov in https://github.com/zenml-io/zenml/pull/2247
+* Prune of unused artifacts links via client by @avishniakov in https://github.com/zenml-io/zenml/pull/2192
+* Rename nlp example by @safoinme in https://github.com/zenml-io/zenml/pull/2221
+* Support refreshing service connector credentials in the Vertex step operator to support long-running jobs by @stefannica in https://github.com/zenml-io/zenml/pull/2198
+* Refactor secrets stores to store all secret metadata in the DB by @stefannica in https://github.com/zenml-io/zenml/pull/2193
+* Add `latest_version_id` to the `ModelResponse` by @avishniakov in https://github.com/zenml-io/zenml/pull/2266
+* Remove `link_artifact` from docs for MCP by @strickvl in https://github.com/zenml-io/zenml/pull/2272
+* Improve action by adding advice to KeyError when configured steps are not present in pipeline by @christianversloot in https://github.com/zenml-io/zenml/pull/2265
+* Allow multi step configuration for skypilot by @safoinme in https://github.com/zenml-io/zenml/pull/2166
+* Reworking the examples by @bcdurak in https://github.com/zenml-io/zenml/pull/2259
+* A docs update for incorrect import in docs/book/user-guide/starter-guide/track-ml-models.md by @yo-harsh in https://github.com/zenml-io/zenml/pull/2279
+* Allow `sklearn` versions > 1.3 by @Vishal-Padia in https://github.com/zenml-io/zenml/pull/2271
+* Free `sklearn` dependency to allow all versions by @strickvl in https://github.com/zenml-io/zenml/pull/2281
+* Misc CI bugfixes by @strickvl in https://github.com/zenml-io/zenml/pull/2260
+* Fix `yamlfix` script to use `--no-yamlfix` flag by @strickvl in https://github.com/zenml-io/zenml/pull/2280
+* Fix dependabot settings autoformatting by `yamlfix` by @strickvl in https://github.com/zenml-io/zenml/pull/2282
+* Add advice for next step to error on AuthorizationException by @christianversloot in https://github.com/zenml-io/zenml/pull/2264
+* Allow skypilot to configure step or run full pipeline in one VM by @safoinme in https://github.com/zenml-io/zenml/pull/2276
+* A docs update with production guide + restructured advanced guide by @htahir1 in https://github.com/zenml-io/zenml/pull/2232
+
+## New Contributors
+* @yo-harsh made their first contribution in https://github.com/zenml-io/zenml/pull/2279
+* @Vishal-Padia made their first contribution in https://github.com/zenml-io/zenml/pull/2271
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.54.0...0.54.1
+
+
 # 0.54.0
 
 This release brings a range of new features, bug fixes and documentation

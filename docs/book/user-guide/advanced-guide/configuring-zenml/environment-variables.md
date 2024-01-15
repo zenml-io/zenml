@@ -31,7 +31,7 @@ export ZENML_REPOSITORY_PATH=/path/to/somewhere
 
 ## Analytics
 
-Please see [our full page](../../../user-guide/advanced-guide/environment-management/global-settings-of-zenml.md#usage-analytics) on what analytics are tracked and how you can opt-out,
+Please see [our full page](../../../user-guide/advanced-guide/configuring-zenml/global-settings-of-zenml.md#usage-analytics) on what analytics are tracked and how you can opt-out,
 but the quick summary is that you can set this to `false` if you want to opt out
 of analytics.
 
