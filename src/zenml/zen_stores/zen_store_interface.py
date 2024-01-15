@@ -1471,7 +1471,8 @@ class ZenStoreInterface(ABC):
                 store to the backup secrets store.
 
         Raises:
-            NotImplementedError: if no backup secrets store is configured.
+            BackupSecretsStoreNotConfiguredError: if no backup secrets store is
+                configured.
         """
 
     @abstractmethod
@@ -1489,7 +1490,8 @@ class ZenStoreInterface(ABC):
                 store to the primary secrets store.
 
         Raises:
-            NotImplementedError: if no backup secrets store is configured.
+            BackupSecretsStoreNotConfiguredError: if no backup secrets store is
+                configured.
         """
 
     # --------------------  Service Accounts --------------------

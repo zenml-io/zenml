@@ -48,14 +48,18 @@ If none of the `ZENML_STORE_*` variables are set, the container will default to 
 
 ### Secret store environment variables
 
-There are many possible Secret Stores that you can choose between. Each one of these Secret Stores requires the docker image to contain different configurations.
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](../../user-guide/advanced-guide/secret-management/secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it explicitly using docker environment variables. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
+
+> **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
 {% tabs %}
-{% tab title="MySQL" %}
-The SQL database is used as the default secret store. You only need to configure these options if you want to change the default behavior.
+{% tab title=SQL database" %}
+The SQL database is used as the default secret store location. You only need to configure these options if you want to change the default behavior.
+
+It is particularly recommended to enable encryption at rest for the SQL database if you plan on using it as a secrets store backend. You'll have to configure the secret key used to encrypt the secret values. If not set, encryption will not be used and passwords will be stored unencrypted in the database.
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `sql` in order to explicitly set this type of secret store.
-*   **ZENML\_SECRETS\_STORE\_ENCRYPTION\_KEY**: This is a secret key used to encrypt all secrets stored in the SQL secrets store. If not set, encryption will not be used and passwords will be stored unencrypted in the database. This should be set to a random string with a recommended length of at least 32 characters, e.g.:
+*   **ZENML\_SECRETS\_STORE\_ENCRYPTION\_KEY**: the secret key used to encrypt all secrets stored in the SQL secrets store. It is recommended to set this to a random string with a length of at least 32 characters, e.g.:
 
     ```python
     from secrets import token_hex
@@ -68,7 +72,7 @@ The SQL database is used as the default secret store. You only need to configure
     openssl rand -hex 32
     ```
 
-> **Important:** If you configure encryption for your SQL database secrets store, you should keep the `ZENML_SECRETS_STORE_ENCRYPTION_KEY` value somewhere safe and secure, as it will be required to decrypt the secrets in the database. If you lose the encryption key, you will not be able to decrypt the secrets in the database and will have to reset them.
+> **Important:** If you configure encryption for your SQL database secrets store, you should keep the `ZENML_SECRETS_STORE_ENCRYPTION_KEY` value somewhere safe and secure, as it will always be required by the ZenML server to decrypt the secrets in the database. If you lose the encryption key, you will not be able to decrypt the secrets in the database and will have to reset them.
 {% endtab %}
 
 {% tab title="AWS" %}
@@ -76,7 +80,7 @@ These configuration options are only relevant if you're using the AWS Secrets Ma
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `aws` in order to set this type of secret store.
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 
@@ -104,7 +108,7 @@ The minimum set of permissions that must be attached to the implicit or configur
 The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The AWS Service Connector authentication method to use (e.g. `secret-key` or `iam-role`).
-* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The AWS Service Connector configuration, in JSON format (e.g. `{"role_arn": "arn:aws:iam::123456789012:role/MyRole"}`).
+* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The AWS Service Connector configuration, in JSON format (e.g. `{"aws_access_key_id":"<aws-key-id>", "aws_secret_access_key","<aws-secret-key>","role_arn": "<aws-role-arn>"}`).
 
 > **Note:** The remaining configuration options are deprecated and may be removed in a future release. Instead, you should set the `ZENML_SECRETS_STORE_AUTH_METHOD` and `ZENML_SECRETS_STORE_AUTH_CONFIG` variables to use the AWS Service Connector authentication method.
 
@@ -117,6 +121,8 @@ The following configuration options are supported:
 These configuration options are only relevant if you're using the GCP Secrets Manager as the secrets store backend.
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `gcp` in order to set this type of secret store.
+
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API. 
 
 The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
 
@@ -152,7 +158,7 @@ gcloud projects add-iam-policy-binding <your GCP project ID> \
   --condition 'title=limit_access_zenml,description="Limit access to secrets with prefix zenml-",expression=resource.name.startsWith("projects/<your GCP project NUMBER>/secrets/zenml-")'
 ```
 
-The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API. The following configuration options are supported:
+The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The GCP Service Connector authentication method to use (e.g. `service-account`).
 * **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The GCP Service Connector configuration, in JSON format (e.g. `{"project_id": "my-project", "service_account_json": { ... }}`).
@@ -169,7 +175,7 @@ These configuration options are only relevant if you're using Azure Key Vault as
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `azure` in order to set this type of secret store.
 * **ZENML\_SECRETS\_STORE\_KEY\_VAULT\_NAME**: The name of the Azure Key Vault. This must be set to point to the Azure Key Vault instance that you want to use.
 
-The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API. The following configuration options are supported:
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API. The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The Azure Service Connector authentication method to use (e.g. `service-account`).
 * **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The Azure Service Connector configuration, in JSON format (e.g. `{"tenant_id": "my-tenant-id", "client_id": "my-client-id", "client_secret": "my-client-secret"}`).
@@ -208,6 +214,18 @@ If your custom secrets store implementation requires additional configuration op
 {% hint style="info" %}
 **ZENML\_SECRETS\_STORE\_TYPE**: Set this variable to `none`to disable the secrets store functionality altogether.
 {% endhint %}
+
+#### Backup secrets store
+
+[A backup secrets store](../../user-guide/advanced-guide/secret-management/secret-management.md#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy).
+
+To configure a backup secrets store in the docker container, use the same approach and instructions documented for the primary secrets store, but set the `**ZENML\_BACKUP\_SECRETS\_STORE\***` environment variables instead of `**ZENML\_SECRETS\_STORE\***`, e.g.:
+
+```yaml
+ZENML_BACKUP_SECRETS_STORE_TYPE: aws
+ZENML_BACKUP_SECRETS_STORE_AUTH_METHOD: secret-key
+ZENML_BACKUP_SECRETS_STORE_AUTH_CONFIG: '{"aws_access_key_id":"<aws-key-id>", "aws_secret_access_key","<aws-secret-key>","role_arn": "<aws-role-arn>"}`'
+```
 
 ### Advanced server configuration options
 

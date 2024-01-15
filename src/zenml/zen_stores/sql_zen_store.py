@@ -93,8 +93,10 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     AuthorizationException,
+    BackupSecretsStoreNotConfiguredError,
     EntityExistsError,
     IllegalOperationError,
+    SecretsStoreNotConfiguredError,
     StackComponentExistsError,
     StackExistsError,
 )
@@ -731,10 +733,10 @@ class SqlZenStore(BaseZenStore):
             The secrets store associated with this store.
 
         Raises:
-            NotImplementedError: If no secrets store is configured.
+            SecretsStoreNotConfiguredError: If no secrets store is configured.
         """
         if self._secrets_store is None:
-            raise NotImplementedError(
+            raise SecretsStoreNotConfiguredError(
                 "No secrets store is configured. Please configure a secrets "
                 "store to create and manage ZenML secrets."
             )
@@ -3952,7 +3954,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The values of the secret.
 
-        # noqa: DAR402
+        # noqa: DAR401
         """
         try:
             return self.secrets_store.get_secret_values(
@@ -4370,12 +4372,13 @@ class SqlZenStore(BaseZenStore):
                 this flag effectively moves all secrets from the primary secrets
                 store to the backup secrets store.
 
-        # noqa: DAR402
+        # noqa: DAR401
         Raises:
-            NotImplementedError: if no backup secrets store is configured.
+            BackupSecretsStoreNotConfiguredError: if no backup secrets store is
+                configured.
         """
         if not self.backup_secrets_store:
-            raise NotImplementedError(
+            raise BackupSecretsStoreNotConfiguredError(
                 "Unable to backup secrets: No backup secrets store is "
                 "configured."
             )
@@ -4435,11 +4438,13 @@ class SqlZenStore(BaseZenStore):
                 this flag effectively moves all secrets from the backup secrets
                 store to the primary secrets store.
 
+        # noqa: DAR401
         Raises:
-            NotImplementedError: if no backup secrets store is configured.
+            BackupSecretsStoreNotConfiguredError: if no backup secrets store is
+                configured.
         """
         if not self.backup_secrets_store:
-            raise NotImplementedError(
+            raise BackupSecretsStoreNotConfiguredError(
                 "Unable to restore secrets: No backup secrets store is "
                 "configured."
             )
