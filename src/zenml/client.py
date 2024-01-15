@@ -4750,6 +4750,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         hydrate: bool = False,
+        tags: Optional[List[str]] = [],
     ) -> Page[ModelResponse]:
         """Get models by filter from Model Control Plane.
 
@@ -4763,6 +4764,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the model to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tags: The tags of the model to filter by.
 
         Returns:
             A page object with all models.
@@ -4778,8 +4780,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         return self.zen_store.list_models(
-            model_filter_model=filter,
-            hydrate=hydrate,
+            model_filter_model=filter, hydrate=hydrate, tags=tags
         )
 
     #################
@@ -4938,6 +4939,7 @@ class Client(metaclass=ClientMetaClass):
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
         hydrate: bool = False,
+        tags: Optional[List[str]] = [],
     ) -> Page[ModelVersionResponse]:
         """Get model versions by filter from Model Control Plane.
 
@@ -4955,6 +4957,7 @@ class Client(metaclass=ClientMetaClass):
             stage: stage of the model version.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tags: The tags to filter by.
 
         Returns:
             A page object with all model versions.
@@ -4975,6 +4978,7 @@ class Client(metaclass=ClientMetaClass):
             model_name_or_id=model_name_or_id,
             model_version_filter_model=model_version_filter_model,
             hydrate=hydrate,
+            tags=tags,
         )
 
     def update_model_version(

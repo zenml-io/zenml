@@ -3648,9 +3648,8 @@ class TestModel:
 
     def test_list_by_tag(self, clean_client: "Client"):
         """Test that listing works with tag filters."""
-        with ModelVersionContext() as model_:
+        with ModelVersionContext():
             zs = clean_client.zen_store
-            model = zs.get_model(model_.id)
 
             ms = zs.list_models(model_filter_model=ModelFilter(), tags=[])
             assert len(ms) == 1
