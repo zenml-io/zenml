@@ -11,7 +11,7 @@ In order to do this, we need to get familiar with two more stack components:
 - The [orchestrator](../../stacks-and-components/component-guide/orchestrators/) manages the workflow and execution of your pipelines.
 - The [container registry](../../stacks-and-components/component-guide/container-registries/) is a storage and content delivery system that holds your Docker container images.
 
-These, along with [remote storage](remote-storage.md) complete a basic cloud stack where our pipeline is entirely running on the cloud. 
+These, along with [remote storage](remote-storage.md), complete a basic cloud stack where our pipeline is entirely running on the cloud. 
 
 ## Starting with a basic cloud stack
 
