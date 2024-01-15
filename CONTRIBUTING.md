@@ -174,7 +174,10 @@ mypy --install-types
 
 Warning: This might take a while for both (~ 15 minutes each, depending on your machine), however if you have
 time, please run it as it will make the
-next commands error-free.
+next commands error-free. Note that the `zenml integration install` command
+might also fail on account of dependency conflicts so you can just install the
+specific integration you're working on and manually run the mypy command for the
+files you've been working on.
 
 You can now run the following scripts to automatically format your
 code and to check whether the code formatting, linting, docstrings, and
@@ -184,6 +187,10 @@ spelling is in order:
 bash scripts/format.sh
 bash scripts/run-ci-checks.sh
 ```
+
+If you're on Windows you might have to run the formatting script as `bash
+scripts/format.sh --no-yamlfix` and run the yamlfix command separately as
+`yamlfix .github -v`.
 
 Tests can be run as follows:
 
