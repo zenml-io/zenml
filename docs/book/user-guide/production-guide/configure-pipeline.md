@@ -5,7 +5,7 @@ description: Add more resources to your pipeline configuration.
 # Configure your pipeline
 
 Now that we have our pipeline up and running in the cloud, you might be wondering how ZenML figured out what sort of dependencies to install
-in the docker image that we just ran on the VM. The answer lies in the [runner script we executed (i.e. run.py)](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py#L215), in particular, these lines:
+in the Docker image that we just ran on the VM. The answer lies in the [runner script we executed (i.e. run.py)](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py#L215), in particular, these lines:
 
 ```python
 pipeline_args["config_path"] = os.path.join(
@@ -33,7 +33,7 @@ However, it is best to not mix configuration from code to ensure separation of c
 
 The YAML configuration of a ZenML pipeline can be very simple, as in this case. Let's break it down and go through each section one by one:
 
-### The docker settings
+### The Docker settings
 
 ```yaml
 settings:
@@ -44,7 +44,7 @@ settings:
       - pyarrow
 ```
 
-The first section is the so-called `settings` of the pipeline. This section has a `docker` key, which controls the [containerization process](cloud-orchestration.md#orchestrating-pipelines-on-the-cloud). Here, we are simply telling ZenML that we need `pyarrow` as a pip requirement, and we want to enable the `sklearn` integration of ZenML, which will in turn install the `scikit-learn` library. This docker section can be populated with many different options, and correspond to the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) class in the Python SDK.
+The first section is the so-called `settings` of the pipeline. This section has a `docker` key, which controls the [containerization process](cloud-orchestration.md#orchestrating-pipelines-on-the-cloud). Here, we are simply telling ZenML that we need `pyarrow` as a pip requirement, and we want to enable the `sklearn` integration of ZenML, which will in turn install the `scikit-learn` library. This Docker section can be populated with many different options, and correspond to the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) class in the Python SDK.
 
 ### Associating a ZenML Model
 
@@ -70,7 +70,7 @@ zenml model version list breast_cancer_classifier
 ```
 {% endtab %}
 {% tab title="Dashboard" %}
-The ZenML Cloud ships with a Model Control Plane dashboard where you can visualize all the versions:
+The [ZenML Cloud](https://www.zenml.io/cloud) ships with a Model Control Plane dashboard where you can visualize all the versions:
 
 <figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt=""><figcaption><p>All model versions listed</p></figcaption></figure>
 {% endtab %}
@@ -94,7 +94,7 @@ def training_pipeline(model_type: str):
     ...
 ```
 
-So you can see that the YAML config is fairly easy to use, and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [advanced guide](../advanced-guide/pipelining-features/configure-steps-pipelines.md), but for now, we can move on to scaling our pipeline.
+So you can see that the YAML config is fairly easy to use and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [advanced guide](../advanced-guide/pipelining-features/configure-steps-pipelines.md), but for now, we can move on to scaling our pipeline.
 
 ## Scaling compute on the cloud
 
@@ -119,7 +119,7 @@ steps:
         cpus: 8
 ```
 
-Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores. The `orchestrator.vm_aws` key corresponds to the [`SkypilotBaseOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config.SkypilotBaseOrchestratorSettings) class in the Python SDK. You can adapt it to `vm_gcp` or `vm_azure` depending on which flavor or skypilot you have configured.
+Here we are configuring the entire pipeline with a certain amount of memory, while for the trainer step we are additionally configuring 8 CPU cores. The `orchestrator.vm_aws` key corresponds to the [`SkypilotBaseOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config.SkypilotBaseOrchestratorSettings) class in the Python SDK. You can adapt it to `vm_gcp` or `vm_azure` depending on which flavor of skypilot you have configured.
 
 {% hint style="info" %}
 Read more about settings in ZenML [here](../advanced-guide/pipelining-features/pipeline-settings.md).

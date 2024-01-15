@@ -26,10 +26,10 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 1. The user runs a pipeline on the client machine. This executes the `run.py` script where ZenML reads the `@pipeline` function and understands what steps need to be executed.
 2. The client asks the server for the stack info, which returns it with the configuration of the cloud stack.
 3. Based on the stack info and pipeline specification, the client builds and pushes an image to the `container registry`. The image contains the environment needed to execute the pipeline and the code of the steps.
-4. The client creates a run in the `orchestrator`. For example, in the case of the [Skypilot](https://skypilot.readthedocs.io/) orchestrator, it creates a virtual machine in the cloud with some commands to pull and run a docker image from the specified container registry.  
+4. The client creates a run in the `orchestrator`. For example, in the case of the [Skypilot](https://skypilot.readthedocs.io/) orchestrator, it creates a virtual machine in the cloud with some commands to pull and run a Docker image from the specified container registry.  
 5. The `orchestrator` pulls the appropriate image from the `container registry` as it's executing the pipeline (each step has an image).
 6. As each pipeline runs, it stores artifacts physically in the `artifact store`. Of course, this artifact store needs to be some form of cloud storage.
-7. As each pipeline runs, it reports status back to the zenml server and optionally queries the server for metadata.
+7. As each pipeline runs, it reports status back to the ZenML server and optionally queries the server for metadata.
 
 ## Provisioning and registering a Skypilot orchestrator alongside a container registry
 
@@ -48,7 +48,7 @@ zenml integration install s3 -y
 ```
 
 {% hint style="info" %}
-Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements s3`.
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the S3 integration you can use `zenml integration requirements s3`.
 {% endhint %}
 
 The only configuration parameter mandatory for registering an S3 Artifact Store is the root path URI, which needs to point to an S3 bucket and take the form `s3://bucket-name`. In order to create a S3 bucket, refer to the [AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html).
@@ -97,7 +97,7 @@ zenml integration install azure -y
 ```
 
 {% hint style="info" %}
-Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements azure`.
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the Azure integration you can use `zenml integration requirements azure`.
 {% endhint %}
 
 The only configuration parameter mandatory for registering an Azure Artifact Store is the root path URI, which needs to
@@ -158,7 +158,7 @@ Run the training pipeline:
 python run.py --training-pipeline
 ```
  
-You will notice this time your pipeline behaves differently. After it has built the docker image with all your code, it will push that image, and run a VM on the cloud. Here is where your pipeline will execute, and the logs will be streamed back to you. So with a few commands, we were able to ship our entire code to the cloud!
+You will notice this time your pipeline behaves differently. After it has built the Docker image with all your code, it will push that image, and run a VM on the cloud. Here is where your pipeline will execute, and the logs will be streamed back to you. So with a few commands, we were able to ship our entire code to the cloud!
 
 Curious to see what other stacks you can create? The [Component Guide](../../stacks-and-components/component-guide/) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
 

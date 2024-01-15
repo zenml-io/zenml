@@ -25,7 +25,7 @@ The most basic way to configure a step or a pipeline `@step` and `@pipeline` dec
 ```
 
 {% hint style="info" %}
-Once you set configuration on a pipeline, they will be applied to all steps with some exceptions. See the [later section on precedence for more details](configure-steps-pipelines.md#hierarchy-and-precedence).
+Once you set configuration on a pipeline, they will be applied to all steps with some exceptions. See the [section on precedence for more details](configure-steps-pipelines.md#hierarchy-and-precedence).
 {% endhint %}
 
 ### Method 2: On the step/pipeline instance
@@ -85,7 +85,7 @@ steps:
   ...
 ```
 
-The YAML method is the recommended method on how to apply configuration in production. It has the benefit of being declarative and decoupled from the codebase.
+The YAML method is the recommended method for applying configuration in production. It has the benefit of being declarative and decoupled from the codebase.
 
 {% hint style="info" %}
 It is best practice to put all config files in a `configs` directory at the root of your repository and check them into git history. This way, the tracked commit hash of a pipeline run links back to your config YAML.
@@ -332,7 +332,7 @@ These are boolean flags for various configurations:
 
 ### `build` ID
 
-The UUID of the [`build`](../infrastructure-management/containerize-your-pipeline.md) to use for this pipeline. If specified, docker image building is skipped for remote orchestrators, and the docker image specified in this build is used.
+The UUID of the [`build`](../infrastructure-management/containerize-your-pipeline.md) to use for this pipeline. If specified, Docker image building is skipped for remote orchestrators, and the Docker image specified in this build is used.
 
 ### `extra` dict
 
@@ -371,7 +371,7 @@ def my_pipeline(gamma: float)
     trainer(gamma=gamma)
 ```
 
-Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always take precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](#hierarchy-and-precedence).
+Important note, in the above case, the value of the step would be the one defined in the `steps` key (i.e. 0.001). So the YAML config always takes precedence over pipeline parameters that are passed down to steps in code. Read [this section for more details](#hierarchy-and-precedence).
 
 Normally, parameters defined at the pipeline level are used in multiple steps, and then no step-level configuration is defined.
 
@@ -385,7 +385,7 @@ To change the name for a run, pass `run_name` as a parameter. This can be a dyna
 
 ### Real-time `settings`
 
-Settings are special runtime configuration of a pipeline or a step that require a [dedicated section](pipeline-settings.md). In short, they define a whole bunch of execution configuration such as docker building and resource settings.
+Settings are special runtime configurations of a pipeline or a step that require a [dedicated section](pipeline-settings.md). In short, they define a whole bunch of execution configuration such as Docker building and resource settings.
 
 ### `failure_hook_source` and `success_hook_source`
 
@@ -397,7 +397,7 @@ A lot of pipeline-level configuration can also be applied at a step level (as we
 
 * `experiment_tracker`: Name of the [experiment_tracker](../../../stacks-and-components/component-guide/experiment-trackers/experiment-trackers.md) to enable for this step. This experiment_tracker should be defined in the active stack with the same name. 
 * `step_operator`: Name of the [step_operator](../../../stacks-and-components/component-guide/step-operators/step-operators.md) to enable for this step. This step_operator should be defined in the active stack with the same name. 
-* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](managing-steps.md#step-output-names)). The most interesting configuration here is the `materializer_source`, which is UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../data-management/handle-custom-data-types.md).
+* `outputs`: This is configuration of the output artifacts of this step. This is further keyed by output name (by default, step outputs [are named `output`](managing-steps.md#step-output-names)). The most interesting configuration here is the `materializer_source`, which is the UDF path of the materializer in code to use for this output (e.g. `materializers.some_data.materializer.materializer_class`). Read more about this source path [here](../data-management/handle-custom-data-types.md).
 
 Learn more about step configuration in the [dedicated section on managing steps](managing-steps.md).
 
@@ -405,7 +405,7 @@ Learn more about step configuration in the [dedicated section on managing steps]
 
 Some things can be configured on pipelines and steps, some only on one of the two. Pipeline-level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. 
 
-When an object is configured, ZenML merges the values with previously configured keys. E.g.:
+When an object is configured, ZenML merges the values with previously-configured keys. E.g.:
 
 ```python
 from zenml.config import ResourceSettings

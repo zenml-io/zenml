@@ -9,7 +9,7 @@ In the previous chapters, we've been working with artifacts stored locally on ou
 Remote storage allows us to store our artifacts in the cloud, which means they're accessible from anywhere and by anyone with the right permissions. This is essential for team collaboration and for managing the larger datasets and models that come with production workloads.
 
 When using a stack with remote storage, nothing changes except the fact that the artifacts
-get materialized in a central, remote, storage location. This diagram explains the flow:
+get materialized in a central and remote storage location. This diagram explains the flow:
 
 <figure><img src="../../.gitbook/assets/local_run_with_remote_artifact_store.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote artifact store.</p></figcaption></figure>
 
@@ -30,7 +30,7 @@ zenml integration install s3 -y
 ```
 
 {% hint style="info" %}
-Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements s3`.
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the AWS S3 integration you can use `zenml integration requirements s3`.
 {% endhint %}
 
 The only configuration parameter mandatory for registering an S3 Artifact Store is the root path URI, which needs to point to an S3 bucket and take the form `s3://bucket-name`. In order to create a S3 bucket, refer to the [AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html).
@@ -79,7 +79,7 @@ zenml integration install azure -y
 ```
 
 {% hint style="info" %}
-Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements azure`.
+Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the Azure integration you can use `zenml integration requirements azure`.
 {% endhint %}
 
 The only configuration parameter mandatory for registering an Azure Artifact Store is the root path URI, which needs to

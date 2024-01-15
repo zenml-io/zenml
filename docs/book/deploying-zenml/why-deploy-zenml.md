@@ -22,7 +22,7 @@ When you first get started with ZenML, it is based on the following architecture
 
 ![Scenario 1: ZenML default local configuration](../.gitbook/assets/Scenario1.png)
 
-The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. In the previous pages, we used the `zenml up` command to spin up a local rest server to serve the dashboard as well. The diagram for this will look as follows:
+The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. In the previous pages, we used the `zenml up` command to spin up a local REST server to serve the dashboard as well. The diagram for this will look as follows:
 
 ![Scenario 2: ZenML with a local REST Server](../.gitbook/assets/Scenario2.png)
 

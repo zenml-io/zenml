@@ -27,7 +27,7 @@ processing steps on their local machine.
 <img src="../../../.gitbook/assets/ci_cd_local.png" alt="Pipeline with local stack"/>
 
 Once the data scientist thinks they have improved the pipeline, they create a 
-pull request for his branch on GitHub. This automatically triggers a GitHub Action 
+pull request for their branch on GitHub. This automatically triggers a GitHub Action 
 that will run the same pipeline in the staging environment (e.g. a pipeline 
 running on a cloud stack in GCP), potentially with different test data. As long
 as the  pipeline does not run successfully in the staging environment, the PR

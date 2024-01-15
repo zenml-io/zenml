@@ -111,7 +111,7 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 
 There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](../../stacks-and-components/component-guide/component-guide.md)
 
-Perhaps the most important one after the orchestrator and the artifact store is the [container registry](../../stacks-and-components/component-guide/container-registries/). A container registry is a component that stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
+Perhaps the most important stack component after the orchestrator and the artifact store is the [container registry](../../stacks-and-components/component-guide/container-registries/). A container registry stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
 
 ## Registering a stack
 
