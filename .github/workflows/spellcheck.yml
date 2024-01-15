@@ -1,0 +1,27 @@
+---
+name: Spellcheck
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches: [main]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml']
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml']
+concurrency:
+  # New commit on branch cancels running workflows of the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  spellcheck:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-dind-runners
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+      - name: Spelling checker
+        uses: crate-ci/typos@v1.17.0
+        with:
+          files: .
+          config: ./.typos.toml

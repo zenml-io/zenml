@@ -166,7 +166,7 @@ Now that we have our orchestrator and container registry registered, we can [reg
 {% tabs %}
 {% tab title="CLI" %}
 ```shell
-zenml stack register miminal_cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
+zenml stack register minimal_cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
 ```
 {% endtab %}
 {% tab title="Dashboard" %}
@@ -178,7 +178,7 @@ Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipel
 we can run a training pipeline. First, set the minimal cloud stack active:
 
 ```shell
-zenml stack set miminal_cloud_stack
+zenml stack set minimal_cloud_stack
 ```
 
 and then, run the training pipeline:
