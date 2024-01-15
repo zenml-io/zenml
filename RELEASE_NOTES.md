@@ -3,7 +3,7 @@
 # 0.54.1
 
 Release 0.54.1, includes a mix of updates and new additions and bug fixes. The most notable changes are the new production guide,
-Allowing multi step VMs for skypilot which allows you to configure a step to run on a specific VM or run the entire pipeline on a single VM,
+allowing multi step VMs for the Skypilot orchestrator which allows you to configure a step to run on a specific VM or run the entire pipeline on a single VM,
 and some improvements to the Model Control Plane.
 
 ## What's Changed
