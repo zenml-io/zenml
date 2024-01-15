@@ -418,10 +418,10 @@ def go() -> None:
         gave_email = _prompt_email(AnalyticsEventSource.ZENML_GO)
         metadata = {"gave_email": gave_email}
 
+    zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
+
     with track_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
         console.print(zenml_cli_privacy_message, width=80)
-
-        zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
 
         if not os.path.isdir(zenml_tutorial_path):
             try:
