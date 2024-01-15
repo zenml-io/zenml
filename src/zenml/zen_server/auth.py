@@ -508,13 +508,15 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
 
     # Use the external access token to extract the user information and
     # permissions
-    
+
     # OpenID Connect 5.3.2. Due to the possibility of token substitution attacks (see Section 16.11 OpenID Connect),
     # the UserInfo Response is not guaranteed to be about the End-User identified
     # by the sub (subject) element of the ID Token. The sub Claim in the UserInfo Response MUST
     # be verified to exactly match the sub Claim in the ID Token; if they do not match,
     # the UserInfo Response values MUST NOT be used.
-    decoded_access_token = jwt.decode(external_access_token, options={"verify_signature": False})
+    decoded_access_token = jwt.decode(
+        external_access_token, options={"verify_signature": False}
+    )
     access_token_sub = decoded_access_token.get("sub")
 
     # Get the user information from the external authenticator
@@ -542,19 +544,23 @@ def authenticate_external_user(external_access_token: str) -> AuthContext:
 
     if 200 <= auth_response.status_code < 300:
         try:
-            content_type = auth_response.headers["Content-Type"].split("/").pop()
+            content_type = (
+                auth_response.headers["Content-Type"].split("/").pop()
+            )
 
             # A jwt token is returned when the content type is application/jwt and is decoded differently than a token with am application/json content type
             if content_type == "jwt":
                 authorization_token = auth_response.text
 
                 # OpenID Connect 5.3.2. Successful UserInfo Response states that the UserInfo response MAY be encrypted without also being signed
-                decoded_token = jwt.decode(authorization_token, options={"verify_signature": False})
+                decoded_token = jwt.decode(
+                    authorization_token, options={"verify_signature": False}
+                )
             else:
                 decoded_token = auth_response.json()
-            
+
             user_sub = decoded_token.get("sub")
-            
+
             if access_token_sub != user_sub:
                 raise AuthorizationException(
                     "Error fetching user information from external authenticator. "
