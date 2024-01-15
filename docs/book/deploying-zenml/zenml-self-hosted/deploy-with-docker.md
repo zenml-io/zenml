@@ -108,7 +108,7 @@ The minimum set of permissions that must be attached to the implicit or configur
 The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The AWS Service Connector authentication method to use (e.g. `secret-key` or `iam-role`).
-* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The AWS Service Connector configuration, in JSON format (e.g. `{"aws_access_key_id":"<aws-key-id>", "aws_secret_access_key","<aws-secret-key>","role_arn": "<aws-role-arn>"}`).
+* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The AWS Service Connector configuration, in JSON format (e.g. `{"aws_access_key_id":"<aws-key-id>","aws_secret_access_key":"<aws-secret-key>","region":"<aws-region>"}`).
 
 > **Note:** The remaining configuration options are deprecated and may be removed in a future release. Instead, you should set the `ZENML_SECRETS_STORE_AUTH_METHOD` and `ZENML_SECRETS_STORE_AUTH_CONFIG` variables to use the AWS Service Connector authentication method.
 
@@ -161,7 +161,7 @@ gcloud projects add-iam-policy-binding <your GCP project ID> \
 The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The GCP Service Connector authentication method to use (e.g. `service-account`).
-* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The GCP Service Connector configuration, in JSON format (e.g. `{"project_id": "my-project", "service_account_json": { ... }}`).
+* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The GCP Service Connector configuration, in JSON format (e.g. `{"project_id":"my-project","service_account_json":{ ... }}`).
 
 > **Note:** The remaining configuration options are deprecated and may be removed in a future release. Instead, you should set the `ZENML_SECRETS_STORE_AUTH_METHOD` and `ZENML_SECRETS_STORE_AUTH_CONFIG` variables to use the GCP Service Connector authentication method.
 
@@ -178,7 +178,7 @@ These configuration options are only relevant if you're using Azure Key Vault as
 The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API. The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The Azure Service Connector authentication method to use (e.g. `service-account`).
-* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The Azure Service Connector configuration, in JSON format (e.g. `{"tenant_id": "my-tenant-id", "client_id": "my-client-id", "client_secret": "my-client-secret"}`).
+* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The Azure Service Connector configuration, in JSON format (e.g. `{"tenant_id":"my-tenant-id","client_id":"my-client-id","client_secret": "my-client-secret"}`).
 
 > **Note:** The remaining configuration options are deprecated and may be removed in a future release. Instead, you should set the `ZENML_SECRETS_STORE_AUTH_METHOD` and `ZENML_SECRETS_STORE_AUTH_CONFIG` variables to use the Azure Service Connector authentication method.
 
