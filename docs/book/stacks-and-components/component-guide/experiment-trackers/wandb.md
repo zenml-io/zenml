@@ -152,7 +152,7 @@ def tf_trainer(
 
 {% hint style="info" %}
 Instead of hardcoding an experiment tracker name, you can also use the 
-[Client](../../advanced-guide/environment-management/client.md) to dynamically
+[Client](../../advanced-guide/configuring-zenml/client.md) to dynamically
 use the experiment tracker of your active stack:
 
 ```python
@@ -235,7 +235,7 @@ Doing the above auto-magically logs all the data, metrics, and results within th
 
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for
 more information on how to specify settings.
 
 <!-- For scarf -->
