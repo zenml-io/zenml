@@ -72,21 +72,9 @@ container registry:
 zenml container-registry register cloud_container_registry -f aws --uri=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com -c aws_connector
 ```
 
-Now, please you can register a new stack with:
+With the components registered, everything is set up for the next steps. 
 
-```shell
-zenml stack register cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
-```
-
-Amazing, everything is set up. You can now go ahead and run your pipeline. 
-As mentioned above, this will build an image, push it to your registry and 
-the Skypilot orchestrator will use the image to run the pipeline on a VM:
-
-```shell
-python run.py --training-pipeline
-```
-
-For more information, read the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
+For more information, you can always check the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 {% tab title="GCP" %}
 In order to launch a pipeline on GCP with the SkyPilot orchestrator, the first 
@@ -124,21 +112,9 @@ container registry:
 zenml container-registry register cloud-container-registry -f gcp --uri=gcr.io/<PROJECT_ID> -c gcp_connector
 ```
 
-Now, please you can register a new stack with:
+With the components registered, everything is set up for the next steps. 
 
-```shell
-zenml stack register cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
-```
-
-Amazing, everything is set up. You can now go ahead and run your pipeline. 
-As mentioned above, this will build an image, push it to your registry and 
-the Skypilot orchestrator will use the image to run the pipeline on a VM:
-
-```shell
-python run.py --training-pipeline
-```
-
-For more information, read the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
+For more information, you can always check the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 {% tab title="Azure" %}
 In order to launch a pipeline on Azure with the SkyPilot orchestrator, the first 
@@ -176,20 +152,9 @@ container registry.
 zenml container-registry register cloud-container-registry -f azure --uri=<REGISTRY_NAME>.azurecr.io -c azure_connector
 ```
 
-Now, please you can register a new stack with:
+With the components registered, everything is set up for the next steps. 
 
-```shell
-zenml stack register cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
-```
-
-Amazing, everything is set up. You can now go ahead and run your pipeline. 
-As mentioned above, this will build an image, push it to your registry and 
-the Skypilot orchestrator will use the image to run the pipeline on a VM.
-
-```shell
-python run.py --training-pipeline
-```
-For more information, read the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
+For more information, you can always check the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 {% endtabs %}
 
@@ -197,18 +162,14 @@ For more information, read the [dedicated Skypilot orchestrator guide](../../sta
 Having trouble with setting up infrastructure? Try reading the [stack deployment](../../stacks-and-components/stack-deployment/) section of the docs to gain more insight. If that still doesn't work, join the [ZenML community](https://zenml.io/slack) and ask!
 {% endhint %}
 
-Please note that your local client needs to be authenticated to the cloud CLI, and have sufficient permissions to push a container to your container registry, and deploy a VM using Skypilot. However, it is no longer necessary to have direct access to the remote artifact storage, as the pipeline executes in a VM on the cloud. Of course, that means the provisioned VM now needs access to the remote storage instead!
-
-It is important to understand at the infrastructure level how services authenticate with each other. This can get quite complex, and ZenML has a concept called [Service Connectors](../../stacks-and-components/auth-management/auth-management.md) that simplifies this. If you're curious, read that section of the docs!
-
 ## Running a pipeline on a cloud stack
 
-Now that we have our remote artifact store registered, we can [register a new stack](understand-stacks.md#registering-a-stack) with it, just like we did in the previous chapter:
+Now that we have our orchestrator and container registry registered, we can [register a new stack](understand-stacks.md#registering-a-stack), just like we did in the previous chapter:
 
 {% tabs %}
 {% tab title="CLI" %}
 ```shell
-zenml stack register miminal_cloud_stack -o skypilot -c cloud_container_registry -a cloud_artifact_store
+zenml stack register miminal_cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
 ```
 {% endtab %}
 {% tab title="Dashboard" %}
