@@ -240,7 +240,7 @@ def authenticate_credentials(
                 token=access_token,
             )
         except AuthorizationException:
-            error = "Authentication error: error decoding access token"
+            error = "Authentication error: error decoding access token. You may need to rerun zenml connect."
             logger.exception(error)
             raise AuthorizationException(error)
 
