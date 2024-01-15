@@ -17,6 +17,7 @@ import os
 import re
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from uuid import uuid4
 
 import sky
 
@@ -178,6 +179,12 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
+        # Set up some variables for configuration
+        orchestrator_run_id = str(uuid4())
+        environment[
+            ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID
+        ] = orchestrator_run_id
+
         settings = cast(
             SkypilotBaseOrchestratorSettings,
             self.get_settings(deployment),
@@ -200,37 +207,44 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                 deployment=deployment, step_name=pipeline_step_name
             )
 
-        if self.config.disable_step_based_settings:
-            # Run the entire pipeline in one VM
-            command = PipelineEntrypointConfiguration.get_entrypoint_command()
-            args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
-                deployment_id=deployment.id
-            )
-        else:
-            for step_name, step in deployment.step_configurations.items():
+        different_settings_found = False
+
+        if not self.config.disable_step_based_settings:
+            for _, step in deployment.step_configurations.items():
                 step_settings = cast(
                     SkypilotBaseOrchestratorSettings,
                     self.get_settings(step),
                 )
                 if step_settings != settings:
+                    different_settings_found = True
                     logger.info(
                         "At least one step has different settings than the "
                         "pipeline. The step with different settings will be "
                         "run in a separate VM.\n"
                         "You can configure the orchestrator to disable this "
                         "behavior by updating the `disable_step_based_settings` "
-                        "in your orchestrator configuration."
-                        "By running the following command: "
+                        "in your orchestrator configuration "
+                        "by running the following command: "
                         "`zenml orchestrator update --disable-step-based-settings=True`"
                     )
                     break
-            # Run each step in a separate VM if configured.
-            # Build entrypoint command and args for the orchestrator VM.
-            # This will internally also build the command/args for all step VMs.
+
+        # Decide which configuration to use based on whether different settings were found
+        if (
+            not self.config.disable_step_based_settings
+            and different_settings_found
+        ):
+            # Run each step in a separate VM using SkypilotOrchestratorEntrypointConfiguration
             command = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_command()
             args = SkypilotOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
                 run_name=orchestrator_run_name,
                 deployment_id=deployment.id,
+            )
+        else:
+            # Run the entire pipeline in one VM using PipelineEntrypointConfiguration
+            command = PipelineEntrypointConfiguration.get_entrypoint_command()
+            args = PipelineEntrypointConfiguration.get_entrypoint_arguments(
+                deployment_id=deployment.id
             )
 
         entrypoint_str = " ".join(command)
