@@ -189,6 +189,7 @@ the Skypilot orchestrator will use the image to run the pipeline on a VM.
 python run.py --training-pipeline
 ```
 For more information, read the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
+{% endtab %}
 {% endtabs %}
 
 {% hint style="info" %}
