@@ -77,8 +77,8 @@ if [ -z "$SKIP_INSTALL" ]; then
   # pip install feast --upgrade  # The integration feast version has unsupported googleapis-common-protos >=1.52.* requirement
   
   # TEMPORARY FIX
-  pip install -r docs/requirements-docs-frozen.txt
   pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs]"
+  pip install -r docs/requirements-docs-frozen.txt
 fi
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################
@@ -95,7 +95,7 @@ rm -rf src/zenml/zen_stores/migrations/script.py.mako
 python docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
 
 
-############################################### Build the API docs ####################################################
+############################################## Build the API docs ####################################################
 if [ -n "$PUSH" ]; then
   if [ -n "$LATEST" ]; then
     mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION latest
