@@ -38,10 +38,7 @@ class Action(StrEnum):
     PROMOTE = "promote"
 
     # Secrets
-    BACKUP = "backup"
-
-    # Secrets
-    RESTORE = "restore"
+    BACKUP_RESTORE = "backup_restore"
 
 
 class ResourceType(StrEnum):

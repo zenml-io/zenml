@@ -228,8 +228,7 @@ def backup_secrets(
             store to the backup secrets store.
     """
     verify_permission(
-        resource_type=ResourceType.SECRET,
-        action=Action.BACKUP,
+        resource_type=ResourceType.SECRET, action=Action.BACKUP_RESTORE
     )
 
     zen_store().backup_secrets(
@@ -260,7 +259,7 @@ def restore_secrets(
     """
     verify_permission(
         resource_type=ResourceType.SECRET,
-        action=Action.RESTORE,
+        action=Action.BACKUP_RESTORE,
     )
 
     zen_store().restore_secrets(
