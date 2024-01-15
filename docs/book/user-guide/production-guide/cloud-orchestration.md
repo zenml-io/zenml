@@ -37,88 +37,158 @@ While there are detailed docs on [how to set up a Skypilot orchestrator](../../s
 
 {% tabs %}
 {% tab title="AWS" %}
-You will need to install and set up the AWS CLI on your machine as a
-prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before
-you register the S3 Artifact Store.
-
-The Amazon Web Services S3 Artifact Store flavor is provided by the [S3 ZenML integration](../../stacks-and-components/component-guide/artifact-stores/s3.md), you need to install it on your local machine to be able to register an S3 Artifact Store and add it to your stack:
+In order to launch a pipeline on AWS with the SkyPilot orchestrator, the first 
+thing that you need to do is to install the SkyPilot and AWS integrations:
 
 ```shell
-zenml integration install s3 -y
+zenml integration install aws skypilot_aws -f
 ```
 
-{% hint style="info" %}
-Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the S3 integration you can use `zenml integration requirements s3`.
-{% endhint %}
-
-The only configuration parameter mandatory for registering an S3 Artifact Store is the root path URI, which needs to point to an S3 bucket and take the form `s3://bucket-name`. In order to create a S3 bucket, refer to the [AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html).
-
-With the URI to your S3 bucket known, registering an S3 Artifact Store can be done as follows:
+Before we start registering any components, there is another step that we have 
+to execute. As we [explained in the previous section](./remote-storage.md#configuring-permissions-with-your-first-service-connector), 
+components such as orchestrators and container registries often require you to 
+set up the right permissions. In ZenML, this process is simplified with the 
+use of [Service Connectors](../../stacks-and-components/auth-management). 
+For this example, we will go ahead and use the [implicit authentication feature 
+of our AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#implicit-authentication) 
+if you haven't already created a service connector in the last section yet:
 
 ```shell
-# Register the S3 artifact-store
-zenml artifact-store register remote_artifact_store -f s3 --path=s3://bucket-name
+zenml service-connector register aws_connector --type aws --auth-method implicit
+```
+Once the step connector is set up, we can register the 
+[Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
+using the connection:
+
+```shell
+zenml orchestrator register skypilot_orchestrator -f vm_aws -c aws_connector
 ```
 
-For more information, read the [dedicated S3 artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/s3.md).
+The next step is to register an [AWS ECR container registry](../../stacks-and-components/component-guide/container-registries/aws.md). 
+Similar to the orchestrator, we will use our connector as we are setting up the 
+container registry.
+
+```shell
+zenml container-registry register cloud_container_registry -f aws --uri=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com -c aws_connector
+```
+
+Now, please you can register a new stack with:
+
+```shell
+zenml stack register cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
+```
+
+Amazing, everything is set up. You can now go ahead and run your pipeline. 
+As mentioned above, this will build an image, push it to your registry and 
+the Skypilot orchestrator will use the image to run the pipeline on a VM.
+
+```shell
+python run.py --training-pipeline
+```
+
+For more information, read the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 {% tab title="GCP" %}
-You will need to install and set up the Google Cloud CLI on your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk) , before you register the GCS Artifact Store.
-
-The Google Cloud Storage Artifact Store flavor is provided by the [GCP ZenML integration](../../stacks-and-components/component-guide/artifact-stores/gcp.md), you need to install it on your local machine to be able to register a GCS Artifact Store and add it to your stack:
-
-```shell
-zenml integration install gcp -y
-```
-
-{% hint style="info" %}
-Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the GCP integrations you can use `zenml integration requirements gcp`.
-{% endhint %}
-
-The only configuration parameter mandatory for registering a GCS Artifact Store is the root path URI, which needs to point to a GCS bucket and take the form `gs://bucket-name`. Please
-read [the Google Cloud Storage documentation](https://cloud.google.com/storage/docs/creating-buckets) on how to provision a GCS bucket.
-
-With the URI to your GCS bucket known, registering a GCS Artifact Store can be done as follows:
+In order to launch a pipeline on GCP with the SkyPilot orchestrator, the first 
+thing that you need to do is to install the SkyPilot and GCP integrations:
 
 ```shell
-# Register the GCS artifact store
-zenml artifact-store register remote_artifact_store -f gcp --path=gs://bucket-name
+zenml integration install gcp skypilot_gcp -f
 ```
 
-For more information, read the [dedicated GCS artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/gcp.md).
+Before we start registering any components, there is another step that we have 
+to execute. As we [explained in the previous section](./remote-storage.md#configuring-permissions-with-your-first-service-connector), 
+components such as orchestrators and container registries often require you to 
+set up the right permissions. In ZenML, this process is simplified with the 
+use of [Service Connectors](../../stacks-and-components/auth-management). 
+For this example, we will go ahead and use the [implicit authentication feature 
+of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#implicit-authentication) 
+if you haven't already created a service connector in the last section yet:
+
+```shell
+zenml service-connector register gcp_connector --type gcp --auth-method implicit --auto-configure
+```
+Once the step connector is set up, we can register the 
+[Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
+using the connection:
+
+```shell
+zenml orchestrator register skypilot_orchestrator -f vm_gcp -c gcp_connector
+```
+
+The next step is to register an [GCP container registry](../../stacks-and-components/component-guide/container-registries/gcp.md). 
+Similar to the orchestrator, we will use our connector as we are setting up the 
+container registry.
+
+```shell
+zenml container-registry register cloud-container-registry -f gcp --uri=gcr.io/<PROJECT_ID> -c gcp_connector
+```
+
+Now, please you can register a new stack with:
+
+```shell
+zenml stack register cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
+```
+
+Amazing, everything is set up. You can now go ahead and run your pipeline. 
+As mentioned above, this will build an image, push it to your registry and 
+the Skypilot orchestrator will use the image to run the pipeline on a VM.
+
+```shell
+python run.py --training-pipeline
+```
+For more information, read the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtab %}
 {% tab title="Azure" %}
-You will need to install and set up the Azure CLI on your machine as a prerequisite, as covered in [the Azure documentation](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli), before you register the Azure Artifact Store.
-
-The Microsoft Azure Artifact Store flavor is provided by the [Azure ZenML integration](../../stacks-and-components/component-guide/artifact-stores/azure.md), you need to install it on your local machine to be able to register an Azure Artifact Store and add it to your stack:
-
-```shell
-zenml integration install azure -y
-```
-
-{% hint style="info" %}
-Having trouble with this command? You can use `poetry` or `pip` to install the requirements of any ZenML integration directly. In order to obtain the exact requirements of the Azure integration you can use `zenml integration requirements azure`.
-{% endhint %}
-
-The only configuration parameter mandatory for registering an Azure Artifact Store is the root path URI, which needs to
-point to an Azure Blog Storage container and take the form `az://container-name` or `abfs://container-name`. Please
-read [the Azure Blob Storage documentation](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal)
-on how to provision an Azure Blob Storage container.
-
-With the URI to your Azure Blob Storage container known, registering an Azure Artifact Store can be done as follows:
+In order to launch a pipeline on Azure with the SkyPilot orchestrator, the first 
+thing that you need to do is to install the SkyPilot and Azure integrations:
 
 ```shell
-# Register the Azure artifact store
-zenml artifact-store register remote_artifact_store -f azure --path=az://container-name
+zenml integration install azure skypilot_azure -f
 ```
 
-For more information, read the [dedicated Azure artifact store flavor guide](../../stacks-and-components/component-guide/artifact-stores/azure.md).
-{% endtab %}
-{% tab title="Other" %}
-You can create a remote stack on pretty much any environment, including other cloud providers such as Lambda Cloud, Paperspace etc. A cloud agnostic stack would use the [Kubernetes](../../stacks-and-components/component-guide/orchestrators/kubernetes.md) orchestrator, a [Minio artifact store](../../stacks-and-components/component-guide/artifact-stores/artifact-stores.md), and a [default container registry](../../stacks-and-components/component-guide/container-registries/default.md).
+Before we start registering any components, there is another step that we have 
+to execute. As we [explained in the previous section](./remote-storage.md#configuring-permissions-with-your-first-service-connector), 
+components such as orchestrators and container registries often require you to 
+set up the right permissions. In ZenML, this process is simplified with the 
+use of [Service Connectors](../../stacks-and-components/auth-management). 
+For this example, we will go ahead and use the [implicit authentication feature 
+of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#implicit-authentication) 
+if you haven't already created a service connector in the last section yet:
 
-It is also relatively simple to create a [custom orchestrator flavor](../../stacks-and-components/custom-solutions/implement-a-custom-stack-component.md) for your use case.
-{% endtab %}
+```shell
+zenml service-connector register azure_connector --type azure --auth-method implicit --auto-configure
+```
+Once the step connector is set up, we can register the 
+[Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
+using the connection:
+
+```shell
+zenml orchestrator register skypilot_orchestrator -f vm_azure -c azure_connector
+```
+
+The next step is to register an [Azure container registry](../../stacks-and-components/component-guide/container-registries/azure.md). 
+Similar to the orchestrator, we will use our connector as we are setting up the 
+container registry.
+
+```shell
+zenml container-registry register cloud-container-registry -f azure --uri=<REGISTRY_NAME>.azurecr.io -c azure_connector
+```
+
+Now, please you can register a new stack with:
+
+```shell
+zenml stack register cloud_stack -o skypilot_orchestrator -a cloud_artifact_store -c cloud_container_registry
+```
+
+Amazing, everything is set up. You can now go ahead and run your pipeline. 
+As mentioned above, this will build an image, push it to your registry and 
+the Skypilot orchestrator will use the image to run the pipeline on a VM.
+
+```shell
+python run.py --training-pipeline
+```
+For more information, read the [dedicated Skypilot orchestrator guide](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md).
 {% endtabs %}
 
 {% hint style="info" %}
