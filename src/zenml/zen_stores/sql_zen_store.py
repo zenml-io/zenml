@@ -1028,9 +1028,22 @@ class SqlZenStore(BaseZenStore):
         assert self.db_backup_file_path is not None
 
         output = []
-        for table in metadata.tables.values():
+        for table in metadata.sorted_tables:
             # write the table creation statement
-            output.append(str(CreateTable(table)).strip())
+            create_table_stmt = str(CreateTable(table)).strip()
+            # if any of the columns in the table are a reserved word in mysql, we need to escape them
+            # https://dev.mysql.com/doc/refman/8.0/en/keywords.html
+            reserved_words = [
+                "KEY" # consider only "key" for now
+            ]
+            # for word in reserved_words:
+            #     create_table_stmt = create_table_stmt.replace(f" {word} ", f" `{word}` ")
+            # replace line key VARCHAR(255) NOT NULL with `key` VARCHAR(255) NOT NULL
+            create_table_stmt = create_table_stmt.replace("key VARCHAR(255) NOT NULL", "`key` VARCHAR(255) NOT NULL")
+            create_table_stmt = create_table_stmt.replace("values TEXT NOT NULL", "`values` TEXT NOT NULL")
+            # if amy double quotes are used for column names, replace them with backticks
+            create_table_stmt = create_table_stmt.replace('"', '')
+            output.append(create_table_stmt)
 
             with self.engine.connect() as conn:
                 # write the table data
@@ -1038,8 +1051,17 @@ class SqlZenStore(BaseZenStore):
                     # checked manually that converting to string isn't a problem
                     # if the column is of type int and i pass, say, '5', it still
                     # takes 5 as the value in the table's row.
-                    row_values = [str(row[c.name]) for c in table.columns if row[c.name] is not None]
+                    row_values = []
+                    for c in table.columns:
+                        if row[c.name] is not None:
+                            # escape any single quotes in the row value
+                            row_values.append(str(row[c.name]).replace("'", "\\'"))
+                        else:
+                            row_values.append("NULL")
+
                     values = ', '.join(f"'{item}'" for item in row_values)
+                    values = values.replace("'NULL'", "NULL")
+
                     insert_stmt = f"INSERT INTO {table.name} VALUES ({values})"
                     output.append(insert_stmt)
         
