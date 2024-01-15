@@ -40,6 +40,12 @@ on-demand and managed spot VMs. While you can select the VM type you want to use
 also includes an optimizer that automatically selects the cheapest VM/zone/region/cloud for your workloads.
 Finally, the orchestrator includes an autostop feature that cleans up idle clusters, preventing unnecessary cloud costs.
 
+{% hint style="info" %}
+You can configure the SkyPilot VM Orchestrator to use a specific VM type, and 
+resources for each step of your pipeline can be configured individually.
+Read more about how to configure step-specific resources [here](#configuring-step-specific-resources).
+{% endhint %}
+
 {% hint style="warning" %}
 The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](/docs/book/user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
 {% endhint %}
@@ -378,7 +384,11 @@ One of the key features of the SkyPilot VM Orchestrator is the ability to run ea
 
 The SkyPilot VM Orchestrator allows you to configure resources for each step individually. This means you can specify different VM types, CPU and memory requirements, and even use spot instances for certain steps while using on-demand instances for others.
 
-To configure step-specific resources, you can pass a `SkypilotBaseOrchestratorSettings` object to the `settings` parameter of the `@step` decorator. This object allows you to define various attributes such as `instance_type`, `cpus`, `memory`, `use_spot`, `region`, and more.
+If no step-specific settings are specified, the orchestrator will use the resources specified in the orchestrator settings for each step and run the entire pipeline in one VM. If step-specific settings are specified, an orchestrator VM will be spun up first, which will subsequently spin out new VMs dependant on the step settings. You can disable this behavior by setting the `disable_step_based_settings` parameter to `True` in the orchestrator configuration, using the following command:
+
+```shell
+zenml orchestrator update <ORCHESTRATOR_NAME> --disable_step_based_settings=True
+```
 
 Here's an example of how to configure specific resources for a step for the AWS cloud:
 
