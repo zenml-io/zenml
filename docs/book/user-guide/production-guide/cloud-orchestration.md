@@ -38,7 +38,7 @@ While there are detailed docs on [how to set up a Skypilot orchestrator](../../s
 {% tabs %}
 {% tab title="AWS" %}
 In order to launch a pipeline on AWS with the SkyPilot orchestrator, the first 
-thing that you need to do is to install the SkyPilot and AWS integrations:
+thing that you need to do is to install the AWS and Skypilot integrations:
 
 ```shell
 zenml integration install aws skypilot_aws -f
@@ -51,14 +51,13 @@ set up the right permissions. In ZenML, this process is simplified with the
 use of [Service Connectors](../../stacks-and-components/auth-management). 
 For this example, we will go ahead and use the [implicit authentication feature 
 of our AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#implicit-authentication) 
-if you haven't already created a service connector in the last section yet:
+if you haven't already created a service connector in the last section:
 
 ```shell
 zenml service-connector register aws_connector --type aws --auth-method implicit
 ```
 Once the service connector is set up, we can register [a
-Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
-using the connection:
+Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_aws -c aws_connector
@@ -78,7 +77,7 @@ For more information, you can always check the [dedicated Skypilot orchestrator 
 {% endtab %}
 {% tab title="GCP" %}
 In order to launch a pipeline on GCP with the SkyPilot orchestrator, the first 
-thing that you need to do is to install the SkyPilot and GCP integrations:
+thing that you need to do is to install the GCP and Skypilot integrations:
 
 ```shell
 zenml integration install gcp skypilot_gcp -f
@@ -91,14 +90,13 @@ set up the right permissions. In ZenML, this process is simplified with the
 use of [Service Connectors](../../stacks-and-components/auth-management). 
 For this example, we will go ahead and use the [implicit authentication feature 
 of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#implicit-authentication) 
-if you haven't already created a service connector in the last section yet:
+if you haven't already created a service connector in the last section:
 
 ```shell
 zenml service-connector register gcp_connector --type gcp --auth-method implicit --auto-configure
 ```
 Once the service connector is set up, we can register [a 
-Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
-using the connection:
+Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_gcp -c gcp_connector
@@ -118,7 +116,7 @@ For more information, you can always check the [dedicated Skypilot orchestrator 
 {% endtab %}
 {% tab title="Azure" %}
 In order to launch a pipeline on Azure with the SkyPilot orchestrator, the first 
-thing that you need to do is to install the SkyPilot and Azure integrations:
+thing that you need to do is to install the Azure and SkyPilot integrations:
 
 ```shell
 zenml integration install azure skypilot_azure -f
@@ -130,15 +128,14 @@ components such as orchestrators and container registries often require you to
 set up the right permissions. In ZenML, this process is simplified with the 
 use of [Service Connectors](../../stacks-and-components/auth-management). 
 For this example, we will go ahead and use the [implicit authentication feature 
-of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#implicit-authentication) 
-if you haven't already created a service connector in the last section yet:
+of our Azure service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#implicit-authentication) 
+if you haven't already created a service connector in the last section:
 
 ```shell
 zenml service-connector register azure_connector --type azure --auth-method implicit --auto-configure
 ```
 Once the service connector is set up, we can register [a 
-Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md) 
-using the connection:
+Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
 zenml orchestrator register skypilot_orchestrator -f vm_azure -c azure_connector
