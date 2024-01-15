@@ -3764,6 +3764,62 @@ class TestModelVersion:
             assert mv1 in mvs
             assert mv2 in mvs
 
+    def test_list_by_tags(self):
+        """Test list using tag filter."""
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            mv1 = zs.create_model_version(
+                ModelVersionRequest(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="great one",
+                    tags=["tag1", "tag2"],
+                )
+            )
+            mv2 = zs.create_model_version(
+                ModelVersionRequest(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="and yet another one",
+                    tags=["tag3", "tag2"],
+                )
+            )
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(),
+                tags=[],
+            )
+            assert len(mvs) == 2
+            assert mv1 in mvs
+            assert mv2 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(),
+                tags=["tag2"],
+            )
+            assert len(mvs) == 2
+            assert mv1 in mvs
+            assert mv2 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(),
+                tags=["tag1"],
+            )
+            assert len(mvs) == 1
+            assert mv1 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(),
+                tags=["tag3"],
+            )
+            assert len(mvs) == 1
+            assert mv2 in mvs
+
     def test_delete_not_found(self):
         """Test that delete fails if not found."""
         with ModelVersionContext():

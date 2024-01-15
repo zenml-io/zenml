@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for models."""
 
-from typing import Union
+from typing import List, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -75,6 +75,7 @@ def list_model_versions(
         make_dependable(ModelVersionFilter)
     ),
     hydrate: bool = False,
+    tags: List[str] = [],
     auth_context: AuthContext = Security(authorize),
 ) -> Page[ModelVersionResponse]:
     """Get model versions according to query filters.
@@ -84,6 +85,7 @@ def list_model_versions(
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
+        tags: Filter model versions by tags.
         auth_context: The authentication context.
 
     Returns:
@@ -100,6 +102,7 @@ def list_model_versions(
     model_versions = zen_store().list_model_versions(
         model_version_filter_model=model_version_filter_model,
         hydrate=hydrate,
+        tags=tags,
     )
     return dehydrate_page(model_versions)
 
