@@ -345,5 +345,7 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         if self.tags:
             from zenml.zen_stores.schemas import TagSchema
 
-            return [col(TagSchema.name).in_(self.tags)]
+            return [
+                col(TagSchema.name).in_(self.tags)  # type: ignore[list-item]
+            ]
         return []

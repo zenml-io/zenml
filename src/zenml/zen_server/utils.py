@@ -282,8 +282,6 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
     Returns:
         Function to use in FastAPI `Depends`.
     """
-    from enum import EnumType
-
     from fastapi import Query
 
     def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
@@ -297,25 +295,21 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
                 error["loc"] = tuple(["query"] + list(error["loc"]))
             raise HTTPException(422, detail=e.errors())
 
-    query_params = [
-        v
-        for v in inspect.signature(cls).parameters.values()  # type: ignore[attr-defined]
-    ]
+    query_params = [v for v in inspect.signature(cls).parameters.values()]
     for i in range(len(query_params)):
         qp = query_params[i]
         try:
             iter(qp.annotation)
-            if not isinstance(qp.annotation, EnumType):
-                query_params[i] = inspect.Parameter(
-                    name=qp.name,
-                    default=Query(qp.default),
-                    kind=qp.kind,
-                    annotation=qp.annotation,
-                )
+            query_params[i] = inspect.Parameter(
+                name=qp.name,
+                default=Query(qp.default),
+                kind=qp.kind,
+                annotation=qp.annotation,
+            )
         except TypeError:
             pass
 
-    init_cls_and_handle_errors.__signature__ = inspect.Signature(
+    init_cls_and_handle_errors.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
         parameters=query_params
     )
 
