@@ -77,7 +77,7 @@ runs:
         AWS_ACCESS_KEY_ID: ${{ inputs.runners_cache_access_key_id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.runners_cache_secret_access_key }}
       with:
-        endpoint: minio-service.minioo.svc.cluster.local  # optional
+        endpoint: minio-service.minioa.svc.cluster.local  # optional
         insecure: true  # optional, use http instead of https. default false
         bucket: caching  # required
         use-fallback: false  # optional, use github actions cache fallback, default false
@@ -94,15 +94,43 @@ runs:
       with:
         script: |
           const title = 'Minio Cache Miss Detected';
-          const body = 'A cache miss was detected in the ${{ github.workflow }} workflow run on ${{ github.ref }}.';
+          const body = `
+            A cache miss was detected in the ${{ github.workflow }} workflow run.
+            - **Branch**: ${{ github.ref_name }}
+            - **Commit**: ${{ github.sha }}
+            - **Date**: ${{ github.event.head_commit.timestamp }}
+            - **Run ID**: ${{ github.run_id }}
+            - **Run Number**: ${{ github.run_number }}
+          `;
           const labels = ['cache-miss', 'CI'];
-          github.rest.issues.create({
+
+          // Check if an issue with the same title already exists
+          const issues = await github.rest.issues.listForRepo({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title,
-            body,
-            labels
+            state: 'open',
+            labels: labels.join(',')
           });
+
+          const existingIssue = issues.data.find(issue => issue.title === title);
+          if (!existingIssue) {
+            // Create a new issue if one does not already exist
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels
+            });
+          } else {
+            // Optionally, add a comment to the existing issue
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: existingIssue.number,
+              body: `Cache miss detected again on ${new Date().toISOString()}`
+            });
+          }
     # Disabled for now because it doesn't work well with multiple parallel jobs
     # - uses: syphar/restore-pip-download-cache@v1
     #   with:
