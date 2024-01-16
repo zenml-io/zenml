@@ -283,8 +283,8 @@ class WorkspaceScopedFilter(BaseFilter):
 class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
     """Model to enable advanced scoping with workspace and tagging.
 
-    `tags` property is a list and cannot be properly parsed on CLI,
-    make sure to allow them as a separate option like this
+    `tags` property is a list and cannot be properly parsed on CLI.
+    Make sure to allow them as a separate option like this:
     @click.option(
         "--tag",
         "-t",
