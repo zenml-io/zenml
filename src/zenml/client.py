@@ -2865,6 +2865,7 @@ class Client(metaclass=ClientMetaClass):
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
+        tags: Optional[List[str]] = [],
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
 
@@ -2892,6 +2893,7 @@ class Client(metaclass=ClientMetaClass):
             has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tags: A list of tags to filter by.
 
         Returns:
             A list of artifact versions.
@@ -2917,6 +2919,7 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
+            tags=tags,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id

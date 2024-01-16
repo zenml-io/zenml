@@ -32,11 +32,11 @@ from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.tag import TagResponse
@@ -346,14 +346,14 @@ class ArtifactVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ArtifactVersionFilter(WorkspaceScopedFilter):
+class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of artifact versions."""
 
     # `name` and `only_unused` refer to properties related to other entities
     #  rather than a field in the db, hence they needs to be handled
     #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "name",
         "only_unused",
         "has_custom_name",

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 from functools import partial
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import click
 
@@ -23,6 +23,7 @@ from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import ArtifactFilter, ArtifactVersionFilter
+from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)
@@ -113,32 +114,35 @@ def version() -> None:
 
 
 @cli_utils.list_options(ArtifactVersionFilter)
+@click.option(
+    "--tag",
+    "-t",
+    help="Tags to search for.",
+    type=str,
+    required=False,
+    multiple=True,
+)
 @version.command("list", help="List all artifact versions.")
-def list_artifact_versions(**kwargs: Any) -> None:
+def list_artifact_versions(tag: Optional[List[str]], **kwargs: Any) -> None:
     """List all artifact versions.
 
     Args:
+        tag: Tags to search for.
         **kwargs: Keyword arguments to filter artifact versions by.
     """
-    artifact_versions = Client().list_artifact_versions(**kwargs)
+    artifact_versions = Client().list_artifact_versions(
+        **kwargs, tags=tag or []
+    )
 
     if not artifact_versions:
         cli_utils.declare("No artifact versions found.")
         return
 
-    cli_utils.print_pydantic_models(
-        artifact_versions,
-        exclude_columns=[
-            "created",
-            "updated",
-            "user",
-            "workspace",
-            "producer_step_run_id",
-            "run_metadata",
-            "artifact_store_id",
-            "visualizations",
-        ],
-    )
+    to_print = []
+    for artifact_version in artifact_versions:
+        to_print.append(_artifact_version_to_print(artifact_version))
+
+    cli_utils.print_table(to_print)
 
 
 @version.command("update", help="Update an artifact version.")
@@ -281,3 +285,18 @@ def prune_artifacts(
         except Exception as e:
             cli_utils.error(str(e))
     cli_utils.declare("All unused artifacts and artifact versions deleted.")
+
+
+def _artifact_version_to_print(
+    artifact_version: ArtifactVersionResponse,
+) -> Dict[str, Any]:
+    return {
+        "id": artifact_version.id,
+        "name": artifact_version.artifact.name,
+        "version": artifact_version.version,
+        "uri": artifact_version.uri,
+        "type": artifact_version.type,
+        "materializer": artifact_version.materializer,
+        "data_type": artifact_version.data_type,
+        "tags": [t.name for t in artifact_version.tags],
+    }
