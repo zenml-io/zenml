@@ -23,6 +23,7 @@ from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import ArtifactFilter, ArtifactVersionFilter
+from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.utils.pagination_utils import depaginate
 
@@ -35,23 +36,33 @@ def artifact() -> None:
 
 
 @cli_utils.list_options(ArtifactFilter)
+@click.option(
+    "--tag",
+    "-t",
+    help="Tags to search for.",
+    type=str,
+    required=False,
+    multiple=True,
+)
 @artifact.command("list", help="List all artifacts.")
-def list_artifacts(**kwargs: Any) -> None:
+def list_artifacts(tag: Optional[List[str]], **kwargs: Any) -> None:
     """List all artifacts.
 
     Args:
+        tag: Tags to search for.
         **kwargs: Keyword arguments to filter artifacts by.
     """
-    artifacts = Client().list_artifacts(**kwargs)
+    artifacts = Client().list_artifacts(**kwargs, tags=tag or [])
 
     if not artifacts:
         cli_utils.declare("No artifacts found.")
         return
 
-    cli_utils.print_pydantic_models(
-        artifacts,
-        exclude_columns=["created", "updated", "has_custom_name"],
-    )
+    to_print = []
+    for artifact in artifacts:
+        to_print.append(_artifact_to_print(artifact))
+
+    cli_utils.print_table(to_print)
 
 
 @artifact.command("update", help="Update an artifact.")
@@ -298,5 +309,15 @@ def _artifact_version_to_print(
         "type": artifact_version.type,
         "materializer": artifact_version.materializer,
         "data_type": artifact_version.data_type,
+        "tags": [t.name for t in artifact_version.tags],
+    }
+
+
+def _artifact_to_print(
+    artifact_version: ArtifactResponse,
+) -> Dict[str, Any]:
+    return {
+        "id": artifact_version.id,
+        "name": artifact_version.name,
         "tags": [t.name for t in artifact_version.tags],
     }

@@ -2713,6 +2713,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
+        tags: Optional[List[str]] = [],
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
 
@@ -2728,6 +2729,7 @@ class Client(metaclass=ClientMetaClass):
             has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tags: Filter artifacts by tags.
 
         Returns:
             A list of artifacts.
@@ -2742,6 +2744,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             has_custom_name=has_custom_name,
+            tags=tags,
         )
         return self.zen_store.list_artifacts(
             artifact_filter_model,
