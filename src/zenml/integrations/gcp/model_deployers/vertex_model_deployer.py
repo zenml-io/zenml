@@ -21,13 +21,13 @@ from uuid import UUID
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.bentoml.constants import BENTOML_DEFAULT_PORT
-from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
-    BentoMLModelDeployerConfig,
-    BentoMLModelDeployerFlavor,
-)
 from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentConfig,
     BentoMLDeploymentService,
+)
+from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
+    VertexModelDeployerConfig,
+    VertexModelDeployerFlavor,
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
@@ -40,27 +40,25 @@ logger = get_logger(__name__)
 
 
 class VertexModelDeployer(BaseModelDeployer):
-    """Vertex model deployer stack component implementation."""
+    """Vertex AI model deployer stack component implementation."""
 
     NAME: ClassVar[str] = "VertexAI"
-    FLAVOR: ClassVar[
-        Type[BaseModelDeployerFlavor]
-    ] = BentoMLModelDeployerFlavor
+    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = VertexModelDeployerFlavor
 
     _service_path: Optional[str] = None
 
     @property
-    def config(self) -> BentoMLModelDeployerConfig:
+    def config(self) -> VertexModelDeployerConfig:
         """Returns the `BentoMLModelDeployerConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(BentoMLModelDeployerConfig, self._config)
+        return cast(VertexModelDeployerConfig, self._config)
 
     @staticmethod
     def get_service_path(id_: UUID) -> str:
-        """Get the path where local BentoML service information is stored.
+        """Get the path where local Vertex service information is stored.
 
         This includes the deployment service configuration, PID and log files
         are stored.

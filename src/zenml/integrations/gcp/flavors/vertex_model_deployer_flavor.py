@@ -32,7 +32,7 @@ class VertexModelDeployerConfig(BaseModelDeployerConfig):
 
 
 class VertexModelDeployerFlavor(BaseModelDeployerFlavor):
-    """Flavor for the BentoML model deployer."""
+    """Flavor for the Vertex model deployer."""
 
     @property
     def name(self) -> str:
@@ -72,7 +72,7 @@ class VertexModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def config_class(self) -> Type[VertexModelDeployerConfig]:
-        """Returns `BentoMLModelDeployerConfig` config class.
+        """Returns `VertexModelDeployerConfig` config class.
 
         Returns:
                 The config class.
