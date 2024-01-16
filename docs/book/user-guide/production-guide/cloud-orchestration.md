@@ -41,7 +41,7 @@ In order to launch a pipeline on AWS with the SkyPilot orchestrator, the first
 thing that you need to do is to install the AWS and Skypilot integrations:
 
 ```shell
-zenml integration install aws skypilot_aws -f
+zenml integration install aws skypilot_aws -y
 ```
 
 Before we start registering any components, there is another step that we have 
@@ -80,7 +80,7 @@ In order to launch a pipeline on GCP with the SkyPilot orchestrator, the first
 thing that you need to do is to install the GCP and Skypilot integrations:
 
 ```shell
-zenml integration install gcp skypilot_gcp -f
+zenml integration install gcp skypilot_gcp -y
 ```
 
 Before we start registering any components, there is another step that we have 
@@ -119,7 +119,7 @@ In order to launch a pipeline on Azure with the SkyPilot orchestrator, the first
 thing that you need to do is to install the Azure and SkyPilot integrations:
 
 ```shell
-zenml integration install azure skypilot_azure -f
+zenml integration install azure skypilot_azure -y
 ```
 
 Before we start registering any components, there is another step that we have 
