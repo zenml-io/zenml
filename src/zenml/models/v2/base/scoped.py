@@ -27,6 +27,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import Field
+from sqlmodel import col
 
 from zenml.models.v2.base.base import (
     BaseRequest,
@@ -272,5 +273,63 @@ class WorkspaceScopedFilter(BaseFilter):
                 getattr(table, "workspace_id").is_(None),
             )
             query = query.where(scope_filter)
+
+        return query
+
+
+class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
+    """Model to enable advanced scoping with workspace and tagging.
+
+    `tags` property is a list and cannot be properly parsed on CLI,
+    make sure to allow them as a separate option like this
+    @click.option(
+        "--tag",
+        "-t",
+        help="Tags to search for.",
+        type=str,
+        required=False,
+        multiple=True,
+    )
+    """
+
+    tags: Optional[List[str]] = Field(
+        default_factory=list,
+        description="List of tags to apply to the filter query.",
+    )
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "tags",
+    ]
+
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        "tags",
+    ]
+
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
+
+        query = super().apply_filter(query=query, table=table)
+
+        if self.tags:
+            query = (
+                query.join(getattr(table, "tags"))
+                .join(TagResourceSchema.tag)
+                .where(col(TagSchema.name).in_(self.tags))
+            )
 
         return query
