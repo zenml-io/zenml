@@ -3651,19 +3651,19 @@ class TestModel:
         with ModelVersionContext():
             zs = clean_client.zen_store
 
-            ms = zs.list_models(model_filter_model=ModelFilter(), tags=[])
+            ms = zs.list_models(model_filter_model=ModelFilter(tags=[]))
             assert len(ms) == 1
 
-            ms = zs.list_models(model_filter_model=ModelFilter(), tags=["foo"])
+            ms = zs.list_models(model_filter_model=ModelFilter(tags=["foo"]))
             assert len(ms) == 1
 
             ms = zs.list_models(
-                model_filter_model=ModelFilter(), tags=["foo", "bar"]
+                model_filter_model=ModelFilter(tags=["foo", "bar"])
             )
             assert len(ms) == 1
 
             ms = zs.list_models(
-                model_filter_model=ModelFilter(), tags=["foobar"]
+                model_filter_model=ModelFilter(tags=["foobar"])
             )
             assert len(ms) == 0
 
@@ -3809,8 +3809,7 @@ class TestModelVersion:
             )
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(),
-                tags=[],
+                model_version_filter_model=ModelVersionFilter(tags=[]),
             )
             assert len(mvs) == 2
             assert mv1 in mvs
@@ -3818,8 +3817,7 @@ class TestModelVersion:
 
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(),
-                tags=["tag2"],
+                model_version_filter_model=ModelVersionFilter(tags=["tag2"]),
             )
             assert len(mvs) == 2
             assert mv1 in mvs
@@ -3827,16 +3825,14 @@ class TestModelVersion:
 
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(),
-                tags=["tag1"],
+                model_version_filter_model=ModelVersionFilter(tags=["tag1"]),
             )
             assert len(mvs) == 1
             assert mv1 in mvs
 
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(),
-                tags=["tag3"],
+                model_version_filter_model=ModelVersionFilter(tags=["tag3"]),
             )
             assert len(mvs) == 1
             assert mv2 in mvs
@@ -4769,7 +4765,9 @@ class TestTagResource:
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
         with ModelVersionContext() as model:
-            tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
+            tag = clean_client.create_tag(
+                TagRequest(name="test_cascade_deletion", color="red")
+            )
             fake_model_id = uuid4() if not use_model else model.id
             clean_client.zen_store.create_tag_resource(
                 TagResourceRequest(
@@ -4791,7 +4789,7 @@ class TestTagResource:
             if use_tag:
                 clean_client.delete_tag(tag.id)
                 tag = clean_client.create_tag(
-                    TagRequest(name="foo", color="red")
+                    TagRequest(name="test_cascade_deletion", color="red")
                 )
             else:
                 clean_client.delete_model(model.id)
