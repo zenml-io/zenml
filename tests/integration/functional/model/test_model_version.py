@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 from typing import Optional
 from unittest import mock
+from unittest.mock import patch
 
 import pytest
 from typing_extensions import Annotated
@@ -81,17 +82,24 @@ def artifact_linker(
     model_version: Optional[ModelVersion] = None,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
+    do_link: bool = True,
 ) -> None:
-    """Step linking an artifact to a model version via function."""
+    """Step linking an artifact to a model version via function or implicit."""
 
-    artifact = save_artifact(data="Hello, World!", name="manual_artifact")
-
-    link_artifact_to_model(
-        artifact_version_id=artifact.id,
-        model_version=model_version,
+    artifact = save_artifact(
+        data="Hello, World!",
+        name="manual_artifact",
         is_model_artifact=is_model_artifact,
         is_deployment_artifact=is_deployment_artifact,
     )
+
+    if do_link:
+        link_artifact_to_model(
+            artifact_version_id=artifact.id,
+            model_version=model_version,
+            is_model_artifact=is_model_artifact,
+            is_deployment_artifact=is_deployment_artifact,
+        )
 
 
 @step
@@ -579,3 +587,67 @@ class TestModelVersion:
         mv = ModelVersion(name=MODEL_NAME, version="latest")
         assert mv.number == 4
         assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
+
+    def test_link_artifact_via_save_artifact(self, clean_client: "Client"):
+        """Test that artifacts are auto-linked to a model version on call of `save_artifact`."""
+
+        @pipeline(
+            enable_cache=False,
+        )
+        def _inner_pipeline(
+            is_model_artifact: bool = False,
+            is_deployment_artifact: bool = False,
+        ):
+            artifact_linker(
+                is_model_artifact=is_model_artifact,
+                is_deployment_artifact=is_deployment_artifact,
+                do_link=False,
+            )
+
+        mv_in_pipe = ModelVersion(
+            name=MODEL_NAME,
+        )
+
+        # no context, no model
+        with patch("zenml.artifacts.utils.logger.debug") as logger:
+            _inner_pipeline()
+            logger.assert_called_once_with(
+                "Unable to link saved artifact to model version."
+            )
+
+        # use context
+        _inner_pipeline.with_options(model_version=mv_in_pipe)()
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 1
+        assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
+
+        # use context + model
+        _inner_pipeline.with_options(model_version=mv_in_pipe)(
+            is_model_artifact=True
+        )
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 2
+        assert (
+            mv.get_model_artifact("manual_artifact").load() == "Hello, World!"
+        )
+
+        # use context + deployment
+        _inner_pipeline.with_options(model_version=mv_in_pipe)(
+            is_deployment_artifact=True
+        )
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 3
+        assert (
+            mv.get_deployment_artifact("manual_artifact").load()
+            == "Hello, World!"
+        )
+
+        # link outside of a step
+        with patch("zenml.artifacts.utils.logger.debug") as logger:
+            save_artifact(data="Hello, World!", name="manual_artifact")
+            logger.assert_called_once_with(
+                "Unable to link saved artifact to step run."
+            )
