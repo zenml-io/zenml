@@ -3663,8 +3663,11 @@ class TestModel:
             assert len(ms) == 1
 
             ms = zs.list_models(
-                model_filter_model=ModelFilter(tags=["foobar"])
+                model_filter_model=ModelFilter(tags=["non_existent_tag"])
             )
+            assert len(ms) == 0
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tags=[""]))
             assert len(ms) == 0
 
 
@@ -3817,6 +3820,12 @@ class TestModelVersion:
 
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(tags=[""]),
+            )
+            assert len(mvs) == 0
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
                 model_version_filter_model=ModelVersionFilter(tags=["tag2"]),
             )
             assert len(mvs) == 2
@@ -3836,6 +3845,14 @@ class TestModelVersion:
             )
             assert len(mvs) == 1
             assert mv2 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(
+                    tags=["non_existent_tag"]
+                ),
+            )
+            assert len(mvs) == 0
 
     def test_delete_not_found(self):
         """Test that delete fails if not found."""
