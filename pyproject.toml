@@ -291,7 +291,7 @@ exclude = [
     "__pypackages__",
     "_build",
     "buck-out",
-    "test_durations",
+    ".test_durations",
     "build",
     "dist",
     "node_modules",
