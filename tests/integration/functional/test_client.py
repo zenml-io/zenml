@@ -1586,9 +1586,16 @@ class TestModelVersion:
         model_versions = client_with_model.list_model_versions(
             self.MODEL_NAME,
             name=f"contains:{self.VERSION_NAME}_",
-            tags=["foobar"],
+            tags=["non_existent_tag"],
         )
         assert len(model_versions) == 0
+
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tags=[],
+        )
+        assert len(model_versions) == PAGE_SIZE_DEFAULT
 
     def test_delete_model_version_found(self, client_with_model: "Client"):
         client_with_model.delete_model_version(
