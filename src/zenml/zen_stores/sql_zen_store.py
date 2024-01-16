@@ -97,6 +97,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     StackComponentExistsError,
     StackExistsError,
+    TriggerExistsError,
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
@@ -222,6 +223,12 @@ from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.stack.flavor_registry import FlavorRegistry
+from zenml.models.v2.core.trigger import (
+    TriggerFilter,
+    TriggerRequest,
+    TriggerResponse,
+)
+from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 from zenml.utils import uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -5889,6 +5896,187 @@ class SqlZenStore(BaseZenStore):
 
             pipeline_run.update(run_update)
             session.add(pipeline_run)
+
+
+    # --------------------------- Triggers ---------------------------
+
+
+    @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
+    def create_trigger(
+        self, trigger: TriggerRequest
+    ) -> TriggerResponse:
+        """Creates a new trigger.
+
+        Args:
+            trigger: Trigger to be created.
+
+        Returns:
+            The newly created trigger.
+
+        Raises:
+            Exception: If anything goes wrong during the creation of the
+                trigger.
+        """
+        with Session(self.engine) as session:
+            self._fail_if_trigger_with_name_exists(trigger=trigger, session=session)
+
+            new_trigger = TriggerSchema.from_request(trigger)
+            session.add(new_trigger)
+            session.commit()
+            session.refresh(new_trigger)
+
+            return new_trigger.to_model(hydrate=True)
+
+    def get_trigger(self, trigger_id: UUID, hydrate: bool = True) -> TriggerResponse:
+        """Get a trigger by its unique ID.
+
+        Args:
+            trigger_id: The ID of the trigger to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger with the given ID.
+
+        Raises:
+            KeyError: if the trigger doesn't exist.
+        """
+        with Session(self.engine) as session:
+            trigger = session.exec(
+                select(TriggerSchema).where(TriggerSchema.id == trigger_id)
+            ).first()
+
+            if trigger is None:
+                raise KeyError(f"Trigger with ID {trigger_id} not found.")
+            return trigger.to_model(hydrate=hydrate)
+
+    def list_triggers(
+        self,
+        trigger_filter_model: TriggerFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerResponse]:
+        """List all trigger matching the given filter criteria.
+
+        Args:
+            trigger_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all triggers matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(TriggerSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StackSchema,
+                filter_model=trigger_filter_model,
+                hydrate=hydrate,
+            )
+
+    @track_decorator(AnalyticsEvent.UPDATED_TRIGGER)
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: StackUpdate
+    ) -> StackResponse:
+        """Update a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger update.
+            trigger_update: The update request on the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            KeyError: if the trigger doesn't exist.
+            IllegalOperationError: if the trigger is a default trigger.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the domain key (name, workspace, owner)
+            # already exists
+            existing_trigger = session.exec(
+                select(TriggerSchema).where(TriggerSchema.id == trigger_id)
+            ).first()
+            if existing_trigger is None:
+                raise KeyError(
+                    f"Unable to update trigger with id '{trigger_id}': Found no"
+                    f"existing trigger with this id."
+                )
+            # In case of a renaming update, make sure no trigger already exists
+            # with that name
+            if trigger_update.name:
+                if existing_trigger.name != trigger_update.name:
+                    self._fail_if_trigger_with_name_exists(
+                        trigger=trigger_update, session=session
+                    )
+
+            existing_trigger.update(
+                trigger_update=trigger_update,
+            )
+
+            session.add(existing_trigger)
+            session.commit()
+            session.refresh(existing_trigger)
+
+            return existing_trigger.to_model(hydrate=True)
+
+    def delete_trigger(self, trigger_id: UUID) -> None:
+        """Delete a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to delete.
+
+        Raises:
+            KeyError: if the trigger doesn't exist.
+        """
+        with Session(self.engine) as session:
+            try:
+                trigger = session.exec(
+                    select(TriggerSchema).where(TriggerSchema.id == trigger_id)
+                ).one()
+
+                if trigger is None:
+                    raise KeyError(f"Trigger with ID {trigger_id} not found.")
+                session.delete(trigger)
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.commit()
+
+    def _fail_if_trigger_with_name_exists(
+        self,
+        trigger: TriggerRequest,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a trigger with same name exists.
+
+        Args:
+            trigger: The Trigger
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            TriggerExistsError: If a trigger with the given name already exists.
+        """
+        existing_domain_trigger = session.exec(
+            select(TriggerSchema)
+            .where(TriggerSchema.name == trigger.name)
+            .where(TriggerSchema.workspace_id == trigger.workspace)
+        ).first()
+        if existing_domain_trigger is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=trigger.workspace, session=session
+            )
+            raise TriggerExistsError(
+                f"Unable to register trigger with name "
+                f"'{trigger.name}': Found an existing trigger with the same "
+                f"name in the active workspace, '{workspace.name}'."
+            )
+        return None
 
     # ----------------------------- Users -----------------------------
 

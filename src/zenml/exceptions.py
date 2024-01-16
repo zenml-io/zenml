@@ -197,6 +197,10 @@ class EntityExistsError(ZenMLBaseException):
     """Raised when trying to register an entity that already exists."""
 
 
+class TriggerExistsError(EntityExistsError):
+    """Raised when registering a trigger with name that already exists."""
+
+
 class StackExistsError(EntityExistsError):
     """Raised when trying to register a stack with name that already exists."""
 

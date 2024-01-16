@@ -280,6 +280,14 @@ from zenml.models.v2.misc.service_connector_type import (
     ResourceTypeModel,
 )
 from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
+from zenml.models.v2.core.trigger import (
+    TriggerRequest,
+    TriggerFilter,
+    TriggerUpdate,
+    TriggerResponse,
+    TriggerResponseBody,
+    TriggerResponseMetadata
+)
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
@@ -639,6 +647,12 @@ __all__ = [
     "TagResponseBody",
     "TagRequest",
     "TagUpdate",
+    "TriggerResponse",
+    "TriggerRequest",
+    "TriggerFilter",
+    "TriggerUpdate",
+    "TriggerResponseBody",
+    "TriggerResponseMetadata",
     "UserRequest",
     "UserUpdate",
     "UserFilter",
