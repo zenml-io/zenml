@@ -21,6 +21,7 @@ google_cloud_ai_platform/training_clients.py
 import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
+from google.api_core.exceptions import ServerError
 from google.cloud import aiplatform
 
 from zenml import __version__
@@ -47,9 +48,7 @@ from zenml.step_operators import BaseStepOperator
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
-    )
+    from zenml.models import PipelineDeploymentBase
 
 logger = get_logger(__name__)
 
@@ -150,7 +149,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
@@ -188,7 +187,6 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
         Raises:
             RuntimeError: If the run fails.
-            ConnectionError: If the run fails due to a connection error.
         """
         resource_settings = info.config.resource_settings
         if resource_settings.cpu_count or resource_settings.memory:
@@ -217,7 +215,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             "api_endpoint": self.config.region + VERTEX_ENDPOINT_SUFFIX
         }
         # Initialize client that will be used to create and send requests.
-        # This client only needs to be created once, and can be reused for multiple requests.
+        # This client only needs to be created once, and can be reused for
+        # multiple requests.
         client = aiplatform.gapic.JobServiceClient(
             credentials=credentials, client_options=client_options
         )
@@ -245,6 +244,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                                 {"name": key, "value": value}
                                 for key, value in environment.items()
                             ],
+                        },
+                        "disk_spec": {
+                            "boot_disk_type": settings.boot_disk_type,
+                            "boot_disk_size_gb": settings.boot_disk_size_gb,
                         },
                     }
                 ]
@@ -297,27 +300,30 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             try:
                 response = client.get_custom_job(name=job_id)
                 retry_count = 0
-            # Handle transient connection error.
-            except ConnectionError as err:
+            # Handle transient connection errors and credential expiration by
+            # recreating the Python API client.
+            except (ConnectionError, ServerError) as err:
                 if retry_count < CONNECTION_ERROR_RETRY_LIMIT:
                     retry_count += 1
                     logger.warning(
-                        "ConnectionError (%s) encountered when polling job: "
-                        "%s. Trying to recreate the API client.",
-                        err,
-                        job_id,
+                        f"Error encountered when polling job "
+                        f"{job_id}: {err}\nRetrying...",
                     )
+                    # This call will refresh the credentials if they expired.
+                    credentials, project_id = self._get_authentication()
                     # Recreate the Python API client.
                     client = aiplatform.gapic.JobServiceClient(
-                        client_options=client_options
+                        credentials=credentials, client_options=client_options
                     )
                 else:
-                    logger.error(
+                    logger.exception(
                         "Request failed after %s retries.",
                         CONNECTION_ERROR_RETRY_LIMIT,
                     )
-                    raise
-
+                    raise RuntimeError(
+                        f"Request failed after {CONNECTION_ERROR_RETRY_LIMIT} "
+                        f"retries: {err}"
+                    )
             if response.state in VERTEX_JOB_STATES_FAILED:
                 err_msg = (
                     "Job '{}' did not succeed.  Detailed response {}.".format(

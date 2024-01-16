@@ -24,15 +24,15 @@ from zenml.constants import (
     DEVICES,
     VERSION_1,
 )
-from zenml.enums import OAuthDeviceStatus, PermissionType
+from zenml.enums import OAuthDeviceStatus
 from zenml.models import (
-    OAuthDeviceFilterModel,
-    OAuthDeviceInternalUpdateModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
+    OAuthDeviceFilter,
+    OAuthDeviceInternalUpdate,
+    OAuthDeviceResponse,
+    OAuthDeviceUpdate,
     OAuthDeviceVerificationRequest,
+    Page,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -51,51 +51,55 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[OAuthDeviceResponseModel],
+    response_model=Page[OAuthDeviceResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_authorized_devices(
-    filter_model: OAuthDeviceFilterModel = Depends(
-        make_dependable(OAuthDeviceFilterModel)
+    filter_model: OAuthDeviceFilter = Depends(
+        make_dependable(OAuthDeviceFilter)
     ),
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
-) -> Page[OAuthDeviceResponseModel]:
+    hydrate: bool = False,
+    auth_context: AuthContext = Security(authorize),
+) -> Page[OAuthDeviceResponse]:
     """Gets a page of OAuth2 authorized devices belonging to the current user.
 
     Args:
         filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         auth_context: The current auth context.
 
     Returns:
         Page of OAuth2 authorized device objects.
     """
     filter_model.set_scope_user(auth_context.user.id)
-    return zen_store().list_authorized_devices(filter_model=filter_model)
+    return zen_store().list_authorized_devices(
+        filter_model=filter_model, hydrate=hydrate
+    )
 
 
 @router.get(
     "/{device_id}",
-    response_model=OAuthDeviceResponseModel,
+    response_model=OAuthDeviceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_authorization_device(
     device_id: UUID,
     user_code: Optional[str] = None,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
-) -> OAuthDeviceResponseModel:
+    hydrate: bool = True,
+    auth_context: AuthContext = Security(authorize),
+) -> OAuthDeviceResponse:
     """Gets a specific OAuth2 authorized device using its unique ID.
 
     Args:
         device_id: The ID of the OAuth2 authorized device to get.
         user_code: The user code of the OAuth2 authorized device to get. Needs
             to be specified with devices that have not been verified yet.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
         auth_context: The current auth context.
 
     Returns:
@@ -106,13 +110,15 @@ def get_authorization_device(
             belong to the current user or could not be verified using the
             given user code.
     """
-    device = zen_store().get_authorized_device(device_id=device_id)
+    device = zen_store().get_authorized_device(
+        device_id=device_id, hydrate=hydrate
+    )
     if not device.user:
         # A device that hasn't been verified and associated with a user yet
         # can only be retrieved if the user code is specified and valid.
         if user_code:
             internal_device = zen_store().get_internal_authorized_device(
-                device_id=device_id
+                device_id=device_id, hydrate=hydrate
             )
             if internal_device.verify_user_code(user_code=user_code):
                 return device
@@ -127,17 +133,15 @@ def get_authorization_device(
 
 @router.put(
     "/{device_id}",
-    response_model=OAuthDeviceResponseModel,
+    response_model=OAuthDeviceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_authorized_device(
     device_id: UUID,
-    update: OAuthDeviceUpdateModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
-) -> OAuthDeviceResponseModel:
+    update: OAuthDeviceUpdate,
+    auth_context: AuthContext = Security(authorize),
+) -> OAuthDeviceResponse:
     """Updates a specific OAuth2 authorized device using its unique ID.
 
     Args:
@@ -166,17 +170,15 @@ def update_authorized_device(
 
 @router.put(
     "/{device_id}" + DEVICE_VERIFY,
-    response_model=OAuthDeviceResponseModel,
+    response_model=OAuthDeviceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def verify_authorized_device(
     device_id: UUID,
     request: OAuthDeviceVerificationRequest,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
-) -> OAuthDeviceResponseModel:
+    auth_context: AuthContext = Security(authorize),
+) -> OAuthDeviceResponse:
     """Verifies a specific OAuth2 authorized device using its unique ID.
 
     This endpoint implements the OAuth2 device authorization grant flow as
@@ -231,7 +233,7 @@ def verify_authorized_device(
         # counter and lock the device if the maximum number of failed auth
         # attempts has been reached.
         failed_auth_attempts = device_model.failed_auth_attempts + 1
-        update = OAuthDeviceInternalUpdateModel(
+        update = OAuthDeviceInternalUpdate(
             failed_auth_attempts=failed_auth_attempts
         )
         if failed_auth_attempts >= config.max_failed_device_auth_attempts:
@@ -253,7 +255,7 @@ def verify_authorized_device(
     # We don't reset the expiration date yet, because we want to make sure
     # that the client has received the access token before we do so, to avoid
     # brute force attacks on the device code.
-    update = OAuthDeviceInternalUpdateModel(
+    update = OAuthDeviceInternalUpdate(
         status=OAuthDeviceStatus.VERIFIED,
         user_id=auth_context.user.id,
         failed_auth_attempts=0,
@@ -274,9 +276,7 @@ def verify_authorized_device(
 @handle_exceptions
 def delete_authorized_device(
     device_id: UUID,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    auth_context: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific OAuth2 authorized device using its unique ID.
 

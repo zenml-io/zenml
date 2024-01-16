@@ -28,15 +28,17 @@ from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
+    from zenml.artifacts.artifact_config import ArtifactConfig
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.model.artifact_config import ArtifactConfig
-    from zenml.model.model_config import ModelConfig
-    from zenml.models.pipeline_models import PipelineResponseModel
-    from zenml.models.pipeline_run_models import PipelineRunResponseModel
-    from zenml.models.step_run_models import StepRunResponseModel
-    from zenml.stack.stack import Stack
+    from zenml.model.model_version import ModelVersion
+    from zenml.models import (
+        ArtifactVersionResponse,
+        PipelineResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
 
 logger = get_logger(__name__)
 
@@ -87,8 +89,8 @@ class StepContext(metaclass=SingletonMetaClass):
 
     def __init__(
         self,
-        pipeline_run: "PipelineRunResponseModel",
-        step_run: "StepRunResponseModel",
+        pipeline_run: "PipelineRunResponse",
+        step_run: "StepRunResponse",
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
         output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
@@ -142,6 +144,62 @@ class StepContext(metaclass=SingletonMetaClass):
             for key in output_materializers.keys()
         }
 
+    @property
+    def pipeline(self) -> "PipelineResponse":
+        """Returns the current pipeline.
+
+        Returns:
+            The current pipeline or None.
+
+        Raises:
+            StepContextError: If the pipeline run does not have a pipeline.
+        """
+        if self.pipeline_run.pipeline:
+            return self.pipeline_run.pipeline
+        raise StepContextError(
+            f"Unable to get pipeline in step '{self.step_name}' of pipeline "
+            f"run '{self.pipeline_run.id}': This pipeline run does not have "
+            f"a pipeline associated with it."
+        )
+
+    @property
+    def model_version(self) -> "ModelVersion":
+        """Returns configured ModelVersion.
+
+        Order of resolution to search for ModelVersion is:
+            1. ModelVersion from @step
+            2. ModelVersion from @pipeline
+
+        Returns:
+            The `ModelVersion` object associated with the current step.
+
+        Raises:
+            StepContextError: If the `ModelVersion` object is not set in `@step` or `@pipeline`.
+        """
+        if self.step_run.config.model_version is not None:
+            model_version = self.step_run.config.model_version
+        elif self.pipeline_run.config.model_version is not None:
+            model_version = self.pipeline_run.config.model_version
+        else:
+            raise StepContextError(
+                f"Unable to get ModelVersion in step '{self.step_name}' of pipeline "
+                f"run '{self.pipeline_run.id}': it was not set in `@step` or `@pipeline`."
+            )
+
+        # warm-up the model version
+        model_version._get_or_create_model_version()
+
+        return model_version
+
+    @property
+    def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
+        """Returns the input artifacts of the current step.
+
+        Returns:
+            The input artifacts of the current step.
+        """
+        return self.step_run.inputs
+
     def _get_output(
         self, output_name: Optional[str] = None
     ) -> "StepContextOutput":
@@ -185,138 +243,6 @@ class StepContext(metaclass=SingletonMetaClass):
             return self._outputs[output_name]
         else:
             return next(iter(self._outputs.values()))
-
-    @property
-    def pipeline(self) -> "PipelineResponseModel":
-        """Returns the current pipeline.
-
-        Returns:
-            The current pipeline or None.
-
-        Raises:
-            StepContextError: If the pipeline run does not have a pipeline.
-        """
-        if self.pipeline_run.pipeline:
-            return self.pipeline_run.pipeline
-        raise StepContextError(
-            f"Unable to get pipeline in step '{self.step_name}' of pipeline "
-            f"run '{self.pipeline_run.id}': This pipeline run does not have "
-            f"a pipeline associated with it."
-        )
-
-    @property
-    def model_config(self) -> "ModelConfig":
-        """Returns configured ModelConfig.
-
-        Order of resolution to search for ModelConfig is:
-            1. ModelConfig from @step
-            2. ModelConfig from @pipeline
-
-        Returns:
-            The `ModelConfig` object associated with the current step.
-
-        Raises:
-            StepContextError: If the `ModelConfig` object is not set in `@step` or `@pipeline`.
-        """
-        if self.step_run.config.model_config is not None:
-            return self.step_run.config.model_config
-        if self.pipeline_run.config.model_config is not None:
-            return self.pipeline_run.config.model_config
-        raise StepContextError(
-            f"Unable to get ModelConfig in step '{self.step_name}' of pipeline "
-            f"run '{self.pipeline_run.id}': It was not set in `@step` or `@pipeline`."
-        )
-
-    @property
-    def stack(self) -> Optional["Stack"]:
-        """(Deprecated) Returns the current active stack.
-
-        Returns:
-            The current active stack or None.
-        """
-        logger.warning(
-            "`StepContext.stack` is deprecated and will be removed in a "
-            "future release. Please use `Client().active_stack` instead."
-        )
-        return self._stack
-
-    @property
-    def pipeline_name(self) -> str:
-        """(Deprecated) Returns the current pipeline name.
-
-        Returns:
-            The current pipeline name or None.
-
-        Raises:
-            StepContextError: If the pipeline run does not have a pipeline.
-        """
-        logger.warning(
-            "`StepContext.pipeline_name` is deprecated and will be removed in "
-            "a future release. Please use `StepContext.pipeline.name` instead."
-        )
-        if not self.pipeline:
-            raise StepContextError(
-                f"Unable to get pipeline name in step '{self.step_name}' of "
-                f"pipeline run '{self.pipeline_run.name}': The pipeline run "
-                f"does not have a pipeline associated with it."
-            )
-        return self.pipeline.name
-
-    @property
-    def run_name(self) -> Optional[str]:
-        """(Deprecated) Returns the current run name.
-
-        Returns:
-            The current run name or None.
-        """
-        logger.warning(
-            "`StepContext.run_name` is deprecated and will be removed in a "
-            "future release. Please use `StepContext.pipeline_run.name` "
-            "instead."
-        )
-        return self.pipeline_run.name
-
-    @property
-    def parameters(self) -> Dict[str, Any]:
-        """(Deprecated) The step parameters.
-
-        Returns:
-            The step parameters.
-        """
-        logger.warning(
-            "`StepContext.parameters` is deprecated and will be removed in "
-            "a future release. Please use "
-            "`StepContext.step_run.config.parameters` instead."
-        )
-        return self.step_run.config.parameters
-
-    @property
-    def step_run_info(self) -> "StepRunInfo":
-        """(Deprecated) Info about the currently running step.
-
-        Returns:
-            Info about the currently running step.
-        """
-        logger.warning(
-            "`StepContext.step_run_info` is deprecated and will be removed in "
-            "a future release. Please use `StepContext.step_run` or "
-            "`StepContext.pipeline_run` to access information about the "
-            "current run instead."
-        )
-        return self._step_run_info
-
-    @property
-    def cache_enabled(self) -> bool:
-        """(Deprecated) Returns whether cache is enabled for the step.
-
-        Returns:
-            True if cache is enabled for the step, otherwise False.
-        """
-        logger.warning(
-            "`StepContext.cache_enabled` is deprecated and will be removed in "
-            "a future release."
-        )
-        return self._cache_enabled
 
     def get_output_materializer(
         self,
@@ -392,24 +318,26 @@ class StepContext(metaclass=SingletonMetaClass):
         Returns:
             Metadata for the given output.
         """
-        return self._get_output(output_name).metadata or {}
+        return self._get_output(output_name).run_metadata or {}
 
     def add_output_metadata(
-        self, output_name: Optional[str] = None, **metadata: "MetadataType"
+        self,
+        metadata: Dict[str, "MetadataType"],
+        output_name: Optional[str] = None,
     ) -> None:
         """Adds metadata for a given step output.
 
         Args:
+            metadata: The metadata to add.
             output_name: Optional name of the output for which to add the
                 metadata. If no name is given and the step only has a single
                 output, the metadata of this output will be added. If the
                 step has multiple outputs, an exception will be raised.
-            **metadata: The metadata to add.
         """
         output = self._get_output(output_name)
-        if not output.metadata:
-            output.metadata = {}
-        output.metadata.update(**metadata)
+        if not output.run_metadata:
+            output.run_metadata = {}
+        output.run_metadata.update(**metadata)
 
     def _set_artifact_config(
         self,
@@ -443,7 +371,7 @@ class StepContextOutput:
 
     materializer_classes: Sequence[Type["BaseMaterializer"]]
     artifact_uri: str
-    metadata: Optional[Dict[str, "MetadataType"]] = None
+    run_metadata: Optional[Dict[str, "MetadataType"]] = None
     artifact_config: Optional["ArtifactConfig"]
 
     def __init__(

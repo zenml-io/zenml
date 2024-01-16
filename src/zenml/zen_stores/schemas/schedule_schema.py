@@ -19,10 +19,12 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship
 
-from zenml.models.schedule_model import (
-    ScheduleRequestModel,
-    ScheduleResponseModel,
-    ScheduleUpdateModel,
+from zenml.models import (
+    ScheduleRequest,
+    ScheduleResponse,
+    ScheduleResponseBody,
+    ScheduleResponseMetadata,
+    ScheduleUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -60,7 +62,7 @@ class ScheduleSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="schedules")
+    user: Optional["UserSchema"] = Relationship(back_populates="schedules")
 
     pipeline_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -95,65 +97,69 @@ class ScheduleSchema(NamedSchema, table=True):
     catchup: bool
 
     @classmethod
-    def from_create_model(
-        cls, model: ScheduleRequestModel
+    def from_request(
+        cls, schedule_request: ScheduleRequest
     ) -> "ScheduleSchema":
-        """Create a `ScheduleSchema` from a `ScheduleRequestModel`.
+        """Create a `ScheduleSchema` from a `ScheduleRequest`.
 
         Args:
-            model: The `ScheduleRequestModel` to create the schema from.
+            schedule_request: The `ScheduleRequest` to create the schema from.
 
         Returns:
             The created `ScheduleSchema`.
         """
-        if model.interval_second is not None:
-            interval_second = model.interval_second.total_seconds()
+        if schedule_request.interval_second is not None:
+            interval_second = schedule_request.interval_second.total_seconds()
         else:
             interval_second = None
         return cls(
-            name=model.name,
-            workspace_id=model.workspace,
-            user_id=model.user,
-            pipeline_id=model.pipeline_id,
-            orchestrator_id=model.orchestrator_id,
-            active=model.active,
-            cron_expression=model.cron_expression,
-            start_time=model.start_time,
-            end_time=model.end_time,
+            name=schedule_request.name,
+            workspace_id=schedule_request.workspace,
+            user_id=schedule_request.user,
+            pipeline_id=schedule_request.pipeline_id,
+            orchestrator_id=schedule_request.orchestrator_id,
+            active=schedule_request.active,
+            cron_expression=schedule_request.cron_expression,
+            start_time=schedule_request.start_time,
+            end_time=schedule_request.end_time,
             interval_second=interval_second,
-            catchup=model.catchup,
+            catchup=schedule_request.catchup,
         )
 
-    def from_update_model(
-        self, model: ScheduleUpdateModel
-    ) -> "ScheduleSchema":
+    def update(self, schedule_update: ScheduleUpdate) -> "ScheduleSchema":
         """Update a `ScheduleSchema` from a `ScheduleUpdateModel`.
 
         Args:
-            model: The `ScheduleUpdateModel` to update the schema from.
+            schedule_update: The `ScheduleUpdateModel` to update the schema from.
 
         Returns:
             The updated `ScheduleSchema`.
         """
-        if model.name is not None:
-            self.name = model.name
-        if model.active is not None:
-            self.active = model.active
-        if model.cron_expression is not None:
-            self.cron_expression = model.cron_expression
-        if model.start_time is not None:
-            self.start_time = model.start_time
-        if model.end_time is not None:
-            self.end_time = model.end_time
-        if model.interval_second is not None:
-            self.interval_second = model.interval_second.total_seconds()
-        if model.catchup is not None:
-            self.catchup = model.catchup
+        if schedule_update.name is not None:
+            self.name = schedule_update.name
+        if schedule_update.active is not None:
+            self.active = schedule_update.active
+        if schedule_update.cron_expression is not None:
+            self.cron_expression = schedule_update.cron_expression
+        if schedule_update.start_time is not None:
+            self.start_time = schedule_update.start_time
+        if schedule_update.end_time is not None:
+            self.end_time = schedule_update.end_time
+        if schedule_update.interval_second is not None:
+            self.interval_second = (
+                schedule_update.interval_second.total_seconds()
+            )
+        if schedule_update.catchup is not None:
+            self.catchup = schedule_update.catchup
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> ScheduleResponseModel:
+    def to_model(self, hydrate: bool = False) -> ScheduleResponse:
         """Convert a `ScheduleSchema` to a `ScheduleResponseModel`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
 
         Returns:
             The created `ScheduleResponseModel`.
@@ -162,19 +168,29 @@ class ScheduleSchema(NamedSchema, table=True):
             interval_second = timedelta(seconds=self.interval_second)
         else:
             interval_second = None
-        return ScheduleResponseModel(
-            id=self.id,
-            name=self.name,
-            workspace=self.workspace.to_model(),
-            user=self.user.to_model(),
-            pipeline_id=self.pipeline_id,
-            orchestrator_id=self.orchestrator_id,
+
+        body = ScheduleResponseBody(
+            user=self.user.to_model() if self.user else None,
             active=self.active,
             cron_expression=self.cron_expression,
             start_time=self.start_time,
             end_time=self.end_time,
             interval_second=interval_second,
             catchup=self.catchup,
-            created=self.created,
             updated=self.updated,
+            created=self.created,
+        )
+        metadata = None
+        if hydrate:
+            metadata = ScheduleResponseMetadata(
+                workspace=self.workspace.to_model(),
+                pipeline_id=self.pipeline_id,
+                orchestrator_id=self.orchestrator_id,
+            )
+
+        return ScheduleResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
         )

@@ -30,7 +30,7 @@ from zenml.constants import (
 )
 from zenml.enums import StoreType
 from zenml.logger import get_logger
-from zenml.models.server_models import ServerDeploymentType
+from zenml.models import ServerDeploymentType
 from zenml.services import (
     ContainerService,
     ContainerServiceConfig,

@@ -126,12 +126,14 @@ class NumpyMaterializer(BaseMaterializer):
             # Save histogram for 1D arrays
             if len(arr.shape) == 1:
                 histogram_path = os.path.join(self.uri, "histogram.png")
+                histogram_path = histogram_path.replace("\\", "/")
                 self._save_histogram(histogram_path, arr)
                 return {histogram_path: VisualizationType.IMAGE}
 
-            # Save as image for 2D or 3D arrays with 3 or 4 channels
-            if self._array_can_be_saved_as_image(arr):
+            # Save as image for 3D arrays with 3 or 4 channels
+            if len(arr.shape) == 3 and arr.shape[2] in [3, 4]:
                 image_path = os.path.join(self.uri, "image.png")
+                image_path = image_path.replace("\\", "/")
                 self._save_image(image_path, arr)
                 return {image_path: VisualizationType.IMAGE}
 
@@ -157,24 +159,6 @@ class NumpyMaterializer(BaseMaterializer):
         with fileio.open(output_path, "wb") as f:
             plt.savefig(f)
         plt.close()
-
-    @staticmethod
-    def _array_can_be_saved_as_image(arr: "NDArray[Any]") -> bool:
-        """Checks if a numpy array can be saved as an image.
-
-        This is the case if the array is 2D or 3D with 3 or 4 channels.
-
-        Args:
-            arr: The numpy array to check.
-
-        Returns:
-            True if the array can be saved as an image, False otherwise.
-        """
-        if len(arr.shape) == 2:
-            return True
-        if len(arr.shape) == 3 and arr.shape[2] in [3, 4]:
-            return True
-        return False
 
     def _save_image(self, output_path: str, arr: "NDArray[Any]") -> None:
         """Saves a numpy array as an image.

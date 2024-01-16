@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
-from zenml.models.flavor_models import FlavorFilterModel, FlavorResponseModel
+from zenml.models import FlavorFilter, FlavorResponse
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -116,7 +116,7 @@ def get_flavor_by_name_and_type_from_zen_store(
     zen_store: BaseZenStore,
     flavor_name: str,
     component_type: StackComponentType,
-) -> FlavorResponseModel:
+) -> FlavorResponse:
     """Get a stack component flavor by name and type from a ZenStore.
 
     Args:
@@ -131,10 +131,11 @@ def get_flavor_by_name_and_type_from_zen_store(
         KeyError: If no flavor with the given name and type exists.
     """
     flavors = zen_store.list_flavors(
-        FlavorFilterModel(name=flavor_name, type=component_type)
+        FlavorFilter(name=flavor_name, type=component_type)
     )
     if not flavors:
         raise KeyError(
-            f"No flavor with name '{flavor_name}' and type '{component_type}' exists."
+            f"No flavor with name '{flavor_name}' and type "
+            f"'{component_type}' exists."
         )
     return flavors[0]

@@ -17,15 +17,21 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, CODE_REPOSITORIES, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import (
-    CodeRepositoryFilterModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
+    CodeRepositoryFilter,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    Page,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -35,68 +41,81 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + CODE_REPOSITORIES,
     tags=["code_repositories"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
 @router.get(
     "",
-    response_model=Page[CodeRepositoryResponseModel],
+    response_model=Page[CodeRepositoryResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_code_repositories(
-    filter_model: CodeRepositoryFilterModel = Depends(
-        make_dependable(CodeRepositoryFilterModel)
+    filter_model: CodeRepositoryFilter = Depends(
+        make_dependable(CodeRepositoryFilter)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[CodeRepositoryResponseModel]:
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize),
+) -> Page[CodeRepositoryResponse]:
     """Gets a page of code repositories.
 
     Args:
         filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         Page of code repository objects.
     """
-    return zen_store().list_code_repositories(filter_model=filter_model)
+    return verify_permissions_and_list_entities(
+        filter_model=filter_model,
+        resource_type=ResourceType.CODE_REPOSITORY,
+        list_method=zen_store().list_code_repositories,
+        hydrate=hydrate,
+    )
 
 
 @router.get(
     "/{code_repository_id}",
-    response_model=CodeRepositoryResponseModel,
+    response_model=CodeRepositoryResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_code_repository(
     code_repository_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> CodeRepositoryResponseModel:
+    hydrate: bool = True,
+    _: AuthContext = Security(authorize),
+) -> CodeRepositoryResponse:
     """Gets a specific code repository using its unique ID.
 
     Args:
         code_repository_id: The ID of the code repository to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific code repository object.
     """
-    return zen_store().get_code_repository(
-        code_repository_id=code_repository_id
+    return verify_permissions_and_get_entity(
+        id=code_repository_id,
+        get_method=zen_store().get_code_repository,
+        hydrate=hydrate,
     )
 
 
 @router.put(
     "/{code_repository_id}",
-    response_model=CodeRepositoryResponseModel,
+    response_model=CodeRepositoryResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_code_repository(
     code_repository_id: UUID,
-    update: CodeRepositoryUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> CodeRepositoryResponseModel:
+    update: CodeRepositoryUpdate,
+    _: AuthContext = Security(authorize),
+) -> CodeRepositoryResponse:
     """Updates a code repository.
 
     Args:
@@ -106,8 +125,11 @@ def update_code_repository(
     Returns:
         The updated code repository object.
     """
-    return zen_store().update_code_repository(
-        code_repository_id=code_repository_id, update=update
+    return verify_permissions_and_update_entity(
+        id=code_repository_id,
+        update_model=update,
+        get_method=zen_store().get_code_repository,
+        update_method=zen_store().update_code_repository,
     )
 
 
@@ -118,11 +140,15 @@ def update_code_repository(
 @handle_exceptions
 def delete_code_repository(
     code_repository_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific code repository.
 
     Args:
         code_repository_id: The ID of the code repository to delete.
     """
-    zen_store().delete_code_repository(code_repository_id=code_repository_id)
+    verify_permissions_and_delete_entity(
+        id=code_repository_id,
+        get_method=zen_store().get_code_repository,
+        delete_method=zen_store().delete_code_repository,
+    )

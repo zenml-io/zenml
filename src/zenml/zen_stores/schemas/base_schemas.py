@@ -31,9 +31,3 @@ class NamedSchema(BaseSchema):
     """Base Named SQL Model."""
 
     name: str
-
-
-class ShareableSchema(NamedSchema):
-    """Base shareable SQL Model."""
-
-    is_shared: bool

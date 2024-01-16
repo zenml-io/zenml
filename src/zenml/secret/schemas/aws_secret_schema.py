@@ -13,17 +13,13 @@
 #  permissions and limitations under the License.
 """AWS Authentication Secret Schema definition."""
 
-from typing import ClassVar, Optional
+from typing import Optional
 
 from zenml.secret.base_secret import BaseSecretSchema
-
-AWS_SECRET_SCHEMA_TYPE = "aws"
 
 
 class AWSSecretSchema(BaseSecretSchema):
     """AWS Authentication Secret Schema definition."""
-
-    TYPE: ClassVar[str] = AWS_SECRET_SCHEMA_TYPE
 
     aws_access_key_id: str
     aws_secret_access_key: str

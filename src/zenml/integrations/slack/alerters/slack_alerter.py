@@ -56,6 +56,9 @@ class SlackAlerterParameters(BaseAlerterStepParameters):
     payload: Optional[SlackAlerterPayload] = None
     include_format_blocks: Optional[bool] = True
 
+    # Allowing user to use their own custom blocks in the slack post message
+    blocks: Optional[List[Dict]] = None  # type: ignore
+
 
 class SlackAlerter(BaseAlerter):
     """Send messages to Slack channels."""
@@ -143,7 +146,9 @@ class SlackAlerter(BaseAlerter):
         return DEFAULT_DISAPPROVE_MSG_OPTIONS
 
     def _create_blocks(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
+        self,
+        message: Optional[str],
+        params: Optional[BaseAlerterStepParameters],
     ) -> List[Dict]:  # type: ignore
         """Helper function to create slack blocks.
 
@@ -154,49 +159,63 @@ class SlackAlerter(BaseAlerter):
         Returns:
             List of slack blocks.
         """
-        if (
-            isinstance(params, SlackAlerterParameters)
-            and hasattr(params, "payload")
-            and params.payload is not None
-        ):
-            payload = params.payload
-            return [
-                {
-                    "type": "section",
-                    "fields": [
-                        {
-                            "type": "mrkdwn",
-                            "text": f":star: *Pipeline:*\n{payload.pipeline_name}",
+        if isinstance(params, SlackAlerterParameters):
+            if hasattr(params, "blocks") and params.blocks is not None:
+                logger.info("Using custom blocks")
+                return params.blocks
+            elif hasattr(params, "payload") and params.payload is not None:
+                logger.info(
+                    "No custom blocks set. Using default blocks for Slack alerter"
+                )
+                payload = params.payload
+                return [
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": f":star: *Pipeline:*\n{payload.pipeline_name}",
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": f":arrow_forward: *Step:*\n{payload.step_name}",
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": f":ring_buoy: *Stack:*\n{payload.stack_name}",
+                            },
+                        ],
+                        "accessory": {
+                            "type": "image",
+                            "image_url": "https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png",
+                            "alt_text": "zenml logo",
                         },
-                        {
-                            "type": "mrkdwn",
-                            "text": f":arrow_forward: *Step:*\n{payload.step_name}",
-                        },
-                        {
-                            "type": "mrkdwn",
-                            "text": f":ring_buoy: *Stack:*\n{payload.stack_name}",
-                        },
-                    ],
-                    "accessory": {
-                        "type": "image",
-                        "image_url": "https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png",
-                        "alt_text": "zenml logo",
                     },
-                },
-                {
-                    "type": "section",
-                    "fields": [
-                        {
-                            "type": "mrkdwn",
-                            "text": f":email: *Message:*\n{message}",
-                        },
-                    ],
-                },
-            ]
-        return []
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": f":email: *Message:*\n{message}",
+                            },
+                        ],
+                    },
+                ]
+            else:
+                logger.info(
+                    "No custom blocks or payload set for Slack alerter."
+                )
+                return []
+        else:
+            logger.info(
+                "params is not of type SlackAlerterParameters. Returning empty blocks."
+            )
+            return []
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self,
+        message: Optional[str] = None,
+        params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a Slack channel.
 

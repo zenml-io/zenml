@@ -117,7 +117,7 @@ The AWS Service Connector is part of the AWS ZenML integration. You can either
 install the entire integration or use a pypi extra to install it independently  
 of the integration:                                                             
                                                                                 
- • pip install zenml[connectors-aws] installs only prerequisites for the AWS    
+ • pip install "zenml[connectors-aws]" installs only prerequisites for the AWS    
    Service Connector Type                                                       
  • zenml integration install aws installs the entire AWS ZenML integration      
                                                                                 
@@ -600,7 +600,7 @@ The GCP Service Connector is part of the GCP ZenML integration. You can either
 install the entire integration or use a pypi extra to install it independently  
 of the integration:                                                             
                                                                                 
- • pip install zenml[connectors-gcp] installs only prerequisites for the GCP    
+ • pip install "zenml[connectors-gcp]" installs only prerequisites for the GCP    
    Service Connector Type                                                       
  • zenml integration install gcp installs the entire GCP ZenML integration      
                                                                                 
@@ -850,7 +850,7 @@ The Kubernetes Service Connector is part of the Kubernetes ZenML integration.
 You can either install the entire integration or use a pypi extra to install it 
 independently of the integration:                                               
                                                                                 
- • pip install zenml[connectors-kubernetes] installs only prerequisites for the 
+ • pip install "zenml[connectors-kubernetes]" installs only prerequisites for the 
    Kubernetes Service Connector Type                                            
  • zenml integration install kubernetes installs the entire Kubernetes ZenML    
    integration                                                                  

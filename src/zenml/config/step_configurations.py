@@ -34,7 +34,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
-from zenml.model.model_config import ModelConfig
+from zenml.model.model_version import ModelVersion
 from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
@@ -134,7 +134,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
-    model_config: Optional[ModelConfig] = None
+    model_version: Optional[ModelVersion] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 

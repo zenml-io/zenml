@@ -213,6 +213,10 @@ class StackValidationError(ZenMLBaseException):
     """Raised when a stack configuration is not valid."""
 
 
+class StackComponentValidationError(ZenMLBaseException):
+    """Raised when a stack component configuration is not valid."""
+
+
 class ProvisioningError(ZenMLBaseException):
     """Raised when an error occurs when provisioning resources for a StackComponent."""
 
@@ -235,6 +239,10 @@ class SettingsResolvingError(ZenMLBaseException):
 
 class InputResolutionError(ZenMLBaseException):
     """Raised when step input resolving failed."""
+
+
+class HydrationError(ZenMLBaseException):
+    """Raised when the model hydration failed."""
 
 
 class ZenKeyError(KeyError):

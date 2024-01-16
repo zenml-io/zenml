@@ -25,15 +25,16 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import ComponentResponseModel, ServiceConnectorRequirements
+from zenml.models import ServiceConnectorRequirements, StepRunResponse
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
-        PipelineDeploymentResponseModel,
+    from zenml.models import (
+        ComponentResponse,
+        PipelineDeploymentBase,
+        PipelineDeploymentResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
@@ -162,9 +163,6 @@ class StackComponentConfig(BaseModel, ABC):
         resources or capabilities (e.g. local filesystem, local database or
         other services).
 
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
-
         Examples:
           * Artifact Stores that store artifacts in the local filesystem
           * Orchestrators that are connected to local orchestration runtime
@@ -186,8 +184,6 @@ class StackComponentConfig(BaseModel, ABC):
             key: The key for which to get the attribute value.
 
         Raises:
-            RuntimeError: If the stack component is not part of the active
-                stack, or the active stack is missing a secrets manager.
             KeyError: If the secret or secret key don't exist.
 
         Returns:
@@ -202,69 +198,28 @@ class StackComponentConfig(BaseModel, ABC):
 
         secret_ref = secret_utils.parse_secret_reference(value)
 
-        # Try to resolve the secret using the secret store first
+        # Try to resolve the secret using the secret store
         try:
-            store_secret = Client().get_secret_by_name_and_scope(
+            secret = Client().get_secret_by_name_and_scope(
                 name=secret_ref.name,
             )
         except (KeyError, NotImplementedError):
-            pass
-        else:
-            if secret_ref.key in store_secret.values:
-                return store_secret.secret_values[secret_ref.key]
-            else:
-                raise KeyError(
-                    f"Failed to resolve secret reference for attribute {key} "
-                    f"of stack component `{self}`. "
-                    f"The secret {secret_ref.name} does not contain a value "
-                    f"for key {secret_ref.key}. Available keys: "
-                    f"{set(store_secret.values)}."
-                )
-
-        # A stack component can be part of many stacks, and currently a
-        # secrets manager is associated with a stack. This means we're
-        # not able to identify the 'correct' secrets manager that the user
-        # wanted to resolve the secrets in a general way. We therefore
-        # limit secret resolving to components of the active stack.
-        if not self._is_part_of_active_stack():
-            raise RuntimeError(
-                f"Failed to resolve secret reference for attribute {key} "
-                f"of stack component `{self}`: The stack component is not "
-                "part of the active stack and therefore can't have it's "
-                "secret references resolved. If you want to access attributes "
-                "of this stack component which reference secrets, set a stack "
-                "which includes both this component and a secrets manager as "
-                "your active stack: `zenml stack set <STACK_NAME>`."
-            )
-
-        secrets_manager = Client().active_stack.secrets_manager
-        if not secrets_manager:
-            raise RuntimeError(
-                f"Failed to resolve secret reference for attribute {key} "
-                f"of stack component `{self}`: The active stack does not "
-                "have a secrets manager."
-            )
-
-        try:
-            secret = secrets_manager.get_secret(secret_ref.name)
-        except KeyError:
             raise KeyError(
                 f"Failed to resolve secret reference for attribute {key} "
                 f"of stack component `{self}`: The secret "
                 f"{secret_ref.name} does not exist."
             )
 
-        try:
-            secret_value = secret.content[secret_ref.key]
-        except KeyError:
+        if secret_ref.key not in secret.values:
             raise KeyError(
                 f"Failed to resolve secret reference for attribute {key} "
-                f"of stack component `{self}`: The secret "
-                f"{secret_ref.name} does not contain a value for key "
-                f"{secret_ref.key}. Available keys: {set(secret.content)}."
+                f"of stack component `{self}`. "
+                f"The secret {secret_ref.name} does not contain a value "
+                f"for key {secret_ref.key}. Available keys: "
+                f"{set(secret.values.keys())}."
             )
 
-        return str(secret_value)
+        return secret.secret_values[secret_ref.key]
 
     def _is_part_of_active_stack(self) -> bool:
         """Checks if this config belongs to a component in the active stack.
@@ -365,7 +320,7 @@ class StackComponent:
 
     @classmethod
     def from_model(
-        cls, component_model: "ComponentResponseModel"
+        cls, component_model: "ComponentResponse"
     ) -> "StackComponent":
         """Creates a StackComponent from a ComponentModel.
 
@@ -442,7 +397,13 @@ class StackComponent:
 
     def get_settings(
         self,
-        container: Union["Step", "StepRunInfo", "PipelineDeploymentBaseModel"],
+        container: Union[
+            "Step",
+            "StepRunResponse",
+            "StepRunInfo",
+            "PipelineDeploymentBase",
+            "PipelineDeploymentResponse",
+        ],
     ) -> "BaseSettings":
         """Gets settings for this stack component.
 
@@ -473,7 +434,7 @@ class StackComponent:
 
         all_settings = (
             container.config.settings
-            if isinstance(container, (Step, StepRunInfo))
+            if isinstance(container, (Step, StepRunResponse, StepRunInfo))
             else container.pipeline_configuration.settings
         )
 
@@ -638,7 +599,7 @@ class StackComponent:
         return None
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
@@ -652,7 +613,7 @@ class StackComponent:
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
     ) -> None:
         """Prepares deploying the pipeline.

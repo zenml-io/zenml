@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator base config and settings."""
 
-from typing import Dict, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -107,18 +107,26 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     down: bool = True
     stream_logs: bool = True
 
+    docker_run_args: List[str] = []
+
 
 class SkypilotBaseOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseOrchestratorConfig, SkypilotBaseOrchestratorSettings
 ):
-    """Skypilot orchestrator base config."""
+    """Skypilot orchestrator base config.
+
+    Attributes:
+        disable_step_based_settings: whether to disable step-based settings.
+            If True, the orchestrator will run all steps with the pipeline
+            settings in one single VM. If False, the orchestrator will run
+            each step with its own settings in separate VMs if provided.
+    """
+
+    disable_step_based_settings: bool = False
 
     @property
     def is_local(self) -> bool:
         """Checks if this stack component is running locally.
-
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
 
         Returns:
             True if this config is for a local component, False otherwise.

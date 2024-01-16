@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,3 +18,4 @@
 
 from .batch_inference import e2e_use_case_batch_inference
 from .training import e2e_use_case_training
+from .deployment import e2e_use_case_deployment

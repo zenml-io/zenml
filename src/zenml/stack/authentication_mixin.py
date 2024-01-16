@@ -15,11 +15,13 @@
 
 from typing import Optional, Type, TypeVar, cast
 
+from pydantic import BaseModel
+
 from zenml.client import Client
-from zenml.secret import BaseSecretSchema
+from zenml.models import SecretResponse
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
-T = TypeVar("T", bound=BaseSecretSchema)
+T = TypeVar("T", bound=BaseModel)
 
 
 class AuthenticationConfigMixin(StackComponentConfig):
@@ -53,56 +55,64 @@ class AuthenticationMixin(StackComponent):
         return cast(AuthenticationConfigMixin, self._config)
 
     def get_authentication_secret(
-        self, expected_schema_type: Type[T]
-    ) -> Optional[T]:
+        self,
+    ) -> Optional[SecretResponse]:
         """Gets the secret referred to by the authentication secret attribute.
 
-        Args:
-            expected_schema_type: The expected secret schema class.
-
         Returns:
-            The secret object if the `authentication_secret` attribute is set,
+            The secret if the `authentication_secret` attribute is set,
             `None` otherwise.
 
         Raises:
-            RuntimeError: If no secrets manager exists in the active stack.
-            TypeError: If the secret is not of the expected schema type.
+            KeyError: If the secret does not exist.
         """
         if not self.config.authentication_secret:
             return None
 
-        # Try to resolve the secret using the secret store first
+        # Try to resolve the secret using the secret store
         try:
-            store_secret = Client().get_secret_by_name_and_scope(
+            return Client().get_secret_by_name_and_scope(
                 name=self.config.authentication_secret,
             )
         except (KeyError, NotImplementedError):
-            pass
-        else:
-            return expected_schema_type(
-                name=self.config.authentication_secret,
-                **store_secret.secret_values,
+            raise KeyError(
+                f"The authentication secret {self.config.authentication_secret} "
+                f"referenced by the `{self.name}` `{self.type}` stack "
+                "component does not exist."
             )
 
-        active_stack = Client().active_stack
-        secrets_manager = active_stack.secrets_manager
-        if not secrets_manager:
-            raise RuntimeError(
-                f"Unable to retrieve secret '{self.config.authentication_secret}' "
-                "because the active stack does not have a secrets manager."
+    def get_typed_authentication_secret(
+        self, expected_schema_type: Type[T]
+    ) -> Optional[T]:
+        """Gets a typed secret referred to by the authentication secret attribute.
+
+        Args:
+            expected_schema_type: A Pydantic model class that represents the
+                expected schema type of the secret.
+
+        Returns:
+            The secret values extracted from the secret and converted into the
+            indicated Pydantic type, if the `authentication_secret` attribute is
+            set, `None` otherwise.
+
+        Raises:
+            TypeError: If the secret cannot be converted into the indicated
+                Pydantic type.
+        """
+        secret = self.get_authentication_secret()
+
+        if not secret:
+            return None
+
+        try:
+            typed_secret = expected_schema_type(
+                **secret.secret_values,
             )
-
-        secret = secrets_manager.get_secret(self.config.authentication_secret)
-
-        if not isinstance(secret, expected_schema_type):
+        except (TypeError, ValueError) as e:
             raise TypeError(
-                f"Authentication secret has type {secret.TYPE} but a secret of "
-                f"type {expected_schema_type.TYPE} was expected. To solve this "
-                f"issue, register a secret with name "
-                f"{self.config.authentication_secret} of type "
-                f"{expected_schema_type.TYPE} using the following command: \n "
-                f"`zenml secrets-manager secret register {self.config.authentication_secret} "
-                f"--schema={expected_schema_type.TYPE} ...`"
+                f"Authentication secret `{self.config.authentication_secret}` "
+                f"referenced by the `{self.name}` `{self.type}` stack component"
+                f"could not be converted to {expected_schema_type}: {e}"
             )
 
-        return secret
+        return typed_secret

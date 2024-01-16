@@ -15,12 +15,12 @@
 
 import os
 import sys
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import psutil
 from rich import print
-from tensorboard import notebook  # type: ignore [import-untyped]
-from tensorboard.manager import (  # type: ignore [import-untyped]
+from tensorboard import notebook  # type:ignore[import-untyped]
+from tensorboard.manager import (  # type:ignore[import-untyped]
     TensorBoardInfo,
     get_all,
 )
@@ -33,7 +33,9 @@ from zenml.integrations.tensorboard.services.tensorboard_service import (
     TensorboardServiceConfig,
 )
 from zenml.logger import get_logger
-from zenml.models.step_run_models import StepRunResponseModel
+
+if TYPE_CHECKING:
+    from zenml.models import StepRunResponse
 
 logger = get_logger(__name__)
 
@@ -68,7 +70,7 @@ class TensorboardVisualizer:
 
     def visualize(
         self,
-        object: StepRunResponseModel,
+        object: "StepRunResponse",
         height: int = 800,
         *args: Any,
         **kwargs: Any,
@@ -98,7 +100,8 @@ class TensorboardVisualizer:
                     return
 
                 if sys.platform == "win32":
-                    # Daemon service functionality is currently not supported on Windows
+                    # Daemon service functionality is currently not supported
+                    # on Windows
                     print(
                         "You can run:\n"
                         f"[italic green]    tensorboard --logdir {logdir}"
@@ -143,7 +146,7 @@ class TensorboardVisualizer:
 
     def stop(
         self,
-        object: StepRunResponseModel,
+        object: "StepRunResponse",
     ) -> None:
         """Stop the TensorBoard server previously started for a pipeline step.
 
@@ -177,7 +180,7 @@ class TensorboardVisualizer:
                 return
 
 
-def get_step(pipeline_name: str, step_name: str) -> StepRunResponseModel:
+def get_step(pipeline_name: str, step_name: str) -> "StepRunResponse":
     """Get the StepRunResponseModel for the specified pipeline and step name.
 
     Args:

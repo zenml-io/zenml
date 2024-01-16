@@ -14,8 +14,18 @@
 """Base ZenML Service Connector class."""
 import logging
 from abc import abstractmethod
-from datetime import datetime, timezone
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, cast
+from datetime import datetime, timedelta, timezone
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import (
@@ -28,21 +38,21 @@ from pydantic.main import ModelMetaclass
 from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS,
+    SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS,
     handle_bool_env_var,
 )
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
-    ServiceConnectorBaseModel,
-    ServiceConnectorRequestModel,
+    ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
-    ServiceConnectorTypeModel,
-    UserResponseModel,
-    WorkspaceResponseModel,
-)
-from zenml.models.service_connector_models import (
+    ServiceConnectorResponse,
+    ServiceConnectorResponseBody,
+    ServiceConnectorResponseMetadata,
     ServiceConnectorTypedResourcesModel,
+    ServiceConnectorTypeModel,
+    UserResponse,
+    WorkspaceResponse,
 )
 
 logger = get_logger(__name__)
@@ -168,6 +178,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
     resource_type: Optional[str] = None
     resource_id: Optional[str] = None
     expires_at: Optional[datetime] = None
+    expires_skew_tolerance: Optional[int] = None
     expiration_seconds: Optional[int] = None
     config: AuthenticationConfig
 
@@ -586,7 +597,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     @classmethod
     def from_model(
-        cls, model: "ServiceConnectorBaseModel"
+        cls,
+        model: Union["ServiceConnectorRequest", "ServiceConnectorResponse"],
     ) -> "ServiceConnector":
         """Creates a service connector instance from a service connector model.
 
@@ -626,10 +638,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
         # Unpack the authentication configuration
         config = model.configuration.copy()
-        if (
-            isinstance(model, ServiceConnectorResponseModel)
-            and model.secret_id
-        ):
+        if isinstance(model, ServiceConnectorResponse) and model.secret_id:
             try:
                 secret = Client().get_secret(model.secret_id)
             except KeyError as e:
@@ -680,9 +689,10 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             resource_id=model.resource_id,
             config=auth_config,
             expires_at=model.expires_at,
+            expires_skew_tolerance=model.expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
         )
-        if isinstance(model, ServiceConnectorResponseModel):
+        if isinstance(model, ServiceConnectorResponse):
             connector.id = model.id
             connector.name = model.name
 
@@ -693,17 +703,15 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         user: UUID,
         workspace: UUID,
         name: Optional[str] = None,
-        is_shared: bool = False,
         description: str = "",
         labels: Optional[Dict[str, str]] = None,
-    ) -> "ServiceConnectorRequestModel":
+    ) -> "ServiceConnectorRequest":
         """Convert the connector instance to a service connector model.
 
         Args:
             name: The name of the connector.
             user: The ID of the user that created the connector.
             workspace: The ID of the workspace that the connector belongs to.
-            is_shared: Whether the connector is shared with other users.
             description: The description of the connector.
             labels: The labels of the connector.
 
@@ -722,15 +730,15 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 "connector configuration is not valid: name must be set"
             )
 
-        model = ServiceConnectorRequestModel(
+        model = ServiceConnectorRequest(
             connector_type=spec.connector_type,
             name=name,
             description=description,
             user=user,
             workspace=workspace,
-            is_shared=is_shared,
             auth_method=self.auth_method,
             expires_at=self.expires_at,
+            expires_skew_tolerance=self.expires_skew_tolerance,
             expiration_seconds=self.expiration_seconds,
             labels=labels or {},
         )
@@ -748,14 +756,13 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def to_response_model(
         self,
-        workspace: WorkspaceResponseModel,
-        user: Optional[UserResponseModel] = None,
+        workspace: WorkspaceResponse,
+        user: Optional[UserResponse] = None,
         name: Optional[str] = None,
         id: Optional[UUID] = None,
-        is_shared: bool = False,
         description: str = "",
         labels: Optional[Dict[str, str]] = None,
-    ) -> "ServiceConnectorResponseModel":
+    ) -> "ServiceConnectorResponse":
         """Convert the connector instance to a service connector response model.
 
         Args:
@@ -763,7 +770,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             user: The user that created the connector.
             name: The name of the connector.
             id: The ID of the connector.
-            is_shared: Whether the connector is shared with other users.
             description: The description of the connector.
             labels: The labels of the connector.
 
@@ -783,20 +789,24 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 "connector configuration is not valid: name and ID must be set"
             )
 
-        model = ServiceConnectorResponseModel(
+        model = ServiceConnectorResponse(
             id=id,
-            created=datetime.utcnow(),
-            updated=datetime.utcnow(),
-            connector_type=self.get_type(),
             name=name,
-            description=description,
-            user=user,
-            workspace=workspace,
-            is_shared=is_shared,
-            auth_method=self.auth_method,
-            expires_at=self.expires_at,
-            expiration_seconds=self.expiration_seconds,
-            labels=labels or {},
+            body=ServiceConnectorResponseBody(
+                user=user,
+                created=datetime.utcnow(),
+                updated=datetime.utcnow(),
+                description=description,
+                connector_type=self.get_type(),
+                auth_method=self.auth_method,
+                expires_at=self.expires_at,
+                expires_skew_tolerance=self.expires_skew_tolerance,
+            ),
+            metadata=ServiceConnectorResponseMetadata(
+                workspace=workspace,
+                expiration_seconds=self.expiration_seconds,
+                labels=labels or {},
+            ),
         )
 
         # Validate the connector configuration.
@@ -824,7 +834,25 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             return False
 
         expires_at = self.expires_at.replace(tzinfo=timezone.utc)
-        return expires_at < datetime.now(timezone.utc)
+        # Subtract some time to account for clock skew or other delays.
+        expires_at = expires_at - timedelta(
+            seconds=self.expires_skew_tolerance
+            if self.expires_skew_tolerance is not None
+            else SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS
+        )
+        delta = expires_at - datetime.now(timezone.utc)
+        result = delta < timedelta(seconds=0)
+
+        logger.debug(
+            f"Checking if connector {self.name} has expired.\n"
+            f"Expires at: {self.expires_at}\n"
+            f"Expires at (+skew): {expires_at}\n"
+            f"Current UTC time: {datetime.now(timezone.utc)}\n"
+            f"Delta: {delta}\n"
+            f"Result: {result}\n"
+        )
+
+        return result
 
     def validate_runtime_args(
         self,
@@ -936,6 +964,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def connect(
         self,
+        verify: bool = True,
         **kwargs: Any,
     ) -> Any:
         """Authenticate and connect to a resource.
@@ -951,6 +980,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         main service connector.
 
         Args:
+            verify: Whether to verify that the connector can access the
+                configured resource before connecting to it.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -962,22 +993,23 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             AuthorizationException: If the connector's authentication
                 credentials have expired.
         """
-        resource_type, resource_id = self.validate_runtime_args(
-            resource_type=self.resource_type,
-            resource_id=self.resource_id,
-            require_resource_type=True,
-            require_resource_id=True,
-        )
-
-        if self.has_expired():
-            raise AuthorizationException(
-                "the connector's authentication credentials have expired."
+        if verify:
+            resource_type, resource_id = self.validate_runtime_args(
+                resource_type=self.resource_type,
+                resource_id=self.resource_id,
+                require_resource_type=True,
+                require_resource_id=True,
             )
 
-        self._verify(
-            resource_type=resource_type,
-            resource_id=resource_id,
-        )
+            if self.has_expired():
+                raise AuthorizationException(
+                    "the connector's authentication credentials have expired."
+                )
+
+            self._verify(
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
 
         return self._connect_to_resource(
             **kwargs,
@@ -1346,6 +1378,12 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             resource_type=resource_type,
             resource_id=resource_id,
         )
+        # Transfer the expiration skew tolerance to the connector client
+        # if an expiration time is set for the connector client credentials.
+        if connector_client.expires_at is not None:
+            connector_client.expires_skew_tolerance = (
+                self.expires_skew_tolerance
+            )
 
         if connector_client.has_expired():
             raise AuthorizationException(

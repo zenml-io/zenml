@@ -475,6 +475,7 @@ Within the `SeldonDeploymentConfig` you can configure:
   a `SeldonResourceRequirements` object with the `requests` and `limits` properties. The values for these properties can
   be a dictionary with the `cpu` and `memory` keys. The values for these keys can be a string with the amount of CPU and
   memory to be allocated to the model.
+* `serviceAccount` The name of the Service Account applied to the deployment.
 
 For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.model\_deployers)
@@ -561,6 +562,7 @@ def seldon_deployment_pipeline():
             resources=SeldonResourceRequirements(
                 limits={"cpu": "200m", "memory": "250Mi"}
             ),
+            serviceAccountName="kubernetes-service-account",
         ),
     )
 ```

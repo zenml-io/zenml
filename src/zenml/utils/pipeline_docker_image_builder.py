@@ -120,7 +120,7 @@ class PipelineDockerImageBuilder:
             # pipeline?
             return docker_settings.parent_image, dockerfile, requirements
 
-        stack.validate_image_builder()
+        stack.validate()
         image_builder = stack.image_builder
         if not image_builder:
             raise RuntimeError(
@@ -407,7 +407,8 @@ class PipelineDockerImageBuilder:
 
             try:
                 local_requirements = subprocess.check_output(
-                    command, shell=True  # nosec
+                    command,
+                    shell=True,  # nosec
                 ).decode()
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(

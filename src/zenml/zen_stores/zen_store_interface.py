@@ -16,102 +16,110 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
-from zenml.enums import ModelStages
 from zenml.models import (
-    ArtifactFilterModel,
-    ArtifactRequestModel,
-    ArtifactResponseModel,
-    CodeRepositoryFilterModel,
-    CodeRepositoryRequestModel,
-    CodeRepositoryResponseModel,
-    CodeRepositoryUpdateModel,
-    ComponentFilterModel,
-    ComponentRequestModel,
-    ComponentResponseModel,
-    ComponentUpdateModel,
-    FlavorFilterModel,
-    FlavorRequestModel,
-    FlavorResponseModel,
-    FlavorUpdateModel,
-    ModelFilterModel,
-    ModelRequestModel,
-    ModelResponseModel,
-    ModelUpdateModel,
-    ModelVersionArtifactFilterModel,
-    ModelVersionArtifactRequestModel,
-    ModelVersionArtifactResponseModel,
-    ModelVersionFilterModel,
-    ModelVersionPipelineRunFilterModel,
-    ModelVersionPipelineRunRequestModel,
-    ModelVersionPipelineRunResponseModel,
-    ModelVersionRequestModel,
-    ModelVersionResponseModel,
-    ModelVersionUpdateModel,
-    OAuthDeviceFilterModel,
-    OAuthDeviceResponseModel,
-    OAuthDeviceUpdateModel,
-    PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
-    PipelineBuildResponseModel,
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentRequestModel,
-    PipelineDeploymentResponseModel,
-    PipelineFilterModel,
-    PipelineRequestModel,
-    PipelineResponseModel,
-    PipelineRunFilterModel,
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
-    PipelineUpdateModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    RoleUpdateModel,
-    RunMetadataRequestModel,
-    RunMetadataResponseModel,
-    ScheduleRequestModel,
-    ScheduleResponseModel,
-    ServiceConnectorFilterModel,
-    ServiceConnectorRequestModel,
+    APIKeyFilter,
+    APIKeyRequest,
+    APIKeyResponse,
+    APIKeyRotateRequest,
+    APIKeyUpdate,
+    ArtifactFilter,
+    ArtifactRequest,
+    ArtifactResponse,
+    ArtifactUpdate,
+    ArtifactVersionFilter,
+    ArtifactVersionRequest,
+    ArtifactVersionResponse,
+    ArtifactVersionUpdate,
+    ArtifactVisualizationResponse,
+    CodeReferenceResponse,
+    CodeRepositoryFilter,
+    CodeRepositoryRequest,
+    CodeRepositoryResponse,
+    CodeRepositoryUpdate,
+    ComponentFilter,
+    ComponentRequest,
+    ComponentResponse,
+    ComponentUpdate,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
+    LogsResponse,
+    ModelFilter,
+    ModelRequest,
+    ModelResponse,
+    ModelUpdate,
+    ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
+    ModelVersionArtifactResponse,
+    ModelVersionFilter,
+    ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunRequest,
+    ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
+    ModelVersionResponse,
+    ModelVersionUpdate,
+    OAuthDeviceFilter,
+    OAuthDeviceResponse,
+    OAuthDeviceUpdate,
+    Page,
+    PipelineBuildFilter,
+    PipelineBuildRequest,
+    PipelineBuildResponse,
+    PipelineDeploymentFilter,
+    PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
+    PipelineFilter,
+    PipelineRequest,
+    PipelineResponse,
+    PipelineRunFilter,
+    PipelineRunRequest,
+    PipelineRunResponse,
+    PipelineRunUpdate,
+    PipelineUpdate,
+    RunMetadataFilter,
+    RunMetadataRequest,
+    RunMetadataResponse,
+    ScheduleFilter,
+    ScheduleRequest,
+    ScheduleResponse,
+    ScheduleUpdate,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
+    ServerModel,
+    ServiceAccountFilter,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountUpdate,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
-    ServiceConnectorResponseModel,
+    ServiceConnectorResponse,
     ServiceConnectorTypeModel,
-    ServiceConnectorUpdateModel,
-    StackFilterModel,
-    StackRequestModel,
-    StackResponseModel,
-    StackUpdateModel,
-    StepRunFilterModel,
-    StepRunRequestModel,
-    StepRunResponseModel,
-    StepRunUpdateModel,
-    TeamFilterModel,
-    TeamRequestModel,
-    TeamResponseModel,
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-    TeamUpdateModel,
-    UserFilterModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
-    UserUpdateModel,
-    WorkspaceFilterModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
+    ServiceConnectorUpdate,
+    StackFilter,
+    StackRequest,
+    StackResponse,
+    StackUpdate,
+    StepRunFilter,
+    StepRunRequest,
+    StepRunResponse,
+    StepRunUpdate,
+    TagFilter,
+    TagRequest,
+    TagResponse,
+    TagUpdate,
+    UserFilter,
+    UserRequest,
+    UserResponse,
+    UserUpdate,
+    WorkspaceFilter,
+    WorkspaceRequest,
+    WorkspaceResponse,
+    WorkspaceUpdate,
 )
-from zenml.models.page_model import Page
-from zenml.models.run_metadata_models import RunMetadataFilterModel
-from zenml.models.schedule_model import (
-    ScheduleFilterModel,
-    ScheduleUpdateModel,
-)
-from zenml.models.server_models import ServerModel
 
 
 class ZenStoreInterface(ABC):
@@ -207,89 +215,438 @@ class ZenStoreInterface(ABC):
             The ID of the deployment.
         """
 
-    # ------
-    # Stacks
-    # ------
+    # -------------------- API Keys --------------------
 
     @abstractmethod
-    def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
-        """Create a new stack.
+    def create_api_key(
+        self, service_account_id: UUID, api_key: APIKeyRequest
+    ) -> APIKeyResponse:
+        """Create a new API key for a service account.
 
         Args:
-            stack: The stack to create.
+            service_account_id: The ID of the service account for which to
+                create the API key.
+            api_key: The API key to create.
 
         Returns:
-            The created stack.
+            The created API key.
 
         Raises:
-            StackExistsError: If a stack with the same name is already owned
-                by this user in this workspace.
+            KeyError: If the service account doesn't exist.
+            EntityExistsError: If an API key with the same name is already
+                configured for the same service account.
         """
 
     @abstractmethod
-    def get_stack(self, stack_id: UUID) -> StackResponseModel:
-        """Get a stack by its unique ID.
+    def get_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> APIKeyResponse:
+        """Get an API key for a service account.
 
         Args:
-            stack_id: The ID of the stack to get.
+            service_account_id: The ID of the service account for which to fetch
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            The stack with the given ID.
+            The API key with the given ID.
 
         Raises:
-            KeyError: if the stack doesn't exist.
+            KeyError: if an API key with the given name or ID is not configured
+                for the given service account.
         """
 
     @abstractmethod
-    def list_stacks(
-        self, stack_filter_model: StackFilterModel
-    ) -> Page[StackResponseModel]:
-        """List all stacks matching the given filter criteria.
+    def list_api_keys(
+        self,
+        service_account_id: UUID,
+        filter_model: APIKeyFilter,
+        hydrate: bool = False,
+    ) -> Page[APIKeyResponse]:
+        """List all API keys for a service account matching the given filter criteria.
 
         Args:
-            stack_filter_model: All filter parameters including pagination
-                params
+            service_account_id: The ID of the service account for which to list
+                the API keys.
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            A list of all stacks matching the filter criteria.
+            A list of all API keys matching the filter criteria.
         """
 
     @abstractmethod
-    def update_stack(
-        self, stack_id: UUID, stack_update: StackUpdateModel
-    ) -> StackResponseModel:
-        """Update a stack.
+    def update_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        api_key_update: APIKeyUpdate,
+    ) -> APIKeyResponse:
+        """Update an API key for a service account.
 
         Args:
-            stack_id: The ID of the stack update.
-            stack_update: The update request on the stack.
+            service_account_id: The ID of the service account for which to update
+                the API key.
+            api_key_name_or_id: The name or ID of the API key to update.
+            api_key_update: The update request on the API key.
 
         Returns:
-            The updated stack.
+            The updated API key.
 
         Raises:
-            KeyError: if the stack doesn't exist.
+            KeyError: if an API key with the given name or ID is not configured
+                for the given service account.
+            EntityExistsError: if the API key update would result in a name
+                conflict with an existing API key for the same service account.
         """
 
     @abstractmethod
-    def delete_stack(self, stack_id: UUID) -> None:
-        """Delete a stack.
+    def rotate_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        rotate_request: APIKeyRotateRequest,
+    ) -> APIKeyResponse:
+        """Rotate an API key for a service account.
 
         Args:
-            stack_id: The ID of the stack to delete.
+            service_account_id: The ID of the service account for which to
+                rotate the API key.
+            api_key_name_or_id: The name or ID of the API key to rotate.
+            rotate_request: The rotate request on the API key.
+
+        Returns:
+            The updated API key.
 
         Raises:
-            KeyError: if the stack doesn't exist.
+            KeyError: if an API key with the given name or ID is not configured
+                for the given service account.
         """
 
-    # ----------------
-    # Stack components
-    # ----------------
+    @abstractmethod
+    def delete_api_key(
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete an API key for a service account.
+
+        Args:
+            service_account_id: The ID of the service account for which to
+                delete the API key.
+            api_key_name_or_id: The name or ID of the API key to delete.
+
+        Raises:
+            KeyError: if an API key with the given name or ID is not configured
+                for the given service account.
+        """
+
+    # -------------------- Artifacts --------------------
+
+    @abstractmethod
+    def create_artifact(self, artifact: ArtifactRequest) -> ArtifactResponse:
+        """Creates a new artifact.
+
+        Args:
+            artifact: The artifact to create.
+
+        Returns:
+            The newly created artifact.
+
+        Raises:
+            EntityExistsError: If an artifact with the same name already exists.
+        """
+
+    @abstractmethod
+    def get_artifact(
+        self, artifact_id: UUID, hydrate: bool = True
+    ) -> ArtifactResponse:
+        """Gets an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+
+    @abstractmethod
+    def list_artifacts(
+        self, filter_model: ArtifactFilter, hydrate: bool = False
+    ) -> Page[ArtifactResponse]:
+        """List all artifacts matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all artifacts matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_artifact(
+        self, artifact_id: UUID, artifact_update: ArtifactUpdate
+    ) -> ArtifactResponse:
+        """Updates an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to update.
+            artifact_update: The update to be applied to the artifact.
+
+        Returns:
+            The updated artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+
+    # -------------------- Artifact Versions --------------------
+
+    @abstractmethod
+    def create_artifact_version(
+        self, artifact_version: ArtifactVersionRequest
+    ) -> ArtifactVersionResponse:
+        """Creates an artifact version.
+
+        Args:
+            artifact_version: The artifact version to create.
+
+        Returns:
+            The created artifact version.
+        """
+
+    @abstractmethod
+    def get_artifact_version(
+        self, artifact_version_id: UUID, hydrate: bool = True
+    ) -> ArtifactVersionResponse:
+        """Gets an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The artifact version.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
+        """
+
+    @abstractmethod
+    def list_artifact_versions(
+        self,
+        artifact_version_filter_model: ArtifactVersionFilter,
+        hydrate: bool = False,
+    ) -> Page[ArtifactVersionResponse]:
+        """List all artifact versions matching the given filter criteria.
+
+        Args:
+            artifact_version_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all artifact versions matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_artifact_version(
+        self,
+        artifact_version_id: UUID,
+        artifact_version_update: ArtifactVersionUpdate,
+    ) -> ArtifactVersionResponse:
+        """Updates an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to update.
+            artifact_version_update: The update to be applied to the artifact
+                version.
+
+        Returns:
+            The updated artifact version.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_artifact_version(self, artifact_version_id: UUID) -> None:
+        """Deletes an artifact version.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to delete.
+
+        Raises:
+            KeyError: if the artifact version doesn't exist.
+        """
+
+    @abstractmethod
+    def prune_artifact_versions(
+        self,
+        only_versions: bool = True,
+    ) -> None:
+        """Prunes unused artifact versions and their artifacts.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+        """
+
+    # -------------------- Artifact Visualization --------------------
+
+    @abstractmethod
+    def get_artifact_visualization(
+        self, artifact_visualization_id: UUID, hydrate: bool = True
+    ) -> ArtifactVisualizationResponse:
+        """Gets an artifact visualization.
+
+        Args:
+            artifact_visualization_id: The ID of the artifact visualization
+                to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The artifact visualization.
+
+        Raises:
+            KeyError: if the artifact visualization doesn't exist.
+        """
+
+    # -------------------- Code References --------------------
+
+    @abstractmethod
+    def get_code_reference(
+        self, code_reference_id: UUID, hydrate: bool = True
+    ) -> CodeReferenceResponse:
+        """Gets a specific code reference.
+
+        Args:
+            code_reference_id: The ID of the code reference to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested code reference, if it was found.
+
+        Raises:
+            KeyError: If no code reference with the given ID exists.
+        """
+
+    # -------------------- Code repositories --------------------
+
+    @abstractmethod
+    def create_code_repository(
+        self, code_repository: CodeRepositoryRequest
+    ) -> CodeRepositoryResponse:
+        """Creates a new code repository.
+
+        Args:
+            code_repository: Code repository to be created.
+
+        Returns:
+            The newly created code repository.
+
+        Raises:
+            EntityExistsError: If a code repository with the given name already
+                exists.
+        """
+
+    @abstractmethod
+    def get_code_repository(
+        self, code_repository_id: UUID, hydrate: bool = True
+    ) -> CodeRepositoryResponse:
+        """Gets a specific code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested code repository, if it was found.
+
+        Raises:
+            KeyError: If no code repository with the given ID exists.
+        """
+
+    @abstractmethod
+    def list_code_repositories(
+        self, filter_model: CodeRepositoryFilter, hydrate: bool = False
+    ) -> Page[CodeRepositoryResponse]:
+        """List all code repositories.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all code repositories.
+        """
+
+    @abstractmethod
+    def update_code_repository(
+        self, code_repository_id: UUID, update: CodeRepositoryUpdate
+    ) -> CodeRepositoryResponse:
+        """Updates an existing code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to update.
+            update: The update to be applied to the code repository.
+
+        Returns:
+            The updated code repository.
+
+        Raises:
+            KeyError: If no code repository with the given name exists.
+        """
+
+    @abstractmethod
+    def delete_code_repository(self, code_repository_id: UUID) -> None:
+        """Deletes a code repository.
+
+        Args:
+            code_repository_id: The ID of the code repository to delete.
+
+        Raises:
+            KeyError: If no code repository with the given ID exists.
+        """
+
+    # -------------------- Components --------------------
 
     @abstractmethod
     def create_stack_component(
-        self, component: ComponentRequestModel
-    ) -> ComponentResponseModel:
+        self, component: ComponentRequest
+    ) -> ComponentResponse:
         """Create a stack component.
 
         Args:
@@ -304,27 +661,17 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_stack_components(
-        self, component_filter_model: ComponentFilterModel
-    ) -> Page[ComponentResponseModel]:
-        """List all stack components matching the given filter criteria.
-
-        Args:
-            component_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all stack components matching the filter criteria.
-        """
-
-    @abstractmethod
     def get_stack_component(
-        self, component_id: UUID
-    ) -> ComponentResponseModel:
+        self,
+        component_id: UUID,
+        hydrate: bool = True,
+    ) -> ComponentResponse:
         """Get a stack component by ID.
 
         Args:
             component_id: The ID of the stack component to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The stack component.
@@ -334,11 +681,29 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def list_stack_components(
+        self,
+        component_filter_model: ComponentFilter,
+        hydrate: bool = False,
+    ) -> Page[ComponentResponse]:
+        """List all stack components matching the given filter criteria.
+
+        Args:
+            component_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all stack components matching the filter criteria.
+        """
+
+    @abstractmethod
     def update_stack_component(
         self,
         component_id: UUID,
-        component_update: ComponentUpdateModel,
-    ) -> ComponentResponseModel:
+        component_update: ComponentUpdate,
+    ) -> ComponentResponse:
         """Update an existing stack component.
 
         Args:
@@ -364,15 +729,77 @@ class ZenStoreInterface(ABC):
             ValueError: if the stack component is part of one or more stacks.
         """
 
-    # -----------------------
-    # Stack component flavors
-    # -----------------------
+    # -------------------- Devices --------------------
+
+    @abstractmethod
+    def get_authorized_device(
+        self, device_id: UUID, hydrate: bool = True
+    ) -> OAuthDeviceResponse:
+        """Gets a specific OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested device, if it was found.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+
+    @abstractmethod
+    def list_authorized_devices(
+        self, filter_model: OAuthDeviceFilter, hydrate: bool = False
+    ) -> Page[OAuthDeviceResponse]:
+        """List all OAuth 2.0 authorized devices for a user.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all matching OAuth 2.0 authorized devices.
+        """
+
+    @abstractmethod
+    def update_authorized_device(
+        self, device_id: UUID, update: OAuthDeviceUpdate
+    ) -> OAuthDeviceResponse:
+        """Updates an existing OAuth 2.0 authorized device for internal use.
+
+        Args:
+            device_id: The ID of the device to update.
+            update: The update to be applied to the device.
+
+        Returns:
+            The updated OAuth 2.0 authorized device.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+
+    @abstractmethod
+    def delete_authorized_device(self, device_id: UUID) -> None:
+        """Deletes an OAuth 2.0 authorized device.
+
+        Args:
+            device_id: The ID of the device to delete.
+
+        Raises:
+            KeyError: If no device with the given ID exists.
+        """
+
+    # -------------------- Flavors --------------------
 
     @abstractmethod
     def create_flavor(
         self,
-        flavor: FlavorRequestModel,
-    ) -> FlavorResponseModel:
+        flavor: FlavorRequest,
+    ) -> FlavorResponse:
         """Creates a new stack component flavor.
 
         Args:
@@ -387,9 +814,27 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def get_flavor(
+        self, flavor_id: UUID, hydrate: bool = True
+    ) -> FlavorResponse:
+        """Get a stack component flavor by ID.
+
+        Args:
+            flavor_id: The ID of the flavor to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The stack component flavor.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+
+    @abstractmethod
     def update_flavor(
-        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
-    ) -> FlavorResponseModel:
+        self, flavor_id: UUID, flavor_update: FlavorUpdate
+    ) -> FlavorResponse:
         """Updates an existing user.
 
         Args:
@@ -401,28 +846,18 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
-        """Get a stack component flavor by ID.
-
-        Args:
-            flavor_id: The ID of the flavor to get.
-
-        Returns:
-            The stack component flavor.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
-        """
-
-    @abstractmethod
     def list_flavors(
-        self, flavor_filter_model: FlavorFilterModel
-    ) -> Page[FlavorResponseModel]:
+        self,
+        flavor_filter_model: FlavorFilter,
+        hydrate: bool = False,
+    ) -> Page[FlavorResponse]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
             flavor_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             List of all the stack component flavors matching the given criteria.
@@ -439,429 +874,30 @@ class ZenStoreInterface(ABC):
             KeyError: if the stack component flavor doesn't exist.
         """
 
-    # -----
-    # Users
-    # -----
-
+    # -------------------- Logs --------------------
     @abstractmethod
-    def create_user(self, user: UserRequestModel) -> UserResponseModel:
-        """Creates a new user.
+    def get_logs(self, logs_id: UUID, hydrate: bool = True) -> LogsResponse:
+        """Get logs by its unique ID.
 
         Args:
-            user: User to be created.
+            logs_id: The ID of the logs to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            The newly created user.
+            The logs with the given ID.
 
         Raises:
-            EntityExistsError: If a user with the given name already exists.
+            KeyError: if the logs doesn't exist.
         """
 
-    @abstractmethod
-    def get_user(
-        self,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        include_private: bool = False,
-    ) -> UserResponseModel:
-        """Gets a specific user, when no id is specified the active user is returned.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-            include_private: Whether to include private user information
-
-        Returns:
-            The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name or ID exists.
-        """
-
-    @abstractmethod
-    def list_users(
-        self, user_filter_model: UserFilterModel
-    ) -> Page[UserResponseModel]:
-        """List all users.
-
-        Args:
-            user_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all users.
-        """
-
-    @abstractmethod
-    def update_user(
-        self, user_id: UUID, user_update: UserUpdateModel
-    ) -> UserResponseModel:
-        """Updates an existing user.
-
-        Args:
-            user_id: The id of the user to update.
-            user_update: The update to be applied to the user.
-
-        Returns:
-            The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-
-    @abstractmethod
-    def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
-        """
-
-    # -----
-    # Teams
-    # -----
-
-    @abstractmethod
-    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
-        """Creates a new team.
-
-        Args:
-            team: The team model to create.
-
-        Returns:
-            The newly created team.
-        """
-
-    @abstractmethod
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
-        """Gets a specific team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to get.
-
-        Returns:
-            The requested team.
-
-        Raises:
-            KeyError: If no team with the given name or ID exists.
-        """
-
-    @abstractmethod
-    def list_teams(
-        self, team_filter_model: TeamFilterModel
-    ) -> Page[TeamResponseModel]:
-        """List all teams matching the given filter criteria.
-
-        Args:
-            team_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all teams matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_team(
-        self, team_id: UUID, team_update: TeamUpdateModel
-    ) -> TeamResponseModel:
-        """Update an existing team.
-
-        Args:
-            team_id: The ID of the team to be updated.
-            team_update: The update to be applied to the team.
-
-        Returns:
-            The updated team.
-
-        Raises:
-            KeyError: if the team does not exist.
-        """
-
-    @abstractmethod
-    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
-        """
-
-    # -----
-    # Roles
-    # -----
-
-    @abstractmethod
-    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
-        """Creates a new role.
-
-        Args:
-            role: The role model to create.
-
-        Returns:
-            The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
-        """
-
-    @abstractmethod
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
-        """Gets a specific role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to get.
-
-        Returns:
-            The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-
-    @abstractmethod
-    def list_roles(
-        self, role_filter_model: RoleFilterModel
-    ) -> Page[RoleResponseModel]:
-        """List all roles matching the given filter criteria.
-
-        Args:
-            role_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all roles matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_role(
-        self, role_id: UUID, role_update: RoleUpdateModel
-    ) -> RoleResponseModel:
-        """Update an existing role.
-
-        Args:
-            role_id: The ID of the role to be updated.
-            role_update: The update to be applied to the role.
-
-        Returns:
-            The updated role.
-
-        Raises:
-            KeyError: if the role does not exist.
-        """
-
-    @abstractmethod
-    def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given ID exists.
-        """
-
-    # ---------------------
-    # User Role assignments
-    # ---------------------
-    @abstractmethod
-    def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequestModel
-    ) -> UserRoleAssignmentResponseModel:
-        """Creates a new role assignment.
-
-        Args:
-            user_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-        """
-
-    @abstractmethod
-    def get_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> UserRoleAssignmentResponseModel:
-        """Gets a specific role assignment.
-
-        Args:
-            user_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The requested role assignment.
-
-        Raises:
-            KeyError: If no role assignment with the given ID exists.
-        """
-
-    @abstractmethod
-    def delete_user_role_assignment(
-        self, user_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            user_role_assignment_id: The ID of the specific role assignment
-        """
-
-    @abstractmethod
-    def list_user_role_assignments(
-        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
-    ) -> Page[UserRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            user_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-
-    # ---------------------
-    # Team Role assignments
-    # ---------------------
-    @abstractmethod
-    def create_team_role_assignment(
-        self, team_role_assignment: TeamRoleAssignmentRequestModel
-    ) -> TeamRoleAssignmentResponseModel:
-        """Creates a new team role assignment.
-
-        Args:
-            team_role_assignment: The role assignment model to create.
-
-        Returns:
-            The newly created role assignment.
-        """
-
-    @abstractmethod
-    def get_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> TeamRoleAssignmentResponseModel:
-        """Gets a specific role assignment.
-
-        Args:
-            team_role_assignment_id: ID of the role assignment to get.
-
-        Returns:
-            The requested role assignment.
-
-        Raises:
-            KeyError: If no role assignment with the given ID exists.
-        """
-
-    @abstractmethod
-    def delete_team_role_assignment(
-        self, team_role_assignment_id: UUID
-    ) -> None:
-        """Delete a specific role assignment.
-
-        Args:
-            team_role_assignment_id: The ID of the specific role assignment
-        """
-
-    @abstractmethod
-    def list_team_role_assignments(
-        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
-    ) -> Page[TeamRoleAssignmentResponseModel]:
-        """List all roles assignments matching the given filter criteria.
-
-        Args:
-            team_role_assignment_filter_model: All filter parameters including
-                pagination params.
-
-        Returns:
-            A list of all roles assignments matching the filter criteria.
-        """
-
-    # --------
-    # Workspaces
-    # --------
-
-    @abstractmethod
-    def create_workspace(
-        self, workspace: WorkspaceRequestModel
-    ) -> WorkspaceResponseModel:
-        """Creates a new workspace.
-
-        Args:
-            workspace: The workspace to create.
-
-        Returns:
-            The newly created workspace.
-
-        Raises:
-            EntityExistsError: If a workspace with the given name already exists.
-        """
-
-    @abstractmethod
-    def get_workspace(
-        self, workspace_name_or_id: Union[UUID, str]
-    ) -> WorkspaceResponseModel:
-        """Get an existing workspace by name or ID.
-
-        Args:
-            workspace_name_or_id: Name or ID of the workspace to get.
-
-        Returns:
-            The requested workspace.
-
-        Raises:
-            KeyError: If there is no such workspace.
-        """
-
-    @abstractmethod
-    def list_workspaces(
-        self, workspace_filter_model: WorkspaceFilterModel
-    ) -> Page[WorkspaceResponseModel]:
-        """List all workspace matching the given filter criteria.
-
-        Args:
-            workspace_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all workspace matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_workspace(
-        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
-    ) -> WorkspaceResponseModel:
-        """Update an existing workspace.
-
-        Args:
-            workspace_id: The ID of the workspace to be updated.
-            workspace_update: The update to be applied to the workspace.
-
-        Returns:
-            The updated workspace.
-
-        Raises:
-            KeyError: if the workspace does not exist.
-        """
-
-    @abstractmethod
-    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a workspace.
-
-        Args:
-            workspace_name_or_id: Name or ID of the workspace to delete.
-
-        Raises:
-            KeyError: If no workspace with the given name exists.
-        """
-
-    # ---------
-    # Pipelines
-    # ---------
+    # -------------------- Pipelines --------------------
 
     @abstractmethod
     def create_pipeline(
         self,
-        pipeline: PipelineRequestModel,
-    ) -> PipelineResponseModel:
+        pipeline: PipelineRequest,
+    ) -> PipelineResponse:
         """Creates a new pipeline in a workspace.
 
         Args:
@@ -876,11 +912,15 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponseModel:
+    def get_pipeline(
+        self, pipeline_id: UUID, hydrate: bool = True
+    ) -> PipelineResponse:
         """Get a pipeline with a given ID.
 
         Args:
             pipeline_id: ID of the pipeline.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The pipeline.
@@ -891,13 +931,17 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_pipelines(
-        self, pipeline_filter_model: PipelineFilterModel
-    ) -> Page[PipelineResponseModel]:
+        self,
+        pipeline_filter_model: PipelineFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineResponse]:
         """List all pipelines matching the given filter criteria.
 
         Args:
             pipeline_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all pipelines matching the filter criteria.
@@ -907,8 +951,8 @@ class ZenStoreInterface(ABC):
     def update_pipeline(
         self,
         pipeline_id: UUID,
-        pipeline_update: PipelineUpdateModel,
-    ) -> PipelineResponseModel:
+        pipeline_update: PipelineUpdate,
+    ) -> PipelineResponse:
         """Updates a pipeline.
 
         Args:
@@ -933,15 +977,13 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline doesn't exist.
         """
 
-    # ---------
-    # Builds
-    # ---------
+    # -------------------- Pipeline builds --------------------
 
     @abstractmethod
     def create_build(
         self,
-        build: PipelineBuildRequestModel,
-    ) -> PipelineBuildResponseModel:
+        build: PipelineBuildRequest,
+    ) -> PipelineBuildResponse:
         """Creates a new build in a workspace.
 
         Args:
@@ -956,11 +998,15 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+    def get_build(
+        self, build_id: UUID, hydrate: bool = True
+    ) -> PipelineBuildResponse:
         """Get a build with a given ID.
 
         Args:
             build_id: ID of the build.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The build.
@@ -971,13 +1017,17 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_builds(
-        self, build_filter_model: PipelineBuildFilterModel
-    ) -> Page[PipelineBuildResponseModel]:
+        self,
+        build_filter_model: PipelineBuildFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineBuildResponse]:
         """List all builds matching the given filter criteria.
 
         Args:
             build_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all builds matching the filter criteria.
@@ -994,15 +1044,13 @@ class ZenStoreInterface(ABC):
             KeyError: if the build doesn't exist.
         """
 
-    # ----------------------
-    # Pipeline Deployments
-    # ----------------------
+    # -------------------- Pipeline deployments --------------------
 
     @abstractmethod
     def create_deployment(
         self,
-        deployment: PipelineDeploymentRequestModel,
-    ) -> PipelineDeploymentResponseModel:
+        deployment: PipelineDeploymentRequest,
+    ) -> PipelineDeploymentResponse:
         """Creates a new deployment in a workspace.
 
         Args:
@@ -1018,12 +1066,14 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_deployment(
-        self, deployment_id: UUID
-    ) -> PipelineDeploymentResponseModel:
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> PipelineDeploymentResponse:
         """Get a deployment with a given ID.
 
         Args:
             deployment_id: ID of the deployment.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The deployment.
@@ -1034,13 +1084,17 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_deployments(
-        self, deployment_filter_model: PipelineDeploymentFilterModel
-    ) -> Page[PipelineDeploymentResponseModel]:
+        self,
+        deployment_filter_model: PipelineDeploymentFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineDeploymentResponse]:
         """List all deployments matching the given filter criteria.
 
         Args:
             deployment_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all deployments matching the filter criteria.
@@ -1057,89 +1111,12 @@ class ZenStoreInterface(ABC):
             KeyError: If the deployment doesn't exist.
         """
 
-    # ---------
-    # Schedules
-    # ---------
-
-    @abstractmethod
-    def create_schedule(
-        self, schedule: ScheduleRequestModel
-    ) -> ScheduleResponseModel:
-        """Creates a new schedule.
-
-        Args:
-            schedule: The schedule to create.
-
-        Returns:
-            The newly created schedule.
-        """
-
-    @abstractmethod
-    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
-        """Get a schedule with a given ID.
-
-        Args:
-            schedule_id: ID of the schedule.
-
-        Returns:
-            The schedule.
-
-        Raises:
-            KeyError: if the schedule does not exist.
-        """
-
-    @abstractmethod
-    def list_schedules(
-        self, schedule_filter_model: ScheduleFilterModel
-    ) -> Page[ScheduleResponseModel]:
-        """List all schedules in the workspace.
-
-        Args:
-            schedule_filter_model: All filter parameters including pagination
-                params
-
-        Returns:
-            A list of schedules.
-        """
-
-    @abstractmethod
-    def update_schedule(
-        self,
-        schedule_id: UUID,
-        schedule_update: ScheduleUpdateModel,
-    ) -> ScheduleResponseModel:
-        """Updates a schedule.
-
-        Args:
-            schedule_id: The ID of the schedule to be updated.
-            schedule_update: The update to be applied.
-
-        Returns:
-            The updated schedule.
-
-        Raises:
-            KeyError: if the schedule doesn't exist.
-        """
-
-    @abstractmethod
-    def delete_schedule(self, schedule_id: UUID) -> None:
-        """Deletes a schedule.
-
-        Args:
-            schedule_id: The ID of the schedule to delete.
-
-        Raises:
-            KeyError: if the schedule doesn't exist.
-        """
-
-    # --------------
-    # Pipeline runs
-    # --------------
+    # -------------------- Pipeline runs --------------------
 
     @abstractmethod
     def create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+        self, pipeline_run: PipelineRunRequest
+    ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
@@ -1155,12 +1132,14 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_run(
-        self, run_name_or_id: Union[str, UUID]
-    ) -> PipelineRunResponseModel:
+        self, run_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
         Args:
             run_name_or_id: The name or ID of the pipeline run to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The pipeline run.
@@ -1170,31 +1149,18 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_or_create_run(
-        self, pipeline_run: PipelineRunRequestModel
-    ) -> Tuple[PipelineRunResponseModel, bool]:
-        """Gets or creates a pipeline run.
-
-        If a run with the same ID or name already exists, it is returned.
-        Otherwise, a new run is created.
-
-        Args:
-            pipeline_run: The pipeline run to get or create.
-
-        Returns:
-            The pipeline run, and a boolean indicating whether the run was
-            created or not.
-        """
-
-    @abstractmethod
     def list_runs(
-        self, runs_filter_model: PipelineRunFilterModel
-    ) -> Page[PipelineRunResponseModel]:
+        self,
+        runs_filter_model: PipelineRunFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineRunResponse]:
         """List all pipeline runs matching the given filter criteria.
 
         Args:
             runs_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all pipeline runs matching the filter criteria.
@@ -1202,8 +1168,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_run(
-        self, run_id: UUID, run_update: PipelineRunUpdateModel
-    ) -> PipelineRunResponseModel:
+        self, run_id: UUID, run_update: PipelineRunUpdate
+    ) -> PipelineRunResponse:
         """Updates a pipeline run.
 
         Args:
@@ -1228,138 +1194,29 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    # ------------------
-    # Pipeline run steps
-    # ------------------
-
     @abstractmethod
-    def create_run_step(
-        self, step_run: StepRunRequestModel
-    ) -> StepRunResponseModel:
-        """Creates a step run.
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunRequest
+    ) -> Tuple[PipelineRunResponse, bool]:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
 
         Args:
-            step_run: The step run to create.
+            pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The created step run.
-
-        Raises:
-            EntityExistsError: if the step run already exists.
-            KeyError: if the pipeline run doesn't exist.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
 
-    @abstractmethod
-    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
-        """Get a step run by ID.
-
-        Args:
-            step_run_id: The ID of the step run to get.
-
-        Returns:
-            The step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-
-    @abstractmethod
-    def list_run_steps(
-        self, step_run_filter_model: StepRunFilterModel
-    ) -> Page[StepRunResponseModel]:
-        """List all step runs matching the given filter criteria.
-
-        Args:
-            step_run_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all step runs matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_run_step(
-        self,
-        step_run_id: UUID,
-        step_run_update: StepRunUpdateModel,
-    ) -> StepRunResponseModel:
-        """Updates a step run.
-
-        Args:
-            step_run_id: The ID of the step to update.
-            step_run_update: The update to be applied to the step.
-
-        Returns:
-            The updated step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-
-    # ---------
-    # Artifacts
-    # ---------
-
-    @abstractmethod
-    def create_artifact(
-        self, artifact: ArtifactRequestModel
-    ) -> ArtifactResponseModel:
-        """Creates an artifact.
-
-        Args:
-            artifact: The artifact to create.
-
-        Returns:
-            The created artifact.
-        """
-
-    @abstractmethod
-    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
-        """Gets an artifact.
-
-        Args:
-            artifact_id: The ID of the artifact to get.
-
-        Returns:
-            The artifact.
-
-        Raises:
-            KeyError: if the artifact doesn't exist.
-        """
-
-    @abstractmethod
-    def list_artifacts(
-        self, artifact_filter_model: ArtifactFilterModel
-    ) -> Page[ArtifactResponseModel]:
-        """List all artifacts matching the given filter criteria.
-
-        Args:
-            artifact_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all artifacts matching the filter criteria.
-        """
-
-    @abstractmethod
-    def delete_artifact(self, artifact_id: UUID) -> None:
-        """Deletes an artifact.
-
-        Args:
-            artifact_id: The ID of the artifact to delete.
-
-        Raises:
-            KeyError: if the artifact doesn't exist.
-        """
-
-    # ------------
-    # Run Metadata
-    # ------------
+    # -------------------- Run metadata --------------------
 
     @abstractmethod
     def create_run_metadata(
-        self, run_metadata: RunMetadataRequestModel
-    ) -> List[RunMetadataResponseModel]:
+        self, run_metadata: RunMetadataRequest
+    ) -> List[RunMetadataResponse]:
         """Creates run metadata.
 
         Args:
@@ -1370,108 +1227,337 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def get_run_metadata(
+        self, run_metadata_id: UUID, hydrate: bool = True
+    ) -> RunMetadataResponse:
+        """Get run metadata by its unique ID.
+
+        Args:
+            run_metadata_id: The ID of the run metadata to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The run metadata with the given ID.
+
+        Raises:
+            KeyError: if the run metadata doesn't exist.
+        """
+
+    @abstractmethod
     def list_run_metadata(
         self,
-        run_metadata_filter_model: RunMetadataFilterModel,
-    ) -> Page[RunMetadataResponseModel]:
+        run_metadata_filter_model: RunMetadataFilter,
+        hydrate: bool = False,
+    ) -> Page[RunMetadataResponse]:
         """List run metadata.
 
         Args:
             run_metadata_filter_model: All filter parameters including
                 pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The run metadata.
         """
 
-    # -----------------
-    # Code Repositories
-    # -----------------
+    # -------------------- Schedules --------------------
 
     @abstractmethod
-    def create_code_repository(
-        self, code_repository: CodeRepositoryRequestModel
-    ) -> CodeRepositoryResponseModel:
-        """Creates a new code repository.
+    def create_schedule(self, schedule: ScheduleRequest) -> ScheduleResponse:
+        """Creates a new schedule.
 
         Args:
-            code_repository: Code repository to be created.
+            schedule: The schedule to create.
 
         Returns:
-            The newly created code repository.
-
-        Raises:
-            EntityExistsError: If a code repository with the given name already
-                exists.
+            The newly created schedule.
         """
 
     @abstractmethod
-    def get_code_repository(
-        self, code_repository_id: UUID
-    ) -> CodeRepositoryResponseModel:
-        """Gets a specific code repository.
+    def get_schedule(
+        self, schedule_id: UUID, hydrate: bool = True
+    ) -> ScheduleResponse:
+        """Get a schedule with a given ID.
 
         Args:
-            code_repository_id: The ID of the code repository to get.
+            schedule_id: ID of the schedule.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            The requested code repository, if it was found.
+            The schedule.
 
         Raises:
-            KeyError: If no code repository with the given ID exists.
+            KeyError: if the schedule does not exist.
         """
 
     @abstractmethod
-    def list_code_repositories(
-        self, filter_model: CodeRepositoryFilterModel
-    ) -> Page[CodeRepositoryResponseModel]:
-        """List all code repositories.
+    def list_schedules(
+        self,
+        schedule_filter_model: ScheduleFilter,
+        hydrate: bool = False,
+    ) -> Page[ScheduleResponse]:
+        """List all schedules in the workspace.
+
+        Args:
+            schedule_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of schedules.
+        """
+
+    @abstractmethod
+    def update_schedule(
+        self,
+        schedule_id: UUID,
+        schedule_update: ScheduleUpdate,
+    ) -> ScheduleResponse:
+        """Updates a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to be updated.
+            schedule_update: The update to be applied.
+
+        Returns:
+            The updated schedule.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+
+    # --------------------  Secrets --------------------
+
+    @abstractmethod
+    def create_secret(
+        self,
+        secret: SecretRequest,
+    ) -> SecretResponse:
+        """Creates a new secret.
+
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret: The secret to create.
+
+        Returns:
+            The newly created secret.
+
+        Raises:
+            KeyError: if the user or workspace does not exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+
+    @abstractmethod
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
+        """Get a secret with a given name.
+
+        Args:
+            secret_id: ID of the secret.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The secret.
+
+        Raises:
+            KeyError: if the secret does not exist.
+        """
+
+    @abstractmethod
+    def list_secrets(
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
+        """List all secrets matching the given filter criteria.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
+        Args:
+            secret_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all secrets matching the filter criteria, with pagination
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
+        """
+
+    @abstractmethod
+    def update_secret(
+        self,
+        secret_id: UUID,
+        secret_update: SecretUpdate,
+    ) -> SecretResponse:
+        """Updates a secret.
+
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret_id: The ID of the secret to be updated.
+            secret_update: The update to be applied.
+
+        Returns:
+            The updated secret.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+
+    @abstractmethod
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Deletes a secret.
+
+        Args:
+            secret_id: The ID of the secret to delete.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+        """
+
+    # --------------------  Service Accounts --------------------
+
+    @abstractmethod
+    def create_service_account(
+        self, service_account: ServiceAccountRequest
+    ) -> ServiceAccountResponse:
+        """Creates a new service account.
+
+        Args:
+            service_account: Service account to be created.
+
+        Returns:
+            The newly created service account.
+
+        Raises:
+            EntityExistsError: If a user or service account with the given name
+                already exists.
+        """
+
+    @abstractmethod
+    def get_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
+    ) -> ServiceAccountResponse:
+        """Gets a specific service account.
+
+        Args:
+            service_account_name_or_id: The name or ID of the service account to
+                get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested service account, if it was found.
+
+        Raises:
+            KeyError: If no service account with the given name or ID exists.
+        """
+
+    @abstractmethod
+    def list_service_accounts(
+        self,
+        filter_model: ServiceAccountFilter,
+        hydrate: bool = False,
+    ) -> Page[ServiceAccountResponse]:
+        """List all service accounts.
 
         Args:
             filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            A page of all code repositories.
+            A list of filtered service accounts.
         """
 
     @abstractmethod
-    def update_code_repository(
-        self, code_repository_id: UUID, update: CodeRepositoryUpdateModel
-    ) -> CodeRepositoryResponseModel:
-        """Updates an existing code repository.
+    def update_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+        service_account_update: ServiceAccountUpdate,
+    ) -> ServiceAccountResponse:
+        """Updates an existing service account.
 
         Args:
-            code_repository_id: The ID of the code repository to update.
-            update: The update to be applied to the code repository.
+            service_account_name_or_id: The name or the ID of the service
+                account to update.
+            service_account_update: The update to be applied to the service
+                account.
 
         Returns:
-            The updated code repository.
+            The updated service account.
 
         Raises:
-            KeyError: If no code repository with the given name exists.
+            KeyError: If no service account with the given name exists.
         """
 
     @abstractmethod
-    def delete_code_repository(self, code_repository_id: UUID) -> None:
-        """Deletes a code repository.
+    def delete_service_account(
+        self,
+        service_account_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Delete a service account.
 
         Args:
-            code_repository_id: The ID of the code repository to delete.
+            service_account_name_or_id: The name or the ID of the service
+                account to delete.
 
         Raises:
-            KeyError: If no code repository with the given ID exists.
+            IllegalOperationError: if the service account has already been used
+                to create other resources.
         """
 
-    # ------------------
-    # Service Connectors
-    # ------------------
+    # -------------------- Service Connectors --------------------
 
     @abstractmethod
     def create_service_connector(
         self,
-        service_connector: ServiceConnectorRequestModel,
-    ) -> ServiceConnectorResponseModel:
+        service_connector: ServiceConnectorRequest,
+    ) -> ServiceConnectorResponse:
         """Creates a new service connector.
 
         Args:
@@ -1487,12 +1573,14 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_service_connector(
-        self, service_connector_id: UUID
-    ) -> ServiceConnectorResponseModel:
+        self, service_connector_id: UUID, hydrate: bool = True
+    ) -> ServiceConnectorResponse:
         """Gets a specific service connector.
 
         Args:
             service_connector_id: The ID of the service connector to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The requested service connector, if it was found.
@@ -1503,13 +1591,17 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_service_connectors(
-        self, filter_model: ServiceConnectorFilterModel
-    ) -> Page[ServiceConnectorResponseModel]:
+        self,
+        filter_model: ServiceConnectorFilter,
+        hydrate: bool = False,
+    ) -> Page[ServiceConnectorResponse]:
         """List all service connectors.
 
         Args:
             filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all service connectors.
@@ -1517,8 +1609,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_service_connector(
-        self, service_connector_id: UUID, update: ServiceConnectorUpdateModel
-    ) -> ServiceConnectorResponseModel:
+        self, service_connector_id: UUID, update: ServiceConnectorUpdate
+    ) -> ServiceConnectorResponse:
         """Updates an existing service connector.
 
         The update model contains the fields to be updated. If a field value is
@@ -1564,7 +1656,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def verify_service_connector_config(
         self,
-        service_connector: ServiceConnectorRequestModel,
+        service_connector: ServiceConnectorRequest,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector configuration has access to resources.
@@ -1617,7 +1709,7 @@ class ZenStoreInterface(ABC):
         service_connector_id: UUID,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> ServiceConnectorResponseModel:
+    ) -> ServiceConnectorResponse:
         """Get a service connector client for a service connector and given resource.
 
         Args:
@@ -1638,7 +1730,6 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_service_connector_resources(
         self,
-        user_name_or_id: Union[str, UUID],
         workspace_name_or_id: Union[str, UUID],
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
@@ -1647,7 +1738,6 @@ class ZenStoreInterface(ABC):
         """List resources that can be accessed by service connectors.
 
         Args:
-            user_name_or_id: The name or ID of the user to scope to.
             workspace_name_or_id: The name or ID of the workspace to scope to.
             connector_type: The type of service connector to scope to.
             resource_type: The type of resource to scope to.
@@ -1693,12 +1783,327 @@ class ZenStoreInterface(ABC):
             KeyError: If no service connector type with the given ID exists.
         """
 
-    #########
-    # Model
-    #########
+    # -------------------- Stacks --------------------
 
     @abstractmethod
-    def create_model(self, model: ModelRequestModel) -> ModelResponseModel:
+    def create_stack(self, stack: StackRequest) -> StackResponse:
+        """Create a new stack.
+
+        Args:
+            stack: The stack to create.
+
+        Returns:
+            The created stack.
+
+        Raises:
+            StackExistsError: If a stack with the same name is already owned
+                by this user in this workspace.
+        """
+
+    @abstractmethod
+    def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
+        """Get a stack by its unique ID.
+
+        Args:
+            stack_id: The ID of the stack to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The stack with the given ID.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
+    @abstractmethod
+    def list_stacks(
+        self,
+        stack_filter_model: StackFilter,
+        hydrate: bool = False,
+    ) -> Page[StackResponse]:
+        """List all stacks matching the given filter criteria.
+
+        Args:
+            stack_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all stacks matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_stack(
+        self, stack_id: UUID, stack_update: StackUpdate
+    ) -> StackResponse:
+        """Update a stack.
+
+        Args:
+            stack_id: The ID of the stack update.
+            stack_update: The update request on the stack.
+
+        Returns:
+            The updated stack.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_stack(self, stack_id: UUID) -> None:
+        """Delete a stack.
+
+        Args:
+            stack_id: The ID of the stack to delete.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
+    # -------------------- Step runs --------------------
+
+    @abstractmethod
+    def create_run_step(self, step_run: StepRunRequest) -> StepRunResponse:
+        """Creates a step run.
+
+        Args:
+            step_run: The step run to create.
+
+        Returns:
+            The created step run.
+
+        Raises:
+            EntityExistsError: if the step run already exists.
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def get_run_step(
+        self, step_run_id: UUID, hydrate: bool = True
+    ) -> StepRunResponse:
+        """Get a step run by ID.
+
+        Args:
+            step_run_id: The ID of the step run to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The step run.
+
+        Raises:
+            KeyError: if the step run doesn't exist.
+        """
+
+    @abstractmethod
+    def list_run_steps(
+        self,
+        step_run_filter_model: StepRunFilter,
+        hydrate: bool = False,
+    ) -> Page[StepRunResponse]:
+        """List all step runs matching the given filter criteria.
+
+        Args:
+            step_run_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all step runs matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_run_step(
+        self,
+        step_run_id: UUID,
+        step_run_update: StepRunUpdate,
+    ) -> StepRunResponse:
+        """Updates a step run.
+
+        Args:
+            step_run_id: The ID of the step to update.
+            step_run_update: The update to be applied to the step.
+
+        Returns:
+            The updated step run.
+
+        Raises:
+            KeyError: if the step run doesn't exist.
+        """
+
+    # -------------------- Users --------------------
+
+    @abstractmethod
+    def create_user(self, user: UserRequest) -> UserResponse:
+        """Creates a new user.
+
+        Args:
+            user: User to be created.
+
+        Returns:
+            The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
+        """
+
+    @abstractmethod
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+        hydrate: bool = True,
+    ) -> UserResponse:
+        """Gets a specific user, when no id is specified the active user is returned.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested user, if it was found.
+
+        Raises:
+            KeyError: If no user with the given name or ID exists.
+        """
+
+    @abstractmethod
+    def list_users(
+        self,
+        user_filter_model: UserFilter,
+        hydrate: bool = False,
+    ) -> Page[UserResponse]:
+        """List all users.
+
+        Args:
+            user_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all users.
+        """
+
+    @abstractmethod
+    def update_user(
+        self, user_id: UUID, user_update: UserUpdate
+    ) -> UserResponse:
+        """Updates an existing user.
+
+        Args:
+            user_id: The id of the user to update.
+            user_update: The update to be applied to the user.
+
+        Returns:
+            The updated user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+    @abstractmethod
+    def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given ID exists.
+        """
+
+    # -------------------- Workspaces --------------------
+
+    @abstractmethod
+    def create_workspace(
+        self, workspace: WorkspaceRequest
+    ) -> WorkspaceResponse:
+        """Creates a new workspace.
+
+        Args:
+            workspace: The workspace to create.
+
+        Returns:
+            The newly created workspace.
+
+        Raises:
+            EntityExistsError: If a workspace with the given name already exists.
+        """
+
+    @abstractmethod
+    def get_workspace(
+        self, workspace_name_or_id: Union[UUID, str], hydrate: bool = True
+    ) -> WorkspaceResponse:
+        """Get an existing workspace by name or ID.
+
+        Args:
+            workspace_name_or_id: Name or ID of the workspace to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The requested workspace.
+
+        Raises:
+            KeyError: If there is no such workspace.
+        """
+
+    @abstractmethod
+    def list_workspaces(
+        self,
+        workspace_filter_model: WorkspaceFilter,
+        hydrate: bool = False,
+    ) -> Page[WorkspaceResponse]:
+        """List all workspace matching the given filter criteria.
+
+        Args:
+            workspace_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all workspace matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
+    ) -> WorkspaceResponse:
+        """Update an existing workspace.
+
+        Args:
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
+
+        Returns:
+            The updated workspace.
+
+        Raises:
+            KeyError: if the workspace does not exist.
+        """
+
+    @abstractmethod
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
+
+        Args:
+            workspace_name_or_id: Name or ID of the workspace to delete.
+
+        Raises:
+            KeyError: If no workspace with the given name exists.
+        """
+
+    # -------------------- Models --------------------
+
+    @abstractmethod
+    def create_model(self, model: ModelRequest) -> ModelResponse:
         """Creates a new model.
 
         Args:
@@ -1726,8 +2131,8 @@ class ZenStoreInterface(ABC):
     def update_model(
         self,
         model_id: UUID,
-        model_update: ModelUpdateModel,
-    ) -> ModelResponseModel:
+        model_update: ModelUpdate,
+    ) -> ModelResponse:
         """Updates an existing model.
 
         Args:
@@ -1740,12 +2145,14 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_model(
-        self, model_name_or_id: Union[str, UUID]
-    ) -> ModelResponseModel:
+        self, model_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> ModelResponse:
         """Get an existing model.
 
         Args:
             model_name_or_id: name or id of the model to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The model of interest.
@@ -1757,26 +2164,27 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_models(
         self,
-        model_filter_model: ModelFilterModel,
-    ) -> Page[ModelResponseModel]:
+        model_filter_model: ModelFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelResponse]:
         """Get all models by filter.
 
         Args:
             model_filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all models.
         """
 
-    #################
-    # Model Versions
-    #################
+    # -------------------- Model versions --------------------
 
     @abstractmethod
     def create_model_version(
-        self, model_version: ModelVersionRequestModel
-    ) -> ModelVersionResponseModel:
+        self, model_version: ModelVersionRequest
+    ) -> ModelVersionResponse:
         """Creates a new model version.
 
         Args:
@@ -1787,20 +2195,19 @@ class ZenStoreInterface(ABC):
 
         Raises:
             ValueError: If `number` is not None during model version creation.
-            EntityExistsError: If a model version with the given name already exists.
+            EntityExistsError: If a model version with the given name already
+                exists.
         """
 
     @abstractmethod
     def delete_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
     ) -> None:
         """Deletes a model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_id: name or id of the model version to be deleted.
+            model_version_id: id of the model version to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
@@ -1808,18 +2215,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_model_version(
-        self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, UUID, ModelStages]
-        ] = None,
-    ) -> ModelVersionResponseModel:
+        self, model_version_id: UUID, hydrate: bool = True
+    ) -> ModelVersionResponse:
         """Get an existing model version.
 
         Args:
-            model_name_or_id: name or id of the model containing the model version.
-            model_version_name_or_number_or_id: name, id, stage or number of the model version to be retrieved.
-                If skipped latest version will be retrieved.
+            model_version_id: name, id, stage or number of the model version to
+                be retrieved. If skipped - latest is retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
 
         Returns:
             The model version of interest.
@@ -1831,15 +2236,19 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_model_versions(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_filter_model: ModelVersionFilterModel,
-    ) -> Page[ModelVersionResponseModel]:
+        model_version_filter_model: ModelVersionFilter,
+        model_name_or_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model versions.
-            model_version_filter_model: All filter parameters including pagination
-                params.
+            model_name_or_id: name or id of the model containing the model
+                versions.
+            model_version_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model versions.
@@ -1849,8 +2258,8 @@ class ZenStoreInterface(ABC):
     def update_model_version(
         self,
         model_version_id: UUID,
-        model_version_update_model: ModelVersionUpdateModel,
-    ) -> ModelVersionResponseModel:
+        model_version_update_model: ModelVersionUpdate,
+    ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
         Args:
@@ -1862,21 +2271,21 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the model version not found
-            RuntimeError: If there is a model version with target stage, but `force` flag is off
+            RuntimeError: If there is a model version with target stage,
+                but `force` flag is off
         """
 
-    ###########################
-    # Model Versions Artifacts
-    ###########################
+    # -------------------- Model Versions Artifacts --------------------
 
     @abstractmethod
     def create_model_version_artifact_link(
-        self, model_version_artifact_link: ModelVersionArtifactRequestModel
-    ) -> ModelVersionArtifactResponseModel:
+        self, model_version_artifact_link: ModelVersionArtifactRequest
+    ) -> ModelVersionArtifactResponse:
         """Creates a new model version link.
 
         Args:
-            model_version_artifact_link: the Model Version to Artifact Link to be created.
+            model_version_artifact_link: the Model Version to Artifact Link
+                to be created.
 
         Returns:
             The newly created model version to artifact link.
@@ -1888,17 +2297,16 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_model_version_artifact_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_artifact_link_filter_model: ModelVersionArtifactFilterModel,
-    ) -> Page[ModelVersionArtifactResponseModel]:
+        model_version_artifact_link_filter_model: ModelVersionArtifactFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionArtifactResponse]:
         """Get all model version to artifact links by filter.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_artifact_link_filter_model: All filter parameters including pagination
-                params.
+            model_version_artifact_link_filter_model: All filter parameters
+                including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to artifact links.
@@ -1907,54 +2315,66 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def delete_model_version_artifact_link(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_artifact_link_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version to artifact link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_artifact_link_name_or_id: name or ID of the model version to artifact link to be deleted.
+            model_version_id: ID of the model version containing the link.
+            model_version_artifact_link_name_or_id: name or ID of the model
+                version to artifact link to be deleted.
 
         Raises:
             KeyError: specified ID or name not found.
         """
 
-    ###############################
-    # Model Versions Pipeline Runs
-    ###############################
+    @abstractmethod
+    def delete_all_model_version_artifact_links(
+        self,
+        model_version_id: UUID,
+        only_links: bool = True,
+    ) -> None:
+        """Deletes all model version to artifact links.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+            only_links: Flag deciding whether to delete only links or all.
+        """
+
+    # -------------------- Model Versions Pipeline Runs --------------------
 
     @abstractmethod
     def create_model_version_pipeline_run_link(
         self,
-        model_version_pipeline_run_link: ModelVersionPipelineRunRequestModel,
-    ) -> ModelVersionPipelineRunResponseModel:
+        model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
+    ) -> ModelVersionPipelineRunResponse:
         """Creates a new model version to pipeline run link.
 
         Args:
-            model_version_pipeline_run_link: the Model Version to Pipeline Run Link to be created.
+            model_version_pipeline_run_link: the Model Version to Pipeline Run
+                Link to be created.
 
         Returns:
-            - If Model Version to Pipeline Run Link already exists - returns the existing link.
-            - Otherwise, returns the newly created model version to pipeline run link.
+            - If Model Version to Pipeline Run Link already exists - returns
+                the existing link.
+            - Otherwise, returns the newly created model version to pipeline
+                run link.
         """
 
     @abstractmethod
     def list_model_version_pipeline_run_links(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
-        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilterModel,
-    ) -> Page[ModelVersionPipelineRunResponseModel]:
+        model_version_pipeline_run_link_filter_model: ModelVersionPipelineRunFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_pipeline_run_link_filter_model: All filter parameters including pagination
-                params.
+            model_version_pipeline_run_link_filter_model: All filter parameters
+                including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all model version to pipeline run links.
@@ -1963,79 +2383,102 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def delete_model_version_pipeline_run_link(
         self,
-        model_name_or_id: Union[str, UUID],
-        model_version_name_or_id: Union[str, UUID],
+        model_version_id: UUID,
         model_version_pipeline_run_link_name_or_id: Union[str, UUID],
     ) -> None:
         """Deletes a model version to pipeline run link.
 
         Args:
-            model_name_or_id: name or ID of the model containing the model version.
-            model_version_name_or_id: name or ID of the model version containing the link.
-            model_version_pipeline_run_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+            model_version_id: ID of the model version containing the link.
+            model_version_pipeline_run_link_name_or_id: name or ID of the model
+                version to pipeline run link to be deleted.
 
         Raises:
             KeyError: specified ID not found.
         """
 
-    # ------------------
-    # Authorized Devices
-    # ------------------
+    #################
+    # Tags
+    #################
 
     @abstractmethod
-    def get_authorized_device(
-        self, device_id: UUID
-    ) -> OAuthDeviceResponseModel:
-        """Gets a specific OAuth 2.0 authorized device.
+    def create_tag(self, tag: TagRequest) -> TagResponse:
+        """Creates a new tag.
 
         Args:
-            device_id: The ID of the device to get.
+            tag: the tag to be created.
 
         Returns:
-            The requested device, if it was found.
+            The newly created tag.
 
         Raises:
-            KeyError: If no device with the given ID exists.
+            EntityExistsError: If a tag with the given name already exists.
         """
 
     @abstractmethod
-    def list_authorized_devices(
-        self, filter_model: OAuthDeviceFilterModel
-    ) -> Page[OAuthDeviceResponseModel]:
-        """List all OAuth 2.0 authorized devices for a user.
+    def delete_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a tag.
 
         Args:
-            filter_model: All filter parameters including pagination
-                params.
+            tag_name_or_id: name or id of the tag to delete.
 
-        Returns:
-            A page of all matching OAuth 2.0 authorized devices.
+        Raises:
+            KeyError: specified ID or name not found.
         """
 
     @abstractmethod
-    def update_authorized_device(
-        self, device_id: UUID, update: OAuthDeviceUpdateModel
-    ) -> OAuthDeviceResponseModel:
-        """Updates an existing OAuth 2.0 authorized device for internal use.
+    def get_tag(
+        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> TagResponse:
+        """Get an existing tag.
 
         Args:
-            device_id: The ID of the device to update.
-            update: The update to be applied to the device.
+            tag_name_or_id: name or id of the tag to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            The updated OAuth 2.0 authorized device.
+            The tag of interest.
 
         Raises:
-            KeyError: If no device with the given ID exists.
+            KeyError: specified ID or name not found.
         """
 
     @abstractmethod
-    def delete_authorized_device(self, device_id: UUID) -> None:
-        """Deletes an OAuth 2.0 authorized device.
+    def list_tags(
+        self,
+        tag_filter_model: TagFilter,
+        hydrate: bool = False,
+    ) -> Page[TagResponse]:
+        """Get all tags by filter.
 
         Args:
-            device_id: The ID of the device to delete.
+            tag_filter_model: All filter parameters including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all tags.
+        """
+
+    @abstractmethod
+    def update_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        tag_update_model: TagUpdate,
+    ) -> TagResponse:
+        """Update tag.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be updated.
+            tag_update_model: Tag to use for the update.
+
+        Returns:
+            An updated tag.
 
         Raises:
-            KeyError: If no device with the given ID exists.
+            KeyError: If the tag is not found
         """

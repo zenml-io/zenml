@@ -13,37 +13,22 @@
 #  permissions and limitations under the License.
 """Base Secrets Store implementation."""
 from abc import ABC
-from datetime import datetime
-from functools import partial
 from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
     Optional,
-    Tuple,
     Type,
-    Union,
 )
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
-from zenml.enums import SecretScope, SecretsStoreType
-from zenml.exceptions import IllegalOperationError
+from zenml.enums import SecretsStoreType
 from zenml.logger import get_logger
-from zenml.models.secret_models import (
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
-)
-from zenml.models.user_models import UserResponseModel
-from zenml.models.workspace_models import WorkspaceResponseModel
 from zenml.utils import source_utils
-from zenml.utils.pagination_utils import depaginate
-from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
 )
@@ -56,13 +41,10 @@ if TYPE_CHECKING:
 ZENML_SECRET_LABEL = "zenml"
 ZENML_SECRET_ID_LABEL = "zenml_secret_id"
 ZENML_SECRET_NAME_LABEL = "zenml_secret_name"
-ZENML_SECRET_SCOPE_LABEL = "zenml_secret_scope"
-ZENML_SECRET_USER_LABEL = "zenml_secret_user"
-ZENML_SECRET_WORKSPACE_LABEL = "zenml_secret_workspace"
 
 
 class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
-    """Base class for accessing and persisting ZenML secret objects.
+    """Base class for accessing and persisting ZenML secret values.
 
     Attributes:
         config: The configuration of the secret store.
@@ -96,14 +78,6 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         """
         super().__init__(**kwargs)
         self._zen_store = zen_store
-
-        self.zen_store.register_event_handler(
-            StoreEvent.WORKSPACE_DELETED, self._on_workspace_deleted
-        )
-
-        self.zen_store.register_event_handler(
-            StoreEvent.USER_DELETED, self._on_user_deleted
-        )
 
         try:
             self._initialize()
@@ -166,13 +140,6 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             )
 
             return SqlSecretsStore
-
-        if store_config.type == SecretsStoreType.REST:
-            from zenml.zen_stores.secrets_stores.rest_secrets_store import (
-                RestSecretsStore,
-            )
-
-            return RestSecretsStore
 
         if store_config.type == SecretsStoreType.AWS:
             from zenml.zen_stores.secrets_stores.aws_secrets_store import (
@@ -253,188 +220,6 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             raise ValueError("Store not initialized")
         return self._zen_store
 
-    # --------------------
-    # Store Event Handlers
-    # --------------------
-
-    def _on_workspace_deleted(
-        self, event: StoreEvent, workspace_id: UUID
-    ) -> None:
-        """Handle the deletion of a workspace.
-
-        This method deletes all secrets associated with the given workspace.
-
-        Args:
-            event: The store event.
-            workspace_id: The ID of the workspace that was deleted.
-        """
-        logger.debug(
-            "Handling workspace deletion event for workspace %s", workspace_id
-        )
-
-        # Delete all secrets associated with the workspace.
-        secrets = depaginate(
-            partial(
-                self.list_secrets,
-                secret_filter_model=SecretFilterModel(
-                    workspace_id=workspace_id
-                ),
-            )
-        )
-        for secret in secrets:
-            try:
-                self.delete_secret(secret.id)
-            except KeyError:
-                pass
-            except Exception as e:
-                logger.warning("Failed to delete secret %s: %s", secret.id, e)
-
-    def _on_user_deleted(self, event: StoreEvent, user_id: UUID) -> None:
-        """Handle the deletion of a user.
-
-        This method deletes all secrets associated with the given user.
-
-        Args:
-            event: The store event.
-            user_id: The ID of the user that was deleted.
-        """
-        logger.debug("Handling user deletion event for user %s", user_id)
-
-        # Delete all secrets associated with the user.
-        secrets = depaginate(
-            partial(
-                self.list_secrets,
-                secret_filter_model=SecretFilterModel(user_id=user_id),
-            )
-        )
-        for secret in secrets:
-            try:
-                self.delete_secret(secret.id)
-            except KeyError:
-                pass
-            except Exception as e:
-                logger.warning("Failed to delete secret %s: %s", secret.id, e)
-
-    # ------------------------------------------
-    # Common helpers for Secrets Store back-ends
-    # ------------------------------------------
-
-    def _validate_user_and_workspace(
-        self, user_id: UUID, workspace_id: UUID
-    ) -> Tuple[UserResponseModel, WorkspaceResponseModel]:
-        """Validates that the given user and workspace IDs are valid.
-
-        This method calls the ZenML store to validate the user and workspace
-        IDs. It raises a KeyError exception if either the user or workspace
-        does not exist.
-
-        Args:
-            user_id: The ID of the user to validate.
-            workspace_id: The ID of the workspace to validate.
-
-        Returns:
-            The user and workspace.
-        """
-        user = self.zen_store.get_user(user_id)
-        workspace = self.zen_store.get_workspace(workspace_id)
-
-        return user, workspace
-
-    def _validate_user_and_workspace_update(
-        self,
-        secret_update: SecretUpdateModel,
-        current_user: UUID,
-        current_workspace: UUID,
-    ) -> None:
-        """Validates that a secret update does not change the user or workspace.
-
-        Args:
-            secret_update: Secret update.
-            current_user: The current user ID.
-            current_workspace: The current workspace ID.
-
-        Raises:
-            IllegalOperationError: If the user or workspace is changed.
-        """
-        if secret_update.user and current_user != secret_update.user:
-            raise IllegalOperationError("Cannot change the user of a secret.")
-        if (
-            secret_update.workspace
-            and current_workspace != secret_update.workspace
-        ):
-            raise IllegalOperationError(
-                "Cannot change the workspace of a secret."
-            )
-
-    def _check_secret_scope(
-        self,
-        secret_name: str,
-        scope: SecretScope,
-        workspace: UUID,
-        user: UUID,
-        exclude_secret_id: Optional[UUID] = None,
-    ) -> Tuple[bool, str]:
-        """Checks if a secret with the given name already exists in the given scope.
-
-        This method enforces the following scope rules:
-
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
-
-        Args:
-            secret_name: The name of the secret.
-            scope: The scope of the secret.
-            workspace: The ID of the workspace to which the secret belongs.
-            user: The ID of the user to which the secret belongs.
-            exclude_secret_id: The ID of a secret to exclude from the check
-                (used e.g. during an update to exclude the existing secret).
-
-        Returns:
-            True if a secret with the given name already exists in the given
-            scope, False otherwise, and an error message.
-        """
-        filter = SecretFilterModel(
-            name=secret_name,
-            scope=scope,
-            page=1,
-            size=2,  # We only need to know if there is more than one secret
-        )
-
-        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-            filter.workspace_id = workspace
-        if scope == SecretScope.USER:
-            filter.user_id = user
-
-        existing_secrets = self.list_secrets(secret_filter_model=filter).items
-        if exclude_secret_id is not None:
-            existing_secrets = [
-                s for s in existing_secrets if s.id != exclude_secret_id
-            ]
-
-        if existing_secrets:
-            existing_secret_model = existing_secrets[0]
-
-            msg = (
-                f"Found an existing {scope.value} scoped secret with the "
-                f"same '{secret_name}' name"
-            )
-            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-                msg += (
-                    f" in the same '{existing_secret_model.workspace.name}' "
-                    f"workspace"
-                )
-            if scope == SecretScope.USER:
-                assert existing_secret_model.user
-                msg += (
-                    f" for the same '{existing_secret_model.user.name}' user"
-                )
-
-            return True, msg
-
-        return False, ""
-
     # --------------------------------------------------------
     # Helpers for Secrets Store back-ends that use tags/labels
     # --------------------------------------------------------
@@ -442,32 +227,21 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
     def _get_secret_metadata(
         self,
         secret_id: Optional[UUID] = None,
-        secret_name: Optional[str] = None,
-        scope: Optional[SecretScope] = None,
-        workspace: Optional[UUID] = None,
-        user: Optional[UUID] = None,
     ) -> Dict[str, str]:
         """Get a dictionary with metadata that can be used as tags/labels.
 
         This utility method can be used with Secrets Managers that can
         associate metadata (e.g. tags, labels) with a secret. The metadata can
-        be configured alongside each secret and then used as a filter criteria
-        when running queries against the backend e.g. to retrieve all the
-        secrets within a given scope or to retrieve all secrets with a given
-        name within a given scope.
+        be configured alongside each secret.
 
         NOTE: the ZENML_SECRET_LABEL is always included in the metadata to
         distinguish ZenML secrets from other secrets that might be stored in
         the same backend, as well as to distinguish between different ZenML
         deployments using the same backend. Its value is set to the ZenML
-        deployment ID and it should be included in all queries to the backend.
+        deployment ID.
 
         Args:
             secret_id: Optional secret ID to include in the metadata.
-            secret_name: Optional secret name to include in the metadata.
-            scope: Optional scope to include in the metadata.
-            workspace: Optional workspace ID to include in the metadata.
-            user: Optional user ID to include in the scope metadata.
 
         Returns:
             Dictionary with secret metadata information.
@@ -480,79 +254,27 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
             ZENML_SECRET_LABEL: str(self.zen_store.get_store_info().id)
         }
 
-        if secret_id:
+        # Include the secret ID if provided.
+        if secret_id is not None:
             metadata[ZENML_SECRET_ID_LABEL] = str(secret_id)
-        if secret_name:
-            metadata[ZENML_SECRET_NAME_LABEL] = secret_name
-        if scope:
-            metadata[ZENML_SECRET_SCOPE_LABEL] = scope.value
-        if workspace:
-            metadata[ZENML_SECRET_WORKSPACE_LABEL] = str(workspace)
-        if user:
-            metadata[ZENML_SECRET_USER_LABEL] = str(user)
 
         return metadata
 
-    def _get_secret_metadata_for_secret(
+    def _verify_secret_metadata(
         self,
-        secret: Union[SecretRequestModel, SecretResponseModel],
-        secret_id: Optional[UUID] = None,
-    ) -> Dict[str, str]:
-        """Get a dictionary with the secrets metadata describing a secret.
-
-        This utility method can be used with Secrets Managers that can
-        associate metadata (e.g. tags, labels) with a secret. The metadata can
-        be configured alongside each secret and then used as a filter criteria
-        when running queries against the backend.
-
-        Args:
-            secret: The secret to get the metadata for.
-            secret_id: Optional secret ID to include in the metadata (if not
-                already included in the secret).
-
-        Returns:
-            Dictionary with secret metadata information.
-        """
-        if isinstance(secret, SecretRequestModel):
-            return self._get_secret_metadata(
-                secret_id=secret_id,
-                secret_name=secret.name,
-                scope=secret.scope,
-                workspace=secret.workspace,
-                user=secret.user,
-            )
-
-        return self._get_secret_metadata(
-            secret_id=secret.id,
-            secret_name=secret.name,
-            scope=secret.scope,
-            workspace=secret.workspace.id,
-            user=secret.user.id if secret.user else None,
-        )
-
-    def _create_secret_from_metadata(
-        self,
+        secret_id: UUID,
         metadata: Dict[str, str],
-        created: datetime,
-        updated: datetime,
-        values: Optional[Dict[str, str]] = None,
-    ) -> SecretResponseModel:
-        """Create a ZenML secret model from metadata stored in the secrets store backend.
+    ) -> None:
+        """Verify that the given metadata corresponds to a valid ZenML secret.
 
         Args:
+            secret_id: The ID of the secret.
             metadata: ZenML secret metadata collected from the backend secret
                 (e.g. from secret tags/labels).
-            created: The secret creation time.
-            updated: The secret last updated time.
-            values: The secret values (optional).
-
-        Returns:
-            The ZenML secret.
 
         Raises:
-            KeyError: If the secret does not have the required metadata, if it
-                is not managed by this ZenML instance or if it is linked to a
-                user or workspace that no longer exists.
+            KeyError: If the secret does not have the required metadata or if it
+                is not managed by this ZenML instance.
         """
         # Double-check that the secret is managed by this ZenML instance.
         if metadata.get(ZENML_SECRET_LABEL) != str(
@@ -562,49 +284,17 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
 
         # Recover the ZenML secret fields from the input secret metadata.
         try:
-            secret_id = UUID(metadata[ZENML_SECRET_ID_LABEL])
-            name = metadata[ZENML_SECRET_NAME_LABEL]
-            scope = SecretScope(metadata[ZENML_SECRET_SCOPE_LABEL])
-            workspace_id = UUID(metadata[ZENML_SECRET_WORKSPACE_LABEL])
-            user_id = UUID(metadata[ZENML_SECRET_USER_LABEL])
+            stored_secret_id = UUID(metadata[ZENML_SECRET_ID_LABEL])
         except KeyError as e:
             raise KeyError(
                 f"Secret could not be retrieved: missing required metadata: {e}"
             )
 
-        try:
-            user, workspace = self._validate_user_and_workspace(
-                user_id, workspace_id
-            )
-        except KeyError as e:
-            # The user or workspace associated with the secret no longer
-            # exists. This can happen if the user or workspace is being
-            # deleted nearly at the same time as this call. In this case, we
-            # raise a KeyError exception. The caller should handle this
-            # exception by assuming that the secret no longer exists.
-            logger.warning(
-                f"Secret with ID {secret_id} is associated with a "
-                f"non-existent user or workspace. Silently ignoring the "
-                f"secret: {e}"
-            )
+        if secret_id != stored_secret_id:
             raise KeyError(
-                f"Secret with ID {secret_id} could not be retrieved: "
-                f"the secret is associated with a non-existent user or "
-                f"workspace: {e}"
+                f"Secret could not be retrieved: secret ID mismatch: "
+                f"expected {secret_id}, got {stored_secret_id}"
             )
-
-        secret_model = SecretResponseModel(
-            id=secret_id,
-            name=name,
-            scope=scope,
-            workspace=workspace,
-            user=user,
-            values=values if values else {},
-            created=created,
-            updated=updated,
-        )
-
-        return secret_model
 
     class Config:
         """Pydantic configuration class."""

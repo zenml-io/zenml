@@ -12,23 +12,4 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-"""Initialization of ZenML model.
-ZenML model support Model Control Plane feature.
-"""
-
-from zenml.model.model_config import ModelConfig
-from zenml.model.artifact_config import (
-    ArtifactConfig,
-    ModelArtifactConfig,
-    DeploymentArtifactConfig,
-)
-from zenml.model.link_output_to_model import link_output_to_model
-
-
-__all__ = [
-    "ArtifactConfig",
-    "DeploymentArtifactConfig",
-    "ModelArtifactConfig",
-    "ModelConfig",
-    "link_output_to_model",
-]
+"""Concepts related to the Model Control Plane feature."""

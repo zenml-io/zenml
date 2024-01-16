@@ -19,110 +19,58 @@ from uuid import uuid4
 import pytest
 
 from tests.unit.steps.test_external_artifact import MockZenmlClient
-from zenml.models.model_models import (
-    ModelResponseModel,
-    ModelVersionResponseModel,
+from zenml.models import (
+    ModelResponse,
+    ModelResponseBody,
+    ModelResponseMetadata,
+    ModelVersionResponse,
+    ModelVersionResponseBody,
+    ModelVersionResponseMetadata,
 )
 
-ARTIFACT_IDS = [uuid4(), uuid4()]
+ARTIFACT_VERSION_IDS = [uuid4(), uuid4()]
 
 
 @pytest.mark.parametrize(
-    "artifact_object_ids,query_name,query_pipe,query_step,query_version,expected",
+    "artifact_object_ids,query_name,query_version,expected",
     (
         (
-            {"foo::bar::artifact": {"1": ARTIFACT_IDS[0]}},
+            {"artifact": {"1": ARTIFACT_VERSION_IDS[0]}},
             "artifact",
             None,
-            None,
-            None,
-            ARTIFACT_IDS[0],
+            ARTIFACT_VERSION_IDS[0],
         ),
         (
             {
-                "bar::bar::artifact": {"1": ARTIFACT_IDS[0]},
-                "foo::foo::artifact": {"1": ARTIFACT_IDS[1]},
-            },
-            "artifact",
-            None,
-            None,
-            None,
-            "RuntimeError",
-        ),
-        (
-            {
-                "bar::bar::artifact": {"1": ARTIFACT_IDS[0]},
-                "foo::foo::artifact": {"1": ARTIFACT_IDS[1]},
-            },
-            "artifact",
-            None,
-            "bar",
-            None,
-            ARTIFACT_IDS[0],
-        ),
-        (
-            {
-                "bar::bar::artifact": {"1": ARTIFACT_IDS[0]},
-                "foo::foo::artifact": {"1": ARTIFACT_IDS[1]},
-            },
-            "artifact",
-            "bar",
-            None,
-            None,
-            ARTIFACT_IDS[0],
-        ),
-        (
-            {
-                "bar::bar::artifact": {"1": ARTIFACT_IDS[0]},
-                "foo::foo::artifact": {"1": ARTIFACT_IDS[1]},
-            },
-            "artifact",
-            "foo",
-            "foo",
-            None,
-            ARTIFACT_IDS[1],
-        ),
-        (
-            {
-                "foo::bar::artifact": {
-                    "1": ARTIFACT_IDS[0],
-                    "2": ARTIFACT_IDS[1],
+                "artifact": {
+                    "1": ARTIFACT_VERSION_IDS[0],
+                    "2": ARTIFACT_VERSION_IDS[1],
                 }
             },
             "artifact",
             None,
-            None,
-            None,
-            ARTIFACT_IDS[1],
+            ARTIFACT_VERSION_IDS[1],
         ),
         (
             {
-                "foo::bar::artifact": {
-                    "1": ARTIFACT_IDS[0],
-                    "2": ARTIFACT_IDS[1],
+                "artifact": {
+                    "1": ARTIFACT_VERSION_IDS[0],
+                    "2": ARTIFACT_VERSION_IDS[1],
                 }
             },
             "artifact",
-            None,
-            None,
             "1",
-            ARTIFACT_IDS[0],
+            ARTIFACT_VERSION_IDS[0],
         ),
         (
             {},
             "artifact",
-            None,
-            "bar",
             None,
             None,
         ),
     ),
     ids=[
         "No collision",
-        "Collision - only name",
-        "Collision resolved - name+step",
-        "Collision resolved - name+pipeline",
-        "Collision resolved - name+step+pipeline",
         "Latest version",
         "Specific version",
         "Not found",
@@ -131,8 +79,6 @@ ARTIFACT_IDS = [uuid4(), uuid4()]
 def test_getters(
     artifact_object_ids,
     query_name,
-    query_pipe,
-    query_step,
     query_version,
     expected,
     sample_workspace_model,
@@ -144,27 +90,35 @@ def test_getters(
             "zenml.client": MockZenmlClient,
         },
     ):
-        model = ModelResponseModel(
+        model = ModelResponse(
             id=uuid4(),
             name="model",
-            workspace=sample_workspace_model,
-            created=datetime.now(),
-            updated=datetime.now(),
+            body=ModelResponseBody(
+                created=datetime.now(),
+                updated=datetime.now(),
+                tags=[],
+            ),
+            metadata=ModelResponseMetadata(
+                workspace=sample_workspace_model,
+            ),
         )
-        mv = ModelVersionResponseModel(
-            name="foo",
-            model=model,
-            workspace=sample_workspace_model,
-            created=datetime.now(),
-            updated=datetime.now(),
+        mv = ModelVersionResponse(
             id=uuid4(),
-            artifact_object_ids=artifact_object_ids,
+            name="foo",
+            body=ModelVersionResponseBody(
+                created=datetime.now(),
+                updated=datetime.now(),
+                model=model,
+                number=-1,
+                data_artifact_ids=artifact_object_ids,
+            ),
+            metadata=ModelVersionResponseMetadata(
+                workspace=sample_workspace_model,
+            ),
         )
         if expected != "RuntimeError":
-            got = mv.get_artifact_object(
+            got = mv.get_data_artifact(
                 name=query_name,
-                pipeline_name=query_pipe,
-                step_name=query_step,
                 version=query_version,
             )
             if got is not None:
@@ -173,9 +127,7 @@ def test_getters(
                 assert expected is None
         else:
             with pytest.raises(RuntimeError):
-                mv.get_artifact_object(
+                mv.get_data_artifact(
                     name=query_name,
-                    pipeline_name=query_pipe,
-                    step_name=query_step,
                     version=query_version,
                 )

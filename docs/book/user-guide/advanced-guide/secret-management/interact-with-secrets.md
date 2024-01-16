@@ -48,7 +48,7 @@ The CLI also includes commands that can be used to list, update and delete secre
 
 #### Interactively register missing secrets for your stack
 
-If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that the stack contains a [secrets manager](../../../stacks-and-components/component-guide/secrets-managers/secrets-managers.md) and all the referenced secrets exist in this secrets manager. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
+If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that all the referenced secrets exist. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
 
 ```shell
 zenml stack register-secrets [<STACK_NAME>]
@@ -135,10 +135,6 @@ You can use the environment variable `ZENML_SECRET_VALIDATION_LEVEL` to disable 
 * Setting it to `NONE` disables any validation.
 * Setting it to `SECRET_EXISTS` only validates the existence of secrets. This might be useful if the machine you're running on only has permission to list secrets but not actually read their values.
 * Setting it to `SECRET_AND_KEY_EXISTS` (the default) validates both the secret existence as well as the existence of the exact key-value pair.
-
-{% hint style="warning" %}
-If you have secrets registered through both the [centralized secrets management](interact-with-secrets.md) and [a secrets manager](/docs/book/stacks-and-components/component-guide/secrets-managers/secrets-managers.md), ZenML will first try to fetch the secret from the centralized secrets management and only fall back to the secrets manager if the secret is not found. This means that if you have a secret registered with the same name in both the centralized secrets store and the secrets manager, the secret registered in the secrets store will take precedence.
-{% endhint %}
 
 ### Fetch secret values in a step
 

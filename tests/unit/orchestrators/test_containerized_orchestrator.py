@@ -21,8 +21,7 @@ from zenml.config import DockerSettings
 from zenml.config.step_configurations import Step
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
-from zenml.models.pipeline_build_models import BuildItem
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
+from zenml.models import BuildItem, PipelineDeploymentBase
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 
@@ -70,7 +69,7 @@ def test_builds_with_no_docker_settings():
     specifies custom Docker settings."""
     orchestrator = _get_orchestrator()
 
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={
@@ -98,7 +97,7 @@ def test_builds_with_custom_docker_settings_for_some_steps():
     custom_step_1_settings = DockerSettings(
         requirements=["step_1_requirements"]
     )
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={
@@ -134,7 +133,7 @@ def test_builds_with_custom_docker_settings_for_all_steps():
     custom_step_2_settings = DockerSettings(
         requirements=["step_2_requirements"]
     )
-    deployment = PipelineDeploymentBaseModel(
+    deployment = PipelineDeploymentBase(
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         step_configurations={
@@ -173,7 +172,9 @@ def test_getting_image_from_deployment(
             deployment=sample_deployment_response_model
         )
 
-    sample_deployment_response_model.build = sample_build_response_model
+    sample_deployment_response_model.metadata.build = (
+        sample_build_response_model
+    )
     assert not sample_build_response_model.images
 
     with pytest.raises(KeyError):
@@ -182,7 +183,7 @@ def test_getting_image_from_deployment(
             deployment=sample_deployment_response_model
         )
 
-    sample_build_response_model.images = {
+    sample_build_response_model.metadata.images = {
         ORCHESTRATOR_DOCKER_IMAGE_KEY: BuildItem(image="image_name")
     }
     assert (

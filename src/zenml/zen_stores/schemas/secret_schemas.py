@@ -22,12 +22,14 @@ from sqlalchemy import TEXT, Column
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesGcmEngine
 from sqlmodel import Field, Relationship
 
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import SecretScope
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
-from zenml.models.secret_models import (
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
+from zenml.models import (
+    SecretRequest,
+    SecretResponse,
+    SecretResponseBody,
+    SecretResponseMetadata,
+    SecretUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -47,7 +49,7 @@ class SecretSchema(NamedSchema, table=True):
 
     scope: SecretScope
 
-    values: bytes = Field(sa_column=Column(TEXT, nullable=False))
+    values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -133,15 +135,12 @@ class SecretSchema(NamedSchema, table=True):
     @classmethod
     def from_request(
         cls,
-        secret: SecretRequestModel,
-        encryption_engine: Optional[AesGcmEngine] = None,
+        secret: SecretRequest,
     ) -> "SecretSchema":
-        """Create a `SecretSchema` from a `SecretRequestModel`.
+        """Create a `SecretSchema` from a `SecretRequest`.
 
         Args:
-            secret: The `SecretRequestModel` from which to create the schema.
-            encryption_engine: The encryption engine to use to encrypt the
-                secret values. If None, the values will be base64 encoded.
+            secret: The `SecretRequest` from which to create the schema.
 
         Returns:
             The created `SecretSchema`.
@@ -152,76 +151,112 @@ class SecretSchema(NamedSchema, table=True):
             scope=secret.scope,
             workspace_id=secret.workspace,
             user_id=secret.user,
-            values=cls._dump_secret_values(
-                secret.secret_values, encryption_engine
-            ),
+            # Don't store secret values implicitly in the secret. The
+            # SQL secret store will call `store_secret_values` to store the
+            # values separately if SQL is used as the secrets store.
+            values=None,
         )
 
     def update(
         self,
-        secret_update: SecretUpdateModel,
-        encryption_engine: Optional[AesGcmEngine] = None,
+        secret_update: SecretUpdate,
     ) -> "SecretSchema":
-        """Update a `SecretSchema` from a `SecretUpdateModel`.
-
-        The method also knows how to handle the `values` field of the secret
-        update model: It will update the existing values with the new values
-        and drop `None` values.
+        """Update a `SecretSchema` from a `SecretUpdate`.
 
         Args:
-            secret_update: The `SecretUpdateModel` from which to update the schema.
-            encryption_engine: The encryption engine to use to encrypt the
-                secret values. If None, the values will be base64 encoded.
+            secret_update: The `SecretUpdate` from which to update the schema.
 
         Returns:
             The updated `SecretSchema`.
         """
+        # Don't update the secret values implicitly in the secret. The
+        # SQL secret store will call `set_secret_values` to update the
+        # values separately if SQL is used as the secrets store.
         for field, value in secret_update.dict(
-            exclude_unset=True, exclude={"workspace", "user"}
+            exclude_unset=True, exclude={"workspace", "user", "values"}
         ).items():
-            if field == "values":
-                existing_values = self._load_secret_values(
-                    self.values, encryption_engine
-                )
-                existing_values.update(secret_update.secret_values)
-                # Drop values removed in the update
-                for k, v in secret_update.values.items():
-                    if v is None and k in existing_values:
-                        del existing_values[k]
-                self.values = self._dump_secret_values(
-                    existing_values, encryption_engine
-                )
-            else:
-                setattr(self, field, value)
+            setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
 
     def to_model(
         self,
-        encryption_engine: Optional[AesGcmEngine] = None,
-        include_values: bool = True,
-    ) -> SecretResponseModel:
+        hydrate: bool = False,
+    ) -> SecretResponse:
         """Converts a secret schema to a secret model.
 
         Args:
-            encryption_engine: The encryption engine to use to decrypt the
-                secret values. If None, the values will be base64 decoded.
-            include_values: Whether to include the secret values in the
-                response model or not.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The secret model.
         """
-        return SecretResponseModel(
-            id=self.id,
-            name=self.name,
-            scope=self.scope,
-            values=self._load_secret_values(self.values, encryption_engine)
-            if include_values
-            else {},
+        metadata = None
+        if hydrate:
+            metadata = SecretResponseMetadata(
+                workspace=self.workspace.to_model(),
+            )
+
+        # Don't load the secret values implicitly in the secret. The
+        # SQL secret store will call `get_secret_values` to load the
+        # values separately if SQL is used as the secrets store.
+        body = SecretResponseBody(
             user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
+            scope=self.scope,
+        )
+        return SecretResponse(
+            id=self.id,
+            name=self.name,
+            body=body,
+            metadata=metadata,
+        )
+
+    def get_secret_values(
+        self,
+        encryption_engine: Optional[AesGcmEngine] = None,
+    ) -> Dict[str, str]:
+        """Get the secret values for this secret.
+
+        This method is used by the SQL secrets store to load the secret values
+        from the database.
+
+        Args:
+            encryption_engine: The encryption engine to use to decrypt the
+                secret values. If None, the values will be base64 decoded.
+
+        Returns:
+            The secret values
+
+        Raises:
+            KeyError: if no secret values for the given ID are stored in the
+                secrets store.
+        """
+        if not self.values:
+            raise KeyError(
+                f"Secret values for secret {self.id} have not been stored in "
+                f"the SQL secrets store."
+            )
+        return self._load_secret_values(self.values, encryption_engine)
+
+    def set_secret_values(
+        self,
+        secret_values: Dict[str, str],
+        encryption_engine: Optional[AesGcmEngine] = None,
+    ) -> None:
+        """Create a `SecretSchema` from a `SecretRequest`.
+
+        This method is used by the SQL secrets store to store the secret values
+        in the database.
+
+        Args:
+            secret_values: The new secret values.
+            encryption_engine: The encryption engine to use to encrypt the
+                secret values. If None, the values will be base64 encoded.
+        """
+        self.values = self._dump_secret_values(
+            secret_values, encryption_engine
         )

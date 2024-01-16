@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,9 +27,8 @@ from .etl import (
 from .hp_tuning import hp_tuning_select_best_model, hp_tuning_single_search
 from .inference import inference_predict
 from .promotion import (
-    promote_get_metric,
-    promote_metric_compare_promoter_in_model_registry,
-    promote_get_versions,
-    promote_model_version_in_model_control_plane,
+    compute_performance_metrics_on_current_data,
+    promote_with_metric_compare,
 )
 from .training import model_evaluator, model_trainer
+from .deployment import deployment_deploy

@@ -57,6 +57,7 @@ class SeldonDeploymentConfig(ServiceConfig):
             resource configuration.
         is_custom_deployment: whether the deployment is a custom deployment
         spec: custom Kubernetes resource specification for the Seldon Core
+        serviceAccountName: The name of the Service Account applied to the deployment.
     """
 
     model_uri: str = ""
@@ -71,6 +72,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     extra_args: Dict[str, Any] = Field(default_factory=dict)
     is_custom_deployment: Optional[bool] = False
     spec: Optional[Dict[Any, Any]] = Field(default_factory=dict)
+    serviceAccountName: Optional[str] = None
 
     def get_seldon_deployment_labels(self) -> Dict[str, str]:
         """Generate labels for the Seldon Core deployment from the service configuration.
@@ -302,6 +304,7 @@ class SeldonDeploymentService(BaseDeploymentService):
             annotations=self.config.get_seldon_deployment_annotations(),
             is_custom_deployment=self.config.is_custom_deployment,
             spec=self.config.spec,
+            serviceAccountName=self.config.serviceAccountName,
         )
         deployment.spec.replicas = self.config.replicas
         deployment.spec.predictors[0].replicas = self.config.replicas

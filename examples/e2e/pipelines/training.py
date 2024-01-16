@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 #
 
 
-from typing import List, Optional
+import random
+from typing import Any, Dict, List, Optional
 
 from steps import (
+    compute_performance_metrics_on_current_data,
     data_loader,
     hp_tuning_select_best_model,
     hp_tuning_single_search,
@@ -26,21 +28,12 @@ from steps import (
     model_trainer,
     notify_on_failure,
     notify_on_success,
-    promote_get_metric,
-    promote_get_versions,
-    promote_metric_compare_promoter_in_model_registry,
-    promote_model_version_in_model_control_plane,
+    promote_with_metric_compare,
     train_data_preprocessor,
     train_data_splitter,
 )
 
-from zenml import get_pipeline_context, pipeline
-from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    mlflow_model_registry_deployer_step,
-)
-from zenml.integrations.mlflow.steps.mlflow_registry import (
-    mlflow_register_model_step,
-)
+from zenml import pipeline
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -48,6 +41,8 @@ logger = get_logger(__name__)
 
 @pipeline(on_failure=notify_on_failure)
 def e2e_use_case_training(
+    model_search_space: Dict[str, Any],
+    target_env: str,
     test_size: float = 0.2,
     drop_na: Optional[bool] = None,
     normalize: Optional[bool] = None,
@@ -64,6 +59,8 @@ def e2e_use_case_training(
     trains and evaluates a model.
 
     Args:
+        model_search_space: Search space for hyperparameter tuning
+        target_env: The environment to promote the model to
         test_size: Size of holdout set for training 0.0..1.0
         drop_na: If `True` NA values will be removed from dataset
         normalize: If `True` dataset will be normalized with MinMaxScaler
@@ -72,14 +69,12 @@ def e2e_use_case_training(
         min_test_accuracy: Threshold to stop execution if test set accuracy is lower
         fail_on_accuracy_quality_gates: If `True` and `min_train_accuracy` or `min_test_accuracy`
             are not met - execution will be interrupted early
-
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
-    pipeline_extra = get_pipeline_context().extra
     ########## ETL stage ##########
-    raw_data, target = data_loader()
+    raw_data, target, _ = data_loader(random_state=random.randint(0, 100))
     dataset_trn, dataset_tst = train_data_splitter(
         dataset=raw_data,
         test_size=test_size,
@@ -94,9 +89,7 @@ def e2e_use_case_training(
     ########## Hyperparameter tuning stage ##########
     after = []
     search_steps_prefix = "hp_tuning_search_"
-    for config_name, model_search_configuration in pipeline_extra[
-        "model_search_space"
-    ].items():
+    for config_name, model_search_configuration in model_search_space.items():
         step_name = f"{search_steps_prefix}{config_name}"
         hp_tuning_single_search(
             id=step_name,
@@ -108,9 +101,7 @@ def e2e_use_case_training(
             target=target,
         )
         after.append(step_name)
-    best_model = hp_tuning_select_best_model(
-        search_steps_prefix=search_steps_prefix, after=after
-    )
+    best_model = hp_tuning_select_best_model(step_names=after, after=after)
 
     ########## Training stage ##########
     model = model_trainer(
@@ -127,50 +118,22 @@ def e2e_use_case_training(
         fail_on_accuracy_quality_gates=fail_on_accuracy_quality_gates,
         target=target,
     )
-    mlflow_register_model_step(
-        model,
-        name=pipeline_extra["mlflow_model_name"],
-    )
-
     ########## Promotion stage ##########
-    latest_version, current_version = promote_get_versions(
-        after=["mlflow_register_model_step"],
-    )
-    latest_deployment = mlflow_model_registry_deployer_step(
-        id="deploy_latest_model_version",
-        registry_model_name=pipeline_extra["mlflow_model_name"],
-        registry_model_version=latest_version,
-        replace_existing=True,
-    )
-    latest_metric = promote_get_metric(
-        id="get_metrics_latest_model_version",
-        dataset_tst=dataset_tst,
-        deployment_service=latest_deployment,
-    )
-
-    current_deployment = mlflow_model_registry_deployer_step(
-        id="deploy_current_model_version",
-        registry_model_name=pipeline_extra["mlflow_model_name"],
-        registry_model_version=current_version,
-        replace_existing=True,
-        after=["get_metrics_latest_model_version"],
-    )
-    current_metric = promote_get_metric(
-        id="get_metrics_current_model_version",
-        dataset_tst=dataset_tst,
-        deployment_service=current_deployment,
-    )
-
     (
-        was_promoted,
-        promoted_version,
-    ) = promote_metric_compare_promoter_in_model_registry(
+        latest_metric,
+        current_metric,
+    ) = compute_performance_metrics_on_current_data(
+        dataset_tst=dataset_tst,
+        target_env=target_env,
+        after=["model_evaluator"],
+    )
+
+    promote_with_metric_compare(
         latest_metric=latest_metric,
         current_metric=current_metric,
-        latest_version=latest_version,
-        current_version=current_version,
+        target_env=target_env,
     )
-    promote_model_version_in_model_control_plane(was_promoted)
+    last_step = "promote_with_metric_compare"
 
-    notify_on_success(after=["promote_model_version_in_model_control_plane"])
+    notify_on_success(after=[last_step])
     ### YOUR CODE ENDS HERE ###

@@ -36,7 +36,7 @@ To use the AWS Service Connector with ZenML, you will need to use a different AW
 
 The AWS Service Connector is part of the AWS ZenML integration. You can either install the entire integration or use a PyPI extra to install it independently of the integration:
 
-* `pip install zenml[connectors-aws]` installs only prerequisites for the AWS Service Connector Type
+* `pip install "zenml[connectors-aws]"` installs only prerequisites for the AWS Service Connector Type
 * `zenml integration install aws` installs the entire AWS ZenML integration
 
 It is not required to [install and set up the AWS CLI on your local machine](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) to use the AWS Service Connector to link Stack Components to AWS resources and services. However, it is recommended to do so if you are looking for a quick setup that includes using the auto-configuration Service Connector features.

@@ -75,7 +75,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 In the local case, we need to install one additional Python package that is needed for the local Airflow server:
 
 ```bash
-pip install apache-airflow-providers-docker
+pip install apache-airflow-providers-docker apache-airflow~=2.5.0
 ```
 
 Once that is installed, we can start the local Airflow server by running:
@@ -154,7 +154,7 @@ of your Airflow deployment.
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use
 it to run your pipeline steps in Airflow. Check
-out [this page](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md) if you want to learn
+out [this page](/docs/book/user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md) if you want to learn
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
@@ -190,7 +190,7 @@ Alternatively, you can get the orchestrator UI URL in Python using the following
 from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
+orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 ```
 
 {% hint style="info" %}
@@ -211,13 +211,13 @@ The username will always be `admin`.
 For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or
 running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow\_orchestrator\_flavor.AirflowOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for
 more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure that it
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure that it
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full
 acceleration.
 
@@ -294,7 +294,7 @@ the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/inte
 . For this reason, we suggest starting by copying the original and modifying it according to your needs.
 
 Check out our docs on how to apply settings to your
-pipelines [here](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
+pipelines [here](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
 
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out
 the [API Docs](https://sdkdocs.zenml.io/latest/api\_docs/integration\_code\_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow\_orchestrator.AirflowOrchestrator)

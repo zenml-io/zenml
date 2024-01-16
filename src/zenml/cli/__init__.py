@@ -182,12 +182,7 @@ zenml orchestrator list --name "contains:sagemaker"
 ```
 
 For fields marked as being of type `BOOL`, you can use the 'True' or 'False'
-values to filter the output. For example, to find all orchestrators that are
-currently shared, you would type:
-
-```shell
-zenml orchestrator list --is_shared="True"
-```
+values to filter the output.
 
 Finally, for fields marked as being of type `DATETIME`, you can pass in datetime
 values in the `%Y-%m-%d %H:%M:%S` format. These can be combined with the `gte`,
@@ -227,8 +222,6 @@ registered within your ZenML workspace / repository, type:
 ```bash
 zenml artifact-store list
 ```
-
-If you wish to update/share
 
 If you wish to delete a particular artifact store, pass the name of the
 artifact store into the CLI with the following command:
@@ -517,94 +510,6 @@ Secrets can be scoped to a workspace or a user. By default, secrets
 are scoped to the current workspace. To scope a secret to a user, use the
 `--scope user` argument in the `register` command.
 
-Secrets Management with Secrets Managers
-----------------------------------------
-
-NOTE: this is a legacy feature that is being deprecated in favor of the
-centralized ZenML secrets store. Going forward, we recommend using centralized
-ZenML secrets instead of secrets manager stack components to configure and store
-secrets.
-
-Secrets can also be managed through the secrets manager stack component in your
-active stack. To set up a local file-based secrets manager, use the following
-CLI command:
-
-```bash
-zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
-```
-
-This can then be used as part of your Stack (see below).
-
-When you use a secrets manager, ZenML secrets are managed through the secrets
-manager stack component in your active stack. This means that you can only
-use the CLI commands described here if the active stack contains a secrets
-manager. This is just one of the limitations of using secrets managers, as
-opposed to the centralized ZenML secrets store, and one of the reasons why we
-have deprecated them.
-
-Secret groupings come in different types, and certain types have predefined keys
-that should be used. For example, an AWS secret has predefined keys of
-`aws_access_key_id` and `aws_secret_access_key` (and an optional
-`aws_session_token`). If you do not have a specific secret type you wish to use,
-ZenML will use the `arbitrary` type to store your key-value pairs.
-
-To register a secret, use the `register` command and pass the key-value pairs
-as command line arguments:
-
-```bash
-zenml secrets-manager secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
-```
-
-Note that the keys and values will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `register` command instead:
-
-```shell
-zenml secrets-manager secret register SECRET_NAME -i
-```
-
-As an alternative to the interactive mode, also useful for values that
-are long or contain newline or special characters, you can also use the special
-`@` syntax to indicate to ZenML that the value needs to be read from a file:
-
-```bash
-zenml secrets-manager secret register SECRET_NAME --schema=aws \
-   --aws_access_key_id=1234567890 \
-   --aws_secret_access_key=abcdefghij \
-   --aws_session_token=@/path/to/token.txt
-```
-
-
-To list all the secrets available, use the `list` command:
-
-```bash
-zenml secrets-manager secret list
-```
-
-To get the key-value pairs for a particular secret, use the `get` command:
-
-```bash
-zenml secrets-manager secret get SECRET_NAME
-```
-
-To update a secret, use the `update` command:
-
-```bash
-zenml secrets-manager secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
-```
-
-Note that the keys and values will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `update` command instead:
-
-```shell
-zenml secrets-manager secret update SECRET_NAME -i
-```
-
-Finally, to delete a secret, use the `delete` command:
-
-```bash
-zenml secrets-manager secret delete SECRET_NAME
-```
-
 Add a Feature Store to your Stack
 ---------------------------------
 
@@ -727,28 +632,12 @@ zenml stack register STACK_NAME \
 
 Each corresponding argument should be the name, id or even the first few letters
  of the id that uniquely identify the artifact store or orchestrator.
-(If you want to use your secrets manager, you should pass its name in with the
-`-x` option flag.)
 
 If you want to immediately set this newly created stack as your active stack,
 simply pass along the `--set` flag.
 
 ```bash
 zenml stack register STACK_NAME ... --set
-```
-
-If you want to share the stack and all of its components with everyone using
-the same ZenML deployment, simply pass along the `--share` flag.
-
-```bash
-zenml stack register STACK_NAME ... --share
-```
-
-Even if you haven't done so at creation time of the stack, you can always
-decide to do so at a later stage.
-
-```bash
-zenml stack share STACK_NAME
 ```
 
 To list the stacks that you have registered within your current ZenML
@@ -819,9 +708,9 @@ zenml stack update --help
 To remove a stack component from a stack, use the following command:
 
 ```shell
-# assuming you want to remove the secrets-manager and the feature-store
+# assuming you want to remove the image builder and the feature-store
 # from your stack
-zenml stack remove-component -x -f
+zenml stack remove-component -i -f
 ```
 
 If you wish to rename your stack, use the following command:
@@ -903,6 +792,75 @@ You can delete one of your registered code repositories like this:
 zenml code-repository delete <REPOSITORY_NAME_OR_ID>
 ```
 
+Administering your Models
+----------------------------
+
+ZenML provides several CLI commands to help you administer your models and
+model versions as part of the Model Control Plane.
+
+To register a new model, you can use the following CLI command:
+```bash
+zenml model register --name <NAME> [--MODEL_OPTIONS]
+```
+
+To list all registered models, use:
+```bash
+zenml model list
+```
+
+To update a model, use:
+```bash
+zenml model update <MODEL_NAME_OR_ID> [--MODEL_OPTIONS]
+```
+
+If you would like to add or remove tags from the model, use:
+```bash
+zenml model update <MODEL_NAME_OR_ID> --tag <TAG> --tag <TAG> .. 
+   --remove-tag <TAG> --remove-tag <TAG> ..
+```
+
+To delete a model, use:
+```bash
+zenml model delete <MODEL_NAME_OR_ID>
+```
+
+The CLI interface for models also helps to navigate through artifacts linked to a specific model versions.
+```bash
+zenml model data_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
+zenml model endpoint_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
+zenml model model_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
+```
+
+You can also navigate the pipeline runs linked to a specific model versions:
+```bash
+zenml model runs <MODEL_NAME_OR_ID> [-v <VERSION>]
+```
+
+To list the model versions of a specific model, use:
+```bash
+zenml model version list <MODEL_NAME_OR_ID>
+```
+
+To delete a model version, use:
+```bash
+zenml model version delete <MODEL_NAME_OR_ID> <VERSION>
+```
+
+To update a model version, use:
+```bash
+zenml model version update <MODEL_NAME_OR_ID> <VERSION> [--MODEL_VERSION_OPTIONS]
+```
+These are some of the more common uses of model version updates:
+- stage (i.e. promotion)
+```bash
+zenml model version update <MODEL_NAME_OR_ID> <VERSION> --stage <STAGE>
+```
+- tags
+```bash
+zenml model version update <MODEL_NAME_OR_ID> <VERSION> --tag <TAG> --tag <TAG> .. 
+   --remove-tag <TAG> --remove-tag <TAG> ..
+```
+
 Administering your Pipelines
 ----------------------------
 
@@ -980,20 +938,32 @@ list all artifacts that have been saved, use:
 zenml artifact list
 ```
 
-The metadata of an artifact can only be deleted if it is no longer linked to
-any pipeline runs, i.e., if the run that produced the artifact and all runs that
-cached any of its steps have been deleted.
+Each artifact has one or several versions. To list artifact versions, use:
 
-To delete all artifacts that are no longer linked to any pipeline runs, use:
+```bash
+zenml artifact versions list
+```
+
+If you would like to rename an artifact or adjust the tags of an artifact or
+artifact version, use the corresponding `update` command:
+
+```bash
+zenml artifact update <NAME> -n <NEW_NAME>
+zenml artifact update <NAME> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
+zenml artifact version update <NAME> -v <VERSION> -t <TAG1> -t <TAG2> -r <TAG_TO_REMOVE>
+```
+
+The metadata of artifacts or artifact versions stored by ZenML can only be 
+deleted once they are no longer used by any pipeline runs. I.e., an artifact
+version can only be deleted if the run that produced it and all runs that used
+it as an input have been deleted. Similarly, an artifact can only be deleted if
+all its versions can be deleted.
+
+To delete all artifacts and artifact versions that are no longer linked to any 
+pipeline runs, use:
 
 ```bash
 zenml artifact prune
-```
-
-To delete a specific artifact, use:
-
-```bash
-zenml artifact delete <ARTIFACT_NAME_OR_ID>
 ```
 
 Each pipeline run that requires Docker images also stores a build which
@@ -1288,11 +1258,11 @@ ssl_key: null
 ssl_verify_server_cert: false
 ```
 
-Managing users, teams, workspaces and roles
------------------------------------------
+Managing users and workspaces
+-------------------------------------------
 
-When using the ZenML service, you can manage permissions by managing users,
-teams, workspaces and roles using the CLI.
+When using the ZenML service, you can manage permissions by managing users and
+workspaces and using the CLI.
 If you want to create a new user or delete an existing one, run either
 
 ```bash
@@ -1303,86 +1273,99 @@ or
 zenml user delete USER_NAME
 ```
 
-A freshly created user will by default be assigned the admin role. This
-behavior can be overwritten:
-```bash
-zenml user create USER_NAME --role guest
-```
-
 To see a list of all users, run:
 ```bash
 zenml user list
 ```
 
-A team is a grouping of many users that allows you to quickly assign and
-revoke roles. If you want to create a new team, run:
+
+Managing service accounts
+-------------------------
+
+ZenML supports the use of service accounts to authenticate clients to the
+ZenML server using API keys. This is useful for automating tasks such as
+running pipelines or deploying models.
+
+To create a new service account, run:
 
 ```bash
-zenml team create TEAM_NAME
-```
-To add one or more users to a team, run:
-```bash
-zenml team add TEAM_NAME --user USER_NAME [--user USER_NAME ...]
-```
-Similarly, to remove users from a team run:
-```bash
-zenml team remove TEAM_NAME --user USER_NAME [--user USER_NAME ...]
-```
-To delete a team (keep in mind this will revoke any roles assigned to this
-team from the team members), run:
-```bash
-zenml team delete TEAM_NAME
+zenml service-account create SERVICE_ACCOUNT_NAME
 ```
 
-To see a list of all teams, run:
+This command creates a service account and an API key for it. The API key is
+displayed as part of the command output and cannot be retrieved later. You can
+then use the issued API key to connect your ZenML client to the server with the
+CLI:
+
 ```bash
-zenml team list
+zenml connect --url https://... --api-key <API_KEY>
 ```
 
-A role groups permissions to resources. Currently, there are the following
-globally scoped roles to choose from: 'write', 'read' and 'me'. To create
-a role, run one of the following commands:
+or by setting the `ZENML_STORE_URL` and `ZENML_STORE_API_KEY` environment
+variables when you set up your ZenML client for the first time: 
+
 ```bash
-zenml role create ROLE_NAME -p write -p read -p me
-zenml role create ROLE_NAME -p read
+export ZENML_STORE_URL=https://...
+export ZENML_STORE_API_KEY=<API_KEY>
 ```
 
-To delete a role run:
+To see all the service accounts you've created and their API keys, use the
+following commands:
+
 ```bash
-zenml role delete ROLE_NAME
+zenml service-account list
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> list
 ```
 
-To see a list of all roles, run:
+Additionally, the following command allows you to more precisely inspect one of
+these service accounts and an API key:
+
 ```bash
-zenml role list
+zenml service-account describe <SERVICE_ACCOUNT_NAME>
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> describe <API_KEY_NAME>
 ```
 
-You can also update the role name and the attached permissions of a role:
+API keys don't have an expiration date. For increased security, we recommend
+that you regularly rotate the API keys to prevent unauthorized access to your
+ZenML server. You can do this with the ZenML CLI:
+
 ```bash
-zenml role update [-n <NEW_NAME>| -r <PERMISSION_TO_REMOVE>| -a <PERMISSION_TO_ADD>]
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate <API_KEY_NAME>
 ```
 
-If you want to assign or revoke a role from users or teams, you can run
+Running this command will create a new API key and invalidate the old one. The
+new API key is displayed as part of the command output and cannot be retrieved
+later. You can then use the new API key to connect your ZenML client to the
+server just as described above.
+
+When rotating an API key, you can also configure a retention period for the old
+API key. This is useful if you need to keep the old API key for a while to
+ensure that all your workloads have been updated to use the new API key. You can
+do this with the `--retain` flag. For example, to rotate an API key and keep the
+old one for 60 minutes, you can run the following command:
 
 ```bash
-zenml role assign ROLE_NAME --user USER_NAME [--user USER_NAME ...]
-zenml role assign ROLE_NAME --team TEAM_NAME [--team TEAM_NAME ...]
-```
-or
-```bash
-zenml role revoke ROLE_NAME --user USER_NAME [--user USER_NAME ...]
-zenml role revoke ROLE_NAME --team TEAM_NAME [--team TEAM_NAME ...]
-```
-
-You can see a list of all current role assignments by running:
-
-```bash
-zenml role assignment list
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate <API_KEY_NAME> \
+      --retain 60
 ```
 
-At any point you may inspect all available permissions:
+For increased security, you can deactivate a service account or an API key using
+one of the following commands:
+
+```
+zenml service-account update <SERVICE_ACCOUNT_NAME> --active false
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> update <API_KEY_NAME> \
+      --active false
+```
+
+Deactivating a service account or an API key will prevent it from being used to
+authenticate and has immediate effect on all workloads that use it.
+
+To permanently delete an API key for a service account, use the following
+command:
+
 ```bash
-zenml permission list
+zenml service-account api-key <SERVICE_ACCOUNT_NAME> delete <API_KEY_NAME>
 ```
 
 Deploying ZenML to the cloud
@@ -1478,13 +1461,14 @@ from zenml.cli.integration import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.model_registry import *  # noqa
 from zenml.cli.pipeline import *  # noqa
-from zenml.cli.role import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.served_model import *  # noqa
 from zenml.cli.server import *  # noqa
+from zenml.cli.service_accounts import *  # noqa
 from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.workspace import *  # noqa
+from zenml.cli.tag import *  # noqa

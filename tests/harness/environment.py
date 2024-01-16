@@ -26,7 +26,7 @@ from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:
     from zenml.client import Client
-    from zenml.models.component_models import ComponentResponseModel
+    from zenml.models import ComponentResponse
 
 
 class TestEnvironment:
@@ -46,10 +46,10 @@ class TestEnvironment:
         self.config = config
         self.deployment = deployment
         self._optional_components: Optional[
-            Dict[StackComponentType, List[ComponentResponseModel]]
+            Dict[StackComponentType, List[ComponentResponse]]
         ] = None
         self._mandatory_components: Optional[
-            Dict[StackComponentType, List[ComponentResponseModel]]
+            Dict[StackComponentType, List[ComponentResponse]]
         ] = None
 
     @property
@@ -144,7 +144,7 @@ class TestEnvironment:
     @property
     def optional_components(
         self,
-    ) -> Dict[StackComponentType, List["ComponentResponseModel"]]:
+    ) -> Dict[StackComponentType, List["ComponentResponse"]]:
         """Returns the optional components managed or tracked by this environment.
 
         Returns:
@@ -161,7 +161,7 @@ class TestEnvironment:
     @property
     def mandatory_components(
         self,
-    ) -> Dict[StackComponentType, List["ComponentResponseModel"]]:
+    ) -> Dict[StackComponentType, List["ComponentResponse"]]:
         """Returns the mandatory components managed or tracked by this environment.
 
         Returns:
@@ -182,7 +182,7 @@ class TestEnvironment:
     @property
     def components(
         self,
-    ) -> Dict[StackComponentType, List["ComponentResponseModel"]]:
+    ) -> Dict[StackComponentType, List["ComponentResponse"]]:
         """Returns the components managed or tracked by this environment.
 
         Returns:
@@ -214,7 +214,6 @@ class TestEnvironment:
             RuntimeError: If the environment is disabled or if a mandatory
                 component cannot be provisioned.
         """
-        from zenml.models.component_models import ComponentResponseModel
         from zenml.stack.stack_component import StackComponent
 
         if self.is_disabled:
@@ -229,7 +228,7 @@ class TestEnvironment:
 
         with self.deployment.connect() as client:
             component_requirements: List[StackRequirement] = []
-            components: List[ComponentResponseModel] = []
+            components: List["ComponentResponse"] = []
 
             for requirement in self.config.compiled_requirements:
                 result, err = requirement.check_software_requirements()
@@ -317,7 +316,6 @@ class TestEnvironment:
         Raises:
             RuntimeError: If the environment is disabled.
         """
-        from zenml.models.component_models import ComponentResponseModel
         from zenml.stack.stack_component import StackComponent
 
         if self.is_disabled:
@@ -335,7 +333,7 @@ class TestEnvironment:
 
         with self.deployment.connect() as client:
             component_requirements: List[StackRequirement] = []
-            components: List[ComponentResponseModel] = []
+            components: List["ComponentResponse"] = []
             external_components: List[UUID] = []
 
             for requirement in self.config.compiled_requirements:

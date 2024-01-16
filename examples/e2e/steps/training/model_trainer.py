@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,19 +15,20 @@
 # limitations under the License.
 #
 
-
 import mlflow
 import pandas as pd
 from sklearn.base import ClassifierMixin
 from typing_extensions import Annotated
 
-from zenml import step
+from zenml import ArtifactConfig, get_step_context, step
 from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
 )
+from zenml.integrations.mlflow.steps.mlflow_registry import (
+    mlflow_register_model_step,
+)
 from zenml.logger import get_logger
-from zenml.model import ModelArtifactConfig
 
 logger = get_logger(__name__)
 
@@ -47,7 +48,10 @@ def model_trainer(
     dataset_trn: pd.DataFrame,
     model: ClassifierMixin,
     target: str,
-) -> Annotated[ClassifierMixin, "model", ModelArtifactConfig()]:
+    name: str,
+) -> Annotated[
+    ClassifierMixin, ArtifactConfig(name="model", is_model_artifact=True)
+]:
     """Configure and train a model on the training dataset.
 
     This is an example of a model training step that takes in a dataset artifact
@@ -73,6 +77,7 @@ def model_trainer(
         dataset_trn: The preprocessed train dataset.
         model: The model instance to train.
         target: Name of target columns in dataset.
+        name: The name of the model.
 
     Returns:
         The trained model artifact.
@@ -87,6 +92,21 @@ def model_trainer(
         dataset_trn.drop(columns=[target]),
         dataset_trn[target],
     )
+
+    # register mlflow model
+    mlflow_register_model_step.entrypoint(
+        model,
+        name=name,
+    )
+    # keep track of mlflow version for future use
+    model_registry = Client().active_stack.model_registry
+    if model_registry:
+        versions = model_registry.list_model_versions(name=name)
+        if versions:
+            model_version = get_step_context().model_version
+            model_version.log_metadata(
+                {"model_registry_version": versions[-1].version}
+            )
     ### YOUR CODE ENDS HERE ###
 
     return model

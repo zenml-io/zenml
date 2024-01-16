@@ -21,7 +21,7 @@ from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
 )
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.seldon.model_deployers import SeldonModelDeployer

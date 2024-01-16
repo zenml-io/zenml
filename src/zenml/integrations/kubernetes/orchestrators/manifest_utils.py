@@ -77,7 +77,7 @@ def add_local_stores_mount(
         pass
     else:
         # Run KFP containers in the context of the local UID/GID
-        # to ensure that the artifact and metadata stores can be shared
+        # to ensure that the local stores can be shared
         # with the local pipeline runs.
         pod_spec.security_context = k8s_client.V1SecurityContext(
             run_as_user=os.getuid(),
@@ -196,6 +196,20 @@ def add_pod_settings(
     for container in pod_spec.containers:
         assert isinstance(container, k8s_client.V1Container)
         container._resources = settings.resources
+        if settings.volume_mounts:
+            if container.volume_mounts:
+                container.volume_mounts.extend(settings.volume_mounts)
+            else:
+                container.volume_mounts = settings.volume_mounts
+
+    if settings.volumes:
+        if pod_spec.volumes:
+            pod_spec.volumes.extend(settings.volumes)
+        else:
+            pod_spec.volumes = settings.volumes
+
+    if settings.host_ipc:
+        pod_spec.host_ipc = settings.host_ipc
 
 
 def build_cron_job_manifest(

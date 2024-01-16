@@ -27,6 +27,7 @@ IAM role)
 import base64
 import datetime
 import json
+import os
 import re
 from typing import Any, Dict, List, Optional, Tuple, cast
 
@@ -42,6 +43,11 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
+from zenml.integrations.aws import (
+    AWS_CONNECTOR_TYPE,
+    AWS_RESOURCE_TYPE,
+    S3_RESOURCE_TYPE,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -61,10 +67,6 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-
-AWS_CONNECTOR_TYPE = "aws"
-AWS_RESOURCE_TYPE = "aws-generic"
-S3_RESOURCE_TYPE = "s3-bucket"
 EKS_KUBE_API_TOKEN_EXPIRATION = 60
 DEFAULT_IAM_ROLE_TOKEN_EXPIRATION = 3600  # 1 hour
 DEFAULT_STS_TOKEN_EXPIRATION = 43200  # 12 hours
@@ -196,7 +198,7 @@ The AWS Service Connector is part of the AWS ZenML integration. You can either
 install the entire integration or use a pypi extra to install it independently
 of the integration:
 
-* `pip install zenml[connectors-aws]` installs only prerequisites for the AWS
+* `pip install "zenml[connectors-aws]"` installs only prerequisites for the AWS
 Service Connector Type
 * `zenml integration install aws` installs the entire AWS ZenML integration
 
@@ -1370,6 +1372,21 @@ class AWSServiceConnector(ServiceConnector):
                     "aws_session_token"
                 ] = credentials.token
 
+            aws_credentials_path = os.path.join(
+                users_home, ".aws", "credentials"
+            )
+
+            # Create the file as well as the parent dir if needed.
+            dirname = os.path.split(aws_credentials_path)[0]
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            with os.fdopen(
+                os.open(aws_credentials_path, os.O_WRONLY | os.O_CREAT, 0o600),
+                "w",
+            ):
+                pass
+
+            # Write the credentials to the file
             common.rewrite_credentials_file(all_profiles, users_home)
 
             logger.info(

@@ -37,7 +37,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
+from zenml.models import PipelineDeploymentBase
 from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -73,7 +73,7 @@ class Compiler:
         pipeline: "Pipeline",
         stack: "Stack",
         run_configuration: PipelineRunConfiguration,
-    ) -> Tuple[PipelineDeploymentBaseModel, PipelineSpec]:
+    ) -> Tuple[PipelineDeploymentBase, PipelineSpec]:
         """Compiles a ZenML pipeline to a serializable representation.
 
         Args:
@@ -132,7 +132,7 @@ class Compiler:
 
         client_version, server_version = get_zenml_versions()
 
-        deployment = PipelineDeploymentBaseModel(
+        deployment = PipelineDeploymentBase(
             run_name_template=run_name,
             pipeline_configuration=pipeline.configuration,
             step_configurations=steps,
@@ -204,12 +204,15 @@ class Compiler:
                 enable_step_logs=config.enable_step_logs,
                 settings=config.settings,
                 extra=config.extra,
-                model_config=config.model_config,
+                model_version=config.model_version,
+                parameters=config.parameters,
             )
 
         for invocation_id in config.steps:
             if invocation_id not in pipeline.invocations:
-                raise KeyError(f"No step invocation with id {invocation_id}.")
+                raise KeyError(
+                    f"Configuration for step {invocation_id} cannot be applied to any pipeline step. Make sure that all configured steps are present in your pipeline."
+                )
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
@@ -432,7 +435,9 @@ class Compiler:
 
         step = invocation.step
         if step_config:
-            step._apply_configuration(step_config)
+            step._apply_configuration(
+                step_config, runtime_parameters=invocation.parameters
+            )
 
         step_spec = self._get_step_spec(invocation=invocation)
         step_settings = self._filter_and_validate_settings(

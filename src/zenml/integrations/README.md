@@ -18,7 +18,7 @@ found on [this page](https://docs.zenml.io/getting-started/introduction).
 
 Note that one integration may belong to different categories: For example, the 
 cloud integrations (AWS/GCP/Azure) contain container registries, artifact 
-stores, secrets managers etc.
+stores, orchestrators etc.
 
 ## Step 2: Create individual stack component flavors
 
@@ -70,14 +70,14 @@ the name of your integration.
         ├── artifact-stores                     <- Separated directory for  
         |      ├── __init_.py                      every type
         |      └── <example-artifact-store>     <- Implementation class for the  
-        ├── secrets-managers                       artifact store flavor
+        ├── orchestrators                          artifact store flavor
         |      ├── __init_.py
-        |      └── <example-secrets-manager>    <- Implementation class for the  
-        |                                          flavor secrets manager
+        |      └── <example-orchestrator>       <- Implementation class for the  
+        |                                          orchestrator flavor
         ├── flavors 
         |      ├── __init_.py 
         |      ├── <example-artifact-store-flavor>  <- Config class and flavor
-        |      └── <example-secrets-manager-flavor> <- Config class and flavor
+        |      └── <example-orchestrator-flavor>    <- Config class and flavor
         |
         └── __init_.py                          <- Integration class 
 ```

@@ -27,7 +27,7 @@ from zenml.stack.stack_component import StackComponent
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
 
-def test_update_stack_component_succeeds(clean_workspace) -> None:
+def test_update_stack_component_succeeds(clean_client: "Client") -> None:
     """Test that valid stack component update succeeds."""
     register_command = cli.commands["container-registry"].commands["register"]
     update_command = cli.commands["container-registry"].commands["update"]
@@ -45,7 +45,7 @@ def test_update_stack_component_succeeds(clean_workspace) -> None:
     assert register_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_workspace.get_stack_component(
+            clean_client.get_stack_component(
                 name_id_or_prefix="new_container_registry",
                 component_type=StackComponentType.CONTAINER_REGISTRY,
             )
@@ -63,7 +63,7 @@ def test_update_stack_component_succeeds(clean_workspace) -> None:
     assert update_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_workspace.get_stack_component(
+            clean_client.get_stack_component(
                 name_id_or_prefix="new_container_registry",
                 component_type=StackComponentType.CONTAINER_REGISTRY,
             )
@@ -73,7 +73,7 @@ def test_update_stack_component_succeeds(clean_workspace) -> None:
 
 
 def test_update_stack_component_for_nonexistent_component_fails(
-    clean_workspace,
+    clean_client: "Client",
 ) -> None:
     """Test stack update of nonexistent stack fails."""
     update_command = cli.commands["orchestrator"].commands["update"]
@@ -86,7 +86,7 @@ def test_update_stack_component_for_nonexistent_component_fails(
 
 
 def test_update_stack_component_with_name_or_uuid_fails(
-    clean_workspace,
+    clean_client: "Client",
 ) -> None:
     """Test that updating stack component name or uuid fails."""
     register_container_registry_command = cli.commands[
@@ -117,7 +117,7 @@ def test_update_stack_component_with_name_or_uuid_fails(
     )
     assert update_result1.exit_code == 1
     with does_not_raise():
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
         )
@@ -131,14 +131,14 @@ def test_update_stack_component_with_name_or_uuid_fails(
     )
     assert update_result2.exit_code == 1
     with does_not_raise():
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
         )
 
 
 def test_update_stack_component_with_non_configured_property_fails(
-    clean_workspace,
+    clean_client: "Client",
 ) -> None:
     """Updating stack component with aa non-configured property fails."""
     register_container_registry_command = cli.commands[
@@ -169,7 +169,7 @@ def test_update_stack_component_with_non_configured_property_fails(
     )
     assert update_result.exit_code == 1
     with pytest.raises(AttributeError):
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
         ).__getattribute__("favorite_cat")
@@ -194,15 +194,15 @@ class FlavorContext:
 
 
 def test_remove_attribute_component_succeeds(
-    clean_workspace,
+    clean_client: "Client",
 ) -> None:
     """Removing an optional attribute from a stack component succeeds."""
-    with FlavorContext(clean_workspace) as test_flavor:
+    with FlavorContext(clean_client) as test_flavor:
         configuration = {
             "favorite_orchestration_language": "arn:arias:aws:iam",
             "favorite_orchestration_language_version": "a1.big.cat",
         }
-        created_orchestrator = clean_workspace.create_stack_component(
+        created_orchestrator = clean_client.create_stack_component(
             name="arias_orchestrator",
             component_type=test_flavor.type,
             flavor=test_flavor.name,
@@ -227,7 +227,7 @@ def test_remove_attribute_component_succeeds(
         )
         assert remove_attribute.exit_code == 0
 
-        orchestrator_response = clean_workspace.get_stack_component(
+        orchestrator_response = clean_client.get_stack_component(
             name_id_or_prefix=created_orchestrator.id,
             component_type=StackComponentType.ORCHESTRATOR,
         )
@@ -237,7 +237,7 @@ def test_remove_attribute_component_succeeds(
             not in orchestrator_response.configuration
         )
         try:
-            clean_workspace.delete_stack_component(
+            clean_client.delete_stack_component(
                 name_id_or_prefix=created_orchestrator.id,
                 component_type=StackComponentType.ORCHESTRATOR,
             )
@@ -246,7 +246,7 @@ def test_remove_attribute_component_succeeds(
 
 
 def test_remove_attribute_component_non_existent_attributes_fail(
-    clean_workspace,
+    clean_client: "Client",
 ) -> None:
     """Removing a nonexistent component attribute fails."""
     runner = CliRunner()
@@ -265,7 +265,7 @@ def test_remove_attribute_component_non_existent_attributes_fail(
 
 
 def test_remove_attribute_component_nonexistent_component_fails(
-    clean_workspace,
+    clean_client: "Client",
 ) -> None:
     """Removing an attribute from a nonexistent stack component fails."""
     runner = CliRunner()
@@ -284,16 +284,16 @@ def test_remove_attribute_component_nonexistent_component_fails(
 
 
 def test_remove_attribute_component_required_attribute_fails(
-    clean_workspace,
+    clean_client: "Client",
 ) -> None:
     """Removing a required attribute from a stack component fails."""
-    with FlavorContext(clean_workspace) as test_flavor:
+    with FlavorContext(clean_client) as test_flavor:
         configuration = {
             "favorite_orchestration_language": "arn:arias:aws:iam",
             "favorite_orchestration_language_version": "a1.big.cat",
         }
 
-        created_orchestrator = clean_workspace.create_stack_component(
+        created_orchestrator = clean_client.create_stack_component(
             name="arias_orchestrator",
             component_type=test_flavor.type,
             flavor=test_flavor.name,
@@ -313,7 +313,7 @@ def test_remove_attribute_component_required_attribute_fails(
         )
         assert remove_attribute.exit_code != 0
         try:
-            clean_workspace.delete_stack_component(
+            clean_client.delete_stack_component(
                 name_id_or_prefix=created_orchestrator.id,
                 component_type=StackComponentType.ORCHESTRATOR,
             )
@@ -322,7 +322,7 @@ def test_remove_attribute_component_required_attribute_fails(
 
 
 def test_rename_stack_component_to_preexisting_name_fails(
-    clean_workspace,
+    clean_client: "Client",
 ) -> None:
     """Renaming a component to a name that already is occupied fails."""
     register_orchestrator_command = cli.commands["orchestrator"].commands[
@@ -350,14 +350,14 @@ def test_rename_stack_component_to_preexisting_name_fails(
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="new_orchestrator",
             component_type=StackComponentType.ORCHESTRATOR,
         )
 
 
 def test_rename_stack_component_nonexistent_component_fails(
-    clean_workspace,
+    clean_client: "Client",
 ) -> None:
     """Renaming nonexistent stack component fails."""
     rename_container_registry_command = cli.commands[
@@ -370,18 +370,18 @@ def test_rename_stack_component_nonexistent_component_fails(
     )
     assert result.exit_code == 1
     with pytest.raises(KeyError):
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="arias_container_registry",
             component_type=StackComponentType.ORCHESTRATOR,
         )
     with pytest.raises(KeyError):
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="arias_container_registry",
             component_type=StackComponentType.ORCHESTRATOR,
         )
 
 
-def test_renaming_non_core_component_succeeds(clean_workspace) -> None:
+def test_renaming_non_core_component_succeeds(clean_client: "Client") -> None:
     """Test renaming a non-core stack component succeeds."""
     new_component_name = "arias_container_registry"
     register_container_registry_command = cli.commands[
@@ -410,18 +410,18 @@ def test_renaming_non_core_component_succeeds(clean_workspace) -> None:
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="some_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
         )
     with does_not_raise():
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix=new_component_name,
             component_type=StackComponentType.CONTAINER_REGISTRY,
         )
 
 
-def test_renaming_core_component_succeeds(clean_workspace) -> None:
+def test_renaming_core_component_succeeds(clean_client: "Client") -> None:
     """Test renaming a core stack component succeeds."""
     new_component_name = "arias_orchestrator"
     register_orchestrator_command = cli.commands["orchestrator"].commands[
@@ -451,18 +451,18 @@ def test_renaming_core_component_succeeds(clean_workspace) -> None:
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="some_orchestrator",
             component_type=StackComponentType.ORCHESTRATOR,
         )
     with does_not_raise():
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix=new_component_name,
             component_type=StackComponentType.ORCHESTRATOR,
         )
 
 
-def test_renaming_default_component_fails(clean_workspace) -> None:
+def test_renaming_default_component_fails(clean_client: "Client") -> None:
     """Test renaming a default stack component fails."""
     new_component_name = "aria"
 
@@ -474,12 +474,12 @@ def test_renaming_default_component_fails(clean_workspace) -> None:
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="default",
             component_type=StackComponentType.ORCHESTRATOR,
         )
     with pytest.raises(KeyError):
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix=new_component_name,
             component_type=StackComponentType.ORCHESTRATOR,
         )
@@ -491,18 +491,18 @@ def test_renaming_default_component_fails(clean_workspace) -> None:
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="default",
             component_type=StackComponentType.ARTIFACT_STORE,
         )
     with pytest.raises(KeyError):
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix=new_component_name,
             component_type=StackComponentType.ARTIFACT_STORE,
         )
 
 
-def test_delete_default_component_fails(clean_workspace) -> None:
+def test_delete_default_component_fails(clean_client: "Client") -> None:
     """Test deleting a default stack component fails."""
     runner = CliRunner()
     delete_command = cli.commands["orchestrator"].commands["delete"]
@@ -512,7 +512,7 @@ def test_delete_default_component_fails(clean_workspace) -> None:
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="default",
             component_type=StackComponentType.ORCHESTRATOR,
         )
@@ -523,13 +523,13 @@ def test_delete_default_component_fails(clean_workspace) -> None:
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_workspace.get_stack_component(
+        clean_client.get_stack_component(
             name_id_or_prefix="default",
             component_type=StackComponentType.ARTIFACT_STORE,
         )
 
 
-def test_set_labels_on_register(clean_workspace) -> None:
+def test_set_labels_on_register(clean_client: "Client") -> None:
     """Test that metadata can be set while registering components."""
     register_command = cli.commands["orchestrator"].commands["register"]
 
@@ -548,7 +548,7 @@ def test_set_labels_on_register(clean_workspace) -> None:
     assert register_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_workspace.get_stack_component(
+            clean_client.get_stack_component(
                 name_id_or_prefix="new_orchestrator",
                 component_type=StackComponentType.ORCHESTRATOR,
             )
@@ -557,7 +557,7 @@ def test_set_labels_on_register(clean_workspace) -> None:
     )
 
 
-def test_set_labels_on_update(clean_workspace) -> None:
+def test_set_labels_on_update(clean_client: "Client") -> None:
     """Test that metadata can be set while updating components."""
     register_command = cli.commands["orchestrator"].commands["register"]
 
@@ -586,7 +586,7 @@ def test_set_labels_on_update(clean_workspace) -> None:
     assert update_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_workspace.get_stack_component(
+            clean_client.get_stack_component(
                 name_id_or_prefix="new_orchestrator",
                 component_type=StackComponentType.ORCHESTRATOR,
             )
@@ -595,7 +595,7 @@ def test_set_labels_on_update(clean_workspace) -> None:
     )
 
 
-def test_remove_labels(clean_workspace) -> None:
+def test_remove_labels(clean_client: "Client") -> None:
     """Test that metadata can be removed from components."""
     register_command = cli.commands["orchestrator"].commands["register"]
 
@@ -614,7 +614,7 @@ def test_remove_labels(clean_workspace) -> None:
     assert register_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_workspace.get_stack_component(
+            clean_client.get_stack_component(
                 name_id_or_prefix="new_orchestrator",
                 component_type=StackComponentType.ORCHESTRATOR,
             )
@@ -639,7 +639,7 @@ def test_remove_labels(clean_workspace) -> None:
     assert remove_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_workspace.get_stack_component(
+            clean_client.get_stack_component(
                 name_id_or_prefix="new_orchestrator",
                 component_type=StackComponentType.ORCHESTRATOR,
             )

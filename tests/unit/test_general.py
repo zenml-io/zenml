@@ -93,6 +93,7 @@ def _test_materializer(
             assert len(visualizations) > 0
         for uri, value in visualizations.items():
             assert isinstance(uri, str)
+            assert "\\" not in uri
             assert isinstance(value, VisualizationType)
             assert os.path.exists(uri)
 

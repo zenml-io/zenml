@@ -67,7 +67,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
         # ensure that tracking_url is set in the step metadata
         trainer_step = run.steps["trainer"]
-        tracking_url = trainer_step.metadata.get(
+        tracking_url = trainer_step.run_metadata.get(
             METADATA_EXPERIMENT_TRACKER_URL
         )
         assert tracking_url is not None

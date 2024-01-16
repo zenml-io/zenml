@@ -15,17 +15,14 @@
 
 from typing import Callable, List, TypeVar
 
-from zenml.models import (
-    BaseResponseModel,
-    Page,
-)
+from zenml.models import BaseResponse, Page
 
-AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
 
 
 def depaginate(
-    list_method: Callable[..., Page[AnyResponseModel]],
-) -> List[AnyResponseModel]:
+    list_method: Callable[..., Page[AnyResponse]],
+) -> List[AnyResponse]:
     """Depaginate the results from a client or store method that returns pages.
 
     Args:

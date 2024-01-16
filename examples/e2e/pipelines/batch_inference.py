@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 from steps import (
     data_loader,
     drift_quality_gate,
@@ -25,13 +24,9 @@ from steps import (
     notify_on_success,
 )
 
-from zenml import get_pipeline_context, pipeline
-from zenml.artifacts.external_artifact import ExternalArtifact
+from zenml import ExternalArtifact, pipeline
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import evidently_report_step
-from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    mlflow_model_registry_deployer_step,
-)
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -49,19 +44,17 @@ def e2e_use_case_batch_inference():
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
     ########## ETL stage  ##########
-    df_inference, target = data_loader(is_inference=True)
+    df_inference, target, _ = data_loader(
+        random_state=ExternalArtifact(name="random_state"), is_inference=True
+    )
     df_inference = inference_data_preprocessor(
         dataset_inf=df_inference,
-        preprocess_pipeline=ExternalArtifact(
-            model_artifact_name="preprocess_pipeline",
-        ),
+        preprocess_pipeline=ExternalArtifact(name="preprocess_pipeline"),
         target=target,
     )
     ########## DataQuality stage  ##########
     report, _ = evidently_report_step(
-        reference_dataset=ExternalArtifact(
-            model_artifact_name="dataset_trn",
-        ),
+        reference_dataset=ExternalArtifact(name="dataset_trn"),
         comparison_dataset=df_inference,
         ignored_cols=["target"],
         metrics=[
@@ -70,15 +63,7 @@ def e2e_use_case_batch_inference():
     )
     drift_quality_gate(report)
     ########## Inference stage  ##########
-    deployment_service = mlflow_model_registry_deployer_step(
-        registry_model_name=get_pipeline_context().extra["mlflow_model_name"],
-        registry_model_version=ExternalArtifact(
-            model_artifact_name="promoted_version",
-        ),
-        replace_existing=True,
-    )
     inference_predict(
-        deployment_service=deployment_service,
         dataset_inf=df_inference,
         after=["drift_quality_gate"],
     )

@@ -16,16 +16,16 @@
 import pytest
 from pydantic import ValidationError
 
+from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models.flavor_models import FlavorBaseModel
+from zenml.models import FlavorRequest
 
 
-def test_flavor_base_model_fails_with_long_name():
+def test_flavor_request_model_fails_with_long_name():
     """Test that the flavor base model fails with long names."""
     long_name = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
-        FlavorBaseModel(
+        FlavorRequest(
             name=long_name,
             type=StackComponentType.ANNOTATOR,
             config_schema="",
@@ -34,11 +34,11 @@ def test_flavor_base_model_fails_with_long_name():
         )
 
 
-def test_flavor_base_model_fails_with_long_config_schema():
+def test_flavor_request_model_fails_with_long_config_schema():
     """Test that the flavor base model fails with long types."""
     with pytest.raises(ValidationError):
         long_schema = "a" * (TEXT_FIELD_MAX_LENGTH + 1)
-        FlavorBaseModel(
+        FlavorRequest(
             name="abc",
             type=StackComponentType.ANNOTATOR,
             config_schema=long_schema,
@@ -47,11 +47,11 @@ def test_flavor_base_model_fails_with_long_config_schema():
         )
 
 
-def test_flavor_base_model_fails_with_long_source():
+def test_flavor_request_model_fails_with_long_source():
     """Test that the flavor base model fails with long source strings."""
     with pytest.raises(ValidationError):
         long_source = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        FlavorBaseModel(
+        FlavorRequest(
             name="abc",
             type=StackComponentType.ANNOTATOR,
             config_schema="",
@@ -60,11 +60,11 @@ def test_flavor_base_model_fails_with_long_source():
         )
 
 
-def test_flavor_base_model_fails_with_long_integration():
+def test_flavor_request_model_fails_with_long_integration():
     """Test that the flavor base model fails with long integration strings."""
     with pytest.raises(ValidationError):
         long_integration = "a" * (STR_FIELD_MAX_LENGTH + 1)
-        FlavorBaseModel(
+        FlavorRequest(
             name="abc",
             type=StackComponentType.ANNOTATOR,
             config_schema="",

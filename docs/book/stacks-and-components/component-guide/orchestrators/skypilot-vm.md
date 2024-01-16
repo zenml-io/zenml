@@ -40,6 +40,12 @@ on-demand and managed spot VMs. While you can select the VM type you want to use
 also includes an optimizer that automatically selects the cheapest VM/zone/region/cloud for your workloads.
 Finally, the orchestrator includes an autostop feature that cleans up idle clusters, preventing unnecessary cloud costs.
 
+{% hint style="info" %}
+You can configure the SkyPilot VM Orchestrator to use a specific VM type, and 
+resources for each step of your pipeline can be configured individually.
+Read more about how to configure step-specific resources [here](#configuring-step-specific-resources).
+{% endhint %}
+
 {% hint style="warning" %}
 The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](/docs/book/user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md)
 {% endhint %}
@@ -65,16 +71,16 @@ To use the SkyPilot VM Orchestrator, you need:
 * One of the SkyPilot integrations installed. You can install the SkyPilot integration for your cloud provider of choice using the following command:
   ```shell
     # For AWS
-    pip install zenml[connectors-gcp]
-    zenml integration install aws vm_aws 
+    pip install "zenml[connectors-aws]"
+    zenml integration install aws skypilot_aws 
 
     # for GCP
-    pip install zenml[connectors-gcp]
-    zenml integration install gcp vm_gcp # for GCP
+    pip install "zenml[connectors-gcp]"
+    zenml integration install gcp skypilot_gcp # for GCP
 
     # for Azure
-    pip install zenml[connectors-azure]
-    zenml integration install azure vm_azure # for Azure
+    pip install "zenml[connectors-azure]"
+    zenml integration install azure skypilot_azure # for Azure
   ```
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
@@ -90,8 +96,8 @@ To use the SkyPilot VM Orchestrator, you need:
 We need first to install the SkyPilot integration for AWS and the AWS connectors extra, using the following two commands:
 
   ```shell
-    pip install zenml[connectors-aws]
-    zenml integration install aws vm_aws 
+    pip install "zenml[connectors-aws]"
+    zenml integration install aws skypilot_aws 
   ```
 
 To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](../../../stacks-and-components/auth-management/aws-service-connector.md).
@@ -140,8 +146,8 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 We need first to install the SkyPilot integration for GCP and the GCP extra for ZenML, using the following two commands:
 
   ```shell
-    pip install zenml[connectors-gcp]
-    zenml integration install gcp vm_gcp 
+    pip install "zenml[connectors-gcp]"
+    zenml integration install gcp skypilot_gcp
   ```
 
 To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](../../../stacks-and-components/auth-management/gcp-service-connector.md)
@@ -198,8 +204,8 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 We need first to install the SkyPilot integration for Azure and the Azure extra for ZenML, using the following two commands
 
   ```shell
-    pip install zenml[connectors-azure]
-    zenml integration install azure vm_azure 
+    pip install "zenml[connectors-azure]"
+    zenml integration install azure skypilot_azure 
   ```
 
 To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](../../../stacks-and-components/auth-management/azure-service-connector.md)
@@ -266,8 +272,7 @@ The following code snippets show how to configure the orchestrator settings for 
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAWSOrchestratorSettings
-
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
 
 skypilot_settings = SkypilotAWSOrchestratorSettings(
     cpus="2",
@@ -276,7 +281,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
     spot_recovery="recovery_strategy",
-    region="us-west1",
+    region="us-west-1",
     zone="us-west1-a",
     image_id="ami-1234567890abcdef0",
     disk_size=100,
@@ -303,7 +308,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotGCPOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_gcp_vm_flavor import SkypilotGCPOrchestratorSettings
 
 
 skypilot_settings = SkypilotGCPOrchestratorSettings(
@@ -315,7 +320,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
     spot_recovery="recovery_strategy",
     region="us-west1",
     zone="us-west1-a",
-    image_id="ami-1234567890abcdef0",
+    image_id="ubuntu-pro-2004-focal-v20231101",
     disk_size=100,
     disk_tier="high",
     cluster_name="my_cluster",
@@ -340,7 +345,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_flavor import SkypilotAzureOrchestratorSettings
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_azure_vm_flavor import SkypilotAzureOrchestratorSettings
 
 
 skypilot_settings = SkypilotAzureOrchestratorSettings(
@@ -350,9 +355,8 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
     accelerator_args={"tpu_vm": True, "runtime_version": "tpu-vm-base"},
     use_spot=True,
     spot_recovery="recovery_strategy",
-    region="us-west1",
-    zone="us-west1-a",
-    image_id="ami-1234567890abcdef0",
+    region="West Europe",
+    image_id="Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest",
     disk_size=100,
     disk_tier="high",
     cluster_name="my_cluster",
@@ -373,9 +377,53 @@ skypilot_settings = SkypilotAzureOrchestratorSettings(
 {% endtab %}
 {% endtabs %}
 
+
+One of the key features of the SkyPilot VM Orchestrator is the ability to run each step of a pipeline on a separate VM with its own specific settings. This allows for fine-grained control over the resources allocated to each step, ensuring that each part of your pipeline has the necessary compute power while optimizing for cost and efficiency.
+
+## Configuring Step-Specific Resources
+
+The SkyPilot VM Orchestrator allows you to configure resources for each step individually. This means you can specify different VM types, CPU and memory requirements, and even use spot instances for certain steps while using on-demand instances for others.
+
+If no step-specific settings are specified, the orchestrator will use the resources specified in the orchestrator settings for each step and run the entire pipeline in one VM. If step-specific settings are specified, an orchestrator VM will be spun up first, which will subsequently spin out new VMs dependant on the step settings. You can disable this behavior by setting the `disable_step_based_settings` parameter to `True` in the orchestrator configuration, using the following command:
+
+```shell
+zenml orchestrator update <ORCHESTRATOR_NAME> --disable_step_based_settings=True
+```
+
+Here's an example of how to configure specific resources for a step for the AWS cloud:
+
+```python
+from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
+
+# Settings for a specific step that requires more resources
+high_resource_settings = SkypilotAWSOrchestratorSettings(
+    instance_type='t2.2xlarge',
+    cpus=8,
+    memory=32,
+    use_spot=False,
+    region='us-east-1',
+    # ... other settings
+)
+
+@step(settings={"orchestrator.vm_aws": high_resource_settings})
+def my_resource_intensive_step():
+    # Step implementation
+    pass
+```
+
+{% hint style="warning" %}
+When configuring pipeline or step-specific resources, you can use the `settings`
+parameter to specifically target the orchestrator flavor you want to use
+`orchestrator.STACK_COMPONENT_FLAVOR` and not orchestrator component name
+`orchestrator.STACK_COMPONENT_NAME`. For example, if you want to configure
+resources for the `vm_gcp` flavor, you can use `settings={"orchestrator.vm_gcp": ...}`.
+{% endhint %}
+
+By using the `settings` parameter, you can tailor the resources for each step according to its specific needs. This flexibility allows you to optimize your pipeline execution for both performance and cost.
+
 Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot\_orchestrator\_base\_vm\_flavor.SkypilotBaseOrchestratorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for more
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for more
 information on how to specify settings.
 
 <!-- For scarf -->

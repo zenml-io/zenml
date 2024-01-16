@@ -17,14 +17,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
-from zenml.enums import PermissionType
 from zenml.models import (
-    PipelineDeploymentFilterModel,
-    PipelineDeploymentResponseModel,
+    Page,
+    PipelineDeploymentFilter,
+    PipelineDeploymentResponse,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+)
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -34,55 +39,68 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINE_DEPLOYMENTS,
     tags=["deployments"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
 @router.get(
     "",
-    response_model=Page[PipelineDeploymentResponseModel],
+    response_model=Page[PipelineDeploymentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_deployments(
-    deployment_filter_model: PipelineDeploymentFilterModel = Depends(
-        make_dependable(PipelineDeploymentFilterModel)
+    deployment_filter_model: PipelineDeploymentFilter = Depends(
+        make_dependable(PipelineDeploymentFilter)
     ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[PipelineDeploymentResponseModel]:
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize),
+) -> Page[PipelineDeploymentResponse]:
     """Gets a list of deployment.
 
     Args:
         deployment_filter_model: Filter model used for pagination, sorting,
-            filtering
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         List of deployment objects.
     """
-    return zen_store().list_deployments(
-        deployment_filter_model=deployment_filter_model
+    return verify_permissions_and_list_entities(
+        filter_model=deployment_filter_model,
+        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
+        list_method=zen_store().list_deployments,
+        hydrate=hydrate,
     )
 
 
 @router.get(
     "/{deployment_id}",
-    response_model=PipelineDeploymentResponseModel,
+    response_model=PipelineDeploymentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_deployment(
     deployment_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> PipelineDeploymentResponseModel:
+    hydrate: bool = True,
+    _: AuthContext = Security(authorize),
+) -> PipelineDeploymentResponse:
     """Gets a specific deployment using its unique id.
 
     Args:
         deployment_id: ID of the deployment to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         A specific deployment object.
     """
-    return zen_store().get_deployment(deployment_id=deployment_id)
+    return verify_permissions_and_get_entity(
+        id=deployment_id,
+        get_method=zen_store().get_deployment,
+        hydrate=hydrate,
+    )
 
 
 @router.delete(
@@ -92,11 +110,15 @@ def get_deployment(
 @handle_exceptions
 def delete_deployment(
     deployment_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a specific deployment.
 
     Args:
         deployment_id: ID of the deployment to delete.
     """
-    zen_store().delete_deployment(deployment_id=deployment_id)
+    verify_permissions_and_delete_entity(
+        id=deployment_id,
+        get_method=zen_store().get_deployment,
+        delete_method=zen_store().delete_deployment,
+    )

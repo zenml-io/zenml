@@ -30,7 +30,7 @@ from zenml.constants import (
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
-from zenml.models.server_models import ServerDeploymentType
+from zenml.models import ServerDeploymentType
 
 logger = get_logger(__name__)
 
@@ -106,6 +106,10 @@ class ServerConfiguration(BaseModel):
         external_server_id: The ID of the ZenML server to use with the
             `EXTERNAL` authentication scheme. If not specified, the regular
             ZenML server ID is used.
+        rbac_implementation_source: Source pointing to a class implementing
+            the RBAC interface defined by
+            `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
+            RBAC will not be enabled for this server.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -120,13 +124,13 @@ class ServerConfiguration(BaseModel):
     auth_cookie_name: Optional[str] = None
     auth_cookie_domain: Optional[str] = None
     cors_allow_origins: Optional[List[str]] = None
-    max_failed_device_auth_attempts: int = (
-        DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
-    )
+    max_failed_device_auth_attempts: (
+        int
+    ) = DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
     device_auth_timeout: int = DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT
-    device_auth_polling_interval: int = (
-        DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
-    )
+    device_auth_polling_interval: (
+        int
+    ) = DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
     dashboard_url: Optional[str] = None
     device_expiration_minutes: Optional[int] = None
     trusted_device_expiration_minutes: Optional[int] = None
@@ -135,6 +139,8 @@ class ServerConfiguration(BaseModel):
     external_user_info_url: Optional[str] = None
     external_cookie_name: Optional[str] = None
     external_server_id: Optional[UUID] = None
+
+    rbac_implementation_source: Optional[str] = None
 
     _deployment_id: Optional[UUID] = None
 
@@ -196,6 +202,15 @@ class ServerConfiguration(BaseModel):
         )
 
         return self._deployment_id
+
+    @property
+    def rbac_enabled(self) -> bool:
+        """Whether RBAC is enabled on the server or not.
+
+        Returns:
+            Whether RBAC is enabled on the server or not.
+        """
+        return self.rbac_implementation_source is not None
 
     def get_jwt_token_issuer(self) -> str:
         """Get the JWT token issuer.

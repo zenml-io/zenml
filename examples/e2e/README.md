@@ -81,12 +81,12 @@ This template uses
 to demonstrate how to perform major critical steps for Continuous Training (CT)
 and Continuous Delivery (CD).
 
-It consists of two pipelines with the following high-level setup:
+It consists of three pipelines with the following high-level setup:
 <p align="center">
-  <img height=300 src=".assets/00_pipelines_composition.png">
+  <img height=800 src=".assets/00_pipelines_composition.png">
 </p>
 
-Both pipelines are inside a shared Model Control Plane model context - training pipeline creates and promotes new Model Control Plane version and inference pipeline is reading from inference Model Control Plane version. This makes those pipelines closely connected, while ensuring that only quality-assured Model Control Plane versions are used to produce predictions delivered to stakeholders.
+All pipelines are leveraging the Model Control Plane to bring all parts together - the training pipeline creates and promotes a new Model Control Plane version with a trained model object in it, deployment pipeline uses the inference Model Control Plane version (the one promoted during training) to create a deployment service and inference pipeline using deployment service from the inference Model Control Plane version and store back new set of predictions as a versioned data artifact for future use. This makes those pipelines closely connected while ensuring that only quality-assured Model Control Plane versions are used to produce predictions delivered to stakeholders.
 * [CT] Training
   * Load, split, and preprocess the training dataset
   * Search for an optimal model object architecture and tune its hyperparameters
@@ -94,6 +94,8 @@ Both pipelines are inside a shared Model Control Plane model context - training 
   * Compare a recently trained model object with one promoted earlier
   * If a recently trained model object performs better - stage it as a new inference model object in model registry
   * On success of the current model object - stage newly created Model Control Plane version as the one used for inference
+* [CD] Deployment
+  * Deploy a new prediction service based on the model object connected to the inference Model Control Plane version.
 * [CD] Batch Inference
   * Load the inference dataset and preprocess it reusing object fitted during training
   * Perform data drift analysis reusing training dataset of the inference Model Control Plane version as a reference
@@ -119,23 +121,27 @@ The project loosely follows [the recommended ZenML project structure](https://do
 
 ```
 .
-├── pipelines               # `zenml.pipeline` implementations
-│   ├── batch_inference.py  # [CD] Batch Inference pipeline
-│   └── training.py         # [CT] Training Pipeline
-├── steps                   # logically grouped `zenml.steps` implementations
-│   ├── alerts              # alert developer on pipeline status
-│   ├── data_quality        # quality gates built on top of drift report
-│   ├── etl                 # ETL logic for dataset
-│   ├── hp_tuning           # tune hyperparameters and model architectures
-│   ├── inference           # inference on top of the model from the registry
-│   ├── promotion           # find if a newly trained model will be new inference
-│   └── training            # train and evaluate model
-├── utils                   # helper functions
+├── configs                   # pipelines configuration files
+│   ├── deployer_config.yaml  # the configuration of the deployment pipeline
+│   ├── inference_config.yaml # the configuration of the batch inference pipeline
+│   └── train_config.yaml     # the configuration of the training pipeline
+├── pipelines                 # `zenml.pipeline` implementations
+│   ├── batch_inference.py    # [CD] Batch Inference pipeline
+│   ├── deployment.py         # [CD] Deployment pipeline
+│   └── training.py           # [CT] Training Pipeline
+├── steps                     # logically grouped `zenml.steps` implementations
+│   ├── alerts                # alert developer on pipeline status
+│   ├── deployment            # deploy trained model objects
+│   ├── data_quality          # quality gates built on top of drift report
+│   ├── etl                   # ETL logic for dataset
+│   ├── hp_tuning             # tune hyperparameters and model architectures
+│   ├── inference             # inference on top of the model from the registry
+│   ├── promotion             # find if a newly trained model will be new inference
+│   └── training              # train and evaluate model
+├── utils                     # helper functions
 ├── .dockerignore
-├── inference_config.yaml   # the configuration of the batch inference pipeline
-├── Makefile                # helper scripts for quick start with integrations
-├── README.md               # this file
-├── requirements.txt        # extra Python dependencies 
-├── run.py                  # CLI tool to run pipelines on ZenML Stack
-└── train_config.yaml       # the configuration of the training pipeline
+├── Makefile                  # helper scripts for quick start with integrations
+├── README.md                 # this file
+├── requirements.txt          # extra Python dependencies 
+└── run.py                    # CLI tool to run pipelines on ZenML Stack
 ```

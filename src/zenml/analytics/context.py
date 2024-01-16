@@ -28,7 +28,7 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.analytics.enums import AnalyticsEvent
-    from zenml.models.server_models import (
+    from zenml.models import (
         ServerDatabaseType,
         ServerDeploymentType,
     )

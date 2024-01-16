@@ -31,7 +31,7 @@ install_integrations() {
     # figure out the python version
     python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
 
-    ignore_integrations="feast label_studio bentoml seldon kserve langchain llama_index pycaret skypilot_aws skypilot_gcp skypilot_azure"
+    ignore_integrations="feast label_studio bentoml seldon kserve pycaret skypilot_aws skypilot_gcp skypilot_azure"
     # if python version is 3.11, exclude all integrations depending on kfp
     # because they are not yet compatible with python 3.11
     if [ "$python_version" = "3.11" ]; then
@@ -48,11 +48,16 @@ install_integrations() {
     zenml integration export-requirements \
         --output-file integration-requirements.txt \
         $ignore_integrations_args
+
+    # pin pyyaml>=6.0.1
+    echo "" >> integration-requirements.txt
+    echo "pyyaml>=6.0.1" >> integration-requirements.txt
+
     pip install -r integration-requirements.txt
     rm integration-requirements.txt
 
-    # install langchain and llama_index integrations separately
-    zenml integration install -y langchain llama_index
+    # install langchain separately
+    zenml integration install -y langchain
 }
 
 

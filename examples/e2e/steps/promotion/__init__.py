@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from .promote_get_metric import promote_get_metric
-from .promote_metric_compare_promoter_in_model_registry import (
-    promote_metric_compare_promoter_in_model_registry,
+from .compute_performance_metrics_on_current_data import (
+    compute_performance_metrics_on_current_data,
 )
-from .promote_get_versions import promote_get_versions
-from .promote_model_version_in_model_control_plane import (
-    promote_model_version_in_model_control_plane,
-)
+from .promote_with_metric_compare import promote_with_metric_compare

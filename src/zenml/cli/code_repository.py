@@ -25,7 +25,7 @@ from zenml.config.source import Source
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models import CodeRepositoryFilterModel
+from zenml.models import CodeRepositoryFilter
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
@@ -162,7 +162,7 @@ def register_code_repository(
 
 
 @code_repository.command("list", help="List all connected code repositories.")
-@list_options(CodeRepositoryFilterModel)
+@list_options(CodeRepositoryFilter)
 def list_code_repositories(**kwargs: Any) -> None:
     """List all connected code repositories.
 

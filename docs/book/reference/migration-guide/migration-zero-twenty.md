@@ -285,7 +285,7 @@ If you are only using stack component flavors that are shipped with the zenml Py
 
 With collaboration being the key part of ZenML, the 0.20.0 release puts the concepts of Users in the front and center and introduces the possibility to share stacks and stack components with other users by means of the ZenML server.
 
-When your client is connected to a ZenML server, entities such as Stacks, Stack Components, Stack Component Flavors, Pipelines, Pipeline Runs, and Artifacts are scoped to a Project and owned by the User that creates them. Only the objects that are owned by the current user used to authenticate to the ZenML server and that are part of the current project are available to the client.
+When your client is connected to a ZenML server, entities such as Stacks, Stack Components, Stack Component Flavors, Pipelines, Pipeline Runs, and artifacts are scoped to a Project and owned by the User that creates them. Only the objects that are owned by the current user used to authenticate to the ZenML server and that are part of the current project are available to the client.
 
 Stacks and Stack Components can also be shared within the same project with other users. To share an object, either set it as shared during creation time (e.g. `zenml stack register mystack ... --share`) or afterwards (e.g. through `zenml stack share mystack`).
 

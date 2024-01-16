@@ -23,7 +23,7 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models import OAuthDeviceFilterModel
+from zenml.models import OAuthDeviceFilter
 
 logger = get_logger(__name__)
 
@@ -58,7 +58,7 @@ def describe_authorized_device(id_or_prefix: str) -> None:
 @authorized_device.command(
     "list", help="List all authorized devices for the current user."
 )
-@list_options(OAuthDeviceFilterModel)
+@list_options(OAuthDeviceFilter)
 def list_authorized_devices(**kwargs: Any) -> None:
     """List all authorized devices.
 

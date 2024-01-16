@@ -177,11 +177,14 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         # Convert the docker_build_options dictionary to a list of strings
         docker_build_args = []
         for key, value in build_options.items():
+            option = f"--{key}"
             if isinstance(value, list):
                 for val in value:
-                    docker_build_args.extend([key, val])
-            else:
-                docker_build_args.extend([key, value])
+                    docker_build_args.extend([option, val])
+            elif value is not None and not isinstance(value, bool):
+                docker_build_args.extend([option, value])
+            elif value is not False:
+                docker_build_args.extend([option])
 
         return cloudbuild_v1.Build(
             source=cloudbuild_v1.Source(
@@ -198,7 +201,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
                         "-t",
                         image_name,
                         ".",
-                        *build_options,
+                        *docker_build_args,
                     ],
                 },
                 {

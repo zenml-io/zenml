@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,9 +20,12 @@ from datetime import datetime as dt
 from typing import Optional
 
 import click
-from pipelines import e2e_use_case_batch_inference, e2e_use_case_training
+from pipelines import (
+    e2e_use_case_batch_inference,
+    e2e_use_case_deployment,
+    e2e_use_case_training,
+)
 
-from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -174,6 +177,7 @@ def main(
 
         pipeline_args["config_path"] = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
+            "configs",
             "train_config.yaml",
         )
         pipeline_args[
@@ -182,10 +186,23 @@ def main(
         e2e_use_case_training.with_options(**pipeline_args)(**run_args_train)
         logger.info("Training pipeline finished successfully!")
 
+    # Execute Deployment Pipeline
+    run_args_inference = {}
+    pipeline_args["config_path"] = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "configs",
+        "deployer_config.yaml",
+    )
+    pipeline_args[
+        "run_name"
+    ] = f"e2e_use_case_deployment_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    e2e_use_case_deployment.with_options(**pipeline_args)(**run_args_inference)
+
     # Execute Batch Inference Pipeline
     run_args_inference = {}
     pipeline_args["config_path"] = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
+        "configs",
         "inference_config.yaml",
     )
     pipeline_args[
@@ -193,18 +210,6 @@ def main(
     ] = f"e2e_use_case_batch_inference_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     e2e_use_case_batch_inference.with_options(**pipeline_args)(
         **run_args_inference
-    )
-
-    artifact = ExternalArtifact(
-        model_artifact_name="predictions",
-        model_name="e2e_use_case",
-        model_version="staging",
-        model_artifact_version=None,  # can be skipped - using latest artifact link
-    )
-    logger.info(
-        "Batch inference pipeline finished successfully! "
-        "You can find predictions in Artifact Store using ID: "
-        f"`{str(artifact.get_artifact_id())}`."
     )
 
 

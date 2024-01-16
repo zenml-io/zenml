@@ -62,7 +62,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
 
     @staticmethod
     def preprocess_checkpoint_result_dict(
-        artifact_dict: Dict[str, Any]
+        artifact_dict: Dict[str, Any],
     ) -> None:
         """Pre-processes a GE checkpoint dict before it is used to de-serialize a GE CheckpointResult object.
 

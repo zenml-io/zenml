@@ -111,6 +111,7 @@ class WhylogsMaterializer(BaseMaterializer):
         )
         rendered_html = visualization.summary_drift_report()
         filepath = os.path.join(self.uri, HTML_FILENAME)
+        filepath = filepath.replace("\\", "/")
         with fileio.open(filepath, "w") as f:
             f.write(rendered_html.data)
         return {filepath: VisualizationType.HTML}
@@ -144,9 +145,9 @@ class WhylogsMaterializer(BaseMaterializer):
             # we are not running as part of a pipeline
             return
 
-        run_info = step_context.step_run_info
         settings = cast(
-            WhylogsDataValidatorSettings, data_validator.get_settings(run_info)
+            WhylogsDataValidatorSettings,
+            data_validator.get_settings(step_context.step_run),
         )
 
         if not settings.enable_whylabs:

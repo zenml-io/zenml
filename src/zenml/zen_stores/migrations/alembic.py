@@ -19,7 +19,15 @@ database connection.
 """
 
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Union,
+)
 
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
@@ -192,7 +200,8 @@ class Alembic:
 
         def do_upgrade(rev: _RevIdType, context: Any) -> List[Any]:
             return self.script_directory._upgrade_revs(
-                revision, rev  # type:ignore [arg-type]
+                revision,
+                rev,  # type:ignore [arg-type]
             )
 
         self.run_migrations(do_upgrade)
@@ -206,7 +215,8 @@ class Alembic:
 
         def do_downgrade(rev: _RevIdType, context: Any) -> List[Any]:
             return self.script_directory._downgrade_revs(
-                revision, rev  # type:ignore [arg-type]
+                revision,
+                rev,  # type:ignore [arg-type]
             )
 
         self.run_migrations(do_downgrade)

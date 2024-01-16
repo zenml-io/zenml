@@ -16,12 +16,15 @@
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.gcp import GCP_VERTEX_ORCHESTRATOR_FLAVOR
+from zenml.integrations.gcp import (
+    GCP_RESOURCE_TYPE,
+    GCP_VERTEX_ORCHESTRATOR_FLAVOR,
+)
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
 
@@ -173,7 +176,7 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="gcp-generic",
+            resource_type=GCP_RESOURCE_TYPE,
         )
 
     @property

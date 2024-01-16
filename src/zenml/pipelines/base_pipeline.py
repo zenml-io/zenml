@@ -29,9 +29,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.config.step_configurations import StepConfigurationUpdate
-    from zenml.models.pipeline_build_models import (
-        PipelineBuildBaseModel,
-    )
+    from zenml.models import PipelineBuildBase
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -51,7 +49,7 @@ PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
 PARAM_ON_FAILURE = "on_failure"
 PARAM_ON_SUCCESS = "on_success"
-PARAM_MODEL_CONFIG = "model_config"
+PARAM_MODEL_VERSION = "model_version"
 
 TEMPLATE_NAME_ATTRIBUTE = "_template_name"
 
@@ -130,7 +128,7 @@ class BasePipeline(Pipeline, ABC):
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
-        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
+        build: Union[str, "UUID", "PipelineBuildBase", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         step_configurations: Optional[
             Mapping[str, "StepConfigurationUpdateOrDict"]

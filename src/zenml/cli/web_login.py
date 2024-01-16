@@ -59,7 +59,7 @@ def web_login(url: str, verify_ssl: Union[str, bool]) -> str:
         AuthorizationException: If an error occurred during the authorization
             process.
     """
-    from zenml.models.auth_models import (
+    from zenml.models import (
         OAuthDeviceAuthorizationRequest,
         OAuthDeviceAuthorizationResponse,
         OAuthDeviceTokenRequest,

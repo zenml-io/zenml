@@ -34,7 +34,7 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
-from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
+from zenml.integrations.azure import (
     AZURE_CONNECTOR_TYPE,
     AZURE_RESOURCE_TYPE,
     BLOB_RESOURCE_TYPE,
@@ -205,7 +205,7 @@ The Azure Service Connector is part of the Azure ZenML integration. You can
 either install the entire integration or use a pypi extra to install it
 independently of the integration:
 
-* `pip install zenml[connectors-azure]` installs only prerequisites for the
+* `pip install "zenml[connectors-azure]"` installs only prerequisites for the
 Azure Service Connector Type
 * `zenml integration install azure` installs the entire Azure ZenML integration
 

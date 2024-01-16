@@ -28,11 +28,7 @@ initial Role. The User will be sent an invitation email. If a user is part of an
 organization, they can utilize their login on all tenants they have authority to
 access.
 
-### Device-to-device authentication
+<!-- For scarf -->
+<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
-{% hint style="info" %}
-We are actively developing low privilege service accounts and will update this
-when they are implemented. For the time being all workloads (like for example a
-pipeline run) will get an irrevocable API Token that is valid for 24h - please
-reach out to us in case longer-lasting tokens are needed for your Tenants.
-{% endhint %}
+

@@ -29,7 +29,7 @@ $ zenml service-connector list-types --type azure
 
 The Azure Service Connector is part of the Azure ZenML integration. You can either install the entire integration or use a pypi extra to install it independently of the integration:
 
-* `pip install zenml[connectors-azure]` installs only prerequisites for the Azure Service Connector Type
+* `pip install "zenml[connectors-azure]"` installs only prerequisites for the Azure Service Connector Type
 * `zenml integration install azure` installs the entire Azure ZenML integration
 
 It is not required to [install and set up the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) on your local machine to use the Azure Service Connector to link Stack Components to Azure resources and services. However, it is recommended to do so if you are looking for a quick setup that includes using the auto-configuration Service Connector features.
