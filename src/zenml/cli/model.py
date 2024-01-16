@@ -409,8 +409,7 @@ def list_model_versions(
     """
     model_versions = Client().zen_store.list_model_versions(
         model_name_or_id=model_name,
-        model_version_filter_model=ModelVersionFilter(**kwargs),
-        tags=tag or [],
+        model_version_filter_model=ModelVersionFilter(**kwargs, tags=tag),
     )
 
     if not model_versions:

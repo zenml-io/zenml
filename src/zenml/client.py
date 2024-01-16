@@ -4972,13 +4972,13 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             number=number,
             stage=stage,
+            tags=tags,
         )
 
         return self.zen_store.list_model_versions(
             model_name_or_id=model_name_or_id,
             model_version_filter_model=model_version_filter_model,
             hydrate=hydrate,
-            tags=tags,
         )
 
     def update_model_version(

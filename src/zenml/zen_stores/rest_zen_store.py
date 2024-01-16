@@ -2829,7 +2829,6 @@ class RestZenStore(BaseZenStore):
         self,
         model_version_filter_model: ModelVersionFilter,
         model_name_or_id: Optional[Union[str, UUID]] = None,
-        tags: Optional[List[str]] = [],
         hydrate: bool = False,
     ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
@@ -2839,7 +2838,6 @@ class RestZenStore(BaseZenStore):
                 versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
-            tags: Filter model versions by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2851,14 +2849,14 @@ class RestZenStore(BaseZenStore):
                 route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
                 response_model=ModelVersionResponse,
                 filter_model=model_version_filter_model,
-                params={"hydrate": hydrate, "tags": tags},
+                params={"hydrate": hydrate},
             )
         else:
             return self._list_paginated_resources(
                 route=MODEL_VERSIONS,
                 response_model=ModelVersionResponse,
                 filter_model=model_version_filter_model,
-                params={"hydrate": hydrate, "tags": tags},
+                params={"hydrate": hydrate},
             )
 
     def update_model_version(

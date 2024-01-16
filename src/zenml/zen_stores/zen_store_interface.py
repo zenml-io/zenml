@@ -2240,7 +2240,6 @@ class ZenStoreInterface(ABC):
         self,
         model_version_filter_model: ModelVersionFilter,
         model_name_or_id: Optional[Union[str, UUID]] = None,
-        tags: Optional[List[str]] = [],
         hydrate: bool = False,
     ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
@@ -2250,7 +2249,6 @@ class ZenStoreInterface(ABC):
                 versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
-            tags: Filter model versions by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
