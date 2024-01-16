@@ -42,7 +42,7 @@ from zenml.artifacts.utils import (
     save_artifact,
     load_artifact,
 )
-from zenml.model.utils import log_model_metadata
+from zenml.model.utils import log_model_metadata, link_artifact_to_model
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.model.model_version import ModelVersion
@@ -59,6 +59,7 @@ __all__ = [
     "load_artifact",
     "log_artifact_metadata",
     "log_model_metadata",
+    "link_artifact_to_model",
     "ModelVersion",
     "pipeline",
     "save_artifact",
