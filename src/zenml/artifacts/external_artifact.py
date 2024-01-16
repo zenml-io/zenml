@@ -57,7 +57,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
             latest version of the artifact will be used.
         version: Version of the artifact to search. Only used when `name` is
             provided. Cannot be used together with `model`.
-        model: The model version to search in. Only used when `name`
+        model: The model to search in. Only used when `name`
             is provided. Cannot be used together with `version`.
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.

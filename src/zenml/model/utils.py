@@ -129,10 +129,10 @@ def log_model_version_metadata(
         metadata: The metadata to log.
         model_name: The name of the model to log metadata for. Can
             be omitted when being called inside a step with configured
-            `model_version` in decorator.
+            `model` in decorator.
         model_version: The version of the model to log metadata for. Can
             be omitted when being called inside a step with configured
-            `model_version` in decorator.
+            `model` in decorator.
     """
     logger.warning(
         "`log_model_version_metadata` is deprecated. Please use "
@@ -156,14 +156,14 @@ def log_model_metadata(
         metadata: The metadata to log.
         model_name: The name of the model to log metadata for. Can
             be omitted when being called inside a step with configured
-            `model_version` in decorator.
+            `model` in decorator.
         model_version: The version of the model to log metadata for. Can
             be omitted when being called inside a step with configured
-            `model_version` in decorator.
+            `model` in decorator.
 
     Raises:
         ValueError: If no model name/version is provided and the function is not
-            called inside a step with configured `model_version` in decorator.
+            called inside a step with configured `model` in decorator.
     """
     mv = None
     try:
@@ -175,7 +175,7 @@ def log_model_metadata(
     if not step_context and not (model_name and model_version):
         raise ValueError(
             "Model name and version must be provided unless the function is "
-            "called inside a step with configured `model_version` in decorator."
+            "called inside a step with configured `model` in decorator."
         )
     if mv is None:
         from zenml import Model

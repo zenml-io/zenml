@@ -21,10 +21,10 @@ from zenml.model.model import Model
 
 
 class NewModelRequest(BaseModel):
-    """Request to create a new model version."""
+    """Request to create a new version of a model."""
 
     class Requester(BaseModel):
-        """Requester of a new model version."""
+        """Requester of a new version of a model."""
 
         source: str
         name: str
@@ -42,16 +42,16 @@ class NewModelRequest(BaseModel):
 
     @property
     def model(self) -> Model:
-        """Model version getter.
+        """Model getter.
 
         Returns:
-            The model version.
+            The model.
 
         Raises:
-            RuntimeError: If the model version is not set.
+            RuntimeError: If the model is not set.
         """
         if self._model is None:
-            raise RuntimeError("Model version is not set.")
+            raise RuntimeError("Model is not set.")
         return self._model
 
     def update_request(
@@ -63,7 +63,7 @@ class NewModelRequest(BaseModel):
 
         Args:
             model: `Model` to use.
-            requester: Requester of a new model version.
+            requester: Requester of a new version of a model.
         """
         self.requesters.append(requester)
         if self._model is None:

@@ -57,7 +57,7 @@ def my_step():
 ```
 
 You can also use the [active model](../../starter-guide/track-ml-models.md) to get the 
-model version metadata, or the associated artifacts directly as described in the
+model metadata, or the associated artifacts directly as described in the
 [starter guide](../../starter-guide/track-ml-models.md):
 
 ```python

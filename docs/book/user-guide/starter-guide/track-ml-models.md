@@ -6,7 +6,7 @@ description: Creating a full picture of a ML model using the Model Control Plane
 
 ![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/mcp_walkthrough.gif)
 
-As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many `ModelVersions` (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
+As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many model versions (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
 
 ## What is a ZenML Model?
 
@@ -35,14 +35,14 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 
 ## Configuring a model in a pipeline
 
-The easiest way to use a ZenML model is to pass a model version object as part of a pipeline run. This can be done easily at a pipeline or a step level, or via a 
+The easiest way to use a ZenML model is to pass a `Model` object as part of a pipeline run. This can be done easily at a pipeline or a step level, or via a 
 [YAML config](../production-guide/configure-pipeline.md).
 
-Once you configure a pipeline this way, **all** artifacts generated during pipeline runs are automatically linked to the specified model version. This connecting of artifacts provides lineage tracking and transparency into what data and models are used during training, evaluation, and inference.
+Once you configure a pipeline this way, **all** artifacts generated during pipeline runs are automatically linked to the specified model. This connecting of artifacts provides lineage tracking and transparency into what data and models are used during training, evaluation, and inference.
 
 ```python
 from zenml import pipeline
-from zenml import ModelVersion
+from zenml import Model
 
 model = Model(
     # The name uniquely identifies this model
@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
 The above will establish a **link between all artifacts that pass through this ZenML pipeline and this model**. This includes the **technical model** which is what comes out of the `svc_trainer` step. You will be able to see all associated artifacts and pipeline runs, all within one view.
 
-Further, this pipeline run and all other pipeline runs that are configured with this model version will be linked to this model as well. 
+Further, this pipeline run and all other pipeline runs that are configured with this model configuration will be linked to this model as well. 
 
 You can see all versions of a model, and associated artifacts and run like this:
 
@@ -107,14 +107,14 @@ The following commands can be used to list the various artifacts associated with
 
 The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
 
-<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model Versions List.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model versions List.</p></figcaption></figure>
 
 {% endtab %}
 {% endtabs %}
 
 ## Fetching the model in a pipeline
 
-When configured at the pipeline or step level, the model version will be available through the [StepContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md) or [PipelineContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md).
+When configured at the pipeline or step level, the model will be available through the [StepContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md) or [PipelineContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md).
 
 ```python
 from zenml import get_step_context, get_pipeline_context, step, pipeline
@@ -125,7 +125,7 @@ def svc_trainer(
     y_train: pd.Series,
     gamma: float = 0.001,
 ) -> Annotated[ClassifierMixin, "trained_model"]:
-    # This will return the model version specified in the 
+    # This will return the model specified in the 
     # @pipeline decorator. In this case, the production version of 
     # the `iris_classifier` will be returned in this case.
     model = get_step_context().model
@@ -149,7 +149,7 @@ def training_pipeline(gamma: float = 0.002):
 
 ## Logging metadata to the `Model` object
 
-[Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), model versions too can take a dictionary
+[Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), models too can take a dictionary
 of key-value pairs to capture their metadata. This is achieved using the 
 `log_model_metadata` method:
 
@@ -223,20 +223,20 @@ A model's versions can exist in various stages. These are meant to signify their
 ```python
 from zenml.model import Model
 
-# Get the latest model version
+# Get the latest version of a model
 model = Model(
     name="iris_classifier",
     version="latest"
 )
 
-# Get a model from a version
+# Get `my_version` version of a model
 model = Model(
     name="iris_classifier",
     version="my_version",
 )
 
 # Pass the stage into the version field
-# to get the model by stage
+# to get the `staging` model
 model = Model(
     name="iris_classifier",
     version="staging",
@@ -264,7 +264,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-ZenML Model and Model Versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../advanced-guide/data-management/model-management.md).
+ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../advanced-guide/data-management/model-management.md).
 guide.
 
 <!-- For scarf -->

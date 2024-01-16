@@ -11,16 +11,16 @@ viewing and using them is unified and centralized in the ZenML API, client as
 well as on the [ZenML Cloud](https://zenml.io/cloud) dashboard.
 
 A Model captures lineage information and more. Within a Model, different Model
-Versions can be staged. For example, you can rely on your predictions at a
-specific stage, like `Production`, and decide whether the Model Version should
+versions can be staged. For example, you can rely on your predictions at a
+specific stage, like `Production`, and decide whether the Model version should
 be promoted based on your business rules during training. Plus, accessing data
-from other Models and their Versions is just as simple.
+from other Models and their versions is just as simple.
 
 The Model Control Plane is how you manage your models through this unified
 interface. It allows you to combine the logic of your pipelines, artifacts and
 crucial business data along with the actual 'technical model'.
 
-## Model Versions
+## Model versions
 
 ZenML is already versioning your models and storing some metadata, but the Model
 Control Plane allows you more flexibility in terms of how you refer to and use
@@ -84,7 +84,7 @@ the `model` argument of the `@pipeline` decorator.
 
 As an example, here we have a training pipeline which orchestrates the training
 of a model object, storing datasets and the model object itself as links within
-a newly created Model Version. This integration is achieved by configuring the
+a newly created Model version. This integration is achieved by configuring the
 pipeline within a Model Context using `Model`. The name
 is specified, while other fields remain optional for this task.
 
@@ -104,12 +104,12 @@ def train_and_promote_model():
     ...
 ```
 
-Running the training pipeline creates a model and a Model Version, all while
+Running the training pipeline creates a new model version, all while
 maintaining a connection to the artifacts.
 
 ## Model versions
 
-Each model can have many model versions. Model versions are a way for you to
+Each model can have many versions. Model versions are a way for you to
 track different iterations of your training process, complete with some extra
 dashboard and API functionality to support the full ML lifecycle.
 
@@ -148,7 +148,7 @@ def training_pipeline( ... ):
     # training happens here
 ```
 
-Here we are specifically setting the model version for a particular step or for
+Here we are specifically setting the model configuration for a particular step or for
 the pipeline as a whole.
 
 ### Autonumbering of versions
@@ -191,8 +191,8 @@ updated_version = Model(
 
 ## Stages and Promotion
 
-Model stages are a way to model the progress that a model version takes through various
-stages in its lifecycle. A ZenML Model Version can be promoted to a different
+Model stages are a way to model the progress that different versions takes through various
+stages in its lifecycle. A ZenML Model version can be promoted to a different
 stage through the Dashboard, the ZenML CLI or code.
 
 This is a way to signify the progression of your model version through the ML
@@ -201,7 +201,7 @@ particular model version. Possible options for stages are:
 
 - `staging`: This version is staged for production.
 - `production`: This version is running in a production setting.
-- `latest`: The latest version of the model. This is a virtual stage to retrieve the latest model version only - model versions cannot be promoted to `latest`.
+- `latest`: The latest version of the model. This is a virtual stage to retrieve the latest version only - versions cannot be promoted to `latest`.
 - `archived`: This is archived and no longer relevant. This stage occurs when a
   model moves out of any other stage.
 
@@ -226,7 +226,7 @@ this feature [here](./model-control-plane-dashboard.md).
 
 ### Promotion via Python SDK
 
-This is the most common way that you'll use to promote your model versions. You
+This is the most common way that you'll use to promote your models. You
 can see how you would do this here:
 
 ```python
@@ -238,13 +238,13 @@ from zenml.enum import ModelStages
 model = Model(name=MODEL_NAME, version="1.2.3")
 model.set_stage(stage=ModelStages.PRODUCTION)
 
-# get Latest Model Version and set it as Staging
+# get Latest model and set it as Staging
 # (if there is current Staging version it will get Archived)
 latest_model = Model(name=MODEL_NAME, version=ModelStages.LATEST)
 latest_model.set_stage(stage=ModelStages.STAGING)
 ```
 
-Within a pipeline context, you would get the model version from the step context
+Within a pipeline context, you would get the model from the step context
 but the mechanism for setting the stage is the same.
 
 ```python
@@ -266,7 +266,7 @@ def train_and_promote_model():
 
 ## Linking Artifacts to Models
 
-Artifacts generated during pipeline runs can be linked to models and specific model versions in ZenML. This connecting of artifacts provides lineage tracking and transparency into what data and models are used during training, evaluation, and inference.
+Artifacts generated during pipeline runs can be linked to models in ZenML. This connecting of artifacts provides lineage tracking and transparency into what data and models are used during training, evaluation, and inference.
 
 There are a few ways to link artifacts:
 
@@ -288,7 +288,7 @@ def my_pipeline():
 ```
 
 This will automatically link all artifacts from this pipeline run to the
-specified model version.
+specified model configuration.
 
 ### Artifact Configuration
 

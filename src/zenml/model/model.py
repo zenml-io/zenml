@@ -54,8 +54,8 @@ class Model(BaseModel):
     trade_offs: The tradeoffs of the model.
     ethics: The ethical implications of the model.
     tags: Tags associated with the model.
-    version: The model version name, number or stage is optional and points model context
-        to a specific version/stage. If skipped new model version will be created.
+    version: The version name, version number or stage is optional and points model context
+        to a specific version/stage. If skipped new version will be created.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
     """
@@ -97,7 +97,7 @@ class Model(BaseModel):
                 self._get_or_create_model_version()
             except RuntimeError:
                 logger.info(
-                    f"Model version `{self.version}` doesn't exist "
+                    f"Version `{self.version}` of `{self.name}` model doesn't exist "
                     "and cannot be fetched from the Model Control Plane."
                 )
         return self._id
@@ -128,7 +128,7 @@ class Model(BaseModel):
                 self._get_or_create_model_version()
             except RuntimeError:
                 logger.info(
-                    f"Model version `{self.version}` doesn't exist "
+                    f"Version `{self.version}` of `{self.name}` model doesn't exist "
                     "and cannot be fetched from the Model Control Plane."
                 )
         return self._number
@@ -149,7 +149,7 @@ class Model(BaseModel):
                 return ModelStages(stage)
         except RuntimeError:
             logger.info(
-                f"Model version `{self.version}` doesn't exist "
+                f"Version `{self.version}` of `{self.name}` model doesn't exist "
                 "and cannot be fetched from the Model Control Plane."
             )
         return None
@@ -298,7 +298,7 @@ class Model(BaseModel):
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False
     ) -> None:
-        """Sets this Model Version to a desired stage.
+        """Sets this Model to a desired stage.
 
         Args:
             stage: the target stage for model version.

@@ -52,7 +52,7 @@ class ArtifactConfig(BaseModel):
         version: The version of the artifact.
         tags: The tags of the artifact.
         model_name: The name of the model to link artifact to.
-        model_version: The identifier of the model version to link the artifact
+        model_version: The identifier of a version of the model to link the artifact
             to. It can be an exact version ("my_version"), exact version number
             (42), stage (ModelStages.PRODUCTION or "production"), or
             (ModelStages.LATEST or None) for the latest version (default).
@@ -88,21 +88,21 @@ class ArtifactConfig(BaseModel):
         smart_union = True
 
     @property
-    def _model_version(self) -> Optional["Model"]:
-        """The model version linked to this artifact.
+    def _model(self) -> Optional["Model"]:
+        """The model linked to this artifact.
 
         Returns:
-            The model version or None if the model version cannot be determined.
+            The model or None if the model version cannot be determined.
         """
         try:
-            model_version = get_step_context().model
+            model_ = get_step_context().model
         except (StepContextError, RuntimeError):
-            model_version = None
+            model_ = None
         # Check if another model name was specified
         if (self.model_name is not None) and (
-            model_version is None or model_version.name != self.model_name
+            model_ is None or model_.name != self.model_name
         ):
-            # Create a new ModelConfig instance with the provided model name and version
+            # Create a new Model instance with the provided model name and version
             from zenml.model.model import Model
 
             on_the_fly_config = Model(
@@ -110,4 +110,4 @@ class ArtifactConfig(BaseModel):
             )
             return on_the_fly_config
 
-        return model_version
+        return model_

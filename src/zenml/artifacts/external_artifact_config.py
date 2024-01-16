@@ -72,7 +72,7 @@ class ExternalArtifactConfiguration(BaseModel):
                 if not isinstance(response_, ArtifactVersionResponse):
                     raise RuntimeError(
                         f"Failed to pull artifact `{self.name}` from the Model "
-                        f"Version (name=`{self.model.name}`, version="
+                        f"(name=`{self.model.name}`, version="
                         f"`{self.model.version}`). Please validate the "
                         "input and try again."
                     )
