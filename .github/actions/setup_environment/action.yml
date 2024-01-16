@@ -81,7 +81,8 @@ runs:
         insecure: true  # optional, use http instead of https. default false
         bucket: caching  # required
         use-fallback: false  # optional, use github actions cache fallback, default false
-        key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
+        key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version
+          }}-${{inputs.install_integrations}}
         path: |
           ~/.cache/pip
         restore-keys: |
