@@ -15,62 +15,55 @@
 from typing import Dict, Any
 
 from pydantic import Field
+from zenml.models.v2.base.scoped import WorkspaceScopedResponseBody, \
+    WorkspaceScopedResponseMetadata, WorkspaceScopedResponse, \
+    WorkspaceScopedFilter
 
 from zenml import BaseRequest
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.v2.base.update import update_model
 
 
 # ------------------ Request Model ------------------
 
-class EventMatchRequest(BaseRequest):
-    """BaseModel for all Events."""
+class EventFilterRequest(BaseRequest):
+    """BaseModel for all event sources."""
 
     event_type: str = Field(
         title="The type of event.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    # TODO: refine and type this ?
-    configuration: Dict[str, Any] = {}
+    configuration: Dict[str, Any] = Field(
+        title="The event source configuration.",
+    )
 
 
 # ------------------ Update Model ------------------
 
 @update_model
-class TriggerUpdate(TriggerRequest):
-    """Update model for stacks."""
+class EventFilterUpdate(EventFilterRequest):
+    """Update model for event sources."""
 
 
 # ------------------ Response Model ------------------
 
-class TriggerResponseBody(WorkspaceScopedResponseBody):
-    """ResponseBody for triggers."""
-    event: Event = Field(
-        title="The event that activates this trigger.",
-    )
-    action: Action = Field(
-        title="The actions that is executed by this trigger.",
-    )
-    created: datetime = Field(
-        title="The timestamp when this trigger was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this trigger was last updated.",
-    )
+class EventFilterResponseBody(WorkspaceScopedResponseBody):
+    """ResponseBody for events."""
 
 
-class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response metadata for triggers."""
+class EventFilterResponseMetadata(WorkspaceScopedResponseMetadata):
+    """Response metadata for events."""
 
     description: str = Field(
         default="",
-        title="The description of the trigger",
+        title="The description of the event",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
 
-class TriggerResponse(
-    WorkspaceScopedResponse[TriggerResponseBody, TriggerResponseMetadata]
+class EventFilterResponse(
+    WorkspaceScopedResponse[EventFilterResponseBody, EventFilterResponseMetadata]
 ):
     """Response model for models."""
 
@@ -83,14 +76,5 @@ class TriggerResponse(
 # ------------------ Filter Model ------------------
 
 
-class TriggerFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all TriggerModels."""
-    name: str = Field(
-        title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
-    )
-    description: str = Field(
-        default="",
-        title="The description of the trigger",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    # Enable filtering by event and action ?
+class EventFilterFilter(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all EventFilterModels."""

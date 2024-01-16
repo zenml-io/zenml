@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""COllection of all models concerning triggers."""
+"""Collection of all models concerning triggers."""
 from datetime import datetime
 
 from pydantic import Field
@@ -26,7 +26,7 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.action import Action
-from zenml.models.v2.core.event import Event
+from zenml.models.v2.core.event_source import Event
 
 
 # ------------------ Request Model ------------------
