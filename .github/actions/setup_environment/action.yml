@@ -77,7 +77,7 @@ runs:
         AWS_ACCESS_KEY_ID: ${{ inputs.runners_cache_access_key_id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.runners_cache_secret_access_key }}
       with:
-        endpoint: minio-service.minioa.svc.cluster.local  # optional
+        endpoint: minio-service.minio.svc.cluster.local  # optional
         insecure: true  # optional, use http instead of https. default false
         bucket: caching  # required
         use-fallback: false  # optional, use github actions cache fallback, default false
@@ -103,7 +103,6 @@ runs:
             - **Run Number**: ${{ github.run_number }}
           `;
           const labels = ['cache-miss', 'CI'];
-
           // Check if an issue with the same title already exists
           const issues = await github.rest.issues.listForRepo({
             owner: context.repo.owner,
@@ -111,7 +110,6 @@ runs:
             state: 'open',
             labels: labels.join(',')
           });
-
           const existingIssue = issues.data.find(issue => issue.title === title);
           if (!existingIssue) {
             // Create a new issue if one does not already exist
