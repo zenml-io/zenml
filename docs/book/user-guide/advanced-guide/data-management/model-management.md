@@ -359,10 +359,10 @@ def trainer(
     return model
 ```
 
-### Link artifacts: functional way
+### Link artifacts explicitly
 
-If you would like to link an artifact to a model not from the context or even outside of a step, you can use the `link_artifact_to_model` utility function.
-All you need is ready to link the artifact to the configuration of a model.
+If you would like to link an artifact to a model not from the step context or even outside of a step, you can use the `link_artifact_to_model` function.
+All you need is ready to link artifact and the configuration of a model.
 
 ```python
 from zenml import step, ModelVersion, link_artifact_to_model, save_artifact
