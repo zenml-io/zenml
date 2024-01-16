@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for models."""
 
-from typing import List, Union
+from typing import Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -71,7 +71,6 @@ router = APIRouter(
 def list_models(
     model_filter_model: ModelFilter = Depends(make_dependable(ModelFilter)),
     hydrate: bool = False,
-    tags: List[str] = [],
     _: AuthContext = Security(authorize),
 ) -> Page[ModelResponse]:
     """Get models according to query filters.
@@ -81,7 +80,6 @@ def list_models(
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
-        tags: Filter model versions by tags.
 
     Returns:
         The models according to query filters.
@@ -91,7 +89,6 @@ def list_models(
         resource_type=ResourceType.MODEL,
         list_method=zen_store().list_models,
         hydrate=hydrate,
-        tags=tags,
     )
 
 

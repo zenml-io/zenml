@@ -4777,10 +4777,11 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             created=created,
             updated=updated,
+            tags=tags,
         )
 
         return self.zen_store.list_models(
-            model_filter_model=filter, hydrate=hydrate, tags=tags
+            model_filter_model=filter, hydrate=hydrate
         )
 
     #################

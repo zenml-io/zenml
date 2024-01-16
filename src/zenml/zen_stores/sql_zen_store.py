@@ -6816,7 +6816,6 @@ class SqlZenStore(BaseZenStore):
         self,
         model_filter_model: ModelFilter,
         hydrate: bool = False,
-        tags: Optional[List[str]] = [],
     ) -> Page[ModelResponse]:
         """Get all models by filter.
 
@@ -6825,19 +6824,12 @@ class SqlZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tags: List of tags to filter on.
 
         Returns:
             A page of all models.
         """
         with Session(self.engine) as session:
             query = select(ModelSchema)
-            if tags:
-                query = (
-                    query.join(ModelSchema.tags)
-                    .join(TagResourceSchema.tag)
-                    .where(col(TagSchema.name).in_(tags))
-                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,

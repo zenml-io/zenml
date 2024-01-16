@@ -102,7 +102,7 @@ def list_models(tag: Optional[List[str]], **kwargs: Any) -> None:
         **kwargs: Keyword arguments to filter models.
     """
     models = Client().zen_store.list_models(
-        model_filter_model=ModelFilter(**kwargs), tags=tag or []
+        model_filter_model=ModelFilter(**kwargs, tags=tag or [])
     )
 
     if not models:
@@ -409,7 +409,9 @@ def list_model_versions(
     """
     model_versions = Client().zen_store.list_model_versions(
         model_name_or_id=model_name,
-        model_version_filter_model=ModelVersionFilter(**kwargs, tags=tag),
+        model_version_filter_model=ModelVersionFilter(
+            **kwargs, tags=tag or []
+        ),
     )
 
     if not model_versions:
