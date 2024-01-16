@@ -383,7 +383,7 @@ def version() -> None:
 @cli_utils.list_options(ModelVersionFilter)
 @click.option(
     "--model-name",
-    "-mn",
+    "-n",
     help="The name of the parent model.",
     type=str,
     required=False,
