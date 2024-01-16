@@ -2,9 +2,9 @@
 description: Interacting with your ZenML instance through the ZenML Client.
 ---
 
-# Use the Client
+# Use the Python Client
 
-Pipelines, runs, stacks, and many other ZenML resources are stored and versioned in a database within your ZenML instance behind the scenes. The ZenML `Client` allows you to fetch, update, or even create any of these resources programmatically in Python.
+Pipelines, runs, stacks, and many other ZenML resources are stored and versioned in a database within your ZenML instance behind the scenes. The ZenML Python `Client` allows you to fetch, update, or even create any of these resources programmatically in Python.
 
 {% hint style="info" %}
 In all other programming languages and environments, you can interact with ZenML resources through the REST API endpoints of your ZenML server instead. Checkout the `/docs/` page of your server for an overview of all available endpoints.
@@ -42,7 +42,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Artifacts**: Information about all artifacts that were written to your artifact stores as part of pipeline runs.
 * **Schedules**: Metadata about the schedules that you have used to [schedule pipeline runs](../pipelining-features/schedule-pipeline-runs.md).
 * **Builds**: The pipeline-specific Docker images that were created when [containerizing your pipeline](containerize-your-pipeline.md).
-* **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](connect-your-git-repository.md) for more information.
+* **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](../user-guide/production-guide/connect-code-repository.md) for more information.
 
 {% hint style="info" %}
 Checkout the [documentation on fetching runs](../../starter-guide/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
@@ -79,7 +79,7 @@ client.list_pipeline_runs(
 
 These methods always return a [Page](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-models/#zenml.models.page\_model) of resources, which behaves like a standard Python list and contains, by default, the first 50 results. You can modify the page size by passing the `size` argument or fetch a subsequent page by passing the `page` argument to the list method.
 
-You can further restrict your search by passing additional arguments that will be used to filter the results. E.g., most resources have a `user_id` associated with them that can be set to only list resources created by that specific user. The available filter argument options are different for each list method; check out the method declaration in the [Client SDK documentation](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/) to find out which exact arguments are supported or have a look at the fields of the corresponding [filter model class](use-the-client.md#resource-models).
+You can further restrict your search by passing additional arguments that will be used to filter the results. E.g., most resources have a `user_id` associated with them that can be set to only list resources created by that specific user. The available filter argument options are different for each list method; check out the method declaration in the [Client SDK documentation](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/) to find out which exact arguments are supported or have a look at the fields of the corresponding filter model class.
 
 Except for pipeline runs, all other resources will by default be ordered by creation time ascending. E.g., `client.list_artifacts()` would return the first 50 artifacts ever created. You can change the ordering by specifying the `sort_by` argument when calling list methods.
 

@@ -418,10 +418,10 @@ def go() -> None:
         gave_email = _prompt_email(AnalyticsEventSource.ZENML_GO)
         metadata = {"gave_email": gave_email}
 
+    zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
+
     with track_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
         console.print(zenml_cli_privacy_message, width=80)
-
-        zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
 
         if not os.path.isdir(zenml_tutorial_path):
             try:
@@ -470,8 +470,7 @@ def go() -> None:
             zenml_go_notebook_tutorial_message(ipynb_files), width=80
         )
         input("Press ENTER to continue...")
-    notebook_path = os.path.join(zenml_tutorial_path, "notebooks")
-    subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
+    subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
 
 
 def _prompt_email(event_source: AnalyticsEventSource) -> bool:
