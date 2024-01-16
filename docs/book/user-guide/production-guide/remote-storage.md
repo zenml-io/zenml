@@ -120,7 +120,7 @@ There are [many ways of creating a service connector](../../stacks-and-component
 {% tabs %}
 {% tab title="AWS" %}
 ```shell
-zenml service-connector register local_service_connector --type aws --auto-configure
+zenml service-connector register cloud_connector --type aws --auto-configure
 ```
 {% hint style="info" %}
 Having trouble with this command? You can read more about the AWS service connectors [here](../../stacks-and-components/auth-management/aws-service-connector.md).
@@ -128,7 +128,7 @@ Having trouble with this command? You can read more about the AWS service connec
 {% endtab %}
 {% tab title="GCP" %}
 ```shell
-zenml service-connector register local_service_connector --type gcp --auto-configure
+zenml service-connector register cloud_connector --type gcp --auto-configure
 ```
 {% hint style="info" %}
 Having trouble with this command? You can read more about the GCP service connectors [here](../../stacks-and-components/auth-management/gcp-service-connector.md).
@@ -136,7 +136,7 @@ Having trouble with this command? You can read more about the GCP service connec
 {% endtab %}
 {% tab title="Azure" %}
 ```shell
-zenml service-connector register local_service_connector --type azure --auto-configure
+zenml service-connector register cloud_connector --type azure --auto-configure
 ```
 {% hint style="info" %}
 Having trouble with this command? You can read more about the Azure service connectors [here](../../stacks-and-components/auth-management/azure-service-connector.md).
@@ -150,7 +150,7 @@ should have permission to access the artifact store defined in the previous step
 Once we have our service connector, we can now attach it to stack components. In this case, we are going to connect it to our remote artifact store:
 
 ```shell
-zenml artifact-store connect cloud_artifact_store --connector aws-generic
+zenml artifact-store connect cloud_artifact_store --connector cloud_connector
 ```
 
 Now, every time you (or anyone else with access) uses the `cloud_artifact_store`, they will be granted a temporary token that will grant them access to the remote storage. Therefore, your colleagues don't need to worry about setting up credentials and installing clients locally!

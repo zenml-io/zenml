@@ -54,13 +54,13 @@ of our AWS service connector](../../stacks-and-components/auth-management/aws-se
 if you haven't already created a service connector in the last section:
 
 ```shell
-zenml service-connector register aws_connector --type aws --auth-method implicit
+zenml service-connector register cloud_connector --type aws --auth-method implicit
 ```
 Once the service connector is set up, we can register [a
 Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
-zenml orchestrator register skypilot_orchestrator -f vm_aws -c aws_connector
+zenml orchestrator register skypilot_orchestrator -f vm_aws -c cloud_connector
 ```
 
 The next step is to register [an AWS container registry](../../stacks-and-components/component-guide/container-registries/aws.md). 
@@ -68,7 +68,7 @@ Similar to the orchestrator, we will use our connector as we are setting up the
 container registry:
 
 ```shell
-zenml container-registry register cloud_container_registry -f aws --uri=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com -c aws_connector
+zenml container-registry register cloud_container_registry -f aws --uri=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com -c cloud_connector
 ```
 
 With the components registered, everything is set up for the next steps. 
@@ -93,13 +93,13 @@ of our GCP service connector](../../stacks-and-components/auth-management/gcp-se
 if you haven't already created a service connector in the last section:
 
 ```shell
-zenml service-connector register gcp_connector --type gcp --auth-method implicit --auto-configure
+zenml service-connector register cloud_connector --type gcp --auth-method implicit --auto-configure
 ```
 Once the service connector is set up, we can register [a 
 Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
-zenml orchestrator register skypilot_orchestrator -f vm_gcp -c gcp_connector
+zenml orchestrator register skypilot_orchestrator -f vm_gcp -c cloud_connector
 ```
 
 The next step is to register [a GCP container registry](../../stacks-and-components/component-guide/container-registries/gcp.md). 
@@ -107,7 +107,7 @@ Similar to the orchestrator, we will use our connector as we are setting up the
 container registry:
 
 ```shell
-zenml container-registry register cloud-container-registry -f gcp --uri=gcr.io/<PROJECT_ID> -c gcp_connector
+zenml container-registry register cloud-container-registry -f gcp --uri=gcr.io/<PROJECT_ID> -c cloud_connector
 ```
 
 With the components registered, everything is set up for the next steps. 
@@ -132,13 +132,13 @@ of our Azure service connector](../../stacks-and-components/auth-management/gcp-
 if you haven't already created a service connector in the last section:
 
 ```shell
-zenml service-connector register azure_connector --type azure --auth-method implicit --auto-configure
+zenml service-connector register cloud_connector --type azure --auth-method implicit --auto-configure
 ```
 Once the service connector is set up, we can register [a 
 Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
 
 ```shell
-zenml orchestrator register skypilot_orchestrator -f vm_azure -c azure_connector
+zenml orchestrator register skypilot_orchestrator -f vm_azure -c cloud_connector
 ```
 
 The next step is to register [an Azure container registry](../../stacks-and-components/component-guide/container-registries/azure.md). 
@@ -146,7 +146,7 @@ Similar to the orchestrator, we will use our connector as we are setting up the
 container registry.
 
 ```shell
-zenml container-registry register cloud-container-registry -f azure --uri=<REGISTRY_NAME>.azurecr.io -c azure_connector
+zenml container-registry register cloud-container-registry -f azure --uri=<REGISTRY_NAME>.azurecr.io -c cloud_connector
 ```
 
 With the components registered, everything is set up for the next steps. 
