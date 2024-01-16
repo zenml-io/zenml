@@ -23,6 +23,7 @@ from typing import (
     Optional,
     Type,
     TypeVar,
+    Union,
 )
 from uuid import UUID
 
@@ -38,6 +39,8 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+
     from zenml.models.v2.core.user import UserResponse
     from zenml.models.v2.core.workspace import WorkspaceResponse
     from zenml.zen_stores.schemas import BaseSchema
@@ -292,7 +295,7 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
     )
     """
 
-    tags: Optional[List[str]] = Field(
+    tags: List[str] = Field(
         default_factory=list,
         description="List of tags to apply to the filter query.",
     )
@@ -321,15 +324,24 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         Returns:
             The query with filter applied.
         """
-        from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
+        from zenml.zen_stores.schemas import TagResourceSchema
 
         query = super().apply_filter(query=query, table=table)
-
         if self.tags:
-            query = (
-                query.join(getattr(table, "tags"))
-                .join(TagResourceSchema.tag)
-                .where(col(TagSchema.name).in_(self.tags))
+            query = query.join(getattr(table, "tags"), isouter=True).join(
+                TagResourceSchema.tag, isouter=True
             )
 
         return query
+
+    def get_custom_filters(
+        self,
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom filters for tags.
+
+        Returns:
+            A list of tag filters.
+        """
+        from zenml.zen_stores.schemas import TagSchema
+
+        return [col(TagSchema.name).in_(self.tags)]

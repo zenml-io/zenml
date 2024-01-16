@@ -272,12 +272,19 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
         def f(model: Model = Depends(make_dependable(Model))):
             ...
 
+    UPDATE: Function from above mentioned Github issue was extended to support
+    iterable querying, e.g. tags: List[str]. It needs a default set to Query(<default>),
+    rather just plain <default>.
+
     Args:
         cls: The model class.
 
     Returns:
         Function to use in FastAPI `Depends`.
     """
+    from enum import EnumType
+
+    from fastapi import Query
 
     def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
         from fastapi import HTTPException
@@ -290,7 +297,27 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
                 error["loc"] = tuple(["query"] + list(error["loc"]))
             raise HTTPException(422, detail=e.errors())
 
-    init_cls_and_handle_errors.__signature__ = inspect.signature(cls)  # type: ignore[attr-defined]
+    query_params = [
+        v
+        for v in inspect.signature(cls).parameters.values()  # type: ignore[attr-defined]
+    ]
+    for i in range(len(query_params)):
+        qp = query_params[i]
+        try:
+            iter(qp.annotation)
+            if not isinstance(qp.annotation, EnumType):
+                query_params[i] = inspect.Parameter(
+                    name=qp.name,
+                    default=Query(qp.default),
+                    kind=qp.kind,
+                    annotation=qp.annotation,
+                )
+        except TypeError:
+            pass
+
+    init_cls_and_handle_errors.__signature__ = inspect.Signature(
+        parameters=query_params
+    )
 
     return init_cls_and_handle_errors
 
