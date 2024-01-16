@@ -36,7 +36,7 @@ pipeline_model = Client().get_pipeline("first_pipeline")
 ```
 
 {% hint style="info" %}
-Check out the [ZenML Client Documentation](../advanced-guide/environment-management/use-the-client.md) for more information on the `Client` class and its purpose.
+Check out the [ZenML Client Documentation](../../reference/python-client.md) for more information on the `Client` class and its purpose.
 {% endhint %}
 
 ### Discover and list all pipelines
@@ -78,7 +78,7 @@ runs = pipeline_model.runs
 The result will be a list of the most recent runs of this pipeline, ordered from newest to oldest.
 
 {% hint style="info" %}
-Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](../advanced-guide/environment-management/use-the-client.md#list-of-resources) for more information.
+Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](../../reference/python-client.md#list-of-resources) for more information.
 {% endhint %}
 
 ### Get the last run of a pipeline
@@ -158,7 +158,7 @@ step = run.steps["first_step"]
 ```
 
 {% hint style="info" %}
-If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#using-a-custom-step-invocation-id) to learn more about the invocation ID.
+If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../advanced-guide/pipelining-features/managing-steps.md#using-a-custom-step-invocation-id) to learn more about the invocation ID.
 {% endhint %}
 
 ### Step information
@@ -191,7 +191,7 @@ my_pytorch_model = output.load()
 Similarly, you can use the `inputs` and `input` properties to get the input artifacts of a step instead.
 
 {% hint style="info" %}
-Check out [this page](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names) to see what the output names of your steps are and how to customize them.
+Check out [this page](../advanced-guide/pipelining-features/managing-steps.md#step-output-names) to see what the output names of your steps are and how to customize them.
 {% endhint %}
 
 Note that the output of a step corresponds to a specific artifact version.
