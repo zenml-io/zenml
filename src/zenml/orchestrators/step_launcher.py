@@ -395,11 +395,6 @@ class StepLauncher:
                     artifact_config_ = annotation.artifact_config.copy()
                 else:
                     artifact_config_ = ArtifactConfig(name=output_name_)
-                    logger.info(
-                        f"Linking artifact `{artifact_config_.name}` to "
-                        f"model `{artifact_config_.model_name}` version "
-                        f"`{artifact_config_.model_version}` implicitly."
-                    )
 
                 link_artifact_config_to_model_version(
                     artifact_config=artifact_config_,
