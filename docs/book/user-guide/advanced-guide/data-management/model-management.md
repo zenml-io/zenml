@@ -325,8 +325,8 @@ will be assumed to be a data artifact.
 
 ### Produce intermediate artifacts
 
-It often comes handy to save some of your work half-way: steps like epoch-based training can be running slow and you don't want to loose any checkpoints along the way, if error occurs.
-You can use `save_artifact` utility function to save your data assets as ZenML artifact. Moreover, if your step has Model context configured in `@pipeline` or `@step` decorator it will be automatically linked to it, so you can get easy access to it using Model Control Plane features.
+It often handy to save some of your work half-way: steps like epoch-based training can be running slow and you don't want to loose any checkpoints along the way if an error occurs.
+You can use the `save_artifact` utility function to save your data assets as ZenML artifacts. Moreover, if your step has the Model context configured in the `@pipeline` or `@step` decorator it will be automatically linked to it, so you can get easy access to it using the Model Control Plane features.
 
 ```python
 from zenml import step, ModelVersion
@@ -361,8 +361,8 @@ def trainer(
 
 ### Link artifacts: functional way
 
-If you would like to link some artifact to a model not from the context or even outside of a step, you can use `link_artifact_to_model` utility function.
-All you need is ready to link artifact and configuration of a model.
+If you would like to link an artifact to a model not from the context or even outside of a step, you can use the `link_artifact_to_model` utility function.
+All you need is ready to link the artifact to the configuration of a model.
 
 ```python
 from zenml import step, ModelVersion, link_artifact_to_model, save_artifact
