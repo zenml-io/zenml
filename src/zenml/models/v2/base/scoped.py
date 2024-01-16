@@ -342,6 +342,8 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         Returns:
             A list of tag filters.
         """
-        from zenml.zen_stores.schemas import TagSchema
+        if self.tags:
+            from zenml.zen_stores.schemas import TagSchema
 
-        return [col(TagSchema.name).in_(self.tags)]
+            return [col(TagSchema.name).in_(self.tags)]
+        return []

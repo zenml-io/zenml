@@ -1340,7 +1340,20 @@ class TestModel:
         assert len(ms) == 1
         assert model1 in ms
 
-        ms = clean_client.list_models(tags=["foobar"])
+        ms = clean_client.list_models(tags=["non_existent_tag"])
+        assert len(ms) == 0
+
+        ms = clean_client.list_models()
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
+        ms = clean_client.list_models(tags=[])
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
+        ms = clean_client.list_models(tags=[""])
         assert len(ms) == 0
 
 
