@@ -4966,6 +4966,12 @@ up, the cluster will not be torn down for debugging purposes.</p></td>
         <td><code>bool</code></td>
         <td><p>if True, show the logs in the terminal.</p></td>
       </tr>
+      <tr>
+        <td><code>docker_run_args</code></td>
+        <td><code>List[str]</code></td>
+        <td><p>Optional arguments to pass to the <code>docker run</code> command
+running inside the VM.</p></td>
+      </tr>
   </tbody>
 </table>
         <details class="quote">
@@ -5032,6 +5038,8 @@ up, the cluster will not be torn down for debugging purposes.</p></td>
 <span class="sd">            Note that if errors occur during provisioning/data syncing/setting</span>
 <span class="sd">            up, the cluster will not be torn down for debugging purposes.</span>
 <span class="sd">        stream_logs: if True, show the logs in the terminal.</span>
+<span class="sd">        docker_run_args: Optional arguments to pass to the `docker run` command</span>
+<span class="sd">            running inside the VM.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Resources</span>
