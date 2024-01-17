@@ -17,12 +17,12 @@ from typing import Any, Dict
 
 from pydantic import BaseModel, Field
 
-from zenml.models.v2.base.base import BaseRequest
-from zenml.models.v2.base.scoped import WorkspaceScopedResponseBody
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseRequest
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.update import update_model
@@ -30,6 +30,7 @@ from zenml.models.v2.base.update import update_model
 
 class ActionPlanBase(BaseModel):
     """BaseModel for all ActionPlans."""
+
     flavor: str = Field(
         title="The flavor of action.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -55,6 +56,7 @@ class ActionPlanUpdate(ActionPlanRequest):
 # ------------------ Response Model ------------------
 class ActionPlanResponseBody(WorkspaceScopedResponseBody):
     """Response body for actions."""
+
     flavor: str = Field(
         title="The flavor of event.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -82,4 +84,3 @@ class ActionPlanResponse(
 
 class ActionPlanFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all ActionPlanModels."""
-

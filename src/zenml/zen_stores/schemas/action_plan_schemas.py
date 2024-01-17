@@ -14,7 +14,7 @@
 """SQL Model Implementations for Action Plans."""
 import json
 from datetime import datetime
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from pydantic import Field
@@ -31,8 +31,8 @@ from zenml.models import (
     ActionPlanUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
@@ -64,9 +64,9 @@ class ActionPlanSchema(BaseSchema, table=True):
         )
     )
 
-    triggers: List["TriggerSchema"] = Relationship(back_populates="action_plan")
-
-
+    triggers: List["TriggerSchema"] = Relationship(
+        back_populates="action_plan"
+    )
 
     @classmethod
     def from_request(cls, request: ActionPlanRequest) -> "ActionPlanSchema":
@@ -102,8 +102,7 @@ class ActionPlanSchema(BaseSchema, table=True):
         return ActionPlanResponse(
             id=self.id,
             body=ActionPlanResponseBody(
-                created=self.created,
-                updated=self.updated
+                created=self.created, updated=self.updated
             ),
         )
 

@@ -1176,7 +1176,7 @@ class SqlZenStore(BaseZenStore):
     # -------------------- Actions Plans --------------------
 
     def create_action_plan(
-            self, action_plan: ActionPlanRequest
+        self, action_plan: ActionPlanRequest
     ) -> ActionPlanResponse:
         """Create an action_plan.
 
@@ -1195,9 +1195,9 @@ class SqlZenStore(BaseZenStore):
         return new_action_plan.to_model(hydrate=True)
 
     def get_action_plan(
-            self,
-            action_plan_id: UUID,
-            hydrate: bool = True,
+        self,
+        action_plan_id: UUID,
+        hydrate: bool = True,
     ) -> ActionPlanResponse:
         """Get an action_plan by ID.
 
@@ -1214,7 +1214,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             action_plan = session.exec(
-                select(ActionPlanSchema).where(ActionPlanSchema.id == action_plan_id)
+                select(ActionPlanSchema).where(
+                    ActionPlanSchema.id == action_plan_id
+                )
             ).first()
 
             if action_plan is None:
@@ -1222,9 +1224,9 @@ class SqlZenStore(BaseZenStore):
             return action_plan.to_model(hydrate=hydrate)
 
     def list_action_plans(
-            self,
-            action_plan_filter_model: ActionPlanFilter,
-            hydrate: bool = False,
+        self,
+        action_plan_filter_model: ActionPlanFilter,
+        hydrate: bool = False,
     ) -> Page[ActionPlanResponse]:
         """List all action_plans matching the given filter criteria.
 
@@ -1248,9 +1250,9 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_action_plan(
-            self,
-            action_plan_id: UUID,
-            action_plan_update: ActionPlanUpdate,
+        self,
+        action_plan_id: UUID,
+        action_plan_update: ActionPlanUpdate,
     ) -> ActionPlanResponse:
         """Update an existing action_plan.
 
@@ -3393,11 +3395,10 @@ class SqlZenStore(BaseZenStore):
             session.delete(deployment)
             session.commit()
 
-# -------------------- Event Filters  --------------------
-
+    # -------------------- Event Filters  --------------------
 
     def create_event_filter(
-            self, event_filter: EventFilterRequest
+        self, event_filter: EventFilterRequest
     ) -> EventFilterResponse:
         """Create an event_filter.
 
@@ -3416,9 +3417,9 @@ class SqlZenStore(BaseZenStore):
         return new_event_filter.to_model(hydrate=True)
 
     def get_event_filter(
-            self,
-            event_filter_id: UUID,
-            hydrate: bool = True,
+        self,
+        event_filter_id: UUID,
+        hydrate: bool = True,
     ) -> EventFilterResponse:
         """Get an event_filter by ID.
 
@@ -3435,7 +3436,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             event_filter = session.exec(
-                select(EventFilterSchema).where(EventFilterSchema.id == event_filter_id)
+                select(EventFilterSchema).where(
+                    EventFilterSchema.id == event_filter_id
+                )
             ).first()
 
             if event_filter is None:
@@ -3443,9 +3446,9 @@ class SqlZenStore(BaseZenStore):
             return event_filter.to_model(hydrate=hydrate)
 
     def list_event_filters(
-            self,
-            event_filter_filter_model: EventFilterFilter,
-            hydrate: bool = False,
+        self,
+        event_filter_filter_model: EventFilterFilter,
+        hydrate: bool = False,
     ) -> Page[EventFilterResponse]:
         """List all event_filters matching the given filter criteria.
 
@@ -3469,9 +3472,9 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_event_filter(
-            self,
-            event_filter_id: UUID,
-            event_filter_update: EventFilterUpdate,
+        self,
+        event_filter_id: UUID,
+        event_filter_update: EventFilterUpdate,
     ) -> EventFilterResponse:
         """Update an existing event_filter.
 
@@ -3500,10 +3503,10 @@ class SqlZenStore(BaseZenStore):
         # TODO: implement
         raise NotImplementedError()
 
-# -------------------- Event Sources  --------------------
+    # -------------------- Event Sources  --------------------
 
     def create_event_source(
-            self, event_source: EventSourceRequest
+        self, event_source: EventSourceRequest
     ) -> EventSourceResponse:
         """Create an event_source.
 
@@ -3522,9 +3525,9 @@ class SqlZenStore(BaseZenStore):
         return new_event_source.to_model(hydrate=True)
 
     def get_event_source(
-            self,
-            event_source_id: UUID,
-            hydrate: bool = True,
+        self,
+        event_source_id: UUID,
+        hydrate: bool = True,
     ) -> EventSourceResponse:
         """Get an event_source by ID.
 
@@ -3541,7 +3544,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             event_source = session.exec(
-                select(EventSourceSchema).where(EventSourceSchema.id == event_source_id)
+                select(EventSourceSchema).where(
+                    EventSourceSchema.id == event_source_id
+                )
             ).first()
 
             if event_source is None:
@@ -3549,9 +3554,9 @@ class SqlZenStore(BaseZenStore):
             return event_source.to_model(hydrate=hydrate)
 
     def list_event_sources(
-            self,
-            event_source_filter_model: EventSourceFilter,
-            hydrate: bool = False,
+        self,
+        event_source_filter_model: EventSourceFilter,
+        hydrate: bool = False,
     ) -> Page[EventSourceResponse]:
         """List all event_sources matching the given filter criteria.
 
@@ -3575,9 +3580,9 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_event_source(
-            self,
-            event_source_id: UUID,
-            event_source_update: EventSourceUpdate,
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
     ) -> EventSourceResponse:
         """Update an existing event_source.
 
@@ -6655,14 +6660,10 @@ class SqlZenStore(BaseZenStore):
             pipeline_run.update(run_update)
             session.add(pipeline_run)
 
-
     # --------------------------- Triggers ---------------------------
 
-
     @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
-    def create_trigger(
-        self, trigger: TriggerRequest
-    ) -> TriggerResponse:
+    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
         """Creates a new trigger.
 
         Args:
@@ -6676,7 +6677,9 @@ class SqlZenStore(BaseZenStore):
                 trigger.
         """
         with Session(self.engine) as session:
-            self._fail_if_trigger_with_name_exists(trigger=trigger, session=session)
+            self._fail_if_trigger_with_name_exists(
+                trigger=trigger, session=session
+            )
 
             new_trigger = TriggerSchema.from_request(trigger)
             session.add(new_trigger)
@@ -6685,7 +6688,9 @@ class SqlZenStore(BaseZenStore):
 
             return new_trigger.to_model(hydrate=True)
 
-    def get_trigger(self, trigger_id: UUID, hydrate: bool = True) -> TriggerResponse:
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TriggerResponse:
         """Get a trigger by its unique ID.
 
         Args:

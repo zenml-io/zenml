@@ -28,9 +28,11 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
-        ArtifactVersionSchema,
         ActionPlanSchema,
+        ArtifactVersionSchema,
         CodeRepositorySchema,
+        EventFilterSchema,
+        EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionArtifactSchema,
@@ -48,8 +50,6 @@ if TYPE_CHECKING:
         StackSchema,
         StepRunSchema,
         TriggerSchema,
-        EventSourceSchema,
-        EventFilterSchema
     )
 
 

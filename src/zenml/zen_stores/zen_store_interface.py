@@ -235,7 +235,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def create_action_plan(
-            self, action_plan: ActionPlanRequest
+        self, action_plan: ActionPlanRequest
     ) -> ActionPlanResponse:
         """Create an action_plan.
 
@@ -248,9 +248,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_action_plan(
-            self,
-            action_plan_id: UUID,
-            hydrate: bool = True,
+        self,
+        action_plan_id: UUID,
+        hydrate: bool = True,
     ) -> ActionPlanResponse:
         """Get an action_plan by ID.
 
@@ -268,9 +268,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_action_plans(
-            self,
-            action_plan_filter_model: ActionPlanFilter,
-            hydrate: bool = False,
+        self,
+        action_plan_filter_model: ActionPlanFilter,
+        hydrate: bool = False,
     ) -> Page[ActionPlanResponse]:
         """List all action_plans matching the given filter criteria.
 
@@ -286,9 +286,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_action_plan(
-            self,
-            action_plan_id: UUID,
-            action_plan_update: ActionPlanUpdate,
+        self,
+        action_plan_id: UUID,
+        action_plan_update: ActionPlanUpdate,
     ) -> ActionPlanResponse:
         """Update an existing action_plan.
 
@@ -1214,7 +1214,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def create_event_filter(
-            self, event_filter: EventFilterRequest
+        self, event_filter: EventFilterRequest
     ) -> EventFilterResponse:
         """Create an event_filter.
 
@@ -1227,9 +1227,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_event_filter(
-            self,
-            event_filter_id: UUID,
-            hydrate: bool = True,
+        self,
+        event_filter_id: UUID,
+        hydrate: bool = True,
     ) -> EventFilterResponse:
         """Get an event_filter by ID.
 
@@ -1247,9 +1247,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_event_filters(
-            self,
-            event_filter_filter_model: EventFilterFilter,
-            hydrate: bool = False,
+        self,
+        event_filter_filter_model: EventFilterFilter,
+        hydrate: bool = False,
     ) -> Page[EventFilterResponse]:
         """List all event_filters matching the given filter criteria.
 
@@ -1265,9 +1265,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_event_filter(
-            self,
-            event_filter_id: UUID,
-            event_filter_update: EventFilterUpdate,
+        self,
+        event_filter_id: UUID,
+        event_filter_update: EventFilterUpdate,
     ) -> EventFilterResponse:
         """Update an existing event_filter.
 
@@ -1297,7 +1297,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def create_event_source(
-            self, event_source: EventSourceRequest
+        self, event_source: EventSourceRequest
     ) -> EventSourceResponse:
         """Create an event_source.
 
@@ -1310,9 +1310,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_event_source(
-            self,
-            event_source_id: UUID,
-            hydrate: bool = True,
+        self,
+        event_source_id: UUID,
+        hydrate: bool = True,
     ) -> EventSourceResponse:
         """Get an event_source by ID.
 
@@ -1330,9 +1330,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_event_sources(
-            self,
-            event_source_filter_model: EventSourceFilter,
-            hydrate: bool = False,
+        self,
+        event_source_filter_model: EventSourceFilter,
+        hydrate: bool = False,
     ) -> Page[EventSourceResponse]:
         """List all event_sources matching the given filter criteria.
 
@@ -1348,9 +1348,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_event_source(
-            self,
-            event_source_id: UUID,
-            event_source_update: EventSourceUpdate,
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
     ) -> EventSourceResponse:
         """Update an existing event_source.
 
@@ -2240,9 +2240,7 @@ class ZenStoreInterface(ABC):
     # -------------------- Triggers  --------------------
 
     @abstractmethod
-    def create_trigger(
-            self, trigger: TriggerRequest
-    ) -> TriggerResponse:
+    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
         """Create an trigger.
 
         Args:
@@ -2254,9 +2252,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_trigger(
-            self,
-            trigger_id: UUID,
-            hydrate: bool = True,
+        self,
+        trigger_id: UUID,
+        hydrate: bool = True,
     ) -> TriggerResponse:
         """Get an trigger by ID.
 
@@ -2274,9 +2272,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_triggers(
-            self,
-            trigger_filter_model: TriggerFilter,
-            hydrate: bool = False,
+        self,
+        trigger_filter_model: TriggerFilter,
+        hydrate: bool = False,
     ) -> Page[TriggerResponse]:
         """List all triggers matching the given filter criteria.
 
@@ -2292,9 +2290,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_trigger(
-            self,
-            trigger_id: UUID,
-            trigger_update: TriggerUpdate,
+        self,
+        trigger_id: UUID,
+        trigger_update: TriggerUpdate,
     ) -> TriggerResponse:
         """Update an existing trigger.
 
@@ -2319,7 +2317,6 @@ class ZenStoreInterface(ABC):
         Raises:
             KeyError: if the trigger doesn't exist.
         """
-
 
     # -------------------- Users --------------------
 

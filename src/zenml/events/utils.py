@@ -37,11 +37,17 @@ def validate_event_config(
         ValueError: If the configuration is invalid.
     """
     if event_configuration_type == EventConfigurationType.SOURCE:
-        event_configuration_class = event_configuration_registry.get_event_source_flavor(event_flavor)
+        event_configuration_class = (
+            event_configuration_registry.get_event_source_flavor(event_flavor)
+        )
     elif event_configuration_type == EventConfigurationType.FILTER:
-        event_configuration_class = event_configuration_registry.get_event_filter_flavor(event_flavor)
+        event_configuration_class = (
+            event_configuration_registry.get_event_filter_flavor(event_flavor)
+        )
     else:
-        raise ValueError(f"Invalid event configuration type {event_configuration_type}.")
+        raise ValueError(
+            f"Invalid event configuration type {event_configuration_type}."
+        )
     try:
         event_configuration_class(**configuration_dict)
     except ValueError:

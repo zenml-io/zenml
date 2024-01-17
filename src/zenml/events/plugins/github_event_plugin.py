@@ -23,20 +23,26 @@ from zenml.events.base_event_flavor import BaseEventFlavor, EventConfig
 
 # -------------------- Github Event Models -----------------------------------
 
+
 class Commit(BaseModel):
     """Github Event."""
+
     id: str
     message: str
     url: str
 
+
 class Repository(BaseModel):
     """Github Repository."""
+
     id: int
     name: str
     full_name: str
 
+
 class PushEvent(BaseModel):
     """Push Event from Github."""
+
     ref: str
     before: str
     after: str
@@ -46,8 +52,10 @@ class PushEvent(BaseModel):
 
 # -------------------- Configuration Models ----------------------------------
 
+
 class GithubEventSourceConfiguration(EventConfig):
     """Configuration for github source filters."""
+
     repo: str
 
 
@@ -55,13 +63,16 @@ class GithubEventSourceFlavor(BaseEventFlavor):
     """Enables users to configure github event sources."""
 
     EVENT_FLAVOR: ClassVar[str] = "GITHUB"
-    CONFIGURATION_TYPE: ClassVar[EventConfigurationType] = EventConfigurationType.SOURCE
+    CONFIGURATION_TYPE: ClassVar[
+        EventConfigurationType
+    ] = EventConfigurationType.SOURCE
 
     config: GithubEventSourceConfiguration
 
     @staticmethod
     def register_endpoint(router: APIRouter):
         """Register the github webhook to receive events from github."""
+
         @router.post("/github-webhook")
         async def post_event(body: PushEvent):
             print(body)
@@ -69,6 +80,7 @@ class GithubEventSourceFlavor(BaseEventFlavor):
 
 class GithubEventFilterConfiguration(EventConfig):
     """Configuration for github event filters."""
+
     source_id: UUID
     branch: str
 
@@ -77,6 +89,8 @@ class GithubEventFilterFlavor(BaseEventFlavor):
     """Allows users to configure filters on events coming from a github source."""
 
     EVENT_FLAVOR: ClassVar[str] = "GITHUB"
-    CONFIGURATION_TYPE: ClassVar[EventConfigurationType] = EventConfigurationType.FILTER
+    CONFIGURATION_TYPE: ClassVar[
+        EventConfigurationType
+    ] = EventConfigurationType.FILTER
 
     config: GithubEventFilterConfiguration

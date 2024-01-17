@@ -22,10 +22,7 @@ from zenml.constants import API, EVENTS, VERSION_1
 from zenml.enums import EventConfigurationType
 from zenml.events.event_flavor_registry import event_configuration_registry
 
-events_router = APIRouter(
-    prefix=API + VERSION_1 + EVENTS,
-    tags=["events"]
-)
+events_router = APIRouter(prefix=API + VERSION_1 + EVENTS, tags=["events"])
 
 
 class EventConfig(BaseModel, ABC):
@@ -90,6 +87,7 @@ class BaseEventFlavorMeta(type):
 
 class BaseEventFlavor(metaclass=BaseEventFlavorMeta):
     """Base Event Flavor to register Event Configurations."""
+
     EVENT_FLAVOR: ClassVar[str]
     CONFIGURATION_TYPE: ClassVar[EventConfigurationType]
 

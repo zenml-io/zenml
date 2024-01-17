@@ -56,7 +56,7 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
-        TriggerSchema
+        TriggerSchema,
     )
 
 

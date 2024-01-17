@@ -67,15 +67,14 @@ class BaseActionFlavorMeta(type):
         # TODO: Validate that the class is properly defined.
 
         # Register the action configuration.
-        action_flavor_registry.register_action_flavor(
-            cls.EVENT_FLAVOR, cls
-        )
+        action_flavor_registry.register_action_flavor(cls.EVENT_FLAVOR, cls)
 
         return cls
 
 
 class BaseActionFlavor(metaclass=BaseActionFlavorMeta):
     """Base Action Flavor to register Action Plan Configurations."""
+
     ACTION_FLAVOR: ClassVar[str]
 
     # `SKIP_REGISTRATION` can be set to True to not register the class

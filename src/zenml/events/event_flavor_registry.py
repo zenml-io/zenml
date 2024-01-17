@@ -26,10 +26,12 @@ class EventFlavorRegistry:
 
     def __init__(self) -> None:
         """Initialize the event flavor registry."""
-        self.event_source_flavors: Dict[Type[Any], Type[
-            "BaseEventFlavor"]] = {}
-        self.event_filter_flavors: Dict[Type[Any], Type[
-            "BaseEventFlavor"]] = {}
+        self.event_source_flavors: Dict[
+            Type[Any], Type["BaseEventFlavor"]
+        ] = {}
+        self.event_filter_flavors: Dict[
+            Type[Any], Type["BaseEventFlavor"]
+        ] = {}
 
     def register_event_source_flavor(
         self, key: Type[Any], flavor: Type["BaseEventFlavor"]
@@ -42,7 +44,9 @@ class EventFlavorRegistry:
         """
         if key not in self.event_source_flavors:
             self.event_source_flavors[key] = flavor
-            logger.debug(f"Registered event source configuration {flavor} for {key}")
+            logger.debug(
+                f"Registered event source configuration {flavor} for {key}"
+            )
         else:
             logger.debug(
                 f"Found existing event source configuration class for {key}: "
@@ -61,7 +65,9 @@ class EventFlavorRegistry:
         """
         if key not in self.event_source_flavors:
             self.event_source_flavors[key] = flavor
-            logger.debug(f"Registered event source configuration {flavor} for {key}")
+            logger.debug(
+                f"Registered event source configuration {flavor} for {key}"
+            )
         else:
             logger.debug(
                 f"Found existing event source configuration class for {key}: "
@@ -69,8 +75,9 @@ class EventFlavorRegistry:
                 f"Skipping registration of {flavor}."
             )
 
-    def get_event_source_flavor(self, key: Type[Any]) -> Type[
-        "BaseEventFlavor"]:
+    def get_event_source_flavor(
+        self, key: Type[Any]
+    ) -> Type["BaseEventFlavor"]:
         """Get a single event_source based on the key.
 
         Args:
@@ -86,8 +93,9 @@ class EventFlavorRegistry:
 
         raise KeyError(f"No event source configured for flavors {key}")
 
-    def get_event_filter_flavor(self, key: Type[Any]) -> Type[
-        "BaseEventFlavor"]:
+    def get_event_filter_flavor(
+        self, key: Type[Any]
+    ) -> Type["BaseEventFlavor"]:
         """Get a single event_filter based on the key.
 
         Args:
@@ -132,7 +140,9 @@ class EventFlavorRegistry:
             True if a event_source is registered for the given flavors, False
             otherwise.
         """
-        return any(issubclass(key, flavor) for flavor in self.event_source_flavors)
+        return any(
+            issubclass(key, flavor) for flavor in self.event_source_flavors
+        )
 
     def is_event_filter_registered(self, key: Type[Any]) -> bool:
         """Returns if a event_filter class is registered for the given flavors.
@@ -144,7 +154,9 @@ class EventFlavorRegistry:
             True if a event_filter is registered for the given flavors, False
             otherwise.
         """
-        return any(issubclass(key, flavors) for flavors in self.event_filter_flavors)
+        return any(
+            issubclass(key, flavors) for flavors in self.event_filter_flavors
+        )
 
 
 event_configuration_registry = EventFlavorRegistry()

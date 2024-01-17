@@ -26,8 +26,7 @@ class ActionFlavorRegistry:
 
     def __init__(self) -> None:
         """Initialize the action flavor registry."""
-        self.action_flavors: Dict[Type[Any], Type[
-            "BaseActionFlavor"]] = {}
+        self.action_flavors: Dict[Type[Any], Type["BaseActionFlavor"]] = {}
 
     def register_action_flavor(
         self, key: Type[Any], type_: Type["BaseActionFlavor"]
@@ -48,8 +47,7 @@ class ActionFlavorRegistry:
                 f"Skipping registration of {type_}."
             )
 
-    def get_action_flavor(self, key: Type[Any]) -> Type[
-        "BaseActionFlavor"]:
+    def get_action_flavor(self, key: Type[Any]) -> Type["BaseActionFlavor"]:
         """Get a single action based on the key.
 
         Args:
@@ -86,5 +84,6 @@ class ActionFlavorRegistry:
             otherwise.
         """
         return any(issubclass(key, type_) for type_ in self.action_flavors)
+
 
 action_flavor_registry = ActionFlavorRegistry()

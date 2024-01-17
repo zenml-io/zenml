@@ -14,7 +14,7 @@
 """SQL Model Implementations for Action Plans."""
 import json
 from datetime import datetime
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from pydantic import Field
@@ -33,8 +33,8 @@ from zenml.models import (
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
@@ -62,7 +62,9 @@ class EventFilterSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    event_source: "EventSourceSchema" = Relationship(back_populates="event_filters")
+    event_source: "EventSourceSchema" = Relationship(
+        back_populates="event_filters"
+    )
 
     flavor: str = Field(nullable=False)
 
@@ -75,7 +77,9 @@ class EventFilterSchema(BaseSchema, table=True):
         )
     )
 
-    triggers: List["TriggerSchema"] = Relationship(back_populates="event_filter")
+    triggers: List["TriggerSchema"] = Relationship(
+        back_populates="event_filter"
+    )
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
     @classmethod
@@ -111,7 +115,7 @@ class EventFilterSchema(BaseSchema, table=True):
         body = EventFilterResponseBody(
             created=self.created,
             updated=self.updated,
-            description=self.description
+            description=self.description,
         )
         metadata = None
         if hydrate:
@@ -120,11 +124,7 @@ class EventFilterSchema(BaseSchema, table=True):
                 triggers=[t.to_model() for t in self.triggers],
             )
 
-        return EventFilterResponse(
-            id=self.id,
-            body=body,
-            metadata=metadata
-        )
+        return EventFilterResponse(id=self.id, body=body, metadata=metadata)
 
     def update(self, update: EventFilterUpdate) -> "EventFilterSchema":
         """Updates a `EventFilterSchema` from a `EventFilterUpdate`.

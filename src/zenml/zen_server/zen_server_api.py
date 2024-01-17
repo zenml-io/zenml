@@ -26,7 +26,6 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 import zenml
-from zenml.events import event_configuration_registry
 from zenml.analytics import source_context
 from zenml.constants import API, HEALTH
 from zenml.enums import AuthScheme, SourceContextTypes

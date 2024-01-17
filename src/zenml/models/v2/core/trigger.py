@@ -17,7 +17,6 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.models.v2.core.event_filter import EventFilterResponse
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -28,11 +27,13 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.action_plan import ActionPlanResponse
+from zenml.models.v2.core.event_filter import EventFilterResponse
 
 
 # ------------------ Request Model ------------------
 class TriggerRequest(WorkspaceScopedRequest):
     """Model for creating a new Trigger."""
+
     name: str = Field(
         title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
     )
@@ -41,16 +42,14 @@ class TriggerRequest(WorkspaceScopedRequest):
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event_filter_id: UUID = Field(
-        title="The id of the event filter."
-    )
-    action_plan_id: UUID = Field(
-        title="The id of the action plan."
-    )
+    event_filter_id: UUID = Field(title="The id of the event filter.")
+    action_plan_id: UUID = Field(title="The id of the action plan.")
 
     # executions: somehow we need to link to executed Actions here
 
+
 # ------------------ Update Model ------------------
+
 
 @update_model
 class TriggerUpdate(TriggerRequest):
@@ -59,8 +58,10 @@ class TriggerUpdate(TriggerRequest):
 
 # ------------------ Response Model ------------------
 
+
 class TriggerResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for triggers."""
+
     created: datetime = Field(
         title="The timestamp when this trigger was created."
     )
@@ -101,6 +102,7 @@ class TriggerResponse(
 
 class TriggerFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all TriggerModels."""
+
     name: str = Field(
         title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
     )

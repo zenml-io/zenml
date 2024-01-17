@@ -17,8 +17,8 @@ from typing import Any, Dict
 
 from pydantic import Field
 
-from zenml.models.v2.base.base import BaseRequest
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseRequest
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedResponse,
@@ -28,6 +28,7 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.base.update import update_model
 
 # ------------------ Request Model ------------------
+
 
 class EventSourceRequest(BaseRequest):
     """BaseModel for all event sources."""
@@ -49,6 +50,7 @@ class EventSourceRequest(BaseRequest):
 
 # ------------------ Update Model ------------------
 
+
 @update_model
 class EventSourceUpdate(EventSourceRequest):
     """Update model for event sources."""
@@ -56,8 +58,10 @@ class EventSourceUpdate(EventSourceRequest):
 
 # ------------------ Response Model ------------------
 
+
 class EventSourceResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for event sources."""
+
     flavor: str = Field(
         title="The flavor of event.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -81,7 +85,9 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
 
 
 class EventSourceResponse(
-    WorkspaceScopedResponse[EventSourceResponseBody, EventSourceResponseMetadata]
+    WorkspaceScopedResponse[
+        EventSourceResponseBody, EventSourceResponseMetadata
+    ]
 ):
     """Response model for event sources."""
 

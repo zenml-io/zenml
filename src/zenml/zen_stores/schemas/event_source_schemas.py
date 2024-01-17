@@ -31,11 +31,12 @@ from zenml.models import (
     EventSourceUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
+
 
 class EventSourceSchema(BaseSchema, table=True):
     """SQL Model for tag."""
@@ -63,8 +64,9 @@ class EventSourceSchema(BaseSchema, table=True):
         )
     )
 
-    event_filters: List["EventFilterSchema"] = Relationship(back_populates="event_source")
-
+    event_filters: List["EventFilterSchema"] = Relationship(
+        back_populates="event_source"
+    )
 
     @classmethod
     def from_request(cls, request: EventSourceRequest) -> "EventSourceSchema":
@@ -100,8 +102,7 @@ class EventSourceSchema(BaseSchema, table=True):
         return EventSourceResponse(
             id=self.id,
             body=EventSourceResponseBody(
-                created=self.created,
-                updated=self.updated
+                created=self.created, updated=self.updated
             ),
         )
 

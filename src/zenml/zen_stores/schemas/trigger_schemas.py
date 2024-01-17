@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Triggers."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -26,12 +26,12 @@ from zenml.models.v2.core.trigger import (
     TriggerResponseMetadata,
     TriggerUpdate,
 )
+from zenml.zen_stores.schemas.action_plan_schemas import ActionPlanSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
-from zenml.zen_stores.schemas.action_plan_schemas import ActionPlanSchema
 
 
 class TriggerSchema(NamedSchema, table=True):
@@ -81,10 +81,7 @@ class TriggerSchema(NamedSchema, table=True):
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
-    def update(
-        self,
-        trigger_update: "TriggerUpdate"
-    ) -> "TriggerSchema":
+    def update(self, trigger_update: "TriggerUpdate") -> "TriggerSchema":
         """Updates a trigger schema with a trigger update model.
 
         Args:
@@ -103,9 +100,7 @@ class TriggerSchema(NamedSchema, table=True):
         return self
 
     @classmethod
-    def from_request(
-        cls, request: "TriggerRequest"
-    ) -> "TriggerSchema":
+    def from_request(cls, request: "TriggerRequest") -> "TriggerSchema":
         """Convert a `TriggerRequest` to a `TriggerSchema`.
 
         Args:
@@ -120,7 +115,7 @@ class TriggerSchema(NamedSchema, table=True):
             user_id=request.user,
             action_plan_id=request.action_plan_id,
             event_filter_id=request.event_filter_id,
-            description=request.description
+            description=request.description,
         )
 
     def to_model(self, hydrate: bool = False) -> "TriggerResponse":
@@ -137,7 +132,7 @@ class TriggerSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             description=self.description,
             created=self.created,
-            updated=self.updated
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
