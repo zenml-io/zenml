@@ -54,24 +54,8 @@ from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
     VertexOrchestratorSettings,
 )
-from zenml.integrations.gcp.google_cloud_function import create_cloud_function
-from zenml.integrations.gcp.google_cloud_scheduler import create_scheduler_job
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
-)
-from zenml.integrations.gcp.orchestrators import vertex_scheduler
-from zenml.integrations.gcp.orchestrators.vertex_scheduler.main import (
-    ENABLE_CACHING,
-    ENCRYPTION_SPEC_KEY_NAME,
-    JOB_ID,
-    LABELS,
-    LOCATION,
-    NETWORK,
-    PARAMETER_VALUES,
-    PIPELINE_ROOT,
-    PROJECT,
-    TEMPLATE_PATH,
-    WORKLOAD_SERVICE_ACCOUNT,
 )
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
