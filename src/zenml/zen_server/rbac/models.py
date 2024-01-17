@@ -29,12 +29,16 @@ class Action(StrEnum):
     UPDATE = "update"
     DELETE = "delete"
     READ_SECRET_VALUE = "read_secret_value"
+    PRUNE = "prune"
 
     # Service connectors
     CLIENT = "client"
 
     # Models
     PROMOTE = "promote"
+
+    # Secrets
+    BACKUP_RESTORE = "backup_restore"
 
 
 class ResourceType(StrEnum):

@@ -2789,6 +2789,29 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_artifact(artifact_id=artifact.id)
         logger.info(f"Deleted artifact '{artifact.name}'.")
 
+    def prune_artifacts(
+        self,
+        only_versions: bool = True,
+        delete_from_artifact_store: bool = False,
+    ) -> None:
+        """Delete all unused artifacts and artifact versions.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+            delete_from_artifact_store: Delete data from artifact metadata
+        """
+        if delete_from_artifact_store:
+            unused_artifact_versions = depaginate(
+                partial(self.list_artifact_versions, only_unused=True)
+            )
+            for unused_artifact_version in unused_artifact_versions:
+                self._delete_artifact_from_artifact_store(
+                    unused_artifact_version
+                )
+
+        self.zen_store.prune_artifact_versions(only_versions)
+        logger.info("All unused artifacts and artifact versions deleted.")
+
     # --------------------------- Artifact Versions ---------------------------
 
     def get_artifact_version(
@@ -2948,7 +2971,7 @@ class Client(metaclass=ClientMetaClass):
         database, not the actual object stored in the artifact store.
 
         Args:
-            name_id_or_prefix: The ID or name or prefix of the artifact to
+            name_id_or_prefix: The ID of artifact version or name or prefix of the artifact to
                 delete.
             version: The version of the artifact to delete.
             delete_metadata: If True, delete the metadata of the artifact
@@ -3562,6 +3585,44 @@ class Client(metaclass=ClientMetaClass):
         logger.debug(f"Fetching the secrets in scope {scope.value}.")
 
         return self.list_secrets(scope=scope, hydrate=hydrate)
+
+    def backup_secrets(
+        self,
+        ignore_errors: bool = True,
+        delete_secrets: bool = False,
+    ) -> None:
+        """Backs up all secrets to the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the backup
+                process and attempt to backup all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully backed up from the primary secrets store. Setting
+                this flag effectively moves all secrets from the primary secrets
+                store to the backup secrets store.
+        """
+        self.zen_store.backup_secrets(
+            ignore_errors=ignore_errors, delete_secrets=delete_secrets
+        )
+
+    def restore_secrets(
+        self,
+        ignore_errors: bool = False,
+        delete_secrets: bool = False,
+    ) -> None:
+        """Restore all secrets from the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the
+                restore process and attempt to restore all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully restored from the backup secrets store. Setting
+                this flag effectively moves all secrets from the backup secrets
+                store to the primary secrets store.
+        """
+        self.zen_store.restore_secrets(
+            ignore_errors=ignore_errors, delete_secrets=delete_secrets
+        )
 
     # --------------------------- Code repositories ---------------------------
 
@@ -5003,8 +5064,6 @@ class Client(metaclass=ClientMetaClass):
 
     #################################################
     # Model Versions Artifacts
-    #
-    # Only view capabilities are exposed via client.
     #################################################
 
     def list_model_version_artifact_links(
@@ -5072,6 +5131,51 @@ class Client(metaclass=ClientMetaClass):
                 has_custom_name=has_custom_name,
             ),
             hydrate=hydrate,
+        )
+
+    def delete_model_version_artifact_link(
+        self, model_version_id: UUID, artifact_version_id: UUID
+    ) -> None:
+        """Delete model version to artifact link in Model Control Plane.
+
+        Args:
+            model_version_id: The id of the model version holding the link.
+            artifact_version_id: The id of the artifact version to be deleted.
+
+        Raises:
+            RuntimeError: If more than one artifact link is found for given filters.
+        """
+        artifact_links = self.list_model_version_artifact_links(
+            model_version_id=model_version_id,
+            artifact_version_id=artifact_version_id,
+        )
+        if artifact_links.items:
+            if artifact_links.total > 1:
+                raise RuntimeError(
+                    "More than one artifact link found for give model version "
+                    f"`{model_version_id}` and artifact version "
+                    f"`{artifact_version_id}`. This should not be happening and "
+                    "might indicate a corrupted state of your ZenML database. "
+                    "Please seek support via Community Slack."
+                )
+            self.zen_store.delete_model_version_artifact_link(
+                model_version_id=model_version_id,
+                model_version_artifact_link_name_or_id=artifact_links.items[
+                    0
+                ].id,
+            )
+
+    def delete_all_model_version_artifact_links(
+        self, model_version_id: UUID, only_links: bool
+    ) -> None:
+        """Delete all model version to artifact links in Model Control Plane.
+
+        Args:
+            model_version_id: The id of the model version holding the link.
+            only_links: If true, only delete the link to the artifact.
+        """
+        self.zen_store.delete_all_model_version_artifact_links(
+            model_version_id, only_links
         )
 
     #################################################

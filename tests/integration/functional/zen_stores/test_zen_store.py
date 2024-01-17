@@ -478,10 +478,18 @@ def test_delete_user_with_resources_fails():
         zen_store.delete_user(user.id)
 
     with UserContext(delete=False, login=login) as user:
-        with SecretContext(user_id=user.id, delete=False):
+        secret_context = SecretContext(user_id=user.id, delete=False)
+        with secret_context:
+            # We only use the context as a shortcut to create the resource
             pass
 
-    # Secrets are deleted when the user is deleted
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_user(user.id)
+
+    secret_context.cleanup()
+
+    # Can delete because owned resources have been removed
     with does_not_raise():
         zen_store.delete_user(user.id)
 
@@ -815,10 +823,20 @@ def test_delete_service_account_with_resources_fails():
         zen_store.delete_service_account(service_account.id)
 
     with ServiceAccountContext(delete=False, login=login) as service_account:
-        with SecretContext(user_id=service_account.id, delete=False):
+        secret_context = SecretContext(
+            user_id=service_account.id, delete=False
+        )
+        with secret_context:
+            # We only use the context as a shortcut to create the resource
             pass
 
-    # Secrets are deleted when the service_account is deleted
+    # Can't delete because owned resources exist
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_service_account(service_account.id)
+
+    secret_context.cleanup()
+
+    # Can delete because owned resources have been removed
     with does_not_raise():
         zen_store.delete_service_account(service_account.id)
 
@@ -3592,7 +3610,8 @@ class TestModel:
         """Test that latest version can be properly fetched."""
         with ModelVersionContext() as created_model:
             zs = Client().zen_store
-            assert zs.get_model(created_model.id).latest_version is None
+            assert zs.get_model(created_model.id).latest_version_name is None
+            assert zs.get_model(created_model.id).latest_version_id is None
             for name in ["great one", "yet another one"]:
                 mv = zs.create_model_version(
                     ModelVersionRequest(
@@ -3602,7 +3621,13 @@ class TestModel:
                         name=name,
                     )
                 )
-                assert zs.get_model(created_model.id).latest_version == mv.name
+                assert (
+                    zs.get_model(created_model.id).latest_version_name
+                    == mv.name
+                )
+                assert (
+                    zs.get_model(created_model.id).latest_version_id == mv.id
+                )
                 time.sleep(1)  # thanks to MySQL again!
 
     def test_update_name(self, clean_client: "Client"):
@@ -4210,6 +4235,32 @@ class TestModelVersionArtifactLinks:
             )
             assert len(mvls) == 0
 
+    def test_link_delete_all(self):
+        with ModelVersionContext(True, create_artifacts=2) as (
+            model_version,
+            artifacts,
+        ):
+            zs = Client().zen_store
+            for artifact in artifacts:
+                zs.create_model_version_artifact_link(
+                    ModelVersionArtifactRequest(
+                        user=model_version.user.id,
+                        workspace=model_version.workspace.id,
+                        model=model_version.model.id,
+                        model_version=model_version.id,
+                        artifact_version=artifact.id,
+                    )
+                )
+            zs.delete_all_model_version_artifact_links(
+                model_version_id=model_version.id,
+            )
+            mvls = zs.list_model_version_artifact_links(
+                model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
+                    model_version_id=model_version.id
+                ),
+            )
+            assert len(mvls) == 0
+
     def test_link_delete_not_found(self):
         with ModelVersionContext(True) as model_version:
             zs = Client().zen_store
@@ -4318,7 +4369,7 @@ class TestModelVersionArtifactLinks:
             )
             assert (
                 mv.get_deployment_artifact(artifacts[2].name, "1")
-                == mv.endpoint_artifacts[artifacts[2].name]["1"]
+                == mv.deployment_artifacts[artifacts[2].name]["1"]
             )
 
 

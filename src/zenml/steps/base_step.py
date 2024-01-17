@@ -443,6 +443,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Dict[str, "StepArtifact"],
         Dict[str, "ExternalArtifact"],
         Dict[str, Any],
+        Dict[str, Any],
     ]:
         """Parses the call args for the step entrypoint.
 
@@ -470,6 +471,7 @@ class BaseStep(metaclass=BaseStepMeta):
         artifacts = {}
         external_artifacts = {}
         parameters = {}
+        default_parameters = {}
 
         for key, value in bound_args.arguments.items():
             self.entrypoint_definition.validate_input(key=key, value=value)
@@ -510,9 +512,9 @@ class BaseStep(metaclass=BaseStepMeta):
                 and key not in external_artifacts
                 and key not in self.configuration.parameters
             ):
-                parameters[key] = value
+                default_parameters[key] = value
 
-        return artifacts, external_artifacts, parameters
+        return artifacts, external_artifacts, parameters, default_parameters
 
     def __call__(
         self,
@@ -548,6 +550,7 @@ class BaseStep(metaclass=BaseStepMeta):
             input_artifacts,
             external_artifacts,
             parameters,
+            default_parameters,
         ) = self._parse_call_args(*args, **kwargs)
 
         upstream_steps = {
@@ -563,6 +566,7 @@ class BaseStep(metaclass=BaseStepMeta):
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
             parameters=parameters,
+            default_parameters=default_parameters,
             upstream_steps=upstream_steps,
             custom_id=id,
             allow_id_suffix=not id,

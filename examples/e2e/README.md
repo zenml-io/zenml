@@ -18,6 +18,16 @@ Settings of your project are:
 - Data drift checks based on Evidently report
 - Notifications about failures enabled
 
+> [!NOTE]
+> If you are coming from [our production guide](https://docs.zenml.io/user-guide/production-guide), 
+> you can apply the same principles that you have seen in the guide to this project. 
+> You can [connect it to remote storage](https://docs.zenml.io/user-guide/production-guide/remote-storage),
+> [run it with a cloud orchestrator](https://docs.zenml.io/user-guide/production-guide/cloud-orchestration),
+> [attach a git repository to it](https://docs.zenml.io/user-guide/production-guide/connect-code-repository),
+> and much more. If you are looking to try these steps with a simpler example,
+> feel free to take a look at [our starter template](https://github.com/zenml-io/template-starter)
+> as well.
+
 ## 👋 Introduction
 
 Welcome to your newly generated "ZenML E2E project" project! This is
@@ -26,7 +36,7 @@ The project contains a collection of standard and custom ZenML steps,
 pipelines and other artifacts and useful resources that can serve as a 
 solid starting point for your smooth journey with ZenML.
 
-What to do first? You can start by giving the the project a quick run. The
+What to do first? You can start by giving the project a quick run. The
 project is ready to be used and can run as-is without any further code
 changes! You can try it right away by installing ZenML, the needed
 ZenML integration and then calling the CLI included in the project. We also
@@ -62,7 +72,7 @@ python run.py --help
 for your generated project. For example, you could disable hyperparameters
 tuning and use your favorite model architecture or promote every trained model,
 if you haven't already!
-* take a look at [the project structure](#📜-project-structure) and the code
+* take a look at [the project structure](#-project-structure) and the code
 itself. The code is heavily commented and should be easy to follow.
 * read the [ZenML documentation](https://docs.zenml.io) to learn more about
 various ZenML concepts referenced in the code and to get a better sense of

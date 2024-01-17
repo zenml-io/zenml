@@ -319,16 +319,6 @@ zenml:
       aws_secret_access_key:
       aws_session_token:
 
-      # The AWS Secrets Manager has a known issue where it does not immediately
-      # reflect new and updated secrets in the `list_secrets` results. To work
-      # around this issue, you can set this value to a non-zero value to
-      # get the ZenML server to wait after creating or updating an AWS secret
-      # until the changes are reflected in the secrets returned by
-      # `list_secrets` or the number of seconds specified by this value has
-      # elapsed. Should not be set to a high value as it may cause thread
-      # starvation in the ZenML server on high load.
-      secret_list_refresh_timeout: 0
-
 
     # GCP secrets store configuration. Only relevant if the `gcp` secrets store
     # type is configured.
@@ -477,6 +467,259 @@ zenml:
 
     # Custom secrets store configuration. Only relevant if the `custom` secrets
     # store type is configured.
+    custom:
+
+      # The class path of the custom secrets store implementation. This should
+      # point to a full Python class that extends the
+      # `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`
+      # base class. The class should be importable from the container image
+      # that you are using for the ZenML server.
+      #
+      # Any additional configuration options for the custom secrets store
+      # implementation should be passed through the `environment` and the
+      # `secretEnvironment` variables and using the `ZENML_SECRETS_STORE_<OPTION_NAME>`
+      # environment variable naming convention. For example, if the custom
+      # secrets store implementation expects an `aws_access_key_id` option, you
+      # should set the `ZENML_SECRETS_STORE_AWS_ACCESS_KEY_ID` environment
+      # variable in the `zenml.secretEnvironment` variable.
+      class_path: my.custom.secrets.store.MyCustomSecretsStore
+
+  # Backup secrets store settings. This is used as a backup to the primary
+  # secrets store. Secret values for newly created and updated secrets are also
+  # saved in the secondary secrets store and there are management commands to
+  # migrate secret values individually or in bulk from the primary to the
+  # secondary secrets store and vice versa.
+  # A backup secrets store is is useful for high availability and disaster
+  # recovery scenarios where the primary secrets store is unavailable. It is
+  # also useful as a temporary setup for migrating secrets from one secrets
+  # store to another.
+  backupSecretsStore:
+
+    # Set to true to enable a backup secrets store.
+    enabled: false
+
+    # The type of secrets store to use. Use one of:
+    #
+    # sql - Use the same SQL database as the ZenML server
+    # aws - Use the AWS Secrets Manager as a secrets store
+    # gcp - Use the GCP Secrets Manager as a secrets store
+    # azure - Use the Azure Key Vault as a secrets store
+    # hashicorp - Use the HashiCorp Vault as a secrets store
+    # custom - Use a custom secrets store implementation (needs a custom
+    #          ZenML server image with the custom secrets store implementation
+    #          installed)
+    #
+    # Depending on the type, additional configuration options may be required
+    # under the respective sections.
+    #
+    type: sql
+
+    # SQL backup secrets store configuration. Only relevant if the `sql` backup
+    # secrets store type is configured.
+    sql:
+
+      # The secret key used to encrypt secrets in the SQL database. Only relevant
+      # if the SQL secrets store type is used. This should be set to a random
+      # string with a recommended length of at least 32 characters, e.g.:
+      #
+      #   ```python
+      #   from secrets import token_hex
+      #   token_hex(32)
+      #   ```
+      #   
+      # or:
+      #
+      #   ```shell
+      #   openssl rand -hex 32
+      #   ```
+      #
+      # If not set, database secret encryption will be disabled.
+      #
+      # IMPORTANT: If you configure encryption for your SQL database secrets
+      # store, you should keep this value somewhere safe and secure, as it will be
+      # required to decrypt the secrets in the database. If you lose the
+      # encryption key, you will not be able to decrypt the secrets in the
+      # database and will have to reset them. You should not change this value
+      # after you have already configured encryption for your SQL database
+      # secrets store.
+      encryptionKey:
+
+    # AWS backup secrets store configuration. Only relevant if the `aws` backup
+    # secrets store type is configured.
+    #
+    # The AWS secrets store uses the AWS Service Connector under the hood to
+    # authenticate with the AWS Secrets Manager API. This means that you can
+    # use the same authentication methods and configuration as you would use for
+    # the AWS Service Connector. Just set the `authMethod` field to the
+    # authentication method that you want to use and set the required
+    # configuration attributes under the `authConfig` field.
+    # 
+    # For a list of supported authentication methods and their configuration
+    # options, see the following documentation:
+    # https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods
+    # 
+    # You can also use the ZenML CLI to get the list of supported authentication
+    # methods and their configuration options, e.g.:
+    #
+    #   ```shell
+    #   zenml service-connector describe-type aws
+    #   zenml service-connector describe-type aws --auth-method secret-key
+    #   ```
+    aws:
+
+      # The AWS Service Connector authentication method to use. The currently
+      # supported authentication methods are:
+      #
+      # - implicit - Use the IAM role attached to the ZenML server pod or
+      #              environment variables to authenticate with the AWS Secrets
+      #              Manager API
+      # - secret-key - Use an AWS secret key
+      # - iam-role - Use an IAM role
+      # - session-token - Use an AWS session token derived from an AWS secret
+      #                   key
+      # - federation-token - Use an AWS federation token derived from an AWS
+      #                      secret key
+      authMethod: secret-key
+
+      # The AWS Service Connector authentication configuration. This should
+      # include the corresponding authentication configuration attributes for
+      # the `authMethod` that you have chosen above.
+      authConfig:
+        # The AWS region to use. This must be set to the region where the AWS
+        # Secrets Manager service that you want to use is located. Mandatory
+        # for all authentication methods.
+        region:
+        # The AWS access key and secret key to use to authenticate with the AWS
+        # Secrets Manager instance. Both are required if the `authMethod` is set
+        # to `secret-key`, `sts-token`, `iam-role`, or `federation-token`.
+        aws_access_key_id:
+        aws_secret_access_key:
+        # The AWS role ARN to use to authenticate with the AWS Secrets Manager
+        # instance. Required if the `authMethod` is set to `iam-role`.
+        role_arn:
+        
+    # GCP backup secrets store configuration. Only relevant if the `gcp` backup
+    # secrets store type is configured.
+    #
+    # The GCP secrets store uses the GCP Service Connector under the hood to
+    # authenticate with the GCP Secrets Manager API. This means that you can
+    # use the same authentication methods and configuration as you would use for
+    # the GCP Service Connector. Just set the `authMethod` field to the
+    # authentication method that you want to use and set the required
+    # configuration attributes under the `authConfig` field.
+    # 
+    # For a list of supported authentication methods and their configuration
+    # options, see the following documentation:
+    # https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods
+    # 
+    # You can also use the ZenML CLI to get the list of supported authentication
+    # methods and their configuration options, e.g.:
+    #
+    #   ```shell
+    #   zenml service-connector describe-type gcp
+    #   zenml service-connector describe-type gcp --auth-method service-account
+    #   ```
+    gcp:
+
+      # The GCP Service Connector authentication method to use. The currently
+      # supported authentication methods are:
+      #
+      # - implicit - Use the GCP service account attached to the ZenML server
+      #              pod or environment variables to authenticate with the GCP
+      #              Secrets Manager API
+      # - user-account - Use a GCP user account
+      # - service-account - Use a GCP service account
+      # - impersonation - Use the GCP service account impersonation feature
+      authMethod: service-account
+
+      # The GCP Service Connector authentication configuration. This should
+      # include the corresponding authentication configuration attributes for
+      # the `authMethod` that you have chosen above.
+      authConfig:
+        # The GCP project ID to use. This must be set to the project ID where
+        # the GCP Secrets Manager service that you want to use is located.
+        # Mandatory for all authentication methods.
+        project_id:
+
+        # The GCP user account credentials to use to authenticate with the GCP
+        # Secrets Manager instance. Required if the `authMethod` is set to
+        # `user-account`.
+        user_account_json:
+
+        # The GCP service account credentials to use to authenticate with the
+        # GCP Secrets Manager instance. Required if the `authMethod` is set to
+        # `service-account` or `impersonation`.
+        service_account_json: 
+
+        # The GCP service account to impersonate when authenticating with the
+        # GCP Secrets Manager instance. Required if the `authMethod` is set to
+        # `impersonation`.
+        target_principal:
+
+    # Azure backup Key Vault secrets store configuration. Only relevant if the
+    # `azure` backup secrets store type is configured.
+    #
+    # The Azure secrets store uses the Azure Service Connector under the hood to
+    # authenticate with the Azure Key Vault API. This means that you can
+    # use the same authentication methods and configuration as you would use for
+    # the Azure Service Connector. Just set the `authMethod` field to the
+    # authentication method that you want to use and set the required
+    # configuration attributes under the `authConfig` field.
+    # 
+    # For a list of supported authentication methods and their configuration
+    # options, see the following documentation:
+    # https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods
+    # 
+    # You can also use the ZenML CLI to get the list of supported authentication
+    # methods and their configuration options, e.g.:
+    #
+    #   ```shell
+    #   zenml service-connector describe-type azure
+    #   zenml service-connector describe-type azure --auth-method service-principal
+    #   ```
+    azure:
+
+      # The Azure Service Connector authentication method to use. The currently
+      # supported authentication methods are:
+      #
+      # - implicit - Use the Azure managed identity attached to the ZenML server
+      #              pod or environment variables to authenticate with the Azure
+      #              Key Vault API
+      # - service-principal - Use an Azure service principal
+      authMethod: service-principal
+
+      # The Azure Service Connector authentication configuration. This should
+      # include the corresponding authentication configuration attributes for
+      # the `authMethod` that you have chosen above.
+      authConfig:
+
+        # The Azure service principal credentials to use to authenticate with
+        # the Azure Key Vault API. All three are Required if the `authMethod` is
+        # set to `service-principal`.
+        client_id:
+        client_secret:
+        tenant_id:
+
+      # The name of the Azure Key Vault. This must be set to point to the Azure
+      # Key Vault instance that you want to use.
+      key_vault_name:
+
+    # HashiCorp Vault backup secrets store configuration. Only relevant if the
+    # `hashicorp` backup secrets store type is configured
+    hashicorp:
+
+      # The url of the HashiCorp Vault server
+      vault_addr: https://vault.example.com
+      # The token used to authenticate with the Vault server
+      vault_token:
+      # The Vault Enterprise namespace. Not required for Vault OSS.
+      vault_namespace:
+      # The maximum number of secret versions to keep. If not set, the default
+      # value of 1 will be used (only the latest version will be kept).
+      max_versions:
+
+    # Custom backup secrets store configuration. Only relevant if the `custom`
+    # backup secrets store type is configured.
     custom:
 
       # The class path of the custom secrets store implementation. This should
