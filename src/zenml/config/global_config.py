@@ -30,6 +30,7 @@ from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_STORE_DIRECTORY_NAME,
+    ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SECRETS_STORE_PREFIX,
     ENV_ZENML_SERVER,
@@ -537,6 +538,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         env_store_config: Dict[str, str] = {}
         env_secrets_store_config: Dict[str, str] = {}
+        env_backup_secrets_store_config: Dict[str, str] = {}
         for k, v in os.environ.items():
             if v == "":
                 continue
@@ -546,6 +548,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 env_secrets_store_config[
                     k[len(ENV_ZENML_SECRETS_STORE_PREFIX) :].lower()
                 ] = v
+            elif k.startswith(ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX):
+                env_backup_secrets_store_config[
+                    k[len(ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX) :].lower()
+                ] = v
+
         if len(env_store_config):
             if "type" not in env_store_config and "url" in env_store_config:
                 env_store_config["type"] = BaseZenStore.get_store_type(
@@ -577,6 +584,19 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
             config.secrets_store = SecretsStoreConfiguration(
                 **env_secrets_store_config
+            )
+
+        if len(env_backup_secrets_store_config):
+            if "type" not in env_backup_secrets_store_config:
+                env_backup_secrets_store_config["type"] = config.type.value
+
+            logger.debug(
+                "Using environment variables to configure the backup secrets "
+                "store"
+            )
+
+            config.backup_secrets_store = SecretsStoreConfiguration(
+                **env_backup_secrets_store_config
             )
 
         return config

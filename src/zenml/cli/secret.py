@@ -533,3 +533,95 @@ def export_secret(
     filename = filename or f"{secret.name}.yaml"
     write_yaml(filename, secret.secret_values)
     declare(f"Secret '{secret.name}' successfully exported to '{filename}'.")
+
+
+@secret.command(
+    "backup", help="Backup all secrets to the backup secrets store."
+)
+@click.option(
+    "--ignore-errors",
+    "-i",
+    type=click.BOOL,
+    default=True,
+    help="Whether to ignore individual errors when backing up secrets and "
+    "continue with the backup operation until all secrets have been backed up.",
+)
+@click.option(
+    "--delete-secrets",
+    "-d",
+    is_flag=True,
+    default=False,
+    help="Whether to delete the secrets that have been successfully backed up "
+    "from the primary secrets store. Setting this flag effectively moves all "
+    "secrets from the primary secrets store to the backup secrets store.",
+)
+def backup_secrets(
+    ignore_errors: bool = True, delete_secrets: bool = False
+) -> None:
+    """Backup all secrets to the backup secrets store.
+
+    Args:
+        ignore_errors: Whether to ignore individual errors when backing up
+            secrets and continue with the backup operation until all secrets
+            have been backed up.
+        delete_secrets: Whether to delete the secrets that have been
+            successfully backed up from the primary secrets store. Setting
+            this flag effectively moves all secrets from the primary secrets
+            store to the backup secrets store.
+    """
+    client = Client()
+
+    with console.status("Backing up secrets..."):
+        try:
+            client.backup_secrets(
+                ignore_errors=ignore_errors, delete_secrets=delete_secrets
+            )
+            declare("Secrets successfully backed up.")
+        except NotImplementedError as e:
+            error(f"Could not backup secrets: {str(e)}")
+
+
+@secret.command(
+    "restore", help="Restore all secrets from the backup secrets store."
+)
+@click.option(
+    "--ignore-errors",
+    "-i",
+    type=click.BOOL,
+    default=False,
+    help="Whether to ignore individual errors when backing up secrets and "
+    "continue with the backup operation until all secrets have been backed up.",
+)
+@click.option(
+    "--delete-secrets",
+    "-d",
+    is_flag=True,
+    default=False,
+    help="Whether to delete the secrets that have been successfully restored "
+    "from the backup secrets store. Setting this flag effectively moves all "
+    "secrets from the backup secrets store to the primary secrets store.",
+)
+def restore_secrets(
+    ignore_errors: bool = False, delete_secrets: bool = False
+) -> None:
+    """Backup all secrets to the backup secrets store.
+
+    Args:
+        ignore_errors: Whether to ignore individual errors when backing up
+            secrets and continue with the backup operation until all secrets
+            have been backed up.
+        delete_secrets: Whether to delete the secrets that have been
+            successfully restored from the backup secrets store. Setting
+            this flag effectively moves all secrets from the backup secrets
+            store to the primary secrets store.
+    """
+    client = Client()
+
+    with console.status("Restoring secrets from backup..."):
+        try:
+            client.restore_secrets(
+                ignore_errors=ignore_errors, delete_secrets=delete_secrets
+            )
+            declare("Secrets successfully restored.")
+        except NotImplementedError as e:
+            error(f"Could not restore secrets: {str(e)}")

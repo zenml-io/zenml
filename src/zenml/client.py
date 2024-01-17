@@ -3592,6 +3592,44 @@ class Client(metaclass=ClientMetaClass):
 
         return self.list_secrets(scope=scope, hydrate=hydrate)
 
+    def backup_secrets(
+        self,
+        ignore_errors: bool = True,
+        delete_secrets: bool = False,
+    ) -> None:
+        """Backs up all secrets to the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the backup
+                process and attempt to backup all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully backed up from the primary secrets store. Setting
+                this flag effectively moves all secrets from the primary secrets
+                store to the backup secrets store.
+        """
+        self.zen_store.backup_secrets(
+            ignore_errors=ignore_errors, delete_secrets=delete_secrets
+        )
+
+    def restore_secrets(
+        self,
+        ignore_errors: bool = False,
+        delete_secrets: bool = False,
+    ) -> None:
+        """Restore all secrets from the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the
+                restore process and attempt to restore all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully restored from the backup secrets store. Setting
+                this flag effectively moves all secrets from the backup secrets
+                store to the primary secrets store.
+        """
+        self.zen_store.restore_secrets(
+            ignore_errors=ignore_errors, delete_secrets=delete_secrets
+        )
+
     # --------------------------- Code repositories ---------------------------
 
     def create_code_repository(
