@@ -19,9 +19,9 @@ from steps.trainer_step import trainer
 
 from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.integrations.constants import MLFLOW, TENSORFLOW
+from zenml.integrations.constants import TENSORFLOW
 
-docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
+docker_settings = DockerSettings(required_integrations=[TENSORFLOW])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
