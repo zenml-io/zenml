@@ -49,12 +49,12 @@ to execute. As we [explained in the previous section](./remote-storage.md#config
 components such as orchestrators and container registries often require you to 
 set up the right permissions. In ZenML, this process is simplified with the 
 use of [Service Connectors](../../stacks-and-components/auth-management). 
-For this example, we will go ahead and use the [implicit authentication feature 
+For this example, we will go ahead and use the [IAM role authentication method 
 of our AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#implicit-authentication) 
 if you haven't already created a service connector in the last section:
 
 ```shell
-zenml service-connector register cloud_connector --type aws --auto-configure
+AWS_PROFILE=zenml zenml service-connector register cloud_connector --type aws --auto-configure
 ```
 Once the service connector is set up, we can register [a
 Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
@@ -90,12 +90,12 @@ to execute. As we [explained in the previous section](./remote-storage.md#config
 components such as orchestrators and container registries often require you to 
 set up the right permissions. In ZenML, this process is simplified with the 
 use of [Service Connectors](../../stacks-and-components/auth-management). 
-For this example, we will go ahead and use the [implicit authentication feature 
-of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#implicit-authentication) 
+For this example, we will go ahead and use the [Service Account authentication feature 
+of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#gcp-service-account) 
 if you haven't already created a service connector in the last section:
 
 ```shell
-zenml service-connector register cloud_connector --type gcp --auto-configure
+zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project-id=<PROJECT_ID> --generate_temporary_tokens=False
 ```
 Once the service connector is set up, we can register [a 
 Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
@@ -111,7 +111,7 @@ container registry:
 
 ```shell
 zenml container-registry register cloud_container_registry -f gcp --uri=gcr.io/<PROJECT_ID>
-zenml container-registry connect cloud_container_registry --connector skypilot_orchestrator
+zenml container-registry connect cloud_container_registry --connector cloud_connector
 ```
 
 With the components registered, everything is set up for the next steps. 
@@ -131,12 +131,12 @@ to execute. As we [explained in the previous section](./remote-storage.md#config
 components such as orchestrators and container registries often require you to 
 set up the right permissions. In ZenML, this process is simplified with the 
 use of [Service Connectors](../../stacks-and-components/auth-management). 
-For this example, we will go ahead and use the [implicit authentication feature 
-of our Azure service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#implicit-authentication) 
+For this example, we will go ahead and use the [Service Principal authentication 
+feature of our Azure service connector](../../stacks-and-components/auth-management/azure-service-connector.md#azure-service-principal) 
 if you haven't already created a service connector in the last section:
 
 ```shell
-zenml service-connector register cloud_connector --type azure --auto-configure
+zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>
 ```
 Once the service connector is set up, we can register [a 
 Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):
@@ -152,7 +152,7 @@ container registry.
 
 ```shell
 zenml container-registry register cloud_container_registry -f azure --uri=<REGISTRY_NAME>.azurecr.io
-zenml container-registry connect cloud_container_registry --connector skypilot_orchestrator
+zenml container-registry connect cloud_container_registry --connector cloud_connector
 ```
 
 With the components registered, everything is set up for the next steps. 
