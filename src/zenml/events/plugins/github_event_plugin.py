@@ -18,7 +18,7 @@ from uuid import UUID
 from zenml.events.base_event_flavor import (
     BaseEventFlavor, EventConfig
 )
-from zenml.events.enum import EventConfigurationType
+from zenml.enums import EventConfigurationType
 
 
 class GithubEventSourceConfiguration(EventConfig):
@@ -28,7 +28,7 @@ class GithubEventSourceConfiguration(EventConfig):
 class GithubEventSourceFlavor(BaseEventFlavor):
     """Enables users to configure github event sources."""
 
-    EVENT_TYPE: ClassVar[str] = "GITHUB"
+    EVENT_FLAVOR: ClassVar[str] = "GITHUB"
     CONFIGURATION_TYPE: ClassVar[EventConfigurationType] = EventConfigurationType.SOURCE
 
     config: GithubEventSourceConfiguration
@@ -42,7 +42,7 @@ class GithubEventFilterConfiguration(EventConfig):
 class GithubEventFilterFlavor(BaseEventFlavor):
     """Allows users to configure filters on events coming from a github source."""
 
-    ASSOCIATED_TYPE: ClassVar[str] = "GITHUB"
+    EVENT_FLAVOR: ClassVar[str] = "GITHUB"
     CONFIGURATION_TYPE: ClassVar[EventConfigurationType] = EventConfigurationType.FILTER
 
     config: GithubEventFilterConfiguration

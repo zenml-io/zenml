@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
 """SQL Model Implementations for Triggers."""
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import Column, TEXT
 from sqlmodel import Field, Relationship
 
 from zenml.models.v2.core.trigger import (
@@ -31,6 +31,10 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
+    from zenml.zen_stores.schemas.action_plan_schemas import ActionPlanSchema
 
 
 class TriggerSchema(NamedSchema, table=True):
@@ -58,16 +62,27 @@ class TriggerSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="triggers")
 
-    # TODO: undecided if these deserve their own table.
-    #  Especially because of the pot. polymorphism for events.
-    event_hash: str = Field(sa_column=Column(TEXT, nullable=False))
-    event_type: str = Field(sa_column=Column(TEXT, nullable=False))
-    event: str = Field(sa_column=Column(TEXT, nullable=False))
+    event_filter_id: str = build_foreign_key_field(
+        source=__tablename__,
+        target=EventFilterSchema.__tablename__,
+        source_column="event_filter_id",
+        target_column="id",
+        ondelete="CASCADE",  # TODO: check this
+        nullable=False,
+    )
+    event_filter: "EventFilterSchema" = Relationship(back_populates="triggers")
 
-    # TODO: We might want to outsource this into its own table
-    action_hash: str = Field(sa_column=Column(TEXT, nullable=False))
-    action_type: str = Field(sa_column=Column(TEXT, nullable=False))
-    action: str = Field(sa_column=Column(TEXT, nullable=False))
+    action_plan_id: str = build_foreign_key_field(
+        source=__tablename__,
+        target=ActionPlanSchema.__tablename__,
+        source_column="action_id",
+        target_column="id",
+        ondelete="CASCADE",  # TODO: check this
+        nullable=False,
+    )
+    action_plan: "ActionPlanSchema" = Relationship(back_populates="triggers")
+
+    description: str = Field(sa_column=Column(TEXT, nullable=True))
 
     def update(
         self,
@@ -94,7 +109,7 @@ class TriggerSchema(NamedSchema, table=True):
     def from_request(
         cls, request: "TriggerRequest"
     ) -> "TriggerSchema":
-        """Convert a `TriggerRequest` to a `CodeRepositorySchema`.
+        """Convert a `TriggerRequest` to a `TriggerSchema`.
 
         Args:
             request: The request model to convert.
@@ -106,11 +121,9 @@ class TriggerSchema(NamedSchema, table=True):
             name=request.name,
             workspace_id=request.workspace,
             user_id=request.user,
-            action_hash=hash(request.action),
-            action_type=request.action,
-            action=json.dumps(request.action),
-            event_hash=hash(request.action),
-            event=json.dumps(request.event),
+            action_plan_id=request.action_plan_id,
+            event_filter_id=request.event_filter_id,
+            description=request.description
         )
 
     def to_model(self, hydrate: bool = False) -> "TriggerResponse":
@@ -125,15 +138,16 @@ class TriggerSchema(NamedSchema, table=True):
         """
         body = TriggerResponseBody(
             user=self.user.to_model() if self.user else None,
+            description=self.description,
             created=self.created,
-            updated=self.updated,
-            action=json.loads(self.action),
-            event=json.loads(self.event)
+            updated=self.updated
         )
         metadata = None
         if hydrate:
             metadata = TriggerResponseMetadata(
-                workspace=self.workspace.to_model()
+                workspace=self.workspace.to_model(),
+                event_filter=self.event_filter.to_model(),
+                action_plan=self.action_plan.to_model(),
             )
 
         return TriggerResponse(

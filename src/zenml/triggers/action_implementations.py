@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from zenml.models.v2.core.action import ActionBase
+from zenml.models.v2.core.action_plan import ActionBase
 
 
 class PipelineRunAction(ActionBase):

@@ -17,6 +17,10 @@ from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.models import (
+    ActionPlanFilter,
+    ActionPlanResponse,
+    ActionPlanRequest,
+    ActionPlanUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -40,6 +44,14 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    EventFilterRequest,
+    EventFilterResponse,
+    EventFilterFilter,
+    EventFilterUpdate,
+    EventSourceRequest,
+    EventSourceResponse,
+    EventSourceFilter,
+    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -107,6 +119,10 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    TriggerRequest,
+    TriggerResponse,
+    TriggerFilter,
+    TriggerUpdate,
     TagFilter,
     TagRequest,
     TagResponse,
@@ -214,6 +230,89 @@ class ZenStoreInterface(ABC):
         Returns:
             The ID of the deployment.
         """
+
+        # -------------------- Actions Plans --------------------
+
+        @abstractmethod
+        def create_action_plan(
+                self, action_plan: ActionPlanRequest
+        ) -> ActionPlanResponse:
+            """Create an action_plan.
+
+            Args:
+                action_plan: The action_plan to create.
+
+            Returns:
+                The created action_plan.
+            """
+
+        @abstractmethod
+        def get_action_plan(
+                self,
+                action_plan_id: UUID,
+                hydrate: bool = True,
+        ) -> ActionPlanResponse:
+            """Get an action_plan by ID.
+
+            Args:
+                action_plan_id: The ID of the action_plan to get.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                The action_plan.
+
+            Raises:
+                KeyError: if the action_plan doesn't exist.
+            """
+
+        @abstractmethod
+        def list_action_plans(
+                self,
+                action_plan_filter_model: ActionPlanFilter,
+                hydrate: bool = False,
+        ) -> Page[ActionPlanResponse]:
+            """List all action_plans matching the given filter criteria.
+
+            Args:
+                action_plan_filter_model: All filter parameters including pagination
+                    params.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                A list of all action_plans matching the filter criteria.
+            """
+
+        @abstractmethod
+        def update_action_plan(
+                self,
+                action_plan_id: UUID,
+                action_plan_update: ActionPlanUpdate,
+        ) -> ActionPlanResponse:
+            """Update an existing action_plan.
+
+            Args:
+                action_plan_id: The ID of the action_plan to update.
+                action_plan_update: The update to be applied to the action_plan.
+
+            Returns:
+                The updated action_plan.
+
+            Raises:
+                KeyError: if the action_plan doesn't exist.
+            """
+
+        @abstractmethod
+        def delete_action_plan(self, action_plan_id: UUID) -> None:
+            """Delete an action_plan.
+
+            Args:
+                action_plan_id: The ID of the action_plan to delete.
+
+            Raises:
+                KeyError: if the action_plan doesn't exist.
+            """
 
     # -------------------- API Keys --------------------
 
@@ -1111,6 +1210,172 @@ class ZenStoreInterface(ABC):
             KeyError: If the deployment doesn't exist.
         """
 
+        # -------------------- Event Filters  --------------------
+
+        @abstractmethod
+        def create_event_filter(
+                self, event_filter: EventFilterRequest
+        ) -> EventFilterResponse:
+            """Create an event_filter.
+
+            Args:
+                event_filter: The event_filter to create.
+
+            Returns:
+                The created event_filter.
+            """
+
+        @abstractmethod
+        def get_event_filter(
+                self,
+                event_filter_id: UUID,
+                hydrate: bool = True,
+        ) -> EventFilterResponse:
+            """Get an event_filter by ID.
+
+            Args:
+                event_filter_id: The ID of the event_filter to get.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                The event_filter.
+
+            Raises:
+                KeyError: if the stack event_filter doesn't exist.
+            """
+
+        @abstractmethod
+        def list_event_filters(
+                self,
+                event_filter_filter_model: EventFilterFilter,
+                hydrate: bool = False,
+        ) -> Page[EventFilterResponse]:
+            """List all event_filters matching the given filter criteria.
+
+            Args:
+                event_filter_filter_model: All filter parameters including pagination
+                    params.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                A list of all event_filters matching the filter criteria.
+            """
+
+        @abstractmethod
+        def update_event_filter(
+                self,
+                event_filter_id: UUID,
+                event_filter_update: EventFilterUpdate,
+        ) -> EventFilterResponse:
+            """Update an existing event_filter.
+
+            Args:
+                event_filter_id: The ID of the event_filter to update.
+                event_filter_update: The update to be applied to the event_filter.
+
+            Returns:
+                The updated event_filter.
+
+            Raises:
+                KeyError: if the event_filter doesn't exist.
+            """
+
+        @abstractmethod
+        def delete_event_filter(self, event_filter_id: UUID) -> None:
+            """Delete an event_filter.
+
+            Args:
+                event_filter_id: The ID of the event_filter to delete.
+
+            Raises:
+                KeyError: if the event_filter doesn't exist.
+            """
+
+        # -------------------- Event Sources  --------------------
+
+        @abstractmethod
+        def create_event_source(
+                self, event_source: EventSourceRequest
+        ) -> EventSourceResponse:
+            """Create an event_source.
+
+            Args:
+                event_source: The event_source to create.
+
+            Returns:
+                The created event_source.
+            """
+
+        @abstractmethod
+        def get_event_source(
+                self,
+                event_source_id: UUID,
+                hydrate: bool = True,
+        ) -> EventSourceResponse:
+            """Get an event_source by ID.
+
+            Args:
+                event_source_id: The ID of the event_source to get.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                The event_source.
+
+            Raises:
+                KeyError: if the stack event_source doesn't exist.
+            """
+
+        @abstractmethod
+        def list_event_sources(
+                self,
+                event_source_filter_model: EventSourceFilter,
+                hydrate: bool = False,
+        ) -> Page[EventSourceResponse]:
+            """List all event_sources matching the given filter criteria.
+
+            Args:
+                event_source_filter_model: All filter parameters including pagination
+                    params.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                A list of all event_sources matching the filter criteria.
+            """
+
+        @abstractmethod
+        def update_event_source(
+                self,
+                event_source_id: UUID,
+                event_source_update: EventSourceUpdate,
+        ) -> EventSourceResponse:
+            """Update an existing event_source.
+
+            Args:
+                event_source_id: The ID of the event_source to update.
+                event_source_update: The update to be applied to the event_source.
+
+            Returns:
+                The updated event_source.
+
+            Raises:
+                KeyError: if the event_source doesn't exist.
+            """
+
+        @abstractmethod
+        def delete_event_source(self, event_source_id: UUID) -> None:
+            """Delete an event_source.
+
+            Args:
+                event_source_id: The ID of the event_source to delete.
+
+            Raises:
+                KeyError: if the event_source doesn't exist.
+            """
+
     # -------------------- Pipeline runs --------------------
 
     @abstractmethod
@@ -1933,6 +2198,90 @@ class ZenStoreInterface(ABC):
         Raises:
             KeyError: if the step run doesn't exist.
         """
+
+        # -------------------- Triggers  --------------------
+
+        @abstractmethod
+        def create_trigger(
+                self, trigger: TriggerRequest
+        ) -> TriggerResponse:
+            """Create an trigger.
+
+            Args:
+                trigger: The trigger to create.
+
+            Returns:
+                The created trigger.
+            """
+
+        @abstractmethod
+        def get_trigger(
+                self,
+                trigger_id: UUID,
+                hydrate: bool = True,
+        ) -> TriggerResponse:
+            """Get an trigger by ID.
+
+            Args:
+                trigger_id: The ID of the trigger to get.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                The trigger.
+
+            Raises:
+                KeyError: if the stack trigger doesn't exist.
+            """
+
+        @abstractmethod
+        def list_triggers(
+                self,
+                trigger_filter_model: TriggerFilter,
+                hydrate: bool = False,
+        ) -> Page[TriggerResponse]:
+            """List all triggers matching the given filter criteria.
+
+            Args:
+                trigger_filter_model: All filter parameters including pagination
+                    params.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                A list of all triggers matching the filter criteria.
+            """
+
+        @abstractmethod
+        def update_trigger(
+                self,
+                trigger_id: UUID,
+                trigger_update: TriggerUpdate,
+        ) -> TriggerResponse:
+            """Update an existing trigger.
+
+            Args:
+                trigger_id: The ID of the trigger to update.
+                trigger_update: The update to be applied to the trigger.
+
+            Returns:
+                The updated trigger.
+
+            Raises:
+                KeyError: if the trigger doesn't exist.
+            """
+
+        @abstractmethod
+        def delete_trigger(self, trigger_id: UUID) -> None:
+            """Delete an trigger.
+
+            Args:
+                trigger_id: The ID of the trigger to delete.
+
+            Raises:
+                KeyError: if the trigger doesn't exist.
+            """
+
 
     # -------------------- Users --------------------
 

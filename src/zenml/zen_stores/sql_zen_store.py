@@ -102,6 +102,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    ActionPlanFilter,
+    ActionPlanResponse,
+    ActionPlanRequest,
+    ActionPlanUpdate,
     APIKeyFilter,
     APIKeyInternalResponse,
     APIKeyInternalUpdate,
@@ -130,6 +134,14 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    EventFilterRequest,
+    EventFilterResponse,
+    EventFilterFilter,
+    EventFilterUpdate,
+    EventSourceRequest,
+    EventSourceResponse,
+    EventSourceFilter,
+    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -201,6 +213,10 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    TriggerRequest,
+    TriggerResponse,
+    TriggerFilter,
+    TriggerUpdate,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -1122,6 +1138,90 @@ class SqlZenStore(BaseZenStore):
                     "The deployment ID could not be loaded from the database."
                 )
             return identity.id
+
+        # -------------------- Actions Plans --------------------
+
+        def create_action_plan(
+                self, action_plan: ActionPlanRequest
+        ) -> ActionPlanResponse:
+            """Create an action_plan.
+
+            Args:
+                action_plan: The action_plan to create.
+
+            Returns:
+                The created action_plan.
+            """
+
+        def get_action_plan(
+                self,
+                action_plan_id: UUID,
+                hydrate: bool = True,
+        ) -> ActionPlanResponse:
+            """Get an action_plan by ID.
+
+            Args:
+                action_plan_id: The ID of the action_plan to get.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                The action_plan.
+
+            Raises:
+                KeyError: if the action_plan doesn't exist.
+            """
+
+        def list_action_plans(
+                self,
+                action_plan_filter_model: ActionPlanFilter,
+                hydrate: bool = False,
+        ) -> Page[ActionPlanResponse]:
+            """List all action_plans matching the given filter criteria.
+
+            Args:
+                action_plan_filter_model: All filter parameters including pagination
+                    params.
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+
+            Returns:
+                A list of all action_plans matching the filter criteria.
+            """
+
+        def update_action_plan(
+                self,
+                action_plan_id: UUID,
+                action_plan_update: ActionPlanUpdate,
+        ) -> ActionPlanResponse:
+            """Update an existing action_plan.
+
+            Args:
+                action_plan_id: The ID of the action_plan to update.
+                action_plan_update: The update to be applied to the action_plan.
+
+            Returns:
+                The updated action_plan.
+
+            Raises:
+                KeyError: if the action_plan doesn't exist.
+            """
+
+            # TODO: implement
+            raise NotImplementedError()
+
+        def delete_action_plan(self, action_plan_id: UUID) -> None:
+            """Delete an action_plan.
+
+            Args:
+                action_plan_id: The ID of the action_plan to delete.
+
+            Raises:
+                KeyError: if the action_plan doesn't exist.
+            """
+
+            # TODO: implement
+            raise NotImplementedError()
 
     # ------------------------- API Keys -------------------------
 
@@ -3236,6 +3336,219 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(deployment)
             session.commit()
+
+# -------------------- Event Filters  --------------------
+
+
+    def create_event_filter(
+            self, event_filter: EventFilterRequest
+    ) -> EventFilterResponse:
+        """Create an event_filter.
+
+        Args:
+            event_filter: The event_filter to create.
+
+        Returns:
+            The created event_filter.
+        """
+        with Session(self.engine) as session:
+            new_event_filter = EventFilterSchema.from_request(event_filter)
+            session.add(new_event_filter)
+            session.commit()
+            session.refresh(new_event_filter)
+
+        return new_event_filter.to_model(hydrate=True)
+
+    def get_event_filter(
+            self,
+            event_filter_id: UUID,
+            hydrate: bool = True,
+    ) -> EventFilterResponse:
+        """Get an event_filter by ID.
+
+        Args:
+            event_filter_id: The ID of the event_filter to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The event_filter.
+
+        Raises:
+            KeyError: if the stack event_filter doesn't exist.
+        """
+        with Session(self.engine) as session:
+            event_filter = session.exec(
+                select(EventFilterSchema).where(EventFilterSchema.id == trigger_id)
+            ).first()
+
+            if event_filter is None:
+                raise KeyError(f"Trigger with ID {event_filter_id} not found.")
+            return event_filter.to_model(hydrate=hydrate)
+
+    def list_event_filters(
+            self,
+            event_filter_filter_model: EventFilterFilter,
+            hydrate: bool = False,
+    ) -> Page[EventFilterResponse]:
+        """List all event_filters matching the given filter criteria.
+
+        Args:
+            event_filter_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all event_filters matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(EventFilterSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StackSchema,
+                filter_model=event_filter_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_event_filter(
+            self,
+            event_filter_id: UUID,
+            event_filter_update: EventFilterUpdate,
+    ) -> EventFilterResponse:
+        """Update an existing event_filter.
+
+        Args:
+            event_filter_id: The ID of the event_filter to update.
+            event_filter_update: The update to be applied to the event_filter.
+
+        Returns:
+            The updated event_filter.
+
+        Raises:
+            KeyError: if the event_filter doesn't exist.
+        """
+        # TODO: implement
+        raise NotImplementedError()
+
+    def delete_event_filter(self, event_filter_id: UUID) -> None:
+        """Delete an event_filter.
+
+        Args:
+            event_filter_id: The ID of the event_filter to delete.
+
+        Raises:
+            KeyError: if the event_filter doesn't exist.
+        """
+        # TODO: implement
+        raise NotImplementedError()
+
+# -------------------- Event Sources  --------------------
+
+    def create_event_source(
+            self, event_source: EventSourceRequest
+    ) -> EventSourceResponse:
+        """Create an event_source.
+
+        Args:
+            event_source: The event_source to create.
+
+        Returns:
+            The created event_source.
+        """
+        with Session(self.engine) as session:
+            new_event_source = EventSourceSchema.from_request(event_filter)
+            session.add(new_event_source)
+            session.commit()
+            session.refresh(new_event_source)
+
+        return new_event_source.to_model(hydrate=True)
+
+    def get_event_source(
+            self,
+            event_source_id: UUID,
+            hydrate: bool = True,
+    ) -> EventSourceResponse:
+        """Get an event_source by ID.
+
+        Args:
+            event_source_id: The ID of the event_source to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The event_source.
+
+        Raises:
+            KeyError: if the stack event_source doesn't exist.
+        """
+        with Session(self.engine) as session:
+            event_source = session.exec(
+                select(EventSourceSchema).where(EventSourceSchema.id == event_source_id)
+            ).first()
+
+            if event_source is None:
+                raise KeyError(f"Trigger with ID {event_source_id} not found.")
+            return event_source.to_model(hydrate=hydrate)
+
+    def list_event_sources(
+            self,
+            event_source_filter_model: EventSourceFilter,
+            hydrate: bool = False,
+    ) -> Page[EventSourceResponse]:
+        """List all event_sources matching the given filter criteria.
+
+        Args:
+            event_source_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all event_sources matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(EventSourceSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StackSchema,
+                filter_model=event_source_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_event_source(
+            self,
+            event_source_id: UUID,
+            event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Update an existing event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The updated event_source.
+
+        Raises:
+            KeyError: if the event_source doesn't exist.
+        """
+        # TODO: implement
+        raise NotImplementedError()
+
+    def delete_event_source(self, event_source_id: UUID) -> None:
+        """Delete an event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to delete.
+
+        Raises:
+            KeyError: if the event_source doesn't exist.
+        """
+        # TODO: implement
+        raise NotImplementedError()
 
     # ----------------------------- Pipeline runs -----------------------------
 

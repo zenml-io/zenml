@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """COllection of all models concerning actions."""
+from datetime import datetime
+from typing import Dict, Any
 
 from pydantic import BaseModel, Field
 
@@ -23,12 +25,19 @@ from zenml import BaseRequest, WorkspaceScopedResponseBody
 from zenml.models.v2.base.update import update_model
 
 
-class ActionBase(BaseModel):
-    """BaseModel for all Actions."""
+class ActionPlanBase(BaseModel):
+    """BaseModel for all ActionPlans."""
+    flavor: str = Field(
+        title="The flavor of action.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    configuration: Dict[str, Any] = Field(
+        title="The event source configuration.",
+    )
 
 
 # ------------------ Request Model ------------------
-class ActionRequest(ActionBase, BaseRequest):
+class ActionPlanRequest(ActionPlanBase, BaseRequest):
     """Request model for components."""
 
 
@@ -36,33 +45,38 @@ class ActionRequest(ActionBase, BaseRequest):
 
 
 @update_model
-class ActionUpdate(ActionRequest):
+class ActionPlanUpdate(ActionPlanRequest):
     """Update model for stack components."""
 
 
 # ------------------ Response Model ------------------
-class ActionResponseBody(WorkspaceScopedResponseBody):
+class ActionPlanResponseBody(WorkspaceScopedResponseBody):
     """Response body for actions."""
+    flavor: str = Field(
+        title="The flavor of event.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    created: datetime = Field(
+        title="The timestamp when this event filter was created."
+    )
+    updated: datetime = Field(
+        title="The timestamp when this event filter was last updated.",
+    )
 
 
-class ActionResponseMetadata(WorkspaceScopedResponseMetadata):
+class ActionPlanResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for components."""
 
 
-class ActionResponse(
-    WorkspaceScopedResponse[ActionResponseBody, ActionResponseMetadata]
+class ActionPlanResponse(
+    WorkspaceScopedResponse[ActionPlanResponseBody, ActionPlanResponseMetadata]
 ):
     """Response model for actions."""
-
-    name: str = Field(
-        title="The name of the stack component.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
 
 
 # ------------------ Filter Model ------------------
 
 
-class ActionFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all ActionModels."""
+class ActionPlanFilter(WorkspaceScopedFilter):
+    """Model to enable advanced filtering of all ActionPlanModels."""
 

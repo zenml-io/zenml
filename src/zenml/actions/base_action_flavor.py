@@ -17,13 +17,11 @@ from typing import ClassVar, cast, Type, Tuple, Any, Dict
 
 from pydantic import BaseModel, Extra
 
-from zenml.enums import EventConfigurationType
-from zenml.events.event_flavor_registry import \
-    event_configuration_registry
+from zenml.actions.action_flavor_registry import action_flavor_registry
 
 
-class EventConfig(BaseModel, ABC):
-    """Allows configuring of Event Source and Filter configuration."""
+class ActionPlanConfig(BaseModel, ABC):
+    """Allows configuring the action configuration."""
 
     class Config:
         """Pydantic configuration class."""
@@ -37,13 +35,13 @@ class EventConfig(BaseModel, ABC):
         extra = Extra.forbid
 
 
-class BaseEventFlavorMeta(type):
-    """Metaclass responsible for registering different `BaseEventFlavor` subclasses."""
+class BaseActionFlavorMeta(type):
+    """Metaclass responsible for registering different `BaseActionFlavor` subclasses."""
 
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
-    ) -> "BaseEventFlavor":
-        """Creates a EventConfiguration class and registers it at the `EventConfigurationRegistry`.
+    ) -> "BaseActionFlavor":
+        """Creates a ActionConfiguration class and registers it at the `ActionConfigurationRegistry`.
 
         Args:
             name: The name of the class.
@@ -68,23 +66,17 @@ class BaseEventFlavorMeta(type):
 
         # TODO: Validate that the class is properly defined.
 
-        # Register the event source configuration.
-        if cls.CONFIGURATION_TYPE == EventConfigurationType.SOURCE:
-            event_configuration_registry.register_event_source_flavor(
-                cls.EVENT_FLAVOR, cls
-            )
-        elif cls.CONFIGURATION_TYPE == EventConfigurationType.FILTER:
-            event_configuration_registry.register_event_filter_flavor(
-                cls.EVENT_FLAVOR, cls
-            )
+        # Register the action configuration.
+        action_flavor_registry.register_action_flavor(
+            cls.EVENT_FLAVOR, cls
+        )
 
         return cls
 
 
-class BaseEventFlavor(metaclass=BaseEventFlavorMeta):
-    """Base Event Flavor to register Event Configurations."""
-    EVENT_FLAVOR: ClassVar[str]
-    CONFIGURATION_TYPE: ClassVar[EventConfigurationType]
+class BaseActionFlavor(metaclass=BaseActionFlavorMeta):
+    """Base Action Flavor to register Action Plan Configurations."""
+    ACTION_FLAVOR: ClassVar[str]
 
     # `SKIP_REGISTRATION` can be set to True to not register the class
     # in the event source configuration registry. This is primarily useful
@@ -92,4 +84,4 @@ class BaseEventFlavor(metaclass=BaseEventFlavorMeta):
     # set to False unless they override it themselves.
     SKIP_REGISTRATION: ClassVar[bool] = True
 
-    config: EventConfig
+    config: ActionPlanConfig

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
+from datetime import datetime
 from typing import Dict, Any
 
 from pydantic import Field
@@ -29,8 +30,8 @@ from zenml.models.v2.base.update import update_model
 class EventSourceRequest(BaseRequest):
     """BaseModel for all event sources."""
 
-    event_type: str = Field(
-        title="The type of event source.",
+    flavor: str = Field(
+        title="The flavor of event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: str = Field(
@@ -54,11 +55,21 @@ class EventSourceUpdate(EventSourceRequest):
 # ------------------ Response Model ------------------
 
 class EventSourceResponseBody(WorkspaceScopedResponseBody):
-    """ResponseBody for events."""
+    """ResponseBody for event sources."""
+    flavor: str = Field(
+        title="The flavor of event.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    created: datetime = Field(
+        title="The timestamp when this event filter was created."
+    )
+    updated: datetime = Field(
+        title="The timestamp when this event filter was last updated.",
+    )
 
 
 class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response metadata for events."""
+    """Response metadata for event sources."""
 
     description: str = Field(
         default="",
@@ -70,12 +81,7 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
 class EventSourceResponse(
     WorkspaceScopedResponse[EventSourceResponseBody, EventSourceResponseMetadata]
 ):
-    """Response model for models."""
-
-    name: str = Field(
-        title="The name of the model",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+    """Response model for event sources."""
 
 
 # ------------------ Filter Model ------------------

@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import Field
 
+from zenml import EventFilterResponse
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -25,7 +27,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.update import update_model
-from zenml.models.v2.core.action import Action
+from zenml.models.v2.core.action_plan import Action, ActionPlanResponse
 from zenml.models.v2.core.event_source import Event
 
 
@@ -40,12 +42,13 @@ class TriggerRequest(WorkspaceScopedRequest):
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event: Event = Field(
-        title="The event that activates this trigger.",
+    event_filter_id: UUID = Field(
+        title="The id of the event filter."
     )
-    action: Action = Field(
-        title="The actions that is executed by this trigger.",
+    action_plan_id: UUID = Field(
+        title="The id of the action plan."
     )
+
     # executions: somehow we need to link to executed Actions here
 
 # ------------------ Update Model ------------------
@@ -59,27 +62,27 @@ class TriggerUpdate(TriggerRequest):
 
 class TriggerResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for triggers."""
-    event: Event = Field(
-        title="The event that activates this trigger.",
-    )
-    action: Action = Field(
-        title="The actions that is executed by this trigger.",
-    )
     created: datetime = Field(
         title="The timestamp when this trigger was created."
     )
     updated: datetime = Field(
         title="The timestamp when this trigger was last updated.",
     )
+    description: str = Field(
+        default="",
+        title="The description of the trigger",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for triggers."""
 
-    description: str = Field(
-        default="",
-        title="The description of the trigger",
-        max_length=STR_FIELD_MAX_LENGTH,
+    event: EventFilterResponse = Field(
+        title="The event that activates this trigger.",
+    )
+    action: ActionPlanResponse = Field(
+        title="The actions that is executed by this trigger.",
     )
 
 

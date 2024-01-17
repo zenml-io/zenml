@@ -346,3 +346,10 @@ class MetadataResourceTypes(StrEnum):
     STEP_RUN = "step_run"
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
+
+
+class EventConfigurationType(StrEnum):
+    """All possible types an event configuration types."""
+
+    SOURCE = "SOURCE"
+    FILTER = "FILTER"
