@@ -19,7 +19,10 @@ from typing import Dict, Optional, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
-from sqlalchemy_utils.types.encrypted.encrypted_type import AesGcmEngine
+from sqlalchemy_utils.types.encrypted.encrypted_type import (
+    AesGcmEngine,
+    InvalidCiphertextError,
+)
 from sqlmodel import Field, Relationship
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
@@ -35,6 +38,10 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+
+class SecretDecodeError(Exception):
+    """Raised when a secret cannot be decoded or decrypted."""
 
 
 class SecretSchema(NamedSchema, table=True):
@@ -121,16 +128,37 @@ class SecretSchema(NamedSchema, table=True):
 
         Returns:
             The loaded secret values.
+
+        Raises:
+            SecretDecodeError: If the secret values cannot be decoded or
+                decrypted.
         """
         if encryption_engine is None:
-            serialized_values = base64.b64decode(encrypted_values).decode()
+            try:
+                serialized_values = base64.b64decode(encrypted_values).decode()
+            except ValueError as e:
+                raise SecretDecodeError(
+                    "Could not decode base64 encoded secret values: {str(e)}"
+                ) from e
         else:
-            serialized_values = encryption_engine.decrypt(encrypted_values)
+            try:
+                serialized_values = encryption_engine.decrypt(encrypted_values)
+            except (ValueError, InvalidCiphertextError) as e:
+                raise SecretDecodeError(
+                    "Could not decrypt secret values. Please check that the "
+                    f"encryption key is correct: {str(e)}"
+                ) from e
 
-        return cast(
-            Dict[str, str],
-            json.loads(serialized_values),
-        )
+        try:
+            return cast(
+                Dict[str, str],
+                json.loads(serialized_values),
+            )
+        except json.JSONDecodeError as e:
+            raise SecretDecodeError(
+                "Could not decode secret values. Please check that the "
+                f"secret values are valid JSON: {str(e)}"
+            ) from e
 
     @classmethod
     def from_request(

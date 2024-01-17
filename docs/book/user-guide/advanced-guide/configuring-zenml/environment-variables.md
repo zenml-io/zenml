@@ -95,5 +95,19 @@ export ZENML_CONFIG_PATH=/path/to/somewhere
 For more information on server configuration, see the [ZenML Server documentation](../../../deploying-zenml/zenml-self-hosted/deploy-with-docker.md)
 for more, especially the section entitled "ZenML server configuration options".
 
+
+## Client configuration
+
+Setting the `ZENML_STORE_URL` and `ZENML_STORE_API_KEY` environment
+variables automatically connects your ZenML Client to the specified server. This method
+is particularly useful when you are using the ZenML client in an automated CI/CD
+workload environment like GitHub Actions or GitLab CI or in a containerized
+environment like Docker or Kubernetes:
+
+```bash
+export ZENML_STORE_URL=https://...
+export ZENML_STORE_API_KEY=<API_KEY>
+```
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
