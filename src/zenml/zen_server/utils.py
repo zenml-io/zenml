@@ -273,7 +273,7 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
             ...
 
     UPDATE: Function from above mentioned Github issue was extended to support
-    iterable querying, e.g. tags: List[str]. It needs a default set to Query(<default>),
+    multi-input parameters, e.g. tags: List[str]. It needs a default set to Query(<default>),
     rather just plain <default>.
 
     Args:
@@ -295,22 +295,19 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
                 error["loc"] = tuple(["query"] + list(error["loc"]))
             raise HTTPException(422, detail=e.errors())
 
-    query_params = [v for v in inspect.signature(cls).parameters.values()]
-    for i in range(len(query_params)):
-        qp = query_params[i]
-        try:
-            iter(qp.annotation)
-            query_params[i] = inspect.Parameter(
-                name=qp.name,
-                default=Query(qp.default),
-                kind=qp.kind,
-                annotation=qp.annotation,
+    params = {v.name: v for v in inspect.signature(cls).parameters.values()}
+    query_params = getattr(cls, "API_MULTI_INPUT_PARAMS", [])
+    for qp in query_params:
+        if qp in params:
+            params[qp] = inspect.Parameter(
+                name=params[qp].name,
+                default=Query(params[qp].default),
+                kind=params[qp].kind,
+                annotation=params[qp].annotation,
             )
-        except TypeError:
-            pass
 
     init_cls_and_handle_errors.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
-        parameters=query_params
+        parameters=[v for v in params.values()]
     )
 
     return init_cls_and_handle_errors

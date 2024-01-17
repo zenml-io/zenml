@@ -23,7 +23,6 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -39,8 +38,6 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
-
     from zenml.models.v2.core.user import UserResponse
     from zenml.models.v2.core.workspace import WorkspaceResponse
     from zenml.zen_stores.schemas import BaseSchema
@@ -295,7 +292,7 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
     )
     """
 
-    tags: List[str] = Field(
+    tags: Optional[List[str]] = Field(
         default_factory=list,
         description="List of tags to apply to the filter query.",
     )
@@ -307,6 +304,10 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
 
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        "tags",
+    ]
+
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
         "tags",
     ]
 
@@ -324,28 +325,19 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         Returns:
             The query with filter applied.
         """
-        from zenml.zen_stores.schemas import TagResourceSchema
+        from sqlmodel import or_
+
+        from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
         query = super().apply_filter(query=query, table=table)
         if self.tags:
             query = query.join(getattr(table, "tags"), isouter=True).join(
                 TagResourceSchema.tag, isouter=True
             )
+            query = query.where(
+                or_(
+                    *[col(TagSchema.name) == tag_ for tag_ in self.tags],
+                )
+            ).distinct()
 
         return query
-
-    def get_custom_filters(
-        self,
-    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
-        """Get custom filters for tags.
-
-        Returns:
-            A list of tag filters.
-        """
-        if self.tags:
-            from zenml.zen_stores.schemas import TagSchema
-
-            return [
-                col(TagSchema.name).in_(self.tags)  # type: ignore[list-item]
-            ]
-        return []
