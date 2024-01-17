@@ -37,11 +37,15 @@ class StoreConfiguration(BaseModel):
         url: The URL of the store backend.
         secrets_store: The configuration of the secrets store to use to store
             secrets. If not set, secrets management is disabled.
+        backup_secrets_store: The configuration of the secrets store to use to
+            store backups of secrets. If not set, backup and restore of secrets
+            are disabled.
     """
 
     type: StoreType
     url: str
     secrets_store: Optional[SecretsStoreConfiguration] = None
+    backup_secrets_store: Optional[SecretsStoreConfiguration] = None
 
     @classmethod
     def copy_configuration(
