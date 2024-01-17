@@ -307,3 +307,11 @@ class OAuthError(ValueError):
             the error message
         """
         return f"{self.error}: {self.error_description or ''}"
+
+
+class SecretsStoreNotConfiguredError(NotImplementedError):
+    """Raised when a secrets store is not configured."""
+
+
+class BackupSecretsStoreNotConfiguredError(NotImplementedError):
+    """Raised when a backup secrets store is not configured."""

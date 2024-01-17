@@ -84,6 +84,8 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
             Note that if errors occur during provisioning/data syncing/setting
             up, the cluster will not be torn down for debugging purposes.
         stream_logs: if True, show the logs in the terminal.
+        docker_run_args: Optional arguments to pass to the `docker run` command
+            running inside the VM.
     """
 
     # Resources
