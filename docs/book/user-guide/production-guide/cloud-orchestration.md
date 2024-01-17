@@ -50,11 +50,11 @@ components such as orchestrators and container registries often require you to
 set up the right permissions. In ZenML, this process is simplified with the 
 use of [Service Connectors](../../stacks-and-components/auth-management). 
 For this example, we will go ahead and use the [IAM role authentication method 
-of our AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#implicit-authentication) 
+of our AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#aws-iam-role) 
 if you haven't already created a service connector in the last section:
 
 ```shell
-AWS_PROFILE=zenml zenml service-connector register cloud_connector --type aws --auto-configure
+AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
 ```
 Once the service connector is set up, we can register [a
 Skypilot orchestrator](../../stacks-and-components/component-guide/orchestrators/skypilot-vm.md):

@@ -119,7 +119,7 @@ First, let's understand what a service connector does. In simple words, a servic
 {% tab title="AWS" %}
 There are [many ways to create an AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](../../stacks-and-components/auth-management/aws-service-connector.md#aws-iam-role).
 ```shell
-AWS_PROFILE=zenml zenml service-connector register cloud_connector --type aws --auto-configure
+AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
 ```
 {% endtab %}
 {% tab title="GCP" %}
