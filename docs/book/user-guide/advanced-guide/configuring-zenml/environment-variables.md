@@ -15,6 +15,12 @@ export ZENML_LOGGING_VERBOSITY=INFO
 
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
+## Disable step logs
+
+Usually, ZenML [stores step logs in the artifact store](../pipelining-features/managing-steps.md#enable-or-disable-logs-storing),
+but this can sometimes cause performance bottlenecks, especially if the code utilizes
+progress bars.
+
 If you want to configure whether logged output from steps is stored or not, set
 the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that
 this will mean that logs from your steps will no longer be stored and thus won't
@@ -82,7 +88,8 @@ export ZENML_CONFIG_PATH=/path/to/somewhere
 
 ## Integration logs
 
-Setting this to `false` disables integrations logs suppression:
+Setting this to `false` disables local client integrations logs suppression. This is not to be confused with
+`ZENML_DISABLE_STEP_LOGS_STORAGE` , which disables step logging to the artifact store.
 ```bash
 export ZENML_SUPPRESS_LOGS=false
 ```
