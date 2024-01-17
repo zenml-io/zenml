@@ -69,7 +69,7 @@ serverless function. In these cases, you can configure a service account and an
 API key and use the API key to authenticate to the ZenML server:
 
 ```bash
-zenml service-account create --name <SERVICE_ACCOUNT_NAME>
+zenml service-account create <SERVICE_ACCOUNT_NAME>
 ```
 
 This command creates a service account and an API key for it. The API key is
