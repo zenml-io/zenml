@@ -1,5 +1,5 @@
 ---
-name: Setup Python Environment and Unit Test
+name: Setup Python Environment, Lint
 on:
   workflow_call:
     inputs:
@@ -20,7 +20,7 @@ on:
         description: Install ZenML integrations
         type: string
         required: false
-        default: 'no'
+        default: 'yes'
       git-ref:
         description: Git branch or ref
         type: string
@@ -88,9 +88,11 @@ jobs:
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
-      - name: Run unit tests
+      - name: Lint check
+        env:
+          OS: ${{ inputs.os }}
         run: |
-          bash scripts/test-coverage-xml.sh unit
+          bash scripts/lint.sh
       # - name: Upload coverage
       #  # only do it for python 3.8, we don't need to do it for every version
       #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}

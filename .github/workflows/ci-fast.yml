@@ -48,6 +48,18 @@ jobs:
       python-version: '3.8'
       os: ubuntu-latest
     secrets: inherit
+  custom-ubuntu-setup-and-lint:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [ubuntu-dind-runners]
+        python-version: ['3.10']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   custom-ubuntu-setup-and-unit-test:
     if: github.event.pull_request.draft == false
     strategy:
