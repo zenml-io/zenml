@@ -38,6 +38,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
+# TODO: adapt this step for VertexAI
 @step(enable_cache=False)
 def vertex_model_deployer_step(
     model: UnmaterializedArtifact,
