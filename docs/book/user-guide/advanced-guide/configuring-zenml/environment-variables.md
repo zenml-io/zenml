@@ -86,14 +86,6 @@ state for a number of settings, set the environment variable as follows:
 export ZENML_CONFIG_PATH=/path/to/somewhere
 ```
 
-## Integration logs
-
-Setting this to `false` disables local client integrations logs suppression. This is not to be confused with
-`ZENML_DISABLE_STEP_LOGS_STORAGE`, which disables step logging to the artifact store.
-```bash
-export ZENML_SUPPRESS_LOGS=false
-```
-
 ## Server configuration
 
 For more information on server configuration, see the [ZenML Server
@@ -115,5 +107,3 @@ export ZENML_STORE_API_KEY=<API_KEY>
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
-
