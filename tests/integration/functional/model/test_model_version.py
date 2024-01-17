@@ -65,7 +65,7 @@ class ModelContext:
 def step_metadata_logging_functional():
     """Functional logging using implicit ModelVersion from context."""
     log_model_metadata({"foo": "bar"})
-    assert get_step_context().model_version.metadata["foo"] == "bar"
+    assert get_step_context().model_version.run_metadata["foo"].value == "bar"
 
 
 @step
@@ -346,14 +346,14 @@ class TestModelVersion:
         )
         mv.log_metadata({"foo": "bar"})
 
-        assert len(mv.metadata) == 1
-        assert mv.metadata["foo"] == "bar"
+        assert len(mv.run_metadata) == 1
+        assert mv.run_metadata["foo"].value == "bar"
 
         mv.log_metadata({"bar": "foo"})
 
-        assert len(mv.metadata) == 2
-        assert mv.metadata["foo"] == "bar"
-        assert mv.metadata["bar"] == "foo"
+        assert len(mv.run_metadata) == 2
+        assert mv.run_metadata["foo"].value == "bar"
+        assert mv.run_metadata["bar"].value == "foo"
 
     def test_metadata_logging_functional(self, clean_client: "Client"):
         """Test that model version can be used to track metadata from function."""
@@ -367,8 +367,8 @@ class TestModelVersion:
             {"foo": "bar"}, model_name=mv.name, model_version=mv.number
         )
 
-        assert len(mv.metadata) == 1
-        assert mv.metadata["foo"] == "bar"
+        assert len(mv.run_metadata) == 1
+        assert mv.run_metadata["foo"].value == "bar"
 
         with pytest.raises(ValueError):
             log_model_metadata({"foo": "bar"})
@@ -377,9 +377,9 @@ class TestModelVersion:
             {"bar": "foo"}, model_name=mv.name, model_version="latest"
         )
 
-        assert len(mv.metadata) == 2
-        assert mv.metadata["foo"] == "bar"
-        assert mv.metadata["bar"] == "foo"
+        assert len(mv.run_metadata) == 2
+        assert mv.run_metadata["foo"].value == "bar"
+        assert mv.run_metadata["bar"].value == "foo"
 
     def test_metadata_logging_in_steps(self, clean_client: "Client"):
         """Test that model version can be used to track metadata from function in steps."""
@@ -396,8 +396,8 @@ class TestModelVersion:
         my_pipeline()
 
         mv = ModelVersion(name=MODEL_NAME, version="latest")
-        assert len(mv.metadata) == 1
-        assert mv.metadata["foo"] == "bar"
+        assert len(mv.run_metadata) == 1
+        assert mv.run_metadata["foo"].value == "bar"
 
     @pytest.mark.parametrize("delete_artifacts", [False, True])
     def test_deletion_of_links(
