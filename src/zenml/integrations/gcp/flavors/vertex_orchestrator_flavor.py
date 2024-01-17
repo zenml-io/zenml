@@ -61,10 +61,8 @@ class VertexOrchestratorSettings(BaseSettings):
     node_selector_constraint: Optional[Tuple[str, str]] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
-    _node_selector_deprecation = (
-        deprecation_utils.deprecate_pydantic_attributes(
-            "node_selector_constraint"
-        )
+    _node_selector_deprecation = deprecation_utils.deprecate_pydantic_attributes(
+        "node_selector_constraint"
     )
 
 
@@ -133,7 +131,11 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     gpu_limit: Optional[int] = None
 
     _resource_deprecation = deprecation_utils.deprecate_pydantic_attributes(
-        "cpu_limit", "memory_limit", "gpu_limit"
+        "cpu_limit",
+        "memory_limit",
+        "gpu_limit",
+        "function_service_account",
+        "scheduler_service_account",
     )
 
     @property
