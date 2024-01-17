@@ -25,7 +25,7 @@ SERVICE_START_STOP_TIMEOUT = 120
 docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
 
 
-@pipeline(enable_cache=True, settings={"docker": docker_settings})
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
 def mlflow_train_deploy_pipeline(
     epochs: int = 1,
     lr: float = 0.001,

@@ -12,16 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """External artifact definition."""
-from typing import TYPE_CHECKING, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, root_validator
 
 from zenml.logger import get_logger
-from zenml.models.v2.core.artifact import ArtifactResponse
-
-if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
+from zenml.model.model_version import ModelVersion
+from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 
 logger = get_logger(__name__)
 
@@ -35,11 +33,16 @@ class ExternalArtifactConfiguration(BaseModel):
     id: Optional[UUID] = None
     name: Optional[str] = None
     version: Optional[str] = None
+    model_version: Optional[ModelVersion] = None
 
-    _model_version: Optional["ModelVersion"] = PrivateAttr(None)
-
-    def _set_model_version(self, model_version: "ModelVersion") -> None:
-        self._model_version = model_version
+    @root_validator
+    def _validate_all_eac(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if values.get("version", None) and values.get("model_version", None):
+            raise ValueError(
+                "Cannot provide both `version` and `model_version` when "
+                "creating an external artifact."
+            )
+        return values
 
     def get_artifact_version_id(self) -> UUID:
         """Get the artifact.
@@ -64,13 +67,13 @@ class ExternalArtifactConfiguration(BaseModel):
                 response = client.get_artifact_version(
                     self.name, version=self.version
                 )
-            elif self._model_version:
-                response_ = self._model_version.get_artifact(self.name)
-                if not isinstance(response_, ArtifactResponse):
+            elif self.model_version:
+                response_ = self.model_version.get_artifact(self.name)
+                if not isinstance(response_, ArtifactVersionResponse):
                     raise RuntimeError(
                         f"Failed to pull artifact `{self.name}` from the Model "
-                        f"Version (name=`{self._model_version.name}`, version="
-                        f"`{self._model_version.version}`). Please validate the "
+                        f"Version (name=`{self.model_version.name}`, version="
+                        f"`{self.model_version.version}`). Please validate the "
                         "input and try again."
                     )
                 response = response_

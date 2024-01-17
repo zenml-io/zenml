@@ -26,9 +26,6 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
-from zenml.secrets_managers.local.local_secrets_manager import (
-    LocalSecretsManagerConfig,
-)
 
 
 def test_stack_component_default_method_implementations(stub_component):
@@ -171,7 +168,7 @@ def test_stack_component_prevents_secret_references_for_some_attributes(
 
 
 def test_stack_component_secret_reference_resolving(
-    client_with_stub_orchestrator_flavor,
+    client_with_stub_orchestrator_flavor: Client,
 ):
     """Tests that the stack component resolves secrets if possible."""
     from zenml.artifact_stores import LocalArtifactStoreConfig
@@ -195,41 +192,11 @@ def test_stack_component_secret_reference_resolving(
         )
     )
 
-    new_stack = client_with_stub_orchestrator_flavor.create_stack(
+    client_with_stub_orchestrator_flavor.create_stack(
         name="new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store.name,
             StackComponentType.ORCHESTRATOR: new_orchestrator.name,
-        },
-    )
-
-    with pytest.raises(RuntimeError):
-        # not part of the active stack
-        o = StubOrchestrator.from_model(new_orchestrator)
-        _ = o.config.attribute_without_validator
-
-    client_with_stub_orchestrator_flavor.activate_stack(new_stack.id)
-
-    with pytest.raises(RuntimeError):
-        # no secret manager in stack
-        o = StubOrchestrator.from_model(new_orchestrator)
-        _ = o.config.attribute_without_validator
-
-    from zenml.secrets_managers import LocalSecretsManager
-
-    new_secrets_manager = (
-        client_with_stub_orchestrator_flavor.create_stack_component(
-            name="new_secrets_manager",
-            component_type=StackComponentType.SECRETS_MANAGER,
-            flavor="local",
-            configuration=LocalSecretsManagerConfig().dict(),
-        )
-    )
-
-    client_with_stub_orchestrator_flavor.update_stack(
-        name_id_or_prefix=new_stack.id,
-        component_updates={
-            StackComponentType.SECRETS_MANAGER: [new_secrets_manager.name]
         },
     )
 
@@ -238,22 +205,18 @@ def test_stack_component_secret_reference_resolving(
         o = StubOrchestrator.from_model(new_orchestrator)
         _ = o.config.attribute_without_validator
 
-    from zenml.secret import ArbitrarySecretSchema
-
-    secret_without_correct_key = ArbitrarySecretSchema(
-        name="secret", wrong_key="value"
+    client_with_stub_orchestrator_flavor.create_secret(
+        "secret", values=dict(wrong_key="value")
     )
-
-    x = LocalSecretsManager.from_model(new_secrets_manager)
-    x.register_secret(secret_without_correct_key)
 
     with pytest.raises(KeyError):
         # key doesn't exist
         o = StubOrchestrator.from_model(new_orchestrator)
         _ = o.config.attribute_without_validator
 
-    secret_with_correct_key = ArbitrarySecretSchema(name="secret", key="value")
-    x.update_secret(secret_with_correct_key)
+    client_with_stub_orchestrator_flavor.update_secret(
+        "secret", add_or_update_values=dict(key="value")
+    )
 
     with does_not_raise():
         o = StubOrchestrator.from_model(new_orchestrator)

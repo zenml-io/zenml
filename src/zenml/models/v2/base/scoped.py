@@ -175,15 +175,10 @@ class UserScopedFilter(BaseFilter):
         Returns:
             The query with filter applied.
         """
-        from sqlmodel import or_
-
         query = super().apply_filter(query=query, table=table)
 
         if self.scope_user:
-            scope_filter = or_(
-                getattr(table, "user_id") == self.scope_user,
-            )
-            query = query.where(scope_filter)
+            query = query.where(getattr(table, "user_id") == self.scope_user)
 
         return query
 

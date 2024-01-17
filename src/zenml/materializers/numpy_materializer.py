@@ -126,12 +126,14 @@ class NumpyMaterializer(BaseMaterializer):
             # Save histogram for 1D arrays
             if len(arr.shape) == 1:
                 histogram_path = os.path.join(self.uri, "histogram.png")
+                histogram_path = histogram_path.replace("\\", "/")
                 self._save_histogram(histogram_path, arr)
                 return {histogram_path: VisualizationType.IMAGE}
 
             # Save as image for 3D arrays with 3 or 4 channels
             if len(arr.shape) == 3 and arr.shape[2] in [3, 4]:
                 image_path = os.path.join(self.uri, "image.png")
+                image_path = image_path.replace("\\", "/")
                 self._save_image(image_path, arr)
                 return {image_path: VisualizationType.IMAGE}
 

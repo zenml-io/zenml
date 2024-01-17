@@ -463,7 +463,6 @@ def sample_pipeline_deployment_request_model() -> PipelineDeploymentRequest:
 def sample_pipeline_run_request_model() -> PipelineRunRequest:
     """Return sample pipeline run view for testing purposes."""
     return PipelineRunRequest(
-        id=uuid4(),
         name="sample_run_name",
         config=PipelineConfiguration(name="aria_pipeline"),
         num_steps=1,
@@ -484,10 +483,10 @@ def sample_artifact_model() -> ArtifactResponse:
         body=ArtifactResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
+            tags=[],
         ),
         metadata=ArtifactResponseMetadata(
             has_custom_name=True,
-            tags=[],
         ),
     )
 
@@ -509,10 +508,10 @@ def sample_artifact_version_model(
             type=ArtifactType.DATA,
             materializer="sample_module.sample_materializer",
             data_type="sample_module.sample_data_type",
+            tags=[],
         ),
         metadata=ArtifactVersionResponseMetadata(
             workspace=sample_workspace_model,
-            tags=[],
         ),
     )
 

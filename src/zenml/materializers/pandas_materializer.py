@@ -144,6 +144,7 @@ class PandasMaterializer(BaseMaterializer):
             A dictionary of visualization URIs and their types.
         """
         describe_uri = os.path.join(self.uri, "describe.csv")
+        describe_uri = describe_uri.replace("\\", "/")
         with fileio.open(describe_uri, mode="wb") as f:
             df.describe().to_csv(f)
         return {describe_uri: VisualizationType.CSV}

@@ -16,7 +16,10 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+from zenml.integrations.aws import (
+    AWS_RESOURCE_TYPE,
+    AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR,
+)
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
@@ -167,7 +170,7 @@ class SagemakerOrchestratorFlavor(BaseOrchestratorFlavor):
             Requirements for compatible service connectors, if a service
             connector is required for this flavor.
         """
-        return ServiceConnectorRequirements(resource_type="aws-generic")
+        return ServiceConnectorRequirements(resource_type=AWS_RESOURCE_TYPE)
 
     @property
     def docs_url(self) -> Optional[str]:

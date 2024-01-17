@@ -26,14 +26,8 @@ from tests.integration.functional.zen_stores.utils import (
 )
 from zenml.client import Client
 from zenml.enums import SecretScope, SecretsStoreType, StoreType
-from zenml.exceptions import EntityExistsError
-from zenml.models.secret_models import SecretFilterModel, SecretUpdateModel
-
-# The AWS secrets store takes some time to reflect new and updated secrets in
-# the `list_secrets` API. This is the number of seconds to wait before making
-# `list_secrets` calls after creating/updating a secret to ensure that the
-# latest secret information is returned.
-AWS_SECRET_REFRESH_SLEEP = 10
+from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.models import SecretFilter, SecretUpdate
 
 
 def _get_secrets_store_type() -> SecretsStoreType:
@@ -78,7 +72,7 @@ def test_list_secret_excludes_values():
     )
     with SecretContext(values=values) as secret:
         assert secret.secret_values == values
-        all_secrets = store.list_secrets(SecretFilterModel(id=secret.id)).items
+        all_secrets = store.list_secrets(SecretFilter(id=secret.id)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
         assert len(all_secrets[0].values) == 0
@@ -100,7 +94,7 @@ def test_secret_empty_values():
         values["axl"] = "also space cat"
         updated_secret = store.update_secret(
             secret_id=secret.id,
-            secret_update=SecretUpdateModel(
+            secret_update=SecretUpdate(
                 values=dict(
                     axl=values["axl"],
                 ),
@@ -129,7 +123,7 @@ def test_update_secret_existing_values():
         values["axl"] = "also space cat"
         updated_secret = store.update_secret(
             secret_id=secret.id,
-            secret_update=SecretUpdateModel(
+            secret_update=SecretUpdate(
                 values=dict(
                     axl=values["axl"],
                 ),
@@ -158,7 +152,7 @@ def test_update_secret_add_new_values():
         values["blupus"] = "another space cat"
         updated_secret = store.update_secret(
             secret_id=secret.id,
-            secret_update=SecretUpdateModel(
+            secret_update=SecretUpdate(
                 values=dict(
                     blupus=values["blupus"],
                 ),
@@ -187,7 +181,7 @@ def test_update_secret_remove_values():
         del values["aria"]
         updated_secret = store.update_secret(
             secret_id=secret.id,
-            secret_update=SecretUpdateModel(
+            secret_update=SecretUpdate(
                 values=dict(
                     aria=None,
                 ),
@@ -215,7 +209,7 @@ def test_update_secret_remove_nonexisting_values():
 
         updated_secret = store.update_secret(
             secret_id=secret.id,
-            secret_update=SecretUpdateModel(
+            secret_update=SecretUpdate(
                 values=dict(
                     blupus=None,
                 ),
@@ -251,7 +245,7 @@ def test_update_secret_values_sets_updated_date():
         values["blupus"] = "another space cat"
         updated_secret = store.update_secret(
             secret_id=secret.id,
-            secret_update=SecretUpdateModel(
+            secret_update=SecretUpdate(
                 values=dict(
                     blupus=values["blupus"],
                 ),
@@ -294,7 +288,7 @@ def test_update_secret_name_sets_updated_date():
         new_name = sample_name("arias-secrets")
         updated_secret = store.update_secret(
             secret_id=secret.id,
-            secret_update=SecretUpdateModel(
+            secret_update=SecretUpdate(
                 name=new_name,
             ),
         )
@@ -325,9 +319,7 @@ def test_update_secret_name():
     with SecretContext() as secret:
         saved_secret = store.get_secret(secret_id=secret.id)
         assert saved_secret.name == secret.name
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
 
@@ -335,7 +327,7 @@ def test_update_secret_name():
 
         updated_secret = store.update_secret(
             secret_id=secret.id,
-            secret_update=SecretUpdateModel(
+            secret_update=SecretUpdate(
                 name=new_name,
             ),
         )
@@ -345,9 +337,7 @@ def test_update_secret_name():
         saved_secret = store.get_secret(secret_id=secret.id)
         assert saved_secret.name == new_name
 
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=new_name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=new_name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
 
@@ -367,7 +357,7 @@ def test_update_secret_name_fails_if_exists_in_workspace():
             assert saved_secret.name == other_secret.name
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 1
             assert secret.id == all_secrets[0].id
@@ -375,7 +365,7 @@ def test_update_secret_name_fails_if_exists_in_workspace():
             with pytest.raises(EntityExistsError):
                 store.update_secret(
                     secret_id=secret.id,
-                    secret_update=SecretUpdateModel(
+                    secret_update=SecretUpdate(
                         name=other_secret.name,
                     ),
                 )
@@ -384,7 +374,7 @@ def test_update_secret_name_fails_if_exists_in_workspace():
             assert saved_secret.name == secret.name
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 1
             assert secret.id == all_secrets[0].id
@@ -405,7 +395,7 @@ def test_update_user_secret_name_succeeds_if_exists_in_workspace():
             assert saved_secret.name == other_secret.name
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 1
             assert secret.id == all_secrets[0].id
@@ -413,7 +403,7 @@ def test_update_user_secret_name_succeeds_if_exists_in_workspace():
             with does_not_raise():
                 updated_secret = store.update_secret(
                     secret_id=secret.id,
-                    secret_update=SecretUpdateModel(
+                    secret_update=SecretUpdate(
                         name=other_secret.name,
                     ),
                 )
@@ -424,27 +414,25 @@ def test_update_user_secret_name_succeeds_if_exists_in_workspace():
             assert saved_secret.name == other_secret.name
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 0
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=other_secret.name)
+                SecretFilter(name=other_secret.name)
             ).items
             assert len(all_secrets) == 2
             assert secret.id in [s.id for s in all_secrets]
             assert other_secret.id in [s.id for s in all_secrets]
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(
-                    name=other_secret.name, scope=SecretScope.USER
-                )
+                SecretFilter(name=other_secret.name, scope=SecretScope.USER)
             ).items
             assert len(all_secrets) == 1
             assert secret.id == all_secrets[0].id
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=other_secret.name, scope=SecretScope.WORKSPACE
                 )
             ).items
@@ -467,7 +455,7 @@ def test_update_workspace_secret_name_succeeds_if_exists_for_a_user():
             assert saved_secret.name == other_secret.name
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 1
             assert secret.id == all_secrets[0].id
@@ -475,7 +463,7 @@ def test_update_workspace_secret_name_succeeds_if_exists_for_a_user():
             with does_not_raise():
                 updated_secret = store.update_secret(
                     secret_id=secret.id,
-                    secret_update=SecretUpdateModel(
+                    secret_update=SecretUpdate(
                         name=other_secret.name,
                     ),
                 )
@@ -486,19 +474,19 @@ def test_update_workspace_secret_name_succeeds_if_exists_for_a_user():
             assert saved_secret.name == other_secret.name
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 0
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=other_secret.name)
+                SecretFilter(name=other_secret.name)
             ).items
             assert len(all_secrets) == 2
             assert secret.id in [s.id for s in all_secrets]
             assert other_secret.id in [s.id for s in all_secrets]
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=other_secret.name, scope=SecretScope.WORKSPACE
                 )
             ).items
@@ -506,9 +494,7 @@ def test_update_workspace_secret_name_succeeds_if_exists_for_a_user():
             assert secret.id == all_secrets[0].id
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(
-                    name=other_secret.name, scope=SecretScope.USER
-                )
+                SecretFilter(name=other_secret.name, scope=SecretScope.USER)
             ).items
             assert len(all_secrets) == 1
             assert other_secret.id == all_secrets[0].id
@@ -524,14 +510,12 @@ def test_reusing_user_secret_name_succeeds():
     store = client.zen_store
 
     with SecretContext(scope=SecretScope.USER) as secret:
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
 
         user_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
                 user_id=client.active_user.id,
@@ -551,14 +535,14 @@ def test_reusing_user_secret_name_succeeds():
                 secret_name=secret.name, scope=SecretScope.USER
             ) as other_secret:
                 all_secrets = other_store.list_secrets(
-                    SecretFilterModel(name=secret.name),
+                    SecretFilter(name=secret.name),
                 ).items
                 assert len(all_secrets) == 2
                 assert secret.id in [s.id for s in all_secrets]
                 assert other_secret.id in [s.id for s in all_secrets]
 
                 workspace_secrets = other_store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.WORKSPACE,
                         workspace_id=other_client.active_workspace.id,
@@ -567,7 +551,7 @@ def test_reusing_user_secret_name_succeeds():
                 assert len(workspace_secrets) == 0
 
                 user_secrets = other_store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
                         user_id=other_client.active_user.id,
@@ -578,7 +562,7 @@ def test_reusing_user_secret_name_succeeds():
                 assert other_secret.id == user_secrets[0].id
 
                 user_secrets = other_store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
                         user_id=client.active_user.id,
@@ -599,47 +583,39 @@ def test_update_scope_succeeds():
         assert saved_secret.name == secret.name
         assert saved_secret.scope == SecretScope.WORKSPACE
 
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
+        assert len(all_secrets) == 1
+        assert secret.id == all_secrets[0].id
+
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
+            SecretFilter(name=secret.name, scope=SecretScope.WORKSPACE)
         ).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name, scope=SecretScope.WORKSPACE)
-        ).items
-        assert len(all_secrets) == 1
-        assert secret.id == all_secrets[0].id
-
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name, scope=SecretScope.USER)
+            SecretFilter(name=secret.name, scope=SecretScope.USER)
         ).items
         assert len(all_secrets) == 0
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(scope=SecretScope.WORKSPACE)
+            SecretFilter(scope=SecretScope.WORKSPACE)
         ).items
         assert len(all_secrets) >= 1
         assert secret.id in [s.id for s in all_secrets]
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(scope=SecretScope.USER)
+            SecretFilter(scope=SecretScope.USER)
         ).items
         assert secret.id not in [s.id for s in all_secrets]
 
         with does_not_raise():
             updated_secret = store.update_secret(
                 secret_id=secret.id,
-                secret_update=SecretUpdateModel(
+                secret_update=SecretUpdate(
                     scope=SecretScope.USER,
                 ),
             )
-
-        if _get_secrets_store_type() == SecretsStoreType.AWS:
-            # The AWS secrets store returns before the secret is actually
-            # updated in the backend, so we need to wait a bit before
-            # running `list_secrets`.
-            time.sleep(AWS_SECRET_REFRESH_SLEEP)
 
         assert updated_secret.name == secret.name
         assert updated_secret.scope == SecretScope.USER
@@ -648,30 +624,28 @@ def test_update_scope_succeeds():
         assert saved_secret.name == secret.name
         assert saved_secret.scope == SecretScope.USER
 
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name, scope=SecretScope.WORKSPACE)
+            SecretFilter(name=secret.name, scope=SecretScope.WORKSPACE)
         ).items
         assert len(all_secrets) == 0
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name, scope=SecretScope.USER)
+            SecretFilter(name=secret.name, scope=SecretScope.USER)
         ).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(scope=SecretScope.WORKSPACE)
+            SecretFilter(scope=SecretScope.WORKSPACE)
         ).items
         assert secret.id not in [s.id for s in all_secrets]
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(scope=SecretScope.USER)
+            SecretFilter(scope=SecretScope.USER)
         ).items
         assert len(all_secrets) >= 1
         assert secret.id in [s.id for s in all_secrets]
@@ -679,16 +653,10 @@ def test_update_scope_succeeds():
         with does_not_raise():
             updated_secret = store.update_secret(
                 secret_id=secret.id,
-                secret_update=SecretUpdateModel(
+                secret_update=SecretUpdate(
                     scope=SecretScope.WORKSPACE,
                 ),
             )
-
-        if _get_secrets_store_type() == SecretsStoreType.AWS:
-            # The AWS secrets store returns before the secret is actually
-            # updated in the backend, so we need to wait a bit before
-            # running `list_secrets`.
-            time.sleep(AWS_SECRET_REFRESH_SLEEP)
 
         assert updated_secret.name == secret.name
         assert updated_secret.scope == SecretScope.WORKSPACE
@@ -697,31 +665,29 @@ def test_update_scope_succeeds():
         assert saved_secret.name == secret.name
         assert saved_secret.scope == SecretScope.WORKSPACE
 
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
+        assert len(all_secrets) == 1
+        assert secret.id == all_secrets[0].id
+
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
+            SecretFilter(name=secret.name, scope=SecretScope.WORKSPACE)
         ).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name, scope=SecretScope.WORKSPACE)
-        ).items
-        assert len(all_secrets) == 1
-        assert secret.id == all_secrets[0].id
-
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name, scope=SecretScope.USER)
+            SecretFilter(name=secret.name, scope=SecretScope.USER)
         ).items
         assert len(all_secrets) == 0
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(scope=SecretScope.WORKSPACE)
+            SecretFilter(scope=SecretScope.WORKSPACE)
         ).items
         assert len(all_secrets) >= 1
         assert secret.id in [s.id for s in all_secrets]
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(scope=SecretScope.USER)
+            SecretFilter(scope=SecretScope.USER)
         ).items
         assert secret.id not in [s.id for s in all_secrets]
 
@@ -737,22 +703,20 @@ def test_update_scope_fails_if_name_already_in_scope():
             secret_name=secret.name, scope=SecretScope.USER
         ) as other_secret:
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 2
             assert secret.id in [s.id for s in all_secrets]
             assert other_secret.id in [s.id for s in all_secrets]
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(
-                    name=secret.name, scope=SecretScope.WORKSPACE
-                )
+                SecretFilter(name=secret.name, scope=SecretScope.WORKSPACE)
             ).items
             assert len(all_secrets) == 1
             assert secret.id == all_secrets[0].id
 
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name, scope=SecretScope.USER)
+                SecretFilter(name=secret.name, scope=SecretScope.USER)
             ).items
             assert len(all_secrets) == 1
             assert other_secret.id == all_secrets[0].id
@@ -760,7 +724,7 @@ def test_update_scope_fails_if_name_already_in_scope():
             with pytest.raises(EntityExistsError):
                 store.update_secret(
                     secret_id=secret.id,
-                    secret_update=SecretUpdateModel(
+                    secret_update=SecretUpdate(
                         scope=SecretScope.USER,
                     ),
                 )
@@ -772,7 +736,7 @@ def test_update_scope_fails_if_name_already_in_scope():
             with pytest.raises(EntityExistsError):
                 store.update_secret(
                     secret_id=other_secret.id,
-                    secret_update=SecretUpdateModel(
+                    secret_update=SecretUpdate(
                         scope=SecretScope.WORKSPACE,
                     ),
                 )
@@ -791,13 +755,11 @@ def test_workspace_secret_is_visible_to_other_users():
     store = client.zen_store
 
     with SecretContext() as secret:
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
         workspace_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.WORKSPACE,
                 workspace_id=client.active_workspace.id,
@@ -806,7 +768,7 @@ def test_workspace_secret_is_visible_to_other_users():
         assert len(workspace_secrets) == 1
         assert secret.id == workspace_secrets[0].id
         user_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
                 user_id=client.active_user.id,
@@ -822,12 +784,12 @@ def test_workspace_secret_is_visible_to_other_users():
             other_store = other_client.zen_store
 
             all_secrets = other_store.list_secrets(
-                SecretFilterModel(name=secret.name),
+                SecretFilter(name=secret.name),
             ).items
             assert len(all_secrets) == 1
             assert secret.id == all_secrets[0].id
             workspace_secrets = other_store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret.name,
                     scope=SecretScope.WORKSPACE,
                     workspace_id=other_client.active_workspace.id,
@@ -836,7 +798,7 @@ def test_workspace_secret_is_visible_to_other_users():
             assert len(workspace_secrets) == 1
             assert secret.id == workspace_secrets[0].id
             user_secrets = other_store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret.name,
                     scope=SecretScope.USER,
                     user_id=other_client.active_user.id,
@@ -855,13 +817,11 @@ def test_user_secret_is_not_visible_to_other_users():
     store = client.zen_store
 
     with SecretContext() as secret:
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
         workspace_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.WORKSPACE,
                 workspace_id=client.active_workspace.id,
@@ -870,7 +830,7 @@ def test_user_secret_is_not_visible_to_other_users():
         assert len(workspace_secrets) == 1
         assert secret.id == workspace_secrets[0].id
         user_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
                 user_id=client.active_user.id,
@@ -884,13 +844,13 @@ def test_user_secret_is_not_visible_to_other_users():
             scope=SecretScope.USER, secret_name=secret.name
         ) as user_secret:
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 2
             assert secret.id in [s.id for s in all_secrets]
             assert user_secret.id in [s.id for s in all_secrets]
             workspace_secrets = store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret.name,
                     scope=SecretScope.WORKSPACE,
                     workspace_id=client.active_workspace.id,
@@ -900,7 +860,7 @@ def test_user_secret_is_not_visible_to_other_users():
             assert secret.id == workspace_secrets[0].id
             assert user_secret.id not in [s.id for s in workspace_secrets]
             user_secrets = store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret.name,
                     scope=SecretScope.USER,
                     user_id=client.active_user.id,
@@ -918,13 +878,13 @@ def test_user_secret_is_not_visible_to_other_users():
                 other_store = other_client.zen_store
 
                 all_secrets = other_store.list_secrets(
-                    SecretFilterModel(name=secret.name)
+                    SecretFilter(name=secret.name)
                 ).items
                 assert len(all_secrets) == 2
                 assert secret.id in [s.id for s in all_secrets]
                 assert user_secret.id in [s.id for s in all_secrets]
                 workspace_secrets = other_store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.WORKSPACE,
                         workspace_id=other_client.active_workspace.id,
@@ -934,7 +894,7 @@ def test_user_secret_is_not_visible_to_other_users():
                 assert secret.id == workspace_secrets[0].id
                 assert user_secret.id not in [s.id for s in workspace_secrets]
                 user_secrets = other_store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
                         user_id=other_client.active_user.id,
@@ -953,13 +913,11 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
     store = client.zen_store
 
     with SecretContext() as secret:
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
         workspace_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.WORKSPACE,
                 workspace_id=client.active_workspace.id,
@@ -968,7 +926,7 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
         assert len(workspace_secrets) == 1
         assert secret.id == workspace_secrets[0].id
         user_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
                 user_id=client.active_user.id,
@@ -979,12 +937,12 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
 
         with WorkspaceContext(activate=True):
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 1
             assert secret.id == all_secrets[0].id
             workspace_secrets = store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret.name,
                     scope=SecretScope.WORKSPACE,
                     workspace_id=client.active_workspace.id,
@@ -992,7 +950,7 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
             ).items
             assert len(workspace_secrets) == 0
             user_secrets = store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret.name,
                     scope=SecretScope.USER,
                     user_id=client.active_user.id,
@@ -1003,13 +961,13 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
 
             with SecretContext(secret_name=secret.name) as other_secret:
                 all_secrets = store.list_secrets(
-                    SecretFilterModel(name=secret.name)
+                    SecretFilter(name=secret.name)
                 ).items
                 assert len(all_secrets) == 2
                 assert secret.id in [s.id for s in all_secrets]
                 assert other_secret.id in [s.id for s in all_secrets]
                 workspace_secrets = store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.WORKSPACE,
                         workspace_id=client.active_workspace.id,
@@ -1018,7 +976,7 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
                 assert len(workspace_secrets) == 1
                 assert other_secret.id == workspace_secrets[0].id
                 user_secrets = store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
                         user_id=client.active_user.id,
@@ -1037,13 +995,11 @@ def test_user_secret_is_not_visible_to_other_workspaces():
     store = client.zen_store
 
     with SecretContext() as secret:
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
         workspace_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.WORKSPACE,
                 workspace_id=client.active_workspace.id,
@@ -1052,7 +1008,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
         assert len(workspace_secrets) == 1
         assert secret.id == workspace_secrets[0].id
         user_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
                 user_id=client.active_user.id,
@@ -1066,13 +1022,13 @@ def test_user_secret_is_not_visible_to_other_workspaces():
             scope=SecretScope.USER, secret_name=secret.name
         ) as user_secret:
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 2
             assert secret.id in [s.id for s in all_secrets]
             assert user_secret.id in [s.id for s in all_secrets]
             workspace_secrets = store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret.name,
                     scope=SecretScope.WORKSPACE,
                     workspace_id=client.active_workspace.id,
@@ -1082,7 +1038,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
             assert secret.id == workspace_secrets[0].id
             assert user_secret.id not in [s.id for s in workspace_secrets]
             user_secrets = store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret.name,
                     scope=SecretScope.USER,
                     user_id=client.active_user.id,
@@ -1094,13 +1050,13 @@ def test_user_secret_is_not_visible_to_other_workspaces():
 
             with WorkspaceContext(activate=True) as workspace:
                 all_secrets = store.list_secrets(
-                    SecretFilterModel(name=secret.name)
+                    SecretFilter(name=secret.name)
                 ).items
                 assert len(all_secrets) == 2
                 assert secret.id in [s.id for s in all_secrets]
                 assert user_secret.id in [s.id for s in all_secrets]
                 workspace_secrets = store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.WORKSPACE,
                         workspace_id=client.active_workspace.id,
@@ -1108,7 +1064,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
                 ).items
                 assert len(workspace_secrets) == 0
                 user_secrets = store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
                         user_id=client.active_user.id,
@@ -1126,13 +1082,13 @@ def test_user_secret_is_not_visible_to_other_workspaces():
                         other_store = other_client.zen_store
 
                         all_secrets = other_store.list_secrets(
-                            SecretFilterModel(name=secret.name)
+                            SecretFilter(name=secret.name)
                         ).items
                         assert len(all_secrets) == 2
                         assert secret.id in [s.id for s in all_secrets]
                         assert user_secret.id in [s.id for s in all_secrets]
                         workspace_secrets = other_store.list_secrets(
-                            SecretFilterModel(
+                            SecretFilter(
                                 name=secret.name,
                                 scope=SecretScope.WORKSPACE,
                                 workspace_id=other_client.active_workspace.id,
@@ -1140,7 +1096,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
                         ).items
                         assert len(workspace_secrets) == 0
                         user_secrets = other_store.list_secrets(
-                            SecretFilterModel(
+                            SecretFilter(
                                 name=secret.name,
                                 scope=SecretScope.USER,
                                 user_id=other_client.active_user.id,
@@ -1167,14 +1123,14 @@ def test_list_secrets_filter():
     ) as secret_three, SecretContext(
         secret_name=axl_secret_name, scope=SecretScope.USER
     ) as secret_four:
-        all_secrets = store.list_secrets(SecretFilterModel()).items
+        all_secrets = store.list_secrets(SecretFilter()).items
         assert len(all_secrets) >= 4
         assert set(
             [secret_one.id, secret_two.id, secret_three.id, secret_four.id]
         ) <= set(s.id for s in all_secrets)
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=aria_secret_name)
+            SecretFilter(name=aria_secret_name)
         ).items
         assert len(all_secrets) == 2
         assert set([secret_one.id, secret_two.id]) == set(
@@ -1182,7 +1138,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=axl_secret_name)
+            SecretFilter(name=axl_secret_name)
         ).items
         assert len(all_secrets) == 2
         assert set([secret_three.id, secret_four.id]) == set(
@@ -1190,7 +1146,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name="startswith:aria")
+            SecretFilter(name="startswith:aria")
         ).items
         assert len(all_secrets) >= 2
         assert set([secret_one.id, secret_two.id]) <= set(
@@ -1198,7 +1154,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name="startswith:axl")
+            SecretFilter(name="startswith:axl")
         ).items
         assert len(all_secrets) >= 2
         assert set([secret_three.id, secret_four.id]) <= set(
@@ -1206,7 +1162,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name="contains:whiskers")
+            SecretFilter(name="contains:whiskers")
         ).items
         assert len(all_secrets) >= 4
         assert set(
@@ -1214,7 +1170,7 @@ def test_list_secrets_filter():
         ) <= set(s.id for s in all_secrets)
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=f"endswith:{aria_secret_name[-5:]}")
+            SecretFilter(name=f"endswith:{aria_secret_name[-5:]}")
         ).items
         assert len(all_secrets) == 2
         assert set([secret_one.id, secret_two.id]) == set(
@@ -1222,7 +1178,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=f"endswith:{axl_secret_name[-5:]}")
+            SecretFilter(name=f"endswith:{axl_secret_name[-5:]}")
         ).items
         assert len(all_secrets) == 2
         assert set([secret_three.id, secret_four.id]) == set(
@@ -1230,7 +1186,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(scope=SecretScope.WORKSPACE)
+            SecretFilter(scope=SecretScope.WORKSPACE)
         ).items
         assert len(all_secrets) >= 2
         assert set([secret_one.id, secret_three.id]) <= set(
@@ -1238,7 +1194,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(scope=SecretScope.USER)
+            SecretFilter(scope=SecretScope.USER)
         ).items
         assert len(all_secrets) >= 2
         assert set([secret_two.id, secret_four.id]) <= set(
@@ -1246,7 +1202,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(scope=SecretScope.USER)
+            SecretFilter(scope=SecretScope.USER)
         ).items
         assert len(all_secrets) >= 2
         assert set([secret_two.id, secret_four.id]) <= set(
@@ -1254,7 +1210,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=aria_secret_name,
                 workspace_id=client.active_workspace.id,
             )
@@ -1265,7 +1221,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=axl_secret_name,
                 workspace_id=client.active_workspace.id,
             )
@@ -1276,7 +1232,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=aria_secret_name,
                 workspace_id=client.active_workspace.id,
                 user_id=client.active_user.id,
@@ -1288,7 +1244,7 @@ def test_list_secrets_filter():
         )
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=axl_secret_name,
                 workspace_id=client.active_workspace.id,
                 user_id=client.active_user.id,
@@ -1319,7 +1275,7 @@ def test_list_secrets_pagination_and_sorting():
         scope=SecretScope.USER,
     ) as secret_four:
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
             )
         )
@@ -1333,7 +1289,7 @@ def test_list_secrets_pagination_and_sorting():
         ) == set(s.id for s in secrets.items)
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=1,
                 size=2,
@@ -1348,7 +1304,7 @@ def test_list_secrets_pagination_and_sorting():
         assert [secret_two.id, secret_one.id] == [s.id for s in secrets.items]
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=2,
                 size=2,
@@ -1365,7 +1321,7 @@ def test_list_secrets_pagination_and_sorting():
         ]
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=1,
                 size=2,
@@ -1382,7 +1338,7 @@ def test_list_secrets_pagination_and_sorting():
         ]
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=2,
                 size=2,
@@ -1397,7 +1353,7 @@ def test_list_secrets_pagination_and_sorting():
         assert [secret_one.id, secret_two.id] == [s.id for s in secrets.items]
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=1,
                 size=2,
@@ -1412,7 +1368,7 @@ def test_list_secrets_pagination_and_sorting():
         assert {secret_two.id, secret_four.id} == {s.id for s in secrets.items}
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=2,
                 size=2,
@@ -1429,7 +1385,7 @@ def test_list_secrets_pagination_and_sorting():
         }
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=1,
                 size=3,
@@ -1448,7 +1404,7 @@ def test_list_secrets_pagination_and_sorting():
         page_one = [s.id for s in secrets.items]
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=2,
                 size=3,
@@ -1473,7 +1429,7 @@ def test_list_secrets_pagination_and_sorting():
 
         secret_one = store.update_secret(
             secret_one.id,
-            SecretUpdateModel(
+            SecretUpdate(
                 values={
                     "food": "birds",
                 }
@@ -1485,24 +1441,18 @@ def test_list_secrets_pagination_and_sorting():
 
         secret_two = store.update_secret(
             secret_two.id,
-            SecretUpdateModel(
+            SecretUpdate(
                 values={
                     "food": "fish",
                 }
             ),
         )
 
-        if _get_secrets_store_type() == SecretsStoreType.AWS:
-            # The AWS secrets store returns before the secret is actually
-            # updated in the backend, so we need to wait a bit before
-            # running `list_secrets`.
-            time.sleep(AWS_SECRET_REFRESH_SLEEP)
-        else:
-            assert secret_one.updated > secret_one.created
-            assert secret_two.updated > secret_two.created
+        assert secret_one.updated > secret_one.created
+        assert secret_two.updated > secret_two.created
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=1,
                 size=2,
@@ -1520,7 +1470,7 @@ def test_list_secrets_pagination_and_sorting():
         ] == [s.id for s in secrets.items]
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=f"endswith:{suffix}",
                 page=2,
                 size=2,
@@ -1542,7 +1492,7 @@ def test_list_secrets_pagination_and_sorting():
         } == {s.id for s in secrets.items}
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 updated=f"gte:{secret_one.updated.strftime('%Y-%m-%d %H:%M:%S')}",
                 page=1,
                 size=10,
@@ -1561,7 +1511,7 @@ def test_list_secrets_pagination_and_sorting():
         ] == [s.id for s in secrets.items]
 
         secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 created=f"gte:{secret_one.updated.strftime('%Y-%m-%d %H:%M:%S')}",
                 page=1,
                 size=10,
@@ -1578,13 +1528,11 @@ def test_secret_is_deleted_with_workspace():
     store = client.zen_store
 
     with SecretContext() as secret:
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
         workspace_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.WORKSPACE,
                 workspace_id=client.active_workspace.id,
@@ -1595,12 +1543,12 @@ def test_secret_is_deleted_with_workspace():
 
         with WorkspaceContext(activate=True) as workspace:
             all_secrets = store.list_secrets(
-                SecretFilterModel(name=secret.name)
+                SecretFilter(name=secret.name)
             ).items
             assert len(all_secrets) == 1
             assert secret.id == all_secrets[0].id
             workspace_secrets = store.list_secrets(
-                SecretFilterModel(
+                SecretFilter(
                     name=secret.name,
                     scope=SecretScope.WORKSPACE,
                     workspace_id=workspace.id,
@@ -1613,13 +1561,13 @@ def test_secret_is_deleted_with_workspace():
                     store.get_secret(other_secret.id)
 
                 all_secrets = store.list_secrets(
-                    SecretFilterModel(name=secret.name)
+                    SecretFilter(name=secret.name)
                 ).items
                 assert len(all_secrets) == 2
                 assert secret.id in [s.id for s in all_secrets]
                 assert other_secret.id in [s.id for s in all_secrets]
                 workspace_secrets = store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.WORKSPACE,
                         workspace_id=workspace.id,
@@ -1634,20 +1582,20 @@ def test_secret_is_deleted_with_workspace():
                     store.get_secret(other_secret.id)
 
                 all_secrets = store.list_secrets(
-                    SecretFilterModel(name=secret.name)
+                    SecretFilter(name=secret.name)
                 ).items
                 assert len(all_secrets) == 1
                 assert secret.id == all_secrets[0].id
                 all_workspace_secrets = store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         workspace_id=workspace.id,
                     )
                 ).items
                 assert len(all_workspace_secrets) == 0
 
 
-def test_secret_is_deleted_with_user():
-    """Tests that deleting a user automatically deletes all its secrets."""
+def test_delete_user_with_secrets():
+    """Tests that deleting a user is not possible while it owns secrets."""
     client = Client()
     store = client.zen_store
 
@@ -1657,13 +1605,11 @@ def test_secret_is_deleted_with_user():
         )
 
     with SecretContext() as secret:
-        all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name)
-        ).items
+        all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
         workspace_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.WORKSPACE,
                 workspace_id=client.active_workspace.id,
@@ -1672,7 +1618,7 @@ def test_secret_is_deleted_with_user():
         assert len(workspace_secrets) == 1
         assert secret.id == workspace_secrets[0].id
         user_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
                 user_id=client.active_user.id,
@@ -1692,14 +1638,14 @@ def test_secret_is_deleted_with_user():
                     store.get_secret(other_secret.id)
 
                 all_secrets = store.list_secrets(
-                    SecretFilterModel(name=secret.name),
+                    SecretFilter(name=secret.name),
                 ).items
                 assert len(all_secrets) == 2
                 assert secret.id in [s.id for s in all_secrets]
                 assert other_secret.id in [s.id for s in all_secrets]
 
                 user_secrets = store.list_secrets(
-                    SecretFilterModel(
+                    SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
                         user_id=user.id,
@@ -1709,21 +1655,46 @@ def test_secret_is_deleted_with_user():
                 assert len(user_secrets) == 1
                 assert other_secret.id == user_secrets[0].id
 
-        store.delete_user(user.id)
+        with pytest.raises(IllegalOperationError):
+            store.delete_user(user.id)
 
-        # New secret has been deleted at this point with the user
+        with does_not_raise():
+            store.get_secret(other_secret.id)
+
+        all_secrets = store.list_secrets(
+            SecretFilter(name=secret.name),
+        ).items
+        assert len(all_secrets) == 2
+        assert secret.id in [s.id for s in all_secrets]
+        assert other_secret.id in [s.id for s in all_secrets]
+
+        user_secrets = store.list_secrets(
+            SecretFilter(
+                name=secret.name,
+                scope=SecretScope.USER,
+                user_id=user.id,
+                workspace_id=client.active_workspace.id,
+            ),
+        ).items
+        assert len(user_secrets) == 1
+
+        # Delete the secret
+        store.delete_secret(other_secret.id)
+
+        with does_not_raise():
+            store.delete_user(user.id)
 
         with pytest.raises(KeyError):
             store.get_secret(other_secret.id)
 
         all_secrets = store.list_secrets(
-            SecretFilterModel(name=secret.name),
+            SecretFilter(name=secret.name),
         ).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
 
         user_secrets = store.list_secrets(
-            SecretFilterModel(
+            SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
                 user_id=user.id,

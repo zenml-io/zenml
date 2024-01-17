@@ -24,7 +24,7 @@ from tests.integration.functional.cli.utils import (
 from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.enums import ColorVariants
-from zenml.models.tag_models import TagResponseModel
+from zenml.models import TagResponse
 
 
 def test_tag_list():
@@ -93,7 +93,7 @@ def test_tag_create_only_required():
 def test_tag_update():
     """Test that zenml tag update does not fail."""
     with tags_killer(1) as tags:
-        tag: TagResponseModel = tags[0]
+        tag: TagResponse = tags[0]
         runner = CliRunner(mix_stderr=False)
         update_command = cli.commands["tag"].commands["update"]
         color_to_set = "yellow" if tag.color.value != "yellow" else "grey"
@@ -150,7 +150,7 @@ def test_tag_create_without_required_fails():
 def test_tag_delete_found():
     """Test that zenml tag delete does not fail."""
     with tags_killer(1) as tags:
-        tag: TagResponseModel = tags[0]
+        tag: TagResponse = tags[0]
         runner = CliRunner(mix_stderr=False)
         delete_command = cli.commands["tag"].commands["delete"]
         result = runner.invoke(

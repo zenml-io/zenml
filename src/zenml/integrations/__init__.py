@@ -46,6 +46,7 @@ from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
 from zenml.integrations.openai import OpenAIIntegration  # noqa
 from zenml.integrations.pillow import PillowIntegration  # noqa
+from zenml.integrations.polars import PolarsIntegration
 from zenml.integrations.pycaret import PyCaretIntegration  # noqa
 from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa
@@ -63,7 +64,6 @@ from zenml.integrations.spark import SparkIntegration  # noqa
 from zenml.integrations.tekton import TektonIntegration  # noqa
 from zenml.integrations.tensorboard import TensorBoardIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
-from zenml.integrations.vault import VaultSecretsManagerIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa

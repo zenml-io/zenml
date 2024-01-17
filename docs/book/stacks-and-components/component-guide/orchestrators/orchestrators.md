@@ -12,7 +12,7 @@ steps of your pipeline) are available.
 {% hint style="info" %}
 Many of ZenML's remote orchestrators build [Docker](https://www.docker.com/) images in order to transport and execute
 your pipeline code. If you want to learn more about how Docker images are built by ZenML, check
-out [this guide](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md).
+out [this guide](/docs/book/user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md).
 {% endhint %}
 
 ### When to use it
@@ -49,7 +49,7 @@ zenml orchestrator flavor list
 ### How to use it
 
 You don't need to directly interact with any ZenML orchestrator in your code. As long as the orchestrator that you want
-to use is part of your active [ZenML stack](/docs/book/user-guide/starter-guide/understand-stacks.md), using the
+to use is part of your active [ZenML stack](/docs/book/user-guide/production-guide/understand-stacks.md), using the
 orchestrator is as simple as executing a Python file
 that [runs a ZenML pipeline](/docs/book/user-guide/starter-guide/starter-guide.md):
 
@@ -66,13 +66,13 @@ to the orchestrator UI of a specific pipeline run using the following code snipp
 from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = pipeline_run.metadata["orchestrator_url"].value
+orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 ```
 
 #### Specifying per-step resources
 
 If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps
-as described [here](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
+as described [here](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look
 at [step operators](../step-operators/step-operators.md).

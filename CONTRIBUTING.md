@@ -50,15 +50,17 @@ general guidelines that cover both:
 A friendly ping in the comment thread to the submitter or a contributor can help
 draw attention if your issue is blocking.
 
+### Good First Issues for New Contributors
+
 The best way to start is to check the
-[`good-first-issue`](https://github.com/zenml-io/zenml/labels/good%20first%20issue)
+[`good-first-issue`](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22)
 label on the issue board. The core team creates these issues as necessary
 smaller tasks that you can work on to get deeper into ZenML internals. These
 should generally require relatively simple changes, probably affecting just one
 or two files which we think are ideal for people new to ZenML.
 
 The next step after that would be to look at the
-[`good-second-issue`](https://github.com/zenml-io/zenml/labels/good%20second%20issue)
+[`good-second-issue`](https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+second+issue%22)
 label on the issue board. These are a bit more complex, might involve more
 files, but should still be well-defined and achievable to people relatively new
 to ZenML.
@@ -172,7 +174,10 @@ mypy --install-types
 
 Warning: This might take a while for both (~ 15 minutes each, depending on your machine), however if you have
 time, please run it as it will make the
-next commands error-free.
+next commands error-free. Note that the `zenml integration install` command
+might also fail on account of dependency conflicts so you can just install the
+specific integration you're working on and manually run the mypy command for the
+files you've been working on.
 
 You can now run the following scripts to automatically format your
 code and to check whether the code formatting, linting, docstrings, and
@@ -182,6 +187,10 @@ spelling is in order:
 bash scripts/format.sh
 bash scripts/run-ci-checks.sh
 ```
+
+If you're on Windows you might have to run the formatting script as `bash
+scripts/format.sh --no-yamlfix` and run the yamlfix command separately as
+`yamlfix .github -v`.
 
 Tests can be run as follows:
 

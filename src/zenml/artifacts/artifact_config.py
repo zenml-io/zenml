@@ -57,7 +57,7 @@ class ArtifactConfig(BaseModel):
             (42), stage (ModelStages.PRODUCTION or "production"), or
             (ModelStages.LATEST or None) for the latest version (default).
         is_model_artifact: Whether the artifact is a model artifact.
-        is_endpoint_artifact: Whether the artifact is an endpoint artifact.
+        is_deployment_artifact: Whether the artifact is a deployment artifact.
     """
 
     name: Optional[str] = None
@@ -67,7 +67,7 @@ class ArtifactConfig(BaseModel):
     model_name: Optional[str] = None
     model_version: Optional[Union[ModelStages, str, int]] = None
     is_model_artifact: bool = False
-    is_endpoint_artifact: bool = False
+    is_deployment_artifact: bool = False
 
     @root_validator
     def _root_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:

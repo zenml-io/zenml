@@ -55,7 +55,19 @@ def _create_test_models() -> List[Any]:
         key="key", operator="Equal", value="value", effect="NoExecute"
     )
 
-    return [affinity, toleration]
+    volume = k8s_client.V1Volume(
+        name="cache-volume",
+        empty_dir=k8s_client.V1EmptyDirVolumeSource(
+            medium="Memory", size_limit="1Gi"
+        ),
+    )
+
+    volume_mount = k8s_client.V1VolumeMount(
+        mount_path="/dev/shm",  # nosec
+        name="cache-volume",
+    )
+
+    return [affinity, toleration, volume, volume_mount]
 
 
 @pytest.mark.parametrize("model", _create_test_models())

@@ -19,7 +19,7 @@ from uuid import UUID
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.enums import TaggableResourceTypes
+from zenml.enums import MetadataResourceTypes, TaggableResourceTypes
 from zenml.models import (
     BaseResponseMetadata,
     ModelRequest,
@@ -41,6 +41,7 @@ from zenml.models import (
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -79,6 +80,9 @@ class ModelSchema(NamedSchema, table=True):
     limitations: str = Field(sa_column=Column(TEXT, nullable=True))
     trade_offs: str = Field(sa_column=Column(TEXT, nullable=True))
     ethics: str = Field(sa_column=Column(TEXT, nullable=True))
+    save_models_to_registry: bool = Field(
+        sa_column=Column(BOOLEAN, nullable=False)
+    )
     tags: List["TagResourceSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs=dict(
@@ -121,6 +125,7 @@ class ModelSchema(NamedSchema, table=True):
             limitations=model_request.limitations,
             trade_offs=model_request.trade_offs,
             ethics=model_request.ethics,
+            save_models_to_registry=model_request.save_models_to_registry,
         )
 
     def to_model(
@@ -140,11 +145,12 @@ class ModelSchema(NamedSchema, table=True):
 
         if self.model_versions:
             version_numbers = [mv.number for mv in self.model_versions]
-            latest_version = self.model_versions[
-                version_numbers.index(max(version_numbers))
-            ].name
+            latest_version_idx = version_numbers.index(max(version_numbers))
+            latest_version_name = self.model_versions[latest_version_idx].name
+            latest_version_id = self.model_versions[latest_version_idx].id
         else:
-            latest_version = None
+            latest_version_name = None
+            latest_version_id = None
 
         metadata = None
         if hydrate:
@@ -157,6 +163,7 @@ class ModelSchema(NamedSchema, table=True):
                 limitations=self.limitations,
                 trade_offs=self.trade_offs,
                 ethics=self.ethics,
+                save_models_to_registry=self.save_models_to_registry,
             )
 
         body = ModelResponseBody(
@@ -165,7 +172,8 @@ class ModelSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             tags=tags,
-            latest_version=latest_version,
+            latest_version_name=latest_version_name,
+            latest_version_id=latest_version_id,
         )
 
         return ModelResponse(
@@ -254,6 +262,15 @@ class ModelVersionSchema(NamedSchema, table=True):
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ModelVersionSchema.id)",
+            cascade="delete",
+            overlaps="run_metadata",
+        ),
+    )
+
     @classmethod
     def from_request(
         cls, model_version_request: ModelVersionRequest
@@ -291,7 +308,7 @@ class ModelVersionSchema(NamedSchema, table=True):
         """
         # Construct {name: {version: id}} dicts for all linked artifacts
         model_artifact_ids: Dict[str, Dict[str, UUID]] = {}
-        endpoint_artifact_ids: Dict[str, Dict[str, UUID]] = {}
+        deployment_artifact_ids: Dict[str, Dict[str, UUID]] = {}
         data_artifact_ids: Dict[str, Dict[str, UUID]] = {}
         for artifact_link in self.artifact_links:
             if not artifact_link.artifact_version:
@@ -303,8 +320,8 @@ class ModelVersionSchema(NamedSchema, table=True):
                 model_artifact_ids.setdefault(artifact_name, {}).update(
                     {str(artifact_version): artifact_version_id}
                 )
-            elif artifact_link.is_endpoint_artifact:
-                endpoint_artifact_ids.setdefault(artifact_name, {}).update(
+            elif artifact_link.is_deployment_artifact:
+                deployment_artifact_ids.setdefault(artifact_name, {}).update(
                     {str(artifact_version): artifact_version_id}
                 )
             else:
@@ -326,6 +343,10 @@ class ModelVersionSchema(NamedSchema, table=True):
             metadata = ModelVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
+                run_metadata={
+                    rm.key: rm.to_model(hydrate=True)
+                    for rm in self.run_metadata
+                },
             )
 
         body = ModelVersionResponseBody(
@@ -337,7 +358,7 @@ class ModelVersionSchema(NamedSchema, table=True):
             model=self.model.to_model(),
             model_artifact_ids=model_artifact_ids,
             data_artifact_ids=data_artifact_ids,
-            endpoint_artifact_ids=endpoint_artifact_ids,
+            deployment_artifact_ids=deployment_artifact_ids,
             pipeline_run_ids=pipeline_run_ids,
             tags=[t.tag.to_model() for t in self.tags],
         )
@@ -353,12 +374,14 @@ class ModelVersionSchema(NamedSchema, table=True):
         self,
         target_stage: Optional[str] = None,
         target_name: Optional[str] = None,
+        target_description: Optional[str] = None,
     ) -> "ModelVersionSchema":
         """Updates a `ModelVersionSchema` to a target stage.
 
         Args:
             target_stage: The stage to be updated.
             target_name: The version name to be updated.
+            target_description: The version description to be updated.
 
         Returns:
             The updated `ModelVersionSchema`.
@@ -367,6 +390,8 @@ class ModelVersionSchema(NamedSchema, table=True):
             self.stage = target_stage
         if target_name is not None:
             self.name = target_name
+        if target_description is not None:
+            self.description = target_description
         self.updated = datetime.utcnow()
         return self
 
@@ -433,7 +458,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     )
 
     is_model_artifact: bool = Field(sa_column=Column(BOOLEAN, nullable=True))
-    is_endpoint_artifact: bool = Field(
+    is_deployment_artifact: bool = Field(
         sa_column=Column(BOOLEAN, nullable=True)
     )
 
@@ -457,7 +482,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
             model_version_id=model_version_artifact_request.model_version,
             artifact_version_id=model_version_artifact_request.artifact_version,
             is_model_artifact=model_version_artifact_request.is_model_artifact,
-            is_endpoint_artifact=model_version_artifact_request.is_endpoint_artifact,
+            is_deployment_artifact=model_version_artifact_request.is_deployment_artifact,
         )
 
     def to_model(
@@ -482,7 +507,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
                 model_version=self.model_version_id,
                 artifact_version=self.artifact_version.to_model(),
                 is_model_artifact=self.is_model_artifact,
-                is_endpoint_artifact=self.is_endpoint_artifact,
+                is_deployment_artifact=self.is_deployment_artifact,
             ),
             metadata=BaseResponseMetadata() if hydrate else None,
         )

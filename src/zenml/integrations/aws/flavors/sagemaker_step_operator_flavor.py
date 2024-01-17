@@ -16,9 +16,9 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
-from zenml.integrations.aws.service_connectors.aws_service_connector import (
+from zenml.integrations.aws import (
     AWS_RESOURCE_TYPE,
+    AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR,
 )
 from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators.base_step_operator import (

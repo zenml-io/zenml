@@ -45,7 +45,7 @@ zenml step-operator flavor list
 ### How to use it
 
 You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you
-want to use is part of your active [ZenML stack](/docs/book/user-guide/starter-guide/understand-stacks.md), you can simply
+want to use is part of your active [ZenML stack](/docs/book/user-guide/production-guide/understand-stacks.md), you can simply
 specify it in the `@step` decorator of your step.
 
 ```python
@@ -60,12 +60,12 @@ def my_step(...) -> ...:
 #### Specifying per-step resources
 
 If your steps require additional hardware resources, you can specify them on your steps as
-described [here](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md).
+described [here](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md).
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use step operators to run steps on a GPU, you will need to
-follow [the instructions on this page](/docs/book/user-guide/advanced-guide/environment-management/scale-compute-to-the-cloud.md) to ensure 
+follow [the instructions on this page](/docs/book/user-guide/advanced-guide/infrastructure-management/scale-compute-to-the-cloud.md) to ensure 
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to 
 give its full acceleration.
 

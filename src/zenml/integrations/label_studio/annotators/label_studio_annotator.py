@@ -32,7 +32,6 @@ from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
 
 logger = get_logger(__name__)
@@ -152,12 +151,12 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             ValueError: when unable to access the Label Studio API key.
         """
-        secret = self.get_authentication_secret(ArbitrarySecretSchema)
+        secret = self.get_authentication_secret()
         if not secret:
             raise ValueError(
                 "Unable to access predefined secret to access Label Studio API key."
             )
-        api_key = secret.content.get("api_key")
+        api_key = secret.secret_values.get("api_key")
         if not api_key:
             raise ValueError(
                 "Unable to access Label Studio API key from secret."

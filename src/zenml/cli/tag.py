@@ -12,24 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with tags."""
-# from functools import partial
 from typing import Any, Optional, Union
 from uuid import UUID
 
 import click
 
-# from uuid import UUID
-# import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories, ColorVariants
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.models.tag_models import (
-    TagFilterModel,
-    TagRequestModel,
-    TagUpdateModel,
+from zenml.models import (
+    TagFilter,
+    TagRequest,
+    TagUpdate,
 )
 from zenml.utils.dict_utils import remove_none_values
 
@@ -41,7 +38,7 @@ def tag() -> None:
     """Interact with tags."""
 
 
-@cli_utils.list_options(TagFilterModel)
+@cli_utils.list_options(TagFilter)
 @tag.command("list", help="List tags with filter.")
 def list_tags(**kwargs: Any) -> None:
     """List tags with filter.
@@ -49,7 +46,7 @@ def list_tags(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter models.
     """
-    tags = Client().list_tags(TagFilterModel(**kwargs))
+    tags = Client().list_tags(TagFilter(**kwargs))
 
     if not tags:
         cli_utils.declare("No tags found.")
@@ -85,7 +82,7 @@ def register_tag(name: str, color: Optional[ColorVariants]) -> None:
     """
     request_dict = remove_none_values(dict(name=name, color=color))
     try:
-        tag = Client().create_tag(TagRequestModel(**request_dict))
+        tag = Client().create_tag(TagRequest(**request_dict))
     except (EntityExistsError, ValueError) as e:
         cli_utils.error(str(e))
 
@@ -128,7 +125,7 @@ def update_tag(
 
     tag = Client().update_tag(
         tag_name_or_id=tag_name_or_id,
-        tag_update_model=TagUpdateModel(**update_dict),
+        tag_update_model=TagUpdate(**update_dict),
     )
 
     cli_utils.print_pydantic_models(

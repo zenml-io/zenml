@@ -101,6 +101,7 @@ class PillowImageMaterializer(BaseMaterializer):
         file_extension = image.format or DEFAULT_IMAGE_EXTENSION
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
         artifact_store_path = os.path.join(self.uri, full_filename)
+        artifact_store_path = artifact_store_path.replace("\\", "/")
         return {artifact_store_path: VisualizationType.IMAGE}
 
     def extract_metadata(

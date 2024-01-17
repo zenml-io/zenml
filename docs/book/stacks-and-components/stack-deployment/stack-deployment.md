@@ -16,7 +16,7 @@ It is not trivial to set up all the different tools that you might need for your
 * 🤔 Figuring out the defaults for infra parameters is not easy. Even if you have identified the backing infra that you need for a stack component, setting up reasonable defaults for parameters like instance size, CPU, memory, etc., needs a lot of experimentation to figure out.
 * 🚧 Many times, standard tool installations don't work out of the box. For example, to run a custom pipeline in Vertex AI, it is not enough to just run an imported pipeline. You might also need a custom service account that is configured to perform tasks like reading secrets from your secret store or talking to other GCP services that your pipeline might need.
 * 🔐 Some tools need an additional layer of installations to enable a more secure, production-grade setup. For example, a standard MLflow tracking server deployment comes without an authentication frontend which might expose all of your tracking data to the world if deployed as-is.
-* 🗣️ All the components that you deploy must have the right permissions to be able to talk to each other. When you run your pipeline, it is inevitable that some components would need to communicate with the others. For example, your workloads running in a Kubernetes cluster might require access to the container registry or the secrets manager, and so on.
+* 🗣️ All the components that you deploy must have the right permissions to be able to talk to each other. When you run your pipeline, it is inevitable that some components would need to communicate with the others. For example, your workloads running in a Kubernetes cluster might require access to the container registry or the code repository, and so on.
 * 🧹 Cleaning up your resources after you're done with your experiments is super important yet very challenging. Many of the components need a range of other resources to work which might slide past your radar if you're not careful. For example, if your Kubernetes cluster has made use of Load Balancers, you might still have one lying around in your account even after deleting the cluster, costing you money and frustration.
 
 All of these points make taking your pipelines to production a more difficult task than it should be. We believe that the expertise in setting up these often-complex stacks shouldn't be a prerequisite to running your ML pipelines.
@@ -36,6 +36,21 @@ components as well as whole stacks using MLStacks. These stacks will be useful f
 - You are at the start of your MLOps journey, and would like to explore
   different tools.
 - You are looking for guidelines for production-grade deployments.
+
+## Installing the mlstacks extra
+
+To install `mlstacks`, either run `pip install mlstacks` or `pip install
+"zenml[mlstacks]"` to install it along with ZenML.
+
+MLStacks uses Terraform on the backend to manage infrastructure. You will need
+to have Terraform installed. Please visit [the Terraform
+docs](https://learn.hashicorp.com/tutorials/terraform/install-cli#install-terraform)
+for installation instructions.
+
+MLStacks also uses Helm to deploy Kubernetes resources. You will need to have
+Helm installed. Please visit [the Helm
+docs](https://helm.sh/docs/intro/install/#from-script) for installation
+instructions.
 
 ## Deploying a stack component
 

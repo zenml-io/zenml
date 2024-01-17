@@ -84,6 +84,10 @@ from zenml.models import (
     ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
     ServerModel,
     ServiceAccountFilter,
     ServiceAccountRequest,
@@ -103,10 +107,10 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
-    TagFilterModel,
-    TagRequestModel,
-    TagResponseModel,
-    TagUpdateModel,
+    TagFilter,
+    TagRequest,
+    TagResponse,
+    TagUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -235,7 +239,10 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_api_key(
-        self, service_account_id: UUID, api_key_name_or_id: Union[str, UUID]
+        self,
+        service_account_id: UUID,
+        api_key_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
     ) -> APIKeyResponse:
         """Get an API key for a service account.
 
@@ -243,6 +250,8 @@ class ZenStoreInterface(ABC):
             service_account_id: The ID of the service account for which to fetch
                 the API key.
             api_key_name_or_id: The name or ID of the API key to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The API key with the given ID.
@@ -254,7 +263,10 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_api_keys(
-        self, service_account_id: UUID, filter_model: APIKeyFilter
+        self,
+        service_account_id: UUID,
+        filter_model: APIKeyFilter,
+        hydrate: bool = False,
     ) -> Page[APIKeyResponse]:
         """List all API keys for a service account matching the given filter criteria.
 
@@ -262,7 +274,9 @@ class ZenStoreInterface(ABC):
             service_account_id: The ID of the service account for which to list
                 the API keys.
             filter_model: All filter parameters including pagination
-                params
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of all API keys matching the filter criteria.
@@ -492,6 +506,17 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the artifact version doesn't exist.
+        """
+
+    @abstractmethod
+    def prune_artifact_versions(
+        self,
+        only_versions: bool = True,
+    ) -> None:
+        """Prunes unused artifact versions and their artifacts.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
         """
 
     # -------------------- Artifact Visualization --------------------
@@ -1316,6 +1341,121 @@ class ZenStoreInterface(ABC):
             KeyError: if the schedule doesn't exist.
         """
 
+    # --------------------  Secrets --------------------
+
+    @abstractmethod
+    def create_secret(
+        self,
+        secret: SecretRequest,
+    ) -> SecretResponse:
+        """Creates a new secret.
+
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret: The secret to create.
+
+        Returns:
+            The newly created secret.
+
+        Raises:
+            KeyError: if the user or workspace does not exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+
+    @abstractmethod
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
+        """Get a secret with a given name.
+
+        Args:
+            secret_id: ID of the secret.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The secret.
+
+        Raises:
+            KeyError: if the secret does not exist.
+        """
+
+    @abstractmethod
+    def list_secrets(
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
+        """List all secrets matching the given filter criteria.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
+        Args:
+            secret_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all secrets matching the filter criteria, with pagination
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
+        """
+
+    @abstractmethod
+    def update_secret(
+        self,
+        secret_id: UUID,
+        secret_update: SecretUpdate,
+    ) -> SecretResponse:
+        """Updates a secret.
+
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret_id: The ID of the secret to be updated.
+            secret_update: The update to be applied.
+
+        Returns:
+            The updated secret.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+
+    @abstractmethod
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Deletes a secret.
+
+        Args:
+            secret_id: The ID of the secret to delete.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+        """
+
     # --------------------  Service Accounts --------------------
 
     @abstractmethod
@@ -1339,12 +1479,15 @@ class ZenStoreInterface(ABC):
     def get_service_account(
         self,
         service_account_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
     ) -> ServiceAccountResponse:
         """Gets a specific service account.
 
         Args:
             service_account_name_or_id: The name or ID of the service account to
                 get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The requested service account, if it was found.
@@ -1355,13 +1498,17 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_service_accounts(
-        self, filter_model: ServiceAccountFilter
+        self,
+        filter_model: ServiceAccountFilter,
+        hydrate: bool = False,
     ) -> Page[ServiceAccountResponse]:
         """List all service accounts.
 
         Args:
             filter_model: All filter parameters including pagination
                 params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A list of filtered service accounts.
@@ -2182,6 +2329,19 @@ class ZenStoreInterface(ABC):
             KeyError: specified ID or name not found.
         """
 
+    @abstractmethod
+    def delete_all_model_version_artifact_links(
+        self,
+        model_version_id: UUID,
+        only_links: bool = True,
+    ) -> None:
+        """Deletes all model version to artifact links.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+            only_links: Flag deciding whether to delete only links or all.
+        """
+
     # -------------------- Model Versions Pipeline Runs --------------------
 
     @abstractmethod
@@ -2242,7 +2402,7 @@ class ZenStoreInterface(ABC):
     #################
 
     @abstractmethod
-    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+    def create_tag(self, tag: TagRequest) -> TagResponse:
         """Creates a new tag.
 
         Args:
@@ -2271,13 +2431,14 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_tag(
-        self,
-        tag_name_or_id: Union[str, UUID],
-    ) -> TagResponseModel:
+        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The tag of interest.
@@ -2289,12 +2450,15 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_tags(
         self,
-        tag_filter_model: TagFilterModel,
-    ) -> Page[TagResponseModel]:
+        tag_filter_model: TagFilter,
+        hydrate: bool = False,
+    ) -> Page[TagResponse]:
         """Get all tags by filter.
 
         Args:
             tag_filter_model: All filter parameters including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all tags.
@@ -2304,8 +2468,8 @@ class ZenStoreInterface(ABC):
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        tag_update_model: TagUpdateModel,
-    ) -> TagResponseModel:
+        tag_update_model: TagUpdate,
+    ) -> TagResponse:
         """Update tag.
 
         Args:

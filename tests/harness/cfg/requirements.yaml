@@ -1,3 +1,4 @@
+---
 # Software requirements and stack components that are needed
 # by tests can be defined globally here and referenced by name in
 # environments or per-test configurations or passed to pytest directly using the
@@ -120,8 +121,7 @@ requirements:
 
     # Local docker orchestrator
   - name: docker-local
-    system_tools:
-      - docker
+    system_tools: [docker]
     stacks:
       - name: docker-local
         type: orchestrator
@@ -132,10 +132,8 @@ requirements:
 
     # Local airflow orchestrator
   - name: airflow-local
-    system_tools:
-      - docker
-    packages:
-      - apache-airflow-providers-docker
+    system_tools: [docker]
+    packages: [apache-airflow-providers-docker]
     stacks:
       - name: airflow-local
         type: orchestrator
@@ -166,9 +164,7 @@ requirements:
 
     # Local mlflow model deployer
   - name: mlflow-local-deployer
-    system_os:
-      - linux
-      - macos
+    system_os: [linux, macos]
     stacks:
       - name: mlflow-local
         type: model_deployer

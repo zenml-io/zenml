@@ -617,7 +617,7 @@ class KServeModelDeployer(BaseModelDeployer):
                     config.k8s_secret = None
                 return
 
-            credentials = converted_secret.content
+            credentials = converted_secret.get_values()
 
         # S3 credentials are special because part of them need to be passed
         # as annotations
@@ -688,7 +688,6 @@ class KServeModelDeployer(BaseModelDeployer):
             if aws_access_key_id and aws_secret_access_key:
                 # Convert the credentials into the format expected by KServe
                 zenml_secret = KServeS3SecretSchema(
-                    name="",
                     aws_access_key_id=aws_access_key_id,
                     aws_secret_access_key=aws_secret_access_key,
                 )
@@ -729,7 +728,6 @@ class KServeModelDeployer(BaseModelDeployer):
             if gcp_credentials:
                 # Convert the credentials into the format expected by KServe
                 return KServeGSSecretSchema(
-                    name="",
                     google_application_credentials=json.dumps(gcp_credentials),
                 )
 
@@ -759,7 +757,6 @@ class KServeModelDeployer(BaseModelDeployer):
                     and azure_credentials.tenant_id is not None
                 ):
                     return KServeAzureSecretSchema(
-                        name="",
                         azure_client_id=azure_credentials.client_id,
                         azure_client_secret=azure_credentials.client_secret,
                         azure_tenant_id=azure_credentials.tenant_id,

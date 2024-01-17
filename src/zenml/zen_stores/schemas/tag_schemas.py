@@ -23,11 +23,13 @@ from sqlmodel import Field, Relationship
 
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models import (
-    TagRequestModel,
-    TagResourceRequestModel,
-    TagResourceResponseModel,
-    TagResponseModel,
-    TagUpdateModel,
+    TagRequest,
+    TagResourceRequest,
+    TagResourceResponse,
+    TagResourceResponseBody,
+    TagResponse,
+    TagResponseBody,
+    TagUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -55,8 +57,8 @@ class TagSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_request(cls, request: TagRequestModel) -> "TagSchema":
-        """Convert an `TagRequestModel` to an `TagSchema`.
+    def from_request(cls, request: TagRequest) -> "TagSchema":
+        """Convert an `TagRequest` to an `TagSchema`.
 
         Args:
             request: The request model to convert.
@@ -69,36 +71,32 @@ class TagSchema(NamedSchema, table=True):
             color=request.color.value,
         )
 
-    def to_model(
-        self,
-        hydrate: bool = False,
-    ) -> TagResponseModel:
-        """Convert an `TagSchema` to an `TagResponseModel`.
+    def to_model(self, hydrate: bool = False) -> TagResponse:
+        """Convert an `TagSchema` to an `TagResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            The created `TagResponseModel`.
+            The created `TagResponse`.
         """
-        return TagResponseModel(
+        return TagResponse(
             id=self.id,
             name=self.name,
-            color=ColorVariants(self.color),
-            created=self.created,
-            updated=self.updated,
-            tagged_count=len(self.links),
+            body=TagResponseBody(
+                created=self.created,
+                updated=self.updated,
+                color=ColorVariants(self.color),
+                tagged_count=len(self.links),
+            ),
         )
 
-    def update(
-        self,
-        update: TagUpdateModel,
-    ) -> "TagSchema":
-        """Updates a `TagSchema` from a `TagUpdateModel`.
+    def update(self, update: TagUpdate) -> "TagSchema":
+        """Updates a `TagSchema` from a `TagUpdate`.
 
         Args:
-            update: The `TagUpdateModel` to update from.
+            update: The `TagUpdate` to update from.
 
         Returns:
             The updated `TagSchema`.
@@ -155,10 +153,8 @@ class TagResourceSchema(BaseSchema, table=True):
     )
 
     @classmethod
-    def from_request(
-        cls, request: TagResourceRequestModel
-    ) -> "TagResourceSchema":
-        """Convert an `TagResourceRequestModel` to an `TagResourceSchema`.
+    def from_request(cls, request: TagResourceRequest) -> "TagResourceSchema":
+        """Convert an `TagResourceRequest` to an `TagResourceSchema`.
 
         Args:
             request: The request model version to convert.
@@ -172,24 +168,23 @@ class TagResourceSchema(BaseSchema, table=True):
             resource_type=request.resource_type.value,
         )
 
-    def to_model(
-        self,
-        hydrate: bool = False,
-    ) -> TagResourceResponseModel:
-        """Convert an `TagResourceSchema` to an `TagResourceResponseModel`.
+    def to_model(self, hydrate: bool = False) -> TagResourceResponse:
+        """Convert an `TagResourceSchema` to an `TagResourceResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
-            The created `TagResourceResponseModel`.
+            The created `TagResourceResponse`.
         """
-        return TagResourceResponseModel(
+        return TagResourceResponse(
             id=self.id,
-            tag_id=self.tag_id,
-            resource_id=self.resource_id,
-            created=self.created,
-            updated=self.updated,
-            resource_type=TaggableResourceTypes(self.resource_type),
+            body=TagResourceResponseBody(
+                tag_id=self.tag_id,
+                resource_id=self.resource_id,
+                created=self.created,
+                updated=self.updated,
+                resource_type=TaggableResourceTypes(self.resource_type),
+            ),
         )

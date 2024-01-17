@@ -34,7 +34,7 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
-from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
+from zenml.integrations.azure import (
     AZURE_CONNECTOR_TYPE,
     AZURE_RESOURCE_TYPE,
     BLOB_RESOURCE_TYPE,

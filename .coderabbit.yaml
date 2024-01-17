@@ -1,0 +1,30 @@
+language: "en"
+early_access: false
+reviews:
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  path_filters:
+  - "!**/.xml"
+  - "!**/.json"
+  path_instructions:
+  - path: "**/*.js"
+    instructions: "Review the Python code for conformity with Python best practices."
+  - path: "docs/**/*.md"
+    instructions: "Review the documentation for readability and clarity."
+  - path: "tests/**/*.py"
+    instructions: |
+      "Assess the unit test code employing the PyTest testing framework. Confirm that:
+      - The tests adhere to PyTest's established best practices.
+      - Test descriptions are sufficiently detailed to clarify the purpose of each test."
+  auto_review:
+    enabled: false
+    ignore_title_keywords:
+    - "WIP"
+    - "DO NOT MERGE"
+    drafts: false
+    base_branches:
+    - "develop"
+chat:
+  auto_reply: true

@@ -32,11 +32,11 @@ from uuid import UUID
 import requests
 import urllib3
 from pydantic import BaseModel, root_validator, validator
+from requests.adapters import HTTPAdapter, Retry
 
 import zenml
 from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
@@ -68,6 +68,7 @@ from zenml.constants import (
     RUN_METADATA,
     RUNS,
     SCHEDULES,
+    SECRETS,
     SERVICE_ACCOUNTS,
     SERVICE_CONNECTOR_CLIENT,
     SERVICE_CONNECTOR_RESOURCES,
@@ -84,7 +85,6 @@ from zenml.constants import (
 )
 from zenml.enums import (
     OAuthGrantTypes,
-    SecretsStoreType,
     StoreType,
 )
 from zenml.exceptions import (
@@ -109,9 +109,7 @@ from zenml.models import (
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseRequest,
-    BaseRequestModel,
     BaseResponse,
-    BaseResponseModel,
     CodeReferenceResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
@@ -165,6 +163,10 @@ from zenml.models import (
     ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
     ServerModel,
     ServiceAccountFilter,
     ServiceAccountRequest,
@@ -184,10 +186,10 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
-    TagFilterModel,
-    TagRequestModel,
-    TagResponseModel,
-    TagUpdateModel,
+    TagFilter,
+    TagRequest,
+    TagResponse,
+    TagUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -196,7 +198,6 @@ from zenml.models import (
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceScopedRequest,
-    WorkspaceScopedRequestModel,
     WorkspaceUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
@@ -207,9 +208,6 @@ from zenml.utils.networking_utils import (
 )
 from zenml.zen_server.exceptions import exception_from_response
 from zenml.zen_stores.base_zen_store import BaseZenStore
-from zenml.zen_stores.secrets_stores.rest_secrets_store import (
-    RestSecretsStoreConfiguration,
-)
 
 logger = get_logger(__name__)
 
@@ -217,16 +215,11 @@ logger = get_logger(__name__)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
-AnyRequestModel = TypeVar(
-    "AnyRequestModel", bound=Union[BaseRequest, BaseRequestModel]
-)
-AnyResponseModel = TypeVar(
-    "AnyResponseModel",
-    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
-)
-AnyWorkspaceScopedRequestModel = TypeVar(
-    "AnyWorkspaceScopedRequestModel",
-    bound=Union[WorkspaceScopedRequestModel, WorkspaceScopedRequest],
+AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyWorkspaceScopedRequest = TypeVar(
+    "AnyWorkspaceScopedRequest",
+    bound=WorkspaceScopedRequest,
 )
 
 
@@ -235,9 +228,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     Attributes:
         type: The type of the store.
-        secrets_store: The configuration of the secrets store to use.
-            This defaults to a REST secrets store that extends the REST ZenML
-            store.
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
         api_key: The service account API key to use to connect to the Zen
@@ -254,39 +244,12 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.REST
 
-    secrets_store: Optional[SecretsStoreConfiguration] = None
-
     username: Optional[str] = None
     password: Optional[str] = None
     api_key: Optional[str] = None
     api_token: Optional[str] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
-
-    @validator("secrets_store")
-    def validate_secrets_store(
-        cls, secrets_store: Optional[SecretsStoreConfiguration]
-    ) -> SecretsStoreConfiguration:
-        """Ensures that the secrets store uses an associated REST secrets store.
-
-        Args:
-            secrets_store: The secrets store config to be validated.
-
-        Returns:
-            The validated secrets store config.
-
-        Raises:
-            ValueError: If the secrets store is not of type REST.
-        """
-        if secrets_store is None:
-            secrets_store = RestSecretsStoreConfiguration()
-        elif secrets_store.type != SecretsStoreType.REST:
-            raise ValueError(
-                "The secrets store associated with a REST zen store must be "
-                f"of type REST, but is of type {secrets_store.type}."
-            )
-
-        return secrets_store
 
     @root_validator
     def validate_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -822,6 +785,19 @@ class RestZenStore(BaseZenStore):
         """
         self._delete_resource(
             resource_id=artifact_version_id, route=ARTIFACT_VERSIONS
+        )
+
+    def prune_artifact_versions(
+        self,
+        only_versions: bool = True,
+    ) -> None:
+        """Prunes unused artifact versions and their artifacts.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+        """
+        self.delete(
+            path=ARTIFACT_VERSIONS, params={"only_versions": only_versions}
         )
 
     # ------------------------ Artifact Visualizations ------------------------
@@ -1675,6 +1651,126 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=schedule_id,
             route=SCHEDULES,
+        )
+
+    # --------------------------- Secrets ---------------------------
+
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
+        """Creates a new secret.
+
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret: The secret to create.
+
+        Returns:
+            The newly created secret.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=secret,
+            route=SECRETS,
+            response_model=SecretResponse,
+        )
+
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
+        """Get a secret by ID.
+
+        Args:
+            secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The secret.
+        """
+        return self._get_resource(
+            resource_id=secret_id,
+            route=SECRETS,
+            response_model=SecretResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_secrets(
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
+        """List all secrets matching the given filter criteria.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
+        Args:
+            secret_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all secrets matching the filter criteria, with pagination
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
+        """
+        return self._list_paginated_resources(
+            route=SECRETS,
+            response_model=SecretResponse,
+            filter_model=secret_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_secret(
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
+        """Updates a secret.
+
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret_id: The ID of the secret to be updated.
+            secret_update: The update to be applied.
+
+        Returns:
+            The updated secret.
+        """
+        return self._update_resource(
+            resource_id=secret_id,
+            resource_update=secret_update,
+            route=SECRETS,
+            response_model=SecretResponse,
+            # The default endpoint behavior is to replace all secret values
+            # with the values in the update. We want to merge the values
+            # instead.
+            params=dict(patch_values=True),
+        )
+
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Delete a secret.
+
+        Args:
+            secret_id: The id of the secret to delete.
+        """
+        self._delete_resource(
+            resource_id=secret_id,
+            route=SECRETS,
         )
 
     # --------------------------- Service Accounts ---------------------------
@@ -2843,6 +2939,22 @@ class RestZenStore(BaseZenStore):
             route=f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
         )
 
+    def delete_all_model_version_artifact_links(
+        self,
+        model_version_id: UUID,
+        only_links: bool = True,
+    ) -> None:
+        """Deletes all links between model version and an artifact.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+            only_links: Flag deciding whether to delete only links or all.
+        """
+        self.delete(
+            f"{MODEL_VERSIONS}/{model_version_id}{ARTIFACTS}",
+            params={"only_links": only_links},
+        )
+
     # ---------------------- Model Versions Pipeline Runs ----------------------
 
     def create_model_version_pipeline_run_link(
@@ -3019,7 +3131,7 @@ class RestZenStore(BaseZenStore):
     # Tags
     #################
 
-    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+    def create_tag(self, tag: TagRequest) -> TagResponse:
         """Creates a new tag.
 
         Args:
@@ -3030,7 +3142,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=tag,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
             route=TAGS,
         )
 
@@ -3046,13 +3158,14 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(resource_id=tag_name_or_id, route=TAGS)
 
     def get_tag(
-        self,
-        tag_name_or_id: Union[str, UUID],
-    ) -> TagResponseModel:
+        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The tag of interest.
@@ -3060,32 +3173,37 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=tag_name_or_id,
             route=TAGS,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_tags(
         self,
-        tag_filter_model: TagFilterModel,
-    ) -> Page[TagResponseModel]:
+        tag_filter_model: TagFilter,
+        hydrate: bool = False,
+    ) -> Page[TagResponse]:
         """Get all tags by filter.
 
         Args:
             tag_filter_model: All filter parameters including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all tags.
         """
         return self._list_paginated_resources(
             route=TAGS,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
             filter_model=tag_filter_model,
+            params={"hydrate": hydrate},
         )
 
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        tag_update_model: TagUpdateModel,
-    ) -> TagResponseModel:
+        tag_update_model: TagUpdate,
+    ) -> TagResponse:
         """Update tag.
 
         Args:
@@ -3100,7 +3218,7 @@ class RestZenStore(BaseZenStore):
             resource_id=tag.id,
             resource_update=tag_update_model,
             route=TAGS,
-            response_model=TagResponseModel,
+            response_model=TagResponse,
         )
 
     # =======================
@@ -3183,6 +3301,9 @@ class RestZenStore(BaseZenStore):
                 )
 
             self._session = requests.Session()
+            retries = Retry(backoff_factor=0.1, connect=5)
+            self._session.mount("https://", HTTPAdapter(max_retries=retries))
+            self._session.mount("http://", HTTPAdapter(max_retries=retries))
             self._session.verify = self.config.verify_ssl
             token = self._get_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
@@ -3401,17 +3522,13 @@ class RestZenStore(BaseZenStore):
             **kwargs,
         )
 
-    # TODO: In the helper functions below here, there are a few ignored
-    #   mypy issues. This is mainly due to AnyResponse being bound to two
-    #   different classes. Once the 'BaseResponseModel's are replaced with
-    #   'BaseResponse's, we need to remove the ignore and reevaluate them.
     def _create_resource(
         self,
-        resource: AnyRequestModel,
-        response_model: Type[AnyResponseModel],
+        resource: AnyRequest,
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyResponseModel:
+    ) -> AnyResponse:
         """Create a new resource.
 
         Args:
@@ -3425,17 +3542,15 @@ class RestZenStore(BaseZenStore):
             The created resource.
         """
         response_body = self.post(f"{route}", body=resource, params=params)
-        return response_model.parse_obj(  # type: ignore[return-value]
-            response_body
-        )
+        return response_model.parse_obj(response_body)
 
     def _create_workspace_scoped_resource(
         self,
-        resource: AnyWorkspaceScopedRequestModel,
-        response_model: Type[AnyResponseModel],
+        resource: AnyWorkspaceScopedRequest,
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyResponseModel:
+    ) -> AnyResponse:
         """Create a new workspace scoped resource.
 
         Args:
@@ -3457,11 +3572,11 @@ class RestZenStore(BaseZenStore):
 
     def _get_or_create_resource(
         self,
-        resource: AnyRequestModel,
-        response_model: Type[AnyResponseModel],
+        resource: AnyRequest,
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[AnyResponseModel, bool]:
+    ) -> Tuple[AnyResponse, bool]:
         """Get or create a resource.
 
         Args:
@@ -3503,15 +3618,15 @@ class RestZenStore(BaseZenStore):
                 f"response from the {route}{GET_OR_CREATE} endpoint but got "
                 f"{type(was_created)} instead."
             )
-        return response_model.parse_obj(model_json), was_created  # type: ignore[return-value]
+        return response_model.parse_obj(model_json), was_created
 
     def _get_or_create_workspace_scoped_resource(
         self,
-        resource: AnyWorkspaceScopedRequestModel,
-        response_model: Type[AnyResponseModel],
+        resource: AnyWorkspaceScopedRequest,
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[AnyResponseModel, bool]:
+    ) -> Tuple[AnyResponse, bool]:
         """Get or create a workspace scoped resource.
 
         Args:
@@ -3536,9 +3651,9 @@ class RestZenStore(BaseZenStore):
         self,
         resource_id: Union[str, int, UUID],
         route: str,
-        response_model: Type[AnyResponseModel],
+        response_model: Type[AnyResponse],
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyResponseModel:
+    ) -> AnyResponse:
         """Retrieve a single resource.
 
         Args:
@@ -3551,15 +3666,15 @@ class RestZenStore(BaseZenStore):
             The retrieved resource.
         """
         body = self.get(f"{route}/{str(resource_id)}", params=params)
-        return response_model.parse_obj(body)  # type: ignore[return-value]
+        return response_model.parse_obj(body)
 
     def _list_paginated_resources(
         self,
         route: str,
-        response_model: Type[AnyResponseModel],
+        response_model: Type[AnyResponse],
         filter_model: BaseFilter,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Page[AnyResponseModel]:
+    ) -> Page[AnyResponse]:
         """Retrieve a list of resources filtered by some criteria.
 
         Args:
@@ -3583,10 +3698,10 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         # The initial page of items will be of type BaseResponseModel
-        page_of_items: Page[AnyResponseModel] = Page.parse_obj(body)
+        page_of_items: Page[AnyResponse] = Page.parse_obj(body)
         # So these items will be parsed into their correct types like here
         page_of_items.items = [
-            response_model.parse_obj(generic_item)  # type: ignore[misc]
+            response_model.parse_obj(generic_item)
             for generic_item in body["items"]
         ]
         return page_of_items
@@ -3594,9 +3709,9 @@ class RestZenStore(BaseZenStore):
     def _list_resources(
         self,
         route: str,
-        response_model: Type[AnyResponseModel],
+        response_model: Type[AnyResponse],
         **filters: Any,
-    ) -> List[AnyResponseModel]:
+    ) -> List[AnyResponse]:
         """Retrieve a list of resources filtered by some criteria.
 
         Args:
@@ -3617,16 +3732,16 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [response_model.parse_obj(entry) for entry in body]  # type: ignore[misc]
+        return [response_model.parse_obj(entry) for entry in body]
 
     def _update_resource(
         self,
         resource_id: Union[str, int, UUID],
         resource_update: BaseModel,
-        response_model: Type[AnyResponseModel],
+        response_model: Type[AnyResponse],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyResponseModel:
+    ) -> AnyResponse:
         """Update an existing resource.
 
         Args:
@@ -3644,9 +3759,7 @@ class RestZenStore(BaseZenStore):
             f"{route}/{str(resource_id)}", body=resource_update, params=params
         )
 
-        return response_model.parse_obj(  # type: ignore[return-value]
-            response_body
-        )
+        return response_model.parse_obj(response_body)
 
     def _delete_resource(
         self, resource_id: Union[str, UUID], route: str

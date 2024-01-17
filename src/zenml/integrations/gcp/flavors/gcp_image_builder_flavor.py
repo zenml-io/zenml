@@ -18,7 +18,11 @@ from typing import TYPE_CHECKING, Optional, Type
 from pydantic import PositiveInt
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
-from zenml.integrations.gcp import GCP_IMAGE_BUILDER_FLAVOR
+from zenml.integrations.gcp import (
+    GCP_CONNECTOR_TYPE,
+    GCP_IMAGE_BUILDER_FLAVOR,
+    GCP_RESOURCE_TYPE,
+)
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
@@ -82,8 +86,8 @@ class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            connector_type="gcp",
-            resource_type="gcp-generic",
+            connector_type=GCP_CONNECTOR_TYPE,
+            resource_type=GCP_RESOURCE_TYPE,
         )
 
     @property

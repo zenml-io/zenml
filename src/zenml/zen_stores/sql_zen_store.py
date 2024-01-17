@@ -50,7 +50,16 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, SQLModel, create_engine, or_, select
+from sqlmodel import (
+    Session,
+    SQLModel,
+    and_,
+    col,
+    create_engine,
+    delete,
+    or_,
+    select,
+)
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -75,6 +84,7 @@ from zenml.enums import (
     LoggingLevels,
     ModelStages,
     SecretScope,
+    SecretsStoreType,
     SorterOps,
     StackComponentType,
     StepRunInputArtifactType,
@@ -110,7 +120,6 @@ from zenml.models import (
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseResponse,
-    BaseResponseModel,
     CodeReferenceRequest,
     CodeReferenceResponse,
     CodeRepositoryFilter,
@@ -168,8 +177,10 @@ from zenml.models import (
     ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
-    SecretFilterModel,
-    SecretRequestModel,
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretUpdate,
     ServerDatabaseType,
     ServerModel,
     ServiceAccountFilter,
@@ -190,12 +201,12 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
-    TagFilterModel,
-    TagRequestModel,
-    TagResourceRequestModel,
-    TagResourceResponseModel,
-    TagResponseModel,
-    TagUpdateModel,
+    TagFilter,
+    TagRequest,
+    TagResourceRequest,
+    TagResourceResponse,
+    TagResponse,
+    TagUpdate,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -221,7 +232,6 @@ from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
-from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.migrations.alembic import (
     ZENML_ALEMBIC_START_REVISION,
     Alembic,
@@ -247,9 +257,9 @@ from zenml.zen_stores.schemas import (
     PipelineSchema,
     RunMetadataSchema,
     ScheduleSchema,
+    SecretSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
-    StackCompositionSchema,
     StackSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
@@ -264,16 +274,15 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-B = TypeVar(
-    "B",
-    bound=Union[BaseResponse, BaseResponseModel],  # type: ignore[type-arg]
-)
+
+B = TypeVar("B", bound=BaseResponse)  # type: ignore[type-arg]
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -714,6 +723,25 @@ class SqlZenStore(BaseZenStore):
 
     _engine: Optional[Engine] = None
     _alembic: Optional[Alembic] = None
+    _secrets_store: Optional[BaseSecretsStore] = None
+
+    @property
+    def secrets_store(self) -> "BaseSecretsStore":
+        """The secrets store associated with this store.
+
+        Returns:
+            The secrets store associated with this store.
+
+        Raises:
+            NotImplementedError: If no secrets store is configured.
+        """
+        if self._secrets_store is None:
+            raise NotImplementedError(
+                "No secrets store is configured. Please configure a secrets "
+                "store to create and manage ZenML secrets."
+            )
+
+        return self._secrets_store
 
     @property
     def engine(self) -> Engine:
@@ -1055,6 +1083,24 @@ class SqlZenStore(BaseZenStore):
             f.write(";\n".join(output))
                         
         logger.debug(f"Database backed up to {self.db_backup_file_path}")
+
+        secrets_store_config = self.config.secrets_store
+
+        # Initialize the secrets store
+        if (
+            secrets_store_config
+            and secrets_store_config.type != SecretsStoreType.NONE
+        ):
+            secrets_store_class = BaseSecretsStore.get_store_class(
+                secrets_store_config
+            )
+            self._secrets_store = secrets_store_class(
+                zen_store=self,
+                config=secrets_store_config,
+            )
+            # Update the config with the actual secrets store config
+            # to reflect the default values in the saved configuration
+            self.config.secrets_store = self._secrets_store.config
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
@@ -1789,7 +1835,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_version is None:
                 raise KeyError(
                     f"Unable to get artifact version with ID "
-                    f"{artifact_version_id}: No artifact versionwith this ID "
+                    f"{artifact_version_id}: No artifact version with this ID "
                     f"found."
                 )
             return artifact_version.to_model(hydrate=hydrate)
@@ -1812,17 +1858,6 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ArtifactVersionSchema)
-            if artifact_version_filter_model.only_unused:
-                query = query.where(
-                    ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunOutputArtifactSchema.artifact_id)
-                    )
-                )
-                query = query.where(
-                    ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunInputArtifactSchema.artifact_id)
-                    )
-                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -1905,6 +1940,56 @@ class SqlZenStore(BaseZenStore):
                     "found."
                 )
             session.delete(artifact_version)
+            session.commit()
+
+    def prune_artifact_versions(
+        self,
+        only_versions: bool = True,
+    ) -> None:
+        """Prunes unused artifact versions and their artifacts.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+        """
+        with Session(self.engine) as session:
+            unused_artifact_versions = [
+                a[0]
+                for a in session.execute(
+                    select(ArtifactVersionSchema.id).where(
+                        and_(
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(StepRunOutputArtifactSchema.artifact_id)
+                            ),
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(StepRunInputArtifactSchema.artifact_id)
+                            ),
+                        )
+                    )
+                ).fetchall()
+            ]
+            session.execute(
+                delete(ArtifactVersionSchema).where(
+                    col(ArtifactVersionSchema.id).in_(
+                        unused_artifact_versions
+                    ),
+                )
+            )
+            if not only_versions:
+                unused_artifacts = [
+                    a[0]
+                    for a in session.execute(
+                        select(ArtifactSchema.id).where(
+                            col(ArtifactSchema.id).notin_(
+                                select(ArtifactVersionSchema.artifact_id)
+                            )
+                        )
+                    ).fetchall()
+                ]
+                session.execute(
+                    delete(ArtifactSchema).where(
+                        col(ArtifactSchema.id).in_(unused_artifacts)
+                    )
+                )
             session.commit()
 
     # ------------------------ Artifact Visualizations ------------------------
@@ -3320,7 +3405,7 @@ class SqlZenStore(BaseZenStore):
             The created pipeline run.
 
         Raises:
-            EntityExistsError: If an identical pipeline run already exists.
+            EntityExistsError: If a run with the same name already exists.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with same name already exists.
@@ -3333,18 +3418,6 @@ class SqlZenStore(BaseZenStore):
                 raise EntityExistsError(
                     f"Unable to create pipeline run: A pipeline run with name "
                     f"'{pipeline_run.name}' already exists."
-                )
-
-            # Check if pipeline run with same ID already exists.
-            existing_id_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == pipeline_run.id
-                )
-            ).first()
-            if existing_id_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run: A pipeline run with ID "
-                    f"'{pipeline_run.id}' already exists."
                 )
 
             # Create the pipeline run
@@ -3371,6 +3444,184 @@ class SqlZenStore(BaseZenStore):
             return self._get_run_schema(
                 run_name_or_id, session=session
             ).to_model(hydrate=hydrate)
+
+    def _replace_placeholder_run(
+        self, pipeline_run: PipelineRunRequest
+    ) -> PipelineRunResponse:
+        """Replace a placeholder run with the requested pipeline run.
+
+        Args:
+            pipeline_run: Pipeline run request.
+
+        Raises:
+            KeyError: If no placeholder run exists.
+
+        Returns:
+            The run model.
+        """
+        with Session(self.engine) as session:
+            run_schema = session.exec(
+                select(PipelineRunSchema)
+                # The following line locks the row in the DB, so anyone else
+                # calling `SELECT ... FOR UPDATE` will wait until the first
+                # transaction to do so finishes. After the first transaction
+                # finishes, the subsequent queries will not be able to find a
+                # placeholder run anymore, as we already updated the
+                # orchestrator_run_id.
+                # Note: This only locks a single row if the where clause of
+                # the query is indexed (we have a unique index due to the
+                # unique constraint on those columns). Otherwise this will lock
+                # multiple rows or even the complete table which we want to
+                # avoid.
+                .with_for_update()
+                .where(
+                    PipelineRunSchema.deployment_id == pipeline_run.deployment
+                )
+                .where(
+                    PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
+                )
+            ).first()
+
+            if not run_schema:
+                raise KeyError("No placeholder run found.")
+
+            run_schema.update_placeholder(pipeline_run)
+            session.add(run_schema)
+            session.commit()
+
+            return run_schema.to_model(hydrate=True)
+
+    def _get_run_by_orchestrator_run_id(
+        self, orchestrator_run_id: str, deployment_id: UUID
+    ) -> PipelineRunResponse:
+        """Get a pipeline run based on deployment and orchestrator run ID.
+
+        Args:
+            orchestrator_run_id: The orchestrator run ID.
+            deployment_id: The deployment ID.
+
+        Raises:
+            KeyError: If no run exists for the deployment and orchestrator run
+                ID.
+
+        Returns:
+            The pipeline run.
+        """
+        with Session(self.engine) as session:
+            run_schema = session.exec(
+                select(PipelineRunSchema)
+                .where(PipelineRunSchema.deployment_id == deployment_id)
+                .where(
+                    PipelineRunSchema.orchestrator_run_id
+                    == orchestrator_run_id
+                )
+            ).first()
+
+            if not run_schema:
+                raise KeyError(
+                    f"Unable to get run for orchestrator run ID "
+                    f"{orchestrator_run_id} and deployment ID {deployment_id}."
+                )
+
+            return run_schema.to_model(hydrate=True)
+
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunRequest
+    ) -> Tuple[PipelineRunResponse, bool]:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        # noqa: DAR401
+        Raises:
+            ValueError: If the request does not contain an orchestrator run ID.
+            EntityExistsError: If a run with the same name already exists.
+            RuntimeError: If the run fetching failed unexpectedly.
+
+        Returns:
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
+        """
+        if not pipeline_run.orchestrator_run_id:
+            raise ValueError(
+                "Unable to get or create run for request with missing "
+                "orchestrator run ID."
+            )
+
+        try:
+            return (
+                self._replace_placeholder_run(pipeline_run=pipeline_run),
+                True,
+            )
+        except KeyError:
+            # We were not able to find/replace a placeholder run. This could be
+            # due to one of the following three reasons:
+            # (1) There never was a placeholder run for the deployment. This is
+            #     the case if the user ran the pipeline on a schedule.
+            # (2) There was a placeholder run, but a previous pipeline run
+            #     already used it. This is the case if users rerun a pipeline
+            #     run e.g. from the orchestrator UI, as they will use the same
+            #     deployment_id with a new orchestrator_run_id.
+            # (3) A step of the same pipeline run already replaced the
+            #     placeholder run.
+            pass
+
+        try:
+            # We now try to create a new run. The following will happen in the
+            # three cases described above:
+            # (1) The behavior depends on whether we're the first step of the
+            #     pipeline run that's trying to create the run. If yes, the
+            #     `self.create_run(...)` will succeed. If no, a run with the
+            #     same deployment_id and orchestrator_run_id already exists and
+            #     the `self.create_run(...)` call will fail due to the unique
+            #     constraint on those columns.
+            # (2) Same as (1).
+            # (3) A step of the same pipeline run replaced the placeholder
+            #     run, which now contains the deployment_id and
+            #     orchestrator_run_id of the run that we're trying to create.
+            #     -> The `self.create_run(...) call will fail due to the unique
+            #     constraint on those columns.
+            return self.create_run(pipeline_run), True
+        except (EntityExistsError, IntegrityError) as create_error:
+            # Creating the run failed with an
+            # - IntegrityError: This happens when we violated a unique
+            #   constraint, which in turn means a run with the same
+            #   deployment_id and orchestrator_run_id exists. We now fetch and
+            #   return that run.
+            # - EntityExistsError: This happens when a run with the same name
+            #   already exists. This could be either a different run (in which
+            #   case we want to fail) or a run created by a step of the same
+            #   pipeline run (in which case we want to return it).
+            # Note: The IntegrityError might also be raised when other unique
+            # constraints get violated. The only other such constraint is the
+            # primary key constraint on the run ID, which means we randomly
+            # generated an existing UUID. In this case the call below will fail,
+            # but the chance of that happening is so low we don't handle it.
+            try:
+                return (
+                    self._get_run_by_orchestrator_run_id(
+                        orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                        deployment_id=pipeline_run.deployment,
+                    ),
+                    False,
+                )
+            except KeyError:
+                if isinstance(create_error, EntityExistsError):
+                    # There was a run with the same name which does not share
+                    # the deployment_id and orchestrator_run_id -> We fail with
+                    # the error that run names must be unique.
+                    raise create_error from None
+
+                # This should never happen as the run creation failed with an
+                # IntegrityError which means a run with the deployment_id and
+                # orchestrator_run_id exists.
+                raise RuntimeError(
+                    f"Failed to get or create run: {create_error}"
+                )
 
     def list_runs(
         self,
@@ -3455,34 +3706,6 @@ class SqlZenStore(BaseZenStore):
             # Delete the pipeline run
             session.delete(existing_run)
             session.commit()
-
-    def get_or_create_run(
-        self, pipeline_run: PipelineRunRequest
-    ) -> Tuple[PipelineRunResponse, bool]:
-        """Gets or creates a pipeline run.
-
-        If a run with the same ID or name already exists, it is returned.
-        Otherwise, a new run is created.
-
-        Args:
-            pipeline_run: The pipeline run to get or create.
-
-        Returns:
-            The pipeline run, and a boolean indicating whether the run was
-            created or not.
-        """
-        # We want to have the 'create' statement in the try block since running
-        # it first will reduce concurrency issues.
-        try:
-            return self.create_run(pipeline_run), True
-        except (EntityExistsError, IntegrityError):
-            # Catch both `EntityExistsError`` and `IntegrityError`` exceptions
-            # since either one can be raised by the database when trying
-            # to create a new pipeline run with duplicate ID or name.
-            try:
-                return self.get_run(pipeline_run.id), False
-            except KeyError:
-                return self.get_run(pipeline_run.name), False
 
     def count_runs(self, filter_model: Optional[PipelineRunFilter]) -> int:
         """Count all pipeline runs.
@@ -3713,6 +3936,372 @@ class SqlZenStore(BaseZenStore):
             # Delete the schedule
             session.delete(schedule)
             session.commit()
+
+    # ------------------------- Secrets -------------------------
+
+    def _check_sql_secret_scope(
+        self,
+        session: Session,
+        secret_name: str,
+        scope: SecretScope,
+        workspace: UUID,
+        user: UUID,
+        exclude_secret_id: Optional[UUID] = None,
+    ) -> Tuple[bool, str]:
+        """Checks if a secret with the given name already exists in the given scope.
+
+        This method enforces the following scope rules:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            session: The SQLAlchemy session.
+            secret_name: The name of the secret.
+            scope: The scope of the secret.
+            workspace: The ID of the workspace to which the secret belongs.
+            user: The ID of the user to which the secret belongs.
+            exclude_secret_id: The ID of a secret to exclude from the check
+                (used e.g. during an update to exclude the existing secret).
+
+        Returns:
+            True if a secret with the given name already exists in the given
+            scope, False otherwise, and an error message.
+        """
+        scope_filter = (
+            select(SecretSchema)
+            .where(SecretSchema.name == secret_name)
+            .where(SecretSchema.scope == scope.value)
+        )
+
+        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+            scope_filter = scope_filter.where(
+                SecretSchema.workspace_id == workspace
+            )
+        if scope == SecretScope.USER:
+            scope_filter = scope_filter.where(SecretSchema.user_id == user)
+        if exclude_secret_id is not None:
+            scope_filter = scope_filter.where(
+                SecretSchema.id != exclude_secret_id
+            )
+
+        existing_secret = session.exec(scope_filter).first()
+
+        if existing_secret is not None:
+            existing_secret_model = existing_secret.to_model(hydrate=True)
+
+            msg = (
+                f"Found an existing {scope.value} scoped secret with the "
+                f"same '{secret_name}' name"
+            )
+            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+                msg += (
+                    f" in the same '{existing_secret_model.workspace.name}' "
+                    f"workspace"
+                )
+            if scope == SecretScope.USER:
+                assert existing_secret_model.user
+                msg += (
+                    f" for the same '{existing_secret_model.user.name}' user"
+                )
+
+            return True, msg
+
+        return False, ""
+
+    def _set_secret_values(
+        self, secret_id: UUID, values: Dict[str, str]
+    ) -> None:
+        """Sets the values of a secret in the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret to set the values of.
+            values: The values to set.
+        """
+        self.secrets_store.store_secret_values(
+            secret_id=secret_id, secret_values=values
+        )
+
+    def _get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+        """Gets the values of a secret in the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret to set the values of.
+
+        Returns:
+            The values of the secret.
+        """
+        return self.secrets_store.get_secret_values(
+            secret_id=secret_id,
+        )
+
+    def _update_secret_values(
+        self, secret_id: UUID, values: Dict[str, Optional[str]]
+    ) -> Dict[str, str]:
+        """Updates the values of a secret in the configured secrets store.
+
+        This method will update the existing values with the new values
+        and drop `None` values.
+
+        Args:
+            secret_id: The ID of the secret to set the values of.
+            values: The updated values to set.
+
+        Returns:
+            The updated values.
+        """
+        existing_values = self._get_secret_values(secret_id=secret_id)
+
+        for k, v in values.items():
+            if v is not None:
+                existing_values[k] = v
+            # Drop values removed in the update
+            if v is None and k in existing_values:
+                del existing_values[k]
+
+        self.secrets_store.update_secret_values(
+            secret_id=secret_id, secret_values=existing_values
+        )
+
+        return existing_values
+
+    def _delete_secret_values(
+        self,
+        secret_id: UUID,
+    ) -> None:
+        """Deletes the values of a secret in the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret for which to delete the values.
+        """
+        self.secrets_store.delete_secret_values(secret_id=secret_id)
+
+    @track_decorator(AnalyticsEvent.CREATED_SECRET)
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
+        """Creates a new secret.
+
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret: The secret to create.
+
+        Returns:
+            The newly created secret.
+
+        Raises:
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+        with Session(self.engine) as session:
+            # Check if a secret with the same name already exists in the same
+            # scope.
+            secret_exists, msg = self._check_sql_secret_scope(
+                session=session,
+                secret_name=secret.name,
+                scope=secret.scope,
+                workspace=secret.workspace,
+                user=secret.user,
+            )
+            if secret_exists:
+                raise EntityExistsError(msg)
+
+            new_secret = SecretSchema.from_request(
+                secret,
+            )
+            session.add(new_secret)
+            session.commit()
+
+            secret_model = new_secret.to_model(hydrate=True)
+
+        try:
+            # Set the secret values in the configured secrets store
+            self._set_secret_values(
+                secret_id=new_secret.id, values=secret.secret_values
+            )
+        except:
+            # If setting the secret values fails, delete the secret from the
+            # database.
+            with Session(self.engine) as session:
+                session.delete(new_secret)
+                session.commit()
+            raise
+
+        secret_model.set_secrets(secret.secret_values)
+        return secret_model
+
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
+        """Get a secret by ID.
+
+        Args:
+            secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The secret.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+        """
+        with Session(self.engine) as session:
+            secret_in_db = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).first()
+            if secret_in_db is None:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+            secret_model = secret_in_db.to_model(hydrate=hydrate)
+
+        secret_model.set_secrets(self._get_secret_values(secret_id=secret_id))
+
+        return secret_model
+
+    def list_secrets(
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
+        """List all secrets matching the given filter criteria.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
+        Args:
+            secret_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all secrets matching the filter criteria, with pagination
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
+        """
+        with Session(self.engine) as session:
+            query = select(SecretSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=SecretSchema,
+                filter_model=secret_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_secret(
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
+        """Updates a secret.
+
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret_id: The ID of the secret to be updated.
+            secret_update: The update to be applied.
+
+        Returns:
+            The updated secret.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+        with Session(self.engine) as session:
+            existing_secret = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).first()
+
+            if not existing_secret:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+
+            # A change in name or scope requires a check of the scoping rules.
+            if (
+                secret_update.name is not None
+                and existing_secret.name != secret_update.name
+                or secret_update.scope is not None
+                and existing_secret.scope != secret_update.scope
+            ):
+                secret_exists, msg = self._check_sql_secret_scope(
+                    session=session,
+                    secret_name=secret_update.name or existing_secret.name,
+                    scope=secret_update.scope
+                    or SecretScope(existing_secret.scope),
+                    workspace=existing_secret.workspace.id,
+                    user=existing_secret.user.id,
+                    exclude_secret_id=secret_id,
+                )
+
+                if secret_exists:
+                    raise EntityExistsError(msg)
+
+            existing_secret.update(
+                secret_update=secret_update,
+            )
+            session.add(existing_secret)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_secret)
+            secret_model = existing_secret.to_model(hydrate=True)
+
+        if secret_update.values is not None:
+            # Update the secret values in the configured secrets store
+            updated_values = self._update_secret_values(
+                secret_id=secret_id,
+                values=secret_update.get_secret_values_update(),
+            )
+            secret_model.set_secrets(updated_values)
+        else:
+            secret_model.set_secrets(self._get_secret_values(secret_id))
+
+        return secret_model
+
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Delete a secret.
+
+        Args:
+            secret_id: The id of the secret to delete.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+        """
+        # Delete the secret values in the configured secrets store
+        try:
+            self._delete_secret_values(secret_id=secret_id)
+        except KeyError:
+            # If the secret values don't exist in the secrets store, we don't
+            # need to raise an error.
+            pass
+
+        with Session(self.engine) as session:
+            try:
+                secret_in_db = session.exec(
+                    select(SecretSchema).where(SecretSchema.id == secret_id)
+                ).one()
+                session.delete(secret_in_db)
+                session.commit()
+            except NoResultFound:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
 
     # ------------------------- Service Accounts -------------------------
 
@@ -3967,9 +4556,9 @@ class SqlZenStore(BaseZenStore):
                 session.refresh(new_service_connector)
             except Exception:
                 # Delete the secret if it was created
-                if secret_id and self.secrets_store:
+                if secret_id:
                     try:
-                        self.secrets_store.delete_secret(secret_id)
+                        self.delete_secret(secret_id)
                     except Exception:
                         # Ignore any errors that occur while deleting the
                         # secret
@@ -4265,11 +4854,9 @@ class SqlZenStore(BaseZenStore):
                 else:
                     session.delete(service_connector)
 
-                if service_connector.secret_id and self.secrets_store:
+                if service_connector.secret_id:
                     try:
-                        self.secrets_store.delete_secret(
-                            service_connector.secret_id
-                        )
+                        self.delete_secret(service_connector.secret_id)
                     except KeyError:
                         # If the secret doesn't exist anymore, we can ignore
                         # this error
@@ -4330,18 +4917,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The ID of the newly created secret or None, if the service connector
             does not contain any secret credentials.
-
-        Raises:
-            NotImplementedError: If a secrets store is not configured or
-                supported.
         """
         if not secrets:
             return None
-
-        if not self.secrets_store:
-            raise NotImplementedError(
-                "A secrets store is not configured or supported."
-            )
 
         # Generate a unique name for the secret
         # Replace all non-alphanumeric characters with a dash because
@@ -4352,15 +4930,15 @@ class SqlZenStore(BaseZenStore):
         # that is not already in use
         while True:
             secret_name = f"connector-{connector_name}-{random_str(4)}".lower()
-            existing_secrets = self.secrets_store.list_secrets(
-                SecretFilterModel(
+            existing_secrets = self.list_secrets(
+                SecretFilter(
                     name=secret_name,
                 )
             )
             if not existing_secrets.size:
                 try:
-                    return self.secrets_store.create_secret(
-                        SecretRequestModel(
+                    return self.create_secret(
+                        SecretRequest(
                             name=secret_name,
                             user=user,
                             workspace=workspace,
@@ -4455,16 +5033,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The ID of the updated secret or None, if the new service connector
             does not contain any secret credentials.
-
-        Raises:
-            NotImplementedError: If a secrets store is not configured or
-                supported.
         """
-        if not self.secrets_store:
-            raise NotImplementedError(
-                "A secrets store is not configured or supported."
-            )
-
         if updated_connector.secrets is None:
             # If the connector update does not contain a secrets update, keep
             # the existing secret (if any)
@@ -4473,7 +5042,7 @@ class SqlZenStore(BaseZenStore):
         # Delete the existing secret (if any), to be replaced by the new secret
         if existing_connector.secret_id:
             try:
-                self.secrets_store.delete_secret(existing_connector.secret_id)
+                self.delete_secret(existing_connector.secret_id)
             except KeyError:
                 # Ignore if the secret no longer exists
                 pass
@@ -4811,13 +5380,6 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackSchema)
-            if stack_filter_model.component_id:
-                query = query.where(
-                    StackCompositionSchema.stack_id == StackSchema.id
-                ).where(
-                    StackCompositionSchema.component_id
-                    == stack_filter_model.component_id
-                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -5479,13 +6041,14 @@ class SqlZenStore(BaseZenStore):
         )
 
         if new_status != pipeline_run.status:
-            pipeline_run.status = new_status
+            run_update = PipelineRunUpdate(status=new_status)
             if new_status in {
                 ExecutionStatus.COMPLETED,
                 ExecutionStatus.FAILED,
             }:
-                pipeline_run.end_time = datetime.utcnow()
+                run_update.end_time = datetime.utcnow()
 
+            pipeline_run.update(run_update)
             session.add(pipeline_run)
 
     # ----------------------------- Users -----------------------------
@@ -5515,10 +6078,8 @@ class SqlZenStore(BaseZenStore):
             and attr
             not in
             # These are not resources owned by the user or  are resources that
-            # are deleted automatically when the user is deleted. Secrets in
-            # particular are left out because they are automatically deleted
-            # even when stored in an external secret store.
-            ["api_keys", "auth_devices", "secrets"]
+            # are deleted automatically when the user is deleted.
+            ["api_keys", "auth_devices"]
         ]
 
         # This next part is crucial in preserving scalability: we don't fetch
@@ -5822,8 +6383,6 @@ class SqlZenStore(BaseZenStore):
                     "account or consider deactivating it instead."
                 )
 
-            self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
-
             session.delete(user)
             session.commit()
 
@@ -6011,10 +6570,6 @@ class SqlZenStore(BaseZenStore):
                 raise IllegalOperationError(
                     "The default workspace cannot be deleted."
                 )
-
-            self._trigger_event(
-                StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
-            )
 
             session.delete(workspace)
             session.commit()
@@ -6746,6 +7301,7 @@ class SqlZenStore(BaseZenStore):
             existing_model_version.update(
                 target_stage=stage,
                 target_name=model_version_update_model.name,
+                target_description=model_version_update_model.description,
             )
             session.add(existing_model_version)
             session.commit()
@@ -6810,33 +7366,6 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ModelVersionArtifactSchema)
-
-            # Handle artifact name
-            if model_version_artifact_link_filter_model.artifact_name:
-                query = query.where(
-                    ModelVersionArtifactSchema.artifact_version_id
-                    == ArtifactSchema.id
-                ).where(
-                    ArtifactSchema.name
-                    == model_version_artifact_link_filter_model.artifact_name
-                )
-
-            # Handle model artifact types
-            if model_version_artifact_link_filter_model.only_data_artifacts:
-                query = query.where(
-                    ModelVersionArtifactSchema.is_model_artifact == False  # noqa: E712
-                ).where(
-                    ModelVersionArtifactSchema.is_endpoint_artifact == False  # noqa: E712
-                )
-            elif model_version_artifact_link_filter_model.only_endpoint_artifacts:
-                query = query.where(
-                    ModelVersionArtifactSchema.is_endpoint_artifact
-                )
-            elif model_version_artifact_link_filter_model.only_model_artifacts:
-                query = query.where(
-                    ModelVersionArtifactSchema.is_model_artifact
-                )
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -6895,6 +7424,43 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(model_version_artifact_link)
+            session.commit()
+
+    def delete_all_model_version_artifact_links(
+        self,
+        model_version_id: UUID,
+        only_links: bool = True,
+    ) -> None:
+        """Deletes all model version to artifact links.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+            only_links: Whether to only delete the link to the artifact.
+        """
+        with Session(self.engine) as session:
+            if not only_links:
+                artifact_version_ids = session.execute(
+                    select(
+                        ModelVersionArtifactSchema.artifact_version_id
+                    ).where(
+                        ModelVersionArtifactSchema.model_version_id
+                        == model_version_id
+                    )
+                ).fetchall()
+                session.execute(
+                    delete(ArtifactVersionSchema).where(
+                        col(ArtifactVersionSchema.id).in_(
+                            [a[0] for a in artifact_version_ids]
+                        )
+                    ),
+                )
+            session.execute(
+                delete(ModelVersionArtifactSchema).where(
+                    ModelVersionArtifactSchema.model_version_id
+                    == model_version_id
+                )
+            )
+
             session.commit()
 
     # ---------------------- Model Versions Pipeline Runs ----------------------
@@ -6960,15 +7526,6 @@ class SqlZenStore(BaseZenStore):
             A page of all model version to pipeline run links.
         """
         query = select(ModelVersionPipelineRunSchema)
-        # Handle pipeline run name
-        if model_version_pipeline_run_link_filter_model.pipeline_run_name:
-            query = query.where(
-                ModelVersionPipelineRunSchema.pipeline_run_id
-                == PipelineRunSchema.id
-            ).where(
-                PipelineRunSchema.name
-                == model_version_pipeline_run_link_filter_model.pipeline_run_name
-            )
         with Session(self.engine) as session:
             return self.filter_and_paginate(
                 session=session,
@@ -7049,10 +7606,10 @@ class SqlZenStore(BaseZenStore):
             try:
                 tag = self.get_tag(tag_name)
             except KeyError:
-                tag = self.create_tag(TagRequestModel(name=tag_name))
+                tag = self.create_tag(TagRequest(name=tag_name))
             try:
                 self.create_tag_resource(
-                    TagResourceRequestModel(
+                    TagResourceRequest(
                         tag_id=tag.id,
                         resource_id=resource_id,
                         resource_type=resource_type,
@@ -7086,7 +7643,7 @@ class SqlZenStore(BaseZenStore):
                 pass
 
     @track_decorator(AnalyticsEvent.CREATED_TAG)
-    def create_tag(self, tag: TagRequestModel) -> TagResponseModel:
+    def create_tag(self, tag: TagRequest) -> TagResponse:
         """Creates a new tag.
 
         Args:
@@ -7112,7 +7669,7 @@ class SqlZenStore(BaseZenStore):
             session.add(tag_schema)
 
             session.commit()
-            return TagSchema.to_model(tag_schema)
+            return tag_schema.to_model(hydrate=True)
 
     def delete_tag(
         self,
@@ -7139,13 +7696,14 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def get_tag(
-        self,
-        tag_name_or_id: Union[str, UUID],
-    ) -> TagResponseModel:
+        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The tag of interest.
@@ -7162,16 +7720,19 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get tag with ID `{tag_name_or_id}`: "
                     f"No tag with this ID found."
                 )
-            return TagSchema.to_model(tag)
+            return tag.to_model(hydrate=hydrate)
 
     def list_tags(
         self,
-        tag_filter_model: TagFilterModel,
-    ) -> Page[TagResponseModel]:
+        tag_filter_model: TagFilter,
+        hydrate: bool = False,
+    ) -> Page[TagResponse]:
         """Get all tags by filter.
 
         Args:
             tag_filter_model: All filter parameters including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             A page of all tags.
@@ -7183,13 +7744,14 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=TagSchema,
                 filter_model=tag_filter_model,
+                hydrate=hydrate,
             )
 
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        tag_update_model: TagUpdateModel,
-    ) -> TagResponseModel:
+        tag_update_model: TagUpdate,
+    ) -> TagResponse:
         """Update tag.
 
         Args:
@@ -7216,15 +7778,15 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the tag that was just created
             session.refresh(tag)
-            return tag.to_model()
+            return tag.to_model(hydrate=True)
 
     ####################
     # Tags <> resources
     ####################
 
     def create_tag_resource(
-        self, tag_resource: TagResourceRequestModel
-    ) -> TagResourceResponseModel:
+        self, tag_resource: TagResourceRequest
+    ) -> TagResourceResponse:
         """Creates a new tag resource relationship.
 
         Args:
@@ -7234,7 +7796,8 @@ class SqlZenStore(BaseZenStore):
             The newly created tag resource relationship.
 
         Raises:
-            EntityExistsError: If a tag resource relationship with the given configuration.
+            EntityExistsError: If a tag resource relationship with the given
+                configuration already exists.
         """
         with Session(self.engine) as session:
             existing_tag_resource = session.exec(
@@ -7247,8 +7810,10 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_tag_resource is not None:
                 raise EntityExistsError(
-                    f"Unable to create a tag {tag_resource.resource_type.name.lower()} "
-                    f"relationship with IDs `{tag_resource.tag_id}`|`{tag_resource.resource_id}`. "
+                    f"Unable to create a tag "
+                    f"{tag_resource.resource_type.name.lower()} "
+                    f"relationship with IDs "
+                    f"`{tag_resource.tag_id}`|`{tag_resource.resource_id}`. "
                     "This relationship already exists."
                 )
 
@@ -7256,7 +7821,7 @@ class SqlZenStore(BaseZenStore):
             session.add(tag_resource_schema)
 
             session.commit()
-            return TagResourceSchema.to_model(tag_resource_schema)
+            return tag_resource_schema.to_model(hydrate=True)
 
     def delete_tag_resource(
         self,
@@ -7284,8 +7849,8 @@ class SqlZenStore(BaseZenStore):
             if tag_model is None:
                 raise KeyError(
                     f"Unable to delete tag<>resource with IDs: "
-                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
-                    f"`resource_type`='{resource_type.value}': No "
+                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' "
+                    f"and `resource_type`='{resource_type.value}': No "
                     "tag<>resource with these IDs found."
                 )
             session.delete(tag_model)

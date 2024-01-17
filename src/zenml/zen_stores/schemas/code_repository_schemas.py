@@ -109,13 +109,13 @@ class CodeRepositorySchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             source=json.loads(self.source),
             logo_url=self.logo_url,
+            created=self.created,
+            updated=self.updated,
         )
         metadata = None
         if hydrate:
             metadata = CodeRepositoryResponseMetadata(
                 workspace=self.workspace.to_model(),
-                created=self.created,
-                updated=self.updated,
                 config=json.loads(self.config),
                 description=self.description,
             )

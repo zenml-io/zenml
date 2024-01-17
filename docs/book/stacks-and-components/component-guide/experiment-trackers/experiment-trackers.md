@@ -12,7 +12,7 @@ through Experiment Tracker stack components. This establishes a clear link betwe
 Related concepts:
 
 * the Experiment Tracker is an optional type of Stack Component that needs to be registered as part of your
-  ZenML [Stack](/docs/book/user-guide/starter-guide/understand-stacks.md).
+  ZenML [Stack](/docs/book/user-guide/production-guide/understand-stacks.md).
 * ZenML already provides versioning and tracking for the pipeline artifacts by storing artifacts in
   the [Artifact Store](../artifact-stores/artifact-stores.md).
 
@@ -73,7 +73,7 @@ from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
 step = pipeline_run.steps["<STEP_NAME>"]
-experiment_tracker_url = step.metadata["experiment_tracker_url"].value
+experiment_tracker_url = step.run_metadata["experiment_tracker_url"].value
 ```
 
 {% hint style="info" %}

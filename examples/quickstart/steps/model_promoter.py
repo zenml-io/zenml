@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2023. All rights reserved.
+# Copyright (c) ZenML GmbH 2024. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ def model_promoter(accuracy: float, stage: str = "production") -> bool:
             )
             # We compare their metrics
             prod_accuracy = (
-                stage_model_version.get_artifact("model")
+                stage_model_version.get_artifact("sklearn_classifier")
                 .run_metadata["test_accuracy"]
                 .value
             )

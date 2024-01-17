@@ -77,7 +77,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 )
             return client._credentials
 
-        secret = self.get_authentication_secret(
+        secret = self.get_typed_authentication_secret(
             expected_schema_type=GCPSecretSchema
         )
         return secret.get_credential_dict() if secret else None

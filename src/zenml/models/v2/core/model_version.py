@@ -21,7 +21,6 @@ from pydantic import BaseModel, Field, PrivateAttr, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
-from zenml.models.tag_models import TagResponseModel
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -30,12 +29,16 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
+from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+    from zenml.models.v2.core.run_metadata import (
+        RunMetadataResponse,
+    )
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -95,6 +98,10 @@ class ModelVersionUpdate(BaseModel):
         description="Target model version name to be set",
         default=None,
     )
+    description: Optional[str] = Field(
+        description="Target model version description to be set",
+        default=None,
+    )
     add_tags: Optional[List[str]] = Field(
         description="Tags to be added to the model version",
         default=None,
@@ -139,15 +146,15 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
         description="Data artifacts linked to the model version",
         default={},
     )
-    endpoint_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
-        description="Endpoint artifacts linked to the model version",
+    deployment_artifact_ids: Dict[str, Dict[str, UUID]] = Field(
+        description="Deployment artifacts linked to the model version",
         default={},
     )
     pipeline_run_ids: Dict[str, UUID] = Field(
         description="Pipeline runs linked to the model version",
         default={},
     )
-    tags: List[TagResponseModel] = Field(
+    tags: List[TagResponse] = Field(
         title="Tags associated with the model version", default=[]
     )
     created: datetime = Field(
@@ -165,6 +172,10 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
         description="The description of the model version",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
+    )
+    run_metadata: Dict[str, "RunMetadataResponse"] = Field(
+        description="Metadata linked to the model version",
+        default={},
     )
 
 
@@ -227,13 +238,13 @@ class ModelVersionResponse(
         return self.get_body().data_artifact_ids
 
     @property
-    def endpoint_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
-        """The `endpoint_artifact_ids` property.
+    def deployment_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+        """The `deployment_artifact_ids` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().endpoint_artifact_ids
+        return self.get_body().deployment_artifact_ids
 
     @property
     def pipeline_run_ids(self) -> Dict[str, UUID]:
@@ -263,7 +274,7 @@ class ModelVersionResponse(
         return self.get_body().updated
 
     @property
-    def tags(self) -> List["TagResponseModel"]:
+    def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
         Returns:
@@ -279,6 +290,15 @@ class ModelVersionResponse(
             the value of the property.
         """
         return self.get_metadata().description
+
+    @property
+    def run_metadata(self) -> Optional[Dict[str, "RunMetadataResponse"]]:
+        """The `run_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().run_metadata
 
     def get_hydrated_version(self) -> "ModelVersionResponse":
         """Get the hydrated version of this model version.
@@ -368,13 +388,13 @@ class ModelVersionResponse(
         }
 
     @property
-    def endpoint_artifacts(
+    def deployment_artifacts(
         self,
     ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
-        """Get all endpoint artifacts linked to this model version.
+        """Get all deployment artifacts linked to this model version.
 
         Returns:
-            Dictionary of endpoint artifacts with versions as
+            Dictionary of deployment artifacts with versions as
             Dict[str, Dict[str, ArtifactResponse]]
         """
         from zenml.client import Client
@@ -382,9 +402,9 @@ class ModelVersionResponse(
         return {
             name: {
                 version: Client().get_artifact_version(a)
-                for version, a in self.endpoint_artifact_ids[name].items()
+                for version, a in self.deployment_artifact_ids[name].items()
             }
-            for name in self.endpoint_artifact_ids
+            for name in self.deployment_artifact_ids
         }
 
     @property
@@ -412,7 +432,7 @@ class ModelVersionResponse(
         Args:
             collection: The collection to search in (one of
                 self.model_artifact_ids, self.data_artifact_ids,
-                self.endpoint_artifact_ids)
+                self.deployment_artifact_ids)
             name: The name of the artifact to retrieve.
             version: The version of the artifact to retrieve (None for
                 latest/non-versioned)
@@ -448,7 +468,7 @@ class ModelVersionResponse(
         all_artifact_ids = {
             **self.model_artifact_ids,
             **self.data_artifact_ids,
-            **self.endpoint_artifact_ids,
+            **self.deployment_artifact_ids,
         }
         return self._get_linked_object(all_artifact_ids, name, version)
 
@@ -490,23 +510,23 @@ class ModelVersionResponse(
             version,
         )
 
-    def get_endpoint_artifact(
+    def get_deployment_artifact(
         self,
         name: str,
         version: Optional[str] = None,
     ) -> Optional["ArtifactVersionResponse"]:
-        """Get the endpoint artifact linked to this model version.
+        """Get the deployment artifact linked to this model version.
 
         Args:
-            name: The name of the endpoint artifact to retrieve.
-            version: The version of the endpoint artifact to retrieve (None for
+            name: The name of the deployment artifact to retrieve.
+            version: The version of the deployment artifact to retrieve (None for
                 latest/non-versioned)
 
         Returns:
-            Specific version of the endpoint artifact or None
+            Specific version of the deployment artifact or None
         """
         return self._get_linked_object(
-            self.endpoint_artifact_ids,
+            self.deployment_artifact_ids,
             name,
             version,
         )

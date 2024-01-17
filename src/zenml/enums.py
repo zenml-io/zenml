@@ -56,10 +56,24 @@ class VisualizationType(StrEnum):
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 
+    INITIALIZING = "initializing"
     FAILED = "failed"
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
+
+    @property
+    def is_finished(self) -> bool:
+        """Whether the execution status refers to a finished execution.
+
+        Returns:
+            Whether the execution status refers to a finished execution.
+        """
+        return self in {
+            ExecutionStatus.FAILED,
+            ExecutionStatus.COMPLETED,
+            ExecutionStatus.CACHED,
+        }
 
 
 class LoggingLevels(Enum):
@@ -86,7 +100,6 @@ class StackComponentType(StrEnum):
     IMAGE_BUILDER = "image_builder"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
-    SECRETS_MANAGER = "secrets_manager"
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
 
@@ -120,15 +133,10 @@ class StoreType(StrEnum):
 
 
 class SecretsStoreType(StrEnum):
-    """Secrets Store Backend Types.
+    """Secrets Store Backend Types."""
 
-    NOTE: this is a superset of the StoreType values because the set of secrets
-    store backends includes all the backends supported for zen stores.
-    """
-
-    NONE = "none"  # indicates that the secrets store is disabled
-    SQL = StoreType.SQL.value
-    REST = StoreType.REST.value
+    NONE = "none"  # indicates that no secrets store is used
+    SQL = "sql"
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
@@ -337,3 +345,4 @@ class MetadataResourceTypes(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     STEP_RUN = "step_run"
     ARTIFACT_VERSION = "artifact_version"
+    MODEL_VERSION = "model_version"

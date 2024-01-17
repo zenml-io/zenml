@@ -274,7 +274,7 @@ def wait_and_validate_pipeline_run(
             if older_than is not None:
                 runs = [r for r in runs if r.created >= older_than]
 
-            runs = [r for r in runs if r.status != ExecutionStatus.RUNNING]
+            runs = [r for r in runs if r.status.is_finished]
 
             if len(runs) >= run_no:
                 # We have at least `run_no` runs completed or failed

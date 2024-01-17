@@ -72,7 +72,6 @@ class FlavorRegistry:
             LocalDockerOrchestratorFlavor,
             LocalOrchestratorFlavor,
         )
-        from zenml.secrets_managers import LocalSecretsManagerFlavor
 
         flavors = [
             LocalArtifactStoreFlavor,
@@ -83,7 +82,6 @@ class FlavorRegistry:
             DockerHubContainerRegistryFlavor,
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
-            LocalSecretsManagerFlavor,
             LocalImageBuilderFlavor,
         ]
         return flavors

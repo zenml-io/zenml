@@ -118,6 +118,8 @@ class KubernetesSparkStepOperator(SparkStepOperator):
         Returns:
             The required Docker builds.
         """
+        from zenml.config.build_configuration import BuildConfiguration
+
         builds = []
         extra_files = {ENTRYPOINT_NAME: LOCAL_ENTRYPOINT}
         for step_name, step in deployment.step_configurations.items():

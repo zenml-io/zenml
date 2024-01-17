@@ -22,10 +22,11 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.models import (
+    TagFilter,
+    TagRequest,
     UserResponse,
     WorkspaceResponse,
 )
-from zenml.models.tag_models import TagFilterModel, TagRequestModel
 from zenml.utils.string_utils import random_str
 
 SAMPLE_CUSTOM_ARGUMENTS = [
@@ -159,10 +160,10 @@ def tags_killer(tag_create_count: int = 5):
     tags = []
     for _ in range(tag_create_count):
         tags.append(
-            Client().create_tag(TagRequestModel(name=random_resource_name()))
+            Client().create_tag(TagRequest(name=random_resource_name()))
         )
     yield tags
-    for tag in Client().list_tags(TagFilterModel(size=999)).items:
+    for tag in Client().list_tags(TagFilter(size=999)).items:
         Client().delete_tag(tag.id)
 
 

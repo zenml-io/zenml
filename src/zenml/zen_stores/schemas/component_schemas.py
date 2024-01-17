@@ -86,9 +86,9 @@ class StackComponentSchema(NamedSchema, table=True):
         back_populates="stack_component",
     )
 
-    run_or_step_logs: Optional["LogsSchema"] = Relationship(
+    run_or_step_logs: List["LogsSchema"] = Relationship(
         back_populates="artifact_store",
-        sa_relationship_kwargs={"cascade": "delete", "uselist": False},
+        sa_relationship_kwargs={"cascade": "delete", "uselist": True},
     )
 
     connector_id: Optional[UUID] = build_foreign_key_field(
