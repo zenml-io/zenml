@@ -4,26 +4,29 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Tuple
 
-from pipelines.deployment_pipelines.deployment_inference_pipeline import (
-    vertex_deployment_inference_pipeline,
-)
-from pipelines.deployment_pipelines.deployment_training_pipeline import (
-    vertex_train_deploy_pipeline,
-)
+import numpy as np
+from typing_extensions import Annotated
 
-
-def main(type: str) -> None:
-    vertex_train_deploy_pipeline()
-    vertex_deployment_inference_pipeline()
+from zenml import step
 
 
-if __name__ == "__main__":
-    main()
+@step
+def normalizer(
+    X_train: np.ndarray, X_test: np.ndarray
+) -> Tuple[
+    Annotated[np.ndarray, "X_train_normed"],
+    Annotated[np.ndarray, "X_test_normed"],
+]:
+    """Normalize the values for all the images so they are between 0 and 1."""
+    x_train_normed = X_train / 255.0
+    x_test_normed = X_test / 255.0
+    return x_train_normed, x_test_normed

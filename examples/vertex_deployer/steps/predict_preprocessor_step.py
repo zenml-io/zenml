@@ -11,19 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import numpy as np  # type: ignore [import]
+from typing_extensions import Annotated
 
-from pipelines.deployment_pipelines.deployment_inference_pipeline import (
-    vertex_deployment_inference_pipeline,
-)
-from pipelines.deployment_pipelines.deployment_training_pipeline import (
-    vertex_train_deploy_pipeline,
-)
+from zenml import step
 
 
-def main(type: str) -> None:
-    vertex_train_deploy_pipeline()
-    vertex_deployment_inference_pipeline()
-
-
-if __name__ == "__main__":
-    main()
+@step
+def tf_predict_preprocessor(
+    input: np.ndarray,
+) -> Annotated[np.ndarray, "data"]:
+    """Prepares the data for inference."""
+    input = input / 255.0
+    return input
