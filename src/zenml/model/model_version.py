@@ -582,7 +582,7 @@ class ModelVersion(BaseModel):
             self._id = mv.id
 
         difference: Dict[str, Any] = {}
-        if mv.description and mv.description != self.description:
+        if self.description and mv.description != self.description:
             difference["description"] = {
                 "config": self.description,
                 "db": mv.description,
@@ -593,13 +593,13 @@ class ModelVersion(BaseModel):
             if db_tags != configured_tags:
                 difference["tags added"] = list(configured_tags - db_tags)
                 difference["tags removed"] = list(db_tags - configured_tags)
-            if difference:
-                logger.warning(
-                    "Provided model version configuration does not match existing model "
-                    f"version `{self.name}::{self.version}` with the following "
-                    f"changes: {difference}. If you want to update the model version "
-                    "configuration, please use the `zenml model version update` command."
-                )
+        if difference:
+            logger.warning(
+                "Provided model version configuration does not match existing model "
+                f"version `{self.name}::{self.version}` with the following "
+                f"changes: {difference}. If you want to update the model version "
+                "configuration, please use the `zenml model version update` command."
+            )
 
         return mv
 
