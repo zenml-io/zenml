@@ -218,7 +218,7 @@ dev = [
     "pytest-randomly",
     "pytest-mock",
     "pytest-clarity",
-    "pytest-shard",
+    "pytest-split",
     "mkdocs",
     "mkdocs-material",
     "mkdocs-awesome-pages-plugin",
