@@ -50,7 +50,7 @@ class EventSourceSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="triggers")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="event_sources")
 
     flavor: str = Field(nullable=False)
 

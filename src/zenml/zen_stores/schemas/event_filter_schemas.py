@@ -53,7 +53,7 @@ class EventFilterSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="triggers")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="event_filters")
     event_source_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=EventSourceSchema.__tablename__,
@@ -62,7 +62,7 @@ class EventFilterSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    event_source: "WorkspaceSchema" = Relationship(back_populates="triggers")
+    event_source: "EventSourceSchema" = Relationship(back_populates="event_filters")
 
     flavor: str = Field(nullable=False)
 

@@ -56,6 +56,7 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
+        TriggerSchema
     )
 
 
@@ -94,6 +95,10 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user"
     )
     secrets: List["SecretSchema"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    triggers: List["TriggerSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},
     )

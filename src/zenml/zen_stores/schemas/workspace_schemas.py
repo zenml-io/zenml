@@ -29,6 +29,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactVersionSchema,
+        ActionPlanSchema,
         CodeRepositorySchema,
         FlavorSchema,
         ModelSchema,
@@ -46,6 +47,9 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
+        TriggerSchema,
+        EventSourceSchema,
+        EventFilterSchema
     )
 
 
@@ -97,6 +101,22 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     secrets: List["SecretSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    triggers: List["TriggerSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    action_plans: List["ActionPlanSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    event_sources: List["EventSourceSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    event_filters: List["EventFilterSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

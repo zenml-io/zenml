@@ -28,11 +28,6 @@ events_router = APIRouter(
 )
 
 
-@events_router.get("/blah")
-def MICHAEL() -> bool:
-    return True
-
-
 class EventConfig(BaseModel, ABC):
     """Allows configuring of Event Source and Filter configuration."""
 

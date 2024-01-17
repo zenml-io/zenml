@@ -51,7 +51,7 @@ class ActionPlanSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="triggers")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="action_plans")
 
     flavor: str = Field(nullable=False)
 
@@ -64,7 +64,7 @@ class ActionPlanSchema(BaseSchema, table=True):
         )
     )
 
-    triggers: List["TriggerSchema"] = Relationship(back_populates="action")
+    triggers: List["TriggerSchema"] = Relationship(back_populates="action_plan")
 
 
 
