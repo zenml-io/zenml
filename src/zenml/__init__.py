@@ -46,6 +46,7 @@ from zenml.model.utils import log_model_metadata
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.model.model_version import ModelVersion
+from zenml.model.utils import log_model_version_metadata
 from zenml.new.pipelines.pipeline_context import get_pipeline_context
 from zenml.new.pipelines.pipeline_decorator import pipeline
 from zenml.new.steps.step_decorator import step

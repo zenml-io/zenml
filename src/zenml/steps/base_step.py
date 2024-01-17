@@ -70,6 +70,7 @@ if TYPE_CHECKING:
         StepConfiguration,
         StepConfigurationUpdate,
     )
+    from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model_version import ModelVersion
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
@@ -442,6 +443,7 @@ class BaseStep(metaclass=BaseStepMeta):
     ) -> Tuple[
         Dict[str, "StepArtifact"],
         Dict[str, "ExternalArtifact"],
+        Dict[str, "ModelVersionDataLazyLoader"],
         Dict[str, Any],
         Dict[str, Any],
     ]:
@@ -455,9 +457,14 @@ class BaseStep(metaclass=BaseStepMeta):
             StepInterfaceError: If invalid function arguments were passed.
 
         Returns:
-            The artifacts, external artifacts and parameters for the step.
+            The artifacts, external artifacts, model version artifacts/metadata and parameters for the step.
         """
         from zenml.artifacts.external_artifact import ExternalArtifact
+        from zenml.model.lazy_load import ModelVersionDataLazyLoader
+        from zenml.models.v2.core.artifact_version import (
+            LazyArtifactVersionResponse,
+        )
+        from zenml.models.v2.core.run_metadata import LazyRunMetadataResponse
 
         signature = get_step_entrypoint_signature(step=self)
 
@@ -470,6 +477,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         artifacts = {}
         external_artifacts = {}
+        model_artifacts_or_metadata = {}
         parameters = {}
         default_parameters = {}
 
@@ -495,6 +503,20 @@ class BaseStep(metaclass=BaseStepMeta):
                         "steps. Future releases will introduce hashing of "
                         "artifacts which will improve this behavior."
                     )
+            elif isinstance(value, LazyArtifactVersionResponse):
+                model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
+                    model_version=value._lazy_load_model_version,
+                    artifact_name=value._lazy_load_name,
+                    artifact_version=value._lazy_load_version,
+                    metadata_name=None,
+                )
+            elif isinstance(value, LazyRunMetadataResponse):
+                model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
+                    model_version=value._lazy_load_model_version,
+                    artifact_name=value._lazy_load_artifact_name,
+                    artifact_version=value._lazy_load_artifact_version,
+                    metadata_name=value._lazy_load_metadata_name,
+                )
             else:
                 parameters[key] = value
 
@@ -510,11 +532,18 @@ class BaseStep(metaclass=BaseStepMeta):
             if (
                 key not in artifacts
                 and key not in external_artifacts
+                and key not in model_artifacts_or_metadata
                 and key not in self.configuration.parameters
             ):
                 default_parameters[key] = value
 
-        return artifacts, external_artifacts, parameters, default_parameters
+        return (
+            artifacts,
+            external_artifacts,
+            model_artifacts_or_metadata,
+            parameters,
+            default_parameters,
+        )
 
     def __call__(
         self,
@@ -549,6 +578,7 @@ class BaseStep(metaclass=BaseStepMeta):
         (
             input_artifacts,
             external_artifacts,
+            model_artifacts_or_metadata,
             parameters,
             default_parameters,
         ) = self._parse_call_args(*args, **kwargs)
@@ -565,6 +595,7 @@ class BaseStep(metaclass=BaseStepMeta):
             step=self,
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
+            model_artifacts_or_metadata=model_artifacts_or_metadata,
             parameters=parameters,
             default_parameters=default_parameters,
             upstream_steps=upstream_steps,
@@ -993,6 +1024,7 @@ To avoid this consider setting step parameters only in one place (config or code
         self,
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
+        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
     ) -> None:
         """Validates the step inputs.
 
@@ -1002,6 +1034,7 @@ To avoid this consider setting step parameters only in one place (config or code
         Args:
             input_artifacts: The input artifacts.
             external_artifacts: The external input artifacts.
+            model_artifacts_or_metadata: The model artifacts or metadata.
 
         Raises:
             StepInterfaceError: If an entrypoint input is missing.
@@ -1011,6 +1044,7 @@ To avoid this consider setting step parameters only in one place (config or code
                 key in input_artifacts
                 or key in self.configuration.parameters
                 or key in external_artifacts
+                or key in model_artifacts_or_metadata
             ):
                 continue
             raise StepInterfaceError(f"Missing entrypoint input {key}.")
@@ -1019,6 +1053,7 @@ To avoid this consider setting step parameters only in one place (config or code
         self,
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
+        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
     ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 
@@ -1030,6 +1065,8 @@ To avoid this consider setting step parameters only in one place (config or code
         Args:
             input_artifacts: The input artifacts of this step.
             external_artifacts: The external artifacts of this step.
+            model_artifacts_or_metadata: The model artifacts or metadata of
+                this step.
 
         Returns:
             The finalized step configuration.
@@ -1102,6 +1139,7 @@ To avoid this consider setting step parameters only in one place (config or code
         self._validate_inputs(
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
+            model_artifacts_or_metadata=model_artifacts_or_metadata,
         )
 
         values = dict_utils.remove_none_values({"outputs": outputs or None})
@@ -1112,6 +1150,7 @@ To avoid this consider setting step parameters only in one place (config or code
             update={
                 "caching_parameters": self.caching_parameters,
                 "external_input_artifacts": external_artifacts,
+                "model_artifacts_or_metadata": model_artifacts_or_metadata,
             }
         )
 

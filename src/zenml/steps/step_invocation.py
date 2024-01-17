@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Dict, Set
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.step_configurations import StepConfiguration
+    from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.new.pipelines.pipeline import Pipeline
     from zenml.steps import BaseStep
     from zenml.steps.entrypoint_function_utils import StepArtifact
@@ -31,6 +32,7 @@ class StepInvocation:
         step: "BaseStep",
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, "ExternalArtifact"],
+        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         parameters: Dict[str, Any],
         default_parameters: Dict[str, Any],
         upstream_steps: Set[str],
@@ -43,6 +45,8 @@ class StepInvocation:
             step: The step that is represented by the invocation.
             input_artifacts: The input artifacts for the invocation.
             external_artifacts: The external artifacts for the invocation.
+            model_artifacts_or_metadata: The model artifacts or metadata for
+                the invocation.
             parameters: The parameters for the invocation.
             default_parameters: The default parameters for the invocation.
             upstream_steps: The upstream steps for the invocation.
@@ -52,6 +56,7 @@ class StepInvocation:
         self.step = step
         self.input_artifacts = input_artifacts
         self.external_artifacts = external_artifacts
+        self.model_artifacts_or_metadata = model_artifacts_or_metadata
         self.parameters = parameters
         self.default_parameters = default_parameters
         self.invocation_upstream_steps = upstream_steps
@@ -151,4 +156,5 @@ class StepInvocation:
         return self.step._finalize_configuration(
             input_artifacts=self.input_artifacts,
             external_artifacts=external_artifacts,
+            model_artifacts_or_metadata=self.model_artifacts_or_metadata,
         )
