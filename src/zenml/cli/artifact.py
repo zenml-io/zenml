@@ -121,7 +121,6 @@ def list_artifact_versions(**kwargs: Any) -> None:
     """List all artifact versions.
 
     Args:
-        tag: Tags to search for.
         **kwargs: Keyword arguments to filter artifact versions by.
     """
     artifact_versions = Client().list_artifact_versions(**kwargs)
