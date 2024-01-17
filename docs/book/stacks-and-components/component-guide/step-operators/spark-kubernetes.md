@@ -366,7 +366,7 @@ each pipeline step when running `kubectl get pods -n $KUBERNETES_NAMESPACE`.
 
 {% hint style="info" %}
 Instead of hardcoding a step operator name, you can also use the 
-[Client](../../advanced-guide/environment-management/client.md) to dynamically
+[Client](../../advanced-guide/configuring-zenml/client.md) to dynamically
 use the step operator of your active stack:
 
 ```python
@@ -385,7 +385,7 @@ def step_on_spark(...) -> ...:
 For additional configuration of the Spark step operator, you can pass `SparkStepOperatorSettings` when defining or
 running your pipeline. Check out
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-spark/#zenml.integrations.spark.flavors.spark\_step\_operator\_flavor.SparkStepOperatorSettings)
-for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines.md) for
+for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for
 more information on how to specify settings.
 
 <!-- For scarf -->
