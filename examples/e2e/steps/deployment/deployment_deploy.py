@@ -65,9 +65,9 @@ def deployment_deploy() -> (
         # deploy predictor service
         deployment_service = mlflow_model_registry_deployer_step.entrypoint(
             registry_model_name=model_version.name,
-            registry_model_version=model_version.metadata[
+            registry_model_version=model_version.run_metadata[
                 "model_registry_version"
-            ],
+            ].value,
             replace_existing=True,
         )
     else:
