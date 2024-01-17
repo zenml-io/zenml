@@ -14,23 +14,29 @@
 """SQL Model Implementations for Action Plans."""
 import json
 from datetime import datetime
-from typing import List, TYPE_CHECKING
+from typing import List
 from uuid import UUID
 
 from pydantic import Field
 from pydantic.json import pydantic_encoder
-from sqlalchemy import Column, String
+from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Relationship
 
+from zenml import TriggerResponseMetadata
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
-    EventFilterResponse,
     EventFilterRequest,
+    EventFilterResponse,
     EventFilterResponseBody,
-    EventFilterUpdate
+    EventFilterUpdate,
 )
-from zenml.zen_stores.schemas import BaseSchema, WorkspaceSchema, TriggerSchema, EventSourceSchema
+from zenml.zen_stores.schemas import (
+    BaseSchema,
+    EventSourceSchema,
+    TriggerSchema,
+    WorkspaceSchema,
+)
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 
@@ -70,7 +76,7 @@ class EventFilterSchema(BaseSchema, table=True):
     )
 
     triggers: List["TriggerSchema"] = Relationship(back_populates="event_filter")
-
+    description: str = Field(sa_column=Column(TEXT, nullable=True))
 
     @classmethod
     def from_request(cls, request: EventFilterRequest) -> "EventFilterSchema":
@@ -102,13 +108,22 @@ class EventFilterSchema(BaseSchema, table=True):
         Returns:
             The created `TagResponse`.
         """
-        # TODO: complete this
+        body = EventFilterResponseBody(
+            created=self.created,
+            updated=self.updated,
+            description=self.description
+        )
+        metadata = None
+        if hydrate:
+            metadata = TriggerResponseMetadata(
+                workspace=self.workspace.to_model(),
+                triggers=[t.to_model() for t in self.triggers],
+            )
+
         return EventFilterResponse(
             id=self.id,
-            body=EventFilterResponseBody(
-                created=self.created,
-                updated=self.updated
-            ),
+            body=body,
+            metadata=metadata
         )
 
     def update(self, update: EventFilterUpdate) -> "EventFilterSchema":

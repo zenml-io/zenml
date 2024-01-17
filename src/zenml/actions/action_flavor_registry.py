@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Registry for all action configurations."""
-from typing import Type, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from zenml.logger import get_logger
 

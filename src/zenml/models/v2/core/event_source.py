@@ -13,17 +13,19 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
 
 from pydantic import Field
-from zenml.models.v2.base.scoped import WorkspaceScopedResponseBody, \
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponse, \
-    WorkspaceScopedFilter
 
 from zenml import BaseRequest
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.v2.base.scoped import (
+    WorkspaceScopedFilter,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
+)
 from zenml.models.v2.base.update import update_model
-
 
 # ------------------ Request Model ------------------
 

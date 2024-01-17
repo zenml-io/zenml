@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base implementation of the event source configuration."""
 from abc import ABC
-from typing import ClassVar, cast, Type, Tuple, Any, Dict
+from typing import Any, ClassVar, Dict, Tuple, Type, cast
 
 from pydantic import BaseModel, Extra
 
@@ -55,7 +55,7 @@ class BaseActionFlavorMeta(type):
             MaterializerInterfaceError: If the class was improperly defined.
         """
         cls = cast(
-            Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
+            Type["BaseActionFlavor"], super().__new__(mcs, name, bases, dct)
         )
 
         # Skip the following validation and registration for base classes.

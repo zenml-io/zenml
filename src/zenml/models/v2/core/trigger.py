@@ -27,8 +27,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.update import update_model
-from zenml.models.v2.core.action_plan import Action, ActionPlanResponse
-from zenml.models.v2.core.event_source import Event
+from zenml.models.v2.core.action_plan import ActionPlanResponse
 
 
 # ------------------ Request Model ------------------

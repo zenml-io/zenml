@@ -14,7 +14,7 @@
 """SQL Model Implementations for Action Plans."""
 import json
 from datetime import datetime
-from typing import List, TYPE_CHECKING
+from typing import List
 from uuid import UUID
 
 from pydantic import Field
@@ -25,12 +25,12 @@ from sqlmodel import Relationship
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
-    ActionPlanResponse,
     ActionPlanRequest,
+    ActionPlanResponse,
     ActionPlanResponseBody,
-    ActionPlanUpdate
+    ActionPlanUpdate,
 )
-from zenml.zen_stores.schemas import BaseSchema, WorkspaceSchema, TriggerSchema
+from zenml.zen_stores.schemas import BaseSchema, TriggerSchema, WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 

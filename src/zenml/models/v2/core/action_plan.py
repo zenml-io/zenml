@@ -13,15 +13,17 @@
 #  permissions and limitations under the License.
 """COllection of all models concerning actions."""
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
 
 from pydantic import BaseModel, Field
 
-from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.v2.base.scoped import WorkspaceScopedResponseMetadata, \
-    WorkspaceScopedResponse, WorkspaceScopedFilter
-
 from zenml import BaseRequest, WorkspaceScopedResponseBody
+from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.v2.base.scoped import (
+    WorkspaceScopedFilter,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseMetadata,
+)
 from zenml.models.v2.base.update import update_model
 
 

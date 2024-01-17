@@ -21,6 +21,7 @@ from zenml.enums import EventConfigurationType
 
 
 class PipelineRunActionConfiguration(ActionPlanConfig):
+    """Configuration class to configure a pipeline run action."""
     pipeline_build_id: UUID
     pipeline_config: PipelineRunConfiguration
 

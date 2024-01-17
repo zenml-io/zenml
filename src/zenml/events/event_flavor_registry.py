@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Registry all event source configurations."""
-from typing import Type, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Type
+
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -60,7 +61,7 @@ class EventFlavorRegistry:
         """
         if key not in self.event_source_flavors:
             self.event_source_flavors[key] = flavor
-            logger.debug(f"Registered event source configuration {flavors_} for {key}")
+            logger.debug(f"Registered event source configuration {flavor} for {key}")
         else:
             logger.debug(
                 f"Found existing event source configuration class for {key}: "

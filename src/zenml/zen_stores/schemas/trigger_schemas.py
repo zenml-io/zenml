@@ -12,12 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Triggers."""
-import json
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, TEXT
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models.v2.core.trigger import (
@@ -33,8 +32,8 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
     from zenml.zen_stores.schemas.action_plan_schemas import ActionPlanSchema
+    from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
 
 
 class TriggerSchema(NamedSchema, table=True):

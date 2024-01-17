@@ -103,8 +103,8 @@ from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
     ActionPlanFilter,
-    ActionPlanResponse,
     ActionPlanRequest,
+    ActionPlanResponse,
     ActionPlanUpdate,
     APIKeyFilter,
     APIKeyInternalResponse,
@@ -134,13 +134,13 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    EventFilterFilter,
     EventFilterRequest,
     EventFilterResponse,
-    EventFilterFilter,
     EventFilterUpdate,
+    EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
-    EventSourceFilter,
     EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
@@ -213,16 +213,15 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
-    TriggerRequest,
-    TriggerResponse,
-    TriggerFilter,
-    TriggerUpdate,
     TagFilter,
     TagRequest,
     TagResourceRequest,
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerResponse,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -239,12 +238,6 @@ from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.stack.flavor_registry import FlavorRegistry
-from zenml.models.v2.core.trigger import (
-    TriggerFilter,
-    TriggerRequest,
-    TriggerResponse,
-)
-from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 from zenml.utils import uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -265,6 +258,8 @@ from zenml.zen_stores.schemas import (
     BaseSchema,
     CodeReferenceSchema,
     CodeRepositorySchema,
+    EventFilterSchema,
+    EventSourceSchema,
     FlavorSchema,
     IdentitySchema,
     ModelSchema,
@@ -296,6 +291,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
@@ -1139,89 +1135,87 @@ class SqlZenStore(BaseZenStore):
                 )
             return identity.id
 
-        # -------------------- Actions Plans --------------------
+    # -------------------- Actions Plans --------------------
 
-        def create_action_plan(
-                self, action_plan: ActionPlanRequest
-        ) -> ActionPlanResponse:
-            """Create an action_plan.
+    def create_action_plan(
+            self, action_plan: ActionPlanRequest
+    ) -> ActionPlanResponse:
+        """Create an action_plan.
 
-            Args:
-                action_plan: The action_plan to create.
+        Args:
+            action_plan: The action_plan to create.
 
-            Returns:
-                The created action_plan.
-            """
+        Returns:
+            The created action_plan.
+        """
 
-        def get_action_plan(
-                self,
-                action_plan_id: UUID,
-                hydrate: bool = True,
-        ) -> ActionPlanResponse:
-            """Get an action_plan by ID.
+    def get_action_plan(
+            self,
+            action_plan_id: UUID,
+            hydrate: bool = True,
+    ) -> ActionPlanResponse:
+        """Get an action_plan by ID.
 
-            Args:
-                action_plan_id: The ID of the action_plan to get.
-                hydrate: Flag deciding whether to hydrate the output model(s)
-                    by including metadata fields in the response.
+        Args:
+            action_plan_id: The ID of the action_plan to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
-            Returns:
-                The action_plan.
+        Returns:
+            The action_plan.
 
-            Raises:
-                KeyError: if the action_plan doesn't exist.
-            """
+        Raises:
+            KeyError: if the action_plan doesn't exist.
+        """
 
-        def list_action_plans(
-                self,
-                action_plan_filter_model: ActionPlanFilter,
-                hydrate: bool = False,
-        ) -> Page[ActionPlanResponse]:
-            """List all action_plans matching the given filter criteria.
+    def list_action_plans(
+            self,
+            action_plan_filter_model: ActionPlanFilter,
+            hydrate: bool = False,
+    ) -> Page[ActionPlanResponse]:
+        """List all action_plans matching the given filter criteria.
 
-            Args:
-                action_plan_filter_model: All filter parameters including pagination
-                    params.
-                hydrate: Flag deciding whether to hydrate the output model(s)
-                    by including metadata fields in the response.
+        Args:
+            action_plan_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
-            Returns:
-                A list of all action_plans matching the filter criteria.
-            """
+        Returns:
+            A list of all action_plans matching the filter criteria.
+        """
 
-        def update_action_plan(
-                self,
-                action_plan_id: UUID,
-                action_plan_update: ActionPlanUpdate,
-        ) -> ActionPlanResponse:
-            """Update an existing action_plan.
+    def update_action_plan(
+            self,
+            action_plan_id: UUID,
+            action_plan_update: ActionPlanUpdate,
+    ) -> ActionPlanResponse:
+        """Update an existing action_plan.
 
-            Args:
-                action_plan_id: The ID of the action_plan to update.
-                action_plan_update: The update to be applied to the action_plan.
+        Args:
+            action_plan_id: The ID of the action_plan to update.
+            action_plan_update: The update to be applied to the action_plan.
 
-            Returns:
-                The updated action_plan.
+        Returns:
+            The updated action_plan.
 
-            Raises:
-                KeyError: if the action_plan doesn't exist.
-            """
+        Raises:
+            KeyError: if the action_plan doesn't exist.
+        """
+        # TODO: implement
+        raise NotImplementedError()
 
-            # TODO: implement
-            raise NotImplementedError()
+    def delete_action_plan(self, action_plan_id: UUID) -> None:
+        """Delete an action_plan.
 
-        def delete_action_plan(self, action_plan_id: UUID) -> None:
-            """Delete an action_plan.
+        Args:
+            action_plan_id: The ID of the action_plan to delete.
 
-            Args:
-                action_plan_id: The ID of the action_plan to delete.
-
-            Raises:
-                KeyError: if the action_plan doesn't exist.
-            """
-
-            # TODO: implement
-            raise NotImplementedError()
+        Raises:
+            KeyError: if the action_plan doesn't exist.
+        """
+        # TODO: implement
+        raise NotImplementedError()
 
     # ------------------------- API Keys -------------------------
 
@@ -3379,7 +3373,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             event_filter = session.exec(
-                select(EventFilterSchema).where(EventFilterSchema.id == trigger_id)
+                select(EventFilterSchema).where(EventFilterSchema.id == event_filter_id)
             ).first()
 
             if event_filter is None:
@@ -3458,7 +3452,7 @@ class SqlZenStore(BaseZenStore):
             The created event_source.
         """
         with Session(self.engine) as session:
-            new_event_source = EventSourceSchema.from_request(event_filter)
+            new_event_source = EventSourceSchema.from_request(event_source)
             session.add(new_event_source)
             session.commit()
             session.refresh(new_event_source)

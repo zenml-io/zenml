@@ -15,13 +15,12 @@
 from typing import ClassVar
 from uuid import UUID
 
-from zenml.events.base_event_flavor import (
-    BaseEventFlavor, EventConfig
-)
 from zenml.enums import EventConfigurationType
+from zenml.events.base_event_flavor import BaseEventFlavor, EventConfig
 
 
 class GithubEventSourceConfiguration(EventConfig):
+    """Configuration for github source filters."""
     repo: str
 
 
@@ -35,6 +34,7 @@ class GithubEventSourceFlavor(BaseEventFlavor):
 
 
 class GithubEventFilterConfiguration(EventConfig):
+    """Configuration for github event filters."""
     source_id: UUID
     branch: str
 

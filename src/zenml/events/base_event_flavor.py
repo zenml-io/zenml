@@ -13,13 +13,12 @@
 #  permissions and limitations under the License.
 """Base implementation of the event source configuration."""
 from abc import ABC
-from typing import ClassVar, cast, Type, Tuple, Any, Dict
+from typing import Any, ClassVar, Dict, Tuple, Type, cast
 
 from pydantic import BaseModel, Extra
 
 from zenml.enums import EventConfigurationType
-from zenml.events.event_flavor_registry import \
-    event_configuration_registry
+from zenml.events.event_flavor_registry import event_configuration_registry
 
 
 class EventConfig(BaseModel, ABC):
@@ -57,7 +56,7 @@ class BaseEventFlavorMeta(type):
             MaterializerInterfaceError: If the class was improperly defined.
         """
         cls = cast(
-            Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
+            Type["BaseEventFlavor"], super().__new__(mcs, name, bases, dct)
         )
 
         # Skip the following validation and registration for base classes.
