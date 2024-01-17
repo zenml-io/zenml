@@ -1007,20 +1007,6 @@ class SqlZenStore(BaseZenStore):
                 f"sqlite3 {self.config.database} .dump > {self.db_backup_file_path}"
             )
 
-        # # if ssl-ca is set, we need to pass the ssl parameters to mysqldump
-        # if self.config.ssl_ca:
-        #     os.system(
-        #         f"mysqldump --default-character-set=utf8mb4 -h {self.engine.url.host} -u {self.config.username} "
-        #         f"-p{self.config.password} --ssl-ca={self.config.ssl_ca} "
-        #         f"--ssl-cert={self.config.ssl_cert} --ssl-key={self.config.ssl_key} "
-        #         f"{db_name} > {self.db_backup_file_path}"
-        #     )
-        # else:
-        #     os.system(
-        #         f"mysqldump --default-character-set=utf8mb4 -h {self.engine.url.host} -u {self.config.username} "
-        #         f"-p{self.config.password} {db_name} > {self.db_backup_file_path}"
-        #     )
-
         metadata = MetaData()
         metadata.reflect(bind=self.engine)
         from sqlalchemy.schema import CreateTable
@@ -1030,18 +1016,18 @@ class SqlZenStore(BaseZenStore):
         output = []
         for table in metadata.sorted_tables:
             # write the table creation statement
-            create_table_stmt = str(CreateTable(table)).strip()
-            # if any of the columns in the table are a reserved word in mysql, we need to escape them
-            # https://dev.mysql.com/doc/refman/8.0/en/keywords.html
-            reserved_words = [
-                "KEY" # consider only "key" for now
-            ]
-            # for word in reserved_words:
-            #     create_table_stmt = create_table_stmt.replace(f" {word} ", f" `{word}` ")
-            # replace line key VARCHAR(255) NOT NULL with `key` VARCHAR(255) NOT NULL
-            create_table_stmt = create_table_stmt.replace("key VARCHAR(255) NOT NULL", "`key` VARCHAR(255) NOT NULL")
-            create_table_stmt = create_table_stmt.replace("values TEXT NOT NULL", "`values` TEXT NOT NULL")
-            # if amy double quotes are used for column names, replace them with backticks
+            create_table_construct = CreateTable(table)
+            create_table_stmt = str(create_table_construct).strip()
+            for col in create_table_construct.columns:
+                # enclosing all column names in backticks. This is because
+                # some column names are reserved keywords in MySQL. For example,
+                # keys and values. So, instead of tracking all keywords, we just
+                # enclose all column names in backticks.
+                # enclose the first word in the column definition in backticks
+                words = str(col).split()
+                words[0] = f"`{words[0]}`"
+                create_table_stmt = create_table_stmt.replace(f"\n\t{str(col)}", " ".join(words))
+            # if any double quotes are used for column names, replace them with backticks
             create_table_stmt = create_table_stmt.replace('"', '')
             output.append(create_table_stmt)
 
