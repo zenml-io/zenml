@@ -222,6 +222,7 @@ from zenml.models import (
     TriggerFilter,
     TriggerRequest,
     TriggerResponse,
+    TriggerUpdate,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -252,6 +253,7 @@ from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
 from zenml.zen_stores.schemas import (
+    ActionPlanSchema,
     APIKeySchema,
     ArtifactSchema,
     ArtifactVersionSchema,
@@ -1148,6 +1150,13 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created action_plan.
         """
+        with Session(self.engine) as session:
+            new_action_plan = ActionPlanSchema.from_request(action_plan)
+            session.add(new_action_plan)
+            session.commit()
+            session.refresh(new_action_plan)
+
+        return new_action_plan.to_model(hydrate=True)
 
     def get_action_plan(
             self,
@@ -1167,6 +1176,14 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the action_plan doesn't exist.
         """
+        with Session(self.engine) as session:
+            action_plan = session.exec(
+                select(ActionPlanSchema).where(ActionPlanSchema.id == action_plan_id)
+            ).first()
+
+            if action_plan is None:
+                raise KeyError(f"Trigger with ID {action_plan_id} not found.")
+            return action_plan.to_model(hydrate=hydrate)
 
     def list_action_plans(
             self,
@@ -1184,6 +1201,15 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all action_plans matching the filter criteria.
         """
+        with Session(self.engine) as session:
+            query = select(ActionPlanSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ActionPlanSchema,
+                filter_model=action_plan_filter_model,
+                hydrate=hydrate,
+            )
 
     def update_action_plan(
             self,
@@ -3401,7 +3427,7 @@ class SqlZenStore(BaseZenStore):
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=StackSchema,
+                table=EventFilterSchema,
                 filter_model=event_filter_filter_model,
                 hydrate=hydrate,
             )
@@ -3507,7 +3533,7 @@ class SqlZenStore(BaseZenStore):
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=StackSchema,
+                table=EventSourceSchema,
                 filter_model=event_source_filter_model,
                 hydrate=hydrate,
             )
@@ -6278,15 +6304,15 @@ class SqlZenStore(BaseZenStore):
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=StackSchema,
+                table=TriggerSchema,
                 filter_model=trigger_filter_model,
                 hydrate=hydrate,
             )
 
     @track_decorator(AnalyticsEvent.UPDATED_TRIGGER)
     def update_trigger(
-        self, trigger_id: UUID, trigger_update: StackUpdate
-    ) -> StackResponse:
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TriggerResponse:
         """Update a trigger.
 
         Args:

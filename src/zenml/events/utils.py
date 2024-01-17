@@ -19,7 +19,7 @@ from zenml.events.event_flavor_registry import event_configuration_registry
 
 
 def validate_event_config(
-    event_type: str,
+    event_flavor: str,
     event_configuration_type: EventConfigurationType,
     configuration_dict: Dict[str, Any],
 ) -> bool:
@@ -27,7 +27,7 @@ def validate_event_config(
 
     Args:
         configuration_dict: The event filter configuration to validate.
-        event_type: The type of the event that is being configured.
+        event_flavor: The flavor of the event that is being configured.
         event_configuration_type: Type of event configuration [SOURCE, FILTER]
 
     Returns:
@@ -37,9 +37,9 @@ def validate_event_config(
         ValueError: If the configuration is invalid.
     """
     if event_configuration_type == EventConfigurationType.SOURCE:
-        event_configuration_class = event_configuration_registry.get_event_source_flavor(event_type)
+        event_configuration_class = event_configuration_registry.get_event_source_flavor(event_flavor)
     elif event_configuration_type == EventConfigurationType.FILTER:
-        event_configuration_class = event_configuration_registry.get_event_filter_flavor(event_type)
+        event_configuration_class = event_configuration_registry.get_event_filter_flavor(event_flavor)
     else:
         raise ValueError(f"Invalid event configuration type {event_configuration_type}.")
     try:

@@ -30,10 +30,8 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.action_plan_schemas import ActionPlanSchema
-    from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
+from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
+from zenml.zen_stores.schemas.action_plan_schemas import ActionPlanSchema
 
 
 class TriggerSchema(NamedSchema, table=True):

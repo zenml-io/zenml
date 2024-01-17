@@ -17,7 +17,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml import EventFilterResponse
+from zenml.models.v2.core.event_filter import EventFilterResponse
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,

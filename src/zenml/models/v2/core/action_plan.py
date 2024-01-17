@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""COllection of all models concerning actions."""
+"""Collection of all models concerning actions."""
 from datetime import datetime
 from typing import Any, Dict
 
 from pydantic import BaseModel, Field
 
-from zenml import BaseRequest, WorkspaceScopedResponseBody
+from zenml.models.v2.base.base import BaseRequest
+from zenml.models.v2.base.scoped import WorkspaceScopedResponseBody
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,

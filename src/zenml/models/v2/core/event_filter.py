@@ -17,7 +17,7 @@ from typing import Any, Dict
 
 from pydantic import Field
 
-from zenml import BaseRequest
+from zenml.models.v2.base.base import BaseRequest
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,

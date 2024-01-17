@@ -12,12 +12,39 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an event Plugin could look like."""
-from typing import ClassVar
+from typing import ClassVar, List
 from uuid import UUID
+
+from fastapi import APIRouter
+from pydantic import BaseModel
 
 from zenml.enums import EventConfigurationType
 from zenml.events.base_event_flavor import BaseEventFlavor, EventConfig
 
+# -------------------- Github Event Models -----------------------------------
+
+class Commit(BaseModel):
+    """Github Event."""
+    id: str
+    message: str
+    url: str
+
+class Repository(BaseModel):
+    """Github Repository."""
+    id: int
+    name: str
+    full_name: str
+
+class PushEvent(BaseModel):
+    """Push Event from Github."""
+    ref: str
+    before: str
+    after: str
+    repository: Repository
+    commits: List[Commit]
+
+
+# -------------------- Configuration Models ----------------------------------
 
 class GithubEventSourceConfiguration(EventConfig):
     """Configuration for github source filters."""
@@ -31,6 +58,13 @@ class GithubEventSourceFlavor(BaseEventFlavor):
     CONFIGURATION_TYPE: ClassVar[EventConfigurationType] = EventConfigurationType.SOURCE
 
     config: GithubEventSourceConfiguration
+
+    @staticmethod
+    def register_endpoint(router: APIRouter):
+        """Register the github webhook to receive events from github."""
+        @router.post("/github-webhook")
+        async def post_event(body: PushEvent):
+            print(body)
 
 
 class GithubEventFilterConfiguration(EventConfig):

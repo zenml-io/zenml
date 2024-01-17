@@ -14,7 +14,7 @@
 """SQL Model Implementations for Action Plans."""
 import json
 from datetime import datetime
-from typing import List
+from typing import List, TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import Field
@@ -31,13 +31,13 @@ from zenml.models import (
     EventFilterResponseBody,
     EventFilterUpdate,
 )
-from zenml.zen_stores.schemas import (
-    BaseSchema,
-    EventSourceSchema,
-    TriggerSchema,
-    WorkspaceSchema,
-)
+from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 
 
 class EventFilterSchema(BaseSchema, table=True):

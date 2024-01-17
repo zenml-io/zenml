@@ -13,12 +13,24 @@
 #  permissions and limitations under the License.
 """Base implementation of the event source configuration."""
 from abc import ABC
-from typing import Any, ClassVar, Dict, Tuple, Type, cast
+from typing import Any, Callable, ClassVar, Dict, Optional, Tuple, Type, cast
 
+from fastapi import APIRouter
 from pydantic import BaseModel, Extra
 
+from zenml.constants import API, EVENTS, VERSION_1
 from zenml.enums import EventConfigurationType
 from zenml.events.event_flavor_registry import event_configuration_registry
+
+events_router = APIRouter(
+    prefix=API + VERSION_1 + EVENTS,
+    tags=["events"]
+)
+
+
+@events_router.get("/blah")
+def MICHAEL() -> bool:
+    return True
 
 
 class EventConfig(BaseModel, ABC):
@@ -65,13 +77,14 @@ class BaseEventFlavorMeta(type):
             cls.SKIP_REGISTRATION = False
             return cls
 
-        # TODO: Validate that the class is properly defined.
-
         # Register the event source configuration.
         if cls.CONFIGURATION_TYPE == EventConfigurationType.SOURCE:
             event_configuration_registry.register_event_source_flavor(
                 cls.EVENT_FLAVOR, cls
             )
+            if cls.register_endpoint:
+                cls.register_endpoint(events_router)
+                # cls.router = router
         elif cls.CONFIGURATION_TYPE == EventConfigurationType.FILTER:
             event_configuration_registry.register_event_filter_flavor(
                 cls.EVENT_FLAVOR, cls
@@ -92,3 +105,4 @@ class BaseEventFlavor(metaclass=BaseEventFlavorMeta):
     SKIP_REGISTRATION: ClassVar[bool] = True
 
     config: EventConfig
+    register_endpoint: Optional[Callable[..., Callable[..., Type[APIRouter]]]]

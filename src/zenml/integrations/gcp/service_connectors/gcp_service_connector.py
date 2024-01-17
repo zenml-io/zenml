@@ -1534,7 +1534,7 @@ class GCPServiceConnector(ServiceConnector):
             cluster = cluster_map[cluster_name]
 
             # get cluster details
-            cluster_server = cluster.endpoint
+            cluster_server = cluster.register_endpoint
             cluster_ca_cert = cluster.master_auth.cluster_ca_certificate
             bearer_token = credentials.token
 

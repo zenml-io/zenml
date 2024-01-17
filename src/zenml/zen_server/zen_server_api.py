@@ -26,9 +26,11 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 import zenml
+from zenml.events import event_configuration_registry
 from zenml.analytics import source_context
 from zenml.constants import API, HEALTH
 from zenml.enums import AuthScheme, SourceContextTypes
+from zenml.events.base_event_flavor import events_router
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     artifact_endpoint,
@@ -222,6 +224,7 @@ app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
+app.include_router(events_router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.

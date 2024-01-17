@@ -30,7 +30,8 @@ from zenml.models import (
     EventSourceResponseBody,
     EventSourceUpdate,
 )
-from zenml.zen_stores.schemas import BaseSchema, WorkspaceSchema
+from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
