@@ -251,8 +251,11 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
             azure_secret = self.client.get_secret(
                 azure_secret_id,
             )
-        except ResourceNotFoundError:
-            raise KeyError(f"Secret with ID {secret_id} not found")
+        except ResourceNotFoundError as e:
+            raise KeyError(
+                f"Can't find the secret values for secret ID '{secret_id}' "
+                f"in the secrets store back-end: {str(e)}"
+            ) from e
         except HttpResponseError as e:
             raise RuntimeError(
                 f"Error fetching secret with ID {secret_id} {e}"
