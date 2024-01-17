@@ -33,24 +33,6 @@ COPY src/zenml/__init__.py ./src/zenml/
 
 RUN pip install -e .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure]
 
-# install mysqldump
-# RUN apt install gnupg -y
-# RUN apt-get update && apt-get install -y wget
-# RUN wget -c https://dev.mysql.com/get/mysql-apt-config_0.8.16-1_all.deb
-# RUN apt install lsb-release -y
-# RUN dpkg -i mysql-apt-config_0.8.16-1_all.deb
-# RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B7B3B788A8D3785C
-# RUN apt-get update
-# RUN apt-get install -y mysql-client
-
-# RUN apt-get update && apt-get install -y default-libmysqlclient-dev
-# RUN apt-get update && apt-get install -y wget
-# RUN wget -P /zenml https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.27-linux-glibc2.12-x86_64.tar.xz
-# RUN apt-get update && apt-get install -y xz-utils
-# RUN tar -xf /zenml/mysql-8.0.27-linux-glibc2.12-x86_64.tar.xz -C /zenml && cp /zenml/mysql-8.0.27-linux-glibc2.12-x86_64/bin/mysqldump /usr/local/bin
-# RUN rm -rf /zenml/mysql-8.0.27-linux-glibc2.12-x86_64* /var/lib/apt/lists/*
-# RUN apt-get install libmysqlclient21
-
 COPY src src
 
 RUN mkdir -p /zenml/.zenconfig/local_stores/default_zen_store && chown -R $USER_UID:$USER_GID /zenml
