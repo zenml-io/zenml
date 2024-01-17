@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,28 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import mlflow
 import numpy as np
 import tensorflow as tf
 
 from zenml import step
-from zenml.client import Client
-from zenml.integrations.mlflow.experiment_trackers import (
-    MLFlowExperimentTracker,
-)
-
-experiment_tracker = Client().active_stack.experiment_tracker
-
-if not experiment_tracker or not isinstance(
-    experiment_tracker, MLFlowExperimentTracker
-):
-    raise RuntimeError(
-        "Your active stack needs to contain a MLFlow experiment tracker for "
-        "this example to work."
-    )
 
 
-@step(experiment_tracker=experiment_tracker.name)
+@step
 def evaluator(
     X_test: np.ndarray,
     y_test: np.ndarray,
@@ -40,5 +25,4 @@ def evaluator(
 ) -> float:
     """Calculate the accuracy on the test set."""
     _, test_acc = model.evaluate(X_test, y_test, verbose="2")
-    mlflow.log_metric("val_accuracy", test_acc)
     return test_acc

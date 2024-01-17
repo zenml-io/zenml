@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -34,5 +34,4 @@ def get_data_from_api():
 @step(enable_cache=False)
 def dynamic_importer() -> Annotated[np.ndarray, "data"]:
     """Downloads the latest data from a mock API."""
-    data = get_data_from_api()
-    return data
+    return get_data_from_api()

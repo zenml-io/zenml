@@ -16,12 +16,12 @@ from rich import print as rich_print  # type: ignore [import]
 from typing_extensions import Annotated
 
 from zenml import step
-from zenml.integrations.mlflow.services import MLFlowDeploymentService
+from zenml.integrations.gcp.services import VertexDeploymentService
 
 
 @step
 def predictor(
-    service: MLFlowDeploymentService,
+    service: VertexDeploymentService,
     data: np.ndarray,
 ) -> Annotated[np.ndarray, "predictions"]:
     """Run a inference request against a prediction service."""

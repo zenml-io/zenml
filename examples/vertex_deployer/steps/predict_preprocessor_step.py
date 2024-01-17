@@ -22,5 +22,4 @@ def tf_predict_preprocessor(
     input: np.ndarray,
 ) -> Annotated[np.ndarray, "data"]:
     """Prepares the data for inference."""
-    input = input / 255.0
-    return input
+    return input / 255.0
