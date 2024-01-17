@@ -3651,23 +3651,18 @@ class TestModel:
         with ModelVersionContext():
             zs = clean_client.zen_store
 
-            ms = zs.list_models(model_filter_model=ModelFilter(tags=[]))
+            ms = zs.list_models(model_filter_model=ModelFilter(tag=""))
             assert len(ms) == 1
 
-            ms = zs.list_models(model_filter_model=ModelFilter(tags=["foo"]))
+            ms = zs.list_models(model_filter_model=ModelFilter(tag="foo"))
+            assert len(ms) == 1
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tag="bar"))
             assert len(ms) == 1
 
             ms = zs.list_models(
-                model_filter_model=ModelFilter(tags=["foo", "bar"])
+                model_filter_model=ModelFilter(tag="non_existent_tag")
             )
-            assert len(ms) == 1
-
-            ms = zs.list_models(
-                model_filter_model=ModelFilter(tags=["non_existent_tag"])
-            )
-            assert len(ms) == 0
-
-            ms = zs.list_models(model_filter_model=ModelFilter(tags=[""]))
             assert len(ms) == 0
 
 
@@ -3812,7 +3807,7 @@ class TestModelVersion:
             )
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(tags=[]),
+                model_version_filter_model=ModelVersionFilter(tag=""),
             )
             assert len(mvs) == 2
             assert mv1 in mvs
@@ -3820,13 +3815,7 @@ class TestModelVersion:
 
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(tags=[""]),
-            )
-            assert len(mvs) == 0
-
-            mvs = zs.list_model_versions(
-                model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(tags=["tag2"]),
+                model_version_filter_model=ModelVersionFilter(tag="tag2"),
             )
             assert len(mvs) == 2
             assert mv1 in mvs
@@ -3834,14 +3823,14 @@ class TestModelVersion:
 
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(tags=["tag1"]),
+                model_version_filter_model=ModelVersionFilter(tag="tag1"),
             )
             assert len(mvs) == 1
             assert mv1 in mvs
 
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(tags=["tag3"]),
+                model_version_filter_model=ModelVersionFilter(tag="tag3"),
             )
             assert len(mvs) == 1
             assert mv2 in mvs
@@ -3849,7 +3838,7 @@ class TestModelVersion:
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
                 model_version_filter_model=ModelVersionFilter(
-                    tags=["non_existent_tag"]
+                    tag="non_existent_tag"
                 ),
             )
             assert len(mvs) == 0
