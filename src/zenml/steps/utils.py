@@ -25,6 +25,7 @@ from typing_extensions import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.steps.step_output import Output
 from zenml.utils import source_code_utils
 
@@ -403,3 +404,15 @@ def has_only_none_returns(func: Callable[..., Any]) -> bool:
     visitor.visit(tree)
 
     return visitor.has_only_none_returns
+
+
+def log_step_metadata(
+    metadata: Dict[str, "MetadataType"],
+    step_name: Optional[str] = None,
+    step_version: Optional[str] = None,
+    pipeline_name: Optional[str] = None,
+    pipeline_version: Optional[str] = None,
+    run_id: Optional[str] = None,
+):
+    """Logs step metadata."""
+    pass
