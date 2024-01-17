@@ -281,37 +281,15 @@ class WorkspaceScopedFilter(BaseFilter):
 
 
 class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
-    """Model to enable advanced scoping with workspace and tagging.
+    """Model to enable advanced scoping with workspace and tagging."""
 
-    `tags` property is a list and cannot be properly parsed on CLI.
-    Make sure to allow them as a separate option like this:
-    @click.option(
-        "--tag",
-        "-t",
-        help="Tags to search for.",
-        type=str,
-        required=False,
-        multiple=True,
-    )
-    """
-
-    tags: Optional[List[str]] = Field(
-        default_factory=list,
-        description="List of tags to apply to the filter query.",
+    tag: Optional[str] = Field(
+        description="Tag to apply to the filter query.", default=None
     )
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "tags",
-    ]
-
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
-        "tags",
-    ]
-
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        "tags",
+        "tag",
     ]
 
     def apply_filter(
@@ -328,14 +306,13 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         Returns:
             The query with filter applied.
         """
-
         from zenml.zen_stores.schemas import TagResourceSchema
 
         query = super().apply_filter(query=query, table=table)
-        if self.tags:
+        if self.tag:
             query = (
-                query.join(getattr(table, "tags"), isouter=True)
-                .join(TagResourceSchema.tag, isouter=True)
+                query.join(getattr(table, "tags"))
+                .join(TagResourceSchema.tag)
                 .distinct()
             )
 
@@ -349,14 +326,10 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         Returns:
             A list of custom filters.
         """
-        from sqlmodel import or_
-
         from zenml.zen_stores.schemas import TagSchema
 
         custom_filters = super().get_custom_filters()
-        if self.tags:
-            custom_filters.append(
-                or_(*[col(TagSchema.name) == tag_ for tag_ in self.tags])
-            )
+        if self.tag:
+            custom_filters.append(col(TagSchema.name) == self.tag)  # type: ignore[arg-type]
 
         return custom_filters

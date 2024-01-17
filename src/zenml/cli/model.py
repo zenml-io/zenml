@@ -85,24 +85,15 @@ def model() -> None:
 
 
 @cli_utils.list_options(ModelFilter)
-@click.option(
-    "--tag",
-    "-t",
-    help="Tags to search for.",
-    type=str,
-    required=False,
-    multiple=True,
-)
 @model.command("list", help="List models with filter.")
-def list_models(tag: Optional[List[str]], **kwargs: Any) -> None:
+def list_models(**kwargs: Any) -> None:
     """List models with filter in the Model Control Plane.
 
     Args:
-        tag: Tags to search for.
         **kwargs: Keyword arguments to filter models.
     """
     models = Client().zen_store.list_models(
-        model_filter_model=ModelFilter(**kwargs, tags=tag or [])
+        model_filter_model=ModelFilter(**kwargs)
     )
 
     if not models:
@@ -388,30 +379,17 @@ def version() -> None:
     type=str,
     required=False,
 )
-@click.option(
-    "--tag",
-    "-t",
-    help="Tags to search for.",
-    type=str,
-    required=False,
-    multiple=True,
-)
 @version.command("list", help="List model versions with filter.")
-def list_model_versions(
-    model_name: str, tag: Optional[List[str]], **kwargs: Any
-) -> None:
+def list_model_versions(model_name: str, **kwargs: Any) -> None:
     """List model versions with filter in the Model Control Plane.
 
     Args:
         model_name: The name of the parent model.
-        tag: Tags to search for.
         **kwargs: Keyword arguments to filter models.
     """
     model_versions = Client().zen_store.list_model_versions(
         model_name_or_id=model_name,
-        model_version_filter_model=ModelVersionFilter(
-            **kwargs, tags=tag or []
-        ),
+        model_version_filter_model=ModelVersionFilter(**kwargs),
     )
 
     if not model_versions:

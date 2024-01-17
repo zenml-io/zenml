@@ -36,23 +36,14 @@ def artifact() -> None:
 
 
 @cli_utils.list_options(ArtifactFilter)
-@click.option(
-    "--tag",
-    "-t",
-    help="Tags to search for.",
-    type=str,
-    required=False,
-    multiple=True,
-)
 @artifact.command("list", help="List all artifacts.")
-def list_artifacts(tag: Optional[List[str]], **kwargs: Any) -> None:
+def list_artifacts(**kwargs: Any) -> None:
     """List all artifacts.
 
     Args:
-        tag: Tags to search for.
         **kwargs: Keyword arguments to filter artifacts by.
     """
-    artifacts = Client().list_artifacts(**kwargs, tags=tag or [])
+    artifacts = Client().list_artifacts(**kwargs)
 
     if not artifacts:
         cli_utils.declare("No artifacts found.")
@@ -125,25 +116,15 @@ def version() -> None:
 
 
 @cli_utils.list_options(ArtifactVersionFilter)
-@click.option(
-    "--tag",
-    "-t",
-    help="Tags to search for.",
-    type=str,
-    required=False,
-    multiple=True,
-)
 @version.command("list", help="List all artifact versions.")
-def list_artifact_versions(tag: Optional[List[str]], **kwargs: Any) -> None:
+def list_artifact_versions(**kwargs: Any) -> None:
     """List all artifact versions.
 
     Args:
         tag: Tags to search for.
         **kwargs: Keyword arguments to filter artifact versions by.
     """
-    artifact_versions = Client().list_artifact_versions(
-        **kwargs, tags=tag or []
-    )
+    artifact_versions = Client().list_artifact_versions(**kwargs)
 
     if not artifact_versions:
         cli_utils.declare("No artifact versions found.")
