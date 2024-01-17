@@ -89,7 +89,7 @@ export ZENML_CONFIG_PATH=/path/to/somewhere
 ## Integration logs
 
 Setting this to `false` disables local client integrations logs suppression. This is not to be confused with
-`ZENML_DISABLE_STEP_LOGS_STORAGE` , which disables step logging to the artifact store.
+`ZENML_DISABLE_STEP_LOGS_STORAGE`, which disables step logging to the artifact store.
 ```bash
 export ZENML_SUPPRESS_LOGS=false
 ```
