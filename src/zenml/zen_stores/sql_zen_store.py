@@ -94,8 +94,10 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     AuthorizationException,
+    BackupSecretsStoreNotConfiguredError,
     EntityExistsError,
     IllegalOperationError,
+    SecretsStoreNotConfiguredError,
     StackComponentExistsError,
     StackExistsError,
 )
@@ -328,6 +330,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         secrets_store: The configuration of the secrets store to use.
             This defaults to a SQL secrets store that extends the SQL ZenML
             store.
+        backup_secrets_store: The configuration of a backup secrets store to
+            use in addition to the primary one as an intermediate step during
+            the migration to a new secrets store.
         driver: The SQL database driver.
         database: database name. If not already present on the server, it will
             be created automatically on first access.
@@ -354,6 +359,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     type: StoreType = StoreType.SQL
 
     secrets_store: Optional[SecretsStoreConfiguration] = None
+    backup_secrets_store: Optional[SecretsStoreConfiguration] = None
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
@@ -724,6 +730,7 @@ class SqlZenStore(BaseZenStore):
     _engine: Optional[Engine] = None
     _alembic: Optional[Alembic] = None
     _secrets_store: Optional[BaseSecretsStore] = None
+    _backup_secrets_store: Optional[BaseSecretsStore] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -733,15 +740,24 @@ class SqlZenStore(BaseZenStore):
             The secrets store associated with this store.
 
         Raises:
-            NotImplementedError: If no secrets store is configured.
+            SecretsStoreNotConfiguredError: If no secrets store is configured.
         """
         if self._secrets_store is None:
-            raise NotImplementedError(
+            raise SecretsStoreNotConfiguredError(
                 "No secrets store is configured. Please configure a secrets "
                 "store to create and manage ZenML secrets."
             )
 
         return self._secrets_store
+
+    @property
+    def backup_secrets_store(self) -> Optional["BaseSecretsStore"]:
+        """The backup secrets store associated with this store.
+
+        Returns:
+            The backup secrets store associated with this store.
+        """
+        return self._backup_secrets_store
 
     @property
     def engine(self) -> Engine:
@@ -1101,6 +1117,26 @@ class SqlZenStore(BaseZenStore):
             # Update the config with the actual secrets store config
             # to reflect the default values in the saved configuration
             self.config.secrets_store = self._secrets_store.config
+
+        backup_secrets_store_config = self.config.backup_secrets_store
+
+        # Initialize the backup secrets store, if configured
+        if (
+            backup_secrets_store_config
+            and backup_secrets_store_config.type != SecretsStoreType.NONE
+        ):
+            secrets_store_class = BaseSecretsStore.get_store_class(
+                backup_secrets_store_config
+            )
+            self._backup_secrets_store = secrets_store_class(
+                zen_store=self,
+                config=backup_secrets_store_config,
+            )
+            # Update the config with the actual secrets store config
+            # to reflect the default values in the saved configuration
+            self.config.backup_secrets_store = (
+                self._backup_secrets_store.config
+            )
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
@@ -4012,33 +4048,163 @@ class SqlZenStore(BaseZenStore):
         return False, ""
 
     def _set_secret_values(
-        self, secret_id: UUID, values: Dict[str, str]
+        self, secret_id: UUID, values: Dict[str, str], backup: bool = True
     ) -> None:
         """Sets the values of a secret in the configured secrets store.
 
         Args:
             secret_id: The ID of the secret to set the values of.
             values: The values to set.
-        """
-        self.secrets_store.store_secret_values(
-            secret_id=secret_id, secret_values=values
-        )
+            backup: Whether to back up the values in the backup secrets store,
+                if configured.
 
-    def _get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
-        """Gets the values of a secret in the configured secrets store.
+        # noqa: DAR401
+        """
+
+        def do_backup() -> bool:
+            """Backs up the values of a secret in the configured backup secrets store.
+
+            Returns:
+                True if the backup succeeded, False otherwise.
+            """
+            if not backup or not self.backup_secrets_store:
+                return False
+            logger.info(
+                f"Storing secret {secret_id} in the backup secrets store. "
+            )
+            try:
+                self._backup_secret_values(secret_id=secret_id, values=values)
+            except Exception:
+                logger.exception(
+                    f"Failed to store secret values for secret with ID "
+                    f"{secret_id} in the backup secrets store. "
+                )
+                return False
+            return True
+
+        try:
+            self.secrets_store.store_secret_values(
+                secret_id=secret_id, secret_values=values
+            )
+        except Exception:
+            logger.exception(
+                f"Failed to store secret values for secret with ID "
+                f"{secret_id} in the primary secrets store. "
+            )
+            if not do_backup():
+                raise
+        else:
+            do_backup()
+
+    def _backup_secret_values(
+        self, secret_id: UUID, values: Dict[str, str]
+    ) -> None:
+        """Backs up the values of a secret in the configured backup secrets store.
 
         Args:
-            secret_id: The ID of the secret to set the values of.
+            secret_id: The ID of the secret the values of which to backup.
+            values: The values to back up.
+        """
+        if self.backup_secrets_store:
+            # We attempt either an update or a create operation depending on
+            # whether the secret values are already stored in the backup secrets
+            # store. This is to account for any inconsistencies in the backup
+            # secrets store without impairing the backup functionality.
+            try:
+                self.backup_secrets_store.get_secret_values(
+                    secret_id=secret_id,
+                )
+            except KeyError:
+                self.backup_secrets_store.store_secret_values(
+                    secret_id=secret_id, secret_values=values
+                )
+            else:
+                self.backup_secrets_store.update_secret_values(
+                    secret_id=secret_id, secret_values=values
+                )
+
+    def _get_secret_values(
+        self, secret_id: UUID, use_backup: bool = True
+    ) -> Dict[str, str]:
+        """Gets the values of a secret from the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret to get the values of.
+            use_backup: Whether to use the backup secrets store if the primary
+                secrets store fails to retrieve the values and if a backup
+                secrets store is configured.
 
         Returns:
             The values of the secret.
+
+        # noqa: DAR401
         """
-        return self.secrets_store.get_secret_values(
-            secret_id=secret_id,
+        try:
+            return self.secrets_store.get_secret_values(
+                secret_id=secret_id,
+            )
+        except Exception as e:
+            if use_backup and self.backup_secrets_store:
+                logger.exception(
+                    f"Failed to get secret values for secret with ID "
+                    f"{secret_id} from the primary secrets store. "
+                    f"Trying to get them from the backup secrets store. "
+                )
+                try:
+                    backup_values = self._get_backup_secret_values(
+                        secret_id=secret_id
+                    )
+                    if isinstance(e, KeyError):
+                        # Attempt to automatically restore the values in the
+                        # primary secrets store if the backup secrets store
+                        # succeeds in retrieving them and if the values are
+                        # missing in the primary secrets store.
+                        try:
+                            self.secrets_store.store_secret_values(
+                                secret_id=secret_id,
+                                secret_values=backup_values,
+                            )
+                        except Exception:
+                            logger.exception(
+                                f"Failed to restore secret values for secret "
+                                f"with ID {secret_id} in the primary secrets "
+                                "store. "
+                            )
+                    return backup_values
+                except Exception:
+                    logger.exception(
+                        f"Failed to get secret values for secret with ID "
+                        f"{secret_id} from the backup secrets store. "
+                    )
+            raise
+
+    def _get_backup_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+        """Gets the backup values of a secret from the configured backup secrets store.
+
+        Args:
+            secret_id: The ID of the secret to get the values of.
+
+        Returns:
+            The backup values of the secret.
+
+        Raises:
+            KeyError: If no backup secrets store is configured.
+        """
+        if self.backup_secrets_store:
+            return self.backup_secrets_store.get_secret_values(
+                secret_id=secret_id,
+            )
+        raise KeyError(
+            f"Unable to get backup secret values for secret with ID "
+            f"{secret_id}: No backup secrets store is configured."
         )
 
     def _update_secret_values(
-        self, secret_id: UUID, values: Dict[str, Optional[str]]
+        self,
+        secret_id: UUID,
+        values: Dict[str, Optional[str]],
+        overwrite: bool = False,
+        backup: bool = True,
     ) -> Dict[str, str]:
         """Updates the values of a secret in the configured secrets store.
 
@@ -4048,35 +4214,161 @@ class SqlZenStore(BaseZenStore):
         Args:
             secret_id: The ID of the secret to set the values of.
             values: The updated values to set.
+            overwrite: Whether to overwrite the existing values with the new
+                values. If set to False, the new values will be merged with the
+                existing values.
+            backup: Whether to back up the updated values in the backup secrets
+                store, if configured.
 
         Returns:
             The updated values.
+
+        # noqa: DAR401
         """
-        existing_values = self._get_secret_values(secret_id=secret_id)
+        try:
+            existing_values = self._get_secret_values(
+                secret_id=secret_id, use_backup=backup
+            )
+        except KeyError:
+            logger.error(
+                f"Unable to update secret values for secret with ID "
+                f"{secret_id}: No secret with this ID found in the secrets "
+                f"store back-end. Creating a new secret instead."
+            )
+            # If no secret values are yet stored in the secrets store,
+            # we simply treat this as a create operation. This is to account
+            # for cases in which secrets are manually deleted in the secrets
+            # store backend or when the secrets store backend is reconfigured to
+            # a different account, provider, region etc. without migrating
+            # the actual existing secrets themselves.
+            new_values: Dict[str, str] = {
+                k: v for k, v in values.items() if v is not None
+            }
+            self._set_secret_values(
+                secret_id=secret_id, values=new_values, backup=backup
+            )
+            return new_values
 
-        for k, v in values.items():
-            if v is not None:
-                existing_values[k] = v
-            # Drop values removed in the update
-            if v is None and k in existing_values:
-                del existing_values[k]
+        if overwrite:
+            existing_values = {
+                k: v for k, v in values.items() if v is not None
+            }
+        else:
+            for k, v in values.items():
+                if v is not None:
+                    existing_values[k] = v
+                # Drop values removed in the update
+                if v is None and k in existing_values:
+                    del existing_values[k]
 
-        self.secrets_store.update_secret_values(
-            secret_id=secret_id, secret_values=existing_values
-        )
+        def do_backup() -> bool:
+            """Backs up the values of a secret in the configured backup secrets store.
+
+            Returns:
+                True if the backup succeeded, False otherwise.
+            """
+            if not backup or not self.backup_secrets_store:
+                return False
+            logger.info(
+                f"Storing secret {secret_id} in the backup secrets store. "
+            )
+            try:
+                self._backup_secret_values(
+                    secret_id=secret_id, values=existing_values
+                )
+            except Exception:
+                logger.exception(
+                    f"Failed to store secret values for secret with ID "
+                    f"{secret_id} in the backup secrets store. "
+                )
+                return False
+            return True
+
+        try:
+            self.secrets_store.update_secret_values(
+                secret_id=secret_id, secret_values=existing_values
+            )
+        except Exception:
+            logger.exception(
+                f"Failed to update secret values for secret with ID "
+                f"{secret_id} in the primary secrets store. "
+            )
+            if not do_backup():
+                raise
+        else:
+            do_backup()
 
         return existing_values
 
     def _delete_secret_values(
         self,
         secret_id: UUID,
+        delete_backup: bool = True,
     ) -> None:
         """Deletes the values of a secret in the configured secrets store.
 
         Args:
             secret_id: The ID of the secret for which to delete the values.
+            delete_backup: Whether to delete the backup values of the secret
+                from the backup secrets store, if configured.
+
+        # noqa: DAR401
         """
-        self.secrets_store.delete_secret_values(secret_id=secret_id)
+
+        def do_delete_backup() -> bool:
+            """Deletes the backup values of a secret in the configured backup secrets store.
+
+            Returns:
+                True if the backup deletion succeeded, False otherwise.
+            """
+            if not delete_backup or not self.backup_secrets_store:
+                return False
+
+            logger.info(
+                f"Deleting secret {secret_id} from the backup secrets store."
+            )
+            try:
+                self._delete_backup_secret_values(secret_id=secret_id)
+            except KeyError:
+                # If the secret doesn't exist in the backup secrets store, we
+                # consider this a success.
+                return True
+            except Exception:
+                logger.exception(
+                    f"Failed to delete secret values for secret with ID "
+                    f"{secret_id} from the backup secrets store. "
+                )
+                return False
+
+            return True
+
+        try:
+            self.secrets_store.delete_secret_values(secret_id=secret_id)
+        except KeyError:
+            # If the secret doesn't exist in the primary secrets store, we
+            # consider this a success.
+            do_delete_backup()
+        except Exception:
+            logger.exception(
+                f"Failed to delete secret values for secret with ID "
+                f"{secret_id} from the primary secrets store. "
+            )
+            if not do_delete_backup():
+                raise
+        else:
+            do_delete_backup()
+
+    def _delete_backup_secret_values(
+        self,
+        secret_id: UUID,
+    ) -> None:
+        """Deletes the backup values of a secret in the configured backup secrets store.
+
+        Args:
+            secret_id: The ID of the secret for which to delete the backup values.
+        """
+        if self.backup_secrets_store:
+            self.backup_secrets_store.delete_secret_values(secret_id=secret_id)
 
     @track_decorator(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequest) -> SecretResponse:
@@ -4302,6 +4594,139 @@ class SqlZenStore(BaseZenStore):
                 session.commit()
             except NoResultFound:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
+
+    def backup_secrets(
+        self, ignore_errors: bool = True, delete_secrets: bool = False
+    ) -> None:
+        """Backs up all secrets to the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the backup
+                process and attempt to backup all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully backed up from the primary secrets store. Setting
+                this flag effectively moves all secrets from the primary secrets
+                store to the backup secrets store.
+
+        # noqa: DAR401
+        Raises:
+            BackupSecretsStoreNotConfiguredError: if no backup secrets store is
+                configured.
+        """
+        if not self.backup_secrets_store:
+            raise BackupSecretsStoreNotConfiguredError(
+                "Unable to backup secrets: No backup secrets store is "
+                "configured."
+            )
+
+        with Session(self.engine) as session:
+            secrets_in_db = session.exec(select(SecretSchema)).all()
+
+        for secret in secrets_in_db:
+            try:
+                values = self._get_secret_values(
+                    secret_id=secret.id, use_backup=False
+                )
+            except Exception:
+                logger.exception(
+                    f"Failed to get secret values for secret with ID "
+                    f"{secret.id}."
+                )
+                if ignore_errors:
+                    continue
+                raise
+
+            try:
+                self._backup_secret_values(secret_id=secret.id, values=values)
+            except Exception:
+                logger.exception(
+                    f"Failed to backup secret with ID {secret.id}. "
+                )
+                if ignore_errors:
+                    continue
+                raise
+
+            if delete_secrets:
+                try:
+                    self._delete_secret_values(
+                        secret_id=secret.id, delete_backup=False
+                    )
+                except Exception:
+                    logger.exception(
+                        f"Failed to delete secret with ID {secret.id} from the "
+                        f"primary secrets store after backing it up to the "
+                        f"backup secrets store."
+                    )
+                    if ignore_errors:
+                        continue
+                    raise
+
+    def restore_secrets(
+        self, ignore_errors: bool = False, delete_secrets: bool = False
+    ) -> None:
+        """Restore all secrets from the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the
+                restore process and attempt to restore all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully restored from the backup secrets store. Setting
+                this flag effectively moves all secrets from the backup secrets
+                store to the primary secrets store.
+
+        # noqa: DAR401
+        Raises:
+            BackupSecretsStoreNotConfiguredError: if no backup secrets store is
+                configured.
+        """
+        if not self.backup_secrets_store:
+            raise BackupSecretsStoreNotConfiguredError(
+                "Unable to restore secrets: No backup secrets store is "
+                "configured."
+            )
+
+        with Session(self.engine) as session:
+            secrets_in_db = session.exec(select(SecretSchema)).all()
+
+        for secret in secrets_in_db:
+            try:
+                values = self._get_backup_secret_values(secret_id=secret.id)
+            except Exception:
+                logger.exception(
+                    f"Failed to get backup secret values for secret with ID "
+                    f"{secret.id}."
+                )
+                if ignore_errors:
+                    continue
+                raise
+
+            try:
+                self._update_secret_values(
+                    secret_id=secret.id,
+                    values=cast(Dict[str, Optional[str]], values),
+                    overwrite=True,
+                    backup=False,
+                )
+            except Exception:
+                logger.exception(
+                    f"Failed to restore secret with ID {secret.id}. "
+                )
+                if ignore_errors:
+                    continue
+                raise
+
+            if delete_secrets:
+                try:
+                    self._delete_backup_secret_values(secret_id=secret.id)
+                except Exception:
+                    logger.exception(
+                        f"Failed to delete backup secret with ID {secret.id} "
+                        f"from the backup secrets store after restoring it to "
+                        f"the primary secrets store."
+                    )
+                    if ignore_errors:
+                        continue
+                    raise
 
     # ------------------------- Service Accounts -------------------------
 
@@ -6974,7 +7399,9 @@ class SqlZenStore(BaseZenStore):
             return model.to_model(hydrate=hydrate)
 
     def list_models(
-        self, model_filter_model: ModelFilter, hydrate: bool = False
+        self,
+        model_filter_model: ModelFilter,
+        hydrate: bool = False,
     ) -> Page[ModelResponse]:
         """Get all models by filter.
 
@@ -7186,6 +7613,7 @@ class SqlZenStore(BaseZenStore):
                 model_version_filter_model.set_scope_model(model.id)
 
             query = select(ModelVersionSchema)
+
             return self.filter_and_paginate(
                 session=session,
                 query=query,

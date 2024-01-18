@@ -39,6 +39,7 @@ from zenml.logger import get_logger
 from zenml.zen_stores.schemas import (
     SecretSchema,
 )
+from zenml.zen_stores.schemas.secret_schemas import SecretDecodeError
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -217,9 +218,17 @@ class SqlSecretsStore(BaseSecretsStore):
             ).first()
             if secret_in_db is None:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
-            return secret_in_db.get_secret_values(
-                encryption_engine=self._encryption_engine,
-            )
+            try:
+                return secret_in_db.get_secret_values(
+                    encryption_engine=self._encryption_engine,
+                )
+            except SecretDecodeError:
+                raise KeyError(
+                    f"Secret values for secret {secret_id} could not be "
+                    f"decoded. This can happen if encryption has "
+                    f"been enabled/disabled or if the encryption key has been "
+                    "reconfigured without proper secrets migration."
+                )
 
     def update_secret_values(
         self,
