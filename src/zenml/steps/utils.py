@@ -24,8 +24,11 @@ from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.client import Client
+from zenml.enums import MetadataResourceTypes
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.new.steps.step_context import get_step_context
 from zenml.steps.step_output import Output
 from zenml.utils import source_code_utils
 
@@ -409,10 +412,36 @@ def has_only_none_returns(func: Callable[..., Any]) -> bool:
 def log_step_metadata(
     metadata: Dict[str, "MetadataType"],
     step_name: Optional[str] = None,
-    step_version: Optional[str] = None,
     pipeline_name: Optional[str] = None,
     pipeline_version: Optional[str] = None,
     run_id: Optional[str] = None,
 ):
     """Logs step metadata."""
-    pass
+    try:
+        step_context = get_step_context()
+        step_name = step_name or step_context.step_name
+    except RuntimeError as e:
+        step_context = None
+        # not running within a step and no user-provided step name
+        if not step_context and not step_name:
+            raise ValueError(
+                "No step name provided and you are not running "
+                "within a step. Please provide a step name."
+            ) from e
+
+    client = Client()
+    if step_context:
+        step_run_id = step_context.step_run.id
+    elif run_id:
+        step_run_id = run_id
+    else:
+        pipeline_run = client.get_pipeline(
+            name_id_or_prefix=pipeline_name,
+            version=pipeline_version,
+        ).last_run
+        step_run_id = pipeline_run.steps[step_name].id
+    client.create_run_metadata(
+        metadata=metadata,
+        resource_id=step_run_id,
+        resource_type=MetadataResourceTypes.STEP_RUN,
+    )
