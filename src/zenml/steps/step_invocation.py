@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Dict, Set
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.step_configurations import StepConfiguration
-    from zenml.model.lazy_load import ModelVersionDataLazyLoader
+    from zenml.model.lazy_load import DataLazyLoader
     from zenml.new.pipelines.pipeline import Pipeline
     from zenml.steps import BaseStep
     from zenml.steps.entrypoint_function_utils import StepArtifact
@@ -32,7 +32,7 @@ class StepInvocation:
         step: "BaseStep",
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[str, "ExternalArtifact"],
-        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
+        model_artifacts_or_metadata: Dict[str, "DataLazyLoader"],
         parameters: Dict[str, Any],
         default_parameters: Dict[str, Any],
         upstream_steps: Set[str],

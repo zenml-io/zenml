@@ -34,7 +34,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
-from zenml.model.lazy_load import ModelVersionDataLazyLoader
+from zenml.model.lazy_load import DataLazyLoader
 from zenml.model.model_version import ModelVersion
 from zenml.utils import deprecation_utils
 
@@ -153,7 +153,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     name: str
     caching_parameters: Mapping[str, Any] = {}
     external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
-    model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}
+    model_artifacts_or_metadata: Mapping[str, DataLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
     # Override the deprecation validator as we do not want to deprecate the

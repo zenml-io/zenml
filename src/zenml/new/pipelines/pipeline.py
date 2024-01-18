@@ -92,7 +92,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.model.lazy_load import ModelVersionDataLazyLoader
+    from zenml.model.lazy_load import DataLazyLoader
     from zenml.model.model_version import ModelVersion
 
     StepConfigurationUpdateOrDict = Union[
@@ -1260,7 +1260,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         step: "BaseStep",
         input_artifacts: Dict[str, StepArtifact],
         external_artifacts: Dict[str, "ExternalArtifact"],
-        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
+        model_artifacts_or_metadata: Dict[str, "DataLazyLoader"],
         parameters: Dict[str, Any],
         default_parameters: Dict[str, Any],
         upstream_steps: Set[str],

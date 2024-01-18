@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.model.model_version import ModelVersion
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
@@ -651,6 +652,51 @@ def _load_file_from_artifact_store(
             f"likely because the authentication credentials are not configured "
             f"in the artifact store itself. For more information, see {link}."
         )
+
+
+def _lazy_artifact_get(
+    name: Union[str, UUID],
+    version: Optional[str] = None,
+    model_version: Optional["ModelVersion"] = None,
+) -> Optional["ArtifactVersionResponse"]:
+    """Get lazy loaded artifact, when called inside a pipeline.
+
+    This method identifies, if called inside a pipeline
+    context and return a `LazyArtifactVersionResponse` if so.
+    Otherwise it returns `None`.
+
+    Args:
+        name: The name of the artifact.
+        version: The version of the artifact.
+        model_version: The model version context, if available.
+
+    Returns:
+        A `LazyArtifactVersionResponse` if called inside a pipeline
+        context, otherwise `None`.
+    """
+    from zenml import get_pipeline_context
+    from zenml.model.model_version import ModelVersion
+    from zenml.models.v2.core.artifact_version import (
+        LazyArtifactVersionResponse,
+    )
+
+    model_version_ = None
+    if model_version:
+        model_version_ = ModelVersion(
+            name=model_version.name,
+            version=model_version.version or model_version.number,
+        )
+    try:
+        get_pipeline_context()
+        return LazyArtifactVersionResponse(
+            _lazy_load_name=name,
+            _lazy_load_version=version,
+            _lazy_load_model_version=model_version_,
+        )
+    except RuntimeError:
+        pass
+
+    return None
 
 
 # --------------------

@@ -475,9 +475,9 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
     """
 
     id: Optional[UUID] = None  # type: ignore[assignment]
-    _lazy_load_name: Optional[str] = None
+    _lazy_load_name: Optional[Union[str, UUID]] = None
     _lazy_load_version: Optional[str] = None
-    _lazy_load_model_version: "ModelVersion"
+    _lazy_load_model_version: Optional["ModelVersion"]
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.

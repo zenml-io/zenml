@@ -16,7 +16,7 @@ import random
 import string
 from contextlib import ExitStack as does_not_raise
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, Optional
+from typing import Annotated, Any, Dict, Generator, Optional
 from uuid import uuid4
 
 import pytest
@@ -27,7 +27,8 @@ from tests.integration.functional.conftest import (
     int_plus_one_test_step,
 )
 from tests.integration.functional.utils import sample_name
-from zenml import ExternalArtifact
+from zenml import ExternalArtifact, pipeline, save_artifact, step
+from zenml.artifacts.utils import log_artifact_metadata
 from zenml.client import Client
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source
@@ -1129,6 +1130,30 @@ def test_basic_crud_for_entity(
             pass
 
 
+@step
+def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
+    """Produce artifact with metadata."""
+    log_artifact_metadata(metadata={"some_meta": "meta_new_one"})
+    return "body_new_one"
+
+
+@step
+def lazy_asserter_test_artifact(
+    artifact_existing: str,
+    artifact_metadata_existing: str,
+    artifact_new: str,
+    artifact_metadata_new: str,
+):
+    """Assert that passed in values are loaded in lazy mode.
+
+    They do not exists before actual run of the pipeline.
+    """
+    assert artifact_existing == "body_preexisting"
+    assert artifact_metadata_existing == "meta_preexisting"
+    assert artifact_new == "body_new_one"
+    assert artifact_metadata_new == "meta_new_one"
+
+
 class TestArtifact:
     def test_prune_full(self, clean_client: "Client"):
         """Test that artifact pruning works."""
@@ -1180,6 +1205,47 @@ class TestArtifact:
             == artifact.artifact.id
         )
         assert os.path.exists(artifact.uri)
+
+    def test_pipeline_can_load_artifacts_lazy_mode(
+        self,
+        clean_client: "Client",
+    ):
+        """Tests that user can load model artifacts and metadata in lazy mode in pipeline codes."""
+
+        @pipeline(enable_cache=False)
+        def dummy():
+            artifact_existing = clean_client.get_artifact_version(
+                name_id_or_prefix="preexisting"
+            )
+            artifact_metadata_existing = artifact_existing.run_metadata[
+                "some_meta"
+            ]
+
+            artifact_new = clean_client.get_artifact_version(
+                name_id_or_prefix="new_one"
+            )
+            artifact_metadata_new = artifact_new.run_metadata["some_meta"]
+
+            lazy_producer_test_artifact()
+            lazy_asserter_test_artifact(
+                artifact_existing,
+                artifact_metadata_existing,
+                artifact_new,
+                artifact_metadata_new,
+                after=["lazy_producer_test_artifact"],
+            )
+
+        save_artifact(
+            data="body_preexisting", name="preexisting", version="1.2.3"
+        )
+        log_artifact_metadata(
+            metadata={"some_meta": "meta_preexisting"},
+            artifact_name="preexisting",
+            artifact_version="1.2.3",
+        )
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version("new_one")
+        dummy()
 
 
 class TestModel:

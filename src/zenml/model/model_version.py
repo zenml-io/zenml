@@ -195,7 +195,9 @@ class ModelVersion(BaseModel):
         Returns:
             Specific version of the artifact or placeholder in the design time of the pipeline.
         """
-        if lazy := self._lazy_artifact_get(name, version):
+        from zenml.artifacts.utils import _lazy_artifact_get
+
+        if lazy := _lazy_artifact_get(name, version, self):
             return lazy
 
         return self._get_or_create_model_version().get_artifact(
@@ -217,7 +219,9 @@ class ModelVersion(BaseModel):
         Returns:
             Specific version of the model artifact or placeholder in the design time of the pipeline.
         """
-        if lazy := self._lazy_artifact_get(name, version):
+        from zenml.artifacts.utils import _lazy_artifact_get
+
+        if lazy := _lazy_artifact_get(name, version, self):
             return lazy
 
         return self._get_or_create_model_version().get_model_artifact(
@@ -239,7 +243,9 @@ class ModelVersion(BaseModel):
         Returns:
             Specific version of the data artifact or placeholder in the design time of the pipeline.
         """
-        if lazy := self._lazy_artifact_get(name, version):
+        from zenml.artifacts.utils import _lazy_artifact_get
+
+        if lazy := _lazy_artifact_get(name, version, self):
             return lazy
 
         return self._get_or_create_model_version().get_data_artifact(
@@ -261,7 +267,9 @@ class ModelVersion(BaseModel):
         Returns:
             Specific version of the deployment artifact or placeholder in the design time of the pipeline.
         """
-        if lazy := self._lazy_artifact_get(name, version):
+        from zenml.artifacts.utils import _lazy_artifact_get
+
+        if lazy := _lazy_artifact_get(name, version, self):
             return lazy
 
         return self._get_or_create_model_version().get_deployment_artifact(
@@ -415,30 +423,6 @@ class ModelVersion(BaseModel):
         """Config class."""
 
         smart_union = True
-
-    def _lazy_artifact_get(
-        self,
-        name: str,
-        version: Optional[str] = None,
-    ) -> Optional["ArtifactVersionResponse"]:
-        from zenml import get_pipeline_context
-        from zenml.models.v2.core.artifact_version import (
-            LazyArtifactVersionResponse,
-        )
-
-        try:
-            get_pipeline_context()
-            return LazyArtifactVersionResponse(
-                _lazy_load_name=name,
-                _lazy_load_version=version,
-                _lazy_load_model_version=ModelVersion(
-                    name=self.name, version=self.version or self.number
-                ),
-            )
-        except RuntimeError:
-            pass
-
-        return None
 
     def __eq__(self, other: object) -> bool:
         """Check two ModelVersions for equality.

@@ -2837,6 +2837,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The artifact version.
         """
+        from zenml.artifacts.utils import _lazy_artifact_get
+
+        if lazy := _lazy_artifact_get(name=name_id_or_prefix, version=version):
+            return lazy
+
         return self._get_entity_version_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_artifact_version,
             list_method=self.list_artifact_versions,

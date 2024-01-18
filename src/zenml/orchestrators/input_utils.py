@@ -86,45 +86,30 @@ def resolve_step_inputs(
     for name, config_ in step.config.model_artifacts_or_metadata.items():
         issue_found = False
         try:
-            if config_.metadata_name is None and config_.artifact_name:
-                if artifact_ := config_.model_version.get_artifact(
-                    config_.artifact_name, config_.artifact_version
-                ):
-                    input_artifacts[name] = artifact_
-                else:
-                    issue_found = True
-            elif config_.artifact_name is None and config_.metadata_name:
-                # metadata values should go directly in parameters, as primitive types
-                step.config.parameters[
-                    name
-                ] = config_.model_version.run_metadata[
-                    config_.metadata_name
-                ].value
-            elif config_.metadata_name and config_.artifact_name:
-                # metadata values should go directly in parameters, as primitive types
-                if artifact_ := config_.model_version.get_artifact(
-                    config_.artifact_name, config_.artifact_version
-                ):
-                    step.config.parameters[name] = artifact_.run_metadata[
-                        config_.metadata_name
-                    ].value
-                else:
-                    issue_found = True
+            if artifact_ := config_._get_artifact_or_none():
+                input_artifacts[name] = artifact_
+            elif metadata_ := config_._get_run_metadata_or_none():
+                step.config.parameters[name] = metadata_
             else:
                 issue_found = True
         except KeyError:
             issue_found = True
 
         if issue_found:
-            raise ValueError(
-                "Cannot fetch requested information from model "
-                f"`{config_.model_version.name}` version "
-                f"`{config_.model_version.version}` given artifact "
-                f"`{config_.artifact_name}`, artifact version "
-                f"`{config_.artifact_version}`, and metadata "
-                f"key `{config_.metadata_name}` passed into "
-                f"the step `{step.config.name}`."
+            msg = "Cannot fetch requested information from "
+            if config_.model_version:
+                msg += (
+                    f"model `{config_.model_version.name}` "
+                    f"version `{config_.model_version.version}` given "
+                )
+            msg += (
+                f"artifact `{config_.artifact_name}`, artifact version "
+                f"`{config_.artifact_version}`, and metadata key "
+                f"`{config_.metadata_name}` passed into the step "
+                f"`{step.config.name}`."
             )
+
+            raise ValueError(msg)
 
     parent_step_ids = [
         current_run_steps[upstream_step].id

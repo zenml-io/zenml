@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Run Metadata Lazy Loader definition."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
+from uuid import UUID
 
 if TYPE_CHECKING:
     from zenml.model.model_version import ModelVersion
@@ -30,8 +31,8 @@ class RunMetadataLazyGetter:
 
     def __init__(
         self,
-        _lazy_load_model_version: "ModelVersion",
-        _lazy_load_artifact_name: Optional[str],
+        _lazy_load_model_version: Optional["ModelVersion"],
+        _lazy_load_artifact_name: Optional[Union[str, UUID]],
         _lazy_load_artifact_version: Optional[str],
     ):
         """Initialize a RunMetadataLazyGetter.
