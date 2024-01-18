@@ -431,7 +431,7 @@ class Model(BaseModel):
             return LazyArtifactVersionResponse(
                 _lazy_load_name=name,
                 _lazy_load_version=version,
-                _lazy_load_model_version=ModelVersion(
+                _lazy_load_model=Model(
                     name=self.name, version=self.version or self.number
                 ),
             )
@@ -441,7 +441,7 @@ class Model(BaseModel):
         return None
 
     def __eq__(self, other: object) -> bool:
-        """Check two ModelVersions for equality.
+        """Check two Models for equality.
 
         Args:
             other: object to compare with

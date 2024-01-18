@@ -329,11 +329,11 @@ It often handy to save some of your work half-way: steps like epoch-based traini
 You can use the `save_artifact` utility function to save your data assets as ZenML artifacts. Moreover, if your step has the Model context configured in the `@pipeline` or `@step` decorator it will be automatically linked to it, so you can get easy access to it using the Model Control Plane features.
 
 ```python
-from zenml import step, ModelVersion
+from zenml import step, Model
 from zenml.artifacts.utils import save_artifact
 
 
-@step(model_version=ModelVersion(name="MyModel", version="1.2.42"))
+@step(model=Model(name="MyModel", version="1.2.42"))
 def trainer(
     trn_dataset: pd.DataFrame,
 ) -> Annotated[
@@ -365,7 +365,7 @@ If you would like to link an artifact to a model not from the step context or ev
 All you need is ready to link artifact and the configuration of a model.
 
 ```python
-from zenml import step, ModelVersion, link_artifact_to_model, save_artifact
+from zenml import step, Model, link_artifact_to_model, save_artifact
 from zenml.client import Client
 
 
@@ -376,7 +376,7 @@ def f_() -> None:
     # and link it inside a step
     link_artifact_to_model(
         artifact_version_id=new_artifact.id,
-        model_version=ModelVersion(name="MyModel", version="0.0.42"),
+        model=Model(name="MyModel", version="0.0.42"),
     )
 
 
@@ -385,7 +385,7 @@ existing_artifact = Client().get_artifact_version(name_id_or_prefix="existing_ar
 # and link it even outside of a step
 link_artifact_to_model(
     artifact_version_id=existing_artifact.id,
-    model_version=ModelVersion(name="MyModel", version="0.2.42"),
+    model=Model(name="MyModel", version="0.2.42"),
 )
 ```
 

@@ -31,7 +31,7 @@ from zenml.enums import ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.logging import step_logging
-from zenml.model.utils import link_artifact_config_to_model_version
+from zenml.model.utils import link_artifact_config_to_model
 from zenml.models import (
     ArtifactVersionResponse,
     LogsRequest,
@@ -396,7 +396,7 @@ class StepLauncher:
                 else:
                     artifact_config_ = ArtifactConfig(name=output_name_)
 
-                link_artifact_config_to_model_version(
+                link_artifact_config_to_model(
                     artifact_config=artifact_config_,
                     model=model_from_context,
                     artifact_version_id=output_id,

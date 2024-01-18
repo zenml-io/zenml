@@ -101,7 +101,7 @@ def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not
 @step
 def producer() -> Annotated[str, "bar"]:
     """Produce artifact with metadata and attach metadata to model version."""
-    ver = get_step_context().model_version.version
+    ver = get_step_context().model.version
     log_model_version_metadata(metadata={"foobar": "model_meta_" + ver})
     log_artifact_metadata(metadata={"foobar": "artifact_meta_" + ver})
     return "artifact_data_" + ver
@@ -113,7 +113,7 @@ def asserter(artifact: str, artifact_metadata: str, model_metadata: str):
 
     They do not exists before actual run of the pipeline.
     """
-    ver = get_step_context().model_version.version
+    ver = get_step_context().model.version
     assert artifact == "artifact_data_" + ver
     assert artifact_metadata == "artifact_meta_" + ver
     assert model_metadata == "model_meta_" + ver
@@ -126,17 +126,17 @@ def test_pipeline_context_can_load_model_artifacts_and_metadata_in_lazy_mode(
 
     model_name = "foo"
 
-    @pipeline(model_version=ModelVersion(name=model_name), enable_cache=False)
+    @pipeline(model=Model(name=model_name), enable_cache=False)
     def dummy():
         producer()
         with pytest.raises(KeyError):
             clean_client.get_model(model_name)
         with pytest.raises(KeyError):
             clean_client.get_artifact_version("bar")
-        model_version = get_pipeline_context().model_version
-        artifact = model_version.get_artifact("bar")
+        model = get_pipeline_context().model
+        artifact = model.get_artifact("bar")
         artifact_metadata = artifact.run_metadata["foobar"]
-        model_metadata = model_version.run_metadata["foobar"]
+        model_metadata = model.run_metadata["foobar"]
         asserter(
             artifact, artifact_metadata, model_metadata, after=["producer"]
         )

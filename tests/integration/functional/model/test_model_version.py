@@ -34,14 +34,14 @@ class ModelContext:
         self,
         client: "Client",
         create_model: bool = True,
-        model_version: str = None,
+        version: str = None,
         stage: str = None,
     ):
         self.client = client
         self.workspace = client.active_workspace.id
         self.user = client.active_user.id
         self.create_model = create_model
-        self.model_version = model_version
+        self.version = version
         self.stage = stage
 
     def __enter__(self):
@@ -49,10 +49,10 @@ class ModelContext:
             model = self.client.create_model(
                 name=MODEL_NAME,
             )
-            if self.model_version is not None:
+            if self.version is not None:
                 mv = self.client.create_model_version(
                     model_name_or_id=model.id,
-                    name=self.model_version,
+                    name=self.version,
                 )
                 if self.stage is not None:
                     mv.set_stage(self.stage)
@@ -79,12 +79,12 @@ def simple_producer() -> str:
 
 @step
 def artifact_linker(
-    model_version: Optional[ModelVersion] = None,
+    model: Optional[Model] = None,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
     do_link: bool = True,
 ) -> None:
-    """Step linking an artifact to a model version via function or implicit."""
+    """Step linking an artifact to a model via function or implicit."""
 
     artifact = save_artifact(
         data="Hello, World!",
@@ -96,14 +96,14 @@ def artifact_linker(
     if do_link:
         link_artifact_to_model(
             artifact_version_id=artifact.id,
-            model_version=model_version,
+            model=model,
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
         )
 
 
 @step
-def consume_from_model_version(
+def consume_from_model(
     is_consume: bool,
 ) -> Annotated[str, "custom_output"]:
     """A step which can either produce string output or read and return it from model version 1."""
@@ -115,7 +115,7 @@ def consume_from_model_version(
         return "Hello, World!"
 
 
-class TestModelVersion:
+class TestModel:
     def test_model_created_with_warning(self, clean_client: "Client"):
         """Test if the model is created with a warning.
 
@@ -174,7 +174,7 @@ class TestModelVersion:
         self, clean_client: "Client"
     ):
         """Test model and model version retrieval by exact version number."""
-        with ModelContext(clean_client, model_version="1.0.0") as (model, mv):
+        with ModelContext(clean_client, version="1.0.0") as (model, mv):
             mv = Model(name=MODEL_NAME, version="1.0.0")
             with mock.patch("zenml.model.model.logger.warning") as logger:
                 mv_test = mv._get_or_create_model_version()
@@ -196,7 +196,7 @@ class TestModelVersion:
     ):
         """Test model and model version retrieval by exact stage number."""
         with ModelContext(
-            clean_client, model_version="1.0.0", stage=ModelStages.PRODUCTION
+            clean_client, version="1.0.0", stage=ModelStages.PRODUCTION
         ) as (model, mv):
             mv = Model(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with mock.patch("zenml.model.model.logger.warning") as logger:
@@ -209,7 +209,7 @@ class TestModelVersion:
         self, clean_client: "Client"
     ):
         """Test model and model version retrieval fails by exact stage number, if version in stage missing."""
-        with ModelContext(clean_client, model_version="1.0.0"):
+        with ModelContext(clean_client, version="1.0.0"):
             mv = Model(name=MODEL_NAME, version=ModelStages.PRODUCTION)
             with pytest.raises(KeyError):
                 mv._get_model_version()
@@ -218,7 +218,7 @@ class TestModelVersion:
         self, clean_client: "Client"
     ):
         """Test model and model version retrieval by latest version."""
-        with ModelContext(clean_client, model_version="1.0.0"):
+        with ModelContext(clean_client, version="1.0.0"):
             mv = Model(name=MODEL_NAME, version=ModelStages.LATEST)
             mv = mv._get_or_create_model_version()
 
@@ -329,6 +329,8 @@ class TestModelVersion:
 
             warning = logger.call_args[0][0]
             assert "license" in warning
+            assert "tags added" in warning
+            assert "tags removed" in warning
 
     def test_model_version_config_differs_from_db_warns(
         self, clean_client: "Client"
@@ -490,7 +492,7 @@ class TestModelVersion:
 
         @pipeline(model=Model(name=MODEL_NAME))
         def my_pipeline(is_consume: bool):
-            consume_from_model_version(is_consume)
+            consume_from_model(is_consume)
 
         my_pipeline(False)
         mv = Model(name=MODEL_NAME, version="latest")
@@ -511,7 +513,7 @@ class TestModelVersion:
             enable_cache=False,
         )
         def _inner_pipeline(
-            model_version: ModelVersion = None,
+            model_version: Model = None,
             is_model_artifact: bool = False,
             is_deployment_artifact: bool = False,
         ):
@@ -521,7 +523,7 @@ class TestModelVersion:
                 is_deployment_artifact=is_deployment_artifact,
             )
 
-        mv_in_pipe = ModelVersion(
+        mv_in_pipe = Model(
             name=MODEL_NAME,
         )
 
@@ -532,16 +534,14 @@ class TestModelVersion:
         # use context
         _inner_pipeline.with_options(model_version=mv_in_pipe)()
 
-        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 1
         assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
 
         # use custom model version
-        _inner_pipeline(
-            model_version=ModelVersion(name="custom_model_version")
-        )
+        _inner_pipeline(model_version=Model(name="custom_model_version"))
 
-        mv_custom = ModelVersion(name="custom_model_version", version="latest")
+        mv_custom = Model(name="custom_model_version", version="latest")
         assert mv_custom.number == 1
         assert (
             mv_custom.get_artifact("manual_artifact").load() == "Hello, World!"
@@ -552,7 +552,7 @@ class TestModelVersion:
             is_model_artifact=True
         )
 
-        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 2
         assert (
             mv.get_model_artifact("manual_artifact").load() == "Hello, World!"
@@ -563,7 +563,7 @@ class TestModelVersion:
             is_deployment_artifact=True
         )
 
-        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 3
         assert (
             mv.get_deployment_artifact("manual_artifact").load()
@@ -574,10 +574,10 @@ class TestModelVersion:
         artifact = save_artifact(data="Hello, World!", name="manual_artifact")
         link_artifact_to_model(
             artifact_version_id=artifact.id,
-            model_version=ModelVersion(name=MODEL_NAME),
+            model=Model(name=MODEL_NAME),
         )
 
-        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 4
         assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
 
@@ -597,7 +597,7 @@ class TestModelVersion:
                 do_link=False,
             )
 
-        mv_in_pipe = ModelVersion(
+        mv_in_pipe = Model(
             name=MODEL_NAME,
         )
 
@@ -611,7 +611,7 @@ class TestModelVersion:
         # use context
         _inner_pipeline.with_options(model_version=mv_in_pipe)()
 
-        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 1
         assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
 
@@ -620,7 +620,7 @@ class TestModelVersion:
             is_model_artifact=True
         )
 
-        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 2
         assert (
             mv.get_model_artifact("manual_artifact").load() == "Hello, World!"
@@ -631,7 +631,7 @@ class TestModelVersion:
             is_deployment_artifact=True
         )
 
-        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 3
         assert (
             mv.get_deployment_artifact("manual_artifact").load()

@@ -67,14 +67,14 @@ def link_step_artifacts_to_model(
             )
 
         if artifact_config:
-            link_artifact_config_to_model_version(
+            link_artifact_config_to_model(
                 artifact_config=artifact_config,
                 artifact_version_id=artifact_version_id,
                 model=model,
             )
 
 
-def link_artifact_config_to_model_version(
+def link_artifact_config_to_model(
     artifact_config: ArtifactConfig,
     artifact_version_id: UUID,
     model: Optional["Model"] = None,
@@ -183,7 +183,7 @@ def log_model_metadata(
 
 def link_artifact_to_model(
     artifact_version_id: UUID,
-    model_version: Optional["ModelVersion"] = None,
+    model: Optional["Model"] = None,
     is_model_artifact: bool = False,
     is_deployment_artifact: bool = False,
 ) -> None:
@@ -191,22 +191,22 @@ def link_artifact_to_model(
 
     Args:
         artifact_version_id: The ID of the artifact version.
-        model_version: The model version to link to.
+        model: The model to link to.
         is_model_artifact: Whether the artifact is a model artifact.
         is_deployment_artifact: Whether the artifact is a deployment artifact.
 
     Raises:
         RuntimeError: If called outside of a step.
     """
-    if not model_version:
+    if not model:
         is_issue = False
         try:
             step_context = get_step_context()
-            model_version = step_context.model_version
+            model = step_context.model_version
         except StepContextError:
             is_issue = True
 
-        if model_version is None or is_issue:
+        if model is None or is_issue:
             raise RuntimeError(
                 "`link_artifact_to_model` called without `model_version` parameter "
                 "and configured model context cannot be identified. Consider "
@@ -214,11 +214,11 @@ def link_artifact_to_model(
                 "@step or @pipeline decorator."
             )
 
-    link_artifact_config_to_model_version(
+    link_artifact_config_to_model(
         artifact_config=ArtifactConfig(
             is_model_artifact=is_model_artifact,
             is_deployment_artifact=is_deployment_artifact,
         ),
         artifact_version_id=artifact_version_id,
-        model_version=model_version,
+        model_version=model,
     )

@@ -657,9 +657,9 @@ class StepRunner:
                 get_step_context()._get_output(artifact_name).artifact_config
             )
             if artifact_config is not None:
-                if (model_version := artifact_config._model) is not None:
+                if (model := artifact_config._model) is not None:
                     model_version_response = (
-                        model_version._get_or_create_model_version()
+                        model._get_or_create_model_version()
                     )
                     models.add(
                         (
