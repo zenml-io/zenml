@@ -34,6 +34,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedTaggableFilter
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -478,6 +479,7 @@ __all__ = [
     "WorkspaceScopedResponse",
     "WorkspaceScopedResponseBody",
     "WorkspaceScopedResponseMetadata",
+    "WorkspaceScopedTaggableFilter",
     "BaseFilter",
     "StrFilter",
     "BoolFilter",

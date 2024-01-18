@@ -2879,8 +2879,8 @@ class RestZenStore(BaseZenStore):
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the
-                model versions.
+            model_name_or_id: name or id of the model containing the model
+                versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
             hydrate: Flag deciding whether to hydrate the output model(s)
