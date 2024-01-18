@@ -60,3 +60,16 @@ class RBACInterface(ABC):
             will contain the list of instance IDs that the user can perform
             the action on.
         """
+
+    @abstractmethod
+    def share_resource(
+        self, user: "UserResponse", resource: Resource, actions: List[Action]
+    ) -> None:
+        """Share a resource with another user.
+
+        Args:
+            user: User which the resource should be shared with.
+            resource: The resource that should be shared.
+            action: The actions that the user should be able to perform on the
+                resource.
+        """
