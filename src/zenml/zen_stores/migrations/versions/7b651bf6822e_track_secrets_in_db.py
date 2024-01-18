@@ -15,7 +15,6 @@ import sqlalchemy as sa
 from alembic import op
 from pydantic import BaseModel
 
-from zenml.enums import StoreType
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -570,10 +569,11 @@ def upgrade() -> None:
     from zenml.enums import SecretsStoreType
     from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-    store_cfg = GlobalConfiguration().store
+    logger.info("Migrating secrets from the external secrets store to the db.")
 
-    if store_cfg is None or store_cfg.type != StoreType.SQL:
-        return
+    store_cfg = GlobalConfiguration().store
+    if store_cfg is None:
+        store_cfg = GlobalConfiguration().get_default_store()
 
     # We create a new SqlZenStore instance with the same configuration as the
     # one used to run migrations, but we skip the default registrations and
@@ -590,7 +590,17 @@ def upgrade() -> None:
     if secrets_store.TYPE == SecretsStoreType.SQL:
         # If the secrets store is already a SQL secrets store, we don't need
         # to transfer secrets from the external secrets store to the db.
+        logger.info(
+            "Skipping migration of secrets from the external secrets store "
+            "to the db because the db is already configured as a SQL secrets "
+            "store."
+        )
         return
+
+    logger.debug(
+        f"Transferring secrets from the {secrets_store.type} secrets store "
+        f"to the db: {secrets_store.config}"
+    )
 
     # Transfer secrets from the external secrets store to the db
 
@@ -656,6 +666,8 @@ def upgrade() -> None:
 
     # List all secrets in the backend
     external_secrets = backend.list_secrets()
+    if len(external_secrets) == 0:
+        logger.debug("No secrets found in the external secrets store.")
 
     for secret in external_secrets:
         logger.info(

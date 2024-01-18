@@ -185,7 +185,16 @@ def up(
     from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
     server_config = ServerDeploymentConfig(**config_attrs)
+    if blocking:
+        from zenml.constants import (
+            DEFAULT_USERNAME,
+        )
 
+        cli_utils.declare(
+            "The local ZenML dashboard is about to deploy in a "
+            "blocking process. You can connect to it using the "
+            f"'{DEFAULT_USERNAME}' username and an empty password."
+        )
     server = deployer.deploy_server(server_config)
 
     assert gc.store is not None

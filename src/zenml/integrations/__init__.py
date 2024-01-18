@@ -40,7 +40,9 @@ from zenml.integrations.kserve import KServeIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa
 from zenml.integrations.kubernetes import KubernetesIntegration  # noqa
 from zenml.integrations.label_studio import LabelStudioIntegration  # noqa
+from zenml.integrations.langchain import LangchainIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
+# from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
@@ -67,7 +69,3 @@ from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa
-
-if sys.version_info > (3, 7):
-    # from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
-    from zenml.integrations.langchain import LangchainIntegration  # noqa
