@@ -519,11 +519,12 @@ class ModelVersion(BaseModel):
                 "ethics",
                 "save_models_to_registry",
             ):
-                if getattr(self, key) != getattr(model, key):
-                    difference[key] = {
-                        "config": getattr(self, key),
-                        "db": getattr(model, key),
-                    }
+                if self_attr := getattr(self, key, None):
+                    if self_attr != getattr(model, key):
+                        difference[key] = {
+                            "config": getattr(self, key),
+                            "db": getattr(model, key),
+                        }
 
             if difference:
                 logger.warning(
@@ -581,16 +582,17 @@ class ModelVersion(BaseModel):
             self._id = mv.id
 
         difference: Dict[str, Any] = {}
-        if mv.description != self.description:
+        if self.description and mv.description != self.description:
             difference["description"] = {
                 "config": self.description,
                 "db": mv.description,
             }
-        configured_tags = set(self.tags or [])
-        db_tags = {t.name for t in mv.tags}
-        if db_tags != configured_tags:
-            difference["tags added"] = list(configured_tags - db_tags)
-            difference["tags removed"] = list(db_tags - configured_tags)
+        if self.tags:
+            configured_tags = set(self.tags or [])
+            db_tags = {t.name for t in mv.tags}
+            if db_tags != configured_tags:
+                difference["tags added"] = list(configured_tags - db_tags)
+                difference["tags removed"] = list(db_tags - configured_tags)
         if difference:
             logger.warning(
                 "Provided model version configuration does not match existing model "

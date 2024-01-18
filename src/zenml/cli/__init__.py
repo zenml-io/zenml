@@ -805,7 +805,7 @@ zenml model register --name <NAME> [--MODEL_OPTIONS]
 
 To list all registered models, use:
 ```bash
-zenml model list
+zenml model list [MODEL_FILTER_OPTIONS]
 ```
 
 To update a model, use:
@@ -827,7 +827,7 @@ zenml model delete <MODEL_NAME_OR_ID>
 The CLI interface for models also helps to navigate through artifacts linked to a specific model versions.
 ```bash
 zenml model data_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
-zenml model endpoint_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
+zenml model deployment_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
 zenml model model_artifacts <MODEL_NAME_OR_ID> [-v <VERSION>]
 ```
 
@@ -838,7 +838,7 @@ zenml model runs <MODEL_NAME_OR_ID> [-v <VERSION>]
 
 To list the model versions of a specific model, use:
 ```bash
-zenml model version list <MODEL_NAME_OR_ID>
+zenml model version list [--model-name <MODEL_NAME> --name <MODEL_VERSION_NAME> OTHER_OPTIONS]
 ```
 
 To delete a model version, use:
