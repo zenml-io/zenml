@@ -1323,6 +1323,36 @@ class TestModel:
         assert model_.latest_version_name == mv2.name
         assert model_.latest_version_id == mv2.id
 
+    def test_list_by_tags(self, clean_client: "Client"):
+        """Test that models can be listed using tag filters."""
+        model1 = clean_client.create_model(
+            name=self.MODEL_NAME, tags=["foo", "bar"]
+        )
+        model2 = clean_client.create_model(
+            name=self.MODEL_NAME + "2", tags=["foo"]
+        )
+        ms = clean_client.list_models(tag="foo")
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
+        ms = clean_client.list_models(tag="bar")
+        assert len(ms) == 1
+        assert model1 in ms
+
+        ms = clean_client.list_models(tag="non_existent_tag")
+        assert len(ms) == 0
+
+        ms = clean_client.list_models()
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
+        ms = clean_client.list_models(tag="")
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
 
 class TestModelVersion:
     MODEL_NAME = "foo"
@@ -1518,7 +1548,9 @@ class TestModelVersion:
     def test_list_model_version(self, client_with_model: "Client"):
         for i in range(PAGE_SIZE_DEFAULT):
             client_with_model.create_model_version(
-                self.MODEL_NAME, f"{self.VERSION_NAME}_{i}"
+                self.MODEL_NAME,
+                f"{self.VERSION_NAME}_{i}",
+                tags=["foo", "bar"],
             )
 
         model_versions = client_with_model.list_model_versions(
@@ -1538,6 +1570,27 @@ class TestModelVersion:
 
         model_versions = client_with_model.list_model_versions(
             self.MODEL_NAME, name=f"contains:{self.VERSION_NAME}_"
+        )
+        assert len(model_versions) == PAGE_SIZE_DEFAULT
+
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tag="foo",
+        )
+        assert len(model_versions) == PAGE_SIZE_DEFAULT
+
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tag="non_existent_tag",
+        )
+        assert len(model_versions) == 0
+
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tag="",
         )
         assert len(model_versions) == PAGE_SIZE_DEFAULT
 
