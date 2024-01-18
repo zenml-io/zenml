@@ -525,7 +525,14 @@ class Model(BaseModel):
                             "config": getattr(self, key),
                             "db": getattr(model, key),
                         }
-
+            if self.tags:
+                configured_tags = set(self.tags)
+                db_tags = {t.name for t in model.tags}
+                if db_tags != configured_tags:
+                    difference["tags added"] = list(configured_tags - db_tags)
+                    difference["tags removed"] = list(
+                        db_tags - configured_tags
+                    )
             if difference:
                 logger.warning(
                     "Provided model configuration does not match "
@@ -588,7 +595,7 @@ class Model(BaseModel):
                 "db": mv.description,
             }
         if self.tags:
-            configured_tags = set(self.tags or [])
+            configured_tags = set(self.tags)
             db_tags = {t.name for t in mv.tags}
             if db_tags != configured_tags:
                 difference["tags added"] = list(configured_tags - db_tags)
