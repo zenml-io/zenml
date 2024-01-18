@@ -419,7 +419,7 @@ class TestModel:
         my_pipeline()
 
         mv = Model(name=MODEL_NAME, version="latest")
-        assert len(mv.metadata) == 1
+        assert len(mv.run_metadata) == 1
         assert mv.run_metadata["foo"].value == "bar"
 
     @pytest.mark.parametrize("delete_artifacts", [False, True])
@@ -513,12 +513,12 @@ class TestModel:
             enable_cache=False,
         )
         def _inner_pipeline(
-            model_version: Model = None,
+            model: Model = None,
             is_model_artifact: bool = False,
             is_deployment_artifact: bool = False,
         ):
             artifact_linker(
-                model_version=model_version,
+                model=model,
                 is_model_artifact=is_model_artifact,
                 is_deployment_artifact=is_deployment_artifact,
             )
@@ -532,14 +532,14 @@ class TestModel:
             _inner_pipeline()
 
         # use context
-        _inner_pipeline.with_options(model_version=mv_in_pipe)()
+        _inner_pipeline.with_options(model=mv_in_pipe)()
 
         mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 1
         assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
 
         # use custom model version
-        _inner_pipeline(model_version=Model(name="custom_model_version"))
+        _inner_pipeline(model=Model(name="custom_model_version"))
 
         mv_custom = Model(name="custom_model_version", version="latest")
         assert mv_custom.number == 1
@@ -548,9 +548,7 @@ class TestModel:
         )
 
         # use context + model
-        _inner_pipeline.with_options(model_version=mv_in_pipe)(
-            is_model_artifact=True
-        )
+        _inner_pipeline.with_options(model=mv_in_pipe)(is_model_artifact=True)
 
         mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 2
@@ -559,7 +557,7 @@ class TestModel:
         )
 
         # use context + deployment
-        _inner_pipeline.with_options(model_version=mv_in_pipe)(
+        _inner_pipeline.with_options(model=mv_in_pipe)(
             is_deployment_artifact=True
         )
 
@@ -605,20 +603,18 @@ class TestModel:
         with patch("zenml.artifacts.utils.logger.debug") as logger:
             _inner_pipeline()
             logger.assert_called_once_with(
-                "Unable to link saved artifact to model version."
+                "Unable to link saved artifact to model."
             )
 
         # use context
-        _inner_pipeline.with_options(model_version=mv_in_pipe)()
+        _inner_pipeline.with_options(model=mv_in_pipe)()
 
         mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 1
         assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
 
         # use context + model
-        _inner_pipeline.with_options(model_version=mv_in_pipe)(
-            is_model_artifact=True
-        )
+        _inner_pipeline.with_options(model=mv_in_pipe)(is_model_artifact=True)
 
         mv = Model(name=MODEL_NAME, version="latest")
         assert mv.number == 2
@@ -627,7 +623,7 @@ class TestModel:
         )
 
         # use context + deployment
-        _inner_pipeline.with_options(model_version=mv_in_pipe)(
+        _inner_pipeline.with_options(model=mv_in_pipe)(
             is_deployment_artifact=True
         )
 
