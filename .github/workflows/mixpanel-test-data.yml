@@ -7,6 +7,7 @@ on:
     - cron: 30 5 * * *
 jobs:
   post_mocked_data:
+    if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     env:
       ZENML_DEBUG: 1
