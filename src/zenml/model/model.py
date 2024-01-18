@@ -509,7 +509,7 @@ class Model(BaseModel):
                 model_name_or_id=self.name
             )
 
-            difference = {}
+            difference: Dict[str, Any] = {}
             for key in (
                 "license",
                 "audience",

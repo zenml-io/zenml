@@ -202,15 +202,15 @@ def link_artifact_to_model(
         is_issue = False
         try:
             step_context = get_step_context()
-            model = step_context.model_version
+            model = step_context.model
         except StepContextError:
             is_issue = True
 
         if model is None or is_issue:
             raise RuntimeError(
-                "`link_artifact_to_model` called without `model_version` parameter "
+                "`link_artifact_to_model` called without `model` parameter "
                 "and configured model context cannot be identified. Consider "
-                "passing the `model_version` explicitly or configuring it in "
+                "passing the `model` explicitly or configuring it in "
                 "@step or @pipeline decorator."
             )
 
@@ -220,5 +220,5 @@ def link_artifact_to_model(
             is_deployment_artifact=is_deployment_artifact,
         ),
         artifact_version_id=artifact_version_id,
-        model_version=model,
+        model=model,
     )

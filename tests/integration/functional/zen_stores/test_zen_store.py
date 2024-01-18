@@ -3648,7 +3648,7 @@ class TestModel:
 
     def test_list_by_tag(self, clean_client: "Client"):
         """Test that listing works with tag filters."""
-        with ModelVersionContext():
+        with ModelContext():
             zs = clean_client.zen_store
 
             ms = zs.list_models(model_filter_model=ModelFilter(tag=""))
@@ -3785,7 +3785,7 @@ class TestModelVersion:
 
     def test_list_by_tags(self):
         """Test list using tag filter."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
