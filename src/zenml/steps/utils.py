@@ -423,8 +423,8 @@ def log_step_metadata(
         metadata: The metadata to log.
         step_name: The name of the step to log metadata for. Can be omitted
             when being called inside a step.
-        pipeline_name: The name of the pipeline to log metadata for. Can be
-            omitted when being called inside a step.
+        pipeline_name_id_or_prefix: The name of the pipeline to log metadata
+            for. Can be omitted when being called inside a step.
         pipeline_version: The version of the pipeline to log metadata for.
             Can be omitted when being called inside a step.
         run_id: The ID of the run to log metadata for. Can be omitted when
