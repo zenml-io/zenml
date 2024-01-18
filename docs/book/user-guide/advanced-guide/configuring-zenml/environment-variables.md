@@ -54,7 +54,7 @@ export ZENML_ANALYTICS_OPT_IN=false
 Setting to `true` switches to developer mode:
 
 ```bash
-export ZENML_DEBUG=false
+export ZENML_DEBUG=true
 ```
 
 ## Active stack
