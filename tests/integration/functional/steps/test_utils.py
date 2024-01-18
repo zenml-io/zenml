@@ -37,7 +37,9 @@ def test_log_step_metadata_using_latest_run(clean_client):
     output_before_log = run_before_log.steps[
         "step_metadata_logging_step"
     ].output
-    assert not output_before_log.run_metadata
+    assert output_before_log.run_metadata
+    assert not output_before_log.run_metadata.get("description")
+    assert not output_before_log.run_metadata.get("metrics")
 
     step_metadata = {
         "description": "Aria is great!",
@@ -71,7 +73,9 @@ def test_log_step_metadata_using_specific_params(clean_client):
     output_before_log = run_before_log.steps[
         "step_metadata_logging_step"
     ].output
-    assert not output_before_log.run_metadata
+    assert output_before_log.run_metadata
+    assert not output_before_log.run_metadata.get("description")
+    assert not output_before_log.run_metadata.get("metrics")
 
     step_metadata = {
         "description": "Aria is great!",
