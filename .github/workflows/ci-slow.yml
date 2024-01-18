@@ -33,7 +33,7 @@ jobs:
     if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
       == false && github.event.issue.pull_request && contains(github.event.comment.body,
       '/fulltest')
-    runs-on: ubuntu-dind-runners
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
