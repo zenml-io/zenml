@@ -203,7 +203,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             The path to the root directory for all files concerning this
             orchestrator.
         """
-        return os.path.join(get_global_config_directory(), "vertex", str(self.id))
+        return os.path.join(
+            get_global_config_directory(), "vertex", str(self.id)
+        )
 
     @property
     def pipeline_directory(self) -> str:
@@ -287,10 +289,13 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         if node_selector_constraint:
             constraint_label, value = node_selector_constraint
             if not (
-                constraint_label == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                constraint_label
+                == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
                 and gpu_limit == 0
             ):
-                container_op.add_node_selector_constraint(constraint_label, value)
+                container_op.add_node_selector_constraint(
+                    constraint_label, value
+                )
 
     def prepare_or_run_pipeline(
         self,
@@ -377,9 +382,13 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.step_configurations.items():
-                image = self.get_image(deployment=deployment, step_name=step_name)
-                arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, deployment_id=deployment.id
+                image = self.get_image(
+                    deployment=deployment, step_name=step_name
+                )
+                arguments = (
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name, deployment_id=deployment.id
+                    )
                 )
 
                 # Create the `ContainerOp` for the step. Using the
@@ -441,11 +450,17 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         KFPV2Compiler().compile(
             pipeline_func=_construct_kfp_pipeline,
             package_path=pipeline_file_path,
-            pipeline_name=_clean_pipeline_name(deployment.pipeline_configuration.name),
+            pipeline_name=_clean_pipeline_name(
+                deployment.pipeline_configuration.name
+            ),
         )
-        logger.info("Writing Vertex workflow definition to `%s`.", pipeline_file_path)
+        logger.info(
+            "Writing Vertex workflow definition to `%s`.", pipeline_file_path
+        )
 
-        settings = cast(VertexOrchestratorSettings, self.get_settings(deployment))
+        settings = cast(
+            VertexOrchestratorSettings, self.get_settings(deployment)
+        )
 
         # Using the Google Cloud AIPlatform client, upload and execute the
         # pipeline
@@ -510,7 +525,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             )
         if self.config.network:
             logger.info(
-                "The Vertex AI Pipelines job will be peered with the `%s` " "network.",
+                "The Vertex AI Pipelines job will be peered with the `%s` "
+                "network.",
                 self.config.network,
             )
 
@@ -519,7 +535,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 logger.info(
                     "Scheduling job using native Vertex AI Pipelines scheduling..."
                 )
-                pipeline_job_schedule = run.create_schedule(
+                run.create_schedule(
                     display_name=schedule.name,
                     cron=schedule.cron_expression,
                     service_account=self.config.workload_service_account,
@@ -527,7 +543,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 )
 
             else:
-                logger.info("No schedule detected. Creating one-off vertex job...")
+                logger.info(
+                    "No schedule detected. Creating one-off vertex job..."
+                )
                 logger.info(
                     "Submitting pipeline job with job_id `%s` to Vertex AI Pipelines "
                     "service.",
@@ -541,17 +559,24 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     network=self.config.network,
                 )
                 logger.info(
-                    "View the Vertex AI Pipelines job at %s", run._dashboard_uri()
+                    "View the Vertex AI Pipelines job at %s",
+                    run._dashboard_uri(),
                 )
 
                 if settings.synchronous:
-                    logger.info("Waiting for the Vertex AI Pipelines job to finish...")
+                    logger.info(
+                        "Waiting for the Vertex AI Pipelines job to finish..."
+                    )
                     run.wait()
 
         except google_exceptions.ClientError as e:
-            logger.warning("Failed to create the Vertex AI Pipelines job: %s", e)
+            logger.warning(
+                "Failed to create the Vertex AI Pipelines job: %s", e
+            )
         except RuntimeError as e:
-            logger.error("The Vertex AI Pipelines job execution has failed: %s", e)
+            logger.error(
+                "The Vertex AI Pipelines job execution has failed: %s", e
+            )
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
@@ -571,7 +596,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 f"{ENV_ZENML_VERTEX_RUN_ID}."
             )
 
-    def get_pipeline_run_metadata(self, run_id: UUID) -> Dict[str, "MetadataType"]:
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:

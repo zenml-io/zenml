@@ -61,8 +61,10 @@ class VertexOrchestratorSettings(BaseSettings):
     node_selector_constraint: Optional[Tuple[str, str]] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
-    _node_selector_deprecation = deprecation_utils.deprecate_pydantic_attributes(
-        "node_selector_constraint"
+    _node_selector_deprecation = (
+        deprecation_utils.deprecate_pydantic_attributes(
+            "node_selector_constraint"
+        )
     )
 
 
