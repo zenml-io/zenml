@@ -974,10 +974,13 @@ class SqlZenStore(BaseZenStore):
             # add .sql to the end
             # TODO
             self.db_backup_file_path = os.path.join(
-                self.config.backup_directory, ZENML_SQLITE_DB_FILENAME[:-3] + ".sql"
+                self.config.backup_directory,
+                ZENML_SQLITE_DB_FILENAME[:-3] + ".sql",
             )
         else:
-            self.db_backup_file_path = os.path.join(self.config.backup_directory, f"{self.engine.url.database}.sql")
+            self.db_backup_file_path = os.path.join(
+                self.config.backup_directory, f"{self.engine.url.database}.sql"
+            )
 
         if (
             not self.skip_migrations
@@ -1001,6 +1004,44 @@ class SqlZenStore(BaseZenStore):
                     )
                 raise e
 
+        secrets_store_config = self.config.secrets_store
+
+        # Initialize the secrets store
+        if (
+            secrets_store_config
+            and secrets_store_config.type != SecretsStoreType.NONE
+        ):
+            secrets_store_class = BaseSecretsStore.get_store_class(
+                secrets_store_config
+            )
+            self._secrets_store = secrets_store_class(
+                zen_store=self,
+                config=secrets_store_config,
+            )
+            # Update the config with the actual secrets store config
+            # to reflect the default values in the saved configuration
+            self.config.secrets_store = self._secrets_store.config
+
+        backup_secrets_store_config = self.config.backup_secrets_store
+
+        # Initialize the backup secrets store, if configured
+        if (
+            backup_secrets_store_config
+            and backup_secrets_store_config.type != SecretsStoreType.NONE
+        ):
+            secrets_store_class = BaseSecretsStore.get_store_class(
+                backup_secrets_store_config
+            )
+            self._backup_secrets_store = secrets_store_class(
+                zen_store=self,
+                config=backup_secrets_store_config,
+            )
+            # Update the config with the actual secrets store config
+            # to reflect the default values in the saved configuration
+            self.config.backup_secrets_store = (
+                self._backup_secrets_store.config
+            )
+
     def restore_database(self) -> None:
         """Restore the database from a backup."""
         # if a backup file does not exist, return
@@ -1013,7 +1054,7 @@ class SqlZenStore(BaseZenStore):
         with self.engine.begin() as connection:
             # drop the database if it exists
             connection.execute(text(f"DROP DATABASE IF EXISTS {db_name}"))
-        
+
             # then create the database
             connection.execute(text(f"CREATE DATABASE {db_name}"))
 
@@ -1025,8 +1066,10 @@ class SqlZenStore(BaseZenStore):
                 contents = f.read()
 
             # remove any escaped characters like \n and \t and split based on ; but keep the ; at the end of each sentence
-            contents = contents.replace("\\n", "").replace("\\t", "").split(";")
-            
+            contents = (
+                contents.replace("\\n", "").replace("\\t", "").split(";")
+            )
+
             # execute each statement
             for statement in contents:
                 if statement.strip() != "":
@@ -1070,9 +1113,11 @@ class SqlZenStore(BaseZenStore):
                 # enclose the first word in the column definition in backticks
                 words = str(col).split()
                 words[0] = f"`{words[0]}`"
-                create_table_stmt = create_table_stmt.replace(f"\n\t{str(col)}", " ".join(words))
+                create_table_stmt = create_table_stmt.replace(
+                    f"\n\t{str(col)}", " ".join(words)
+                )
             # if any double quotes are used for column names, replace them with backticks
-            create_table_stmt = create_table_stmt.replace('"', '')
+            create_table_stmt = create_table_stmt.replace('"', "")
             output.append(create_table_stmt)
 
             with self.engine.connect() as conn:
@@ -1085,58 +1130,22 @@ class SqlZenStore(BaseZenStore):
                     for c in table.columns:
                         if row[c.name] is not None:
                             # escape any single quotes in the row value
-                            row_values.append(str(row[c.name]).replace("'", "\\'"))
+                            row_values.append(
+                                str(row[c.name]).replace("'", "\\'")
+                            )
                         else:
                             row_values.append("NULL")
 
-                    values = ', '.join(f"'{item}'" for item in row_values)
+                    values = ", ".join(f"'{item}'" for item in row_values)
                     values = values.replace("'NULL'", "NULL")
 
                     insert_stmt = f"INSERT INTO {table.name} VALUES ({values})"
                     output.append(insert_stmt)
-        
+
         with open(self.db_backup_file_path, "w") as f:
             f.write(";\n".join(output))
-                        
+
         logger.debug(f"Database backed up to {self.db_backup_file_path}")
-
-        secrets_store_config = self.config.secrets_store
-
-        # Initialize the secrets store
-        if (
-            secrets_store_config
-            and secrets_store_config.type != SecretsStoreType.NONE
-        ):
-            secrets_store_class = BaseSecretsStore.get_store_class(
-                secrets_store_config
-            )
-            self._secrets_store = secrets_store_class(
-                zen_store=self,
-                config=secrets_store_config,
-            )
-            # Update the config with the actual secrets store config
-            # to reflect the default values in the saved configuration
-            self.config.secrets_store = self._secrets_store.config
-
-        backup_secrets_store_config = self.config.backup_secrets_store
-
-        # Initialize the backup secrets store, if configured
-        if (
-            backup_secrets_store_config
-            and backup_secrets_store_config.type != SecretsStoreType.NONE
-        ):
-            secrets_store_class = BaseSecretsStore.get_store_class(
-                backup_secrets_store_config
-            )
-            self._backup_secrets_store = secrets_store_class(
-                zen_store=self,
-                config=backup_secrets_store_config,
-            )
-            # Update the config with the actual secrets store config
-            # to reflect the default values in the saved configuration
-            self.config.backup_secrets_store = (
-                self._backup_secrets_store.config
-            )
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
