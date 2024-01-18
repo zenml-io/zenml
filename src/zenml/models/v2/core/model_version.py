@@ -23,11 +23,11 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.tag import TagResponse
 
@@ -578,7 +578,7 @@ class ModelVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionFilter(WorkspaceScopedFilter):
+class ModelVersionFilter(WorkspaceScopedTaggableFilter):
     """Filter model for model versions."""
 
     name: Optional[str] = Field(

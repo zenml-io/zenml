@@ -13,11 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for linking step outputs to model versions."""
 
-from typing import (
-    Dict,
-    Optional,
-    Union,
-)
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from zenml.artifacts.artifact_config import ArtifactConfig
@@ -183,3 +179,46 @@ def log_model_metadata(
         mv = ModelVersion(name=model_name, version=model_version)
 
     mv.log_metadata(metadata)
+
+
+def link_artifact_to_model(
+    artifact_version_id: UUID,
+    model_version: Optional["ModelVersion"] = None,
+    is_model_artifact: bool = False,
+    is_deployment_artifact: bool = False,
+) -> None:
+    """Link the artifact to the model.
+
+    Args:
+        artifact_version_id: The ID of the artifact version.
+        model_version: The model version to link to.
+        is_model_artifact: Whether the artifact is a model artifact.
+        is_deployment_artifact: Whether the artifact is a deployment artifact.
+
+    Raises:
+        RuntimeError: If called outside of a step.
+    """
+    if not model_version:
+        is_issue = False
+        try:
+            step_context = get_step_context()
+            model_version = step_context.model_version
+        except StepContextError:
+            is_issue = True
+
+        if model_version is None or is_issue:
+            raise RuntimeError(
+                "`link_artifact_to_model` called without `model_version` parameter "
+                "and configured model context cannot be identified. Consider "
+                "passing the `model_version` explicitly or configuring it in "
+                "@step or @pipeline decorator."
+            )
+
+    link_artifact_config_to_model_version(
+        artifact_config=ArtifactConfig(
+            is_model_artifact=is_model_artifact,
+            is_deployment_artifact=is_deployment_artifact,
+        ),
+        artifact_version_id=artifact_version_id,
+        model_version=model_version,
+    )

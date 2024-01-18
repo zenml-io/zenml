@@ -9,7 +9,6 @@ While development usually [starts locally with ZenML](../../starter-guide/starte
 This guide helps build an understanding of such components:
 
 - [Understanding various development environments](understanding-environments.md).
-- Learning about various means to [connect to ZenML](connecting-to-zenml.md)
 - [Dockerization](containerize-your-pipeline.md) of your pipeline.
 - [Scaling to the cloud](scale-compute-to-the-cloud.md).
 - [Setting up a minimal GCP stack](cloud-stacks/minimal-gcp-stack.md)

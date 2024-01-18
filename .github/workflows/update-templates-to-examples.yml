@@ -50,7 +50,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2023.12.12  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.01.17  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
@@ -95,7 +95,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.issues.createComment({
+            github.rest.issues.createComment({
               issue_number: ${{ github.event.pull_request.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -165,7 +165,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.issues.createComment({
+            github.rest.issues.createComment({
               issue_number: ${{ github.event.pull_request.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -237,7 +237,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |-
-            github.issues.createComment({
+            github.rest.issues.createComment({
               issue_number: ${{ github.event.pull_request.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
