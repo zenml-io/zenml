@@ -78,7 +78,7 @@ def test_log_step_metadata_using_latest_run(clean_client):
     log_step_metadata(
         metadata=step_metadata,
         step_name="step_metadata_logging_step",
-        pipeline_name="step_metadata_logging_pipeline",
+        pipeline_name_id_or_prefix="step_metadata_logging_pipeline",
     )
     run_after_log = step_metadata_logging_pipeline.model.last_run
     run_metadata_after_log = run_after_log.steps[

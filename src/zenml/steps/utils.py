@@ -18,6 +18,7 @@ import ast
 import inspect
 import textwrap
 from typing import Any, Callable, Dict, Optional, Tuple, Union
+from uuid import UUID
 
 import pydantic.typing as pydantic_typing
 from pydantic import BaseModel
@@ -412,11 +413,28 @@ def has_only_none_returns(func: Callable[..., Any]) -> bool:
 def log_step_metadata(
     metadata: Dict[str, "MetadataType"],
     step_name: Optional[str] = None,
-    pipeline_name: Optional[str] = None,
+    pipeline_name_id_or_prefix: Optional[Union[str, UUID]] = None,
     pipeline_version: Optional[str] = None,
     run_id: Optional[str] = None,
-):
-    """Logs step metadata."""
+) -> None:
+    """Logs step metadata.
+
+    Args:
+        metadata: The metadata to log.
+        step_name: The name of the step to log metadata for. Can be omitted
+            when being called inside a step.
+        pipeline_name: The name of the pipeline to log metadata for. Can be
+            omitted when being called inside a step.
+        pipeline_version: The version of the pipeline to log metadata for.
+            Can be omitted when being called inside a step.
+        run_id: The ID of the run to log metadata for. Can be omitted when
+            being called inside a step.
+
+    Raises:
+        ValueError: If no step name is provided and the function is not called
+            from within a step or if no pipeline name or ID is provided and
+            the function is not called from within a step.
+    """
     try:
         step_context = get_step_context()
         step_name = step_name or step_context.step_name
@@ -433,10 +451,15 @@ def log_step_metadata(
     if step_context:
         step_run_id = step_context.step_run.id
     elif run_id:
-        step_run_id = run_id
+        step_run_id = UUID(int=int(run_id))
     else:
+        if not pipeline_name_id_or_prefix:
+            raise ValueError(
+                "No pipeline name or ID provided and you are not running "
+                "within a step. Please provide a pipeline name or ID."
+            )
         pipeline_run = client.get_pipeline(
-            name_id_or_prefix=pipeline_name,
+            name_id_or_prefix=pipeline_name_id_or_prefix,
             version=pipeline_version,
         ).last_run
         step_run_id = pipeline_run.steps[step_name].id
