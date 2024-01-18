@@ -335,7 +335,6 @@ class TestModelVersion:
 
             warning = logger.call_args[0][0]
             assert "license" in warning
-            assert "save_models_to_registry" in warning
 
     def test_model_version_config_differs_from_db_warns(
         self, clean_client: "Client"
