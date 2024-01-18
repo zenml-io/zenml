@@ -277,7 +277,7 @@ jsonref==1.1.0
 jsonschema==4.19.0
 jsonschema-specifications==2023.7.1
 jupyter-events==0.7.0
-jupyter-lsp==2.2.0
+jupyter-lsp==2.2.2
 jupyter_client==8.3.0
 jupyter_core==5.3.1
 jupyter_server==2.7.1
