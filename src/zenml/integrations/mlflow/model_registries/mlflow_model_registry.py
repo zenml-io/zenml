@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 import mlflow
 from mlflow import MlflowClient
 from mlflow.entities.model_registry import (
-    RegistryModelVersion as MLflowModelVersion,
+    ModelVersion as MLflowModelVersion,
 )
 from mlflow.exceptions import MlflowException
 from mlflow.pyfunc import load_model
