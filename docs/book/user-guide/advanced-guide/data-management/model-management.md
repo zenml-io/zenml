@@ -238,7 +238,7 @@ from zenml.enum import ModelStages
 model = Model(name=MODEL_NAME, version="1.2.3")
 model.set_stage(stage=ModelStages.PRODUCTION)
 
-# get Latest model and set it as Staging
+# get latest model and set it as Staging
 # (if there is current Staging version it will get Archived)
 latest_model = Model(name=MODEL_NAME, version=ModelStages.LATEST)
 latest_model.set_stage(stage=ModelStages.STAGING)
