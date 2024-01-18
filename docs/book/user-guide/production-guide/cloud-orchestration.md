@@ -49,9 +49,8 @@ to execute. As we [explained in the previous section](./remote-storage.md#config
 components such as orchestrators and container registries often require you to 
 set up the right permissions. In ZenML, this process is simplified with the 
 use of [Service Connectors](../../stacks-and-components/auth-management). 
-For this example, we will go ahead and use the [IAM role authentication method 
-of our AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#aws-iam-role) 
-if you haven't already created a service connector in the last section:
+For this example, we need to use the [IAM role authentication method 
+of our AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#aws-iam-role):
 
 ```shell
 AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
@@ -90,9 +89,8 @@ to execute. As we [explained in the previous section](./remote-storage.md#config
 components such as orchestrators and container registries often require you to 
 set up the right permissions. In ZenML, this process is simplified with the 
 use of [Service Connectors](../../stacks-and-components/auth-management). 
-For this example, we will go ahead and use the [Service Account authentication feature 
-of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#gcp-service-account) 
-if you haven't already created a service connector in the last section:
+For this example, we need to use the [Service Account authentication feature 
+of our GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#gcp-service-account):
 
 ```shell
 zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project-id=<PROJECT_ID> --generate_temporary_tokens=False
@@ -131,9 +129,8 @@ to execute. As we [explained in the previous section](./remote-storage.md#config
 components such as orchestrators and container registries often require you to 
 set up the right permissions. In ZenML, this process is simplified with the 
 use of [Service Connectors](../../stacks-and-components/auth-management). 
-For this example, we will go ahead and use the [Service Principal authentication 
-feature of our Azure service connector](../../stacks-and-components/auth-management/azure-service-connector.md#azure-service-principal) 
-if you haven't already created a service connector in the last section:
+For this example, we will need to use the [Service Principal authentication 
+feature of our Azure service connector](../../stacks-and-components/auth-management/azure-service-connector.md#azure-service-principal):
 
 ```shell
 zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>
