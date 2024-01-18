@@ -18,6 +18,7 @@ Here's an example of logging metadata for an artifact:
 
 ```python
 from zenml import step, log_artifact_metadata
+from zenml.metadata.metadata_types import StorageSize
 
 @step
 def process_data_step(dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -84,6 +85,8 @@ When logging metadata passing a dictionary of dictionaries in the `metadata` par
 Here's an example of grouping metadata into cards:
 
 ```python
+from zenml.metadata.metadata_types import StorageSize
+
 log_artifact_metadata(
     metadata={
         "model_metrics": {
@@ -106,6 +109,8 @@ In the ZenML dashboard, "model_metrics" and "data_details" would appear as separ
 ZenML supports several special metadata types to capture specific kinds of information. Here are examples of how to use the special types `Uri`, `Path`, `DType`, and `StorageSize`:
 
 ```python
+from zenml.metadata.metadata_types import StorageSize, DType
+
 log_artifact_metadata(
     metadata={
         "dataset_source": Uri("gs://my-bucket/datasets/source.csv"),

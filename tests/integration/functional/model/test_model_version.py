@@ -11,16 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Optional
 from unittest import mock
+from unittest.mock import patch
 
 import pytest
 from typing_extensions import Annotated
 
 from zenml import get_step_context, pipeline, step
+from zenml.artifacts.utils import save_artifact
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model import Model
-from zenml.model.utils import log_model_metadata
+from zenml.model.utils import link_artifact_to_model, log_model_metadata
 from zenml.models import TagRequest
 
 MODEL_NAME = "super_model"
@@ -65,13 +68,38 @@ class ModelContext:
 def step_metadata_logging_functional():
     """Functional logging using implicit Model from context."""
     log_model_metadata({"foo": "bar"})
-    assert get_step_context().model.metadata["foo"] == "bar"
+    assert get_step_context().model.run_metadata["foo"].value == "bar"
 
 
 @step
 def simple_producer() -> str:
     """Simple producer step."""
     return "foo"
+
+
+@step
+def artifact_linker(
+    model_version: Optional[ModelVersion] = None,
+    is_model_artifact: bool = False,
+    is_deployment_artifact: bool = False,
+    do_link: bool = True,
+) -> None:
+    """Step linking an artifact to a model version via function or implicit."""
+
+    artifact = save_artifact(
+        data="Hello, World!",
+        name="manual_artifact",
+        is_model_artifact=is_model_artifact,
+        is_deployment_artifact=is_deployment_artifact,
+    )
+
+    if do_link:
+        link_artifact_to_model(
+            artifact_version_id=artifact.id,
+            model_version=model_version,
+            is_model_artifact=is_model_artifact,
+            is_deployment_artifact=is_deployment_artifact,
+        )
 
 
 @step
@@ -301,7 +329,6 @@ class TestModelVersion:
 
             warning = logger.call_args[0][0]
             assert "license" in warning
-            assert "save_models_to_registry" in warning
 
     def test_model_version_config_differs_from_db_warns(
         self, clean_client: "Client"
@@ -340,14 +367,14 @@ class TestModelVersion:
         )
         mv.log_metadata({"foo": "bar"})
 
-        assert len(mv.metadata) == 1
-        assert mv.metadata["foo"] == "bar"
+        assert len(mv.run_metadata) == 1
+        assert mv.run_metadata["foo"].value == "bar"
 
         mv.log_metadata({"bar": "foo"})
 
-        assert len(mv.metadata) == 2
-        assert mv.metadata["foo"] == "bar"
-        assert mv.metadata["bar"] == "foo"
+        assert len(mv.run_metadata) == 2
+        assert mv.run_metadata["foo"].value == "bar"
+        assert mv.run_metadata["bar"].value == "foo"
 
     def test_metadata_logging_functional(self, clean_client: "Client"):
         """Test that model version can be used to track metadata from function."""
@@ -361,8 +388,8 @@ class TestModelVersion:
             {"foo": "bar"}, model_name=mv.name, model_version=mv.number
         )
 
-        assert len(mv.metadata) == 1
-        assert mv.metadata["foo"] == "bar"
+        assert len(mv.run_metadata) == 1
+        assert mv.run_metadata["foo"].value == "bar"
 
         with pytest.raises(ValueError):
             log_model_metadata({"foo": "bar"})
@@ -371,9 +398,9 @@ class TestModelVersion:
             {"bar": "foo"}, model_name=mv.name, model_version="latest"
         )
 
-        assert len(mv.metadata) == 2
-        assert mv.metadata["foo"] == "bar"
-        assert mv.metadata["bar"] == "foo"
+        assert len(mv.run_metadata) == 2
+        assert mv.run_metadata["foo"].value == "bar"
+        assert mv.run_metadata["bar"].value == "foo"
 
     def test_metadata_logging_in_steps(self, clean_client: "Client"):
         """Test that model version can be used to track metadata from function in steps."""
@@ -391,7 +418,7 @@ class TestModelVersion:
 
         mv = Model(name=MODEL_NAME, version="latest")
         assert len(mv.metadata) == 1
-        assert mv.metadata["foo"] == "bar"
+        assert mv.run_metadata["foo"].value == "bar"
 
     @pytest.mark.parametrize("delete_artifacts", [False, True])
     def test_deletion_of_links(
@@ -476,3 +503,144 @@ class TestModelVersion:
         assert len(mv._get_model_version().data_artifact_ids) == 1
         mv = Model(name=MODEL_NAME, version="1")
         assert len(mv._get_model_version().data_artifact_ids) == 1
+
+    def test_link_artifact_via_function(self, clean_client: "Client"):
+        """Test that user can link artifacts via function to a model version."""
+
+        @pipeline(
+            enable_cache=False,
+        )
+        def _inner_pipeline(
+            model_version: ModelVersion = None,
+            is_model_artifact: bool = False,
+            is_deployment_artifact: bool = False,
+        ):
+            artifact_linker(
+                model_version=model_version,
+                is_model_artifact=is_model_artifact,
+                is_deployment_artifact=is_deployment_artifact,
+            )
+
+        mv_in_pipe = ModelVersion(
+            name=MODEL_NAME,
+        )
+
+        # no context, no model
+        with pytest.raises(RuntimeError):
+            _inner_pipeline()
+
+        # use context
+        _inner_pipeline.with_options(model_version=mv_in_pipe)()
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 1
+        assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
+
+        # use custom model version
+        _inner_pipeline(
+            model_version=ModelVersion(name="custom_model_version")
+        )
+
+        mv_custom = ModelVersion(name="custom_model_version", version="latest")
+        assert mv_custom.number == 1
+        assert (
+            mv_custom.get_artifact("manual_artifact").load() == "Hello, World!"
+        )
+
+        # use context + model
+        _inner_pipeline.with_options(model_version=mv_in_pipe)(
+            is_model_artifact=True
+        )
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 2
+        assert (
+            mv.get_model_artifact("manual_artifact").load() == "Hello, World!"
+        )
+
+        # use context + deployment
+        _inner_pipeline.with_options(model_version=mv_in_pipe)(
+            is_deployment_artifact=True
+        )
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 3
+        assert (
+            mv.get_deployment_artifact("manual_artifact").load()
+            == "Hello, World!"
+        )
+
+        # link outside of a step
+        artifact = save_artifact(data="Hello, World!", name="manual_artifact")
+        link_artifact_to_model(
+            artifact_version_id=artifact.id,
+            model_version=ModelVersion(name=MODEL_NAME),
+        )
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 4
+        assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
+
+    def test_link_artifact_via_save_artifact(self, clean_client: "Client"):
+        """Test that artifacts are auto-linked to a model version on call of `save_artifact`."""
+
+        @pipeline(
+            enable_cache=False,
+        )
+        def _inner_pipeline(
+            is_model_artifact: bool = False,
+            is_deployment_artifact: bool = False,
+        ):
+            artifact_linker(
+                is_model_artifact=is_model_artifact,
+                is_deployment_artifact=is_deployment_artifact,
+                do_link=False,
+            )
+
+        mv_in_pipe = ModelVersion(
+            name=MODEL_NAME,
+        )
+
+        # no context, no model
+        with patch("zenml.artifacts.utils.logger.debug") as logger:
+            _inner_pipeline()
+            logger.assert_called_once_with(
+                "Unable to link saved artifact to model version."
+            )
+
+        # use context
+        _inner_pipeline.with_options(model_version=mv_in_pipe)()
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 1
+        assert mv.get_artifact("manual_artifact").load() == "Hello, World!"
+
+        # use context + model
+        _inner_pipeline.with_options(model_version=mv_in_pipe)(
+            is_model_artifact=True
+        )
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 2
+        assert (
+            mv.get_model_artifact("manual_artifact").load() == "Hello, World!"
+        )
+
+        # use context + deployment
+        _inner_pipeline.with_options(model_version=mv_in_pipe)(
+            is_deployment_artifact=True
+        )
+
+        mv = ModelVersion(name=MODEL_NAME, version="latest")
+        assert mv.number == 3
+        assert (
+            mv.get_deployment_artifact("manual_artifact").load()
+            == "Hello, World!"
+        )
+
+        # link outside of a step
+        with patch("zenml.artifacts.utils.logger.debug") as logger:
+            save_artifact(data="Hello, World!", name="manual_artifact")
+            logger.assert_called_once_with(
+                "Unable to link saved artifact to step run."
+            )

@@ -117,7 +117,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
-from zenml.models.v2.core.model import ModelUpdate
+from zenml.models.v2.core.model import ModelFilter, ModelUpdate
 from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
@@ -3646,6 +3646,25 @@ class TestModel:
             model = zs.get_model(model_.id)
             assert model.name == "and yet another one"
 
+    def test_list_by_tag(self, clean_client: "Client"):
+        """Test that listing works with tag filters."""
+        with ModelVersionContext():
+            zs = clean_client.zen_store
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tag=""))
+            assert len(ms) == 1
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tag="foo"))
+            assert len(ms) == 1
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tag="bar"))
+            assert len(ms) == 1
+
+            ms = zs.list_models(
+                model_filter_model=ModelFilter(tag="non_existent_tag")
+            )
+            assert len(ms) == 0
+
 
 class TestModelVersion:
     def test_create_pass(self):
@@ -3763,6 +3782,66 @@ class TestModelVersion:
             assert len(mvs) == 2
             assert mv1 in mvs
             assert mv2 in mvs
+
+    def test_list_by_tags(self):
+        """Test list using tag filter."""
+        with ModelVersionContext() as model:
+            zs = Client().zen_store
+            mv1 = zs.create_model_version(
+                ModelVersionRequest(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="great one",
+                    tags=["tag1", "tag2"],
+                )
+            )
+            mv2 = zs.create_model_version(
+                ModelVersionRequest(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="and yet another one",
+                    tags=["tag3", "tag2"],
+                )
+            )
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(tag=""),
+            )
+            assert len(mvs) == 2
+            assert mv1 in mvs
+            assert mv2 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(tag="tag2"),
+            )
+            assert len(mvs) == 2
+            assert mv1 in mvs
+            assert mv2 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(tag="tag1"),
+            )
+            assert len(mvs) == 1
+            assert mv1 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(tag="tag3"),
+            )
+            assert len(mvs) == 1
+            assert mv2 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(
+                    tag="non_existent_tag"
+                ),
+            )
+            assert len(mvs) == 0
 
     def test_delete_not_found(self):
         """Test that delete fails if not found."""
@@ -4692,7 +4771,9 @@ class TestTagResource:
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
         with ModelContext() as model:
-            tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
+            tag = clean_client.create_tag(
+                TagRequest(name="test_cascade_deletion", color="red")
+            )
             fake_model_id = uuid4() if not use_model else model.id
             clean_client.zen_store.create_tag_resource(
                 TagResourceRequest(
@@ -4714,7 +4795,7 @@ class TestTagResource:
             if use_tag:
                 clean_client.delete_tag(tag.id)
                 tag = clean_client.create_tag(
-                    TagRequest(name="foo", color="red")
+                    TagRequest(name="test_cascade_deletion", color="red")
                 )
             else:
                 clean_client.delete_model(model.id)

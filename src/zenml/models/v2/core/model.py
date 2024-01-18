@@ -22,11 +22,11 @@ from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedTaggableFilter,
 )
 from zenml.utils.pagination_utils import depaginate
 
@@ -331,7 +331,7 @@ class ModelResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelFilter(WorkspaceScopedFilter):
+class ModelFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     name: Optional[str] = Field(
@@ -346,7 +346,7 @@ class ModelFilter(WorkspaceScopedFilter):
     )
 
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
         "workspace_id",
         "user_id",
     ]

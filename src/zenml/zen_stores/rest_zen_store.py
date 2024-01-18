@@ -69,6 +69,9 @@ from zenml.constants import (
     RUNS,
     SCHEDULES,
     SECRETS,
+    SECRETS_BACKUP,
+    SECRETS_OPERATIONS,
+    SECRETS_RESTORE,
     SERVICE_ACCOUNTS,
     SERVICE_CONNECTOR_CLIENT,
     SERVICE_CONNECTOR_RESOURCES,
@@ -1773,6 +1776,50 @@ class RestZenStore(BaseZenStore):
             route=SECRETS,
         )
 
+    def backup_secrets(
+        self, ignore_errors: bool = True, delete_secrets: bool = False
+    ) -> None:
+        """Backs up all secrets to the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the backup
+                process and attempt to backup all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully backed up from the primary secrets store. Setting
+                this flag effectively moves all secrets from the primary secrets
+                store to the backup secrets store.
+        """
+        params: Dict[str, Any] = {
+            "ignore_errors": ignore_errors,
+            "delete_secrets": delete_secrets,
+        }
+        self.put(
+            f"{SECRETS_OPERATIONS}{SECRETS_BACKUP}",
+            params=params,
+        )
+
+    def restore_secrets(
+        self, ignore_errors: bool = False, delete_secrets: bool = False
+    ) -> None:
+        """Restore all secrets from the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the
+                restore process and attempt to restore all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully restored from the backup secrets store. Setting
+                this flag effectively moves all secrets from the backup secrets
+                store to the primary secrets store.
+        """
+        params: Dict[str, Any] = {
+            "ignore_errors": ignore_errors,
+            "delete_secrets": delete_secrets,
+        }
+        self.put(
+            f"{SECRETS_OPERATIONS}{SECRETS_RESTORE}",
+            params=params,
+        )
+
     # --------------------------- Service Accounts ---------------------------
 
     def create_service_account(
@@ -2832,8 +2879,8 @@ class RestZenStore(BaseZenStore):
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the
-                model versions.
+            model_name_or_id: name or id of the model containing the model
+                versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
             hydrate: Flag deciding whether to hydrate the output model(s)

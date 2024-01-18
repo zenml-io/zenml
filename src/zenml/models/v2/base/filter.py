@@ -264,6 +264,9 @@ class BaseFilter(BaseModel):
     # List of fields that are not even mentioned as options in the CLI.
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = []
 
+    # List of fields that are wrapped with `fastapi.Query(default)` in API.
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = []
+
     sort_by: str = Field(
         default="created", description="Which column to sort by."
     )
