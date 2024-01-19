@@ -3,7 +3,7 @@ import yaml
 from typing_extensions import Annotated
 
 from zenml import (
-    ModelVersion,
+    Model,
     get_pipeline_context,
     get_step_context,
     pipeline,
@@ -63,7 +63,7 @@ def test_pipeline_context_available_as_config_yaml(tmp_path):
 @step(enable_cache=False)
 def promoter_step(do_promote: bool) -> int:
     if do_promote:
-        get_step_context().model_version.set_stage("production")
+        get_step_context().model.set_stage("production")
     return 1
 
 
@@ -72,25 +72,25 @@ def asserter_step(i: int):
     assert i == 1
 
 
-@pipeline(model_version=ModelVersion(name="foo"))
+@pipeline(model=Model(name="foo"))
 def producer_pipe(do_promote: bool):
     promoter_step(do_promote)
 
 
-@pipeline(model_version=ModelVersion(name="foo", version="production"))
+@pipeline(model=Model(name="foo", version="production"))
 def consumer_pipe():
-    mv = get_pipeline_context().model_version
+    mv = get_pipeline_context().model
     asserter_step(mv.get_artifact("producer_pipe::promoter_step::output"))
 
 
-def test_that_argument_can_be_a_get_artifact_of_model_version_in_pipeline_context(
+def test_that_argument_can_be_a_get_artifact_of_model_in_pipeline_context(
     clean_client: "Client",
 ):
     producer_pipe(True)
     consumer_pipe()
 
 
-def test_that_argument_as_get_artifact_of_model_version_in_pipeline_context_fails_if_not_found(
+def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not_found(
     clean_client: "Client",
 ):
     producer_pipe(False)
@@ -101,7 +101,7 @@ def test_that_argument_as_get_artifact_of_model_version_in_pipeline_context_fail
 @step
 def producer() -> Annotated[str, "bar"]:
     """Produce artifact with metadata and attach metadata to model version."""
-    ver = get_step_context().model_version.version
+    ver = get_step_context().model.version
     log_model_version_metadata(metadata={"foobar": "model_meta_" + ver})
     log_artifact_metadata(metadata={"foobar": "artifact_meta_" + ver})
     return "artifact_data_" + ver
@@ -113,7 +113,7 @@ def asserter(artifact: str, artifact_metadata: str, model_metadata: str):
 
     They do not exists before actual run of the pipeline.
     """
-    ver = get_step_context().model_version.version
+    ver = get_step_context().model.version
     assert artifact == "artifact_data_" + ver
     assert artifact_metadata == "artifact_meta_" + ver
     assert model_metadata == "model_meta_" + ver
@@ -126,17 +126,17 @@ def test_pipeline_context_can_load_model_artifacts_and_metadata_in_lazy_mode(
 
     model_name = "foo"
 
-    @pipeline(model_version=ModelVersion(name=model_name), enable_cache=False)
+    @pipeline(model=Model(name=model_name), enable_cache=False)
     def dummy():
         producer()
         with pytest.raises(KeyError):
             clean_client.get_model(model_name)
         with pytest.raises(KeyError):
             clean_client.get_artifact_version("bar")
-        model_version = get_pipeline_context().model_version
-        artifact = model_version.get_artifact("bar")
+        model = get_pipeline_context().model
+        artifact = model.get_artifact("bar")
         artifact_metadata = artifact.run_metadata["foobar"]
-        model_metadata = model_version.run_metadata["foobar"]
+        model_metadata = model.run_metadata["foobar"]
         asserter(
             artifact, artifact_metadata, model_metadata, after=["producer"]
         )

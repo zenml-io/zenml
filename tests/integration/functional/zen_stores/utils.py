@@ -615,7 +615,7 @@ class ServiceConnectorContext:
             self.cleanup()
 
 
-class ModelVersionContext:
+class ModelContext:
     def __init__(
         self,
         create_version: bool = False,
