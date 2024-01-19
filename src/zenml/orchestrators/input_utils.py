@@ -89,7 +89,7 @@ def resolve_step_inputs(
         issue_found = False
         try:
             if config_.metadata_name is None and config_.artifact_name:
-                if artifact_ := config_.model_version.get_artifact(
+                if artifact_ := config_.model.get_artifact(
                     config_.artifact_name, config_.artifact_version
                 ):
                     input_artifacts[name] = artifact_
@@ -97,14 +97,12 @@ def resolve_step_inputs(
                     issue_found = True
             elif config_.artifact_name is None and config_.metadata_name:
                 # metadata values should go directly in parameters, as primitive types
-                step.config.parameters[
-                    name
-                ] = config_.model_version.run_metadata[
+                step.config.parameters[name] = config_.model.run_metadata[
                     config_.metadata_name
                 ].value
             elif config_.metadata_name and config_.artifact_name:
                 # metadata values should go directly in parameters, as primitive types
-                if artifact_ := config_.model_version.get_artifact(
+                if artifact_ := config_.model.get_artifact(
                     config_.artifact_name, config_.artifact_version
                 ):
                     step.config.parameters[name] = artifact_.run_metadata[
@@ -120,8 +118,8 @@ def resolve_step_inputs(
         if issue_found:
             raise ValueError(
                 "Cannot fetch requested information from model "
-                f"`{config_.model_version.name}` version "
-                f"`{config_.model_version.version}` given artifact "
+                f"`{config_.model.name}` version "
+                f"`{config_.model.version}` given artifact "
                 f"`{config_.artifact_name}`, artifact version "
                 f"`{config_.artifact_version}`, and metadata "
                 f"key `{config_.metadata_name}` passed into "

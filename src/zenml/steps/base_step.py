@@ -73,7 +73,7 @@ if TYPE_CHECKING:
         StepConfigurationUpdate,
     )
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
@@ -139,7 +139,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_version: Optional["ModelVersion"] = None,
+        model: Optional["Model"] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a step.
@@ -168,7 +168,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_version: configuration of the model version in the Model Control Plane.
+            model: configuration of the model version in the Model Control Plane.
             **kwargs: Keyword arguments passed to the step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
@@ -215,13 +215,13 @@ class BaseStep(metaclass=BaseStepMeta):
             name,
             "enabled" if enable_step_logs is not False else "disabled",
         )
-        if model_version is not None:
+        if model is not None:
             logger.debug(
                 "Step '%s': Is in Model context %s.",
                 name,
                 {
-                    "model": model_version.name,
-                    "version": model_version.version,
+                    "model": model.name,
+                    "version": model.version,
                 },
             )
 
@@ -241,7 +241,7 @@ class BaseStep(metaclass=BaseStepMeta):
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model_version=model_version,
+            model=model,
         )
         self._verify_and_apply_init_params(*args, **kwargs)
 
@@ -509,14 +509,14 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
             elif isinstance(value, LazyArtifactVersionResponse):
                 model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
-                    model_version=value._lazy_load_model_version,
+                    model=value._lazy_load_model,
                     artifact_name=value._lazy_load_name,
                     artifact_version=value._lazy_load_version,
                     metadata_name=None,
                 )
             elif isinstance(value, LazyRunMetadataResponse):
                 model_artifacts_or_metadata[key] = ModelVersionDataLazyLoader(
-                    model_version=value._lazy_load_model_version,
+                    model=value._lazy_load_model,
                     artifact_name=value._lazy_load_artifact_name,
                     artifact_version=value._lazy_load_artifact_version,
                     metadata_name=value._lazy_load_metadata_name,
@@ -694,7 +694,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_version: Optional["ModelVersion"] = None,
+        model: Optional["Model"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -732,7 +732,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_version: configuration of the model version in the Model Control Plane.
+            model: configuration of the model version in the Model Control Plane.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -806,7 +806,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_version": model_version,
+                "model": model,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -829,7 +829,7 @@ class BaseStep(metaclass=BaseStepMeta):
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_version: Optional["ModelVersion"] = None,
+        model: Optional["Model"] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -856,7 +856,7 @@ class BaseStep(metaclass=BaseStepMeta):
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_version: configuration of the model version in the Model Control Plane.
+            model: configuration of the model version in the Model Control Plane.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -880,7 +880,7 @@ class BaseStep(metaclass=BaseStepMeta):
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model_version=model_version,
+            model=model,
             merge=merge,
         )
         return step_copy
