@@ -25,7 +25,7 @@ from tests.integration.functional.zen_stores.utils import (
 from zenml import pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.config.schedule import Schedule
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 
 if TYPE_CHECKING:
     from zenml.client import Client
@@ -91,7 +91,7 @@ def step_2() -> (
 
 
 @pipeline(
-    model_version=ModelVersion(name=NAME),
+    model=Model(name=NAME),
     name=NAME,
 )
 def pipeline():

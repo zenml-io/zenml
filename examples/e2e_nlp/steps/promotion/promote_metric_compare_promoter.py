@@ -80,9 +80,8 @@ def promote_metric_compare_promoter(
             should_promote = False
 
     if should_promote:
-        model_version = get_step_context().model_version
-        model_version = model_version._get_model_version()
-        model_version.set_stage(pipeline_extra["target_env"], force=True)
+        model = get_step_context().model
+        model.set_stage(pipeline_extra["target_env"], force=True)
 
     logger.info(
         f"Promoted current model version to {pipeline_extra['target_env']} environment"

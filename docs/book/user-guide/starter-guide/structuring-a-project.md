@@ -60,13 +60,13 @@ You will learn more about different environments in a [later chapter](../advance
 
 While passing around artifacts with IDs or names is very useful, it is often desirable to have the ZenML Model be the point of reference instead. 
 
-For example, let's say we have a training pipeline called `train_and_promote` and an inference pipeline called `do_predictions`. The training pipeline produces many different model artifacts, all of which are collected within a [ZenML Model](track-ml-models.md). Each time the `train_and_promote` pipeline runs, it creates a new `iris_classifier`. However, it only promotes the Model Version to `production` if a certain accuracy threshold is met. The promotion can be also be done manually with human intervention, or it can be automated through setting a particular threshold.
+For example, let's say we have a training pipeline called `train_and_promote` and an inference pipeline called `do_predictions`. The training pipeline produces many different model artifacts, all of which are collected within a [ZenML Model](track-ml-models.md). Each time the `train_and_promote` pipeline runs, it creates a new `iris_classifier`. However, it only promotes the model to `production` if a certain accuracy threshold is met. The promotion can be also be done manually with human intervention, or it can be automated through setting a particular threshold.
 
 On the other side, the `do_predictions` pipeline simply picks up the latest promoted model and runs batch inference on it. It need not know of the IDs or names of any of the artifacts produced by the training pipeline's many runs. This way these two pipelines can independently be run, but can rely on each other's output.
 
 <figure><img src="../../.gitbook/assets/mcp_pipeline_overview.png" alt=""><figcaption><p>A simple artifact exchange between pipelines through the Model Control Plane.</p></figcaption></figure>
 
-In code, this is very simple. Once the [pipelines are configured to use a particular model version](track-ml-models.md#configuring-a-model-in-a-pipeline), we can use `get_step_context` to fetch the configured model version within a step directly. Assuming there is a `predict` step in the `do_predictions` pipeline, we can fetch the `production` model like so:
+In code, this is very simple. Once the [pipelines are configured to use a particular model](track-ml-models.md#configuring-a-model-in-a-pipeline), we can use `get_step_context` to fetch the configured model within a step directly. Assuming there is a `predict` step in the `do_predictions` pipeline, we can fetch the `production` model like so:
 
 ```python
 from zenml import step, get_step_context
@@ -76,11 +76,11 @@ from zenml import step, get_step_context
 def predict(
     data: pd.DataFrame,
 ) -> Annotated[pd.Series, "predictions"]:
-    # model_name and model_version derived from pipeline context
-    model_version = get_step_context().model_version
+    # model name and version are derived from pipeline context
+    model = get_step_context().model
 
     # Fetch the model directly from the model control plane
-    model = model_version.get_model_artifact("trained_model")
+    model = model.get_model_artifact("trained_model")
 
     # Make predictions
     predictions = pd.Series(model.predict(data))
@@ -93,7 +93,7 @@ However, this approach has the downside that if the step is cached, then it coul
 from typing_extensions import Annotated
 from zenml import get_pipeline_context, pipeline, ExternalArtifact
 from zenml.enums import ModelStages
-from zenml.model import ModelVersion
+from zenml.model import Model
 import pandas as pd
 from sklearn.base import ClassifierMixin
 
@@ -107,19 +107,19 @@ def predict(
     return predictions
 
 @pipeline(
-    model_config=ModelVersion(
+    model_config=Model(
         name="iris_classifier",
         # Using the production stage
         version=ModelStages.PRODUCTION,
     ),
 )
 def do_predictions():
-    # model_name and model_version derived from pipeline context
-    model_version = get_pipeline_context().model_version
+    # model name and version are derived from pipeline context
+    model = get_pipeline_context().model
     inference_data = load_data()
     predict(
         # Here, we load in the `trained_model` from a trainer step
-        model=model_version.get_model_artifact("trained_model"),  
+        model=model.get_model_artifact("trained_model"),  
         data=inference_data,
     )
 

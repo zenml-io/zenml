@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 from functools import partial
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import click
 
@@ -23,6 +23,8 @@ from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import ArtifactFilter, ArtifactVersionFilter
+from zenml.models.v2.core.artifact import ArtifactResponse
+from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)
@@ -47,10 +49,11 @@ def list_artifacts(**kwargs: Any) -> None:
         cli_utils.declare("No artifacts found.")
         return
 
-    cli_utils.print_pydantic_models(
-        artifacts,
-        exclude_columns=["created", "updated", "has_custom_name"],
-    )
+    to_print = []
+    for artifact in artifacts:
+        to_print.append(_artifact_to_print(artifact))
+
+    cli_utils.print_table(to_print)
 
 
 @artifact.command("update", help="Update an artifact.")
@@ -126,19 +129,11 @@ def list_artifact_versions(**kwargs: Any) -> None:
         cli_utils.declare("No artifact versions found.")
         return
 
-    cli_utils.print_pydantic_models(
-        artifact_versions,
-        exclude_columns=[
-            "created",
-            "updated",
-            "user",
-            "workspace",
-            "producer_step_run_id",
-            "run_metadata",
-            "artifact_store_id",
-            "visualizations",
-        ],
-    )
+    to_print = []
+    for artifact_version in artifact_versions:
+        to_print.append(_artifact_version_to_print(artifact_version))
+
+    cli_utils.print_table(to_print)
 
 
 @version.command("update", help="Update an artifact version.")
@@ -281,3 +276,28 @@ def prune_artifacts(
         except Exception as e:
             cli_utils.error(str(e))
     cli_utils.declare("All unused artifacts and artifact versions deleted.")
+
+
+def _artifact_version_to_print(
+    artifact_version: ArtifactVersionResponse,
+) -> Dict[str, Any]:
+    return {
+        "id": artifact_version.id,
+        "name": artifact_version.artifact.name,
+        "version": artifact_version.version,
+        "uri": artifact_version.uri,
+        "type": artifact_version.type,
+        "materializer": artifact_version.materializer,
+        "data_type": artifact_version.data_type,
+        "tags": [t.name for t in artifact_version.tags],
+    }
+
+
+def _artifact_to_print(
+    artifact_version: ArtifactResponse,
+) -> Dict[str, Any]:
+    return {
+        "id": artifact_version.id,
+        "name": artifact_version.name,
+        "tags": [t.name for t in artifact_version.tags],
+    }

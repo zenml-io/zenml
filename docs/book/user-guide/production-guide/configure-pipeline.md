@@ -52,7 +52,7 @@ The next section is about associating a [ZenML Model](../starter-guide/track-ml-
 
 ```yaml
 # Configuration of the Model Control Plane
-model_version:
+model:
   name: breast_cancer_classifier
   version: rf
   license: Apache 2.0

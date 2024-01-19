@@ -47,7 +47,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 from zenml.models import (
     ComponentResponse,
     PipelineBuildRequest,
@@ -1323,6 +1323,36 @@ class TestModel:
         assert model_.latest_version_name == mv2.name
         assert model_.latest_version_id == mv2.id
 
+    def test_list_by_tags(self, clean_client: "Client"):
+        """Test that models can be listed using tag filters."""
+        model1 = clean_client.create_model(
+            name=self.MODEL_NAME, tags=["foo", "bar"]
+        )
+        model2 = clean_client.create_model(
+            name=self.MODEL_NAME + "2", tags=["foo"]
+        )
+        ms = clean_client.list_models(tag="foo")
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
+        ms = clean_client.list_models(tag="bar")
+        assert len(ms) == 1
+        assert model1 in ms
+
+        ms = clean_client.list_models(tag="non_existent_tag")
+        assert len(ms) == 0
+
+        ms = clean_client.list_models()
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
+        ms = clean_client.list_models(tag="")
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
 
 class TestModelVersion:
     MODEL_NAME = "foo"
@@ -1518,7 +1548,9 @@ class TestModelVersion:
     def test_list_model_version(self, client_with_model: "Client"):
         for i in range(PAGE_SIZE_DEFAULT):
             client_with_model.create_model_version(
-                self.MODEL_NAME, f"{self.VERSION_NAME}_{i}"
+                self.MODEL_NAME,
+                f"{self.VERSION_NAME}_{i}",
+                tags=["foo", "bar"],
             )
 
         model_versions = client_with_model.list_model_versions(
@@ -1541,6 +1573,27 @@ class TestModelVersion:
         )
         assert len(model_versions) == PAGE_SIZE_DEFAULT
 
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tag="foo",
+        )
+        assert len(model_versions) == PAGE_SIZE_DEFAULT
+
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tag="non_existent_tag",
+        )
+        assert len(model_versions) == 0
+
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tag="",
+        )
+        assert len(model_versions) == PAGE_SIZE_DEFAULT
+
     def test_delete_model_version_found(self, client_with_model: "Client"):
         client_with_model.delete_model_version(
             client_with_model.get_model_version(
@@ -1557,45 +1610,45 @@ class TestModelVersion:
         with pytest.raises(KeyError):
             client_with_model.delete_model_version(uuid4())
 
-    def _create_some_model_version(
+    def _create_some_model(
         self,
         client: Client,
         model_name: str = "aria_cat_supermodel",
         model_version_name: str = "1.0.0",
-    ) -> ModelVersion:
+    ) -> Model:
         model = client.create_model(
             name=model_name,
         )
         return client.create_model_version(
             model_name_or_id=model.id,
             name=model_version_name,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
 
     def test_get_by_latest(self, clean_client: "Client"):
-        """Test that model version can be retrieved with latest."""
-        mv1 = self._create_some_model_version(client=clean_client)
+        """Test that model can be retrieved with latest."""
+        mv1 = self._create_some_model(client=clean_client)
 
         # latest returns the only model
         mv2 = clean_client.get_model_version(
             model_name_or_id=mv1.model_id,
             model_version_name_or_number_or_id=ModelStages.LATEST,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
         assert mv2 == mv1
 
         # after second model version, latest should point to it
         mv3 = clean_client.create_model_version(
             model_name_or_id=mv1.model_id, name="2.0.0"
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
         mv4 = clean_client.get_model_version(
             model_name_or_id=mv1.model_id,
             model_version_name_or_number_or_id=ModelStages.LATEST,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
         assert mv4 != mv1
         assert mv4 == mv3
 
     def test_get_by_stage(self, clean_client: "Client"):
-        """Test that model version can be retrieved by stage."""
-        mv1 = self._create_some_model_version(client=clean_client)
+        """Test that model can be retrieved by stage."""
+        mv1 = self._create_some_model(client=clean_client)
 
         clean_client.update_model_version(
             version_name_or_id=mv1.id,
@@ -1607,13 +1660,13 @@ class TestModelVersion:
         mv2 = clean_client.get_model_version(
             model_name_or_id=mv1.model_id,
             model_version_name_or_number_or_id=ModelStages.STAGING,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
 
         assert mv1 == mv2
 
     def test_stage_not_found(self, clean_client: "Client"):
-        """Test that attempting to get model version fails if none at the given stage."""
-        mv1 = self._create_some_model_version(client=clean_client)
+        """Test that attempting to get model fails if none at the given stage."""
+        mv1 = self._create_some_model(client=clean_client)
 
         with pytest.raises(KeyError):
             clean_client.get_model_version(

@@ -111,7 +111,7 @@ class BaseModelRegistry(StackComponent, ABC):
             zenml_pipeline_name: Optional[str] = None,
             zenml_step_name: Optional[str] = None,
             **kwargs: Any,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         """Registers a model version in the model registry."""
 
     @abstractmethod
@@ -130,7 +130,7 @@ class BaseModelRegistry(StackComponent, ABC):
             description: Optional[str] = None,
             tags: Optional[Dict[str, str]] = None,
             stage: Optional[ModelVersionStage] = None,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         """Updates a model version in the model registry."""
 
     @abstractmethod
@@ -140,11 +140,11 @@ class BaseModelRegistry(StackComponent, ABC):
             model_source_uri: Optional[str] = None,
             tags: Optional[Dict[str, str]] = None,
             **kwargs: Any,
-    ) -> List[ModelVersion]:
+    ) -> List[RegistryModelVersion]:
         """Lists all model versions for a registered model."""
 
     @abstractmethod
-    def get_model_version(self, name: str, version: str) -> ModelVersion:
+    def get_model_version(self, name: str, version: str) -> RegistryModelVersion:
         """Gets a model version for a registered model."""
 
     @abstractmethod
@@ -159,7 +159,7 @@ class BaseModelRegistry(StackComponent, ABC):
     @abstractmethod
     def get_model_uri_artifact_store(
             self,
-            model_version: ModelVersion,
+            model_version: RegistryModelVersion,
     ) -> str:
         """Gets the URI artifact store for a model version."""
 ```
