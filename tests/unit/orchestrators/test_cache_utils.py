@@ -38,6 +38,7 @@ def _compile_step(step: BaseStep) -> Step:
         input_artifacts={},
         external_artifacts={},
         model_artifacts_or_metadata={},
+        client_lazy_loaders={},
         parameters={},
         default_parameters={},
         upstream_steps=set(),
