@@ -188,14 +188,16 @@ zenml:
   # used, which will not be persisted across pod restarts.
   # NOTE: the certificate files need to be copied in the helm chart folder and
   # the paths configured here need to be relative to the root of the helm chart.
-  database: {}
+  database: {
+    backupStorageSize: 1Gi
     # url: "mysql://admin:password@zenml-mysql:3306/database"
     # sslCa: /path/to/ca.pem
     # sslCert: /path/to/client-cert.pem
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
-    backupStorageSize: 1Gi
     # backupStorageClass: standard
+  }
+    
 
 
   # Secrets store settings. This is used to store centralized secrets.
