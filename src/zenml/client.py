@@ -37,7 +37,10 @@ from uuid import UUID, uuid4
 
 from pydantic import SecretStr
 
-from zenml.client_lazy_loader import client_lazy_loader
+from zenml.client_lazy_loader import (
+    client_lazy_loader,
+    evaluate_all_lazy_load_args,
+)
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
@@ -282,6 +285,7 @@ class ClientMetaClass(ABCMeta):
         return cls._global_client
 
 
+@evaluate_all_lazy_load_args
 class Client(metaclass=ClientMetaClass):
     """ZenML client class.
 

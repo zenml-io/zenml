@@ -1277,7 +1277,8 @@ class TestArtifact:
                 model,
                 # load model version by version
                 clean_client.get_model_version(
-                    model_name_or_id="model_name",
+                    # this can be lazy loaders too
+                    model_name_or_id=model.id,
                     model_version_name_or_number_or_id="model_version",
                 ),
                 # load model version by stage
