@@ -7,7 +7,7 @@ set -x
 # test-coverage-xml.sh unit
 # For only integration tests call
 # test-coverage-xml.sh integration
-# To store durations, add a fourth argument 'store-durations'
+# To store durations, add a fifth argument 'store-durations'
 TEST_SRC="tests/"${1:-""}
 TEST_ENVIRONMENT=${2:-"default"}
 TEST_SPLITS=${3:-"1"}
@@ -29,7 +29,7 @@ if [ -n "$1" ]; then
     fi
 else
     if [ "$STORE_DURATIONS" == "store-durations" ]; then
-        coverage run -m pytest tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --store-durations --durations-path=unit_.test_durations
+        coverage run -m pytest tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --store-durations --durations-path=.test_durations
         coverage run -m pytest tests/integration --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations
     else
         coverage run -m pytest tests/unit --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision
