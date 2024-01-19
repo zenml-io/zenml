@@ -149,8 +149,7 @@ jobs:
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
-          sudo apt-get update && sudo apt-get install -y libyaml-dev
-          pip install --upgrade pip setuptools
+          pip install pyyaml==5.3.1
           pip install docker-compose
       - name: Install Linux System Dependencies
         if: inputs.os=='ubuntu-latest'
