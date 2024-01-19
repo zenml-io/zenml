@@ -10,7 +10,7 @@ ZenML pipelines are first compiled and executed at later point. During compilati
 
 We identify two major use-cases for exchange artifacts between pipelines:
 * You semantically group your data products using [ZenML Models](model-management.md#linking-artifacts-to-models)
-* You prefer to use [ZenML Client](../../reference/python-client.md#client-methods) to bring all the pieces together
+* You prefer to use [ZenML Client](../../../reference/python-client.md#client-methods) to bring all the pieces together
 
 In the sections below we will dive deeper into these use-cases from pipelines point of view.
 
