@@ -148,7 +148,10 @@ jobs:
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
-        run: pip install docker-compose
+        run: |
+          sudo apt-get update && sudo apt-get install -y libyaml-dev
+          pip install --upgrade pip setuptools
+          pip install docker-compose
       - name: Install Linux System Dependencies
         if: inputs.os=='ubuntu-latest'
         run: sudo apt install graphviz
