@@ -14,7 +14,9 @@
 
 """Utility functions and classes to run ZenML steps."""
 
+
 import ast
+import contextlib
 import inspect
 import textwrap
 from typing import Any, Callable, Dict, Optional, Tuple, Union
@@ -435,14 +437,11 @@ def log_step_metadata(
             from within a step or if no pipeline name or ID is provided and
             the function is not called from within a step.
     """
+    step_context = None
     if not step_name:
-        try:
+        with contextlib.suppress(RuntimeError):
             step_context = get_step_context()
             step_name = step_context.step_name
-        except RuntimeError:
-            step_context = None
-    else:
-        step_context = None
     # not running within a step and no user-provided step name
     if not step_context and not step_name:
         raise ValueError(
