@@ -30,7 +30,7 @@ from zenml import pipeline, step
 def training_data_loader() -> Annotated[pd.DataFrame, "iris_dataset"]:
     """Load the iris dataset as pandas dataframe."""
     iris = load_iris(as_frame=True)
-    return iris
+    return iris.get("frame")
 
 
 @pipeline
@@ -51,7 +51,7 @@ Artifacts named `iris_dataset` can then be found swiftly using various ZenML int
 {% tabs %}
 {% tab title="OSS (CLI)" %}
 
-To list artifacts: `zenml artifacts list`
+To list artifacts: `zenml artifact list`
 
 {% endtab %}
 {% tab title="Cloud (Dashboard)" %}
@@ -109,7 +109,7 @@ After execution, `iris_dataset` and its version `raw_2023` can be seen using:
 {% tabs %}
 {% tab title="OSS (CLI)" %}
 
-To list versions: `zenml artifacts versions list`
+To list versions: `zenml artifact version list`
 
 {% endtab %}
 {% tab title="Cloud (Dashboard)" %}
@@ -308,7 +308,7 @@ def model_finetuner_step(
 For further depth, there is an [advanced metadata logging guide](../advanced-guide/data-management/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
 
 Additionally, there is a lot more to learn about artifacts within ZenML. Please read
-the [dedicated data management guide](../advanced-guide/data-management/) for more information.
+the [dedicated data management guide](../advanced-guide/data-management/data-management.md) for more information.
 
 ## Code example
 

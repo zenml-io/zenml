@@ -20,24 +20,24 @@ import yaml
 
 from zenml import get_step_context, pipeline, step
 from zenml.client import Client
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 
 
 @step
-def assert_model_version_step():
-    model_version = get_step_context().model_version
-    assert model_version is not None
-    assert model_version.name == "foo"
-    assert model_version.version == str(model_version.number)
-    assert model_version.description == "description"
-    assert model_version.license == "MIT"
-    assert model_version.audience == "audience"
-    assert model_version.use_cases == "use_cases"
-    assert model_version.limitations == "limitations"
-    assert model_version.trade_offs == "trade_offs"
-    assert model_version.ethics == "ethics"
-    assert model_version.tags == ["tag"]
-    assert model_version.save_models_to_registry
+def assert_model_step():
+    model = get_step_context().model
+    assert model is not None
+    assert model.name == "foo"
+    assert model.version == str(model.number)
+    assert model.description == "description"
+    assert model.license == "MIT"
+    assert model.audience == "audience"
+    assert model.use_cases == "use_cases"
+    assert model.limitations == "limitations"
+    assert model.trade_offs == "trade_offs"
+    assert model.ethics == "ethics"
+    assert model.tags == ["tag"]
+    assert model.save_models_to_registry
 
 
 @step
@@ -47,11 +47,9 @@ def assert_extra_step():
     assert extra == {"a": 1}
 
 
-def test_pipeline_with_model_version_from_yaml(
-    clean_client: "Client", tmp_path
-):
+def test_pipeline_with_model_from_yaml(clean_client: "Client", tmp_path):
     """Test that the pipeline can be configured with a model version from a yaml file."""
-    model_version = ModelVersion(
+    model = Model(
         name="foo",
         description="description",
         license="MIT",
@@ -67,16 +65,16 @@ def test_pipeline_with_model_version_from_yaml(
     config_path = tmp_path / "config.yaml"
     file_config = dict(
         run_name="run_name_in_file",
-        model_version=model_version.dict(),
+        model=model.dict(),
     )
     config_path.write_text(yaml.dump(file_config))
 
     @pipeline(enable_cache=False)
-    def assert_model_version_pipeline():
-        assert_model_version_step()
+    def assert_model_pipeline():
+        assert_model_step()
 
-    assert_model_version_pipeline.with_options(model_version=model_version)()
-    assert_model_version_pipeline.with_options(config_path=str(config_path))()
+    assert_model_pipeline.with_options(model=model)()
+    assert_model_pipeline.with_options(config_path=str(config_path))()
 
 
 def test_pipeline_config_from_file_not_overridden_for_extra(
@@ -105,35 +103,33 @@ def test_pipeline_config_from_file_not_overridden_for_extra(
     p()
 
 
-def test_pipeline_config_from_file_not_overridden_for_model_version(
+def test_pipeline_config_from_file_not_overridden_for_model(
     clean_client: "Client", tmp_path
 ):
     """Test that the pipeline can be configured with a model version
     from a yaml file, but the values from yaml are not overridden.
     """
-    initial_model_version = ModelVersion(
+    initial_model = Model(
         name="bar",
     )
 
     config_path = tmp_path / "config.yaml"
     file_config = dict(
         run_name="run_name_in_file",
-        model_version=initial_model_version.dict(),
+        model=initial_model.dict(),
     )
     config_path.write_text(yaml.dump(file_config))
 
     @pipeline(enable_cache=False)
-    def assert_model_version_pipeline():
-        assert_model_version_step()
+    def assert_model_pipeline():
+        assert_model_step()
 
-    p = assert_model_version_pipeline.with_options(
-        config_path=str(config_path)
-    )
-    assert p.configuration.model_version.name == "bar"
+    p = assert_model_pipeline.with_options(config_path=str(config_path))
+    assert p.configuration.model.name == "bar"
 
     with patch("zenml.new.pipelines.pipeline.logger.warning") as warning:
         p.configure(
-            model_version=ModelVersion(
+            model=Model(
                 name="foo",
                 description="description",
                 license="MIT",
@@ -148,18 +144,18 @@ def test_pipeline_config_from_file_not_overridden_for_model_version(
         )
         warning.assert_called_once()
 
-    assert p.configuration.model_version is not None
-    assert p.configuration.model_version.name == "foo"
-    assert p.configuration.model_version.version is None
-    assert p.configuration.model_version.description == "description"
-    assert p.configuration.model_version.license == "MIT"
-    assert p.configuration.model_version.audience == "audience"
-    assert p.configuration.model_version.use_cases == "use_cases"
-    assert p.configuration.model_version.limitations == "limitations"
-    assert p.configuration.model_version.trade_offs == "trade_offs"
-    assert p.configuration.model_version.ethics == "ethics"
-    assert p.configuration.model_version.tags == ["tag"]
-    assert p.configuration.model_version.save_models_to_registry
+    assert p.configuration.model is not None
+    assert p.configuration.model.name == "foo"
+    assert p.configuration.model.version is None
+    assert p.configuration.model.description == "description"
+    assert p.configuration.model.license == "MIT"
+    assert p.configuration.model.audience == "audience"
+    assert p.configuration.model.use_cases == "use_cases"
+    assert p.configuration.model.limitations == "limitations"
+    assert p.configuration.model.trade_offs == "trade_offs"
+    assert p.configuration.model.ethics == "ethics"
+    assert p.configuration.model.tags == ["tag"]
+    assert p.configuration.model.save_models_to_registry
     with pytest.raises(AssertionError):
         p()
 

@@ -615,7 +615,7 @@ class ServiceConnectorContext:
             self.cleanup()
 
 
-class ModelVersionContext:
+class ModelContext:
     def __init__(
         self,
         create_version: bool = False,
@@ -647,7 +647,7 @@ class ModelVersionContext:
         try:
             model = client.get_model(self.model)
         except KeyError:
-            model = client.create_model(name=self.model)
+            model = client.create_model(name=self.model, tags=["foo", "bar"])
         if self.create_version:
             try:
                 mv = client.get_model_version(self.model, self.model_version)

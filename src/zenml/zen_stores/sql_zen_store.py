@@ -7257,7 +7257,9 @@ class SqlZenStore(BaseZenStore):
             return model.to_model(hydrate=hydrate)
 
     def list_models(
-        self, model_filter_model: ModelFilter, hydrate: bool = False
+        self,
+        model_filter_model: ModelFilter,
+        hydrate: bool = False,
     ) -> Page[ModelResponse]:
         """Get all models by filter.
 
@@ -7469,6 +7471,7 @@ class SqlZenStore(BaseZenStore):
                 model_version_filter_model.set_scope_model(model.id)
 
             query = select(ModelVersionSchema)
+
             return self.filter_and_paginate(
                 session=session,
                 query=query,

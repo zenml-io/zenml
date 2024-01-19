@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.steps import BaseStep
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
@@ -67,7 +67,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_version: Optional["ModelVersion"] = None,
+    model: Optional["Model"] = None,
 ) -> Callable[["F"], "BaseStep"]:
     ...
 
@@ -87,7 +87,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_version: Optional["ModelVersion"] = None,
+    model: Optional["Model"] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -117,7 +117,7 @@ def step(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
-        model_version: configuration of the model version in the Model Control Plane.
+        model: configuration of the model in the Model Control Plane.
 
     Returns:
         The step instance.
@@ -149,7 +149,7 @@ def step(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model_version=model_version,
+            model=model,
         )
 
         return step_instance
