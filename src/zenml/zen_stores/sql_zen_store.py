@@ -1077,7 +1077,9 @@ class SqlZenStore(BaseZenStore):
                 if statement.strip() != "":
                     connection.execute(text(statement + ";"))
 
-        logger.debug(f"Database restored from {self.db_backup_file_path}")
+        logger.info(
+            f"Database successfully restored from {self.db_backup_file_path}"
+        )
         self.cleanup_database_backup()
 
     def backup_database(self) -> None:
@@ -1270,7 +1272,7 @@ class SqlZenStore(BaseZenStore):
 
             try:
                 self.alembic.upgrade()
-            except Exception:
+            except Exception as e:
                 if backup_enabled:
                     logger.exception(
                         "Failed to migrate the database. Attempting to restore "
@@ -1287,7 +1289,16 @@ class SqlZenStore(BaseZenStore):
                             "to restore the database manually using the backup "
                             "file."
                         )
+                    else:
+                        raise RuntimeError(
+                            "The database migration failed, but the database "
+                            "was successfully restored from the backup file. "
+                            "You can safely retry the upgrade or revert to "
+                            "the previous version of ZenML. Please check the "
+                            "logs for more details."
+                        ) from e
                 raise
+
             else:
                 if backup_enabled:
                     self.cleanup_database_backup()
