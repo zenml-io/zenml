@@ -7,7 +7,7 @@ settings:
       - pyarrow
 
 # configuration of the Model Control Plane
-model_version:
+model:
   name: breast_cancer_classifier
   version: rf
   license: Apache 2.0
