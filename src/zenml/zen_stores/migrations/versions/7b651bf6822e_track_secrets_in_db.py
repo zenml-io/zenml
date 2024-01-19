@@ -587,8 +587,6 @@ def upgrade() -> None:
 
     secrets_store = store.secrets_store
 
-    raise RuntimeError("Fake migration error")
-
     if secrets_store.TYPE == SecretsStoreType.SQL:
         # If the secrets store is already a SQL secrets store, we don't need
         # to transfer secrets from the external secrets store to the db.
