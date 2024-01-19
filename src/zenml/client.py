@@ -39,7 +39,7 @@ from pydantic import SecretStr
 
 from zenml.client_lazy_loader import (
     client_lazy_loader,
-    evaluate_all_lazy_load_args,
+    evaluate_all_lazy_load_args_in_client_methods,
 )
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source
@@ -285,7 +285,7 @@ class ClientMetaClass(ABCMeta):
         return cls._global_client
 
 
-@evaluate_all_lazy_load_args
+@evaluate_all_lazy_load_args_in_client_methods
 class Client(metaclass=ClientMetaClass):
     """ZenML client class.
 

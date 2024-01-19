@@ -13,9 +13,12 @@
 #  permissions and limitations under the License.
 """Lazy loading functionality for Client methods."""
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 
 from pydantic import BaseModel, PrivateAttr
+
+if TYPE_CHECKING:
+    from zenml.client import Client
 
 
 class _CallStep(BaseModel):
@@ -149,7 +152,9 @@ def client_lazy_loader(
         return None
 
 
-def evaluate_all_lazy_load_args(cls: Any) -> Any:
+def evaluate_all_lazy_load_args_in_client_methods(
+    cls: Type["Client"]
+) -> Type["Client"]:
     """Class wrapper to evaluate lazy loader arguments of all methods.
 
     Args:
@@ -176,7 +181,7 @@ def evaluate_all_lazy_load_args(cls: Any) -> Any:
 
         return _inner
 
-    def _decorate() -> Any:
+    def _decorate() -> Type["Client"]:
         for name, fn in inspect.getmembers(cls, inspect.ismethod):
             setattr(cls, name, _evaluate_args(fn))
         return cls
