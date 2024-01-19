@@ -149,9 +149,8 @@ jobs:
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
-          mkdir -p ~/.docker/cli-plugins/
-          curl -SL https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
+          pip install pyyaml==5.3.1
+          pip install docker-compose
           docker compose version
       - name: Install Linux System Dependencies
         if: inputs.os=='ubuntu-latest'
