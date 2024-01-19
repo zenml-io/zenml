@@ -212,14 +212,14 @@ class ZenMLCloudRBAC(RBACInterface):
 
         return full_resource_access, allowed_ids
 
-    def share_resource(
+    def update_resource_membership(
         self, user: "UserResponse", resource: Resource, actions: List[Action]
     ) -> None:
-        """Share a resource with another user.
+        """Update the resource membership of a user.
 
         Args:
-            user: User which the resource should be shared with.
-            resource: The resource that should be shared.
+            user: User for which the resource membership should be updated.
+            resource: The resource.
             action: The actions that the user should be able to perform on the
                 resource.
         """

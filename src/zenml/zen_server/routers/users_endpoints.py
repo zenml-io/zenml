@@ -52,7 +52,7 @@ from zenml.zen_server.rbac.utils import (
     dehydrate_response_model,
     get_allowed_resource_ids,
     get_schema_for_resource_type,
-    share_resource,
+    update_resource_membership,
     verify_permission,
     verify_permission_for_model,
 )
@@ -493,7 +493,9 @@ if server_config().rbac_enabled:
                 membership.
             resource_id: ID of the resource for which to update the membership.
             actions: List of actions that the user should be able to perform on
-                the resource.
+                the resource. If the user currently has permissions to perform
+                actions which are not passed in this list, the permissions will
+                be removed.
             auth_context: Authentication context.
 
         Raises:
@@ -534,7 +536,7 @@ if server_config().rbac_enabled:
                 resource_id=resource_id,
             )
 
-        share_resource(
+        update_resource_membership(
             user=user,
             resource=resource,
             actions=[Action(action) for action in actions],

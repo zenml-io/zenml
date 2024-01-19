@@ -560,18 +560,20 @@ def get_schema_for_resource_type(
     return mapping[resource_type]
 
 
-def share_resource(
+def update_resource_membership(
     user: UserResponse, resource: Resource, actions: List[Action]
 ) -> None:
-    """Share a resource with a user.
+    """Update the resource membership of a user.
 
     Args:
-        user: The user to share the resource with.
-        resource: The resource to share.
-        actions: The actions that the user should be able to perform on the
+        user: User for which the resource membership should be updated.
+        resource: The resource.
+        action: The actions that the user should be able to perform on the
             resource.
     """
     if not server_config().rbac_enabled:
         return
 
-    rbac().share_resource(user=user, resource=resource, actions=actions)
+    rbac().update_resource_membership(
+        user=user, resource=resource, actions=actions
+    )
