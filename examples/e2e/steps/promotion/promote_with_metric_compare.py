@@ -17,9 +17,8 @@
 
 from utils import promote_in_model_registry
 
-from zenml import get_step_context, step
+from zenml import Model, get_step_context, step
 from zenml.logger import get_logger
-from zenml.model.model_version import ModelVersion
 
 logger = get_logger(__name__)
 
@@ -59,10 +58,8 @@ def promote_with_metric_compare(
     should_promote = True
 
     # Get model version numbers from Model Control Plane
-    latest_version = get_step_context().model_version
-    current_version = ModelVersion(
-        name=latest_version.name, version=target_env
-    )
+    latest_version = get_step_context().model
+    current_version = Model(name=latest_version.name, version=target_env)
 
     current_version_number = current_version.number
 
@@ -85,8 +82,8 @@ def promote_with_metric_compare(
 
     if should_promote:
         # Promote in Model Control Plane
-        model_version = get_step_context().model_version
-        model_version.set_stage(stage=target_env, force=True)
+        model = get_step_context().model
+        model.set_stage(stage=target_env, force=True)
         logger.info(f"Current model version was promoted to '{target_env}'.")
 
         # Promote in Model Registry

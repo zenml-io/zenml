@@ -30,7 +30,7 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
 
 # ------------------ Request Model ------------------
 
@@ -203,7 +203,7 @@ class LazyRunMetadataResponse(RunMetadataResponse):
     _lazy_load_artifact_name: Optional[str] = None
     _lazy_load_artifact_version: Optional[str] = None
     _lazy_load_metadata_name: Optional[str] = None
-    _lazy_load_model_version: "ModelVersion"
+    _lazy_load_model: "Model"
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.
