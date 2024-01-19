@@ -29,6 +29,7 @@ from pydantic import root_validator, validator
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
+from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
@@ -154,6 +155,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     caching_parameters: Mapping[str, Any] = {}
     external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
     model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}
+    client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
     # Override the deprecation validator as we do not want to deprecate the

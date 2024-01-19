@@ -37,6 +37,7 @@ from uuid import UUID, uuid4
 
 from pydantic import SecretStr
 
+from zenml.client_lazy_loader import client_lazy_loader
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
@@ -2837,6 +2838,13 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The artifact version.
         """
+        if cll := client_lazy_loader(
+            method_name="get_artifact_version",
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+            hydrate=hydrate,
+        ):
+            return cll  # type: ignore[return-value]
         return self._get_entity_version_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_artifact_version,
             list_method=self.list_artifact_versions,
