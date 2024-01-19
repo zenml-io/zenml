@@ -1,6 +1,6 @@
 # Changes here will be overwritten by Copier
-_commit: 0.45.0-17-gbd996ed
-_src_path: template-nlp
+_commit: 2024.01.12
+_src_path: gh:zenml-io/template-nlp
 accelerator: cpu
 cloud_of_choice: aws
 dataset: airline_reviews
