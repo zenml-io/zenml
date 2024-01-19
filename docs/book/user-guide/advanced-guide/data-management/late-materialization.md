@@ -16,7 +16,7 @@ In the sections below we will dive deeper into these use cases from the pipeline
 
 ## Use ZenML Models to exchange artifacts
 
-The ZenML Model is an entity introduced together with the Model Control Plane. The Model Control Plane is how you manage your models through a unified interface. It allows you to combine the logic of your pipelines, artifacts and crucial business data along with the actual 'technical model'.
+The ZenML Model is an entity introduced together with [the Model Control Plane](model-management.md). The Model Control Plane is how you manage your models through a unified interface. It allows you to combine the logic of your pipelines, artifacts and crucial business data along with the actual 'technical model'.
 
 Documentation for [ZenML Models](model-management.md#linking-artifacts-to-models) describes in great detail how you can link various artifacts produced within pipelines to the model. Here we will focus more on the part that relates to consumption.
 
