@@ -104,24 +104,24 @@ jobs:
       run:
         shell: bash
     steps:
-      # - name: Maximize space for Docker
-      #   uses: easimon/maximize-build-space@v10
-      #   with:
-      #     root-reserve-mb: 20000
-      #     swap-size-mb: 1024
-      #     remove-dotnet: 'true'
-      #     remove-android: 'true'
-      #     remove-haskell: 'true'
-      #     build-mount-path: /var/lib/docker/
-      #   if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-      #     || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-      #     'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      # - name: Reload Docker
-      #   run: sudo systemctl restart docker
-      #   if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-      #     || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-      #     'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      # - uses: actions/checkout@v4.1.1
+      - name: Maximize space for Docker
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 20000
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          build-mount-path: /var/lib/docker/
+        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
+          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+      - name: Reload Docker
+        run: sudo systemctl restart docker
+        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
+          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+      - uses: actions/checkout@v4.1.1
       # - name: Configure AWS credentials
       #   uses: aws-actions/configure-aws-credentials@v1
       #   with:
@@ -138,14 +138,14 @@ jobs:
       #   with:
       #     install_components: gke-gcloud-auth-plugin
       #   if: contains(inputs.test_environment, 'gcp')
-      # - name: Setup environment
-      #   uses: ./.github/actions/setup_environment
-      #   with:
-      #     cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-      #     python-version: ${{ inputs.python-version }}
-      #     os: ${{ inputs.os }}
-      #     runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
-      #     runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
+          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
+          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
