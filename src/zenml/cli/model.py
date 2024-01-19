@@ -23,6 +23,7 @@ from zenml.enums import CliCategories, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
+    ModelFilter,
     ModelResponse,
     ModelVersionArtifactFilter,
     ModelVersionFilter,
@@ -54,13 +55,19 @@ def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
 def _model_version_to_print(
     model_version: ModelVersionResponse,
 ) -> Dict[str, Any]:
+    run_metadata = None
+    if model_version.run_metadata:
+        run_metadata = {
+            k: v.value for k, v in model_version.run_metadata.items()
+        }
     return {
         "id": model_version.id,
+        "model": model_version.model.name,
         "name": model_version.name,
         "number": model_version.number,
         "description": model_version.description,
         "stage": model_version.stage,
-        "metadata": model_version.to_model_version().metadata,
+        "run_metadata": run_metadata,
         "tags": [t.name for t in model_version.tags],
         "data_artifacts_count": len(model_version.data_artifact_ids),
         "model_artifacts_count": len(model_version.model_artifact_ids),
@@ -77,21 +84,17 @@ def model() -> None:
     """Interact with models and model versions in the Model Control Plane."""
 
 
-@click.option(
-    "--name",
-    "-n",
-    help="The name of the model.",
-    type=str,
-    required=False,
-)
+@cli_utils.list_options(ModelFilter)
 @model.command("list", help="List models with filter.")
-def list_models(name: str) -> None:
+def list_models(**kwargs: Any) -> None:
     """List models with filter in the Model Control Plane.
 
     Args:
-        name: The name filter for models.
+        **kwargs: Keyword arguments to filter models.
     """
-    models = Client().list_models(name=name)
+    models = Client().zen_store.list_models(
+        model_filter_model=ModelFilter(**kwargs)
+    )
 
     if not models:
         cli_utils.declare("No models found.")
@@ -369,18 +372,23 @@ def version() -> None:
 
 
 @cli_utils.list_options(ModelVersionFilter)
-@click.argument("model_name_or_id")
+@click.option(
+    "--model-name",
+    "-n",
+    help="The name of the parent model.",
+    type=str,
+    required=False,
+)
 @version.command("list", help="List model versions with filter.")
-def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
+def list_model_versions(model_name: str, **kwargs: Any) -> None:
     """List model versions with filter in the Model Control Plane.
 
     Args:
-        model_name_or_id: The ID or name of the model containing version.
+        model_name: The name of the parent model.
         **kwargs: Keyword arguments to filter models.
     """
-    model_id = Client().get_model(model_name_or_id=model_name_or_id).id
     model_versions = Client().zen_store.list_model_versions(
-        model_name_or_id=model_id,
+        model_name_or_id=model_name,
         model_version_filter_model=ModelVersionFilter(**kwargs),
     )
 

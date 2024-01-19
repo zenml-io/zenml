@@ -272,12 +272,17 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
         def f(model: Model = Depends(make_dependable(Model))):
             ...
 
+    UPDATE: Function from above mentioned Github issue was extended to support
+    multi-input parameters, e.g. tags: List[str]. It needs a default set to Query(<default>),
+    rather just plain <default>.
+
     Args:
         cls: The model class.
 
     Returns:
         Function to use in FastAPI `Depends`.
     """
+    from fastapi import Query
 
     def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
         from fastapi import HTTPException
@@ -290,7 +295,20 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
                 error["loc"] = tuple(["query"] + list(error["loc"]))
             raise HTTPException(422, detail=e.errors())
 
-    init_cls_and_handle_errors.__signature__ = inspect.signature(cls)  # type: ignore[attr-defined]
+    params = {v.name: v for v in inspect.signature(cls).parameters.values()}
+    query_params = getattr(cls, "API_MULTI_INPUT_PARAMS", [])
+    for qp in query_params:
+        if qp in params:
+            params[qp] = inspect.Parameter(
+                name=params[qp].name,
+                default=Query(params[qp].default),
+                kind=params[qp].kind,
+                annotation=params[qp].annotation,
+            )
+
+    init_cls_and_handle_errors.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
+        parameters=[v for v in params.values()]
+    )
 
     return init_cls_and_handle_errors
 

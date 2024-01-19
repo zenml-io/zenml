@@ -26,6 +26,7 @@ from zenml.config.global_config import (
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
+    ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX,
     ENV_ZENML_SECRETS_STORE_PREFIX,
     ENV_ZENML_STORE_PREFIX,
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
@@ -106,6 +107,9 @@ def get_config_environment_vars(
     if global_config.store:
         store_dict = global_config.store.dict(exclude_none=True)
         secrets_store_dict = store_dict.pop("secrets_store", None) or {}
+        backup_secrets_store_dict = (
+            store_dict.pop("backup_secrets_store", None) or {}
+        )
 
         for key, value in store_dict.items():
             if key in ["username", "password"]:
@@ -118,6 +122,11 @@ def get_config_environment_vars(
         for key, value in secrets_store_dict.items():
             environment_vars[
                 ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()
+            ] = str(value)
+
+        for key, value in backup_secrets_store_dict.items():
+            environment_vars[
+                ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX + key.upper()
             ] = str(value)
 
         if deployment and global_config.store.type == StoreType.REST:

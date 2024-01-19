@@ -274,14 +274,14 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
                 SecretId=aws_secret_id
             )
         except ClientError as e:
-            if e.response["Error"]["Code"] == "ResourceNotFoundException":
-                raise KeyError(f"Secret with ID {secret_id} not found")
-
-            if (
+            if e.response["Error"]["Code"] == "ResourceNotFoundException" or (
                 e.response["Error"]["Code"] == "InvalidRequestException"
                 and "marked for deletion" in e.response["Error"]["Message"]
             ):
-                raise KeyError(f"Secret with ID {secret_id} not found")
+                raise KeyError(
+                    f"Can't find the secret values for secret ID '{secret_id}' "
+                    f"in the secrets store back-end: {str(e)}"
+                ) from e
 
             raise RuntimeError(
                 f"Error fetching secret with ID {secret_id} {e}"

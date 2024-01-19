@@ -17,7 +17,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, SECRETS, VERSION_1
+from zenml.constants import (
+    API,
+    SECRETS,
+    SECRETS_BACKUP,
+    SECRETS_OPERATIONS,
+    SECRETS_RESTORE,
+    VERSION_1,
+)
 from zenml.models import (
     Page,
     SecretFilter,
@@ -37,6 +44,7 @@ from zenml.zen_server.rbac.utils import (
     get_allowed_resource_ids,
     has_permissions_for_model,
     is_owned_by_authenticated_user,
+    verify_permission,
 )
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -46,6 +54,12 @@ from zenml.zen_server.utils import (
 
 router = APIRouter(
     prefix=API + VERSION_1 + SECRETS,
+    tags=["secrets"],
+    responses={401: error_response, 403: error_response},
+)
+
+op_router = APIRouter(
+    prefix=API + VERSION_1 + SECRETS_OPERATIONS,
     tags=["secrets"],
     responses={401: error_response, 403: error_response},
 )
@@ -189,4 +203,65 @@ def delete_secret(
         id=secret_id,
         get_method=zen_store().get_secret,
         delete_method=zen_store().delete_secret,
+    )
+
+
+@op_router.put(
+    SECRETS_BACKUP,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def backup_secrets(
+    ignore_errors: bool = True,
+    delete_secrets: bool = False,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Backs up all secrets in the secrets store to the backup secrets store.
+
+    Args:
+        ignore_errors: Whether to ignore individual errors when backing up
+            secrets and continue with the backup operation until all secrets
+            have been backed up.
+        delete_secrets: Whether to delete the secrets that have been
+            successfully backed up from the primary secrets store. Setting
+            this flag effectively moves all secrets from the primary secrets
+            store to the backup secrets store.
+    """
+    verify_permission(
+        resource_type=ResourceType.SECRET, action=Action.BACKUP_RESTORE
+    )
+
+    zen_store().backup_secrets(
+        ignore_errors=ignore_errors, delete_secrets=delete_secrets
+    )
+
+
+@op_router.put(
+    SECRETS_RESTORE,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def restore_secrets(
+    ignore_errors: bool = False,
+    delete_secrets: bool = False,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Restores all secrets from the backup secrets store into the main secrets store.
+
+    Args:
+        ignore_errors: Whether to ignore individual errors when restoring
+            secrets and continue with the restore operation until all secrets
+            have been restored.
+        delete_secrets: Whether to delete the secrets that have been
+            successfully restored from the backup secrets store. Setting
+            this flag effectively moves all secrets from the backup secrets
+            store to the primary secrets store.
+    """
+    verify_permission(
+        resource_type=ResourceType.SECRET,
+        action=Action.BACKUP_RESTORE,
+    )
+
+    zen_store().restore_secrets(
+        ignore_errors=ignore_errors, delete_secrets=delete_secrets
     )
