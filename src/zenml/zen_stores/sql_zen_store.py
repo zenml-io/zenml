@@ -1050,7 +1050,8 @@ class SqlZenStore(BaseZenStore):
             self.cleanup_database_backup()
             return
 
-        db_name = self.db_backup_file_path.split("/")[-1].split(".")[0]
+        assert self.config.database is not None
+        db_name = self.config.database
 
         with self.engine.begin() as connection:
             # drop the database if it exists
