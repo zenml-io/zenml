@@ -64,7 +64,6 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact_config import (
         ExternalArtifactConfiguration,
     )
-    from zenml.client_lazy_loader import ClientLazyLoader
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.step_configurations import (
         PartialArtifactConfiguration,
