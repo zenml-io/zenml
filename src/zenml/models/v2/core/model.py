@@ -31,7 +31,7 @@ from zenml.models.v2.base.scoped import (
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.models.v2.core.tag import TagResponse
 
 
@@ -310,7 +310,7 @@ class ModelResponse(
 
     # Helper functions
     @property
-    def versions(self) -> List["ModelVersion"]:
+    def versions(self) -> List["Model"]:
         """List all versions of the model.
 
         Returns:
@@ -323,7 +323,7 @@ class ModelResponse(
             partial(client.list_model_versions, model_name_or_id=self.id)
         )
         return [
-            mv.to_model_version(suppress_class_validation_warnings=True)
+            mv.to_model_class(suppress_class_validation_warnings=True)
             for mv in model_versions
         ]
 
