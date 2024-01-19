@@ -1,0 +1,29 @@
+---
+name: Test Me!
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches: [main]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+concurrency:
+  # New commit on branch cancels running workflows of the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  custom-ubuntu-runners-integration-test:
+    strategy:
+      matrix:
+        os: [ubuntu-dind-runners]
+        python-version: ['3.10']
+        test_environment: [default, docker-server-docker-orchestrator-mysql]
+      fail-fast: false
+    uses: ./.github/workflows/integration-test-dummy.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
+    secrets: inherit
