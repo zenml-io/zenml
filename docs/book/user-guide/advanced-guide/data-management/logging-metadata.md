@@ -123,7 +123,7 @@ def train_model(dataset: pd.DataFrame) -> Annotated[ClassifierMixin, ArtifactCon
 ```
 
 
-If you call it from without you can attach the metadata to a specific step run
+If you call it from outside you can attach the metadata to a specific step run
 from any pipeline and step. This is useful if you want to attach the metadata
 after you've run the step.
 
@@ -138,6 +138,9 @@ log_step_metadata(
                 "a_number": 3,
             }
         },
+        pipeline_name_id_or_prefix="my_pipeline",
+        step_name="my_step",
+        run_id="my_step_run_id"
     )
 ```
 
