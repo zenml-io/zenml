@@ -443,7 +443,7 @@ def log_step_metadata(
             step_context = get_step_context()
             step_name = step_context.step_name
     # not running within a step and no user-provided step name
-    if not step_context and not step_name:
+    if not step_name:
         raise ValueError(
             "No step name provided and you are not running "
             "within a step. Please provide a step name."
