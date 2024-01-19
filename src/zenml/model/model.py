@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ModelVersion user facing interface to pass into pipeline or step."""
+"""Model user facing interface to pass into pipeline or step."""
 
 from typing import (
     TYPE_CHECKING,
@@ -42,8 +42,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ModelVersion(BaseModel):
-    """ModelVersion class to pass into pipeline or step to set it into a model context.
+class Model(BaseModel):
+    """Model class to pass into pipeline or step to set it into a model context.
 
     name: The name of the model.
     license: The license under which the model is created.
@@ -54,8 +54,8 @@ class ModelVersion(BaseModel):
     trade_offs: The tradeoffs of the model.
     ethics: The ethical implications of the model.
     tags: Tags associated with the model.
-    version: The model version name, number or stage is optional and points model context
-        to a specific version/stage. If skipped new model version will be created.
+    version: The version name, version number or stage is optional and points model context
+        to a specific version/stage. If skipped new version will be created.
     save_models_to_registry: Whether to save all ModelArtifacts to Model Registry,
         if available in active stack.
     """
@@ -97,7 +97,7 @@ class ModelVersion(BaseModel):
                 self._get_or_create_model_version()
             except RuntimeError:
                 logger.info(
-                    f"Model version `{self.version}` doesn't exist "
+                    f"Version `{self.version}` of `{self.name}` model doesn't exist "
                     "and cannot be fetched from the Model Control Plane."
                 )
         return self._id
@@ -128,7 +128,7 @@ class ModelVersion(BaseModel):
                 self._get_or_create_model_version()
             except RuntimeError:
                 logger.info(
-                    f"Model version `{self.version}` doesn't exist "
+                    f"Version `{self.version}` of `{self.name}` model doesn't exist "
                     "and cannot be fetched from the Model Control Plane."
                 )
         return self._number
@@ -149,7 +149,7 @@ class ModelVersion(BaseModel):
                 return ModelStages(stage)
         except RuntimeError:
             logger.info(
-                f"Model version `{self.version}` doesn't exist "
+                f"Version `{self.version}` of `{self.name}` model doesn't exist "
                 "and cannot be fetched from the Model Control Plane."
             )
         return None
@@ -283,7 +283,7 @@ class ModelVersion(BaseModel):
     def set_stage(
         self, stage: Union[str, ModelStages], force: bool = False
     ) -> None:
-        """Sets this Model Version to a desired stage.
+        """Sets this Model to a desired stage.
 
         Args:
             stage: the target stage for model version.
@@ -431,7 +431,7 @@ class ModelVersion(BaseModel):
             return LazyArtifactVersionResponse(
                 _lazy_load_name=name,
                 _lazy_load_version=version,
-                _lazy_load_model_version=ModelVersion(
+                _lazy_load_model=Model(
                     name=self.name, version=self.version or self.number
                 ),
             )
@@ -441,7 +441,7 @@ class ModelVersion(BaseModel):
         return None
 
     def __eq__(self, other: object) -> bool:
-        """Check two ModelVersions for equality.
+        """Check two Models for equality.
 
         Args:
             other: object to compare with
@@ -449,7 +449,7 @@ class ModelVersion(BaseModel):
         Returns:
             True, if equal, False otherwise.
         """
-        if not isinstance(other, ModelVersion):
+        if not isinstance(other, Model):
             return NotImplemented
         if self.name != other.name:
             return False
@@ -509,7 +509,7 @@ class ModelVersion(BaseModel):
                 model_name_or_id=self.name
             )
 
-            difference = {}
+            difference: Dict[str, Any] = {}
             for key in (
                 "license",
                 "audience",
@@ -525,7 +525,14 @@ class ModelVersion(BaseModel):
                             "config": getattr(self, key),
                             "db": getattr(model, key),
                         }
-
+            if self.tags:
+                configured_tags = set(self.tags)
+                db_tags = {t.name for t in model.tags}
+                if db_tags != configured_tags:
+                    difference["tags added"] = list(configured_tags - db_tags)
+                    difference["tags removed"] = list(
+                        db_tags - configured_tags
+                    )
             if difference:
                 logger.warning(
                     "Provided model configuration does not match "
@@ -588,7 +595,7 @@ class ModelVersion(BaseModel):
                 "db": mv.description,
             }
         if self.tags:
-            configured_tags = set(self.tags or [])
+            configured_tags = set(self.tags)
             db_tags = {t.name for t in mv.tags}
             if db_tags != configured_tags:
                 difference["tags added"] = list(configured_tags - db_tags)
@@ -656,7 +663,7 @@ class ModelVersion(BaseModel):
                     # model version for current model was already
                     # created in the current run, not to create
                     # new model versions
-                    pipeline_mv = context.pipeline_run.config.model_version
+                    pipeline_mv = context.pipeline_run.config.model
                     if (
                         pipeline_mv
                         and pipeline_mv.was_created_in_this_run
@@ -666,7 +673,7 @@ class ModelVersion(BaseModel):
                         self.version = pipeline_mv.version
                     else:
                         for step in context.pipeline_run.steps.values():
-                            step_mv = step.config.model_version
+                            step_mv = step.config.model
                             if (
                                 step_mv
                                 and step_mv.was_created_in_this_run
@@ -714,21 +721,21 @@ class ModelVersion(BaseModel):
         self._number = model_version.number
         return model_version
 
-    def _merge(self, model_version: "ModelVersion") -> None:
-        self.license = self.license or model_version.license
-        self.description = self.description or model_version.description
-        self.audience = self.audience or model_version.audience
-        self.use_cases = self.use_cases or model_version.use_cases
-        self.limitations = self.limitations or model_version.limitations
-        self.trade_offs = self.trade_offs or model_version.trade_offs
-        self.ethics = self.ethics or model_version.ethics
-        if model_version.tags is not None:
+    def _merge(self, model: "Model") -> None:
+        self.license = self.license or model.license
+        self.description = self.description or model.description
+        self.audience = self.audience or model.audience
+        self.use_cases = self.use_cases or model.use_cases
+        self.limitations = self.limitations or model.limitations
+        self.trade_offs = self.trade_offs or model.trade_offs
+        self.ethics = self.ethics or model.ethics
+        if model.tags is not None:
             self.tags = list(
-                {t for t in self.tags or []}.union(set(model_version.tags))
+                {t for t in self.tags or []}.union(set(model.tags))
             )
 
     def __hash__(self) -> int:
-        """Get hash of the `ModelVersion`.
+        """Get hash of the `Model`.
 
         Returns:
             Hash function results

@@ -76,9 +76,9 @@ All materializers use the base abstraction called the `BaseMaterializer` class. 
 
 When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation workflow in time, so you can return to them exactly as you run them. On top of the parameters that you provide for your steps, you can also use different `Setting`s to configure runtime configurations for your infrastructure and pipelines.
 
-#### Model and Model Versions
+#### Model and model versions
 
-ZenML exposes the concept of a `Model`, which consists of multiple different `Model Versions`. A `Model Version` represents a unified view of the ML models that are created, tracked, and managed as part of a ZenML project. Model Versions link all other entities to a centralized view.
+ZenML exposes the concept of a `Model`, which consists of multiple different model versions. A model version represents a unified view of the ML models that are created, tracked, and managed as part of a ZenML project. Model versions link all other entities to a centralized view.
 
 ## 2. Execution
 
