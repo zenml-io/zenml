@@ -153,7 +153,7 @@ def client_lazy_loader(
 
 
 def evaluate_all_lazy_load_args_in_client_methods(
-    cls: Type["Client"]
+    cls: Type["Client"],
 ) -> Type["Client"]:
     """Class wrapper to evaluate lazy loader arguments of all methods.
 
