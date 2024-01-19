@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Lazy loading functionality for Client methods."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, PrivateAttr
 
@@ -149,26 +149,36 @@ def client_lazy_loader(
         return None
 
 
-def evaluate_all_lazy_load_args(cls):
+def evaluate_all_lazy_load_args(cls: Any) -> Any:
+    """Class wrapper to evaluate lazy loader arguments of all methods.
+
+    Args:
+        cls: The class to wrap.
+
+    Returns:
+        Wrapped class.
+    """
     import inspect
 
-    def evaluate_args(func):
-        def inner(*args, **kwargs):
-            args = [
-                a.evaluate() if isinstance(a, ClientLazyLoader) else a
-                for a in args
-            ]
+    def _evaluate_args(func: Callable[..., Any]) -> Any:
+        def _inner(*args: Any, **kwargs: Any) -> Any:
+            args = tuple(
+                [
+                    a.evaluate() if isinstance(a, ClientLazyLoader) else a
+                    for a in args
+                ]
+            )
             kwargs = {
                 k: v.evaluate() if isinstance(v, ClientLazyLoader) else v
                 for k, v in kwargs.items()
             }
             return func(*args, **kwargs)
 
-        return inner
+        return _inner
 
-    def decorate():
+    def _decorate() -> Any:
         for name, fn in inspect.getmembers(cls, inspect.ismethod):
-            setattr(cls, name, evaluate_args(fn))
+            setattr(cls, name, _evaluate_args(fn))
         return cls
 
-    return decorate()
+    return _decorate()
