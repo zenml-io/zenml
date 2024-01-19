@@ -138,7 +138,7 @@ enable_artifact_visualization: Optional[bool]
 enable_cache: Optional[bool]
 enable_step_logs: Optional[bool]
 extra: Mapping[str, Any]
-model_version:
+model:
   audience: Optional[str]
   description: Optional[str]
   ethics: Optional[str]
@@ -198,7 +198,7 @@ steps:
       attribute: Optional[str]
       module: str
       type: SourceType
-    model_version:
+    model:
       audience: Optional[str]
       description: Optional[str]
       ethics: Optional[str]
@@ -262,7 +262,7 @@ steps:
       attribute: Optional[str]
       module: str
       type: SourceType
-    model_version:
+    model:
       audience: Optional[str]
       description: Optional[str]
       ethics: Optional[str]
@@ -338,7 +338,7 @@ The UUID of the [`build`](../infrastructure-management/containerize-your-pipelin
 
 This is a dictionary that is available to be passed to steps and pipelines called `extra`. This dictionary is meant to be used to pass any configuration down to the pipeline, step, or stack components that the user has use of. See an example in [this section](#fetching-configuration).
 
-### Configuring the `model_version`
+### Configuring the `model`
 
 Specifies the ZenML [Model](../../starter-guide/track-ml-models.md) to use for this pipeline.
 
