@@ -441,6 +441,8 @@ def log_step_metadata(
             step_name = step_context.step_name
         except RuntimeError:
             step_context = None
+    else:
+        step_context = None
     # not running within a step and no user-provided step name
     if not step_context and not step_name:
         raise ValueError(
