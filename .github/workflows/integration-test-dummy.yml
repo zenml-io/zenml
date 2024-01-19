@@ -138,18 +138,21 @@ jobs:
       #   with:
       #     install_components: gke-gcloud-auth-plugin
       #   if: contains(inputs.test_environment, 'gcp')
-      - name: Setup environment
-        uses: ./.github/actions/setup_environment
-        with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-          python-version: ${{ inputs.python-version }}
-          os: ${{ inputs.os }}
-          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
-          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
+      # - name: Setup environment
+      #   uses: ./.github/actions/setup_environment
+      #   with:
+      #     cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+      #     python-version: ${{ inputs.python-version }}
+      #     os: ${{ inputs.os }}
+      #     runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
+      #     runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
-          pip install docker-compose
+          mkdir -p ~/.docker/cli-plugins/
+          curl -SL https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+          docker compose version
       # - name: Install Linux System Dependencies
       #   if: inputs.os=='ubuntu-latest'
       #   run: sudo apt install graphviz
