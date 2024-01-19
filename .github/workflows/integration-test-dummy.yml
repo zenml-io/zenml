@@ -151,7 +151,6 @@ jobs:
         run: |
           pip install pyyaml==5.3.1
           pip install docker-compose
-          docker compose version
       - name: Install Linux System Dependencies
         if: inputs.os=='ubuntu-latest'
         run: sudo apt install graphviz
