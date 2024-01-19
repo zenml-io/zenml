@@ -19,6 +19,7 @@ import logging
 import math
 import os
 import re
+import shutil
 import sys
 from datetime import datetime
 from functools import lru_cache
@@ -235,7 +236,6 @@ from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
 from zenml.zen_stores.migrations.alembic import (
-    ZENML_ALEMBIC_START_REVISION,
     Alembic,
 )
 from zenml.zen_stores.schemas import (
@@ -373,8 +373,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     max_overflow: int = 20
     pool_pre_ping: bool = True
 
-    # backup
-    backup_directory: Optional[str] = os.path.join(
+    # database backup directory
+    backup_directory: str = os.path.join(
         GlobalConfiguration().config_directory, SQL_STORE_BACKUP_DIRECTORY_NAME
     )
 
@@ -969,40 +969,11 @@ class SqlZenStore(BaseZenStore):
 
         self._alembic = Alembic(self.engine)
 
-        if self.config.driver == SQLDatabaseDriver.SQLITE:
-            # strip the .db from the ZENML_SQLITE_DB_NAME and
-            # add .sql to the end
-            # TODO
-            self.db_backup_file_path = os.path.join(
-                self.config.backup_directory,
-                ZENML_SQLITE_DB_FILENAME[:-3] + ".sql",
-            )
-        else:
-            self.db_backup_file_path = os.path.join(
-                self.config.backup_directory, f"{self.engine.url.database}.sql"
-            )
-
         if (
             not self.skip_migrations
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
-            # TODO add a try catch block around this fn call
-            # perform DB restore if exception is raised.
-            try:
-                self.migrate_database()
-            except Exception as e:
-                logger.error(
-                    "Failed to migrate the database. Attempting to restore "
-                    "the database from a backup."
-                )
-                try:
-                    self.restore_database()
-                except Exception:
-                    logger.exception(
-                        "Failed to restore the database from a backup. "
-                        "Please check the logs for more details."
-                    )
-                raise e
+            self.migrate_database()
 
         secrets_store_config = self.config.secrets_store
 
@@ -1042,14 +1013,44 @@ class SqlZenStore(BaseZenStore):
                 self._backup_secrets_store.config
             )
 
+    def cleanup_database_backup(self) -> None:
+        """Delete the database backup file."""
+        if self.db_backup_file_path is not None:
+            try:
+                os.remove(self.db_backup_file_path)
+            except OSError:
+                logger.warning(
+                    f"Failed to cleanup database dump file "
+                    f"{self.db_backup_file_path}."
+                )
+        self.db_backup_file_path = None
+
     def restore_database(self) -> None:
-        """Restore the database from a backup."""
-        # if a backup file does not exist, return
+        """Restore the database from a backup.
+
+        Raises:
+            RuntimeError: If the database cannot be restored successfully.
+        """
+        # the backup file location is set in the backup_database method
         assert self.db_backup_file_path is not None
-        db_name = self.db_backup_file_path.split("/")[-1].split(".")[0]
         if not os.path.exists(self.db_backup_file_path):
-            logger.debug("No backup found. No restore performed.")
+            raise RuntimeError(
+                f"Database backup file {self.db_backup_file_path} does not "
+                f"exist or is not accessible."
+            )
+
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            # For a sqlite database, we just overwrite the database file
+            # with the backup file
+            assert self.config.database is not None
+            shutil.copyfile(
+                self.db_backup_file_path,
+                self.config.database,
+            )
+            self.cleanup_database_backup()
             return
+
+        db_name = self.db_backup_file_path.split("/")[-1].split(".")[0]
 
         with self.engine.begin() as connection:
             # drop the database if it exists
@@ -1065,34 +1066,46 @@ class SqlZenStore(BaseZenStore):
             with open(self.db_backup_file_path, "r") as f:
                 contents = f.read()
 
-            # remove any escaped characters like \n and \t and split based on ; but keep the ; at the end of each sentence
-            contents = (
+            # remove any escaped characters like \n and \t and split based on ;
+            # but keep the ; at the end of each sentence
+            statements = (
                 contents.replace("\\n", "").replace("\\t", "").split(";")
             )
 
             # execute each statement
-            for statement in contents:
+            for statement in statements:
                 if statement.strip() != "":
                     connection.execute(text(statement + ";"))
 
         logger.debug(f"Database restored from {self.db_backup_file_path}")
-
-        # delete the database dump file
-        os.remove(self.db_backup_file_path)
+        self.cleanup_database_backup()
 
     def backup_database(self) -> None:
         """Backup the database to a file."""
-        db_name = self.db_backup_file_path.split("/")[-1].split(".")[0]
-
         # create the backup directory if it does not exist
         if not os.path.exists(self.config.backup_directory):
             os.makedirs(self.config.backup_directory)
 
         if self.config.driver == SQLDatabaseDriver.SQLITE:
-            # dump the database to a file
-            os.system(
-                f"sqlite3 {self.config.database} .dump > {self.db_backup_file_path}"
+            self.db_backup_file_path = os.path.join(
+                self.config.backup_directory,
+                # Add the -backup suffix to the database filename
+                ZENML_SQLITE_DB_FILENAME[:-3] + "-backup.sql",
             )
+            # For a sqlite database, we can just make a copy of the database
+            # file
+            assert self.config.database is not None
+            shutil.copyfile(
+                self.config.database,
+                self.db_backup_file_path,
+            )
+            return
+
+        # For a MySQL database, we need to dump the database to a file
+        self.db_backup_file_path = os.path.join(
+            self.config.backup_directory,
+            f"{self.engine.url.database}-backup.sql",
+        )
 
         metadata = MetaData()
         metadata.reflect(bind=self.engine)
@@ -1105,16 +1118,16 @@ class SqlZenStore(BaseZenStore):
             # write the table creation statement
             create_table_construct = CreateTable(table)
             create_table_stmt = str(create_table_construct).strip()
-            for col in create_table_construct.columns:
+            for column in create_table_construct.columns:
                 # enclosing all column names in backticks. This is because
                 # some column names are reserved keywords in MySQL. For example,
                 # keys and values. So, instead of tracking all keywords, we just
                 # enclose all column names in backticks.
                 # enclose the first word in the column definition in backticks
-                words = str(col).split()
+                words = str(column).split()
                 words[0] = f"`{words[0]}`"
                 create_table_stmt = create_table_stmt.replace(
-                    f"\n\t{str(col)}", " ".join(words)
+                    f"\n\t{str(column)}", " ".join(words)
                 )
             # if any double quotes are used for column names, replace them with backticks
             create_table_stmt = create_table_stmt.replace('"', "")
@@ -1183,7 +1196,12 @@ class SqlZenStore(BaseZenStore):
             connection.close()
 
     def migrate_database(self) -> None:
-        """Migrate the database to the head as defined by the python package."""
+        """Migrate the database to the head as defined by the python package.
+
+        Raises:
+            RuntimeError: If the database exists and is not empty but has never
+                been migrated with alembic before.
+        """
         alembic_logger = logging.getLogger("alembic")
 
         # remove all existing handlers
@@ -1200,15 +1218,17 @@ class SqlZenStore(BaseZenStore):
 
         alembic_logger.addHandler(get_console_handler())
 
-        # We need to account for 3 distinct cases here:
+        # We need to account for 2 distinct cases here:
         # 1. the database is completely empty (not initialized)
-        # 2. the database is not empty, but has never been migrated with alembic
+        # 2. the database is not empty and has been migrated with alembic before
+        # 3. the database is not empty, but has never been migrated with alembic
         #   before (i.e. was created with SQLModel back when alembic wasn't
-        #   used)
-        # 3. the database is not empty and has been migrated with alembic before
+        #   used). We don't support this direct upgrade case anymore.
         current_revisions = self.alembic.current_revisions()
         head_revisions = self.alembic.head_revisions()
         if len(current_revisions) >= 1:
+            # Case 2: the database has been migrated with alembic before. Just
+            # upgrade to the latest revision.
             if len(current_revisions) > 1:
                 logger.warning(
                     "The ZenML database has more than one migration head "
@@ -1219,22 +1239,58 @@ class SqlZenStore(BaseZenStore):
 
             logger.debug("Current revisions: %s", current_revisions)
             logger.debug("Head revisions: %s", head_revisions)
-            # if the current revision and head revision don't match, run a dump
-            if current_revisions[0] != head_revisions[0]:
+
+            # If the current revision and head revision don't match, a database
+            # migration that changes the database structure or contents may
+            # actually be performed, in which case we enable the backup
+            # functionality. We only enable the backup functionality if the
+            # database will actually be changed, to avoid the overhead for
+            # unnecessary backups.
+            backup_enabled = current_revisions[0] != head_revisions[0]
+
+            if backup_enabled:
                 try:
-                    logger.info("Backing up the database")
+                    logger.info("Backing up the database before migration.")
                     self.backup_database()
-                except Exception as e:
+                except Exception:
                     logger.exception(
                         "Failed to backup the database. Please check the logs "
-                        "for more details."
+                        "for more details. The upgrade will continue as usual "
+                        "but no recovery is possible if something goes wrong."
                     )
                     # TODO catch exception when the directory doesn't exist
                     # write permissions etc.
-                    raise e
-            # Case 3: the database has been migrated with alembic before. Just
-            # upgrade to the latest revision.
-            self.alembic.upgrade()
+                else:
+                    logger.info(
+                        f"Database backup successfully created at "
+                        f"{self.db_backup_file_path}. If something goes wrong "
+                        f"during the upgrade, ZenML will attempt to restore "
+                        f"the database from this backup automatically."
+                    )
+
+            try:
+                self.alembic.upgrade()
+            except Exception:
+                if backup_enabled:
+                    logger.exception(
+                        "Failed to migrate the database. Attempting to restore "
+                        f"the database from the {self.db_backup_file_path} "
+                        "backup file."
+                    )
+                    try:
+                        self.restore_database()
+                    except Exception:
+                        logger.exception(
+                            "Failed to restore the database from the "
+                            f"{self.db_backup_file_path} backup file. Please "
+                            "check the logs for more details. You might need "
+                            "to restore the database manually using the backup "
+                            "file."
+                        )
+                raise
+            else:
+                if backup_enabled:
+                    self.cleanup_database_backup()
         else:
             if self.alembic.db_is_empty():
                 # Case 1: the database is empty. We can just create the
@@ -1257,23 +1313,18 @@ class SqlZenStore(BaseZenStore):
                     session.commit()
                 self.alembic.stamp("head")
             else:
-                # Case 2: the database is not empty, but has never been
-                # migrated with alembic before. We need to create the alembic
-                # version table, initialize it with the first revision where we
-                # introduced alembic and then upgrade to the latest revision.
-                self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
-                # if the current revision and head revision don't match, run a dump
-                if current_revisions[0] != head_revisions[0]:
-                    try:
-                        logger.info("Backing up the database 2")
-                        self.backup_database()
-                    except Exception as e:
-                        logger.exception(
-                            "Failed to backup the database. Please check the logs "
-                            "for more details."
-                        )
-                        raise e
-                self.alembic.upgrade()
+                # Case 3: the database is not empty, but has never been
+                # migrated with alembic before. We don't support this direct
+                # upgrade case anymore. The user needs to run a two-step
+                # upgrade.
+                raise RuntimeError(
+                    "The ZenML database has never been migrated with alembic "
+                    "before. This can happen if you are performing a direct "
+                    "upgrade from a really old version of ZenML. This direct "
+                    "upgrade path is not supported anymore. Please upgrade "
+                    "your ZenML installation first to 0.54.0 or an earlier "
+                    "version and then to the latest version."
+                )
 
         # If an alembic migration took place, all non-custom flavors are purged
         #  and the FlavorRegistry recreates all in-built and integration
