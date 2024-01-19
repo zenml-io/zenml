@@ -57,6 +57,8 @@ from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.model.model import Model
 from zenml.models import (
     ComponentResponse,
+    ModelResponse,
+    ModelVersionResponse,
     PipelineBuildRequest,
     PipelineDeploymentRequest,
     PipelineRequest,
@@ -1139,7 +1141,25 @@ def test_basic_crud_for_entity(
 @step
 def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
     """Produce artifact with metadata."""
+    from zenml.client import Client
+
     log_artifact_metadata(metadata={"some_meta": "meta_new_one"})
+
+    client = Client()
+    model = client.create_model(name="model_name", description="model_desc")
+    client.create_model_version(
+        model_name_or_id=model.id,
+        name="model_version",
+        description="mv_desc_1",
+    )
+    mv = client.create_model_version(
+        model_name_or_id=model.id,
+        name="model_version2",
+        description="mv_desc_2",
+    )
+    client.update_model_version(
+        model_name_or_id=model.id, version_name_or_id=mv.id, stage="staging"
+    )
     return "body_new_one"
 
 
@@ -1149,6 +1169,9 @@ def lazy_asserter_test_artifact(
     artifact_metadata_existing: str,
     artifact_new: str,
     artifact_metadata_new: str,
+    model: ModelResponse,
+    model_version_by_version: ModelVersionResponse,
+    model_version_by_stage: ModelVersionResponse,
 ):
     """Assert that passed in values are loaded in lazy mode.
     They do not exists before actual run of the pipeline.
@@ -1157,6 +1180,13 @@ def lazy_asserter_test_artifact(
     assert artifact_metadata_existing == "meta_preexisting"
     assert artifact_new == "body_new_one"
     assert artifact_metadata_new == "meta_new_one"
+
+    assert model.name == "model_name"
+    assert model.description == "model_desc"
+    assert model_version_by_version.name == "model_version"
+    assert model_version_by_version.description == "mv_desc_1"
+    assert model_version_by_stage.name == "model_version2"
+    assert model_version_by_stage.description == "mv_desc_2"
 
 
 class TestArtifact:
@@ -1211,11 +1241,11 @@ class TestArtifact:
         )
         assert os.path.exists(artifact.uri)
 
-    def test_pipeline_can_load_artifacts_lazy_mode(
+    def test_pipeline_can_load_in_lazy_mode(
         self,
         clean_client: "Client",
     ):
-        """Tests that user can load model artifacts and metadata in lazy mode in pipeline codes."""
+        """Tests that user can load model artifact versions, metadata and models (versions) in lazy mode in pipeline codes."""
 
         @pipeline(enable_cache=False)
         def dummy():
@@ -1231,6 +1261,8 @@ class TestArtifact:
             )
             artifact_metadata_new = artifact_new.run_metadata["some_meta"]
 
+            model = clean_client.get_model(model_name_or_id="model_name")
+
             lazy_producer_test_artifact()
             lazy_asserter_test_artifact(
                 # load artifact directly
@@ -1241,6 +1273,18 @@ class TestArtifact:
                 artifact_new,
                 # read value of metadata directly
                 artifact_metadata_new.value,
+                # load model
+                model,
+                # load model version by version
+                clean_client.get_model_version(
+                    model_name_or_id="model_name",
+                    model_version_name_or_number_or_id="model_version",
+                ),
+                # load model version by stage
+                clean_client.get_model_version(
+                    model_name_or_id="model_name",
+                    model_version_name_or_number_or_id="staging",
+                ),
                 after=["lazy_producer_test_artifact"],
             )
 

@@ -4787,6 +4787,10 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of interest.
         """
+        if cll := client_lazy_loader(
+            "get_model", model_name_or_id=model_name_or_id, hydrate=hydrate
+        ):
+            return cll  # type: ignore[return-value]
         return self.zen_store.get_model(
             model_name_or_id=model_name_or_id,
             hydrate=hydrate,
@@ -4911,6 +4915,14 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: In case method inputs don't adhere to restrictions.
             KeyError: In case no model version with the identifiers exists.
         """
+        if cll := client_lazy_loader(
+            "get_model_version",
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+            hydrate=hydrate,
+        ):
+            return cll  # type: ignore[return-value]
+
         if model_version_name_or_number_or_id is None:
             model_version_name_or_number_or_id = ModelStages.LATEST
 
