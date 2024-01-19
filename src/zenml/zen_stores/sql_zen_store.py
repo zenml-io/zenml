@@ -1116,50 +1116,61 @@ class SqlZenStore(BaseZenStore):
 
         assert self.db_backup_file_path is not None
 
-        output = []
-        for table in metadata.sorted_tables:
-            # write the table creation statement
-            create_table_construct = CreateTable(table)
-            create_table_stmt = str(create_table_construct).strip()
-            for column in create_table_construct.columns:
-                # enclosing all column names in backticks. This is because
-                # some column names are reserved keywords in MySQL. For example,
-                # keys and values. So, instead of tracking all keywords, we just
-                # enclose all column names in backticks.
-                # enclose the first word in the column definition in backticks
-                words = str(column).split()
-                words[0] = f"`{words[0]}`"
-                create_table_stmt = create_table_stmt.replace(
-                    f"\n\t{str(column)}", " ".join(words)
-                )
-            # if any double quotes are used for column names, replace them with backticks
-            create_table_stmt = create_table_stmt.replace('"', "")
-            output.append(create_table_stmt)
+        with open(self.db_backup_file_path, "w") as f:
+
+            def write_statement(statement: str) -> None:
+                """Write a SQL statement to the backup file.
+
+                Args:
+                    statement: The SQL statement to write.
+                """
+                f.write(statement + ";\n")
+
+            for table in metadata.sorted_tables:
+                # write the table creation statement
+                create_table_construct = CreateTable(table)
+                create_table_stmt = str(create_table_construct).strip()
+                for column in create_table_construct.columns:
+                    # enclosing all column names in backticks. This is because
+                    # some column names are reserved keywords in MySQL. For
+                    # example, keys and values. So, instead of tracking all
+                    # keywords, we just enclose all column names in backticks.
+                    # enclose the first word in the column definition in
+                    # backticks
+                    words = str(column).split()
+                    words[0] = f"`{words[0]}`"
+                    create_table_stmt = create_table_stmt.replace(
+                        f"\n\t{str(column)}", " ".join(words)
+                    )
+                # if any double quotes are used for column names, replace them
+                # with backticks
+                create_table_stmt = create_table_stmt.replace('"', "")
+                write_statement(create_table_stmt)
 
             with self.engine.connect() as conn:
-                # write the table data
-                for row in conn.execute(table.select()):
-                    # checked manually that converting to string isn't a problem
-                    # if the column is of type int and i pass, say, '5', it still
-                    # takes 5 as the value in the table's row.
-                    row_values = []
-                    for c in table.columns:
-                        if row[c.name] is not None:
-                            # escape any single quotes in the row value
-                            row_values.append(
-                                str(row[c.name]).replace("'", "\\'")
-                            )
-                        else:
-                            row_values.append("NULL")
+                for table in metadata.sorted_tables:
+                    # write the table data
+                    for row in conn.execute(table.select()):
+                        # checked manually that converting to string isn't a
+                        # problem if the column is of type int and i pass, say,
+                        # '5', it still takes 5 as the value in the table's row.
+                        row_values = []
+                        for c in table.columns:
+                            if row[c.name] is not None:
+                                # escape any single quotes in the row value
+                                row_values.append(
+                                    str(row[c.name]).replace("'", "\\'")
+                                )
+                            else:
+                                row_values.append("NULL")
 
-                    values = ", ".join(f"'{item}'" for item in row_values)
-                    values = values.replace("'NULL'", "NULL")
+                        values = ", ".join(f"'{item}'" for item in row_values)
+                        values = values.replace("'NULL'", "NULL")
 
-                    insert_stmt = f"INSERT INTO {table.name} VALUES ({values})"
-                    output.append(insert_stmt)
-
-        with open(self.db_backup_file_path, "w") as f:
-            f.write(";\n".join(output))
+                        insert_stmt = (
+                            f"INSERT INTO {table.name} VALUES ({values})"
+                        )
+                        write_statement(insert_stmt)
 
         logger.debug(f"Database backed up to {self.db_backup_file_path}")
 
@@ -1290,6 +1301,23 @@ class SqlZenStore(BaseZenStore):
                             "to restore the database manually using the backup "
                             "file."
                         )
+                        # If debug logs are enabled, we print the first lines in
+                        # the backup file to help the user identify the problem.
+                        if (
+                            logging_level == LoggingLevels.DEBUG
+                            and self.db_backup_file_path
+                        ):
+                            try:
+                                with open(self.db_backup_file_path, "r") as f:
+                                    logger.debug(
+                                        "First 500 lines in the backup "
+                                        "file:\n%s",
+                                        "\n".join(
+                                            f.readlines()[:500],
+                                        ),
+                                    )
+                            except Exception:
+                                pass
                     else:
                         raise RuntimeError(
                             "The database migration failed, but the database "
