@@ -5,9 +5,6 @@ on:
   workflow_call:
   issue_comment:
     types: [created]
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
-    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
 env:
   TEAM_MEMBERS: '["@htahir1", "@hamza-zenml", "@bcdurak", "@baris-zenml", "@michael-zenml",
     "@schustmi", "@strickvl", "@alex-zenml", "@alexej-zenml", "@AlexejPenner", "@stefannica",
