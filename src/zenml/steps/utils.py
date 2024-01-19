@@ -435,17 +435,18 @@ def log_step_metadata(
             from within a step or if no pipeline name or ID is provided and
             the function is not called from within a step.
     """
-    try:
-        step_context = get_step_context()
-        step_name = step_name or step_context.step_name
-    except RuntimeError as e:
-        step_context = None
-        # not running within a step and no user-provided step name
-        if not step_context and not step_name:
-            raise ValueError(
-                "No step name provided and you are not running "
-                "within a step. Please provide a step name."
-            ) from e
+    if not step_name:
+        try:
+            step_context = get_step_context()
+            step_name = step_context.step_name
+        except RuntimeError as e:
+            step_context = None
+    # not running within a step and no user-provided step name
+    if not step_context and not step_name:
+        raise ValueError(
+            "No step name provided and you are not running "
+            "within a step. Please provide a step name."
+        )
 
     client = Client()
     if step_context:
