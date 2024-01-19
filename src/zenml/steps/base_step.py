@@ -35,6 +35,7 @@ from typing import (
 
 from pydantic import BaseModel, Extra, ValidationError
 
+from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.source import Source
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
@@ -462,7 +463,6 @@ class BaseStep(metaclass=BaseStepMeta):
             The artifacts, external artifacts, model version artifacts/metadata and parameters for the step.
         """
         from zenml.artifacts.external_artifact import ExternalArtifact
-        from zenml.client_lazy_loader import ClientLazyLoader
         from zenml.model.lazy_load import ModelVersionDataLazyLoader
         from zenml.models.v2.core.artifact_version import (
             LazyArtifactVersionResponse,

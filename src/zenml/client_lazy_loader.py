@@ -21,8 +21,8 @@ from pydantic import BaseModel, PrivateAttr
 class _CallStep(BaseModel):
     attribute_name: Optional[str] = None
     is_call: Optional[bool] = False
-    call_args: Optional[List[Any]] = None
-    call_kwargs: Optional[Dict[str, Any]] = None
+    call_args: Optional[List[Any]] = []
+    call_kwargs: Optional[Dict[str, Any]] = {}
     selector: Optional[Any] = None
 
 
