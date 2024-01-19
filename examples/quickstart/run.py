@@ -229,7 +229,7 @@ def main(
         with open(pipeline_args["config_path"], "r") as f:
             config = yaml.load(f, Loader=yaml.SafeLoader)
         zenml_model = client.get_model_version(
-            config["model_version"]["name"], config["model_version"]["version"]
+            config["model"]["name"], config["model"]["version"]
         )
         preprocess_pipeline_artifact = zenml_model.get_artifact(
             "preprocess_pipeline"
