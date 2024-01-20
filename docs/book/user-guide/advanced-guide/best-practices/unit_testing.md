@@ -39,6 +39,7 @@ def test_calculate_means():
     test_list = [[1, 1, 1], [2, 2, 2], [1.5, 2.5, 3.5]]
     expected_result = [1, 2, 2.5]
 
+    # We can call any ZenML step directly as a normal Python function
     result = calculate_means(test_list)
 
     assert result == expected_result
