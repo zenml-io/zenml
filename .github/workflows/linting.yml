@@ -56,8 +56,8 @@ on:
         required: false
         default: ''
 jobs:
-  unit-test:
-    name: setup-and-test
+  linting:
+    name: setup-and-linting
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
@@ -85,7 +85,7 @@ jobs:
           install_integrations: ${{ inputs.install_integrations }}
           runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
-      - name: Setup tmate session before tests
+      - name: Setup tmate session before linting
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
       - name: Lint check
@@ -97,7 +97,7 @@ jobs:
       #  # only do it for python 3.8, we don't need to do it for every version
       #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
       #   uses: codecov/codecov-action@v2
-      - name: Setup tmate session after tests
+      - name: Setup tmate session
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
       - name: Verify Python Env unaffected
