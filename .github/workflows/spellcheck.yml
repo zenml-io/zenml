@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   spellcheck:
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-dind-runners
     steps:
       - name: Checkout code

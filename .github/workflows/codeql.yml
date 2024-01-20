@@ -9,7 +9,7 @@ on:
     types: [opened]
 jobs:
   analyze:
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && github.repository == 'zenml-io/zenml'
     name: Analyze
     runs-on: ubuntu-latest
     timeout-minutes: 360

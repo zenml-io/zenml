@@ -7,6 +7,7 @@ on:
 name: pr-label
 jobs:
   pr-labeler:
+    if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     env:
       ZENML_DEBUG: 1
