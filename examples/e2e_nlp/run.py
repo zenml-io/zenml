@@ -27,7 +27,7 @@ from pipelines import (
 
 from zenml.enums import ModelStages
 from zenml.logger import get_logger
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 
 logger = get_logger(__name__)
 
@@ -198,7 +198,7 @@ def main(
             "weight_decay": weight_decay,
         }
 
-        model_version = ModelVersion(
+        model = Model(
             name=zenml_model_name,
             license="apache",
             description="Show case Model Control Plane.",
@@ -206,7 +206,7 @@ def main(
             tags=["sentiment_analysis", "huggingface"],
         )
 
-        pipeline_args["model_version"] = model_version
+        pipeline_args["model"] = model
 
         pipeline_args[
             "run_name"
@@ -219,10 +219,8 @@ def main(
     # Execute Promoting Pipeline
     if promoting_pipeline:
         run_args_promoting = {}
-        model_version = ModelVersion(
-            name=zenml_model_name, version=ModelStages.LATEST
-        )
-        pipeline_args["model_version"] = model_version
+        model = Model(name=zenml_model_name, version=ModelStages.LATEST)
+        pipeline_args["model"] = model
         pipeline_args[
             "run_name"
         ] = f"nlp_use_case_promoting_pipeline_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
@@ -234,11 +232,11 @@ def main(
     if deploying_pipeline:
         pipeline_args["enable_cache"] = False
         # Deploying pipeline has new ZenML model config
-        model_version = ModelVersion(
+        model = Model(
             name=zenml_model_name,
             version=ModelStages("staging"),
         )
-        pipeline_args["model_version"] = model_version
+        pipeline_args["model"] = model
         run_args_deploying = {
             "title": deployment_app_title,
             "description": deployment_app_description,

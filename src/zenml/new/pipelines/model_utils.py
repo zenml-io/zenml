@@ -17,14 +17,14 @@ from typing import List, Optional
 
 from pydantic import BaseModel, PrivateAttr
 
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 
 
-class NewModelVersionRequest(BaseModel):
-    """Request to create a new model version."""
+class NewModelRequest(BaseModel):
+    """Request to create a new version of a model."""
 
     class Requester(BaseModel):
-        """Requester of a new model version."""
+        """Requester of a new version of a model."""
 
         source: str
         name: str
@@ -38,35 +38,35 @@ class NewModelVersionRequest(BaseModel):
             return f"{self.source}::{self.name}"
 
     requesters: List[Requester] = []
-    _model_version: Optional[ModelVersion] = PrivateAttr(default=None)
+    _model: Optional[Model] = PrivateAttr(default=None)
 
     @property
-    def model_version(self) -> ModelVersion:
-        """Model version getter.
+    def model(self) -> Model:
+        """Model getter.
 
         Returns:
-            The model version.
+            The model.
 
         Raises:
-            RuntimeError: If the model version is not set.
+            RuntimeError: If the model is not set.
         """
-        if self._model_version is None:
-            raise RuntimeError("Model version is not set.")
-        return self._model_version
+        if self._model is None:
+            raise RuntimeError("Model is not set.")
+        return self._model
 
     def update_request(
         self,
-        model_version: ModelVersion,
-        requester: "NewModelVersionRequest.Requester",
+        model: Model,
+        requester: "NewModelRequest.Requester",
     ) -> None:
-        """Update from `ModelVersion` in place.
+        """Update from `Model` in place.
 
         Args:
-            model_version: `ModelVersion` to use.
-            requester: Requester of a new model version.
+            model: `Model` to use.
+            requester: Requester of a new version of a model.
         """
         self.requesters.append(requester)
-        if self._model_version is None:
-            self._model_version = model_version
+        if self._model is None:
+            self._model = model
 
-        self._model_version._merge(model_version)
+        self._model._merge(model)

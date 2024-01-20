@@ -72,6 +72,8 @@ def save_artifact(
     user_metadata: Optional[Dict[str, "MetadataType"]] = None,
     materializer: Optional["MaterializerClassOrSource"] = None,
     uri: Optional[str] = None,
+    is_model_artifact: bool = False,
+    is_deployment_artifact: bool = False,
     manual_save: bool = True,
 ) -> "ArtifactVersionResponse":
     """Upload and publish an artifact.
@@ -92,6 +94,8 @@ def save_artifact(
         uri: The URI within the artifact store to upload the artifact
             to. If not provided, the artifact will be uploaded to
             `custom_artifacts/{name}/{version}`.
+        is_model_artifact: If the artifact is a model artifact.
+        is_deployment_artifact: If the artifact is a deployment artifact.
         manual_save: If this function is called manually and should therefore
             link the artifact to the current step run.
 
@@ -220,15 +224,28 @@ def save_artifact(
 
     if manual_save:
         try:
-            step_run = get_step_context().step_run
+            error_message = "step run"
+            step_context = get_step_context()
+            step_run = step_context.step_run
             client.zen_store.update_run_step(
                 step_run_id=step_run.id,
                 step_run_update=StepRunUpdate(
                     saved_artifact_versions={name: response.id}
                 ),
             )
-        except RuntimeError:
-            logger.debug("Unable to link saved artifact to step run.")
+            error_message = "model"
+            model = step_context.model
+            if model:
+                from zenml.model.utils import link_artifact_to_model
+
+                link_artifact_to_model(
+                    artifact_version_id=response.id,
+                    model=model,
+                    is_model_artifact=is_model_artifact,
+                    is_deployment_artifact=is_deployment_artifact,
+                )
+        except (RuntimeError, StepContextError):
+            logger.debug(f"Unable to link saved artifact to {error_message}.")
 
     return response
 

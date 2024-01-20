@@ -23,16 +23,16 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
@@ -311,12 +311,12 @@ class ModelVersionResponse(
         return Client().zen_store.get_model_version(self.id)
 
     # Helper functions
-    def to_model_version(
+    def to_model_class(
         self,
         was_created_in_this_run: bool = False,
         suppress_class_validation_warnings: bool = False,
-    ) -> "ModelVersion":
-        """Convert response model to ModelVersion object.
+    ) -> "Model":
+        """Convert response model to Model object.
 
         Args:
             was_created_in_this_run: Whether model version was created during
@@ -325,11 +325,11 @@ class ModelVersionResponse(
                 repeated warnings.
 
         Returns:
-            ModelVersion object
+            Model object
         """
-        from zenml.model.model_version import ModelVersion
+        from zenml.model.model import Model
 
-        mv = ModelVersion(
+        mv = Model(
             name=self.model.name,
             license=self.model.license,
             description=self.description,
@@ -578,7 +578,7 @@ class ModelVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionFilter(WorkspaceScopedFilter):
+class ModelVersionFilter(WorkspaceScopedTaggableFilter):
     """Filter model for model versions."""
 
     name: Optional[str] = Field(

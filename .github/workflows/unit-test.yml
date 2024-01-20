@@ -57,7 +57,7 @@ on:
         default: ''
 jobs:
   unit-test:
-    name: setup-and-test
+    name: unit-test
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1

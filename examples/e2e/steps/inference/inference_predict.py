@@ -53,12 +53,12 @@ def inference_predict(
         The predictions as pandas series
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    model_version = get_step_context().model_version
+    model = get_step_context().model
 
     # get predictor
-    predictor_service: Optional[
-        MLFlowDeploymentService
-    ] = model_version.load_artifact("mlflow_deployment")
+    predictor_service: Optional[MLFlowDeploymentService] = model.load_artifact(
+        "mlflow_deployment"
+    )
     if predictor_service is not None:
         # run prediction from service
         predictions = predictor_service.predict(request=dataset_inf)
@@ -68,7 +68,7 @@ def inference_predict(
             "as the orchestrator is not local."
         )
         # run prediction from memory
-        predictor = model_version.load_artifact("model")
+        predictor = model.load_artifact("model")
         predictions = predictor.predict(dataset_inf)
 
     predictions = pd.Series(predictions, name="predicted")
