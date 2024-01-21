@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Triggers."""
+import base64
+import json
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
@@ -26,9 +28,7 @@ from zenml.models.v2.core.trigger import (
     TriggerResponseMetadata,
     TriggerUpdate,
 )
-from zenml.zen_stores.schemas.action_plan_schemas import ActionPlanSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -59,25 +59,11 @@ class TriggerSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="triggers")
 
-    event_filter_id: str = build_foreign_key_field(
-        source=__tablename__,
-        target=EventFilterSchema.__tablename__,
-        source_column="event_filter_id",
-        target_column="id",
-        ondelete="CASCADE",  # TODO: check this
-        nullable=False,
-    )
-    event_filter: "EventFilterSchema" = Relationship(back_populates="triggers")
+    event_filter: bytes
+    event_flavor: str  # TODO: Use an Enum
 
-    action_plan_id: str = build_foreign_key_field(
-        source=__tablename__,
-        target=ActionPlanSchema.__tablename__,
-        source_column="action_id",
-        target_column="id",
-        ondelete="CASCADE",  # TODO: check this
-        nullable=False,
-    )
-    action_plan: "ActionPlanSchema" = Relationship(back_populates="triggers")
+    action_plan: bytes
+    action_flavor: str  # TODO: Use an Enum
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
@@ -93,8 +79,19 @@ class TriggerSchema(NamedSchema, table=True):
         for field, value in trigger_update.dict(
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():
-            # TODO: deal with action and event updates
-            setattr(self, field, value)
+            if field == "event_filter":
+                self.event_filter = base64.b64encode(
+                    json.dumps(trigger_update.event_filter).encode("utf-8")
+                )
+                self.event_flavor = trigger_update.event_filter.get("flavor")
+            elif field == "action_plan":
+                self.action_plan = base64.b64encode(
+                    json.dumps(trigger_update.action_plan).encode("utf-8")
+                )
+                self.action_flavor = trigger_update.action_plan.get("flavor")
+
+            else:
+                setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
@@ -113,8 +110,14 @@ class TriggerSchema(NamedSchema, table=True):
             name=request.name,
             workspace_id=request.workspace,
             user_id=request.user,
-            action_plan_id=request.action_plan_id,
-            event_filter_id=request.event_filter_id,
+            action_plan=base64.b64encode(
+                    json.dumps(request.action_plan).encode("utf-8")
+                ),
+            action_flavor=request.action_plan.get("flavor"),
+            event_filter=base64.b64encode(
+                    json.dumps(request.event_filter).encode("utf-8")
+                ),
+            event_flavor=request.event_filter.get("flavor"),
             description=request.description,
         )
 
@@ -138,8 +141,12 @@ class TriggerSchema(NamedSchema, table=True):
         if hydrate:
             metadata = TriggerResponseMetadata(
                 workspace=self.workspace.to_model(),
-                event_filter=self.event_filter.to_model(),
-                action_plan=self.action_plan.to_model(),
+                event_filter=json.loads(
+                    base64.b64decode(self.event_filter).decode()
+                ),
+                action_plan=json.loads(
+                    base64.b64decode(self.action_plan).decode()
+                ),
             )
 
         return TriggerResponse(

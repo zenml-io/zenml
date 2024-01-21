@@ -26,14 +26,11 @@ class EventFlavorRegistry:
 
     def __init__(self) -> None:
         """Initialize the event flavor registry."""
-        self.event_source_flavors: Dict[
-            Type[Any], Type["BaseEventFlavor"]
-        ] = {}
-        self.event_filter_flavors: Dict[
+        self.event_flavors: Dict[
             Type[Any], Type["BaseEventFlavor"]
         ] = {}
 
-    def register_event_source_flavor(
+    def register_event_flavor(
         self, key: Type[Any], flavor: Type["BaseEventFlavor"]
     ) -> None:
         """Registers a new event_source.
@@ -42,40 +39,19 @@ class EventFlavorRegistry:
             key: Indicates the flavor of the object.
             flavor: A BaseEventConfiguration subclass.
         """
-        if key not in self.event_source_flavors:
-            self.event_source_flavors[key] = flavor
+        if key not in self.event_flavors:
+            self.event_flavors[key] = flavor
             logger.debug(
                 f"Registered event source configuration {flavor} for {key}"
             )
         else:
             logger.debug(
                 f"Found existing event source configuration class for {key}: "
-                f"{self.event_source_flavors[key]}. "
+                f"{self.event_flavors[key]}. "
                 f"Skipping registration of {flavor}."
             )
 
-    def register_event_filter_flavor(
-        self, key: Type[Any], flavor: Type["BaseEventFlavor"]
-    ) -> None:
-        """Registers a new event_filter.
-
-        Args:
-            key: Indicates the flavors of object.
-            flavor: A BaseEventConfiguration subclass.
-        """
-        if key not in self.event_source_flavors:
-            self.event_source_flavors[key] = flavor
-            logger.debug(
-                f"Registered event source configuration {flavor} for {key}"
-            )
-        else:
-            logger.debug(
-                f"Found existing event source configuration class for {key}: "
-                f"{self.event_source_flavors[key]}. "
-                f"Skipping registration of {flavor}."
-            )
-
-    def get_event_source_flavor(
+    def get_event_flavor(
         self, key: Type[Any]
     ) -> Type["BaseEventFlavor"]:
         """Get a single event_source based on the key.
@@ -87,30 +63,13 @@ class EventFlavorRegistry:
             `BaseEventConfiguration` subclass that was registered for this key.
         """
         for class_ in key.__mro__:
-            event_source = self.event_source_flavors.get(class_, None)
+            event_source = self.event_flavors.get(class_, None)
             if event_source:
                 return event_source
 
         raise KeyError(f"No event source configured for flavors {key}")
 
-    def get_event_filter_flavor(
-        self, key: Type[Any]
-    ) -> Type["BaseEventFlavor"]:
-        """Get a single event_filter based on the key.
-
-        Args:
-            key: Indicates the flavors of object.
-
-        Returns:
-            `BaseEventConfiguration` subclass that was registered for this key.
-        """
-        for class_ in key.__mro__:
-            event_filter = self.event_filter_flavors.get(class_, None)
-            if event_filter:
-                return event_filter
-        raise KeyError(f"No event filter configured for flavors {key}")
-
-    def get_all_event_source_flavors(
+    def get_all_event_flavors(
         self,
     ) -> Dict[Type[Any], Type["BaseEventFlavor"]]:
         """Get all registered event_source flavorss.
@@ -118,19 +77,9 @@ class EventFlavorRegistry:
         Returns:
             A dictionary of registered event_source flavorss.
         """
-        return self.event_source_flavors
+        return self.event_flavors
 
-    def get_all_event_filter_flavors(
-        self,
-    ) -> Dict[Type[Any], Type["BaseEventFlavor"]]:
-        """Get all registered event_filter flavorss.
-
-        Returns:
-            A dictionary of registered event_filter flavorss.
-        """
-        return self.event_filter_flavors
-
-    def is_event_source_registered(self, key: Type[Any]) -> bool:
+    def is_event_flavor_registered(self, key: Type[Any]) -> bool:
         """Returns if a event_source class is registered for the given flavors.
 
         Args:
@@ -141,21 +90,7 @@ class EventFlavorRegistry:
             otherwise.
         """
         return any(
-            issubclass(key, flavor) for flavor in self.event_source_flavors
-        )
-
-    def is_event_filter_registered(self, key: Type[Any]) -> bool:
-        """Returns if a event_filter class is registered for the given flavors.
-
-        Args:
-            key: Indicates the flavors of object.
-
-        Returns:
-            True if a event_filter is registered for the given flavors, False
-            otherwise.
-        """
-        return any(
-            issubclass(key, flavors) for flavors in self.event_filter_flavors
+            issubclass(key, flavor) for flavor in self.event_flavors
         )
 
 

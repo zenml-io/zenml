@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
 
-from zenml.zen_stores.schemas.action_plan_schemas import ActionPlanSchema
 from zenml.zen_stores.schemas.api_key_schemas import APIKeySchema
 from zenml.zen_stores.schemas.artifact_schemas import (
     ArtifactSchema,
@@ -28,7 +27,6 @@ from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
 )
 from zenml.zen_stores.schemas.device_schemas import OAuthDeviceSchema
-from zenml.zen_stores.schemas.event_filter_schemas import EventFilterSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -68,7 +66,6 @@ from zenml.zen_stores.schemas.model_schemas import (
 )
 
 __all__ = [
-    "ActionPlanSchema",
     "APIKeySchema",
     "ArtifactSchema",
     "ArtifactVersionSchema",
@@ -76,7 +73,6 @@ __all__ = [
     "BaseSchema",
     "CodeReferenceSchema",
     "CodeRepositorySchema",
-    "EventFilterSchema",
     "EventSourceSchema",
     "FlavorSchema",
     "IdentitySchema",

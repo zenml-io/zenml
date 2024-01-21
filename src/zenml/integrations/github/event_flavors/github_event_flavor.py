@@ -12,14 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an event Plugin could look like."""
-from typing import ClassVar, List
+from typing import ClassVar, List, Type
 from uuid import UUID
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from zenml.enums import EventConfigurationType
-from zenml.events.base_event_flavor import BaseEventFlavor, EventConfig
+from zenml.events.base_event_flavor import (
+    BaseEventFlavor,
+    EventFilterConfig,
+    EventSourceConfig,
+)
 
 # -------------------- Github Event Models -----------------------------------
 
@@ -53,21 +56,26 @@ class PushEvent(BaseModel):
 # -------------------- Configuration Models ----------------------------------
 
 
-class GithubEventSourceConfiguration(EventConfig):
+class GithubEventSourceConfiguration(EventSourceConfig):
     """Configuration for github source filters."""
 
     repo: str
+
+
+class GithubEventFilterConfiguration(EventFilterConfig):
+    """Configuration for github event filters."""
+
+    source_id: UUID
+    branch: str
 
 
 class GithubEventSourceFlavor(BaseEventFlavor):
     """Enables users to configure github event sources."""
 
     EVENT_FLAVOR: ClassVar[str] = "GITHUB"
-    CONFIGURATION_TYPE: ClassVar[
-        EventConfigurationType
-    ] = EventConfigurationType.SOURCE
 
-    config: GithubEventSourceConfiguration
+    source_config: Type[GithubEventSourceConfiguration]
+    source_filters: List[Type[GithubEventFilterConfiguration]]
 
     @staticmethod
     def register_endpoint(router: APIRouter):
@@ -76,21 +84,3 @@ class GithubEventSourceFlavor(BaseEventFlavor):
         @router.post("/github-webhook")
         async def post_event(body: PushEvent):
             print(body)
-
-
-class GithubEventFilterConfiguration(EventConfig):
-    """Configuration for github event filters."""
-
-    source_id: UUID
-    branch: str
-
-
-class GithubEventFilterFlavor(BaseEventFlavor):
-    """Allows users to configure filters on events coming from a github source."""
-
-    EVENT_FLAVOR: ClassVar[str] = "GITHUB"
-    CONFIGURATION_TYPE: ClassVar[
-        EventConfigurationType
-    ] = EventConfigurationType.FILTER
-
-    config: GithubEventFilterConfiguration

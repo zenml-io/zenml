@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
 from datetime import datetime
-from uuid import UUID
+from typing import Any, Dict
 
 from pydantic import Field
 
@@ -42,8 +42,8 @@ class TriggerRequest(WorkspaceScopedRequest):
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event_filter_id: UUID = Field(title="The id of the event filter.")
-    action_plan_id: UUID = Field(title="The id of the action plan.")
+    event_filter: Dict[str, Any]
+    action_plan: Dict[str, Any]
 
     # executions: somehow we need to link to executed Actions here
 
@@ -68,22 +68,10 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
     updated: datetime = Field(
         title="The timestamp when this trigger was last updated.",
     )
-    description: str = Field(
-        default="",
-        title="The description of the trigger",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for triggers."""
-
-    event: EventFilterResponse = Field(
-        title="The event that activates this trigger.",
-    )
-    action: ActionPlanResponse = Field(
-        title="The actions that is executed by this trigger.",
-    )
 
 
 class TriggerResponse(
@@ -95,7 +83,17 @@ class TriggerResponse(
         title="The name of the model",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
+    description: str = Field(
+        default="",
+        title="The description of the trigger",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    event: EventFilterResponse = Field(
+        title="The event that activates this trigger.",
+    )
+    action: ActionPlanResponse = Field(
+        title="The actions that is executed by this trigger.",
+    )
 
 # ------------------ Filter Model ------------------
 

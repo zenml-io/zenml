@@ -13,13 +13,22 @@
 #  permissions and limitations under the License.
 """Base implementation of the event source configuration."""
 from abc import ABC
-from typing import Any, Callable, ClassVar, Dict, Optional, Tuple, Type, cast
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Extra
 
 from zenml.constants import API, EVENTS, VERSION_1
-from zenml.enums import EventConfigurationType
 from zenml.events.event_flavor_registry import event_configuration_registry
 
 events_router = APIRouter(prefix=API + VERSION_1 + EVENTS, tags=["events"])
@@ -38,6 +47,14 @@ class EventConfig(BaseModel, ABC):
         underscore_attrs_are_private = True
         # prevent extra attributes during model initialization
         extra = Extra.forbid
+
+
+class EventSourceConfig(EventConfig):
+    """The Event Source configuration."""
+
+
+class EventFilterConfig(EventConfig):
+    """The Event Filter configuration."""
 
 
 class BaseEventFlavorMeta(type):
@@ -70,17 +87,11 @@ class BaseEventFlavorMeta(type):
             return cls
 
         # Register the event source configuration.
-        if cls.CONFIGURATION_TYPE == EventConfigurationType.SOURCE:
-            event_configuration_registry.register_event_source_flavor(
-                cls.EVENT_FLAVOR, cls
-            )
-            if cls.register_endpoint:
-                cls.register_endpoint(events_router)
-                # cls.router = router
-        elif cls.CONFIGURATION_TYPE == EventConfigurationType.FILTER:
-            event_configuration_registry.register_event_filter_flavor(
-                cls.EVENT_FLAVOR, cls
-            )
+        event_configuration_registry.register_event_flavor(
+            cls.EVENT_FLAVOR, cls
+        )
+        if cls.register_endpoint:
+            cls.register_endpoint(events_router)
 
         return cls
 
@@ -89,7 +100,6 @@ class BaseEventFlavor(metaclass=BaseEventFlavorMeta):
     """Base Event Flavor to register Event Configurations."""
 
     EVENT_FLAVOR: ClassVar[str]
-    CONFIGURATION_TYPE: ClassVar[EventConfigurationType]
 
     # `SKIP_REGISTRATION` can be set to True to not register the class
     # in the event source configuration registry. This is primarily useful
@@ -97,5 +107,8 @@ class BaseEventFlavor(metaclass=BaseEventFlavorMeta):
     # set to False unless they override it themselves.
     SKIP_REGISTRATION: ClassVar[bool] = True
 
-    config: EventConfig
+    source_config: EventConfig
+    source_filters: List[EventConfig]
+
     register_endpoint: Optional[Callable[..., Callable[..., Type[APIRouter]]]]
+
