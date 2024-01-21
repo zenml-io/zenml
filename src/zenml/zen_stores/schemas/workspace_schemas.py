@@ -28,10 +28,8 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
-        ActionPlanSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
-        EventFilterSchema,
         EventSourceSchema,
         FlavorSchema,
         ModelSchema,
@@ -108,18 +106,11 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    action_plans: List["ActionPlanSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
     event_sources: List["EventSourceSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    event_filters: List["EventFilterSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
+
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
