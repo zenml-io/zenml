@@ -14,21 +14,16 @@
 """Utils for event sources and event filters."""
 from typing import Any, Dict
 
-from zenml.enums import EventConfigurationType
-from zenml.events.event_flavor_registry import event_configuration_registry
+from zenml.events.event_flavor_registry import event_flavor_registry
 
 
 def validate_event_config(
-    event_flavor: str,
-    event_configuration_type: EventConfigurationType,
     configuration_dict: Dict[str, Any],
 ) -> bool:
     """Validate the configuration of an event filter.
 
     Args:
         configuration_dict: The event filter configuration to validate.
-        event_flavor: The flavor of the event that is being configured.
-        event_configuration_type: Type of event configuration [SOURCE, FILTER]
 
     Returns:
         True if the configuration is valid
@@ -36,17 +31,16 @@ def validate_event_config(
     Raises:
         ValueError: If the configuration is invalid.
     """
-    if event_configuration_type == EventConfigurationType.SOURCE:
+    flavor = configuration_dict.get("name", None)
+    if flavor:
         event_configuration_class = (
-            event_configuration_registry.get_event_flavor(event_flavor)
-        )
-    elif event_configuration_type == EventConfigurationType.FILTER:
-        event_configuration_class = (
-            event_configuration_registry.get_event_filter_flavor(event_flavor)
+            event_flavor_registry.get_event_flavor(
+                flavor
+            )
         )
     else:
         raise ValueError(
-            f"Invalid event configuration type {event_configuration_type}."
+            f"Invalid event configuration {flavor}."
         )
     try:
         event_configuration_class(**configuration_dict)

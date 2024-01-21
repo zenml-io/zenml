@@ -14,7 +14,6 @@
 """SQL Model Implementations for Action Plans."""
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from pydantic import Field

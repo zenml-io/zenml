@@ -134,3 +134,21 @@ class Integration(metaclass=IntegrationMeta):
             A list of new stack component flavors.
         """
         return []
+
+    @classmethod
+    def action_flavors(cls) -> List[Type[Flavor]]:
+        """Abstract method to declare new stack component flavors.
+
+        Returns:
+            A list of new stack component flavors.
+        """
+        return []
+
+    @classmethod
+    def event_flavors(cls) -> List[Type[Flavor]]:
+        """Abstract method to declare new stack component flavors.
+
+        Returns:
+            A list of new stack component flavors.
+        """
+        return []

@@ -12,8 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Registry all event source configurations."""
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Dict, List, Type
 
+from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -27,11 +28,43 @@ class EventFlavorRegistry:
     def __init__(self) -> None:
         """Initialize the event flavor registry."""
         self.event_flavors: Dict[
-            Type[Any], Type["BaseEventFlavor"]
+            str, Type["BaseEventFlavor"]
         ] = {}
+        self.register_event_flavors()
+
+    @property
+    def builtin_flavors(self) -> List[Type["BaseEventFlavor"]]:
+        """A list of all default in-built flavors.
+
+        Returns:
+            A list of builtin flavors.
+        """
+        flavors = []
+        return flavors
+
+    @property
+    def integration_flavors(self) -> List[Type["BaseEventFlavor"]]:
+        """A list of all integration event flavors.
+
+        Returns:
+            A list of integration flavors.
+        """
+        integrated_flavors = []
+        for _, integration in integration_registry.integrations.items():
+            for flavor in integration.action_flavors():
+                integrated_flavors.append(flavor)
+
+        return integrated_flavors
+
+    def register_event_flavors(self) -> None:
+        """Registers all flavors."""
+        for flavor in self.builtin_flavors:
+            self.register_event_flavor(flavor().name, flavor)
+        for flavor in self.integration_flavors:
+            self.register_event_flavor(flavor().name, flavor)
 
     def register_event_flavor(
-        self, key: Type[Any], flavor: Type["BaseEventFlavor"]
+        self, key: str, flavor: Type["BaseEventFlavor"]
     ) -> None:
         """Registers a new event_source.
 
@@ -52,7 +85,7 @@ class EventFlavorRegistry:
             )
 
     def get_event_flavor(
-        self, key: Type[Any]
+        self, key: str
     ) -> Type["BaseEventFlavor"]:
         """Get a single event_source based on the key.
 
@@ -62,16 +95,15 @@ class EventFlavorRegistry:
         Returns:
             `BaseEventConfiguration` subclass that was registered for this key.
         """
-        for class_ in key.__mro__:
-            event_source = self.event_flavors.get(class_, None)
-            if event_source:
-                return event_source
+        event_source = self.event_flavors.get(key, None)
+        if event_source:
+            return event_source
 
         raise KeyError(f"No event source configured for flavors {key}")
 
     def get_all_event_flavors(
         self,
-    ) -> Dict[Type[Any], Type["BaseEventFlavor"]]:
+    ) -> Dict[str, Type["BaseEventFlavor"]]:
         """Get all registered event_source flavorss.
 
         Returns:
@@ -79,19 +111,5 @@ class EventFlavorRegistry:
         """
         return self.event_flavors
 
-    def is_event_flavor_registered(self, key: Type[Any]) -> bool:
-        """Returns if a event_source class is registered for the given flavors.
 
-        Args:
-            key: Indicates the flavors of object.
-
-        Returns:
-            True if a event_source is registered for the given flavors, False
-            otherwise.
-        """
-        return any(
-            issubclass(key, flavor) for flavor in self.event_flavors
-        )
-
-
-event_configuration_registry = EventFlavorRegistry()
+event_flavor_registry = EventFlavorRegistry()

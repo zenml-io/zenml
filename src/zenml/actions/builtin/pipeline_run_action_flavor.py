@@ -12,12 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an action Plugin could look like."""
-from typing import ClassVar
+from typing import Type
 from uuid import UUID
 
 from zenml.actions.base_action_flavor import ActionPlanConfig, BaseActionFlavor
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.enums import EventConfigurationType
 
 
 class PipelineRunActionConfiguration(ActionPlanConfig):
@@ -30,9 +29,21 @@ class PipelineRunActionConfiguration(ActionPlanConfig):
 class PipelineRunActionFlavor(BaseActionFlavor):
     """Enables users to configure pipeline run action."""
 
-    ACTION_FLAVOR: ClassVar[str] = "PIPELINE_RUN"
-    CONFIGURATION_TYPE: ClassVar[
-        EventConfigurationType
-    ] = EventConfigurationType.SOURCE
+    @property
+    def name(self) -> str:
+        """Name of the flavor.
 
-    config: ActionPlanConfig
+        Returns:
+            The name of the flavor.
+        """
+        return "pipeline_run"
+
+    @property
+    def config_class(self) -> Type[ActionPlanConfig]:
+        """Config class for the action plan.
+
+        Returns:
+            The config class.
+        """
+        return PipelineRunActionConfiguration
+

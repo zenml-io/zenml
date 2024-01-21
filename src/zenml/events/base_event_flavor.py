@@ -12,24 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base implementation of the event source configuration."""
-from abc import ABC
+import json
+from abc import ABC, abstractmethod
 from typing import (
     Any,
     Callable,
-    ClassVar,
     Dict,
     List,
     Optional,
-    Tuple,
     Type,
-    cast,
 )
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Extra
 
 from zenml.constants import API, EVENTS, VERSION_1
-from zenml.events.event_flavor_registry import event_configuration_registry
 
 events_router = APIRouter(prefix=API + VERSION_1 + EVENTS, tags=["events"])
 
@@ -57,58 +54,55 @@ class EventFilterConfig(EventConfig):
     """The Event Filter configuration."""
 
 
-class BaseEventFlavorMeta(type):
-    """Metaclass responsible for registering different `BaseEventFlavor` subclasses."""
+class EventFlavorResponse(BaseModel):
+    """Response model for Event Flavors."""
+    name: str
+    source_config_schema: Dict[str, Any]
 
-    def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
-    ) -> "BaseEventFlavor":
-        """Creates a EventConfiguration class and registers it at the `EventConfigurationRegistry`.
-
-        Args:
-            name: The name of the class.
-            bases: The base classes of the class.
-            dct: The dictionary of the class.
-
-        Returns:
-            The BaseMaterializerMeta class.
-
-        Raises:
-            MaterializerInterfaceError: If the class was improperly defined.
-        """
-        cls = cast(
-            Type["BaseEventFlavor"], super().__new__(mcs, name, bases, dct)
-        )
-
-        # Skip the following validation and registration for base classes.
-        if cls.SKIP_REGISTRATION:
-            # Reset the flag so subclasses don't have it set automatically.
-            cls.SKIP_REGISTRATION = False
-            return cls
-
-        # Register the event source configuration.
-        event_configuration_registry.register_event_flavor(
-            cls.EVENT_FLAVOR, cls
-        )
-        if cls.register_endpoint:
-            cls.register_endpoint(events_router)
-
-        return cls
+    # TODO: add Filter config schemas
 
 
-class BaseEventFlavor(metaclass=BaseEventFlavorMeta):
+class BaseEventFlavor:
     """Base Event Flavor to register Event Configurations."""
 
-    EVENT_FLAVOR: ClassVar[str]
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """The flavor name.
 
-    # `SKIP_REGISTRATION` can be set to True to not register the class
-    # in the event source configuration registry. This is primarily useful
-    # for defining base classes. Subclasses will automatically have this
-    # set to False unless they override it themselves.
-    SKIP_REGISTRATION: ClassVar[bool] = True
+        Returns:
+            The flavor name.
+        """
 
-    source_config: EventConfig
+    @property
+    @abstractmethod
+    def config_class(self) -> Type[EventConfig]:
+        """Returns `StackComponentConfig` config class.
+
+        Returns:
+            The config class.
+        """
+
+    @property
+    def config_schema(self) -> Dict[str, Any]:
+        """The config schema for a flavor.
+
+        Returns:
+            The config schema.
+        """
+        config_schema: Dict[str, Any] = json.loads(
+            self.config_class.schema_json()
+        )
+        return config_schema
+
     source_filters: List[EventConfig]
 
     register_endpoint: Optional[Callable[..., Callable[..., Type[APIRouter]]]]
+
+    def to_model(self) -> EventFlavorResponse:
+        """Convert the Flavor into a Response Model."""
+        return EventFlavorResponse(
+            name=self.name,
+            source_config_schema=self.config_schema
+        )
 

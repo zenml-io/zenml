@@ -56,6 +56,7 @@ class ResourceType(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     SECRET = "secret"
     TAG = "tag"
+    TRIGGER = "trigger"
     SERVICE_ACCOUNT = "service_account"
     WORKSPACE = "workspace"
     PIPELINE_RUN = "pipeline_run"

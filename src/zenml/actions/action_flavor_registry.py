@@ -12,8 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Registry for all action configurations."""
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Dict, List, Type
 
+from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -26,10 +27,48 @@ class ActionFlavorRegistry:
 
     def __init__(self) -> None:
         """Initialize the action flavor registry."""
-        self.action_flavors: Dict[Type[Any], Type["BaseActionFlavor"]] = {}
+        self.action_flavors: Dict[str, Type["BaseActionFlavor"]] = {}
+        self.register_action_flavors()
+
+    @property
+    def builtin_flavors(self) -> List[Type["BaseActionFlavor"]]:
+        """A list of all default in-built flavors.
+
+        Returns:
+            A list of builtin flavors.
+        """
+        from zenml.actions.builtin.pipeline_run_action_flavor import (
+            PipelineRunActionFlavor,
+        )
+
+        flavors = [
+            PipelineRunActionFlavor,
+        ]
+        return flavors
+
+    @property
+    def integration_flavors(self) -> List[Type["BaseActionFlavor"]]:
+        """A list of all default integration flavors.
+
+        Returns:
+            A list of integration flavors.
+        """
+        integrated_flavors = []
+        for _, integration in integration_registry.integrations.items():
+            for flavor in integration.action_flavors():
+                integrated_flavors.append(flavor)
+
+        return integrated_flavors
+
+    def register_action_flavors(self) -> None:
+        """Registers default flavors."""
+        for flavor in self.builtin_flavors:
+            self.register_action_flavor(flavor().name, flavor)
+        for flavor in self.integration_flavors:
+            self.register_action_flavor(flavor().name, flavor)
 
     def register_action_flavor(
-        self, key: Type[Any], type_: Type["BaseActionFlavor"]
+        self, key: str, type_: Type["BaseActionFlavor"]
     ) -> None:
         """Registers a new action.
 
@@ -47,7 +86,7 @@ class ActionFlavorRegistry:
                 f"Skipping registration of {type_}."
             )
 
-    def get_action_flavor(self, key: Type[Any]) -> Type["BaseActionFlavor"]:
+    def get_action_flavor(self, key: str) -> Type["BaseActionFlavor"]:
         """Get a single action based on the key.
 
         Args:
@@ -56,34 +95,21 @@ class ActionFlavorRegistry:
         Returns:
             `BaseActionConfiguration` subclass that was registered for this key.
         """
-        for class_ in key.__mro__:
-            action = self.action_flavors.get(class_, None)
-            if action:
-                return action
+        action = self.action_flavors.get(key, None)
+        if action:
+            return action
 
         raise KeyError(f"No action configured for type {key}")
 
     def get_all_action_flavors(
         self,
-    ) -> Dict[Type[Any], Type["BaseActionFlavor"]]:
+    ) -> Dict[str, Type["BaseActionFlavor"]]:
         """Get all registered action flavors.
 
         Returns:
             A dictionary of registered action flavors.
         """
         return self.action_flavors
-
-    def is_registered(self, key: Type[Any]) -> bool:
-        """Returns if a action class is registered for the given type.
-
-        Args:
-            key: Indicates the type of object.
-
-        Returns:
-            True if a action is registered for the given type, False
-            otherwise.
-        """
-        return any(issubclass(key, type_) for type_ in self.action_flavors)
 
 
 action_flavor_registry = ActionFlavorRegistry()

@@ -32,11 +32,13 @@ from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.events.base_event_flavor import events_router
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
+    action_flavor_endpoints,
     artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
     code_repositories_endpoints,
     devices_endpoints,
+    event_flavor_endpoints,
     flavors_endpoints,
     model_versions_endpoints,
     models_endpoints,
@@ -54,6 +56,7 @@ from zenml.zen_server.routers import (
     stacks_endpoints,
     steps_endpoints,
     tags_endpoints,
+    triggers_endpoints,
     users_endpoints,
     workspaces_endpoints,
 )
@@ -201,11 +204,12 @@ def dashboard(request: Request) -> Any:
 # to run this file locally, execute:
 # uvicorn zenml.zen_server.zen_server_api:app --reload
 
-
+app.include_router(action_flavor_endpoints.router)
 app.include_router(auth_endpoints.router)
 app.include_router(devices_endpoints.router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(workspaces_endpoints.router)
+app.include_router(event_flavor_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
@@ -220,6 +224,7 @@ app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
+app.include_router(triggers_endpoints.router)
 app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(users_endpoints.router)

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an event Plugin could look like."""
-from typing import ClassVar, List, Type
+from typing import List, Type
 from uuid import UUID
 
 from fastapi import APIRouter
@@ -23,6 +23,7 @@ from zenml.events.base_event_flavor import (
     EventFilterConfig,
     EventSourceConfig,
 )
+from zenml.integrations.github import GITHUB_EVENT_FLAVOR
 
 # -------------------- Github Event Models -----------------------------------
 
@@ -72,9 +73,24 @@ class GithubEventFilterConfiguration(EventFilterConfig):
 class GithubEventSourceFlavor(BaseEventFlavor):
     """Enables users to configure github event sources."""
 
-    EVENT_FLAVOR: ClassVar[str] = "GITHUB"
+    @property
+    def name(self) -> str:
+        """Name of the flavor.
 
-    source_config: Type[GithubEventSourceConfiguration]
+        Returns:
+            The name of the flavor.
+        """
+        return GITHUB_EVENT_FLAVOR
+
+    @property
+    def config_class(self) -> Type[EventSourceConfig]:
+        """Config class for the event source.
+
+        Returns:
+            The config class.
+        """
+        return GithubEventSourceConfiguration
+
     source_filters: List[Type[GithubEventFilterConfiguration]]
 
     @staticmethod
