@@ -370,7 +370,7 @@ class Client(metaclass=ClientMetaClass):
         enable_warnings = handle_bool_env_var(
             ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, False
         )
-        self._root = self.find_repository(
+        self._root = Client.find_repository(
             root, enable_warnings=enable_warnings
         )
 
@@ -5418,8 +5418,8 @@ class Client(metaclass=ClientMetaClass):
 
     # ---- utility prefix matching get functions -----
 
-    @staticmethod
     def _get_entity_by_id_or_name_or_prefix(
+        self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
@@ -5465,7 +5465,7 @@ class Client(metaclass=ClientMetaClass):
 
         # If still no match, try with prefix now
         if entity.total == 0:
-            return Client._get_entity_by_prefix(
+            return self._get_entity_by_prefix(
                 get_method=get_method,
                 list_method=list_method,
                 partial_id_or_name=name_id_or_prefix,
@@ -5489,8 +5489,8 @@ class Client(metaclass=ClientMetaClass):
             f"only one of the {entity_label}s."
         )
 
-    @staticmethod
     def _get_entity_version_by_id_or_name_or_prefix(
+        self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
@@ -5554,8 +5554,8 @@ class Client(metaclass=ClientMetaClass):
                 f"only one of the {entity_label}s."
             )
 
-    @staticmethod
     def _get_entity_by_prefix(
+        self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
         partial_id_or_name: str,
