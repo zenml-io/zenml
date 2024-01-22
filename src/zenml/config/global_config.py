@@ -17,7 +17,6 @@ import json
 import os
 import uuid
 from pathlib import Path, PurePath
-from secrets import token_hex
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
@@ -26,12 +25,15 @@ from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
+from zenml.analytics import group
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_STORE_DIRECTORY_NAME,
+    ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SECRETS_STORE_PREFIX,
+    ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
@@ -39,31 +41,14 @@ from zenml.enums import StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    AnalyticsGroup,
-    event_handler,
-    identify_group,
-)
 
 if TYPE_CHECKING:
-    from zenml.models import StackResponseModel, WorkspaceResponseModel
+    from zenml.models import StackResponse, WorkspaceResponse
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
 CONFIG_ENV_VAR_PREFIX = "ZENML_"
-
-
-def generate_jwt_secret_key() -> str:
-    """Generate a random JWT secret key.
-
-    This key is used to sign and verify generated JWT tokens.
-
-    Returns:
-        A random JWT secret key.
-    """
-    return token_hex(32)
 
 
 class GlobalConfigMetaClass(ModelMetaclass):
@@ -146,11 +131,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     store: Optional[StoreConfiguration]
     active_stack_id: Optional[uuid.UUID]
     active_workspace_name: Optional[str]
-    jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
-    _active_workspace: Optional["WorkspaceResponseModel"] = None
+    _active_workspace: Optional["WorkspaceResponse"] = None
+    _active_stack: Optional["StackResponse"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -182,6 +167,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
         config_values.update(**kwargs)
+
         super().__init__(**config_values)
 
         if not fileio.exists(self._config_file(config_path)):
@@ -305,7 +291,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
                     "Read more about this issue and how to solve it here: "
-                    "`https://docs.zenml.io/user-guide/advanced-guide/global-settings-of-zenml#version-mismatch-downgrading`",
+                    "`https://docs.zenml.io/user-guide/advanced-guide/environment-management/global-settings-of-zenml#version-mismatch-downgrading`",
                     config_version,
                     curr_version,
                 )
@@ -416,6 +402,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         This method is called to ensure that the active stack and workspace
         are set to their default values, if possible.
         """
+        # If running in a ZenML server environment, the active stack and
+        # workspace are not relevant
+        if ENV_ZENML_SERVER in os.environ:
+            return
         active_workspace, active_stack = self.zen_store.validate_active_config(
             self.active_workspace_name,
             self.active_stack_id,
@@ -548,6 +538,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         env_store_config: Dict[str, str] = {}
         env_secrets_store_config: Dict[str, str] = {}
+        env_backup_secrets_store_config: Dict[str, str] = {}
         for k, v in os.environ.items():
             if v == "":
                 continue
@@ -557,6 +548,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 env_secrets_store_config[
                     k[len(ENV_ZENML_SECRETS_STORE_PREFIX) :].lower()
                 ] = v
+            elif k.startswith(ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX):
+                env_backup_secrets_store_config[
+                    k[len(ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX) :].lower()
+                ] = v
+
         if len(env_store_config):
             if "type" not in env_store_config and "url" in env_store_config:
                 env_store_config["type"] = BaseZenStore.get_store_type(
@@ -590,6 +586,19 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 **env_secrets_store_config
             )
 
+        if len(env_backup_secrets_store_config):
+            if "type" not in env_backup_secrets_store_config:
+                env_backup_secrets_store_config["type"] = config.type.value
+
+            logger.debug(
+                "Using environment variables to configure the backup secrets "
+                "store"
+            )
+
+            config.backup_secrets_store = SecretsStoreConfiguration(
+                **env_backup_secrets_store_config
+            )
+
         return config
 
     def set_default_store(self) -> None:
@@ -598,15 +607,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Call this method to initialize or revert the store configuration to the
         default store.
         """
-        with event_handler(
-            AnalyticsEvent.INITIALIZED_STORE
-        ) as analytics_handler:
-            default_store_cfg = self.get_default_store()
-            self._configure_store(default_store_cfg)
-            logger.debug("Using the default store for the global config.")
-            analytics_handler.metadata = {
-                "store_type": default_store_cfg.type.value
-            }
+        default_store_cfg = self.get_default_store()
+        self._configure_store(default_store_cfg)
+        logger.debug("Using the default store for the global config.")
 
     def uses_default_store(self) -> bool:
         """Check if the global configuration uses the default store.
@@ -636,37 +639,25 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             **kwargs: Additional keyword arguments to pass to the store
                 constructor.
         """
-        with event_handler(
-            event=AnalyticsEvent.INITIALIZED_STORE,
-            metadata={"store_type": config.type.value},
-        ):
-            self._configure_store(config, skip_default_registrations, **kwargs)
-            logger.info("Updated the global store configuration.")
+        self._configure_store(config, skip_default_registrations, **kwargs)
+        logger.info("Updated the global store configuration.")
 
-            if self.zen_store.type == StoreType.REST:
-                # Every time a client connects to a ZenML server, we want to
-                # group the client ID and the server ID together. This records
-                # only that a particular client has successfully connected to a
-                # particular server at least once, but no information about the
-                # user account is recorded here.
+        if self.zen_store.type == StoreType.REST:
+            # Every time a client connects to a ZenML server, we want to
+            # group the client ID and the server ID together. This records
+            # only that a particular client has successfully connected to a
+            # particular server at least once, but no information about the
+            # user account is recorded here.
+            server_info = self.zen_store.get_store_info()
 
-                with event_handler(
-                    event=AnalyticsEvent.ZENML_SERVER_CONNECTED
-                ):
-                    server_info = self.zen_store.get_store_info()
-
-                    identify_group(
-                        AnalyticsGroup.ZENML_SERVER_GROUP,
-                        group_id=server_info.id,
-                        group_metadata={
-                            "version": server_info.version,
-                            "deployment_type": str(
-                                server_info.deployment_type
-                            ),
-                            "database_type": str(server_info.database_type),
-                        },
-                        v2=True,
-                    )
+            group(
+                group_id=server_info.id,
+                group_metadata={
+                    "version": server_info.version,
+                    "deployment_type": str(server_info.deployment_type),
+                    "database_type": str(server_info.database_type),
+                },
+            )
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -688,8 +679,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return self._zen_store
 
     def set_active_workspace(
-        self, workspace: "WorkspaceResponseModel"
-    ) -> "WorkspaceResponseModel":
+        self, workspace: "WorkspaceResponse"
+    ) -> "WorkspaceResponse":
         """Set the workspace for the local client.
 
         Args:
@@ -704,15 +695,16 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._sanitize_config()
         return workspace
 
-    def set_active_stack(self, stack: "StackResponseModel") -> None:
+    def set_active_stack(self, stack: "StackResponse") -> None:
         """Set the active stack for the local client.
 
         Args:
             stack: The model of the stack to set active.
         """
         self.active_stack_id = stack.id
+        self._active_stack = stack
 
-    def get_active_workspace(self) -> "WorkspaceResponseModel":
+    def get_active_workspace(self) -> "WorkspaceResponse":
         """Get a model of the active workspace for the local client.
 
         Returns:

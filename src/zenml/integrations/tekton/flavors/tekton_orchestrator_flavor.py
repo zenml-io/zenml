@@ -19,7 +19,7 @@ from pydantic import root_validator
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
@@ -114,9 +114,6 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     @property
     def is_local(self) -> bool:
         """Checks if this stack component is running locally.
-
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
 
         Returns:
             True if this config is for a local component, False otherwise.

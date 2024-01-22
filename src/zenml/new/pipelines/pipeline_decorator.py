@@ -26,6 +26,7 @@ from typing import (
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.model.model import Model
     from zenml.new.pipelines.pipeline import Pipeline
 
     HookSpecification = Union[str, FunctionType]
@@ -43,6 +44,7 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Callable[["F"], "Pipeline"]:
@@ -55,10 +57,12 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    model: Optional["Model"] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -68,6 +72,7 @@ def pipeline(
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
+        enable_step_logs: If step logs should be enabled for this pipeline.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
         on_failure: Callback function in event of failure of the step. Can be a
@@ -76,6 +81,7 @@ def pipeline(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
+        model: configuration of the model in the Model Control Plane.
 
     Returns:
         A pipeline instance.
@@ -88,17 +94,16 @@ def pipeline(
             name=name or func.__name__,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
+            enable_step_logs=enable_step_logs,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            model=model,
             entrypoint=func,
         )
 
         p.__doc__ = func.__doc__
         return p
 
-    if _func is None:
-        return inner_decorator
-    else:
-        return inner_decorator(_func)
+    return inner_decorator if _func is None else inner_decorator(_func)

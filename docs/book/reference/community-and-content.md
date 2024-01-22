@@ -28,7 +28,7 @@ framework. Go here if you are a visual learner, and follow along with some tutor
 ### Public roadmap
 
 The feedback from our community plays a significant role in the development of ZenML. That's why we have
-a [public roadmap](https://zenml.hellonext.co/roadmap) that serves as a bridge between our users and our development
+a [public roadmap](https://zenml.io/roadmap) that serves as a bridge between our users and our development
 team. If you have ideas regarding any new features or want to prioritize one over the other, feel free to share your
 thoughts here or vote on existing ideas.
 

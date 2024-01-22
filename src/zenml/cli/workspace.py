@@ -27,7 +27,7 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.models import WorkspaceFilterModel
+from zenml.models import WorkspaceFilter
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -36,7 +36,7 @@ def workspace() -> None:
 
 
 @workspace.command("list", hidden=True)
-@list_options(WorkspaceFilterModel)
+@list_options(WorkspaceFilter)
 @click.pass_context
 def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
     """List all workspaces.
@@ -46,7 +46,6 @@ def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
         **kwargs: Keyword arguments to filter the list of workspaces.
     """
     warn_unsupported_non_default_workspace()
-    cli_utils.print_active_config()
     client = Client()
     with console.status("Listing workspaces...\n"):
         workspaces = client.list_workspaces(**kwargs)

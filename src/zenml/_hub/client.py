@@ -28,7 +28,7 @@ from zenml.analytics import source_context
 from zenml.client import Client
 from zenml.constants import ENV_ZENML_HUB_URL, IS_DEBUG_ENV
 from zenml.logger import get_logger
-from zenml.models.hub_plugin_models import (
+from zenml.models import (
     HubPluginRequestModel,
     HubPluginResponseModel,
     HubUserResponseModel,

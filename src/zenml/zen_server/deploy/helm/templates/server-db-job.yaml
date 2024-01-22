@@ -1,0 +1,92 @@
+{{- if .Values.zenml.database.url }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "zenml.fullname" . }}-db-migration
+  labels:
+    {{- include "zenml.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation{{ if not .Values.zenml.debug }},hook-succeeded{{ end }}
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/server-secret.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "zenml.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "zenml.serviceAccountName" . }}-db-migration
+      {{- else }}
+      serviceAccountName: {{ include "zenml.serviceAccountName" . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      restartPolicy: Never
+      containers:
+        - name: {{ .Chart.Name }}-db-migration
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
+          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          args: ["migrate-database"]
+          command: ['zenml']
+          env:
+            {{- if .Values.zenml.debug }}
+            - name: ZENML_LOGGING_VERBOSITY
+              value: "DEBUG"
+            {{- end }}
+            - name: ZENML_ANALYTICS_OPT_IN
+              value: "False"
+            - name: ZENML_DEFAULT_PROJECT_NAME
+              value: {{ .Values.zenml.defaultProject | quote }}
+            - name: ZENML_DEFAULT_USER_NAME
+              value: {{ .Values.zenml.defaultUsername | quote }}
+            - name: ZENML_STORE_TYPE
+              value: sql
+            - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
+              value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
+            {{- range $k, $v := include "zenml.serverEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := include "zenml.secretsStoreEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := include "zenml.backupSecretsStoreEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- if .Values.zenml.environment }}
+            {{- range $key, $value := .Values.zenml.environment }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          envFrom:
+          - secretRef:
+              name: {{ include "zenml.fullname" . }}-db-migration
+      {{- with .Values.resources }}
+      resources:
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+  {{- with .Values.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 8 }}
+  {{- end }}
+  {{- with .Values.nodeSelector }}
+  nodeSelector:
+    {{- toYaml . | nindent 8 }}
+  {{- end }}
+{{- end }}

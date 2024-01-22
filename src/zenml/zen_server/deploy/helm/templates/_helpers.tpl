@@ -36,16 +36,16 @@ Common labels
 {{- define "zenml.labels" -}}
 helm.sh/chart: {{ include "zenml.chart" . }}
 {{ include "zenml.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- if .Chart.Version }}
+app.kubernetes.io/version: {{ .Chart.Version | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 {{- define "zenml.metadataLabels" -}}
 helm.sh/chart: {{ include "zenml.chart" . }}
 {{ include "zenml.metadataSelectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- if .Chart.Version }}
+app.kubernetes.io/version: {{ .Chart.Version | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}

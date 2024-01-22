@@ -22,15 +22,17 @@ from typing import (
     Union,
 )
 
-from evidently import test_preset, tests  # type: ignore[import]
-from evidently.test_preset.test_preset import (  # type: ignore[import]
+from evidently import test_preset, tests  # type: ignore[import-untyped]
+from evidently.test_preset.test_preset import (  # type: ignore[import-untyped]
     TestPreset,
 )
-from evidently.tests.base_test import (  # type: ignore[import]
+from evidently.tests.base_test import (  # type: ignore[import-untyped]
     Test,
     generate_column_tests,
 )
-from evidently.utils.generators import BaseGenerator  # type: ignore[import]
+from evidently.utils.generators import (  # type: ignore[import-untyped]
+    BaseGenerator,
+)
 from pydantic import BaseModel, Field
 
 from zenml.logger import get_logger

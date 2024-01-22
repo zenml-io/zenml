@@ -60,6 +60,8 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
         executor_args: Additional arguments to forward to the Kaniko executor.
             See https://github.com/GoogleContainerTools/kaniko#additional-flags
             for a full list of available arguments.
+            Example: `["--compressed-caching=false"]`
+
     """
 
     kubernetes_context: str

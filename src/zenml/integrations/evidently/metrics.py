@@ -22,15 +22,17 @@ from typing import (
     Union,
 )
 
-from evidently import metric_preset, metrics  # type: ignore[import]
-from evidently.metric_preset.metric_preset import (  # type: ignore[import]
+from evidently import metric_preset, metrics  # type: ignore[import-untyped]
+from evidently.metric_preset.metric_preset import (  # type: ignore[import-untyped]
     MetricPreset,
 )
-from evidently.metrics.base_metric import (  # type: ignore[import]
+from evidently.metrics.base_metric import (  # type: ignore[import-untyped]
     Metric,
     generate_column_metrics,
 )
-from evidently.utils.generators import BaseGenerator  # type: ignore[import]
+from evidently.utils.generators import (  # type: ignore[import-untyped]
+    BaseGenerator,
+)
 from pydantic import BaseModel, Field
 
 from zenml.logger import get_logger

@@ -15,6 +15,7 @@
 
 from typing import Any, Dict, List, Tuple
 
+from zenml.enums import ExecutionStatus
 from zenml.lineage_graph.node.base_node import (
     BaseNode,
     BaseNodeDetails,
@@ -24,6 +25,7 @@ from zenml.lineage_graph.node.base_node import (
 class StepNodeDetails(BaseNodeDetails):
     """Captures all artifact details for the node."""
 
+    status: ExecutionStatus
     entrypoint_name: str
     parameters: Dict[str, Any]
     configuration: Dict[str, Any]

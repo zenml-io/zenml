@@ -18,7 +18,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -123,10 +123,10 @@ class ModelRegistryModelMetadata(BaseModel):
         extra = "allow"
 
 
-class ModelVersion(BaseModel):
+class RegistryModelVersion(BaseModel):
     """Base class for all ZenML model versions.
 
-    The `ModelVersion` class represents a version or snapshot of a registered
+    The `RegistryModelVersion` class represents a version or snapshot of a registered
     model, including information such as the associated `ModelBundle`, version
     number, creation time, pipeline run information, and metadata. It serves as
     a blueprint for creating concrete model version implementations in a registry,
@@ -286,11 +286,9 @@ class BaseModelRegistry(StackComponent, ABC):
         version: Optional[str] = None,
         model_source_uri: Optional[str] = None,
         description: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         **kwargs: Any,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         """Registers a model version in the model registry.
 
         Args:
@@ -332,12 +330,10 @@ class BaseModelRegistry(StackComponent, ABC):
         name: str,
         version: str,
         description: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         remove_metadata: Optional[List[str]] = None,
         stage: Optional[ModelVersionStage] = None,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         """Updates a model version in the model registry.
 
         Args:
@@ -361,16 +357,14 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: Optional[str] = None,
         model_source_uri: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         stage: Optional[ModelVersionStage] = None,
         count: Optional[int] = None,
         created_after: Optional[datetime] = None,
         created_before: Optional[datetime] = None,
         order_by_date: Optional[str] = None,
         **kwargs: Any,
-    ) -> Optional[List[ModelVersion]]:
+    ) -> Optional[List[RegistryModelVersion]]:
         """Lists all model versions for a registered model.
 
         Args:
@@ -393,7 +387,7 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: str,
         stage: Optional[ModelVersionStage] = None,
-    ) -> Optional[ModelVersion]:
+    ) -> Optional[RegistryModelVersion]:
         """Gets the latest model version for a registered model.
 
         This method is used to get the latest model version for a registered
@@ -416,7 +410,9 @@ class BaseModelRegistry(StackComponent, ABC):
         return None
 
     @abstractmethod
-    def get_model_version(self, name: str, version: str) -> ModelVersion:
+    def get_model_version(
+        self, name: str, version: str
+    ) -> RegistryModelVersion:
         """Gets a model version for a registered model.
 
         Args:
@@ -456,7 +452,7 @@ class BaseModelRegistry(StackComponent, ABC):
     @abstractmethod
     def get_model_uri_artifact_store(
         self,
-        model_version: ModelVersion,
+        model_version: RegistryModelVersion,
     ) -> str:
         """Gets the URI artifact store for a model version.
 

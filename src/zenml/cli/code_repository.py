@@ -25,7 +25,7 @@ from zenml.config.source import Source
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models import CodeRepositoryFilterModel
+from zenml.models import CodeRepositoryFilter
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
@@ -101,8 +101,6 @@ def register_code_repository(
         logo_url: URL of a logo (png, jpg or svg) for the code repository.
         args: Additional arguments to be passed to the code repository
     """
-    cli_utils.print_active_config()
-
     parsed_name, parsed_args = cli_utils.parse_name_and_extra_arguments(
         list(args) + [name], expand_args=True
     )
@@ -164,14 +162,13 @@ def register_code_repository(
 
 
 @code_repository.command("list", help="List all connected code repositories.")
-@list_options(CodeRepositoryFilterModel)
+@list_options(CodeRepositoryFilter)
 def list_code_repositories(**kwargs: Any) -> None:
     """List all connected code repositories.
 
     Args:
         **kwargs: Keyword arguments to filter code repositories.
     """
-    cli_utils.print_active_config()
     with console.status("Listing code repositories...\n"):
         repos = Client().list_code_repositories(**kwargs)
 
@@ -200,8 +197,6 @@ def delete_code_repository(name_or_id: str, yes: bool = False) -> None:
         name_or_id: The name or ID of the code repository to delete.
         yes: If set, don't ask for confirmation.
     """
-    cli_utils.print_active_config()
-
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete code repository `{name_or_id}`?"

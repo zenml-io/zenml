@@ -73,7 +73,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
 
         """
         try:
-            from zenml.utils.artifact_utils import load_model_from_metadata
+            from zenml.artifacts.utils import load_model_from_metadata
 
             self.model = load_model_from_metadata(self.model_uri)
         except Exception as e:

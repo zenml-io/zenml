@@ -29,7 +29,7 @@ PREVIOUS_DEPRECATION_WARNINGS_ATTRIBUTE = "__previous_deprecation_warnings"
 
 
 def deprecate_pydantic_attributes(
-    *attributes: Union[str, Tuple[str, str]]
+    *attributes: Union[str, Tuple[str, str]],
 ) -> "AnyClassMethod":
     """Utility function for deprecating and migrating pydantic attributes.
 

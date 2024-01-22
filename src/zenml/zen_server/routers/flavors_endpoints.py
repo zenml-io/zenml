@@ -18,17 +18,24 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
-from zenml.enums import PermissionType
-from zenml.exceptions import IllegalOperationError
 from zenml.models import (
-    FlavorFilterModel,
-    FlavorRequestModel,
-    FlavorResponseModel,
-    FlavorUpdateModel,
+    FlavorFilter,
+    FlavorRequest,
+    FlavorResponse,
+    FlavorUpdate,
+    Page,
 )
-from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -38,119 +45,118 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + FLAVORS,
     tags=["flavors"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
 @router.get(
     "",
-    response_model=Page[FlavorResponseModel],
+    response_model=Page[FlavorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_flavors(
-    flavor_filter_model: FlavorFilterModel = Depends(
-        make_dependable(FlavorFilterModel)
-    ),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[FlavorResponseModel]:
+    flavor_filter_model: FlavorFilter = Depends(make_dependable(FlavorFilter)),
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize),
+) -> Page[FlavorResponse]:
     """Returns all flavors.
 
     Args:
         flavor_filter_model: Filter model used for pagination, sorting,
                              filtering
-
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         All flavors.
     """
-    return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
+    return verify_permissions_and_list_entities(
+        filter_model=flavor_filter_model,
+        resource_type=ResourceType.FLAVOR,
+        list_method=zen_store().list_flavors,
+        hydrate=hydrate,
+    )
 
 
 @router.get(
     "/{flavor_id}",
-    response_model=FlavorResponseModel,
+    response_model=FlavorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_flavor(
     flavor_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> FlavorResponseModel:
+    hydrate: bool = True,
+    _: AuthContext = Security(authorize),
+) -> FlavorResponse:
     """Returns the requested flavor.
 
     Args:
         flavor_id: ID of the flavor.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested stack.
     """
-    flavor = zen_store().get_flavor(flavor_id)
-    return flavor
+    return verify_permissions_and_get_entity(
+        id=flavor_id, get_method=zen_store().get_flavor, hydrate=hydrate
+    )
 
 
 @router.post(
     "",
-    response_model=FlavorResponseModel,
+    response_model=FlavorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_flavor(
-    flavor: FlavorRequestModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
-) -> FlavorResponseModel:
+    flavor: FlavorRequest,
+    _: AuthContext = Security(authorize),
+) -> FlavorResponse:
     """Creates a stack component flavor.
 
     Args:
         flavor: Stack component flavor to register.
-        auth_context: Authentication context.
 
     Returns:
         The created stack component flavor.
-
-    Raises:
-        IllegalOperationError: If the workspace or user specified in the stack
-            component flavor does not match the current workspace or authenticated
-            user.
     """
-    if flavor.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating flavors for a user other than yourself "
-            "is not supported."
-        )
-
-    created_flavor = zen_store().create_flavor(
-        flavor=flavor,
+    return verify_permissions_and_create_entity(
+        request_model=flavor,
+        resource_type=ResourceType.FLAVOR,
+        create_method=zen_store().create_flavor,
     )
-    return created_flavor
 
 
 @router.put(
-    "/{team_id}",
-    response_model=FlavorResponseModel,
+    "/{flavor_id}",
+    response_model=FlavorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_flavor(
     flavor_id: UUID,
-    flavor_update: FlavorUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> FlavorResponseModel:
+    flavor_update: FlavorUpdate,
+    _: AuthContext = Security(authorize),
+) -> FlavorResponse:
     """Updates a flavor.
 
     # noqa: DAR401
 
     Args:
-        flavor_id: ID of the team to update.
-        flavor_update: Team update.
+        flavor_id: ID of the flavor to update.
+        flavor_update: Flavor update.
 
     Returns:
         The updated flavor.
     """
-    return zen_store().update_flavor(
-        flavor_id=flavor_id, flavor_update=flavor_update
+    return verify_permissions_and_update_entity(
+        id=flavor_id,
+        update_model=flavor_update,
+        get_method=zen_store().get_flavor,
+        update_method=zen_store().update_flavor,
     )
 
 
@@ -161,11 +167,32 @@ def update_flavor(
 @handle_exceptions
 def delete_flavor(
     flavor_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a flavor.
 
     Args:
         flavor_id: ID of the flavor.
     """
-    zen_store().delete_flavor(flavor_id)
+    verify_permissions_and_delete_entity(
+        id=flavor_id,
+        get_method=zen_store().get_flavor,
+        delete_method=zen_store().delete_flavor,
+    )
+
+
+@router.patch(
+    "/sync",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def sync_flavors(
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Purge all in-built and integration flavors from the DB and sync.
+
+    Returns:
+        None if successful. Raises an exception otherwise.
+    """
+    verify_permission(resource_type=ResourceType.FLAVOR, action=Action.UPDATE)
+    return zen_store()._sync_flavors()

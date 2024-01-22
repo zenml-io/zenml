@@ -16,12 +16,15 @@
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.gcp import GCP_VERTEX_ORCHESTRATOR_FLAVOR
+from zenml.integrations.gcp import (
+    GCP_RESOURCE_TYPE,
+    GCP_VERTEX_ORCHESTRATOR_FLAVOR,
+)
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
 
@@ -33,9 +36,10 @@ class VertexOrchestratorSettings(BaseSettings):
     """Settings for the Vertex orchestrator.
 
     Attributes:
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on Vertex AI Pipelines
-            service.
+        synchronous: If `True`, the client running a pipeline using this
+            orchestrator waits until all steps finish running. If `False`,
+            the client returns immediately and the pipeline is executed
+            asynchronously. Defaults to `True`.
         labels: Labels to assign to the pipeline job.
         node_selector_constraint: Each constraint is a key-value pair label.
             For the container to be eligible to run on a node, the node must have
@@ -53,7 +57,7 @@ class VertexOrchestratorSettings(BaseSettings):
     """
 
     labels: Dict[str, str] = {}
-    synchronous: bool = False
+    synchronous: bool = True
     node_selector_constraint: Optional[Tuple[str, str]] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
@@ -172,7 +176,7 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="gcp-generic",
+            resource_type=GCP_RESOURCE_TYPE,
         )
 
     @property

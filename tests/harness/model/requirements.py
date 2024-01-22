@@ -33,7 +33,7 @@ from zenml.utils.pagination_utils import depaginate
 if TYPE_CHECKING:
     from tests.harness.environment import TestEnvironment
     from tests.harness.harness import TestHarness
-    from zenml.models.component_models import ComponentResponseModel
+    from zenml.models import ComponentResponse
 
 
 class OSType(str, Enum):
@@ -81,7 +81,7 @@ class StackRequirement(BaseTestConfigModel):
         self,
         client: "Client",
         environment: Optional["TestEnvironment"] = None,
-    ) -> Optional["ComponentResponseModel"]:
+    ) -> Optional["ComponentResponse"]:
         """Find a stack component that meets these requirements.
 
         The current deployment (accessible through the passed client) is
@@ -100,7 +100,6 @@ class StackRequirement(BaseTestConfigModel):
         components = depaginate(
             partial(
                 client.list_stack_components,
-                user_id=client.active_user.id,
                 name=self.name or None,
                 type=self.type,
                 flavor=self.flavor,
@@ -119,7 +118,7 @@ class StackRequirement(BaseTestConfigModel):
                     c.id for c in environment.optional_components[self.type]
                 ]
 
-        def filter_components(component: "ComponentResponseModel") -> bool:
+        def filter_components(component: "ComponentResponse") -> bool:
             if self.configuration:
                 for key, value in self.configuration.dict().items():
                     if component.configuration.get(key) != value:
@@ -244,7 +243,7 @@ class StackRequirement(BaseTestConfigModel):
 
         return flavor.integration
 
-    def register_component(self, client: "Client") -> "ComponentResponseModel":
+    def register_component(self, client: "Client") -> "ComponentResponse":
         """Register a stack component described by these requirements.
 
         Args:

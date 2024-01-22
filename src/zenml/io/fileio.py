@@ -305,6 +305,7 @@ __all__ = [
     "remove",
     "rename",
     "rmtree",
+    "size",
     "stat",
     "walk",
 ]

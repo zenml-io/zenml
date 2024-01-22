@@ -22,7 +22,7 @@ from torch.nn import Module
 
 from zenml.enums import ArtifactType
 from zenml.integrations.pytorch.materializers.base_pytorch_materializer import (
-    BasePyTorchMaterliazer,
+    BasePyTorchMaterializer,
 )
 from zenml.integrations.pytorch.utils import count_module_params
 from zenml.io import fileio
@@ -34,7 +34,7 @@ DEFAULT_FILENAME = "entire_model.pt"
 CHECKPOINT_FILENAME = "checkpoint.pt"
 
 
-class PyTorchModuleMaterializer(BasePyTorchMaterliazer):
+class PyTorchModuleMaterializer(BasePyTorchMaterializer):
     """Materializer to read/write Pytorch models.
 
     Inspired by the guide:

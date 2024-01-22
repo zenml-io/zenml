@@ -95,7 +95,7 @@ class PandasMaterializer(BaseMaterializer):
 
         # validate the type of the data.
         def is_dataframe_or_series(
-            df: Union[pd.DataFrame, pd.Series]
+            df: Union[pd.DataFrame, pd.Series],
         ) -> Union[pd.DataFrame, pd.Series]:
             """Checks if the data is a `pd.DataFrame` or `pd.Series`.
 
@@ -144,6 +144,7 @@ class PandasMaterializer(BaseMaterializer):
             A dictionary of visualization URIs and their types.
         """
         describe_uri = os.path.join(self.uri, "describe.csv")
+        describe_uri = describe_uri.replace("\\", "/")
         with fileio.open(describe_uri, mode="wb") as f:
             df.describe().to_csv(f)
         return {describe_uri: VisualizationType.CSV}

@@ -2,8 +2,8 @@
 
 ## How alembic works
 
-The alembic.ini file int the repository root is used for the configuration of
-alembic in general. The env.py file is the entrypoint for alembic where we tie
+The alembic.ini file in the repository root is used for the configuration of
+alembic in general. The `env.py` file is the entrypoint for alembic where we tie
 alembic into the SQL zen store database that ZenML is using.
 
 If you make changes to the SQLModel schemas as a part of your development,
@@ -31,11 +31,12 @@ state of their database.
 
 1) Make sure the `store.url` of your global config points at an instance of the 
    database that represents the status-quo before your changes to the database.
-   (One way of achieving this is to run a `zenml clean -y` before you start.)
+   (One way of achieving this is to find and delete the `.db` file inside your local config
+   folder before you start.)
 2) You have updated a Schema at src/zenml/zen_stores/schemas
    (e.g. adding a new column to stacks called `stack_cats`)
 3) In the repository root run `alembic revision --autogenerate -m "<insert description>"`
-   (e.g. `alembic revision -m "add cat column to stack"`)
+   (e.g. `alembic revision --autogenerate -m "add cat column to stack"`)
    This will lead to an output like this one:
    ```shell
    Generating /home/apenner/PycharmProjects/zenml/src/zenml/alembic/versions/7b807019ae53_add_cat_column_to_stack.py ...  done

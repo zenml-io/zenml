@@ -17,11 +17,11 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-from great_expectations.data_context.store.tuple_store_backend import (  # type: ignore[import]
+from great_expectations.data_context.store.tuple_store_backend import (  # type: ignore[import-untyped]
     TupleStoreBackend,
     filter_properties_dict,
 )
-from great_expectations.exceptions import (  # type: ignore[import]
+from great_expectations.exceptions import (  # type: ignore[import-untyped]
     InvalidKeyError,
     StoreBackendError,
 )

@@ -16,10 +16,10 @@
 from typing import Optional
 
 import pandas as pd
-from great_expectations.core.batch import (  # type: ignore[import]
+from great_expectations.core.batch import (  # type: ignore[import-untyped]
     RuntimeBatchRequest,
 )
-from great_expectations.data_context.data_context import (  # type: ignore[import]
+from great_expectations.data_context.data_context import (  # type: ignore[import-untyped]
     BaseDataContext,
 )
 

@@ -21,7 +21,7 @@ from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models.artifact_models import ArtifactResponseModel
+from zenml.models import ArtifactVersionResponse
 from zenml.pipelines import pipeline
 from zenml.steps import BaseParameters, Output, StepContext, step
 
@@ -325,7 +325,7 @@ def test_step_uses_config_class_default_values_if_no_config_is_passed():
 
     # don't pass the config when initializing the step
     step_instance = some_step()
-    step_instance._finalize_configuration({}, {})
+    step_instance._finalize_configuration({}, {}, {})
 
     assert (
         step_instance.configuration.parameters["params"]["some_parameter"] == 1
@@ -612,7 +612,7 @@ def raw_artifact_test_step_2() -> Output(dict_=Dict, list_=List):
 
 @step
 def raw_artifact_test_step_3(
-    dict_: ArtifactResponseModel, list_: ArtifactResponseModel
+    dict_: ArtifactVersionResponse, list_: ArtifactVersionResponse
 ) -> None:
     assert hasattr(dict_, "uri")
     assert hasattr(list_, "uri")
@@ -620,8 +620,8 @@ def raw_artifact_test_step_3(
 
 @step
 def raw_artifact_test_step_4(dict_: Dict, list_: List) -> None:
-    assert type(dict_) is dict
-    assert type(list_) is list
+    assert isinstance(dict_, dict)
+    assert isinstance(list_, list)
 
 
 def test_step_can_have_raw_artifacts(clean_client):

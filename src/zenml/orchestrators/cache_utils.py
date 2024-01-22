@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.models import StepRunResponse
 
 logger = get_logger(__name__)
 
@@ -60,7 +60,7 @@ def generate_cache_key(
     Returns:
         A cache key.
     """
-    hash_ = hashlib.md5()
+    hash_ = hashlib.md5()  # nosec
 
     # Workspace ID
     hash_.update(workspace_id.bytes)
@@ -68,6 +68,9 @@ def generate_cache_key(
     # Artifact store ID and path
     hash_.update(artifact_store.id.bytes)
     hash_.update(artifact_store.path.encode())
+
+    if artifact_store.custom_cache_key:
+        hash_.update(artifact_store.custom_cache_key)
 
     # Step source. This currently only uses the string representation of the
     # source (e.g. my_module.step_class) instead of the full source to keep
@@ -81,9 +84,9 @@ def generate_cache_key(
         hash_.update(str(value).encode())
 
     # Input artifacts
-    for name, artifact_id in input_artifact_ids.items():
+    for name, artifact_version_id in input_artifact_ids.items():
         hash_.update(name.encode())
-        hash_.update(artifact_id.bytes)
+        hash_.update(artifact_version_id.bytes)
 
     # Output artifacts and materializers
     for name, output in step.config.outputs.items():
@@ -99,7 +102,7 @@ def generate_cache_key(
     return hash_.hexdigest()
 
 
-def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
+def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     """If a given step can be cached, get the corresponding existing step run.
 
     A step run can be cached if there is an existing step run in the same

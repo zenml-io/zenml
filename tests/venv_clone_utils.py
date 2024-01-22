@@ -83,12 +83,14 @@ def _dirmatch(path: str, matchwith: str) -> bool:
     False
     """
     matchlen = len(matchwith)
-    if path.startswith(matchwith) and path[matchlen : matchlen + 1] in [
-        os.sep,
-        "",
-    ]:
-        return True
-    return False
+    return bool(
+        path.startswith(matchwith)
+        and path[matchlen : matchlen + 1]
+        in [
+            os.sep,
+            "",
+        ]
+    )
 
 
 def _virtualenv_sys(venv_path: str) -> Tuple[str, list]:
@@ -210,7 +212,7 @@ def fixup_scripts(
     pybinre = re.compile(r"pythonw?([0-9]+(\.[0-9]+(\.[0-9]+)?)?)?$")
     for file_ in files:
         filename = os.path.join(root, file_)
-        if file_ in ["python", "python%s" % version, "activate_this.py"]:
+        if file_ in ["python", f"python{version}", "activate_this.py"]:
             continue
         elif file_.startswith("python") and pybinre.match(file_):
             # ignore other possible python binaries

@@ -23,3 +23,5 @@ The following guides contain detailed instructions on how to migrate between Zen
 ## Release Notes
 
 For releases with minor breaking changes, e.g., `0.40.3` to `0.41.0`, check out the official [ZenML Release Notes](https://github.com/zenml-io/zenml/releases) to see which breaking changes were introduced.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

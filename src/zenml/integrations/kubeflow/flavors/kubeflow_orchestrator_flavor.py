@@ -22,7 +22,7 @@ from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
-from zenml.models.service_connector_models import ServiceConnectorRequirements
+from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils.secret_utils import SecretField
 
@@ -38,8 +38,10 @@ class KubeflowOrchestratorSettings(BaseSettings):
     """Settings for the Kubeflow orchestrator.
 
     Attributes:
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on KFP. This setting only
+        synchronous: If `True`, the client running a pipeline using this
+            orchestrator waits until all steps finish running. If `False`,
+            the client returns immediately and the pipeline is executed
+            asynchronously. Defaults to `True`. This setting only
             has an effect when specified on the pipeline and will be ignored if
             specified on steps.
         timeout: How many seconds to wait for synchronous runs.
@@ -55,7 +57,7 @@ class KubeflowOrchestratorSettings(BaseSettings):
         pod_settings: Pod settings to apply.
     """
 
-    synchronous: bool = False
+    synchronous: bool = True
     timeout: int = 1200
 
     client_args: Dict[str, Any] = {}
@@ -229,9 +231,6 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     @property
     def is_local(self) -> bool:
         """Checks if this stack component is running locally.
-
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
 
         Returns:
             True if this config is for a local component, False otherwise.

@@ -17,12 +17,11 @@ quick guide.
 
 Tests require ZenML integrations to be installed in your Python virtual
 environment. They are not installed by the test framework itself. You can
-install all integrations required by the tests with the following command:
+install ZenML plus all the integrations required by the tests with the following
+command (preferably in a fresh virtual environment):
 
 ```bash
-zenml integration install kubeflow s3 gcp azure vault pillow evidently \
-    deepchecks great_expectations huggingface lightgbm neural_prophet pytorch \
-    tensorflow whylogs xgboost mlflow neptune seldon
+./scripts/install-zenml-dev.sh -i yes
 ```
 
 Running unit tests is as simple as running `pytest` from the root of the

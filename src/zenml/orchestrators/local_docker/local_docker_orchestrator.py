@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local Docker orchestrator."""
 
+import copy
 import json
 import os
 import sys
@@ -23,7 +24,6 @@ from uuid import uuid4
 from docker.errors import ContainerError
 from pydantic import validator
 
-from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -37,14 +37,11 @@ from zenml.orchestrators import (
     BaseOrchestratorFlavor,
     ContainerizedOrchestrator,
 )
-from zenml.orchestrators import utils as orchestrator_utils
 from zenml.stack import Stack, StackValidator
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 
@@ -98,7 +95,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
@@ -164,17 +161,27 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 user = os.getuid()
             logger.info("Running step `%s` in Docker:", step_name)
 
+            run_args = copy.deepcopy(settings.run_args)
+            docker_environment = run_args.pop("environment", {})
+            docker_environment.update(environment)
+
+            docker_volumes = run_args.pop("volumes", {})
+            docker_volumes.update(volumes)
+
+            extra_hosts = run_args.pop("extra_hosts", {})
+            extra_hosts["host.docker.internal"] = "host-gateway"
+
             try:
                 logs = docker_client.containers.run(
                     image=image,
                     entrypoint=entrypoint,
                     command=arguments,
                     user=user,
-                    volumes=volumes,
-                    environment=environment,
+                    volumes=docker_volumes,
+                    environment=docker_environment,
                     stream=True,
-                    extra_hosts={"host.docker.internal": "host-gateway"},
-                    **settings.run_args,
+                    extra_hosts=extra_hosts,
+                    **run_args,
                 )
 
                 for line in logs:
@@ -184,13 +191,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 raise RuntimeError(error_message)
 
         run_duration = time.time() - start_time
-        run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
-            orchestrator=self, orchestrator_run_id=orchestrator_run_id
-        )
-        run_model = Client().zen_store.get_run(run_id)
         logger.info(
-            "Pipeline run `%s` has finished in %s.",
-            run_model.name,
+            "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
         )
 
@@ -249,9 +251,6 @@ class LocalDockerOrchestratorConfig(  # type: ignore[misc] # https://github.com/
     @property
     def is_local(self) -> bool:
         """Checks if this stack component is running locally.
-
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
 
         Returns:
             True if this config is for a local component, False otherwise.

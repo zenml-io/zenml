@@ -18,11 +18,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
-from zenml.enums import PermissionType
-from zenml.models import StackFilterModel, StackResponseModel, StackUpdateModel
-from zenml.models.page_model import Page
+from zenml.models import Page, StackFilter, StackResponse, StackUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import batch_verify_permissions_for_models
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -32,70 +38,77 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + STACKS,
     tags=["stacks"],
-    responses={401: error_response},
+    responses={401: error_response, 403: error_response},
 )
 
 
 @router.get(
     "",
-    response_model=Page[StackResponseModel],
+    response_model=Page[StackResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_stacks(
-    stack_filter_model: StackFilterModel = Depends(
-        make_dependable(StackFilterModel)
-    ),
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.READ]
-    ),
-) -> Page[StackResponseModel]:
+    stack_filter_model: StackFilter = Depends(make_dependable(StackFilter)),
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize),
+) -> Page[StackResponse]:
     """Returns all stacks.
 
     Args:
-        stack_filter_model: Filter model used for pagination, sorting, filtering
-        auth_context: Authentication Context
+        stack_filter_model: Filter model used for pagination, sorting,
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         All stacks.
     """
-    stack_filter_model.set_scope_user(user_id=auth_context.user.id)
-
-    return zen_store().list_stacks(stack_filter_model=stack_filter_model)
+    return verify_permissions_and_list_entities(
+        filter_model=stack_filter_model,
+        resource_type=ResourceType.STACK,
+        list_method=zen_store().list_stacks,
+        hydrate=hydrate,
+    )
 
 
 @router.get(
     "/{stack_id}",
-    response_model=StackResponseModel,
+    response_model=StackResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_stack(
     stack_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> StackResponseModel:
+    hydrate: bool = True,
+    _: AuthContext = Security(authorize),
+) -> StackResponse:
     """Returns the requested stack.
 
     Args:
         stack_id: ID of the stack.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The requested stack.
     """
-    return zen_store().get_stack(stack_id)
+    return verify_permissions_and_get_entity(
+        id=stack_id, get_method=zen_store().get_stack, hydrate=hydrate
+    )
 
 
 @router.put(
     "/{stack_id}",
-    response_model=StackResponseModel,
+    response_model=StackResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_stack(
     stack_id: UUID,
-    stack_update: StackUpdateModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> StackResponseModel:
+    stack_update: StackUpdate,
+    _: AuthContext = Security(authorize),
+) -> StackResponse:
     """Updates a stack.
 
     Args:
@@ -105,9 +118,22 @@ def update_stack(
     Returns:
         The updated stack.
     """
-    return zen_store().update_stack(
-        stack_id=stack_id,
-        stack_update=stack_update,
+    if stack_update.components:
+        updated_components = [
+            zen_store().get_stack_component(id)
+            for ids in stack_update.components.values()
+            for id in ids
+        ]
+
+        batch_verify_permissions_for_models(
+            updated_components, action=Action.READ
+        )
+
+    return verify_permissions_and_update_entity(
+        id=stack_id,
+        update_model=stack_update,
+        get_method=zen_store().get_stack,
+        update_method=zen_store().update_stack,
     )
 
 
@@ -118,11 +144,15 @@ def update_stack(
 @handle_exceptions
 def delete_stack(
     stack_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a stack.
 
     Args:
         stack_id: Name of the stack.
     """
-    zen_store().delete_stack(stack_id)  # aka 'delete_stack'
+    verify_permissions_and_delete_entity(
+        id=stack_id,
+        get_method=zen_store().get_stack,
+        delete_method=zen_store().delete_stack,
+    )

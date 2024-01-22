@@ -122,7 +122,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
             ValueError: If the dataset ID was not provided and could not be
                 retrieved or inferred from other sources.
         """
-        secret = self.get_authentication_secret(
+        secret = self.get_typed_authentication_secret(
             expected_schema_type=WhylabsSecretSchema
         )
         if not secret:

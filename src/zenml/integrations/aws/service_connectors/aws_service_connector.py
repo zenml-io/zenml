@@ -27,10 +27,12 @@ IAM role)
 import base64
 import datetime
 import json
+import os
 import re
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 import boto3
+from aws_profile_manager import Common  # type: ignore[import-untyped]
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
 from botocore.signers import RequestSigner
@@ -41,6 +43,11 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
+from zenml.integrations.aws import (
+    AWS_CONNECTOR_TYPE,
+    AWS_RESOURCE_TYPE,
+    S3_RESOURCE_TYPE,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -60,10 +67,6 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-
-AWS_CONNECTOR_TYPE = "aws"
-AWS_RESOURCE_TYPE = "aws-generic"
-S3_RESOURCE_TYPE = "s3-bucket"
 EKS_KUBE_API_TOKEN_EXPIRATION = 60
 DEFAULT_IAM_ROLE_TOKEN_EXPIRATION = 3600  # 1 hour
 DEFAULT_STS_TOKEN_EXPIRATION = 43200  # 12 hours
@@ -195,7 +198,7 @@ The AWS Service Connector is part of the AWS ZenML integration. You can either
 install the entire integration or use a pypi extra to install it independently
 of the integration:
 
-* `pip install zenml[connectors-aws]` installs only prerequisites for the AWS
+* `pip install "zenml[connectors-aws]"` installs only prerequisites for the AWS
 Service Connector Type
 * `zenml integration install aws` installs the entire AWS ZenML integration
 
@@ -816,6 +819,8 @@ class AWSServiceConnector(ServiceConnector):
         """
         cfg = self.config
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             assert isinstance(cfg, AWSImplicitConfig)
             # Create a boto3 session and use the default credentials provider
             session = boto3.Session(
@@ -1314,6 +1319,7 @@ class AWSServiceConnector(ServiceConnector):
 
     def _configure_local_client(
         self,
+        profile_name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """Configure a local client to authenticate and connect to a resource.
@@ -1322,6 +1328,11 @@ class AWSServiceConnector(ServiceConnector):
         client or SDK installed on the localhost for the indicated resource.
 
         Args:
+            profile_name: The name of the AWS profile to use. If not specified,
+                a profile name is generated based on the first 8 digits of the
+                connector's UUID in the form 'zenml-<uuid[:8]>'. If a profile
+                with the given or generated name already exists, the profile is
+                overwritten.
             kwargs: Additional implementation specific keyword arguments to use
                 to configure the client.
 
@@ -1333,10 +1344,56 @@ class AWSServiceConnector(ServiceConnector):
         resource_type = self.resource_type
 
         if resource_type in [AWS_RESOURCE_TYPE, S3_RESOURCE_TYPE]:
-            raise NotImplementedError(
-                f"Local client configuration for resource type "
-                f"{resource_type} is not supported"
+            session, _ = self.get_boto3_session(
+                self.auth_method,
+                resource_type=resource_type,
+                resource_id=self.resource_id,
             )
+
+            # Configure a new AWS SDK profile with the credentials
+            # from the session using the aws-profile-manager package
+
+            # Generate a profile name based on the first 8 digits from the
+            # connector UUID, if one is not supplied
+            aws_profile_name = profile_name or f"zenml-{str(self.id)[:8]}"
+            common = Common()
+            users_home = common.get_users_home()
+            all_profiles = common.get_all_profiles(users_home)
+
+            credentials = session.get_credentials()
+            all_profiles[aws_profile_name] = {
+                "region": self.config.region,
+                "aws_access_key_id": credentials.access_key,
+                "aws_secret_access_key": credentials.secret_key,
+            }
+
+            if credentials.token:
+                all_profiles[aws_profile_name][
+                    "aws_session_token"
+                ] = credentials.token
+
+            aws_credentials_path = os.path.join(
+                users_home, ".aws", "credentials"
+            )
+
+            # Create the file as well as the parent dir if needed.
+            dirname = os.path.split(aws_credentials_path)[0]
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            with os.fdopen(
+                os.open(aws_credentials_path, os.O_WRONLY | os.O_CREAT, 0o600),
+                "w",
+            ):
+                pass
+
+            # Write the credentials to the file
+            common.rewrite_credentials_file(all_profiles, users_home)
+
+            logger.info(
+                f"Configured local AWS SDK profile '{aws_profile_name}'."
+            )
+
+            return
 
         raise NotImplementedError(
             f"Configuring the local client for {resource_type} resources is "
@@ -1396,6 +1453,8 @@ class AWSServiceConnector(ServiceConnector):
         expiration_seconds: Optional[int] = None
         expires_at: Optional[datetime.datetime] = None
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             if region_name is None:
                 raise ValueError(
                     "The AWS region name must be specified when using the "

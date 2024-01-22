@@ -19,6 +19,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
@@ -45,12 +47,9 @@ from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack import StackValidator
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
-    )
+    from zenml.models import PipelineDeploymentBase
 
 logger = get_logger(__name__)
 
@@ -181,7 +180,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
@@ -268,7 +267,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             converted_secret = self._convert_artifact_store_secret()
 
             self.seldon_client.create_or_update_secret(
-                self.kubernetes_secret_name, converted_secret.content
+                self.kubernetes_secret_name, converted_secret.get_values()
             )
 
         return self.kubernetes_secret_name
@@ -301,7 +300,6 @@ class SeldonModelDeployer(BaseModelDeployer):
                 # Convert the credentials into the format expected by Seldon
                 # Core
                 zenml_secret = SeldonS3SecretSchema(
-                    name="",
                     rclone_config_s3_access_key_id=aws_access_key_id,
                     rclone_config_s3_secret_access_key=aws_secret_access_key,
                     rclone_config_s3_session_token=aws_session_token,
@@ -327,9 +325,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             )
 
             # Assume implicit in-cluster IAM authentication
-            return SeldonS3SecretSchema(
-                name="", rclone_config_s3_env_auth=True
-            )
+            return SeldonS3SecretSchema(rclone_config_s3_env_auth=True)
 
         elif artifact_store.flavor == "gcp":
             from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
@@ -344,14 +340,12 @@ class SeldonModelDeployer(BaseModelDeployer):
                 if isinstance(gcp_credentials, dict):
                     if gcp_credentials.get("type") == "service_account":
                         return SeldonGSSecretSchema(
-                            name="",
                             rclone_config_gs_service_account_credentials=json.dumps(
                                 gcp_credentials
                             ),
                         )
                     elif gcp_credentials.get("type") == "authorized_user":
                         return SeldonGSSecretSchema(
-                            name="",
                             rclone_config_gs_client_id=gcp_credentials.get(
                                 "client_id"
                             ),
@@ -369,7 +363,6 @@ class SeldonModelDeployer(BaseModelDeployer):
                 else:
                     # Connector token-based authentication
                     return SeldonGSSecretSchema(
-                        name="",
                         rclone_config_gs_token=json.dumps(
                             dict(
                                 access_token=gcp_credentials.token,
@@ -384,9 +377,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 "target Kubernetes cluster, but the served model may not "
                 "be able to access the model artifacts."
             )
-            return SeldonGSSecretSchema(
-                name="", rclone_config_gs_anonymous=False
-            )
+            return SeldonGSSecretSchema(rclone_config_gs_anonymous=False)
 
         elif artifact_store.flavor == "azure":
             from zenml.integrations.azure.artifact_stores import (
@@ -417,14 +408,12 @@ class SeldonModelDeployer(BaseModelDeployer):
                         ) from e
 
                     return SeldonAzureSecretSchema(
-                        name="",
                         rclone_config_az_account=account_name,
                         rclone_config_az_key=account_key,
                     )
 
                 if azure_credentials.sas_token is not None:
                     return SeldonAzureSecretSchema(
-                        name="",
                         rclone_config_az_sas_url=azure_credentials.sas_token,
                     )
 
@@ -433,7 +422,6 @@ class SeldonModelDeployer(BaseModelDeployer):
                     and azure_credentials.account_key is not None
                 ):
                     return SeldonAzureSecretSchema(
-                        name="",
                         rclone_config_az_account=azure_credentials.account_name,
                         rclone_config_az_key=azure_credentials.account_key,
                     )
@@ -445,7 +433,6 @@ class SeldonModelDeployer(BaseModelDeployer):
                     and azure_credentials.account_name is not None
                 ):
                     return SeldonAzureSecretSchema(
-                        name="",
                         rclone_config_az_client_id=azure_credentials.client_id,
                         rclone_config_az_client_secret=azure_credentials.client_secret,
                         rclone_config_az_tenant=azure_credentials.tenant_id,
@@ -458,9 +445,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 "in the target Kubernetes cluster, but the served model "
                 "may not be able to access the model artifacts."
             )
-            return SeldonAzureSecretSchema(
-                name="", rclone_config_az_env_auth=True
-            )
+            return SeldonAzureSecretSchema(rclone_config_az_env_auth=True)
 
         raise RuntimeError(
             "The Seldon Core model deployer doesn't know how to configure "
@@ -554,9 +539,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 to start, or if an operational failure is encountered before
                 it reaches a ready state.
         """
-        with event_handler(
-            event=AnalyticsEvent.MODEL_DEPLOYED, v2=True
-        ) as analytics_handler:
+        with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(SeldonDeploymentConfig, config)
             service = None
 

@@ -14,17 +14,13 @@
 """GCP Authentication Secret Schema definition."""
 
 import json
-from typing import Any, ClassVar, Dict
+from typing import Any, Dict
 
 from zenml.secret.base_secret import BaseSecretSchema
-
-GCP_SECRET_SCHEMA_TYPE = "gcp"
 
 
 class GCPSecretSchema(BaseSecretSchema):
     """GCP Authentication Secret Schema definition."""
-
-    TYPE: ClassVar[str] = GCP_SECRET_SCHEMA_TYPE
 
     token: str
 

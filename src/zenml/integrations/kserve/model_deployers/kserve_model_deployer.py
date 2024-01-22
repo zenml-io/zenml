@@ -30,6 +30,8 @@ from uuid import UUID, uuid4
 from kserve import KServeClient, V1beta1InferenceService, constants, utils
 from kubernetes import client as k8s_client
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
@@ -55,12 +57,9 @@ from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack import StackValidator
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
-    )
+    from zenml.models import PipelineDeploymentBase
 
 logger = get_logger(__name__)
 
@@ -121,7 +120,7 @@ class KServeModelDeployer(BaseModelDeployer):
             "being maintained by the ZenML core team. If you are looking for a "
             "scalable Kubernetes-based model deployment solution, consider "
             "using Seldon instead: "
-            "https://docs.zenml.io/user-guide/component-guide/model-deployers/seldon",
+            "https://docs.zenml.io/stacks-and-components/component-guide/model-deployers/seldon",
         )
         return StackValidator(
             required_components={
@@ -189,7 +188,7 @@ class KServeModelDeployer(BaseModelDeployer):
         return self._client
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBaseModel"
+        self, deployment: "PipelineDeploymentBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
@@ -261,9 +260,7 @@ class KServeModelDeployer(BaseModelDeployer):
         Raises:
             RuntimeError: if the KServe deployment server could not be stopped.
         """
-        with event_handler(
-            event=AnalyticsEvent.MODEL_DEPLOYED, v2=True
-        ) as analytics_handler:
+        with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(KServeDeploymentConfig, config)
             service = None
 
@@ -620,7 +617,7 @@ class KServeModelDeployer(BaseModelDeployer):
                     config.k8s_secret = None
                 return
 
-            credentials = converted_secret.content
+            credentials = converted_secret.get_values()
 
         # S3 credentials are special because part of them need to be passed
         # as annotations
@@ -691,7 +688,6 @@ class KServeModelDeployer(BaseModelDeployer):
             if aws_access_key_id and aws_secret_access_key:
                 # Convert the credentials into the format expected by KServe
                 zenml_secret = KServeS3SecretSchema(
-                    name="",
                     aws_access_key_id=aws_access_key_id,
                     aws_secret_access_key=aws_secret_access_key,
                 )
@@ -732,7 +728,6 @@ class KServeModelDeployer(BaseModelDeployer):
             if gcp_credentials:
                 # Convert the credentials into the format expected by KServe
                 return KServeGSSecretSchema(
-                    name="",
                     google_application_credentials=json.dumps(gcp_credentials),
                 )
 
@@ -762,7 +757,6 @@ class KServeModelDeployer(BaseModelDeployer):
                     and azure_credentials.tenant_id is not None
                 ):
                     return KServeAzureSecretSchema(
-                        name="",
                         azure_client_id=azure_credentials.client_id,
                         azure_client_secret=azure_credentials.client_secret,
                         azure_tenant_id=azure_credentials.tenant_id,

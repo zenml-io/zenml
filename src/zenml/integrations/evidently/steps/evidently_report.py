@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Evidently Report Step."""
+
 from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
@@ -21,7 +22,10 @@ from zenml import step
 from zenml.integrations.evidently.column_mapping import EvidentlyColumnMapping
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
+from zenml.logger import get_logger
 from zenml.types import HTMLString
+
+logger = get_logger(__name__)
 
 
 @step
@@ -51,11 +55,6 @@ def evidently_report_step(
         download_nltk_data: whether to download the NLTK data for the report
             step. Defaults to False.
 
-    Raises:
-        ValueError: If ignored_cols is an empty list
-        ValueError: If column is not found in reference or comparison
-            dataset
-
     Returns:
         A tuple containing the Evidently report in JSON and HTML
         formats.
@@ -69,26 +68,32 @@ def evidently_report_step(
     )
 
     if ignored_cols:
+        exception_msg = (
+            "Columns {extra_cols} configured in the `ignored_cols` "
+            "parameter are not found in the {dataset} dataset. "
+        )
         extra_cols = set(ignored_cols) - set(reference_dataset.columns)
         if extra_cols:
-            raise ValueError(
-                f"Columns {extra_cols} configured in the ignored_cols "
-                "parameter are not found in the reference dataset."
+            logger.warning(
+                exception_msg.format(
+                    extra_cols=extra_cols, dataset="reference"
+                )
             )
         reference_dataset = reference_dataset.drop(
-            labels=list(ignored_cols), axis=1
+            labels=list(set(ignored_cols) - extra_cols), axis=1
         )
 
         if comparison_dataset is not None:
             extra_cols = set(ignored_cols) - set(comparison_dataset.columns)
             if extra_cols:
-                raise ValueError(
-                    f"Columns {extra_cols} configured in the ignored_cols "
-                    "parameter are not found in the comparison dataset."
+                logger.warning(
+                    exception_msg.format(
+                        extra_cols=extra_cols, dataset="comparison"
+                    )
                 )
 
             comparison_dataset = comparison_dataset.drop(
-                labels=list(ignored_cols), axis=1
+                labels=list(set(ignored_cols) - extra_cols), axis=1
             )
 
     if column_mapping:

@@ -26,6 +26,7 @@ from typing import (
 )
 
 from zenml.logger import get_logger
+from zenml.model.model import Model
 from zenml.pipelines.base_pipeline import (
     CLASS_CONFIGURATION,
     PARAM_ENABLE_ARTIFACT_METADATA,
@@ -33,6 +34,7 @@ from zenml.pipelines.base_pipeline import (
     PARAM_ENABLE_CACHE,
     PARAM_ENABLE_STEP_LOGS,
     PARAM_EXTRA_OPTIONS,
+    PARAM_MODEL,
     PARAM_ON_FAILURE,
     PARAM_ON_SUCCESS,
     PARAM_PIPELINE_NAME,
@@ -66,6 +68,7 @@ def pipeline(
     enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    model: Optional["Model"] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
     ...
 
@@ -82,6 +85,7 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    model: Optional["Model"] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 
@@ -101,6 +105,7 @@ def pipeline(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
+        model: configuration of the model in the Model Control Plane.
 
     Returns:
         the inner decorator which creates the pipeline class based on the
@@ -114,14 +119,14 @@ def pipeline(
             f"{pipeline_name} pipeline is deprecated. Check out the 0.40.0 "
             "migration guide for more information on how to migrate your "
             "pipelines to the new syntax: "
-            "https://docs.zenml.io/user-guide/migration-guide/migration-zero-forty.html"
+            "https://docs.zenml.io/reference/migration-guide/migration-zero-forty.html"
         )
 
         return type(
             name or func.__name__,
             (BasePipeline,),
             {
-                PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type]
+                PIPELINE_INNER_FUNC_NAME: staticmethod(func),
                 CLASS_CONFIGURATION: {
                     PARAM_PIPELINE_NAME: name,
                     PARAM_ENABLE_CACHE: enable_cache,
@@ -132,13 +137,11 @@ def pipeline(
                     PARAM_EXTRA_OPTIONS: extra,
                     PARAM_ON_FAILURE: on_failure,
                     PARAM_ON_SUCCESS: on_success,
+                    PARAM_MODEL: model,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,
             },
         )
 
-    if _func is None:
-        return inner_decorator
-    else:
-        return inner_decorator(_func)
+    return inner_decorator if _func is None else inner_decorator(_func)

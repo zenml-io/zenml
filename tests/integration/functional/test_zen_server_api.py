@@ -45,6 +45,7 @@ def test_list_stacks_endpoint(rest_api_auth_token):
     stacks_response = requests.get(
         api_endpoint + STACKS,
         headers={"Authorization": f"Bearer {token}"},
+        timeout=31,
     )
     assert stacks_response.status_code == 200
     assert isinstance(stacks_response.json(), dict)
@@ -59,6 +60,7 @@ def test_list_users_endpoint(rest_api_auth_token):
     users_response = requests.get(
         api_endpoint + USERS,
         headers={"Authorization": f"Bearer {token}"},
+        timeout=31,
     )
     assert users_response.status_code == 200
     assert isinstance(users_response.json(), dict)
@@ -70,12 +72,12 @@ def test_server_requires_auth(rest_api_auth_token):
     endpoint, _ = rest_api_auth_token
     api_endpoint = endpoint + API + VERSION_1
 
-    stacks_response = requests.get(api_endpoint + STACKS)
+    stacks_response = requests.get(api_endpoint + STACKS, timeout=31)
     assert stacks_response.status_code == 401
 
-    users_response = requests.get(api_endpoint + USERS)
+    users_response = requests.get(api_endpoint + USERS, timeout=31)
     assert users_response.status_code == 401
 
     # health doesn't require auth
-    health_response = requests.get(endpoint + "/health")
+    health_response = requests.get(endpoint + "/health", timeout=31)
     assert health_response.status_code == 200

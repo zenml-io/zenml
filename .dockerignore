@@ -2,3 +2,5 @@
 !/README.md
 !/pyproject.toml
 !/src/**
+!/scripts
+!/tests

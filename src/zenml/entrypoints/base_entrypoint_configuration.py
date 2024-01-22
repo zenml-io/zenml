@@ -30,9 +30,7 @@ from zenml.logger import get_logger
 from zenml.utils import code_repository_utils, source_utils, uuid_utils
 
 if TYPE_CHECKING:
-    from zenml.models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 DEFAULT_ENTRYPOINT_COMMAND = [
@@ -181,7 +179,7 @@ class BaseEntrypointConfiguration(ABC):
         result, _ = parser.parse_known_args(arguments)
         return vars(result)
 
-    def load_deployment(self) -> "PipelineDeploymentResponseModel":
+    def load_deployment(self) -> "PipelineDeploymentResponse":
         """Loads the deployment.
 
         Returns:
@@ -191,7 +189,7 @@ class BaseEntrypointConfiguration(ABC):
         return Client().zen_store.get_deployment(deployment_id=deployment_id)
 
     def download_code_if_necessary(
-        self, deployment: "PipelineDeploymentResponseModel"
+        self, deployment: "PipelineDeploymentResponse"
     ) -> None:
         """Downloads user code if necessary.
 

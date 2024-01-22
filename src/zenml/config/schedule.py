@@ -38,7 +38,7 @@ class Schedule(BaseModel):
             recurring runs for a periodic schedule.
         catchup: Whether the recurring run should catch up if behind schedule.
             For example, if the recurring run is paused for a while and
-            re-enabled afterwards. If catchup=True, the scheduler will catch
+            re-enabled afterward. If catchup=True, the scheduler will catch
             up on (backfill) each missed interval. Otherwise, it only
             schedules the latest interval if more than one interval is ready to
             be scheduled. Usually, if your pipeline handles backfill

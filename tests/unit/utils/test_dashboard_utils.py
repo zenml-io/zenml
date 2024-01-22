@@ -14,7 +14,7 @@
 
 from unittest.mock import MagicMock
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis.strategies import text
 
 from zenml.client import Client
@@ -22,12 +22,12 @@ from zenml.utils import dashboard_utils
 
 
 @given(text())
+@settings(deadline=None)
 def test_get_run_url_works_without_server(random_text):
     """Test that the get_run_url function works without a server."""
     if Client().zen_store.type == "sql":
         url = dashboard_utils.get_run_url(random_text)
-        assert url == ""
-        assert isinstance(url, str)
+        assert url is None
 
 
 def test_get_run_url_works_with_mocked_server(monkeypatch):

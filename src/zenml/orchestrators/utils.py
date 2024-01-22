@@ -14,6 +14,7 @@
 """Utility functions for the orchestrator."""
 
 import random
+from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
@@ -25,16 +26,15 @@ from zenml.config.global_config import (
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
+    ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX,
     ENV_ZENML_SECRETS_STORE_PREFIX,
     ENV_ZENML_STORE_PREFIX,
+    PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
-from zenml.logger import get_logger
-from zenml.utils import uuid_utils
+from zenml.enums import StoreType
 
 if TYPE_CHECKING:
-    from zenml.orchestrators import BaseOrchestrator
-
-logger = get_logger(__name__)
+    from zenml.models import PipelineDeploymentResponse
 
 
 def get_orchestrator_run_name(pipeline_name: str) -> str:
@@ -49,24 +49,7 @@ def get_orchestrator_run_name(pipeline_name: str) -> str:
     Returns:
         The orchestrator run name.
     """
-    user_name = Client().active_user.name
-    return f"{pipeline_name}_{user_name}_{random.Random().getrandbits(32):08x}"
-
-
-def get_run_id_for_orchestrator_run_id(
-    orchestrator: "BaseOrchestrator", orchestrator_run_id: str
-) -> UUID:
-    """Generates a run ID from an orchestrator run id.
-
-    Args:
-        orchestrator: The orchestrator of the run.
-        orchestrator_run_id: The orchestrator run id.
-
-    Returns:
-        The run id generated from the orchestrator run id.
-    """
-    run_id_seed = f"{orchestrator.id}-{orchestrator_run_id}"
-    return uuid_utils.generate_uuid_from_string(run_id_seed)
+    return f"{pipeline_name}_{random.Random().getrandbits(128):032x}"
 
 
 def is_setting_enabled(
@@ -93,12 +76,23 @@ def is_setting_enabled(
     return True
 
 
-def get_config_environment_vars() -> Dict[str, str]:
+def get_config_environment_vars(
+    deployment: Optional["PipelineDeploymentResponse"] = None,
+) -> Dict[str, str]:
     """Gets environment variables to set for mirroring the active config.
+
+    If a pipeline deployment is given, the environment variables will be set to
+    include a newly generated API token valid for the duration of the pipeline
+    run instead of the API token from the global config.
+
+    Args:
+        deployment: Optional deployment to use for the environment variables.
 
     Returns:
         Environment variable dict.
     """
+    from zenml.zen_stores.rest_zen_store import RestZenStore
+
     global_config = GlobalConfiguration()
     environment_vars = {}
 
@@ -113,11 +107,14 @@ def get_config_environment_vars() -> Dict[str, str]:
     if global_config.store:
         store_dict = global_config.store.dict(exclude_none=True)
         secrets_store_dict = store_dict.pop("secrets_store", None) or {}
+        backup_secrets_store_dict = (
+            store_dict.pop("backup_secrets_store", None) or {}
+        )
 
         for key, value in store_dict.items():
-            if key == "password":
-                # Don't include the password as we use the token to authenticate
-                # with the server
+            if key in ["username", "password"]:
+                # Don't include the username and password as we use the token to
+                # authenticate with the server
                 continue
 
             environment_vars[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
@@ -126,6 +123,33 @@ def get_config_environment_vars() -> Dict[str, str]:
             environment_vars[
                 ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()
             ] = str(value)
+
+        for key, value in backup_secrets_store_dict.items():
+            environment_vars[
+                ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX + key.upper()
+            ] = str(value)
+
+        if deployment and global_config.store.type == StoreType.REST:
+            # When connected to a ZenML server, if a pipeline deployment is
+            # supplied, we need to fetch an API token that will be valid for the
+            # duration of the pipeline run.
+            assert isinstance(global_config.zen_store, RestZenStore)
+            pipeline_id: Optional[UUID] = None
+            if deployment.pipeline:
+                pipeline_id = deployment.pipeline.id
+            schedule_id: Optional[UUID] = None
+            expires_minutes: Optional[int] = PIPELINE_API_TOKEN_EXPIRES_MINUTES
+            if deployment.schedule:
+                schedule_id = deployment.schedule.id
+                # If a schedule is given, this is a long running pipeline that
+                # should not have an API token that expires.
+                expires_minutes = None
+            api_token = global_config.zen_store.get_api_token(
+                pipeline_id=pipeline_id,
+                schedule_id=schedule_id,
+                expires_minutes=expires_minutes,
+            )
+            environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = api_token
 
     # Make sure to use the correct active stack/workspace which might come
     # from a .zen repository and not the global config
@@ -137,3 +161,26 @@ def get_config_environment_vars() -> Dict[str, str]:
     )
 
     return environment_vars
+
+
+def get_run_name(run_name_template: str) -> str:
+    """Fill out the run name template to get a complete run name.
+
+    Args:
+        run_name_template: The run name template to fill out.
+
+    Raises:
+        ValueError: If the run name is empty.
+
+    Returns:
+        The run name derived from the template.
+    """
+    date = datetime.utcnow().strftime("%Y_%m_%d")
+    time = datetime.utcnow().strftime("%H_%M_%S_%f")
+
+    run_name = run_name_template.format(date=date, time=time)
+
+    if run_name == "":
+        raise ValueError("Empty run names are not allowed.")
+
+    return run_name

@@ -11,7 +11,7 @@ ENV ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
 # localstorage in a SQLite database. If you would like to make your storage
 # persistent, use the appropriate environment variables below to configure the
 # image to use a MySQL-compatible database service that is reachable from the
-# container. See https://docs.zenml.io/getting-started/deploying-zenml/docker
+# container. See https://docs.zenml.io/getting-started/deploying-zenml/zenml-self-hosted/deploy-with-docker
 # for more information on how to configure these environment variables.
 
 # You can also configure the secrets store to use for your ZenML server. Be 
@@ -35,14 +35,13 @@ ENV ZENML_SERVER_DEPLOYMENT_TYPE="hf_spaces"
 # ENV ZENML_SECRETS_STORE_TYPE=""
 # ENV ZENML_SECRETS_STORE_ENCRYPTION_KEY=""
 # ENV ZENML_SECRETS_STORE_CLASS_PATH=""
-# ENV ZENML_JWT_SECRET_KEY=""
+# ENV ZENML_SERVER_JWT_SECRET_KEY=""
 
 # # AWS Secrets Store Configuration
 # ENV ZENML_SECRETS_STORE_REGION_NAME=""
 # ENV ZENML_SECRETS_STORE_AWS_ACCESS_KEY_ID=""
 # ENV ZENML_SECRETS_STORE_AWS_SECRET_ACCESS_KEY=""
 # ENV ZENML_SECRETS_STORE_AWS_SESSION_TOKEN=""
-# ENV ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT=""
 
 # # GCP Secrets Store Configuration
 # ENV ZENML_SECRETS_STORE_PROJECT_ID=""

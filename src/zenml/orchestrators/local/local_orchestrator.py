@@ -12,15 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML local orchestrator."""
-
 import time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 from uuid import uuid4
 
-from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
@@ -29,9 +26,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentResponseModel,
-    )
+    from zenml.models import PipelineDeploymentResponse
 
 logger = get_logger(__name__)
 
@@ -47,7 +42,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponseModel",
+        deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
@@ -84,13 +79,8 @@ class LocalOrchestrator(BaseOrchestrator):
             )
 
         run_duration = time.time() - start_time
-        run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
-            orchestrator=self, orchestrator_run_id=self._orchestrator_run_id
-        )
-        run_model = Client().zen_store.get_run(run_id)
         logger.info(
-            "Pipeline run `%s` has finished in %s.",
-            run_model.name,
+            "Pipeline run has finished in `%s`.",
             string_utils.get_human_readable_time(run_duration),
         )
         self._orchestrator_run_id = None
@@ -118,9 +108,6 @@ class LocalOrchestratorConfig(BaseOrchestratorConfig):
     def is_local(self) -> bool:
         """Checks if this stack component is running locally.
 
-        This designation is used to determine if the stack component can be
-        shared with other users or if it is only usable on the local host.
-
         Returns:
             True if this config is for a local component, False otherwise.
         """
@@ -141,7 +128,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def docs_url(self) -> Optional[str]:
-        """A url to point at docs explaining this flavor.
+        """A URL to point at docs explaining this flavor.
 
         Returns:
             A flavor docs url.
@@ -150,7 +137,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def sdk_docs_url(self) -> Optional[str]:
-        """A url to point at SDK docs explaining this flavor.
+        """A URL to point at SDK docs explaining this flavor.
 
         Returns:
             A flavor SDK docs url.
@@ -159,7 +146,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def logo_url(self) -> str:
-        """A url to represent the flavor in the dashboard.
+        """A URL to represent the flavor in the dashboard.
 
         Returns:
             The flavor logo.

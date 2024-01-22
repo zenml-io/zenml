@@ -11,112 +11,95 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""The 'analytics' module of ZenML.
-
-This module is based on the 'analytics-python' package created by Segment.
-The base functionalities are adapted to work with the ZenML analytics server.
-"""
+"""The 'analytics' module of ZenML."""
 from contextvars import ContextVar
-from typing import Any
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, TYPE_CHECKING
 from uuid import UUID
 
 from zenml.enums import SourceContextTypes
 
 if TYPE_CHECKING:
-    from zenml.utils.analytics_utils import AnalyticsEvent
+    from zenml.analytics.enums import AnalyticsEvent
 
 source_context: ContextVar[SourceContextTypes] = ContextVar(
     "Source-Context", default=SourceContextTypes.PYTHON
 )
 
-# Set up the client / needs to happen after the source context declaration
-from zenml.analytics.client import Client
 
-on_error = Client.DefaultConfig.on_error
-debug = Client.DefaultConfig.debug
-send = Client.DefaultConfig.send
-sync_mode = Client.DefaultConfig.sync_mode
-max_queue_size = Client.DefaultConfig.max_queue_size
-timeout = Client.DefaultConfig.timeout
-max_retries = Client.DefaultConfig.max_retries
+def identify(  # type: ignore[return]
+    metadata: Optional[Dict[str, Any]] = None
+) -> bool:
+    """Attach metadata to user directly.
 
-default_client: Optional[Client] = None
+    Args:
+        metadata: Dict of metadata to attach to the user.
 
+    Returns:
+        True if event is sent successfully, False is not.
+    """
+    from zenml.analytics.context import AnalyticsContext
 
-def set_default_client() -> None:
-    """Sets up a default client with the default configuration."""
-    global default_client
-    if default_client is None:
-        default_client = Client(
-            debug=debug,
-            max_queue_size=max_queue_size,
-            send=send,
-            on_error=on_error,
-            max_retries=max_retries,
-            sync_mode=sync_mode,
-            timeout=timeout,
-        )
+    if metadata is None:
+        return False
+
+    with AnalyticsContext() as analytics:
+        return analytics.identify(traits=metadata)
 
 
-def track(
-    user_id: UUID,
+def alias(user_id: UUID, previous_id: UUID) -> bool:  # type: ignore[return]
+    """Alias user IDs.
+
+    Args:
+        user_id: The user ID.
+        previous_id: Previous ID for the alias.
+
+    Returns:
+        True if event is sent successfully, False is not.
+    """
+    from zenml.analytics.context import AnalyticsContext
+
+    with AnalyticsContext() as analytics:
+        return analytics.alias(user_id=user_id, previous_id=previous_id)
+
+
+def group(  # type: ignore[return]
+    group_id: UUID,
+    group_metadata: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """Attach metadata to a segment group.
+
+    Args:
+        group_id: ID of the group.
+        group_metadata: Metadata to attach to the group.
+
+    Returns:
+        True if event is sent successfully, False if not.
+    """
+    from zenml.analytics.context import AnalyticsContext
+
+    with AnalyticsContext() as analytics:
+        return analytics.group(group_id=group_id, traits=group_metadata)
+
+
+def track(  # type: ignore[return]
     event: "AnalyticsEvent",
-    properties: Optional[Dict[Any, Any]],
-) -> Tuple[bool, str]:
-    """Send a track call with the default client.
+    metadata: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """Track segment event if user opted-in.
 
     Args:
-        user_id: The user ID.
-        event: The type of the event.
-        properties: Dict of additional properties for the event.
+        event: Name of event to track in segment.
+        metadata: Dict of metadata to track.
 
     Returns:
-        Tuple (success flag, the original message).
+        True if event is sent successfully, False if not.
     """
-    set_default_client()
-    assert default_client is not None
-    return default_client.track(
-        user_id=user_id, event=event, properties=properties
-    )
+    from zenml.analytics.context import AnalyticsContext
 
+    if metadata is None:
+        metadata = {}
 
-def identify(
-    user_id: UUID, traits: Optional[Dict[Any, Any]]
-) -> Tuple[bool, str]:
-    """Send an identify call with the default client.
+    metadata.setdefault("event_success", True)
 
-    Args:
-        user_id: The user ID.
-        traits: The traits for the identification process.
-
-    Returns:
-        Tuple (success flag, the original message).
-    """
-    set_default_client()
-    assert default_client is not None
-    return default_client.identify(
-        user_id=user_id,
-        traits=traits,
-    )
-
-
-def group(
-    user_id: UUID, group_id: UUID, traits: Optional[Dict[Any, Any]]
-) -> Tuple[bool, str]:
-    """Send a group call with the default client.
-
-    Args:
-        user_id: The user ID.
-        group_id: The group ID.
-        traits: Traits to assign to the group.
-
-    Returns:
-        Tuple (success flag, the original message).
-    """
-
-    set_default_client()
-    assert default_client is not None
-    return default_client.group(
-        user_id=user_id, group_id=group_id, traits=traits
-    )
+    with AnalyticsContext() as analytics:
+        return analytics.track(event=event, properties=metadata)

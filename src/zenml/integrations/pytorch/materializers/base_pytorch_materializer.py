@@ -25,7 +25,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 DEFAULT_FILENAME = "obj.pt"
 
 
-class BasePyTorchMaterliazer(BaseMaterializer):
+class BasePyTorchMaterializer(BaseMaterializer):
     """Base class for PyTorch materializers."""
 
     FILENAME: ClassVar[str] = DEFAULT_FILENAME
@@ -51,3 +51,9 @@ class BasePyTorchMaterliazer(BaseMaterializer):
         """
         with fileio.open(os.path.join(self.uri, self.FILENAME), "wb") as f:
             torch.save(obj, f, pickle_module=cloudpickle)
+
+
+# Alias for the BasePyTorchMaterializer class, allowing users that have already used
+# the old name to continue using it without breaking their code.
+# 'BasePyTorchMaterializer' or 'BasePyTorchMaterliazer' to refer to the same class.
+BasePyTorchMaterliazer = BasePyTorchMaterializer

@@ -14,7 +14,6 @@
 """Standard steps to be used with the Label Studio annotator integration."""
 
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
-    LabelStudioDatasetRegistrationParameters,
     LabelStudioDatasetSyncParameters,
     get_labeled_data,
     get_or_create_dataset,

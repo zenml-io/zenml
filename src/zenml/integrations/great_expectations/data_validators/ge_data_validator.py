@@ -18,21 +18,23 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, cast
 
 import pandas as pd
 import yaml
-from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
+from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
     CheckpointResult,
 )
-from great_expectations.core import ExpectationSuite  # type: ignore[import]
-from great_expectations.data_context.data_context import (  # type: ignore[import]
+from great_expectations.core import (  # type: ignore[import-untyped]
+    ExpectationSuite,
+)
+from great_expectations.data_context.data_context import (  # type: ignore[import-untyped]
     BaseDataContext,
     DataContext,
 )
-from great_expectations.data_context.types.base import (  # type: ignore[import]
+from great_expectations.data_context.types.base import (  # type: ignore[import-untyped]
     DataContextConfig,
 )
-from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
+from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import-untyped]
     ExpectationSuiteIdentifier,
 )
-from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import]
+from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import-untyped]
     UserConfigurableProfiler,
 )
 

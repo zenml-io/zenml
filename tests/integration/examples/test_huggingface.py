@@ -24,7 +24,7 @@ from tests.integration.examples.utils import run_example
 #         request=request,
 #         name="huggingface",
 #         example_args=["--nlp_task", "token-classification"],
-#         pipelines={"token_classifier_train_eval_pipeline": (1, 5)}
+#         pipelines={"token_classifier_train_eval_pipeline": (1, 5)},
 #     ):
 #         pass
 

@@ -14,6 +14,7 @@
 """Azure Service Connector."""
 import datetime
 import re
+import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -33,7 +34,7 @@ from zenml.constants import (
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
-from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
+from zenml.integrations.azure import (
     AZURE_CONNECTOR_TYPE,
     AZURE_RESOURCE_TYPE,
     BLOB_RESOURCE_TYPE,
@@ -204,7 +205,7 @@ The Azure Service Connector is part of the Azure ZenML integration. You can
 either install the entire integration or use a pypi extra to install it
 independently of the integration:
 
-* `pip install zenml[connectors-azure]` installs only prerequisites for the
+* `pip install "zenml[connectors-azure]"` installs only prerequisites for the
 Azure Service Connector Type
 * `zenml integration install azure` installs the entire Azure ZenML integration
 
@@ -636,6 +637,8 @@ class AzureServiceConnector(ServiceConnector):
         cfg = self.config
         credential: TokenCredential
         if auth_method == AzureAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             try:
                 credential = DefaultAzureCredential()
             except AzureError as e:
@@ -978,13 +981,52 @@ class AzureServiceConnector(ServiceConnector):
             NotImplementedError: If the connector instance does not support
                 local configuration for the configured resource type or
                 authentication method.registry
+            AuthorizationException: If the connector instance does not support
+                local configuration for the configured authentication method.
         """
         resource_type = self.resource_type
 
         if resource_type in [AZURE_RESOURCE_TYPE, BLOB_RESOURCE_TYPE]:
+            if (
+                self.auth_method
+                == AzureAuthenticationMethods.SERVICE_PRINCIPAL
+            ):
+                # Use the service principal credentials to configure the local
+                # Azure CLI
+                assert isinstance(self.config, AzureServicePrincipalConfig)
+
+                command = [
+                    "az",
+                    "login",
+                    "--service-principal",
+                    "-u",
+                    str(self.config.client_id),
+                    "-p",
+                    self.config.client_secret.get_secret_value(),
+                    "--tenant",
+                    str(self.config.tenant_id),
+                ]
+
+                try:
+                    subprocess.run(command, check=True)
+                except subprocess.CalledProcessError as e:
+                    raise AuthorizationException(
+                        f"Failed to update the local Azure CLI with the "
+                        f"connector service principal credentials: {e}"
+                    ) from e
+
+                logger.info(
+                    "Updated the local Azure CLI configuration with the "
+                    "connector's service principal credentials."
+                )
+
+                return
+
             raise NotImplementedError(
-                f"Local client configuration for resource type "
-                f"{resource_type} is not supported"
+                f"Local Azure client configuration for resource type "
+                f"{resource_type} is only supported if the "
+                f"'{AzureAuthenticationMethods.SERVICE_PRINCIPAL}' "
+                f"authentication method is used."
             )
 
         raise NotImplementedError(
@@ -1044,6 +1086,8 @@ class AzureServiceConnector(ServiceConnector):
         expiration_seconds: Optional[int] = None
         expires_at: Optional[datetime.datetime] = None
         if auth_method == AzureAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             auth_config = AzureBaseConfig(
                 resource_group=resource_group,
                 storage_account=storage_account,

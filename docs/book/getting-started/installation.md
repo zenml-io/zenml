@@ -11,15 +11,15 @@ pip install zenml
 ```
 
 {% hint style="warning" %}
-Note that ZenML currently supports **Python 3.7, 3.8, 3.9, and 3.10**. Please make sure that you are using a
-supported Python version.
+Note that ZenML currently supports **Python 3.8, 3.9, 3.10, and 3.11**. 
+Please make sure that you are using a supported Python version.
 {% endhint %}
 
 ## Install with the dashboard
 
 ZenML comes bundled with a web dashboard that lives inside
 a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard **locally**,
-you need to launch the [ZenML Server and Dashboard locally](/docs/book/platform-guide/set-up-your-mlops-platform/deploy-zenml/deploy-zenml.md).
+you need to launch the [ZenML Server and Dashboard locally](/docs/book/deploying-zenml/zenml-self-hosted/zenml-self-hosted.md).
 For this, you need to install the optional dependencies for the ZenML Server:
 
 ```shell
@@ -31,6 +31,18 @@ We highly encourage you to install ZenML in a virtual environment. At ZenML, We 
 use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)
 or [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) to manage our Python virtual environments.
 {% endhint %}
+
+## Nightly builds
+
+ZenML also publishes nightly builds under the [`zenml-nightly` package
+name](https://pypi.org/project/zenml-nightly/). These are built from the latest
+[`develop` branch](https://github.com/zenml-io/zenml/tree/develop) (to which
+work ready for release is published) and are not guaranteed to be stable. To
+install the nightly build, run:
+
+```shell
+pip install zenml-nightly
+```
 
 ## Verifying installations
 

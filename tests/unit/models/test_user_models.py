@@ -16,8 +16,8 @@
 import pytest
 from pydantic import ValidationError
 
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.user_models import UserRequestModel
+from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.models import UserRequest
 
 UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"
 
@@ -26,7 +26,7 @@ def test_user_request_model_fails_with_long_password():
     """Test that the user request model fails with long passwords."""
     long_password = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
-        UserRequestModel(
+        UserRequest(
             password=long_password,
         )
 
@@ -35,6 +35,6 @@ def test_user_request_model_fails_with_long_activation_token():
     """Test that the user request model fails with long activation tokens."""
     long_token = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
-        UserRequestModel(
+        UserRequest(
             activation_token=long_token,
         )

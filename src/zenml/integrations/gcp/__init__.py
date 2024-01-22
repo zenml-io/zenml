@@ -18,9 +18,6 @@ environment. Specifically, it allows the use of cloud artifact stores
 and provides an `io` module to handle file operations on Google Cloud Storage
 (GCS).
 
-Additionally, the GCP secrets manager integration submodule provides a
-way to access the GCP secrets manager from within your ZenML Pipeline runs.
-
 The Vertex AI integration submodule provides a way to run ZenML pipelines in a
 Vertex AI environment.
 """
@@ -33,30 +30,29 @@ from zenml.stack import Flavor
 
 GCP_ARTIFACT_STORE_FLAVOR = "gcp"
 GCP_IMAGE_BUILDER_FLAVOR = "gcp"
-GCP_SECRETS_MANAGER_FLAVOR = "gcp"
 GCP_VERTEX_ORCHESTRATOR_FLAVOR = "vertex"
 GCP_VERTEX_STEP_OPERATOR_FLAVOR = "vertex"
 
+# Service connector constants
+GCP_CONNECTOR_TYPE = "gcp"
+GCP_RESOURCE_TYPE = "gcp-generic"
+GCS_RESOURCE_TYPE = "gcs-bucket"
 
 class GcpIntegration(Integration):
     """Definition of Google Cloud Platform integration for ZenML."""
 
     NAME = GCP
     REQUIREMENTS = [
-        "kfp==1.8.16",
+        "kfp==1.8.22",  # Only 1.x version that supports pyyaml 6
         "gcsfs",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
         "google-cloud-storage>=2.9.0",
-        "google-cloud-aiplatform>=1.11.0",
+        "google-cloud-aiplatform>=1.21.0",  # includes shapely pin fix
         "google-cloud-scheduler>=2.7.3",
         "google-cloud-functions>=1.8.3",
         "google-cloud-build>=3.11.0",
         "kubernetes",
-        # google-cloud-bigquery 2.34.4 is not compatible with shapely 2.0.0
-        # which was released on 2021-12-21. This is a temporary fix until
-        # google-cloud-bigquery is updated.
-        "shapely<2.0",
     ]
 
     @staticmethod
@@ -74,7 +70,6 @@ class GcpIntegration(Integration):
         from zenml.integrations.gcp.flavors import (
             GCPArtifactStoreFlavor,
             GCPImageBuilderFlavor,
-            GCPSecretsManagerFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
         )
@@ -82,7 +77,6 @@ class GcpIntegration(Integration):
         return [
             GCPArtifactStoreFlavor,
             GCPImageBuilderFlavor,
-            GCPSecretsManagerFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
         ]

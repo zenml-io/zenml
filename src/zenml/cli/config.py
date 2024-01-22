@@ -15,11 +15,12 @@
 
 import click
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_decorator
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import CliCategories, LoggingLevels
-from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 
 # Analytics
@@ -38,7 +39,7 @@ def is_analytics_opted_in() -> None:
 @analytics.command(
     "opt-in", context_settings=dict(ignore_unknown_options=True)
 )
-@track(AnalyticsEvent.OPT_IN_ANALYTICS, v2=True)
+@track_decorator(AnalyticsEvent.OPT_IN_ANALYTICS)
 def opt_in() -> None:
     """Opt-in to analytics."""
     gc = GlobalConfiguration()
@@ -49,7 +50,7 @@ def opt_in() -> None:
 @analytics.command(
     "opt-out", context_settings=dict(ignore_unknown_options=True)
 )
-@track(AnalyticsEvent.OPT_OUT_ANALYTICS, v2=True)
+@track_decorator(AnalyticsEvent.OPT_OUT_ANALYTICS)
 def opt_out() -> None:
     """Opt-out of analytics."""
     gc = GlobalConfiguration()

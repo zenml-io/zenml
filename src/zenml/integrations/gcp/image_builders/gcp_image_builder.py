@@ -131,7 +131,9 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             parent_path_directory_name="cloud-build-contexts",
         )
         build = self._configure_cloud_build(
-            image_name=image_name, cloud_build_context=cloud_build_context
+            image_name=image_name,
+            cloud_build_context=cloud_build_context,
+            build_options=docker_build_options,
         )
         image_digest = self._run_cloud_build(build=build)
         image_name_without_tag, _ = image_name.rsplit(":", 1)
@@ -139,13 +141,17 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         return image_name_with_digest
 
     def _configure_cloud_build(
-        self, image_name: str, cloud_build_context: str
+        self,
+        image_name: str,
+        cloud_build_context: str,
+        build_options: Dict[str, Any],
     ) -> cloudbuild_v1.Build:
         """Configures the build to be run to generate the Docker image.
 
         Args:
             image_name: The name of the image to build.
             cloud_build_context: The path to the build context.
+            build_options: Docker build options.
 
         Returns:
             The build to run.
@@ -168,6 +174,18 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             cloud_builder_network_option,
         )
 
+        # Convert the docker_build_options dictionary to a list of strings
+        docker_build_args = []
+        for key, value in build_options.items():
+            option = f"--{key}"
+            if isinstance(value, list):
+                for val in value:
+                    docker_build_args.extend([option, val])
+            elif value is not None and not isinstance(value, bool):
+                docker_build_args.extend([option, value])
+            elif value is not False:
+                docker_build_args.extend([option])
+
         return cloudbuild_v1.Build(
             source=cloudbuild_v1.Source(
                 storage_source=cloudbuild_v1.StorageSource(
@@ -183,6 +201,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
                         "-t",
                         image_name,
                         ".",
+                        *docker_build_args,
                     ],
                 },
                 {

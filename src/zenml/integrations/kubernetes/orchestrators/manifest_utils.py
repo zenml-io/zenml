@@ -77,7 +77,7 @@ def add_local_stores_mount(
         pass
     else:
         # Run KFP containers in the context of the local UID/GID
-        # to ensure that the artifact and metadata stores can be shared
+        # to ensure that the local stores can be shared
         # with the local pipeline runs.
         pod_spec.security_context = k8s_client.V1SecurityContext(
             run_as_user=os.getuid(),
@@ -196,6 +196,20 @@ def add_pod_settings(
     for container in pod_spec.containers:
         assert isinstance(container, k8s_client.V1Container)
         container._resources = settings.resources
+        if settings.volume_mounts:
+            if container.volume_mounts:
+                container.volume_mounts.extend(settings.volume_mounts)
+            else:
+                container.volume_mounts = settings.volume_mounts
+
+    if settings.volumes:
+        if pod_spec.volumes:
+            pod_spec.volumes.extend(settings.volumes)
+        else:
+            pod_spec.volumes = settings.volumes
+
+    if settings.host_ipc:
+        pod_spec.host_ipc = settings.host_ipc
 
 
 def build_cron_job_manifest(
@@ -210,7 +224,7 @@ def build_cron_job_manifest(
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
-) -> k8s_client.V1beta1CronJob:
+) -> k8s_client.V1CronJob:
     """Create a manifest for launching a pod as scheduled CRON job.
 
     Args:
@@ -245,23 +259,23 @@ def build_cron_job_manifest(
         mount_local_stores=mount_local_stores,
     )
 
-    job_spec = k8s_client.V1beta1CronJobSpec(
+    job_spec = k8s_client.V1CronJobSpec(
         schedule=cron_expression,
-        job_template=k8s_client.V1beta1JobTemplateSpec(
-            metadata=pod_manifest["metadata"],
+        job_template=k8s_client.V1JobTemplateSpec(
+            metadata=pod_manifest.metadata,
             spec=k8s_client.V1JobSpec(
                 template=k8s_client.V1PodTemplateSpec(
-                    metadata=pod_manifest["metadata"],
-                    spec=pod_manifest["spec"],
+                    metadata=pod_manifest.metadata,
+                    spec=pod_manifest.spec,
                 ),
             ),
         ),
     )
 
-    job_manifest = k8s_client.V1beta1CronJob(
+    job_manifest = k8s_client.V1CronJob(
         kind="CronJob",
-        api_version="batch/v1beta1",
-        metadata=pod_manifest["metadata"],
+        api_version="batch/v1",
+        metadata=pod_manifest.metadata,
         spec=job_spec,
     )
 

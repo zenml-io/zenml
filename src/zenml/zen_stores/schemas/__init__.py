@@ -13,12 +13,20 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
 
-from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+from zenml.zen_stores.schemas.api_key_schemas import APIKeySchema
+from zenml.zen_stores.schemas.artifact_schemas import (
+    ArtifactSchema,
+    ArtifactVersionSchema,
+)
+from zenml.zen_stores.schemas.artifact_visualization_schemas import (
+    ArtifactVisualizationSchema,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeRepositorySchema,
     CodeReferenceSchema,
 )
+from zenml.zen_stores.schemas.device_schemas import OAuthDeviceSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
@@ -29,12 +37,6 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-from zenml.zen_stores.schemas.role_schemas import (
-    RolePermissionSchema,
-    RoleSchema,
-    TeamRoleAssignmentSchema,
-    UserRoleAssignmentSchema,
-)
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
@@ -51,44 +53,51 @@ from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunParentsSchema,
     StepRunSchema,
 )
-from zenml.zen_stores.schemas.team_schemas import (
-    TeamAssignmentSchema,
-    TeamSchema,
-)
+from zenml.zen_stores.schemas.tag_schemas import TagSchema, TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+from zenml.zen_stores.schemas.model_schemas import (
+    ModelSchema,
+    ModelVersionSchema,
+    ModelVersionArtifactSchema,
+    ModelVersionPipelineRunSchema,
+)
 
 __all__ = [
+    "APIKeySchema",
     "ArtifactSchema",
+    "ArtifactVersionSchema",
+    "ArtifactVisualizationSchema",
     "BaseSchema",
-    "NamedSchema",
-    "CodeRepositorySchema",
     "CodeReferenceSchema",
+    "CodeRepositorySchema",
     "FlavorSchema",
     "IdentitySchema",
-    "ServiceConnectorLabelSchema",
+    "LogsSchema",
+    "NamedSchema",
+    "OAuthDeviceSchema",
     "PipelineBuildSchema",
     "PipelineDeploymentSchema",
     "PipelineRunSchema",
     "PipelineSchema",
-    "WorkspaceSchema",
-    "RoleSchema",
-    "RolePermissionSchema",
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
     "ServiceConnectorSchema",
-    "StackSchema",
     "StackComponentSchema",
     "StackCompositionSchema",
+    "StackSchema",
     "StepRunInputArtifactSchema",
     "StepRunOutputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
-    "TeamRoleAssignmentSchema",
-    "TeamSchema",
-    "TeamAssignmentSchema",
-    "UserRoleAssignmentSchema",
+    "TagSchema",
+    "TagResourceSchema",
     "UserSchema",
     "LogsSchema",
+    "ModelSchema",
+    "ModelVersionSchema",
+    "ModelVersionArtifactSchema",
+    "ModelVersionPipelineRunSchema",
+    "WorkspaceSchema",
 ]

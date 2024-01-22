@@ -15,7 +15,7 @@
 
 import os
 from collections import Counter
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import numpy as np
 
@@ -61,12 +61,7 @@ class NumpyMaterializer(BaseMaterializer):
 
         if fileio.exists(numpy_file):
             with fileio.open(numpy_file, "rb") as f:
-                # This function is untyped for numpy versions supporting python
-                # 3.7, but typed for numpy versions installed on python 3.8+.
-                # We need to cast it to any here so that numpy doesn't complain
-                # about either an untyped function call or an unused ignore
-                # statement
-                return cast(Any, np.load)(f, allow_pickle=True)
+                return np.load(f, allow_pickle=True)
         elif fileio.exists(os.path.join(self.uri, DATA_FILENAME)):
             logger.warning(
                 "A legacy artifact was found. "
@@ -108,12 +103,7 @@ class NumpyMaterializer(BaseMaterializer):
             arr: The numpy array to write.
         """
         with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
-            # This function is untyped for numpy versions supporting python
-            # 3.7, but typed for numpy versions installed on python 3.8+.
-            # We need to cast it to any here so that numpy doesn't complain
-            # about either an untyped function call or an unused ignore
-            # statement
-            cast(Any, np.save)(f, arr)
+            np.save(f, arr)
 
     def save_visualizations(
         self, arr: "NDArray[Any]"
@@ -136,12 +126,14 @@ class NumpyMaterializer(BaseMaterializer):
             # Save histogram for 1D arrays
             if len(arr.shape) == 1:
                 histogram_path = os.path.join(self.uri, "histogram.png")
+                histogram_path = histogram_path.replace("\\", "/")
                 self._save_histogram(histogram_path, arr)
                 return {histogram_path: VisualizationType.IMAGE}
 
-            # Save as image for 2D or 3D arrays with 3 or 4 channels
-            if self._array_can_be_saved_as_image(arr):
+            # Save as image for 3D arrays with 3 or 4 channels
+            if len(arr.shape) == 3 and arr.shape[2] in [3, 4]:
                 image_path = os.path.join(self.uri, "image.png")
+                image_path = image_path.replace("\\", "/")
                 self._save_image(image_path, arr)
                 return {image_path: VisualizationType.IMAGE}
 
@@ -161,30 +153,12 @@ class NumpyMaterializer(BaseMaterializer):
             output_path: The path to save the histogram to.
             arr: The numpy array of which to save the histogram.
         """
-        import matplotlib.pyplot as plt  # type: ignore
+        import matplotlib.pyplot as plt
 
         plt.hist(arr)
         with fileio.open(output_path, "wb") as f:
             plt.savefig(f)
         plt.close()
-
-    @staticmethod
-    def _array_can_be_saved_as_image(arr: "NDArray[Any]") -> bool:
-        """Checks if a numpy array can be saved as an image.
-
-        This is the case if the array is 2D or 3D with 3 or 4 channels.
-
-        Args:
-            arr: The numpy array to check.
-
-        Returns:
-            True if the array can be saved as an image, False otherwise.
-        """
-        if len(arr.shape) == 2:
-            return True
-        if len(arr.shape) == 3 and arr.shape[2] in [3, 4]:
-            return True
-        return False
 
     def _save_image(self, output_path: str, arr: "NDArray[Any]") -> None:
         """Saves a numpy array as an image.
@@ -193,7 +167,7 @@ class NumpyMaterializer(BaseMaterializer):
             output_path: The path to save the image to.
             arr: The numpy array to save.
         """
-        from matplotlib.image import imsave  # type: ignore
+        from matplotlib.image import imsave
 
         with fileio.open(output_path, "wb") as f:
             imsave(f, arr)
@@ -229,12 +203,8 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             A dictionary of metadata.
         """
-        # These functions are untyped for numpy versions supporting python
-        # 3.7, but typed for numpy versions installed on python 3.8+.
-        # We need to cast them to Any here so that numpy doesn't complain
-        # about either an untyped function call or an unused ignore statement.
-        min_val = cast(Any, np.min)(arr).item()
-        max_val = cast(Any, np.max)(arr).item()
+        min_val = np.min(arr).item()
+        max_val = np.max(arr).item()
 
         numpy_metadata: Dict[str, "MetadataType"] = {
             "shape": tuple(arr.shape),

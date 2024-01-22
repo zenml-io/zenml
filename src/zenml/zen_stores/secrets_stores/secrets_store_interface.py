@@ -13,15 +13,8 @@
 #  permissions and limitations under the License.
 """ZenML secrets store interface."""
 from abc import ABC, abstractmethod
+from typing import Dict
 from uuid import UUID
-
-from zenml.models import (
-    SecretFilterModel,
-    SecretRequestModel,
-    SecretResponseModel,
-    SecretUpdateModel,
-)
-from zenml.models.page_model import Page
 
 
 class SecretsStoreInterface(ABC):
@@ -47,110 +40,58 @@ class SecretsStoreInterface(ABC):
     # ---------
 
     @abstractmethod
-    def create_secret(
+    def store_secret_values(
         self,
-        secret: SecretRequestModel,
-    ) -> SecretResponseModel:
-        """Creates a new secret.
-
-        The new secret is also validated against the scoping rules enforced in
-        the secrets store:
-
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+        secret_id: UUID,
+        secret_values: Dict[str, str],
+    ) -> None:
+        """Store secret values for a new secret.
 
         Args:
-            secret: The secret to create.
-
-        Returns:
-            The newly created secret.
-
-        Raises:
-            KeyError: if the user or workspace does not exist.
-            EntityExistsError: If a secret with the same name already exists in
-                the same scope.
-            ValueError: if the secret is invalid.
+            secret_id: ID of the secret.
+            secret_values: Values for the secret.
         """
 
     @abstractmethod
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
-        """Get a secret with a given name.
+    def get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+        """Get the secret values for an existing secret.
 
         Args:
             secret_id: ID of the secret.
 
         Returns:
-            The secret.
+            The secret values.
 
         Raises:
-            KeyError: if the secret does not exist.
+            KeyError: if no secret values for the given ID are stored in the
+                secrets store.
         """
 
     @abstractmethod
-    def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
-        """List all secrets matching the given filter criteria.
-
-        Note that returned secrets do not include any secret values. To fetch
-        the secret values, use `get_secret`.
-
-        Args:
-            secret_filter_model: All filter parameters including pagination
-                params.
-
-        Returns:
-            A list of all secrets matching the filter criteria, with pagination
-            information and sorted according to the filter criteria. The
-            returned secrets do not include any secret values, only metadata. To
-            fetch the secret values, use `get_secret` individually with each
-            secret.
-        """
-
-    @abstractmethod
-    def update_secret(
+    def update_secret_values(
         self,
         secret_id: UUID,
-        secret_update: SecretUpdateModel,
-    ) -> SecretResponseModel:
-        """Updates a secret.
-
-        Secret values that are specified as `None` in the update that are
-        present in the existing secret are removed from the existing secret.
-        Values that are present in both secrets are overwritten. All other
-        values in both the existing secret and the update are kept (merged).
-
-        If the update includes a change of name or scope, the scoping rules
-        enforced in the secrets store are used to validate the update:
-
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+        secret_values: Dict[str, str],
+    ) -> None:
+        """Updates secret values for an existing secret.
 
         Args:
             secret_id: The ID of the secret to be updated.
-            secret_update: The update to be applied.
-
-        Returns:
-            The updated secret.
+            secret_values: The new secret values.
 
         Raises:
-            KeyError: if the secret doesn't exist.
-            EntityExistsError: If a secret with the same name already exists in
-                the same scope.
-            ValueError: if the secret is invalid.
+            KeyError: if no secret values for the given ID are stored in the
+                secrets store.
         """
 
     @abstractmethod
-    def delete_secret(self, secret_id: UUID) -> None:
-        """Deletes a secret.
+    def delete_secret_values(self, secret_id: UUID) -> None:
+        """Deletes secret values for an existing secret.
 
         Args:
-            secret_id: The ID of the secret to delete.
+            secret_id: The ID of the secret.
 
         Raises:
-            KeyError: if the secret doesn't exist.
+            KeyError: if no secret values for the given ID are stored in the
+                secrets store.
         """

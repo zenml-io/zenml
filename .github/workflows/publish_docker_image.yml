@@ -1,19 +1,23 @@
-name: Publish Docker image
-
-on: workflow_call
-
+---
+name: Publish Docker images
+on:
+  workflow_call:
+    inputs:
+      config_file:
+        description: YAML config for Google Cloud Build
+        required: false
+        type: string
+        default: release-cloudbuild.yaml
 jobs:
-  publish_to_pypi:
+  publish_to_docker:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub
     runs-on: ubuntu-latest
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: 'utf-8'
-
+      PYTHONIOENCODING: utf-8
     steps:
-      - uses: actions/checkout@v2
-
+      - uses: actions/checkout@v4.1.1
       - name: Get the version from the github tag ref
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
@@ -30,5 +34,5 @@ jobs:
         run: |-
           gcloud builds submit \
             --quiet \
-            --config=release-cloudbuild.yaml \
+            --config=${{inputs.config_file}} \
             --substitutions=TAG_NAME=${{github.ref_name}} .

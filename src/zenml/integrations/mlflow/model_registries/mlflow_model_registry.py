@@ -19,10 +19,11 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 
 import mlflow
 from mlflow import MlflowClient
-from mlflow.entities.model_registry import ModelVersion as MLflowModelVersion
+from mlflow.entities.model_registry import (
+    ModelVersion as MLflowModelVersion,
+)
 from mlflow.exceptions import MlflowException
 from mlflow.pyfunc import load_model
-from pydantic import Field
 
 from zenml.client import Client
 from zenml.constants import MLFLOW_MODEL_FORMAT
@@ -37,9 +38,9 @@ from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     BaseModelRegistry,
     ModelRegistryModelMetadata,
-    ModelVersion,
     ModelVersionStage,
     RegisteredModel,
+    RegistryModelVersion,
 )
 from zenml.stack.stack import Stack
 from zenml.stack.stack_validator import StackValidator
@@ -347,11 +348,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
         version: Optional[str] = None,
         model_source_uri: Optional[str] = None,
         description: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         **kwargs: Any,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         """Register a model version to the MLflow model registry.
 
         Args:
@@ -387,9 +386,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
                     f"Registering a new version for the model `'{name}'` "
                     f"a version will be assigned automatically."
                 )
+            metadata_dict = metadata.dict() if metadata else {}
             # Set the run ID and link.
-            run_id = metadata.dict().get("mlflow_run_id", None)
-            run_link = metadata.dict().get("mlflow_run_link", None)
+            run_id = metadata_dict.get("mlflow_run_id", None)
+            run_link = metadata_dict.get("mlflow_run_link", None)
             # Register the model version.
             registered_model_version = self.mlflow_client.create_model_version(
                 name=name,
@@ -397,7 +397,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 run_id=run_id,
                 run_link=run_link,
                 description=description,
-                tags=metadata.dict(),
+                tags=metadata_dict,
             )
         except MlflowException as e:
             raise RuntimeError(
@@ -441,12 +441,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
         name: str,
         version: str,
         description: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         remove_metadata: Optional[List[str]] = None,
         stage: Optional[ModelVersionStage] = None,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         """Update a model version in the MLflow model registry.
 
         Args:
@@ -509,7 +507,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         # Update the model stage.
         if stage:
             try:
-                self.mlflow_client.transition_model_stage(
+                self.mlflow_client.transition_model_version_stage(
                     name=name,
                     version=version,
                     stage=stage.value,
@@ -525,7 +523,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         self,
         name: str,
         version: str,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         """Get a model version from the MLflow model registry.
 
         Args:
@@ -558,16 +556,14 @@ class MLFlowModelRegistry(BaseModelRegistry):
         self,
         name: Optional[str] = None,
         model_source_uri: Optional[str] = None,
-        metadata: ModelRegistryModelMetadata = Field(
-            default_factory=ModelRegistryModelMetadata
-        ),
+        metadata: Optional[ModelRegistryModelMetadata] = None,
         stage: Optional[ModelVersionStage] = None,
         count: Optional[int] = None,
         created_after: Optional[datetime] = None,
         created_before: Optional[datetime] = None,
         order_by_date: Optional[str] = None,
         **kwargs: Any,
-    ) -> List[ModelVersion]:
+    ) -> List[RegistryModelVersion]:
         """List model versions from the MLflow model registry.
 
         Args:
@@ -608,12 +604,22 @@ class MLFlowModelRegistry(BaseModelRegistry):
             filter_string=filter_string,
         )
         # Cast the MLflow model versions to the ZenML model version class.
-        model_versions = [
-            self._cast_mlflow_version_to_model_version(
-                mlflow_model_version=mlflow_model_version,
-            )
-            for mlflow_model_version in mlflow_model_versions
-        ]
+        model_versions = []
+        for mlflow_model_version in mlflow_model_versions:
+            try:
+                model_versions.append(
+                    self._cast_mlflow_version_to_model_version(
+                        mlflow_model_version=mlflow_model_version,
+                    )
+                )
+            except (AttributeError, OSError) as e:
+                # Sometimes, the Model Registry in MLflow can become unusable
+                # due to failed version registration or misuse. In such rare
+                # cases, it's best to suppress those versions that are not usable.
+                logger.warning(
+                    f"Error encountered while loading MLflow model version: {e}"
+                )
+
         # Filter the model versions by stage.
         if stage:
             model_versions = [
@@ -700,7 +706,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
     def get_model_uri_artifact_store(
         self,
-        model_version: ModelVersion,
+        model_version: RegistryModelVersion,
     ) -> str:
         """Get the model URI artifact store.
 
@@ -719,7 +725,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
     def _cast_mlflow_version_to_model_version(
         self,
         mlflow_model_version: MLflowModelVersion,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         """Cast an MLflow model version to a model version.
 
         Args:
@@ -744,7 +750,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             )
         except ImportError:
             model_library = None
-        return ModelVersion(
+        return RegistryModelVersion(
             registered_model=RegisteredModel(name=mlflow_model_version.name),
             model_format=MLFLOW_MODEL_FORMAT,
             model_library=model_library,

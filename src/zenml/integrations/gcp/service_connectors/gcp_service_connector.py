@@ -23,6 +23,9 @@ import datetime
 import json
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
 import google.api_core.exceptions
@@ -36,13 +39,18 @@ from google.auth.transport.requests import Request
 from google.cloud import container_v1, storage
 from google.oauth2 import credentials as gcp_credentials
 from google.oauth2 import service_account as gcp_service_account
-from pydantic import Field, SecretStr, validator
+from pydantic import Field, SecretStr, root_validator, validator
 
 from zenml.constants import (
     DOCKER_REGISTRY_RESOURCE_TYPE,
     KUBERNETES_CLUSTER_RESOURCE_TYPE,
 )
 from zenml.exceptions import AuthorizationException
+from zenml.integrations.gcp import (
+    GCP_CONNECTOR_TYPE,
+    GCP_RESOURCE_TYPE,
+    GCS_RESOURCE_TYPE,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -62,10 +70,6 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
-
-GCP_CONNECTOR_TYPE = "gcp"
-GCP_RESOURCE_TYPE = "gcp-generic"
-GCS_RESOURCE_TYPE = "gcs-bucket"
 GKE_KUBE_API_TOKEN_EXPIRATION = 60
 DEFAULT_IMPERSONATE_TOKEN_EXPIRATION = 3600  # 1 hour
 
@@ -76,6 +80,32 @@ class GCPUserAccountCredentials(AuthenticationConfig):
     user_account_json: SecretStr = Field(
         title="GCP User Account Credentials JSON",
     )
+
+    generate_temporary_tokens: bool = Field(
+        default=True,
+        title="Generate temporary OAuth 2.0 tokens",
+        description="Whether to generate temporary OAuth 2.0 tokens from the "
+        "user account credentials JSON. If set to False, the connector will "
+        "distribute the user account credentials JSON to clients instead.",
+    )
+
+    @root_validator(pre=True)
+    def validate_user_account_dict(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Convert the user account credentials to JSON if given in dict format.
+
+        Args:
+            values: The configuration values.
+
+        Returns:
+            The validated configuration values.
+        """
+        if isinstance(values.get("user_account_json"), dict):
+            values["user_account_json"] = json.dumps(
+                values["user_account_json"]
+            )
+        return values
 
     @validator("user_account_json")
     def validate_user_account_json(cls, v: SecretStr) -> SecretStr:
@@ -128,6 +158,32 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
     service_account_json: SecretStr = Field(
         title="GCP Service Account Key JSON",
     )
+
+    generate_temporary_tokens: bool = Field(
+        default=True,
+        title="Generate temporary OAuth 2.0 tokens",
+        description="Whether to generate temporary OAuth 2.0 tokens from the "
+        "service account key JSON. If set to False, the connector will "
+        "distribute the service account key JSON to clients instead.",
+    )
+
+    @root_validator(pre=True)
+    def validate_service_account_dict(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Convert the service account credentials to JSON if given in dict format.
+
+        Args:
+            values: The configuration values.
+
+        Returns:
+            The validated configuration values.
+        """
+        if isinstance(values.get("service_account_json"), dict):
+            values["service_account_json"] = json.dumps(
+                values["service_account_json"]
+            )
+        return values
 
     @validator("service_account_json")
     def validate_service_account_json(cls, v: SecretStr) -> SecretStr:
@@ -248,9 +304,9 @@ user accounts, service accounts, short-lived OAuth 2.0 tokens and implicit
 authentication.
 
 To ensure heightened security measures, this connector always issues short-lived
-OAuth 2.0 tokens to clients instead of long-lived credentials. Furthermore, it
-includes automatic configuration and detection of  credentials locally
-configured through the GCP CLI.
+OAuth 2.0 tokens to clients instead of long-lived credentials unless explicitly
+configured to do otherwise. Furthermore, it includes automatic configuration and
+detection of credentials locally configured through the GCP CLI.
 
 This connector serves as a general means of accessing any GCP service by issuing
 OAuth 2.0 credential objects to clients. Additionally, the connector can handle
@@ -261,7 +317,7 @@ The GCP Service Connector is part of the GCP ZenML integration. You can either
 install the entire integration or use a pypi extra to install it independently
 of the integration:
 
-* `pip install zenml[connectors-gcp]` installs only prerequisites for the GCP
+* `pip install "zenml[connectors-gcp]"` installs only prerequisites for the GCP
 Service Connector Type
 * `zenml integration install gcp` installs the entire GCP ZenML integration
 
@@ -331,9 +387,14 @@ account.
 Use a GCP user account and its credentials to authenticate to GCP services.
 
 This method requires GCP user account credentials like those generated by
-the `gcloud auth application-default login` command. The GCP connector generates
-temporary OAuth 2.0 tokens from the user account credentials and distributes
-them to clients. The tokens have a limited lifetime of 1 hour.
+the `gcloud auth application-default login` command.
+
+By default, the GCP connector generates temporary OAuth 2.0 tokens from the user
+account credentials and distributes them to clients. The tokens have a limited
+lifetime of 1 hour. This behavior can be disabled by setting the
+`generate_temporary_tokens` configuration option to `False`, in which case, the
+connector will distribute the user account credentials JSON to clients instead
+(not recommended).
 
 This method is preferred during development and testing due to its simplicity
 and ease of use. It is not recommended as a direct authentication method for
@@ -358,9 +419,12 @@ This method requires a [GCP service account](https://cloud.google.com/iam/docs/s
 and [a service account key JSON](https://cloud.google.com/iam/docs/service-account-creds#key-types)
 created for it.
 
-The GCP connector generates temporary OAuth 2.0 tokens from the user account
-credentials and distributes them to clients. The tokens have a limited lifetime
-of 1 hour.
+By default, the GCP connector generates temporary OAuth 2.0 tokens from the
+service account credentials and distributes them to clients. The tokens have a
+limited lifetime of 1 hour. This behavior can be disabled by setting the
+`generate_temporary_tokens` configuration option to `False`, in which case, the
+connector will distribute the service account credentials JSON to clients
+instead (not recommended).
 
 A GCP project is required and the connector may only be used to access GCP
 resources in the specified project.
@@ -665,6 +729,8 @@ class GCPServiceConnector(ServiceConnector):
         scopes = self._get_scopes(resource_type, resource_id)
         expires_at: Optional[datetime.datetime] = None
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
+            self._check_implicit_auth_method_allowed()
+
             # Determine the credentials from the environment
             # Override the project ID if specified in the config
             credentials, project_id = google.auth.default(
@@ -777,7 +843,7 @@ class GCPServiceConnector(ServiceConnector):
             raise ValueError(
                 f"Invalid resource ID for an GCS bucket: {resource_id}. "
                 f"Supported formats are:\n"
-                f"GCS bucket URI: gcs://<bucket-name>\n"
+                f"GCS bucket URI: gs://<bucket-name>\n"
                 f"GCS bucket name: <bucket-name>"
             )
 
@@ -999,13 +1065,109 @@ class GCPServiceConnector(ServiceConnector):
             NotImplementedError: If the connector instance does not support
                 local configuration for the configured resource type or
                 authentication method.registry
+            AuthorizationException: If the local client configuration fails.
         """
         resource_type = self.resource_type
 
         if resource_type in [GCP_RESOURCE_TYPE, GCS_RESOURCE_TYPE]:
+            gcloud_config_json: Optional[str] = None
+
+            # There is no way to configure the local gcloud CLI to use
+            # temporary OAuth 2.0 tokens. However, we can configure it to use
+            # the service account credentials
+            if self.auth_method == GCPAuthenticationMethods.SERVICE_ACCOUNT:
+                assert isinstance(self.config, GCPServiceAccountConfig)
+                # Use the service account credentials JSON to configure the
+                # local gcloud CLI
+                gcloud_config_json = (
+                    self.config.service_account_json.get_secret_value()
+                )
+
+            if gcloud_config_json:
+                from google.auth import _cloud_sdk
+
+                if not shutil.which("gcloud"):
+                    raise AuthorizationException(
+                        "The local gcloud CLI is not installed. Please "
+                        "install the gcloud CLI to use this feature."
+                    )
+
+                # Write the credentials JSON to a temporary file
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".json", delete=True
+                ) as f:
+                    f.write(gcloud_config_json)
+                    f.flush()
+                    adc_path = f.name
+
+                    try:
+                        # Run the gcloud CLI command to configure the local
+                        # gcloud CLI to use the credentials JSON
+                        subprocess.run(
+                            [
+                                "gcloud",
+                                "auth",
+                                "login",
+                                "--cred-file",
+                                adc_path,
+                            ],
+                            check=True,
+                            stderr=subprocess.STDOUT,
+                            encoding="utf-8",
+                            stdout=subprocess.PIPE,
+                        )
+                    except subprocess.CalledProcessError as e:
+                        raise AuthorizationException(
+                            f"Failed to configure the local gcloud CLI to use "
+                            f"the credentials JSON: {e}\n"
+                            f"{e.stdout.decode()}"
+                        )
+
+                try:
+                    # Run the gcloud CLI command to configure the local gcloud
+                    # CLI to use the credentials project ID
+                    subprocess.run(
+                        [
+                            "gcloud",
+                            "config",
+                            "set",
+                            "project",
+                            self.config.project_id,
+                        ],
+                        check=True,
+                        stderr=subprocess.STDOUT,
+                        stdout=subprocess.PIPE,
+                    )
+                except subprocess.CalledProcessError as e:
+                    raise AuthorizationException(
+                        f"Failed to configure the local gcloud CLI to use "
+                        f"the project ID: {e}\n"
+                        f"{e.stdout.decode()}"
+                    )
+
+                # Dump the service account credentials JSON to
+                # the local gcloud application default credentials file
+                adc_path = (
+                    _cloud_sdk.get_application_default_credentials_path()
+                )
+                with open(adc_path, "w") as f:
+                    f.write(gcloud_config_json)
+
+                logger.info(
+                    "Updated the local gcloud CLI and application default "
+                    f"credentials file ({adc_path})."
+                )
+
+                return
+
             raise NotImplementedError(
-                f"Local client configuration for resource type "
-                f"{resource_type} is not supported"
+                f"Local gcloud client configuration for resource type "
+                f"{resource_type} is only supported if the "
+                f"'{GCPAuthenticationMethods.SERVICE_ACCOUNT}' authentication "
+                f"method is used and only if the generation of temporary OAuth "
+                f"2.0 tokens is disabled by setting the "
+                f"'generate_temporary_tokens' option to 'False' in the "
+                f"service connector configuration."
             )
 
         raise NotImplementedError(
@@ -1073,6 +1235,8 @@ class GCPServiceConnector(ServiceConnector):
             )
 
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
+            cls._check_implicit_auth_method_allowed()
+
             auth_config = GCPBaseConfig(
                 project_id=project_id,
             )
@@ -1147,13 +1311,27 @@ class GCPServiceConnector(ServiceConnector):
                     "GOOGLE_APPLICATION_CREDENTIALS"
                 )
                 if service_account_json_file is None:
-                    # Shouldn't happen since google.auth.default() should
-                    # already have loaded the credentials from the environment
+                    # No explicit service account JSON file was specified in the
+                    # environment, meaning that the credentials were loaded from
+                    # the GCP application default credentials (ADC) file.
+                    from google.auth import _cloud_sdk
+
+                    # Use the location of the gcloud application default
+                    # credentials file
+                    service_account_json_file = (
+                        _cloud_sdk.get_application_default_credentials_path()
+                    )
+
+                if not service_account_json_file or not os.path.isfile(
+                    service_account_json_file
+                ):
                     raise AuthorizationException(
-                        "No GCP service account credentials found in the "
-                        "environment. Please set the "
-                        "GOOGLE_APPLICATION_CREDENTIALS environment variable "
-                        "to the path of the service account JSON file."
+                        "No GCP service account credentials were found in the "
+                        "environment or the application default credentials "
+                        "path. Please set the GOOGLE_APPLICATION_CREDENTIALS "
+                        "environment variable to the path of the service "
+                        "account JSON file or run 'gcloud auth application-"
+                        "default login' to generate a new ADC file."
                     )
                 with open(service_account_json_file, "r") as f:
                     service_account_json = f.read()
@@ -1332,14 +1510,31 @@ class GCPServiceConnector(ServiceConnector):
         )
 
         if resource_type in [GCP_RESOURCE_TYPE, GCS_RESOURCE_TYPE]:
-            # Use the token extracted from the google credentials object
-            config = GCPOAuth2TokenConfig(
+            # By default, use the token extracted from the google credentials
+            # object
+            auth_method: str = GCPAuthenticationMethods.OAUTH2_TOKEN
+            config: GCPBaseConfig = GCPOAuth2TokenConfig(
                 project_id=self.config.project_id,
                 token=credentials.token,
                 service_account_email=credentials.signer_email
                 if hasattr(credentials, "signer_email")
                 else None,
             )
+
+            # If the connector is explicitly configured to not generate
+            # temporary tokens, use the original config
+            if self.auth_method == GCPAuthenticationMethods.USER_ACCOUNT:
+                assert isinstance(self.config, GCPUserAccountConfig)
+                if not self.config.generate_temporary_tokens:
+                    config = self.config
+                    auth_method = self.auth_method
+                    expires_at = None
+            elif self.auth_method == GCPAuthenticationMethods.SERVICE_ACCOUNT:
+                assert isinstance(self.config, GCPServiceAccountConfig)
+                if not self.config.generate_temporary_tokens:
+                    config = self.config
+                    auth_method = self.auth_method
+                    expires_at = None
 
             # Create a client-side GCP connector instance that is fully formed
             # and ready to use to connect to the specified resource (i.e. has
@@ -1348,7 +1543,7 @@ class GCPServiceConnector(ServiceConnector):
             return GCPServiceConnector(
                 id=self.id,
                 name=connector_name,
-                auth_method=GCPAuthenticationMethods.OAUTH2_TOKEN,
+                auth_method=auth_method,
                 resource_type=resource_type,
                 resource_id=resource_id,
                 config=config,

@@ -20,6 +20,9 @@ from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
+from zenml.step_operators.step_operator_entrypoint_configuration import (
+    StepOperatorEntrypointConfiguration,
+)
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -42,6 +45,21 @@ class BaseStepOperator(StackComponent, ABC):
             The config of the step operator.
         """
         return cast(BaseStepOperatorConfig, self._config)
+
+    @property
+    def entrypoint_config_class(
+        self,
+    ) -> Type[StepOperatorEntrypointConfiguration]:
+        """Returns the entrypoint configuration class for this step operator.
+
+        Concrete step operator implementations may override this property
+        to return a custom entrypoint configuration class if they need to
+        customize the entrypoint configuration.
+
+        Returns:
+            The entrypoint configuration class for this step operator.
+        """
+        return StepOperatorEntrypointConfiguration
 
     @abstractmethod
     def launch(

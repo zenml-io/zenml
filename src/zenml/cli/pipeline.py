@@ -26,14 +26,15 @@ from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineBuildFilterModel,
-    PipelineFilterModel,
-    PipelineRunFilterModel,
+    PipelineBuildBase,
+    PipelineBuildFilter,
+    PipelineFilter,
+    PipelineRunFilter,
+    ScheduleFilter,
 )
-from zenml.models.pipeline_build_models import PipelineBuildBaseModel
-from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.new.pipelines.pipeline import Pipeline
 from zenml.utils import source_utils, uuid_utils
+from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
 
@@ -67,8 +68,6 @@ def register_pipeline(
         source: Importable source resolving to a pipeline instance.
         parameters_path: Path to pipeline parameters file.
     """
-    cli_utils.print_active_config()
-
     if "." not in source:
         cli_utils.error(
             f"The given source path `{source}` is invalid. Make sure it looks "
@@ -171,8 +170,6 @@ def build_pipeline(
             be built.
         output_path: Optional file path to write the output to.
     """
-    cli_utils.print_active_config()
-
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline build` command without a "
@@ -197,19 +194,7 @@ def build_pipeline(
             cli_utils.declare(
                 f"Writing pipeline build output to `{output_path}`."
             )
-            with open(output_path, "w") as f:
-                f.write(
-                    build.yaml(
-                        exclude={
-                            "pipeline",
-                            "stack",
-                            "workspace",
-                            "user",
-                            "created",
-                            "updated",
-                        }
-                    )
-                )
+            write_yaml(output_path, build.to_yaml())
     else:
         cli_utils.declare("No docker builds required.")
 
@@ -275,8 +260,6 @@ def run_pipeline(
         prevent_build_reuse: If True, prevents automatic reusing of previous
             builds.
     """
-    cli_utils.print_active_config()
-
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline run` command without a "
@@ -290,12 +273,12 @@ def run_pipeline(
         name_id_or_prefix=pipeline_name_or_id, version=version
     )
 
-    build: Union[str, "PipelineBuildBaseModel", None] = None
+    build: Union[str, PipelineBuildBase, None] = None
     if build_path_or_id:
         if uuid_utils.is_valid_uuid(build_path_or_id):
             build = build_path_or_id
         elif os.path.exists(build_path_or_id):
-            build = PipelineBuildBaseModel.from_yaml(build_path_or_id)
+            build = PipelineBuildBase.from_yaml(build_path_or_id)
         else:
             cli_utils.error(
                 f"The specified build {build_path_or_id} is not a valid UUID "
@@ -313,14 +296,13 @@ def run_pipeline(
 
 
 @pipeline.command("list", help="List all registered pipelines.")
-@list_options(PipelineFilterModel)
+@list_options(PipelineFilter)
 def list_pipelines(**kwargs: Any) -> None:
     """List all registered pipelines.
 
     Args:
         **kwargs: Keyword arguments to filter pipelines.
     """
-    cli_utils.print_active_config()
     client = Client()
     with console.status("Listing pipelines...\n"):
         pipelines = client.list_pipelines(**kwargs)
@@ -360,8 +342,6 @@ def delete_pipeline(
         version: The version of the pipeline to delete.
         yes: If set, don't ask for confirmation.
     """
-    cli_utils.print_active_config()
-
     version_suffix = f" (version {version})" if version else ""
 
     if not yes:
@@ -392,14 +372,13 @@ def schedule() -> None:
 
 
 @schedule.command("list", help="List all pipeline schedules.")
-@list_options(ScheduleFilterModel)
+@list_options(ScheduleFilter)
 def list_schedules(**kwargs: Any) -> None:
     """List all pipeline schedules.
 
     Args:
         **kwargs: Keyword arguments to filter schedules.
     """
-    cli_utils.print_active_config()
     client = Client()
 
     schedules = client.list_schedules(**kwargs)
@@ -429,8 +408,6 @@ def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
         schedule_name_or_id: The name or ID of the schedule to delete.
         yes: If set, don't ask for confirmation.
     """
-    cli_utils.print_active_config()
-
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete schedule "
@@ -454,15 +431,13 @@ def runs() -> None:
 
 
 @runs.command("list", help="List all registered pipeline runs.")
-@list_options(PipelineRunFilterModel)
+@list_options(PipelineRunFilter)
 def list_pipeline_runs(**kwargs: Any) -> None:
     """List all registered pipeline runs for the filter.
 
     Args:
         **kwargs: Keyword arguments to filter pipeline runs.
     """
-    cli_utils.print_active_config()
-
     client = Client()
     try:
         with console.status("Listing pipeline runs...\n"):
@@ -496,8 +471,6 @@ def delete_pipeline_run(
         run_name_or_id: The name or ID of the pipeline run to delete.
         yes: If set, don't ask for confirmation.
     """
-    cli_utils.print_active_config()
-
     # Ask for confirmation to delete run.
     if not yes:
         confirmation = cli_utils.confirmation(
@@ -524,15 +497,13 @@ def builds() -> None:
 
 
 @builds.command("list", help="List all pipeline builds.")
-@list_options(PipelineBuildFilterModel)
+@list_options(PipelineBuildFilter)
 def list_pipeline_builds(**kwargs: Any) -> None:
     """List all pipeline builds for the filter.
 
     Args:
         **kwargs: Keyword arguments to filter pipeline builds.
     """
-    cli_utils.print_active_config()
-
     client = Client()
     try:
         with console.status("Listing pipeline builds...\n"):
@@ -568,8 +539,6 @@ def delete_pipeline_build(
         build_id: The ID of the pipeline build to delete.
         yes: If set, don't ask for confirmation.
     """
-    cli_utils.print_active_config()
-
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete pipeline build `{build_id}`?"

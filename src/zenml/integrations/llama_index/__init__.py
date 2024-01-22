@@ -12,25 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Llama Index integration."""
-from zenml.integrations.integration import Integration
+# from zenml.integrations.integration import Integration
 
-from zenml.logger import get_logger
-from zenml.integrations.constants import LLAMA_INDEX
-from zenml.integrations.integration import Integration
+# from zenml.logger import get_logger
+# from zenml.integrations.constants import LLAMA_INDEX
+# from zenml.integrations.integration import Integration
 
-logger = get_logger(__name__)
-
-
-class LlamaIndexIntegration(Integration):
-    """Definition of Llama Index integration for ZenML."""
-
-    NAME = LLAMA_INDEX
-    REQUIREMENTS = ["llama_index>=0.4.28,<0.6.0"]
-
-    @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        from zenml.integrations.llama_index import materializers  # noqa
+# logger = get_logger(__name__)
 
 
-LlamaIndexIntegration.check_installation()
+# class LlamaIndexIntegration(Integration):
+#     """Definition of Llama Index integration for ZenML."""
+
+#     NAME = LLAMA_INDEX
+#     REQUIREMENTS = ["llama_index>=0.4.28,<0.6.0"]
+
+#     @classmethod
+#     def activate(cls) -> None:
+#         """Activates the integration."""
+#         from zenml.integrations.llama_index import materializers  # noqa
+
+
+# LlamaIndexIntegration.check_installation()

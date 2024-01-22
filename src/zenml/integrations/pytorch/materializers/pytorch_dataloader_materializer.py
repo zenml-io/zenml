@@ -20,7 +20,7 @@ from torch.utils.data.dataloader import DataLoader
 
 from zenml.enums import ArtifactType
 from zenml.integrations.pytorch.materializers.base_pytorch_materializer import (
-    BasePyTorchMaterliazer,
+    BasePyTorchMaterializer,
 )
 
 if TYPE_CHECKING:
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 DEFAULT_FILENAME = "entire_dataloader.pt"
 
 
-class PyTorchDataLoaderMaterializer(BasePyTorchMaterliazer):
+class PyTorchDataLoaderMaterializer(BasePyTorchMaterializer):
     """Materializer to read/write PyTorch dataloaders and datasets."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataLoader, Dataset)

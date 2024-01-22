@@ -30,6 +30,20 @@ class ArtifactType(StrEnum):
     BASE = "BaseArtifact"
 
 
+class StepRunInputArtifactType(StrEnum):
+    """All possible types of a step run input artifact."""
+
+    DEFAULT = "default"  # input argument that is the output of a previous step
+    MANUAL = "manual"  # manually loaded via `zenml.load_artifact()`
+
+
+class StepRunOutputArtifactType(StrEnum):
+    """All possible types of a step run output artifact."""
+
+    DEFAULT = "default"  # output of the current step
+    MANUAL = "manual"  # manually saved via `zenml.save_artifact()`
+
+
 class VisualizationType(StrEnum):
     """All currently available visualization types."""
 
@@ -42,10 +56,24 @@ class VisualizationType(StrEnum):
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 
+    INITIALIZING = "initializing"
     FAILED = "failed"
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
+
+    @property
+    def is_finished(self) -> bool:
+        """Whether the execution status refers to a finished execution.
+
+        Returns:
+            Whether the execution status refers to a finished execution.
+        """
+        return self in {
+            ExecutionStatus.FAILED,
+            ExecutionStatus.COMPLETED,
+            ExecutionStatus.CACHED,
+        }
 
 
 class LoggingLevels(Enum):
@@ -72,7 +100,6 @@ class StackComponentType(StrEnum):
     IMAGE_BUILDER = "image_builder"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
-    SECRETS_MANAGER = "secrets_manager"
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
 
@@ -106,15 +133,10 @@ class StoreType(StrEnum):
 
 
 class SecretsStoreType(StrEnum):
-    """Secrets Store Backend Types.
+    """Secrets Store Backend Types."""
 
-    NOTE: this is a superset of the StoreType values because the set of secrets
-    store backends includes all the backends supported for zen stores.
-    """
-
-    NONE = "none"  # indicates that the secrets store is disabled
-    SQL = StoreType.SQL.value
-    REST = StoreType.REST.value
+    NONE = "none"  # indicates that no secrets store is used
+    SQL = "sql"
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
@@ -144,6 +166,7 @@ class CliCategories(StrEnum):
     HUB = "ZenML Hub"
     INTEGRATIONS = "Integrations"
     MANAGEMENT_TOOLS = "Management Tools"
+    MODEL_CONTROL_PLANE = "Model Control Plane"
     IDENTITY_AND_SECURITY = "Identity and Security"
     OTHER_COMMANDS = "Other Commands"
 
@@ -183,15 +206,31 @@ class AnalyticsEventSource(StrEnum):
     ZENML_SERVER = "zenml server"
 
 
-class PermissionType(StrEnum):
-    """All permission types."""
+class AuthScheme(StrEnum):
+    """The authentication scheme."""
 
-    # ANY CHANGES TO THIS ENUM WILL NEED TO BE DONE TOGETHER WITH A DB MIGRATION
-    WRITE = "write"  # allows the user to create, update, delete everything
-    READ = "read"  # allows the user to read everything
-    ME = (
-        "me"  # allows the user to self administrate (change name, password...)
-    )
+    NO_AUTH = "NO_AUTH"
+    HTTP_BASIC = "HTTP_BASIC"
+    OAUTH2_PASSWORD_BEARER = "OAUTH2_PASSWORD_BEARER"
+    EXTERNAL = "EXTERNAL"
+
+
+class OAuthGrantTypes(StrEnum):
+    """The OAuth grant types."""
+
+    OAUTH_PASSWORD = "password"
+    OAUTH_DEVICE_CODE = "urn:ietf:params:oauth:grant-type:device_code"
+    ZENML_EXTERNAL = "zenml-external"
+    ZENML_API_KEY = "zenml-api-key"
+
+
+class OAuthDeviceStatus(StrEnum):
+    """The OAuth device status."""
+
+    PENDING = "pending"
+    VERIFIED = "verified"
+    ACTIVE = "active"
+    LOCKED = "locked"
 
 
 class GenericFilterOps(StrEnum):
@@ -255,3 +294,55 @@ class EnvironmentType(StrEnum):
     NOTEBOOK = "notebook"
     PAPERSPACE = "paperspace"
     WSL = "wsl"
+
+
+class ModelStages(StrEnum):
+    """All possible stages of a Model Version."""
+
+    NONE = "none"
+    STAGING = "staging"
+    PRODUCTION = "production"
+    ARCHIVED = "archived"
+    LATEST = "latest"
+
+
+class ColorVariants(StrEnum):
+    """All possible color variants for frontend."""
+
+    GREY = "grey"
+    PURPLE = "purple"
+    RED = "red"
+    GREEN = "green"
+    YELLOW = "yellow"
+    ORANGE = "orange"
+    LIME = "lime"
+    TEAL = "teal"
+    TURQUOISE = "turquoise"
+    MAGENTA = "magenta"
+    BLUE = "blue"
+
+
+class TaggableResourceTypes(StrEnum):
+    """All possible resource types for tagging."""
+
+    ARTIFACT = "artifact"
+    ARTIFACT_VERSION = "artifact_version"
+    MODEL = "model"
+    MODEL_VERSION = "model_version"
+
+
+class ResponseUpdateStrategy(StrEnum):
+    """All available strategies to handle updated properties in the response."""
+
+    ALLOW = "allow"
+    IGNORE = "ignore"
+    DENY = "deny"
+
+
+class MetadataResourceTypes(StrEnum):
+    """All possible resource types for adding metadata."""
+
+    PIPELINE_RUN = "pipeline_run"
+    STEP_RUN = "step_run"
+    ARTIFACT_VERSION = "artifact_version"
+    MODEL_VERSION = "model_version"

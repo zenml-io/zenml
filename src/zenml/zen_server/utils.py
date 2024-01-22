@@ -22,26 +22,25 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     ENV_ZENML_SERVER,
-    ENV_ZENML_SERVER_ROOT_URL_PATH,
 )
 from zenml.enums import ServerProviderType
+from zenml.exceptions import OAuthError
 from zenml.logger import get_logger
 from zenml.zen_server.deploy.deployment import ServerDeployment
 from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
+from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
 
-
-ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
-
-
 _zen_store: Optional["SqlZenStore"] = None
+_rbac: Optional[RBACInterface] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -59,6 +58,34 @@ def zen_store() -> "SqlZenStore":
     return _zen_store
 
 
+def rbac() -> RBACInterface:
+    """Return the initialized RBAC component.
+
+    Raises:
+        RuntimeError: If the RBAC component is not initialized.
+
+    Returns:
+        The RBAC component.
+    """
+    global _rbac
+    if _rbac is None:
+        raise RuntimeError("RBAC component not initialized")
+    return _rbac
+
+
+def initialize_rbac() -> None:
+    """Initialize the RBAC component."""
+    global _rbac
+
+    if rbac_source := server_config().rbac_implementation_source:
+        from zenml.utils import source_utils
+
+        implementation_class = source_utils.load_and_validate_class(
+            rbac_source, expected_class=RBACInterface
+        )
+        _rbac = implementation_class()
+
+
 def initialize_zen_store() -> None:
     """Initialize the ZenML Store.
 
@@ -66,6 +93,10 @@ def initialize_zen_store() -> None:
         ValueError: If the ZenML Store is using a REST back-end.
     """
     logger.debug("Initializing ZenML Store for FastAPI...")
+
+    # Use an environment variable to flag the instance as a server
+    os.environ[ENV_ZENML_SERVER] = "true"
+
     zen_store_ = GlobalConfiguration().zen_store
 
     if not isinstance(zen_store_, SqlZenStore):
@@ -75,15 +106,23 @@ def initialize_zen_store() -> None:
             "when trying to start the ZenML Server."
         )
 
-    # We override track_analytics=False because we do not
-    # want to track anything server side.
-    zen_store_.track_analytics = False
-
-    # Use an environment variable to flag the instance as a server
-    os.environ[ENV_ZENML_SERVER] = "true"
-
     global _zen_store
     _zen_store = zen_store_
+
+
+_server_config: Optional[ServerConfiguration] = None
+
+
+def server_config() -> ServerConfiguration:
+    """Returns the ZenML Server configuration.
+
+    Returns:
+        The ZenML Server configuration.
+    """
+    global _server_config
+    if _server_config is None:
+        _server_config = ServerConfiguration.get_server_config()
+    return _server_config
 
 
 def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
@@ -183,6 +222,11 @@ def handle_exceptions(func: F) -> F:
 
     @wraps(func)
     def decorated(*args: Any, **kwargs: Any) -> Any:
+        # These imports can't happen at module level as this module is also
+        # used by the CLI when installed without the `server` extra
+        from fastapi import HTTPException
+        from fastapi.responses import JSONResponse
+
         from zenml.zen_server.auth import AuthContext, set_auth_context
 
         for arg in args:
@@ -197,6 +241,14 @@ def handle_exceptions(func: F) -> F:
 
         try:
             return func(*args, **kwargs)
+        except OAuthError as error:
+            # The OAuthError is special because it needs to have a JSON response
+            return JSONResponse(
+                status_code=error.status_code,
+                content=error.to_dict(),
+            )
+        except HTTPException:
+            raise
         except Exception as error:
             logger.exception("API error")
             http_exception = http_exception_from_error(error)
@@ -220,12 +272,17 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
         def f(model: Model = Depends(make_dependable(Model))):
             ...
 
+    UPDATE: Function from above mentioned Github issue was extended to support
+    multi-input parameters, e.g. tags: List[str]. It needs a default set to Query(<default>),
+    rather just plain <default>.
+
     Args:
         cls: The model class.
 
     Returns:
         Function to use in FastAPI `Depends`.
     """
+    from fastapi import Query
 
     def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
         from fastapi import HTTPException
@@ -238,6 +295,43 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
                 error["loc"] = tuple(["query"] + list(error["loc"]))
             raise HTTPException(422, detail=e.errors())
 
-    init_cls_and_handle_errors.__signature__ = inspect.signature(cls)  # type: ignore[attr-defined]
+    params = {v.name: v for v in inspect.signature(cls).parameters.values()}
+    query_params = getattr(cls, "API_MULTI_INPUT_PARAMS", [])
+    for qp in query_params:
+        if qp in params:
+            params[qp] = inspect.Parameter(
+                name=params[qp].name,
+                default=Query(params[qp].default),
+                kind=params[qp].kind,
+                annotation=params[qp].annotation,
+            )
+
+    init_cls_and_handle_errors.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
+        parameters=[v for v in params.values()]
+    )
 
     return init_cls_and_handle_errors
+
+
+def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
+    """Get the location of the given IP address.
+
+    Args:
+        ip_address: The IP address to get the location for.
+
+    Returns:
+        A tuple of city, region, country.
+    """
+    import ipinfo  # type: ignore[import-untyped]
+
+    try:
+        handler = ipinfo.getHandler()
+        details = handler.getDetails(ip_address)
+        return (
+            details.city,
+            details.region,
+            details.country_name,
+        )
+    except Exception:
+        logger.exception(f"Could not get IP location for {ip_address}.")
+        return "", "", ""

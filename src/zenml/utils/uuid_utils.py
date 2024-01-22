@@ -68,6 +68,6 @@ def generate_uuid_from_string(value: str) -> UUID:
     Returns:
         The generated UUID.
     """
-    hash_ = hashlib.md5()
+    hash_ = hashlib.md5()  # nosec
     hash_.update(value.encode("utf-8"))
     return UUID(hex=hash_.hexdigest(), version=4)

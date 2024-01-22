@@ -17,6 +17,8 @@ import pytest
 from numpy import ndarray
 from typing_extensions import Annotated
 
+from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.orchestrators.step_runner import OutputSignature
 from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
@@ -55,6 +57,18 @@ def func_with_single_annotated_output() -> Annotated[int, "custom_output"]:
     return 1
 
 
+def func_with_single_artifact_config_output() -> (
+    Annotated[int, ArtifactConfig(name="custom_output")]
+):
+    return 1
+
+
+def func_with_single_output_with_both_name_and_artifact_config() -> (
+    Annotated[int, "custom_output", ArtifactConfig()]
+):
+    return 1
+
+
 def func_with_tuple_output() -> Tuple[int, ...]:
     return_value = (1, 2)
     return return_value
@@ -77,19 +91,188 @@ def func_with_multiple_annotated_outputs() -> (
     return 1, 2
 
 
+def func_with_multiple_annotated_outputs_and_artifact_config() -> (
+    Tuple[Annotated[int, ArtifactConfig(name="custom_output")], int]
+):
+    return 1, 2
+
+
+def func_with_multiple_annotated_outputs_and_model_artifact_config() -> (
+    Tuple[
+        Annotated[
+            int,
+            ArtifactConfig(name="custom_output", is_model_artifact=True),
+        ],
+        int,
+    ]
+):
+    return 1, 2
+
+
+def func_with_multiple_annotated_outputs_and_deployment_artifact_config() -> (
+    Tuple[
+        Annotated[
+            int,
+            ArtifactConfig(name="custom_output", is_deployment_artifact=True),
+        ],
+        int,
+    ]
+):
+    return 1, 2
+
+
 @pytest.mark.parametrize(
     "func,expected_output",
     [
         (func_with_no_output_annotation_and_no_return, {}),
-        (func_with_no_output_annotation_and_return, {"output": Any}),
-        (func_with_single_output, {"output": int}),
-        (func_with_single_annotated_output, {"custom_output": int}),
-        (func_with_tuple_output, {"output": tuple}),
-        (func_with_annotated_tuple_output, {"custom_output": tuple}),
-        (func_with_multiple_outputs, {"output_0": int, "output_1": int}),
+        (
+            func_with_no_output_annotation_and_return,
+            {
+                "output": OutputSignature(
+                    resolved_annotation=Any,
+                    artifact_config=None,
+                    has_custom_name=False,
+                )
+            },
+        ),
+        (
+            func_with_single_output,
+            {
+                "output": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
+                )
+            },
+        ),
+        (
+            func_with_single_annotated_output,
+            {
+                "custom_output": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=ArtifactConfig(name="custom_output"),
+                    has_custom_name=True,
+                )
+            },
+        ),
+        (
+            func_with_single_artifact_config_output,
+            {
+                "custom_output": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=ArtifactConfig(name="custom_output"),
+                    has_custom_name=True,
+                )
+            },
+        ),
+        (
+            func_with_single_output_with_both_name_and_artifact_config,
+            {
+                "custom_output": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=ArtifactConfig(name="custom_output"),
+                    has_custom_name=True,
+                )
+            },
+        ),
+        (
+            func_with_tuple_output,
+            {
+                "output": OutputSignature(
+                    resolved_annotation=tuple,
+                    artifact_config=None,
+                    has_custom_name=False,
+                )
+            },
+        ),
+        (
+            func_with_annotated_tuple_output,
+            {
+                "custom_output": OutputSignature(
+                    resolved_annotation=tuple,
+                    artifact_config=ArtifactConfig(name="custom_output"),
+                    has_custom_name=True,
+                )
+            },
+        ),
+        (
+            func_with_multiple_outputs,
+            {
+                "output_0": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
+                ),
+                "output_1": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
+                ),
+            },
+        ),
         (
             func_with_multiple_annotated_outputs,
-            {"custom_output": int, "output_1": int},
+            {
+                "custom_output": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=ArtifactConfig(name="custom_output"),
+                    has_custom_name=True,
+                ),
+                "output_1": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
+                ),
+            },
+        ),
+        (
+            func_with_multiple_annotated_outputs_and_artifact_config,
+            {
+                "custom_output": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=ArtifactConfig(name="custom_output"),
+                    has_custom_name=True,
+                ),
+                "output_1": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
+                ),
+            },
+        ),
+        (
+            func_with_multiple_annotated_outputs_and_model_artifact_config,
+            {
+                "custom_output": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=ArtifactConfig(
+                        name="custom_output", is_model_artifact=True
+                    ),
+                    has_custom_name=True,
+                ),
+                "output_1": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
+                ),
+            },
+        ),
+        (
+            func_with_multiple_annotated_outputs_and_deployment_artifact_config,
+            {
+                "custom_output": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=ArtifactConfig(
+                        name="custom_output", is_deployment_artifact=True
+                    ),
+                    has_custom_name=True,
+                ),
+                "output_1": OutputSignature(
+                    resolved_annotation=int,
+                    artifact_config=None,
+                    has_custom_name=False,
+                ),
+            },
         ),
     ],
 )
@@ -98,6 +281,18 @@ def test_step_output_annotation_parsing(func, expected_output):
 
 
 def func_with_multiple_annotations() -> Annotated[int, "a", "b"]:
+    return 1
+
+
+def func_with_multiple_artifact_configs() -> (
+    Annotated[int, ArtifactConfig(), ArtifactConfig()]
+):
+    return 1
+
+
+def func_with_ambiguous_output_name() -> (
+    Annotated[int, "a", ArtifactConfig(name="b")]
+):
     return 1
 
 
@@ -120,6 +315,8 @@ def func_with_duplicate_output_name() -> (
     [
         (func_with_multiple_annotations, ValueError),
         (func_with_non_string_annotation, ValueError),
+        (func_with_multiple_artifact_configs, ValueError),
+        (func_with_ambiguous_output_name, ValueError),
         (func_with_ellipsis_annotation, RuntimeError),
         (func_with_duplicate_output_name, RuntimeError),
     ],

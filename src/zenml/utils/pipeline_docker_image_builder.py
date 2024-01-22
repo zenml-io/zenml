@@ -120,7 +120,7 @@ class PipelineDockerImageBuilder:
             # pipeline?
             return docker_settings.parent_image, dockerfile, requirements
 
-        stack.validate_image_builder()
+        stack.validate()
         image_builder = stack.image_builder
         if not image_builder:
             raise RuntimeError(
@@ -407,7 +407,8 @@ class PipelineDockerImageBuilder:
 
             try:
                 local_requirements = subprocess.check_output(
-                    command, shell=True
+                    command,
+                    shell=True,  # nosec
                 ).decode()
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(
@@ -638,8 +639,10 @@ class PipelineDockerImageBuilder:
         lines.append("RUN chmod -R a+rw .")
 
         if docker_settings.user:
-            lines.append(f"USER {docker_settings.user}")
+            # Change file ownership to specified user
             lines.append(f"RUN chown -R {docker_settings.user} .")
+            # Switch back to specified user for subsequent instructions
+            lines.append(f"USER {docker_settings.user}")
 
         if entrypoint:
             lines.append(f"ENTRYPOINT {entrypoint}")

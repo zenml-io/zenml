@@ -28,33 +28,39 @@ from starlette.responses import FileResponse
 import zenml
 from zenml.analytics import source_context
 from zenml.constants import API, HEALTH
-from zenml.enums import SourceContextTypes
+from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
-    artifacts_endpoints,
+    artifact_endpoint,
+    artifact_version_endpoints,
     auth_endpoints,
     code_repositories_endpoints,
+    devices_endpoints,
     flavors_endpoints,
+    model_versions_endpoints,
+    models_endpoints,
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
     pipelines_endpoints,
-    role_assignments_endpoints,
-    roles_endpoints,
     run_metadata_endpoints,
     runs_endpoints,
     schedule_endpoints,
     secrets_endpoints,
     server_endpoints,
+    service_accounts_endpoints,
     service_connectors_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
-    team_role_assignments_endpoints,
-    teams_endpoints,
+    tags_endpoints,
     users_endpoints,
     workspaces_endpoints,
 )
-from zenml.zen_server.utils import ROOT_URL_PATH, initialize_zen_store
+from zenml.zen_server.utils import (
+    initialize_rbac,
+    initialize_zen_store,
+    server_config,
+)
 
 DASHBOARD_DIRECTORY = "dashboard"
 
@@ -74,7 +80,7 @@ def relative_path(rel: str) -> str:
 app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
-    root_path=ROOT_URL_PATH,
+    root_path=server_config().root_url_path,
     default_response_class=ORJSONResponse,
 )
 
@@ -99,7 +105,7 @@ def validation_exception_handler(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=server_config().cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -141,9 +147,10 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
 @app.on_event("startup")
 def initialize() -> None:
     """Initialize the ZenML server."""
-    # IMPORTANT: this needs to be done before the fastapi app starts, to avoid
+    # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
+    initialize_rbac()
 
 
 app.mount(
@@ -195,31 +202,41 @@ def dashboard(request: Request) -> Any:
 
 
 app.include_router(auth_endpoints.router)
+app.include_router(devices_endpoints.router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(workspaces_endpoints.router)
 app.include_router(flavors_endpoints.router)
-app.include_router(roles_endpoints.router)
-app.include_router(role_assignments_endpoints.router)
-app.include_router(team_role_assignments_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
 app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)
+app.include_router(secrets_endpoints.op_router)
 app.include_router(server_endpoints.router)
+app.include_router(service_accounts_endpoints.router)
 app.include_router(service_connectors_endpoints.router)
 app.include_router(service_connectors_endpoints.types_router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
-app.include_router(artifacts_endpoints.router)
-app.include_router(teams_endpoints.router)
+app.include_router(artifact_endpoint.artifact_router)
+app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
-app.include_router(users_endpoints.activation_router)
+
+# When the auth scheme is set to EXTERNAL, users cannot be managed via the
+# API.
+if server_config().auth_scheme != AuthScheme.EXTERNAL:
+    app.include_router(users_endpoints.activation_router)
+
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
+app.include_router(models_endpoints.router)
+app.include_router(model_versions_endpoints.router)
+app.include_router(model_versions_endpoints.model_version_artifacts_router)
+app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
+app.include_router(tags_endpoints.router)
 
 
 def get_root_static_files() -> List[str]:
