@@ -6,6 +6,7 @@ on:
 jobs:
   publish:
     name: Build 🔨 and publish 📰 the api docs 📁 to gh-pages
+    if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     env:
       ZENML_DEBUG: 1
