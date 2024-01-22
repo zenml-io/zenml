@@ -93,9 +93,9 @@ jobs:
   update-templates-to-examples:
     needs: check-membership
     # if team member commented, not a draft, on a PR, using /fulltest
-    # if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
-    #   == false && github.event.issue.pull_request && contains(github.event.comment.body,
-    #   '/fulltest') && github.event.pull_request.head.repo.full_name == github.repository
+    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+      == false && github.event.issue.pull_request && contains(github.event.comment.body,
+      '/fulltest') && github.event.pull_request.head.repo.full_name == github.repository
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
     uses: ./.github/workflows/update-templates-to-examples.yml
@@ -106,9 +106,9 @@ jobs:
   custom-ubuntu-unit-test:
     needs: check-membership
     # if team member commented, not a draft, on a PR, using /fulltest
-    if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
-      == false && github.event.issue.pull_request && contains(github.event.comment.body,
-      '/fulltest')
+    # if: needs.check-membership.outputs.member_check == 'true' && github.event.pull_request.draft
+    #   == false && github.event.issue.pull_request && contains(github.event.comment.body,
+    #   '/fulltest')
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
