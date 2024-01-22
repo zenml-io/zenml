@@ -17,12 +17,12 @@ from typing import TYPE_CHECKING, Optional, Type, cast
 
 import sky
 
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_azure_vm_flavor import (
-    SkypilotAzureOrchestratorConfig,
-    SkypilotAzureOrchestratorSettings,
-)
 from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (
     SkypilotBaseOrchestrator,
+)
+from zenml.integrations.vm_azure.flavors.skypilot_orchestrator_azure_vm_flavor import (
+    SkypilotAzureOrchestratorConfig,
+    SkypilotAzureOrchestratorSettings,
 )
 from zenml.logger import get_logger
 

@@ -15,17 +15,17 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.integrations.skypilot import SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
 )
+from zenml.integrations.vm_azure import SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
-    from zenml.integrations.skypilot.orchestrators import (
+    from zenml.integrations.vm_azure.orchestrators import (
         SkypilotAzureOrchestrator,
     )
 
@@ -115,7 +115,7 @@ class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Implementation class for this flavor.
         """
-        from zenml.integrations.skypilot.orchestrators import (
+        from zenml.integrations.vm_azure.orchestrators import (
             SkypilotAzureOrchestrator,
         )
 

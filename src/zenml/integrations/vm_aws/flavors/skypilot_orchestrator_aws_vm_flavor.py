@@ -11,45 +11,40 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Skypilot orchestrator GCP flavor."""
+"""Skypilot orchestrator AWS flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.integrations.gcp.google_credentials_mixin import (
-    GoogleCredentialsConfigMixin,
-)
-from zenml.integrations.skypilot import SKYPILOT_GCP_ORCHESTRATOR_FLAVOR
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
 )
+from zenml.integrations.vm_aws import SKYPILOT_AWS_ORCHESTRATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
-logger = get_logger(__name__)
-
-
 if TYPE_CHECKING:
-    from zenml.integrations.skypilot.orchestrators import (
-        SkypilotGCPOrchestrator,
+    from zenml.integrations.vm_aws.orchestrators import (
+        SkypilotAWSOrchestrator,
     )
 
 
-class SkypilotGCPOrchestratorSettings(SkypilotBaseOrchestratorSettings):
-    """Skypilot orchestrator settings for GCP."""
+logger = get_logger(__name__)
 
 
-class SkypilotGCPOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    SkypilotBaseOrchestratorConfig,
-    GoogleCredentialsConfigMixin,
-    SkypilotGCPOrchestratorSettings,
+class SkypilotAWSOrchestratorSettings(SkypilotBaseOrchestratorSettings):
+    """Skypilot orchestrator settings."""
+
+
+class SkypilotAWSOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    SkypilotBaseOrchestratorConfig, SkypilotAWSOrchestratorSettings
 ):
-    """Skypilot orchestrator config for GCP."""
+    """Skypilot orchestrator config."""
 
 
-class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Skypilot orchestrator for GCP."""
+class SkypilotAWSOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor for the Skypilot AWS orchestrator."""
 
     @property
     def name(self) -> str:
@@ -58,7 +53,7 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Name of the orchestrator flavor.
         """
-        return SKYPILOT_GCP_ORCHESTRATOR_FLAVOR
+        return SKYPILOT_AWS_ORCHESTRATOR_FLAVOR
 
     @property
     def service_connector_requirements(
@@ -74,7 +69,7 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="gcp-generic",
+            resource_type="aws-generic",
         )
 
     @property
@@ -102,7 +97,7 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/gcp-skypilot.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/aws-skypilot.png"
 
     @property
     def config_class(self) -> Type[BaseOrchestratorConfig]:
@@ -111,17 +106,17 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The config class.
         """
-        return SkypilotGCPOrchestratorConfig
+        return SkypilotAWSOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["SkypilotGCPOrchestrator"]:
+    def implementation_class(self) -> Type["SkypilotAWSOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:
             Implementation class for this flavor.
         """
-        from zenml.integrations.skypilot.orchestrators import (
-            SkypilotGCPOrchestrator,
+        from zenml.integrations.vm_aws.orchestrators import (
+            SkypilotAWSOrchestrator,
         )
 
-        return SkypilotGCPOrchestrator
+        return SkypilotAWSOrchestrator
