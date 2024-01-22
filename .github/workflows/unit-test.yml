@@ -90,6 +90,7 @@ jobs:
         uses: mxschmitt/action-tmate@v3.17
       - name: Run unit tests
         run: |
+          pip install numpy
           bash scripts/test-coverage-xml.sh unit
       # - name: Upload coverage
       #  # only do it for python 3.8, we don't need to do it for every version

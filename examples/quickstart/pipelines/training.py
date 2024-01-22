@@ -24,12 +24,15 @@ from pipelines import (
     feature_engineering,
 )
 from zenml import ExternalArtifact, pipeline
+from zenml.config.docker_settings import DockerSettings
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+docker_settings = DockerSettings(parent_image="safoinext/zenml-dev:0.54.1")
 
-@pipeline
+
+@pipeline(settings={"docker": docker_settings})
 def training(
     train_dataset_id: Optional[UUID] = None,
     test_dataset_id: Optional[UUID] = None,
