@@ -21,7 +21,6 @@ from typing_extensions import Annotated
 
 from zenml import get_pipeline_context, get_step_context, pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
-from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.client import Client
 from zenml.enums import ModelStages
 from zenml.model.model import Model
@@ -590,13 +589,13 @@ def _producer_step() -> (
 def _consumer_pipeline_with_step_context():
     _consumer_step.with_options(
         model=Model(name="step", version=ModelStages.LATEST)
-    )(ExternalArtifact(name="output_0"), 1)
+    )(Client().get_artifact_version(name_id_or_prefix="output_0"), 1)
 
 
 @pipeline(model=Model(name="step", version=ModelStages.LATEST))
 def _consumer_pipeline_with_pipeline_context():
     _consumer_step(
-        ExternalArtifact(name="output_2"),
+        Client().get_artifact_version(name_id_or_prefix="output_2"),
         3,
     )
 

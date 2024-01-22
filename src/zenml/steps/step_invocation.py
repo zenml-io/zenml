@@ -129,10 +129,6 @@ class StepInvocation:
         Returns:
             The finalized step configuration.
         """
-        from zenml.artifacts.external_artifact_config import (
-            ExternalArtifactConfiguration,
-        )
-
         # Validate the upstream steps for legacy .after() calls
         self._get_and_validate_step_upstream_steps()
 
@@ -151,15 +147,13 @@ class StepInvocation:
         )
         self.step.configure(parameters=parameters_to_apply)
 
-        external_artifacts: Dict[str, ExternalArtifactConfiguration] = {}
-        for key, artifact in self.external_artifacts.items():
-            if artifact.value is not None:
-                artifact.upload_by_value()
-            external_artifacts[key] = artifact.config
+        external_artifact_ids = {}
+        for name, artifact in self.external_artifacts.items():
+            external_artifact_ids[name] = artifact.upload_by_value()
 
         return self.step._finalize_configuration(
             input_artifacts=self.input_artifacts,
-            external_artifacts=external_artifacts,
+            external_artifact_ids=external_artifact_ids,
             model_artifacts_or_metadata=self.model_artifacts_or_metadata,
             client_lazy_loaders=self.client_lazy_loaders,
         )

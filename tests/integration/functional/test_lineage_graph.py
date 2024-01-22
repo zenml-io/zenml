@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Tests for the lineage graph."""
 
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 from typing_extensions import Annotated
@@ -23,7 +22,7 @@ from tests.integration.functional.zen_stores.utils import (
     int_plus_one_test_step,
 )
 from zenml import load_artifact, pipeline, save_artifact, step
-from zenml.artifacts.external_artifact import ExternalArtifact
+from zenml.client import Client
 from zenml.enums import MetadataResourceTypes
 from zenml.lineage_graph.lineage_graph import (
     ARTIFACT_PREFIX,
@@ -32,9 +31,6 @@ from zenml.lineage_graph.lineage_graph import (
 )
 from zenml.metadata.metadata_types import MetadataTypeEnum, Uri
 from zenml.models import PipelineRunResponse
-
-if TYPE_CHECKING:
-    from zenml.client import Client
 
 
 def test_generate_run_nodes_and_edges(
@@ -188,7 +184,9 @@ def external_artifact_loader_step(a: int) -> int:
 
 @pipeline
 def second_pipeline(artifact_version_id: UUID):
-    external_artifact_loader_step(a=ExternalArtifact(id=artifact_version_id))
+    external_artifact_loader_step(
+        a=Client().get_artifact_version(artifact_version_id)
+    )
 
 
 def test_add_external_artifacts(clean_client: "Client"):

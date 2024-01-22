@@ -23,12 +23,10 @@ from typing import (
     Tuple,
     Union,
 )
+from uuid import UUID
 
 from pydantic import root_validator, validator
 
-from zenml.artifacts.external_artifact_config import (
-    ExternalArtifactConfiguration,
-)
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
@@ -153,7 +151,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     caching_parameters: Mapping[str, Any] = {}
-    external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
+    external_input_artifact_ids: Mapping[str, UUID] = {}
     model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}
     client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}

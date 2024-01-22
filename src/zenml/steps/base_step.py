@@ -32,6 +32,7 @@ from typing import (
     Union,
     cast,
 )
+from uuid import UUID
 
 from pydantic import BaseModel, Extra, ValidationError
 
@@ -61,9 +62,6 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
-    from zenml.artifacts.external_artifact_config import (
-        ExternalArtifactConfiguration,
-    )
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.step_configurations import (
         PartialArtifactConfiguration,
@@ -497,9 +495,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
             elif isinstance(value, ExternalArtifact):
                 external_artifacts[key] = value
-                if not value.id:
-                    # If the external artifact references a fixed artifact by
-                    # ID, caching behaves as expected.
+                if not value._id:
                     logger.warning(
                         "Using an external artifact as step input currently "
                         "invalidates caching for the step and all downstream "
@@ -1032,7 +1028,7 @@ To avoid this consider setting step parameters only in one place (config or code
     def _validate_inputs(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
+        external_artifact_ids: Dict[str, UUID],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
     ) -> None:
@@ -1043,7 +1039,7 @@ To avoid this consider setting step parameters only in one place (config or code
 
         Args:
             input_artifacts: The input artifacts.
-            external_artifacts: The external input artifacts.
+            external_artifact_ids: The external artifact ids.
             model_artifacts_or_metadata: The model artifacts or metadata.
             client_lazy_loaders: The client lazy loaders.
 
@@ -1053,8 +1049,8 @@ To avoid this consider setting step parameters only in one place (config or code
         for key in self.entrypoint_definition.inputs.keys():
             if (
                 key in input_artifacts
+                or key in external_artifact_ids
                 or key in self.configuration.parameters
-                or key in external_artifacts
                 or key in model_artifacts_or_metadata
                 or key in client_lazy_loaders
             ):
@@ -1064,7 +1060,7 @@ To avoid this consider setting step parameters only in one place (config or code
     def _finalize_configuration(
         self,
         input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
+        external_artifact_ids: Dict[str, UUID],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
     ) -> "StepConfiguration":
@@ -1077,7 +1073,7 @@ To avoid this consider setting step parameters only in one place (config or code
 
         Args:
             input_artifacts: The input artifacts of this step.
-            external_artifacts: The external artifacts of this step.
+            external_artifact_ids: The external artifact IDs of this step.
             model_artifacts_or_metadata: The model artifacts or metadata of
                 this step.
             client_lazy_loaders: The client lazy loaders of this step.
@@ -1152,7 +1148,7 @@ To avoid this consider setting step parameters only in one place (config or code
         self.configure(parameters=parameters, merge=False)
         self._validate_inputs(
             input_artifacts=input_artifacts,
-            external_artifacts=external_artifacts,
+            external_artifact_ids=external_artifact_ids,
             model_artifacts_or_metadata=model_artifacts_or_metadata,
             client_lazy_loaders=client_lazy_loaders,
         )
@@ -1164,7 +1160,7 @@ To avoid this consider setting step parameters only in one place (config or code
         self._configuration = self._configuration.copy(
             update={
                 "caching_parameters": self.caching_parameters,
-                "external_input_artifacts": external_artifacts,
+                "external_input_artifact_ids": external_artifact_ids,
                 "model_artifacts_or_metadata": model_artifacts_or_metadata,
                 "client_lazy_loaders": client_lazy_loaders,
             }

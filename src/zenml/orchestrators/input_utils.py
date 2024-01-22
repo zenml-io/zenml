@@ -78,11 +78,10 @@ def resolve_step_inputs(
 
     for (
         name,
-        external_artifact,
-    ) in step.config.external_input_artifacts.items():
-        artifact_version_id = external_artifact.get_artifact_version_id()
+        external_artifact_id,
+    ) in step.config.external_input_artifact_ids.items():
         input_artifacts[name] = Client().get_artifact_version(
-            artifact_version_id
+            external_artifact_id
         )
 
     for name, config_ in step.config.model_artifacts_or_metadata.items():
