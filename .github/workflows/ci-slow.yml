@@ -221,4 +221,5 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      is-slow-ci: true
     secrets: inherit
