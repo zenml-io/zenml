@@ -168,6 +168,7 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      is-slow-ci: true
     secrets: inherit
   macos-integration-test:
     needs: check-membership
@@ -186,6 +187,7 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      is-slow-ci: true
     secrets: inherit
   custom-ubuntu-integration-test:
     needs: check-membership
