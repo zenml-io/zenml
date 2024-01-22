@@ -52,6 +52,16 @@ jobs:
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
     runs-on: ubuntu-dind-runners
+    needs: check-membership
+    # if team member commented, not a draft, on a PR, using /fulltest
+    if: >
+      needs.check-membership.outputs.member_check == 'true' &&
+      (
+        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+      github.event.pull_request.draft == false && contains(github.event.comment.body,
+      '/fulltest')) ||
+        (github.event_name == 'workflow_dispatch')
+      )
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
