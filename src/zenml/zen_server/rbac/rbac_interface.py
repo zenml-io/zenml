@@ -70,6 +70,6 @@ class RBACInterface(ABC):
         Args:
             user: User for which the resource membership should be updated.
             resource: The resource.
-            action: The actions that the user should be able to perform on the
+            actions: The actions that the user should be able to perform on the
                 resource.
         """

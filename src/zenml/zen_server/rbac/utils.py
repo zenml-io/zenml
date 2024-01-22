@@ -535,7 +535,7 @@ def get_schema_for_resource_type(
         WorkspaceSchema,
     )
 
-    mapping: Dict[ResourceType, "BaseSchema"] = {
+    mapping: Dict[ResourceType, Type["BaseSchema"]] = {
         ResourceType.STACK: StackSchema,
         ResourceType.FLAVOR: FlavorSchema,
         ResourceType.STACK_COMPONENT: StackComponentSchema,
@@ -568,7 +568,7 @@ def update_resource_membership(
     Args:
         user: User for which the resource membership should be updated.
         resource: The resource.
-        action: The actions that the user should be able to perform on the
+        actions: The actions that the user should be able to perform on the
             resource.
     """
     if not server_config().rbac_enabled:
