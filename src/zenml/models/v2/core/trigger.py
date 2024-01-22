@@ -15,7 +15,7 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from pydantic import Field
+from pydantic import Field, BaseModel
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
@@ -26,14 +26,12 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.update import update_model
-from zenml.models.v2.core.action_plan import ActionPlanResponse
-from zenml.models.v2.core.event_filter import EventFilterResponse
+
+# ------------------ Base Model ------------------
 
 
-# ------------------ Request Model ------------------
-class TriggerRequest(WorkspaceScopedRequest):
-    """Model for creating a new Trigger."""
-
+class TriggerBase(BaseModel):
+    """Base model for triggers."""
     name: str = Field(
         title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
     )
@@ -45,6 +43,10 @@ class TriggerRequest(WorkspaceScopedRequest):
     event_filter: Dict[str, Any]
     action_plan: Dict[str, Any]
 
+
+# ------------------ Request Model ------------------
+class TriggerRequest(TriggerBase, WorkspaceScopedRequest):
+    """Model for creating a new Trigger."""
     # executions: somehow we need to link to executed Actions here
 
 
@@ -61,13 +63,13 @@ class TriggerUpdate(TriggerRequest):
 
 class TriggerResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for triggers."""
-
-    created: datetime = Field(
-        title="The timestamp when this trigger was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this trigger was last updated.",
-    )
+    #
+    # created: datetime = Field(
+    #     title="The timestamp when this trigger was created."
+    # )
+    # updated: datetime = Field(
+    #     title="The timestamp when this trigger was last updated.",
+    # )
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -88,10 +90,10 @@ class TriggerResponse(
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event: EventFilterResponse = Field(
+    event: Dict[str, Any] = Field(
         title="The event that activates this trigger.",
     )
-    action: ActionPlanResponse = Field(
+    action: Dict[str, Any] = Field(
         title="The actions that is executed by this trigger.",
     )
 
@@ -104,9 +106,4 @@ class TriggerFilter(WorkspaceScopedFilter):
     name: str = Field(
         title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
     )
-    description: str = Field(
-        default="",
-        title="The description of the trigger",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    # Enable filtering by event and action ?
+    # TODO: Enable filtering by event_filter

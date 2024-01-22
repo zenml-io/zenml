@@ -16,8 +16,8 @@
 
 from fastapi import APIRouter, Security
 
-from zenml.constants import API, EVENTS, VERSION_1
-from zenml.events import event_flavor_registry
+from zenml.constants import API, EVENT_FLAVORS, VERSION_1
+from zenml.events.event_flavor_registry import EventFlavorRegistry
 from zenml.events.base_event_flavor import EventFlavorResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -26,8 +26,8 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=API + VERSION_1 + EVENTS,
-    tags=["events"],
+    prefix=API + VERSION_1 + EVENT_FLAVORS,
+    tags=["event-flavors"],
     responses={401: error_response, 403: error_response},
 )
 
@@ -81,7 +81,7 @@ def get_flavor(
         The requested stack.
     """
     try:
-        return event_flavor_registry.get_event_flavor(flavor_name)().to_model()
+        return EventFlavorRegistry().get_event_flavor(flavor_name)().to_model()
     except KeyError:
         raise KeyError("No event flavor by that name exists.")
         # TODO: Implement this properly

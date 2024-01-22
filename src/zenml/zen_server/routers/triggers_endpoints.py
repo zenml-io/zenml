@@ -117,6 +117,7 @@ def update_trigger(
     Returns:
         The updated trigger.
     """
+    # TODO: Look into updating event/action
     return verify_permissions_and_update_entity(
         id=trigger_id,
         update_model=trigger_update,

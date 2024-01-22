@@ -45,14 +45,6 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
-from zenml.models.v2.core.action_plan import (
-    ActionPlanRequest,
-    ActionPlanFilter,
-    ActionPlanUpdate,
-    ActionPlanResponse,
-    ActionPlanResponseBody,
-    ActionPlanResponseMetadata
-)
 from zenml.models.v2.core.api_key import (
     APIKey,
     APIKeyRequest,
@@ -296,14 +288,6 @@ from zenml.models.v2.core.trigger import (
     TriggerResponseBody,
     TriggerResponseMetadata
 )
-from zenml.models.v2.core.event_filter import (
-    EventFilterRequest,
-    EventFilterFilter,
-    EventFilterUpdate,
-    EventFilterResponse,
-    EventFilterResponseBody,
-    EventFilterResponseMetadata
-)
 from zenml.models.v2.core.event_source import (
     EventSourceRequest,
     EventSourceFilter,
@@ -492,7 +476,18 @@ StepRunResponseMetadata.update_forward_refs(
     LogsResponse=LogsResponse,
     RunMetadataResponse=RunMetadataResponse,
 )
-
+TriggerResponse.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+)
+TriggerResponseBody.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+)
+TriggerResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+)
 __all__ = [
     # V2 Base
     "BaseRequest",
@@ -517,12 +512,6 @@ __all__ = [
     "UUIDFilter",
     "Page",
     # V2 Core
-    "ActionPlanResponse",
-    "ActionPlanRequest",
-    "ActionPlanFilter",
-    "ActionPlanUpdate",
-    "ActionPlanResponseBody",
-    "ActionPlanResponseMetadata",
     "APIKey",
     "APIKeyRequest",
     "APIKeyUpdate",
@@ -689,12 +678,6 @@ __all__ = [
     "EventSourceUpdate",
     "EventSourceResponseBody",
     "EventSourceResponseMetadata",
-    "EventFilterResponse",
-    "EventFilterRequest",
-    "EventFilterFilter",
-    "EventFilterUpdate",
-    "EventFilterResponseBody",
-    "EventFilterResponseMetadata",
     "UserRequest",
     "UserUpdate",
     "UserFilter",

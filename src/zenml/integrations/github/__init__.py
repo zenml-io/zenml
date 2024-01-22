@@ -14,7 +14,7 @@
 """Initialization of the GitHub ZenML integration."""
 from typing import List, Type
 
-from zenml.events.base_event_flavor import BaseEventFlavor
+from zenml.events import BaseEventFlavor
 from zenml.integrations.constants import GITHUB
 from zenml.integrations.integration import Integration
 

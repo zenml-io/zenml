@@ -51,7 +51,7 @@ class EventFlavorRegistry:
         """
         integrated_flavors = []
         for _, integration in integration_registry.integrations.items():
-            for flavor in integration.action_flavors():
+            for flavor in integration.event_flavors():
                 integrated_flavors.append(flavor)
 
         return integrated_flavors
@@ -110,6 +110,3 @@ class EventFlavorRegistry:
             A dictionary of registered event_source flavorss.
         """
         return self.event_flavors
-
-
-event_flavor_registry = EventFlavorRegistry()

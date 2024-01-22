@@ -20,15 +20,13 @@ from typing import (
     Dict,
     List,
     Optional,
-    Type,
+    Type, TYPE_CHECKING,
 )
 
-from fastapi import APIRouter
 from pydantic import BaseModel, Extra
 
-from zenml.constants import API, EVENTS, VERSION_1
-
-events_router = APIRouter(prefix=API + VERSION_1 + EVENTS, tags=["events"])
+if TYPE_CHECKING:
+    from fastapi import APIRouter
 
 
 class EventConfig(BaseModel, ABC):
@@ -97,7 +95,7 @@ class BaseEventFlavor:
 
     source_filters: List[EventConfig]
 
-    register_endpoint: Optional[Callable[..., Callable[..., Type[APIRouter]]]]
+    register_endpoint: Optional[Callable[..., Callable[..., Type["APIRouter"]]]]
 
     def to_model(self) -> EventFlavorResponse:
         """Convert the Flavor into a Response Model."""

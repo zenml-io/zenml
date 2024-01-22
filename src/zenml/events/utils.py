@@ -14,7 +14,7 @@
 """Utils for event sources and event filters."""
 from typing import Any, Dict
 
-from zenml.events.event_flavor_registry import event_flavor_registry
+from zenml.events.event_flavor_registry import EventFlavorRegistry
 
 
 def validate_event_config(
@@ -34,7 +34,7 @@ def validate_event_config(
     flavor = configuration_dict.get("name", None)
     if flavor:
         event_configuration_class = (
-            event_flavor_registry.get_event_flavor(
+            EventFlavorRegistry().get_event_flavor(
                 flavor
             )
         )

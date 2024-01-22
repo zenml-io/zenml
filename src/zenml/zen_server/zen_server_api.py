@@ -16,7 +16,7 @@ import os
 from asyncio.log import logger
 from typing import Any, List
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, APIRouter
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,9 +27,9 @@ from starlette.responses import FileResponse
 
 import zenml
 from zenml.analytics import source_context
-from zenml.constants import API, HEALTH
+from zenml.constants import API, HEALTH, VERSION_1, EVENT_FLAVORS, EVENTS
 from zenml.enums import AuthScheme, SourceContextTypes
-from zenml.events.base_event_flavor import events_router
+from zenml.events.event_flavor_registry import EventFlavorRegistry
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     action_flavor_endpoints,
@@ -229,7 +229,6 @@ app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
-app.include_router(events_router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.
@@ -244,6 +243,14 @@ app.include_router(model_versions_endpoints.router)
 app.include_router(model_versions_endpoints.model_version_artifacts_router)
 app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
 app.include_router(tags_endpoints.router)
+
+events_router = APIRouter(prefix=API + VERSION_1 + EVENTS, tags=["events"])
+
+for _, event in EventFlavorRegistry().get_all_event_flavors().items():
+    event.register_endpoint(events_router)
+
+app.include_router(events_router)
+
 
 
 def get_root_static_files() -> List[str]:
