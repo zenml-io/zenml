@@ -6884,6 +6884,25 @@ class SqlZenStore(BaseZenStore):
 
         return int(entity_count)
 
+    def object_exists(
+        self, object_id: UUID, schema_class: Type[AnySchema]
+    ) -> bool:
+        """Check whether an object exists in the database.
+
+        Args:
+            object_id: The ID of the object to check.
+            schema_class: The schema class.
+
+        Returns:
+            If the object exists.
+        """
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(schema_class.id).where(schema_class.id == object_id)
+            ).first()
+
+            return False if schema is None else True
+
     @staticmethod
     def _get_schema_by_name_or_id(
         object_name_or_id: Union[str, UUID],
