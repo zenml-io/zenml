@@ -1,5 +1,5 @@
 ---
-name: Integration Tests
+name: Integration Tests (Fast CI)
 on:
   workflow_call:
     inputs:
@@ -86,8 +86,8 @@ on:
         required: false
         default: 30
 jobs:
-  integration-and-template-tests:
-    name: integration-and-template-tests
+  integration-tests-fast:
+    name: integration-tests-fast
     runs-on: ${{ inputs.os }}
     strategy:
       fail-fast: false
@@ -230,17 +230,6 @@ jobs:
           'false'
         run: |
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
-      - name: Integration Tests (Ubuntu) - Slow CI
-          # Ubuntu Slow CI integration tests run on single machines
-        if: runner.os != 'macOS' && runner.os != 'Windows' && inputs.is-slow-ci ==
-          'true'
-        run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
-      - name: Integration Tests (Non-Ubuntu) - Slow CI
-        if: runner.os == 'macOS' || runner.os == 'Windows' && inputs.is-slow-ci ==
-          'true'
-        run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
