@@ -82,12 +82,11 @@ runs:
         bucket: caching  # required
         use-fallback: false  # optional, use github actions cache fallback, default false
         key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version
-          }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py')
-          }}
+          }}-${{inputs.install_integrations}}
         path: |
           ~/.cache/pip
         restore-keys: |
-          ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
     - name: Create GitHub issue on cache miss
       if: steps.custom-cache-pip.outputs.cache-hit != 'true'
       uses: actions/github-script@v5

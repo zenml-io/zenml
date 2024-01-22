@@ -42,14 +42,19 @@ from zenml.artifacts.utils import (
     save_artifact,
     load_artifact,
 )
-from zenml.model.utils import log_model_metadata
+from zenml.model.utils import (
+    log_model_metadata,
+    link_artifact_to_model,
+    log_model_version_metadata,
+)
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 from zenml.new.pipelines.pipeline_context import get_pipeline_context
 from zenml.new.pipelines.pipeline_decorator import pipeline
 from zenml.new.steps.step_decorator import step
 from zenml.new.steps.step_context import get_step_context
+from zenml.steps.utils import log_step_metadata
 
 __all__ = [
     "ArtifactConfig",
@@ -59,7 +64,10 @@ __all__ = [
     "load_artifact",
     "log_artifact_metadata",
     "log_model_metadata",
-    "ModelVersion",
+    "log_model_version_metadata",
+    "log_step_metadata",
+    "Model",
+    "link_artifact_to_model",
     "pipeline",
     "save_artifact",
     "show",

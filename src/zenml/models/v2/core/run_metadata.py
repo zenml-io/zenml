@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -28,6 +28,9 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
+
+if TYPE_CHECKING:
+    from zenml.model.model import Model
 
 # ------------------ Request Model ------------------
 
@@ -184,3 +187,40 @@ class RunMetadataFilter(WorkspaceScopedFilter):
     stack_component_id: Optional[Union[str, UUID]] = None
     key: Optional[str] = None
     type: Optional[Union[str, MetadataTypeEnum]] = None
+
+
+# -------------------- Lazy Loader --------------------
+
+
+class LazyRunMetadataResponse(RunMetadataResponse):
+    """Lazy run metadata response.
+
+    Used if the run metadata is accessed from the model in
+    a pipeline context available only during pipeline compilation.
+    """
+
+    id: Optional[UUID] = None  # type: ignore[assignment]
+    _lazy_load_artifact_name: Optional[str] = None
+    _lazy_load_artifact_version: Optional[str] = None
+    _lazy_load_metadata_name: Optional[str] = None
+    _lazy_load_model: "Model"
+
+    def get_body(self) -> None:  # type: ignore[override]
+        """Protects from misuse of the lazy loader.
+
+        Raises:
+            RuntimeError: always
+        """
+        raise RuntimeError(
+            "Cannot access run metadata body before pipeline runs."
+        )
+
+    def get_metadata(self) -> None:  # type: ignore[override]
+        """Protects from misuse of the lazy loader.
+
+        Raises:
+            RuntimeError: always
+        """
+        raise RuntimeError(
+            "Cannot access run metadata metadata before pipeline runs."
+        )
