@@ -60,3 +60,16 @@ class RBACInterface(ABC):
             will contain the list of instance IDs that the user can perform
             the action on.
         """
+
+    @abstractmethod
+    def update_resource_membership(
+        self, user: "UserResponse", resource: Resource, actions: List[Action]
+    ) -> None:
+        """Update the resource membership of a user.
+
+        Args:
+            user: User for which the resource membership should be updated.
+            resource: The resource.
+            actions: The actions that the user should be able to perform on the
+                resource.
+        """
