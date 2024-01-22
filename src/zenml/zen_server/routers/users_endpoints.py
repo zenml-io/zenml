@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for users."""
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -46,11 +46,14 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
 )
-from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     dehydrate_response_model,
     get_allowed_resource_ids,
+    get_schema_for_resource_type,
+    update_resource_membership,
+    verify_permission,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
@@ -462,3 +465,79 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             user_id=auth_context.user.id, user_update=user
         )
         return dehydrate_response_model(updated_user)
+
+
+if server_config().rbac_enabled:
+
+    @router.post(
+        "/{user_name_or_id}/resource_membership",
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+        },
+    )
+    @handle_exceptions
+    def update_user_resource_membership(
+        user_name_or_id: Union[str, UUID],
+        resource_type: str,
+        resource_id: UUID,
+        actions: List[str],
+        auth_context: AuthContext = Security(authorize),
+    ) -> None:
+        """Updates resource memberships of a user.
+
+        Args:
+            user_name_or_id: Name or ID of the user.
+            resource_type: Type of the resource for which to update the
+                membership.
+            resource_id: ID of the resource for which to update the membership.
+            actions: List of actions that the user should be able to perform on
+                the resource. If the user currently has permissions to perform
+                actions which are not passed in this list, the permissions will
+                be removed.
+            auth_context: Authentication context.
+
+        Raises:
+            ValueError: If a user tries to update their own membership.
+            KeyError: If no resource with the given type and ID exists.
+        """
+        user = zen_store().get_user(user_name_or_id)
+        verify_permission_for_model(user, action=Action.READ)
+
+        if user.id == auth_context.user.id:
+            raise ValueError(
+                "Not allowed to call endpoint with the authenticated user."
+            )
+
+        resource_type = ResourceType(resource_type)
+        resource = Resource(type=resource_type, id=resource_id)
+
+        schema_class = get_schema_for_resource_type(resource_type)
+        if not zen_store().object_exists(
+            object_id=resource_id, schema_class=schema_class
+        ):
+            raise KeyError(
+                f"Resource of type {resource_type} with ID {resource_id} does "
+                "not exist."
+            )
+
+        verify_permission(
+            resource_type=resource_type,
+            action=Action.SHARE,
+            resource_id=resource_id,
+        )
+        for action in actions:
+            # Make sure users aren't able to share permissions they don't have
+            # themselves
+            verify_permission(
+                resource_type=resource_type,
+                action=Action(action),
+                resource_id=resource_id,
+            )
+
+        update_resource_membership(
+            user=user,
+            resource=resource,
+            actions=[Action(action) for action in actions],
+        )
