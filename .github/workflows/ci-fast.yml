@@ -6,9 +6,9 @@ on:
   push:
     branches: [main]
     paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
-  # pull_request:
-  #   types: [opened, synchronize, ready_for_review]
-  #   paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
