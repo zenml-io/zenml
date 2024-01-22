@@ -59,13 +59,7 @@ def upgrade() -> None:
     connection = op.get_bind()
     session = Session(bind=connection)
 
-    for source_field, target_field in [
-        ('"model_version"', '"model"'),
-        (
-            '"model_version_artifacts_or_metadata"',
-            '"model_artifacts_or_metadata"',
-        ),
-    ]:
+    for source_field, target_field in [('"model_version"', '"model"')]:
         for update_stmt in update_stmts:
             session.execute(
                 update_stmt,
@@ -83,13 +77,7 @@ def downgrade() -> None:
     connection = op.get_bind()
     session = Session(bind=connection)
 
-    for source_field, target_field in [
-        ('"model"', '"model_version"'),
-        (
-            '"model_artifacts_or_metadata"',
-            '"model_version_artifacts_or_metadata"',
-        ),
-    ]:
+    for source_field, target_field in [('"model"', '"model_version"')]:
         for update_stmt in update_stmts:
             session.execute(
                 update_stmt,
