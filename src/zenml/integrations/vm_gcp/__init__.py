@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ from zenml.stack import Flavor
 SKYPILOT_GCP_ORCHESTRATOR_FLAVOR = "vm_gcp"
 
 class SkypilotGCPIntegration(Integration):
-    """Definition of Skypilot Integration for ZenML."""
+    """Definition of Skypilot (GCP) Integration for ZenML."""
 
     NAME = SKYPILOT_GCP
     REQUIREMENTS = ["skypilot[gcp]<=0.4.1"]

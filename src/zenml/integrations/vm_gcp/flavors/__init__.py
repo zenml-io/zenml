@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Skypilot integration flavor for Skypilot Azure orchestrator."""
+"""Skypilot integration flavor for Skypilot GCP orchestrator."""
 
 from zenml.integrations.vm_gcp.flavors.skypilot_orchestrator_gcp_vm_flavor import (
     SkypilotGCPOrchestratorConfig,

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR = "vm_azure"
 
 
 class SkypilotAzureIntegration(Integration):
-    """Definition of Skypilot Integration for ZenML."""
+    """Definition of Skypilot (Azure) Integration for ZenML."""
 
     NAME = SKYPILOT_AZURE
     REQUIREMENTS = ["skypilot[azure]<=0.4.1"]
