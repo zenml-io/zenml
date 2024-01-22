@@ -19,7 +19,9 @@ from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config im
     SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
 )
-from zenml.integrations.skypilot_azure import SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR
+from zenml.integrations.skypilot_azure import (
+    SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR,
+)
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
