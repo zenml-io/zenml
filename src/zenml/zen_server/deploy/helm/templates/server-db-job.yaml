@@ -33,8 +33,8 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
 
+      {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
       volumes:
-        {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
         # define a volume that will hold a backup of the database
         - name: db-backup
         # if a storage class is set, then use a pvc
@@ -45,7 +45,7 @@ spec:
         # otherwise, use an emptyDir
           emptyDir: {}
         {{- end }}
-        {{- end }}
+      {{- end }}
       restartPolicy: Never
       containers:
         - name: {{ .Chart.Name }}-db-migration
@@ -55,9 +55,11 @@ spec:
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
           args: ["migrate-database"]
           command: ['zenml']
+          {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
           volumeMounts:
             - name: db-backup
               mountPath: /backups
+          {{- end }}
           env:
             {{- if .Values.zenml.debug }}
             - name: ZENML_LOGGING_VERBOSITY
@@ -71,8 +73,6 @@ spec:
               value: {{ .Values.zenml.defaultUsername | quote }}
             - name: ZENML_STORE_TYPE
               value: sql
-            - name: ZENML_STORE_BACKUP_DIRECTORY
-              value: /backups
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
             {{- if .Values.zenml.database.backupStrategy }}
@@ -81,6 +81,9 @@ spec:
             {{- if eq .Values.zenml.database.backupStrategy "database" }}
             - name: ZENML_STORE_BACKUP_DATABASE
               value: {{ .Values.zenml.database.backupDatabase | quote }}
+            {{- else if eq .Values.zenml.database.backupStrategy "dump-file" }}
+            - name: ZENML_STORE_BACKUP_DIRECTORY
+              value: /backups
             {{- end }}
             {{- end }}
             {{- range $k, $v := include "zenml.serverEnvVariables" . | fromYaml }}
