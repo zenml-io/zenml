@@ -188,15 +188,38 @@ zenml:
   # used, which will not be persisted across pod restarts.
   # NOTE: the certificate files need to be copied in the helm chart folder and
   # the paths configured here need to be relative to the root of the helm chart.
-  database: {
-    backupStorageSize: 1Gi
+  database:
     # url: "mysql://admin:password@zenml-mysql:3306/database"
     # sslCa: /path/to/ca.pem
     # sslCert: /path/to/client-cert.pem
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
+
+    # ZenML supports backing up the database before DB migrations are performed
+    # and restoring it in case of a DB migration failure. Several backup
+    # strategies are supported:
+    #
+    # disabled - No backup will be performed
+    # dump-file - the database schema and data are dumped to a local file.
+    #             Users may optionally configure a persistent volume where
+    #             the dump file will be stored by setting both the
+    #             `backupStorageClass` and `backupStorageSize` options. If a
+    #             persistent volume is not configured, the dump file will be
+    #             stored in an emptyDir volume, which is not persisted.
+    #             This is the default backup strategy.
+    # database - the database is copied to a backup database in the same
+    #            database server. This requires the `backupDatabase`
+    #            option to be set to the name of the backup database.
+    #            This backup strategy is only supported for MySQL
+    #            compatible databases and the user specified in the
+    #            database URL must be able to manage (create, drop, and
+    #            modify) the backup database in addition to the main
+    #            database.
+    backupStrategy: dump-file
     # backupStorageClass: standard
-  }
+    # backupStorageSize: 1Gi
+    # backupDatabase: "zenml_backup"
+  
     
 
 

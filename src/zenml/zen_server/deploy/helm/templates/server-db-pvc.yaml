@@ -15,7 +15,7 @@ spec:
   resources:
     requests:
       storage: {{ .Values.zenml.database.backupStorageSize }}
-  {{- with .Values.zenml.database.storageClass }}
+  {{- with .Values.zenml.database.backupStorageClass }}
   storageClassName: {{ . }}
   {{- end }}
 {{- end }}

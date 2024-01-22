@@ -42,6 +42,7 @@ from uuid import UUID
 
 import pymysql
 from pydantic import SecretStr, root_validator, validator
+from pydantic.json import pydantic_encoder
 from sqlalchemy import MetaData, asc, desc, func, text
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -81,6 +82,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     AuthScheme,
+    DatabaseBackupStrategy,
     ExecutionStatus,
     LoggingLevels,
     ModelStages,
@@ -373,10 +375,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     max_overflow: int = 20
     pool_pre_ping: bool = True
 
+    backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.DUMP_FILE
     # database backup directory
     backup_directory: str = os.path.join(
         GlobalConfiguration().config_directory, SQL_STORE_BACKUP_DIRECTORY_NAME
     )
+    backup_database: Optional[str] = None
 
     @validator("secrets_store")
     def validate_secrets_store(
@@ -418,6 +422,29 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "The GRPC attributes %s are unused and will be removed soon. "
                 "Please remove them from SQLZenStore configuration. This will "
                 "become an error in future versions of ZenML."
+            )
+
+        return values
+
+    @root_validator
+    def _validate_backup_strategy(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Validate the backup strategy.
+
+        Args:
+            values: All model attribute values.
+
+        Returns:
+            The model attribute values
+        """
+        backup_strategy = values.get("backup_strategy")
+        if backup_strategy == DatabaseBackupStrategy.DATABASE and (
+            not values.get("backup_database")
+        ):
+            raise ValueError(
+                "The backup database name must be set if the backup strategy "
+                "is set to use a backup database."
             )
 
         return values
@@ -634,16 +661,23 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return config
 
-    def get_sqlmodel_config(
+    def get_sqlalchemy_config(
         self,
-    ) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
-        """Get the SQLModel engine configuration for the SQL ZenML store.
+        database: Optional[str] = None,
+    ) -> Tuple[URL, Dict[str, Any], Dict[str, Any]]:
+        """Get the SQLAlchemy engine configuration for the SQL ZenML store.
+
+        Args:
+            database: Custom database name to use. If not set, the database name
+                from the configuration will be used.
 
         Returns:
-            The URL and connection arguments for the SQLModel engine.
+            The URL and connection arguments for the SQLAlchemy engine.
 
         Raises:
             NotImplementedError: If the SQL driver is not supported.
+            ValueError: If the backup database name is not set when the backup
+                database is requested.
         """
         sql_url = make_url(self.url)
         sqlalchemy_connect_args: Dict[str, Any] = {}
@@ -662,6 +696,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             assert self.password is not None
             assert sql_url.host is not None
 
+            if not database:
+                database = self.database
+
             engine_args = {
                 "pool_size": self.pool_size,
                 "max_overflow": self.max_overflow,
@@ -672,7 +709,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 drivername="mysql+pymysql",
                 username=self.username,
                 password=self.password,
-                database=self.database,
+                database=database,
             )
 
             sqlalchemy_ssl_args: Dict[str, Any] = {}
@@ -697,7 +734,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 f"SQL driver `{sql_url.drivername}` is not supported."
             )
 
-        return str(sql_url), sqlalchemy_connect_args, engine_args
+        return sql_url, sqlalchemy_connect_args, engine_args
 
     class Config:
         """Pydantic configuration class."""
@@ -723,7 +760,6 @@ class SqlZenStore(BaseZenStore):
 
     config: SqlZenStoreConfiguration
     skip_migrations: bool = False
-    db_backup_file_path: Optional[str] = None
     TYPE: ClassVar[StoreType] = StoreType.SQL
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
@@ -928,7 +964,7 @@ class SqlZenStore(BaseZenStore):
         """
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
-        url, connect_args, engine_args = self.config.get_sqlmodel_config()
+        url, connect_args, engine_args = self.config.get_sqlalchemy_config()
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
@@ -959,11 +995,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
                 if _is_mysql_missing_database_error(e):
-                    self._create_mysql_database(
-                        url=self._engine.url,
-                        connect_args=connect_args,
-                        engine_args=engine_args,
-                    )
+                    self._create_drop_mysql_database()
                 else:
                     raise
 
@@ -1013,29 +1045,195 @@ class SqlZenStore(BaseZenStore):
                 self._backup_secrets_store.config
             )
 
-    def cleanup_database_backup(self) -> None:
-        """Delete the database backup file."""
-        if self.db_backup_file_path is not None:
-            try:
-                os.remove(self.db_backup_file_path)
-            except OSError:
-                logger.warning(
-                    f"Failed to cleanup database dump file "
-                    f"{self.db_backup_file_path}."
-                )
-        self.db_backup_file_path = None
+    def _create_drop_mysql_database(
+        self,
+        database: Optional[str] = None,
+        create: bool = True,
+        drop: bool = False,
+    ) -> None:
+        """Creates and/or drop a mysql database.
 
-    def restore_database(self) -> None:
-        """Restore the database from a backup.
+        Args:
+            database: The name of the database to create. If not set, the
+                database name from the configuration will be used.
+            create: Whether to create the database.
+            drop: Whether to drop the database.
+        """
+        url, connect_args, engine_args = self.config.get_sqlalchemy_config(
+            database=database
+        )
+
+        database = url.database
+        logger.info(f"Trying to create database {database}")
+        master_url = url._replace(database=None)
+        master_engine = create_engine(
+            url=master_url, connect_args=connect_args, **engine_args
+        )
+        with master_engine.connect() as conn:
+            if drop:
+                # drop the database if it exists
+                conn.execute(text(f"DROP DATABASE IF EXISTS `{database}`"))
+
+            if create:
+                conn.execute(
+                    text(f"CREATE DATABASE IF NOT EXISTS `{database}`")
+                )
+
+    def _get_db_backup_file_path(self) -> str:
+        """Get the path to the database backup file.
+
+        Returns:
+            The path to the configured database backup file.
+        """
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            return os.path.join(
+                self.config.backup_directory,
+                # Add the -backup suffix to the database filename
+                ZENML_SQLITE_DB_FILENAME[:-3] + "-backup.db",
+            )
+
+        # For a MySQL database, we need to dump the database to a JSON
+        # file
+        return os.path.join(
+            self.config.backup_directory,
+            f"{self.engine.url.database}-backup.json",
+        )
+
+    def _backup_database_to_file(self, dump_file: str) -> None:
+        """Backup the database to a file.
+
+        This method dumps the entire database into a JSON file. Instead of
+        using a SQL dump, we use a proprietary JSON dump because it is easier to
+        read and debug and it is also safer with respect to SQL injection
+        attacks.
+
+        The format of the dump is as depicted in the following example:
+
+        ```json
+        [
+          {
+            "name": "table1",
+            "create_stmt": "CREATE TABLE table1 (id INTEGER NOT NULL, "
+                "name VARCHAR(255), PRIMARY KEY (id))",
+            "data": [
+              {
+                "id": 1,
+                "name": "foo"
+              },
+              {
+                "id": 2,
+                "name": "bar"
+              }
+            ]
+          },
+          {
+            "name": "table2",
+            "create_stmt": "CREATE TABLE table2 (id INTEGER NOT NULL, "
+                "name VARCHAR(255), PRIMARY KEY (id))",
+            "data": [
+              {
+                "id": 1,
+                "name": "foo"
+              },
+              {
+                "id": 2,
+                "name": "bar"
+              }
+            ]
+          }
+        ]
+        ```
+
+        Args:
+            dump_file: The path to the dump file.
+        """
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            # For a sqlite database, we can just make a copy of the database
+            # file
+            assert self.config.database is not None
+            shutil.copyfile(
+                self.config.database,
+                dump_file,
+            )
+            return
+
+        metadata = MetaData()
+        metadata.reflect(bind=self.engine)
+        from sqlalchemy.schema import CreateTable
+
+        with open(dump_file, "w") as f:
+            db_data: List[Dict[str, Any]] = []
+
+            with self.engine.connect() as conn:
+                for table in metadata.sorted_tables:
+                    # 1. extract the table creation statements
+
+                    create_table_construct = CreateTable(table)
+                    create_table_stmt = str(create_table_construct).strip()
+                    for column in create_table_construct.columns:
+                        # enclosing all column names in backticks. This is because
+                        # some column names are reserved keywords in MySQL. For
+                        # example, keys and values. So, instead of tracking all
+                        # keywords, we just enclose all column names in backticks.
+                        # enclose the first word in the column definition in
+                        # backticks
+                        words = str(column).split()
+                        words[0] = f"`{words[0]}`"
+                        create_table_stmt = create_table_stmt.replace(
+                            f"\n\t{str(column)}", " ".join(words)
+                        )
+                    # if any double quotes are used for column names, replace them
+                    # with backticks
+                    create_table_stmt = (
+                        create_table_stmt.replace('"', "") + ";"
+                    )
+
+                    # 2. extract the table data
+
+                    # If the table has a `created` column, we use it to sort
+                    # the rows in the table starting with the oldest rows.
+                    # This is to ensure that the rows are inserted in the
+                    # correct order, since some tables have inner foreign key
+                    # constraints.
+                    if "created" in table.columns:
+                        order_by = table.columns["created"]
+                    else:
+                        order_by = None
+
+                    table_data: List[Dict[str, Any]] = []
+                    for row in conn.execute(table.select().order_by(order_by)):
+                        # Convert the row into a JSON-serializable dict
+                        table_data.append(row._asdict())
+
+                    db_data.append(
+                        dict(
+                            name=table.name,
+                            create_stmt=create_table_stmt,
+                            data=table_data,
+                        )
+                    )
+
+            # Write the data dump to a JSON file. Use an encoder that can handle
+            # datetime, Decimal and other types.
+            json.dump(db_data, f, indent=4, default=pydantic_encoder)
+
+        logger.debug(f"Database backed up to {dump_file}")
+
+    def _restore_database_from_file(self, dump_file: str) -> None:
+        """Restore the database from a backup dump file.
+
+        See the documentation of the `backup_database_to_file` method for
+        details on the format of the dump file.
+
+        Args:
+            dump_file: The path to the dump file.
 
         Raises:
             RuntimeError: If the database cannot be restored successfully.
         """
-        # the backup file location is set in the backup_database method
-        assert self.db_backup_file_path is not None
-        if not os.path.exists(self.db_backup_file_path):
+        if not os.path.exists(dump_file):
             raise RuntimeError(
-                f"Database backup file {self.db_backup_file_path} does not "
+                f"Database backup file '{dump_file}' does not "
                 f"exist or is not accessible."
             )
 
@@ -1044,135 +1242,189 @@ class SqlZenStore(BaseZenStore):
             # with the backup file
             assert self.config.database is not None
             shutil.copyfile(
-                self.db_backup_file_path,
+                dump_file,
                 self.config.database,
             )
-            self.cleanup_database_backup()
             return
 
-        assert self.config.database is not None
-        db_name = self.config.database
+        # read the DB dump file
+        with open(dump_file, "r") as f:
+            db_data = json.load(f)
+
+        # Drop and re-create the primary database
+        self._create_drop_mysql_database(
+            create=True,
+            drop=True,
+        )
 
         with self.engine.begin() as connection:
-            # drop the database if it exists
-            connection.execute(text(f"DROP DATABASE IF EXISTS {db_name}"))
-
-            # then create the database
-            connection.execute(text(f"CREATE DATABASE {db_name}"))
-
-            connection.execute(text(f"USE {db_name}"))
-
-        with self.engine.begin() as connection:
-            # read the dump file and execute it
-            with open(self.db_backup_file_path, "r") as f:
-                contents = f.read()
+            # execute the table creation statements first
+            for table_dump in db_data:
+                connection.execute(text(table_dump["create_stmt"]))
 
             # remove any escaped characters like \n and \t and split based on ;
             # but keep the ; at the end of each sentence
-            statements = (
-                contents.replace("\\n", "").replace("\\t", "").split(";")
-            )
+            # statements = (
+            #     contents.replace("\\n", "").replace("\\t", "").split(";")
+            # )
 
-            # execute each statement
-            for statement in statements:
-                if statement.strip() != "":
-                    connection.execute(text(statement + ";"))
+            # # execute each statement
+            # for statement in statements:
+            #     if statement.strip() != "":
+            #         connection.execute(text(statement + ";"))
 
-        logger.info(
-            f"Database successfully restored from {self.db_backup_file_path}"
-        )
-        self.cleanup_database_backup()
+        # Reload the database metadata after creating the tables
+        metadata = MetaData(bind=self.engine)
+        metadata.reflect()
 
-    def backup_database(self) -> None:
-        """Backup the database to a file."""
-        # create the backup directory if it does not exist
-        if not os.path.exists(self.config.backup_directory):
-            os.makedirs(self.config.backup_directory)
+        # insert the data into the database
+        with self.engine.begin() as connection:
+            for table_dump in db_data:
+                table_name = table_dump["name"]
+                table_data = table_dump["data"]
+                table = metadata.tables[table_name]
+                for row in table_data:
+                    # Convert column values to the correct type
+                    for column in table.columns:
+                        # Blob columns are stored as binary strings
+                        if column.type.python_type == bytes and isinstance(
+                            row[column.name], str
+                        ):
+                            # Convert the string to bytes
+                            row[column.name] = bytes(row[column.name], "utf-8")
 
-        if self.config.driver == SQLDatabaseDriver.SQLITE:
-            self.db_backup_file_path = os.path.join(
-                self.config.backup_directory,
-                # Add the -backup suffix to the database filename
-                ZENML_SQLITE_DB_FILENAME[:-3] + "-backup.sql",
-            )
-            # For a sqlite database, we can just make a copy of the database
-            # file
-            assert self.config.database is not None
-            shutil.copyfile(
-                self.config.database,
-                self.db_backup_file_path,
-            )
-            return
-
-        # For a MySQL database, we need to dump the database to a file
-        self.db_backup_file_path = os.path.join(
-            self.config.backup_directory,
-            f"{self.engine.url.database}-backup.sql",
-        )
-
-        metadata = MetaData()
-        metadata.reflect(bind=self.engine)
-        from sqlalchemy.schema import CreateTable
-
-        assert self.db_backup_file_path is not None
-
-        with open(self.db_backup_file_path, "w") as f:
-
-            def write_statement(statement: str) -> None:
-                """Write a SQL statement to the backup file.
-
-                Args:
-                    statement: The SQL statement to write.
-                """
-                f.write(statement + ";\n")
-
-            for table in metadata.sorted_tables:
-                # write the table creation statement
-                create_table_construct = CreateTable(table)
-                create_table_stmt = str(create_table_construct).strip()
-                for column in create_table_construct.columns:
-                    # enclosing all column names in backticks. This is because
-                    # some column names are reserved keywords in MySQL. For
-                    # example, keys and values. So, instead of tracking all
-                    # keywords, we just enclose all column names in backticks.
-                    # enclose the first word in the column definition in
-                    # backticks
-                    words = str(column).split()
-                    words[0] = f"`{words[0]}`"
-                    create_table_stmt = create_table_stmt.replace(
-                        f"\n\t{str(column)}", " ".join(words)
+                # Insert the data into the table in batches
+                batch_size = 100
+                for i in range(0, len(table_data), batch_size):
+                    connection.execute(
+                        table.insert().values(table_data[i : i + batch_size])
                     )
-                # if any double quotes are used for column names, replace them
-                # with backticks
-                create_table_stmt = create_table_stmt.replace('"', "")
-                write_statement(create_table_stmt)
 
-            with self.engine.connect() as conn:
-                for table in metadata.sorted_tables:
-                    # write the table data
-                    for row in conn.execute(table.select()):
-                        # checked manually that converting to string isn't a
-                        # problem if the column is of type int and i pass, say,
-                        # '5', it still takes 5 as the value in the table's row.
-                        row_values = []
-                        for c in table.columns:
-                            if row[c.name] is not None:
-                                # escape any single quotes in the row value
-                                row_values.append(
-                                    str(row[c.name]).replace("'", "\\'")
-                                )
-                            else:
-                                row_values.append("NULL")
+        logger.info(f"Database successfully restored from '{dump_file}'")
 
-                        values = ", ".join(f"'{item}'" for item in row_values)
-                        values = values.replace("'NULL'", "NULL")
+    def _copy_database(self, src_engine: Engine, dst_engine: Engine) -> None:
+        """Copy the database from one engine to another.
 
-                        insert_stmt = (
-                            f"INSERT INTO {table.name} VALUES ({values})"
-                        )
-                        write_statement(insert_stmt)
+        This method assumes that the destination database exists and is empty.
 
-        logger.debug(f"Database backed up to {self.db_backup_file_path}")
+        Args:
+            src_engine: The source SQLAlchemy engine.
+            dst_engine: The destination SQLAlchemy engine.
+        """
+        src_metadata = MetaData(bind=src_engine)
+        src_metadata.reflect()
+
+        dst_metadata = MetaData(bind=dst_engine)
+        dst_metadata.reflect()
+
+        # @event.listens_for(src_metadata, "column_reflect")
+        # def genericize_datatypes(inspector, tablename, column_dict):
+        # column_dict["type"] = column_dict["type"].as_generic(allow_nulltype=True)
+
+        # Create all tables in the target database
+        for table in src_metadata.sorted_tables:
+            table.create(bind=dst_engine)
+
+        # Refresh target metadata after creating the tables
+        dst_metadata.clear()
+        dst_metadata.reflect()
+
+        # Copy all data from the source database to the destination database
+        with src_engine.begin() as src_conn:
+            with dst_engine.begin() as dst_conn:
+                for src_table in src_metadata.sorted_tables:
+                    dst_table = dst_metadata.tables[src_table.name]
+                    insert = dst_table.insert()
+                    # If the table has a `created` column, we use it to sort
+                    # the rows in the table starting with the oldest rows.
+                    # This is to ensure that the rows are inserted in the
+                    # correct order, since some tables have inner foreign key
+                    # constraints.
+                    if "created" in src_table.columns:
+                        order_by = src_table.columns["created"]
+                    else:
+                        order_by = None
+                    for row in src_conn.execute(
+                        src_table.select().order_by(order_by)
+                    ):
+                        dst_conn.execute(insert, row._asdict())
+
+    def _backup_database_to_db(self, backup_db_name: str) -> None:
+        """Backup the database to a backup database.
+
+        Args:
+            backup_db_name: Custom name for the backup database. If not set,
+                the backup database name from the store configuration will be
+                used.
+        """
+        url, connect_args, engine_args = self.config.get_sqlalchemy_config(
+            database=backup_db_name
+        )
+
+        assert url.database is not None
+
+        # Re-create the backup database
+        self._create_drop_mysql_database(
+            database=url.database,
+            create=True,
+            drop=True,
+        )
+
+        backup_engine = create_engine(
+            url=url, connect_args=connect_args, **engine_args
+        )
+
+        self._copy_database(self.engine, backup_engine)
+
+        logger.debug(
+            f"Database backed up to the `{backup_db_name}` backup database."
+        )
+
+    def _restore_database_from_db(self, backup_db_name: str) -> None:
+        """Restore the database from the backup database.
+
+        Args:
+            backup_db_name: Backup database name to restore from.
+        """
+        url, connect_args, engine_args = self.config.get_sqlalchemy_config(
+            database=backup_db_name
+        )
+
+        backup_engine = create_engine(
+            url=url, connect_args=connect_args, **engine_args
+        )
+
+        # Drop and re-create the primary database
+        self._create_drop_mysql_database(
+            create=True,
+            drop=True,
+        )
+
+        self._copy_database(backup_engine, self.engine)
+
+        logger.debug(
+            f"Database restored from the `{backup_db_name}` "
+            "backup database."
+        )
+
+    def _cleanup_database_backup(self) -> None:
+        """Delete the database backup files."""
+        if self.config.backup_strategy == DatabaseBackupStrategy.DUMP_FILE:
+            dump_file = self._get_db_backup_file_path()
+            if dump_file is not None:
+                try:
+                    os.remove(dump_file)
+                except OSError:
+                    logger.warning(
+                        f"Failed to cleanup database dump file "
+                        f"{dump_file}."
+                    )
+        elif self.config.backup_strategy == DatabaseBackupStrategy.DATABASE:
+            self._create_drop_mysql_database(
+                database=self.config.backup_database,
+                create=False,
+                drop=True,
+            )
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
@@ -1183,31 +1435,92 @@ class SqlZenStore(BaseZenStore):
         if config.auth_scheme != AuthScheme.EXTERNAL:
             self._get_or_create_default_user()
 
-    def _create_mysql_database(
+    def backup_database(
         self,
-        url: URL,
-        connect_args: Dict[str, Any],
-        engine_args: Dict[str, Any],
-    ) -> None:
-        """Creates a mysql database.
+        strategy: Optional[DatabaseBackupStrategy] = None,
+        location: Optional[str] = None,
+    ) -> str:
+        """Backup the database.
 
         Args:
-            url: The URL of the database to create.
-            connect_args: Connect arguments for the SQLAlchemy engine.
-            engine_args: Additional initialization arguments for the SQLAlchemy
-                engine
+            strategy: Custom backup strategy to use. If not set, the backup
+                strategy from the store configuration will be used.
+            location: Custom target location to backup the database to. If not
+                set, the configured backup location will be used. Depending on
+                the backup strategy, this can be a file path or a database name.
+
+        Returns:
+            The location of the backup file or database.
+
+        Raises:
+            ValueError: If the backup database name is not set when the backup
+                database is requested.
         """
-        logger.info("Trying to create database %s.", url.database)
-        master_url = url._replace(database=None)
-        master_engine = create_engine(
-            url=master_url, connect_args=connect_args, **engine_args
-        )
-        query = f"CREATE DATABASE IF NOT EXISTS {self.config.database}"
-        try:
-            connection = master_engine.connect()
-            connection.execute(text(query))
-        finally:
-            connection.close()
+        strategy = strategy or self.config.backup_strategy
+
+        if (
+            strategy == DatabaseBackupStrategy.DUMP_FILE
+            or self.config.driver == SQLDatabaseDriver.SQLITE
+        ):
+            dump_file = location or self._get_db_backup_file_path()
+
+            # create the directory if it does not exist
+            dump_path = os.path.dirname(os.path.abspath(dump_file))
+            if not os.path.exists(dump_path):
+                os.makedirs(dump_path)
+
+            self._backup_database_to_file(dump_file=dump_file)
+
+            return dump_file
+        else:
+            backup_db_name = location or self.config.backup_database
+            if not backup_db_name:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
+
+            self._backup_database_to_db(backup_db_name=backup_db_name)
+
+            return backup_db_name
+
+    def restore_database(
+        self,
+        strategy: Optional[DatabaseBackupStrategy] = None,
+        location: Optional[str] = None,
+    ) -> None:
+        """Restore the database.
+
+        Args:
+            strategy: Custom backup strategy to use. If not set, the backup
+                strategy from the store configuration will be used.
+            location: Custom target location to restore the database from. If
+                not set, the configured backup location will be used. Depending
+                on the backup strategy, this can be a file path or a database
+                name.
+
+        Raises:
+            ValueError: If the backup database name is not set when the backup
+                database is requested.
+        """
+        strategy = strategy or self.config.backup_strategy
+
+        if (
+            strategy == DatabaseBackupStrategy.DUMP_FILE
+            or self.config.driver == SQLDatabaseDriver.SQLITE
+        ):
+            dump_file = location or self._get_db_backup_file_path()
+
+            self._restore_database_from_file(dump_file=dump_file)
+        else:
+            backup_db_name = location or self.config.backup_database
+            if not backup_db_name:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
+
+            self._restore_database_from_db(backup_db_name=backup_db_name)
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the python package.
@@ -1260,68 +1573,52 @@ class SqlZenStore(BaseZenStore):
             # functionality. We only enable the backup functionality if the
             # database will actually be changed, to avoid the overhead for
             # unnecessary backups.
-            backup_enabled = current_revisions[0] != head_revisions[0]
+            backup_enabled = (
+                self.config.backup_strategy != DatabaseBackupStrategy.DISABLED
+                and current_revisions[0] != head_revisions[0]
+            )
+            backup_location: Optional[str] = None
 
             if backup_enabled:
                 try:
                     logger.info("Backing up the database before migration.")
-                    self.backup_database()
+                    backup_location = self.backup_database()
                 except Exception:
                     logger.exception(
                         "Failed to backup the database. Please check the logs "
                         "for more details. The upgrade will continue as usual "
                         "but no recovery is possible if something goes wrong."
                     )
-                    # TODO catch exception when the directory doesn't exist
-                    # write permissions etc.
                 else:
                     logger.info(
-                        f"Database backup successfully created at "
-                        f"{self.db_backup_file_path}. If something goes wrong "
-                        f"during the upgrade, ZenML will attempt to restore "
-                        f"the database from this backup automatically."
+                        f"Database backup successfully created at the "
+                        f"`{backup_location}` backup location. If something "
+                        "goes wrong with the upgrade, ZenML will attempt to "
+                        "restore the database from this backup automatically."
                     )
 
             try:
                 self.alembic.upgrade()
             except Exception as e:
-                if backup_enabled:
+                if backup_enabled and backup_location:
                     logger.exception(
                         "Failed to migrate the database. Attempting to restore "
-                        f"the database from the {self.db_backup_file_path} "
-                        "backup file."
+                        f"the database from the '{backup_location}' "
+                        "backup location."
                     )
                     try:
                         self.restore_database()
                     except Exception:
                         logger.exception(
                             "Failed to restore the database from the "
-                            f"{self.db_backup_file_path} backup file. Please "
+                            f"{backup_location} backup location. Please "
                             "check the logs for more details. You might need "
-                            "to restore the database manually using the backup "
-                            "file."
+                            "to restore the database manually."
                         )
-                        # If debug logs are enabled, we print the first lines in
-                        # the backup file to help the user identify the problem.
-                        if (
-                            logging_level == LoggingLevels.DEBUG
-                            and self.db_backup_file_path
-                        ):
-                            try:
-                                with open(self.db_backup_file_path, "r") as f:
-                                    logger.debug(
-                                        "First 500 lines in the backup "
-                                        "file:\n%s",
-                                        "\n".join(
-                                            f.readlines()[:500],
-                                        ),
-                                    )
-                            except Exception:
-                                pass
                     else:
                         raise RuntimeError(
                             "The database migration failed, but the database "
-                            "was successfully restored from the backup file. "
+                            "was successfully restored from the backup. "
                             "You can safely retry the upgrade or revert to "
                             "the previous version of ZenML. Please check the "
                             "logs for more details."
@@ -1329,8 +1626,14 @@ class SqlZenStore(BaseZenStore):
                 raise
 
             else:
-                if backup_enabled:
-                    self.cleanup_database_backup()
+                if backup_enabled and backup_location:
+                    try:
+                        self._cleanup_database_backup()
+                    except Exception:
+                        logger.exception(
+                            "Failed to cleanup the database backup."
+                        )
+
         else:
             if self.alembic.db_is_empty():
                 # Case 1: the database is empty. We can just create the
