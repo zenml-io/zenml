@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot integration flavor for Skypilot GCP orchestrator."""
 
-from zenml.integrations.vm_gcp.flavors.skypilot_orchestrator_gcp_vm_flavor import (
+from zenml.integrations.skypilot_gcp.flavors.skypilot_orchestrator_gcp_vm_flavor import (
     SkypilotGCPOrchestratorConfig,
     SkypilotGCPOrchestratorFlavor,
     SkypilotGCPOrchestratorSettings,
