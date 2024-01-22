@@ -1,5 +1,42 @@
 <!-- markdown-link-check-disable -->
 
+# 0.55.0
+
+This release comes with a range of new features, bug fixes and documentation updates. The most notable changes are the ability to do lazy loading of Artifact Version, Artifact Version Metadata, and Model Version Metadata inside the pipeline code, and the ability to link Artifacts to Model Versions implicitly via the `save_artifact` function.
+
+Additionally, we've updated the documentation to include a new starter guide on how to manage artifacts, and a new production guide that walks you through how to configure your pipelines to run in production.
+
+## What's Changed
+* Remove --name from service account creation in docs by @christianversloot in https://github.com/zenml-io/zenml/pull/2295
+* Secrets store hot backup and restore by @stefannica in https://github.com/zenml-io/zenml/pull/2277
+* Updating the README of the e2e template by @bcdurak in https://github.com/zenml-io/zenml/pull/2299
+* Add missing docstring for Skypilot setting by @schustmi in https://github.com/zenml-io/zenml/pull/2305
+* Update Manage artifacts starter guide docs by @JonathanLoscalzo in https://github.com/zenml-io/zenml/pull/2301
+* Add some  tiny details and moved around a page by @htahir1 in https://github.com/zenml-io/zenml/pull/2297
+* Model links lazy evaluation in pipeline code by @avishniakov in https://github.com/zenml-io/zenml/pull/2205
+* Link artifact to MCP entity via function call or implicitly in `save_artifact` by @avishniakov in https://github.com/zenml-io/zenml/pull/2298
+* Extend MCP/ACP listing capabilties by @avishniakov in https://github.com/zenml-io/zenml/pull/2285
+* Add latest `zenml` version to migration testing scripts by @strickvl in https://github.com/zenml-io/zenml/pull/2294
+* Remove Python 3.7 check for Langchain Integration by @strickvl in https://github.com/zenml-io/zenml/pull/2308
+* Allow spellcheck to run for docs changes by @strickvl in https://github.com/zenml-io/zenml/pull/2307
+* Add helper message for `zenml up --blocking` login by @strickvl in https://github.com/zenml-io/zenml/pull/2290
+* Fix secret migration from external store in helm deployment by @stefannica in https://github.com/zenml-io/zenml/pull/2315
+* Small docs fixes by @htahir1 in https://github.com/zenml-io/zenml/pull/2314
+* Rename model version to a model by @avishniakov in https://github.com/zenml-io/zenml/pull/2267
+* Updating the docs after the Skypilot tests by @bcdurak in https://github.com/zenml-io/zenml/pull/2311
+* Remove unused Segment / Mixpanel generation workflow and script by @strickvl in https://github.com/zenml-io/zenml/pull/2319
+* Add `log_step_metadata` utility function by @strickvl in https://github.com/zenml-io/zenml/pull/2322
+* Add conditional checks to prevent scheduled actions running inside forked repositories by @strickvl in https://github.com/zenml-io/zenml/pull/2317
+* RBAC resource sharing by @schustmi in https://github.com/zenml-io/zenml/pull/2320
+* Fix typo in migration downgrade by @avishniakov in https://github.com/zenml-io/zenml/pull/2337
+* Separate `skypilot` flavors into different folders by @safoinme in https://github.com/zenml-io/zenml/pull/2332
+* Add warning for GCP integration when using Python >=3.11 by @strickvl in https://github.com/zenml-io/zenml/pull/2333
+
+## New Contributors
+* @JonathanLoscalzo made their first contribution in https://github.com/zenml-io/zenml/pull/2301
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.54.1...0.55.0
+
 # 0.54.1
 
 Release 0.54.1, includes a mix of updates and new additions and bug fixes. The most notable changes are the new production guide,
