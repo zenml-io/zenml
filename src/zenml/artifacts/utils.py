@@ -233,14 +233,14 @@ def save_artifact(
                     saved_artifact_versions={name: response.id}
                 ),
             )
-            error_message = "model version"
-            model_version = step_context.model_version
-            if model_version:
+            error_message = "model"
+            model = step_context.model
+            if model:
                 from zenml.model.utils import link_artifact_to_model
 
                 link_artifact_to_model(
                     artifact_version_id=response.id,
-                    model_version=model_version,
+                    model=model,
                     is_model_artifact=is_model_artifact,
                     is_deployment_artifact=is_deployment_artifact,
                 )
