@@ -634,8 +634,8 @@ class StepRunner:
 
     def _prepare_model_context_for_step(self) -> None:
         try:
-            model_version = get_step_context().model_version
-            model_version._get_or_create_model_version()
+            model = get_step_context().model
+            model._get_or_create_model_version()
         except StepContextError:
             return
 
@@ -657,11 +657,9 @@ class StepRunner:
                 get_step_context()._get_output(artifact_name).artifact_config
             )
             if artifact_config is not None:
-                if (
-                    model_version := artifact_config._model_version
-                ) is not None:
+                if (model := artifact_config._model) is not None:
                     model_version_response = (
-                        model_version._get_or_create_model_version()
+                        model._get_or_create_model_version()
                     )
                     models.add(
                         (
@@ -680,7 +678,7 @@ class StepRunner:
             Set of tuples of (model_id, model_version_id).
         """
         try:
-            mc = get_step_context().model_version
+            mc = get_step_context().model
             model_version = mc._get_or_create_model_version()
             return {(model_version.model.id, model_version.id)}
         except StepContextError:
@@ -731,11 +729,11 @@ class StepRunner:
 
         # Add models from external artifacts
         for external_artifact in external_artifacts:
-            if external_artifact.model_version:
+            if external_artifact.model:
                 models.add(
                     (
-                        external_artifact.model_version.model_id,
-                        external_artifact.model_version.id,
+                        external_artifact.model.model_id,
+                        external_artifact.model.id,
                     )
                 )
 

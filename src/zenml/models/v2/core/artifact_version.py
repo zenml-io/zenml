@@ -44,7 +44,7 @@ from zenml.models.v2.core.tag import TagResponse
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.models.v2.core.artifact_visualization import (
         ArtifactVisualizationRequest,
         ArtifactVisualizationResponse,
@@ -477,7 +477,7 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
     id: Optional[UUID] = None  # type: ignore[assignment]
     _lazy_load_name: Optional[str] = None
     _lazy_load_version: Optional[str] = None
-    _lazy_load_model_version: "ModelVersion"
+    _lazy_load_model: "Model"
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.
@@ -507,7 +507,7 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         from zenml.metadata.lazy_load import RunMetadataLazyGetter
 
         return RunMetadataLazyGetter(  # type: ignore[return-value]
-            self._lazy_load_model_version,
+            self._lazy_load_model,
             self._lazy_load_name,
             self._lazy_load_version,
         )
