@@ -19,6 +19,7 @@ from uuid import UUID
 from pytest_mock import MockFixture
 
 from zenml.analytics.enums import AnalyticsEvent
+from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
 
 
@@ -158,7 +159,7 @@ def test_analytics_event(
     )
 
     # Test zenml initialization
-    clean_client.initialize()
+    Client.initialize()
 
     # Test stack and component registration
     clean_client.create_stack_component(
