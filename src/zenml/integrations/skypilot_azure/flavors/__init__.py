@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,11 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Skypilot ZenML orchestrators."""
+"""Skypilot integration flavor for Skypilot Azure orchestrator."""
 
-from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (  # noqa
-    SkypilotBaseOrchestrator,
+from zenml.integrations.skypilot_azure.flavors.skypilot_orchestrator_azure_vm_flavor import (
+    SkypilotAzureOrchestratorConfig,
+    SkypilotAzureOrchestratorFlavor,
+    SkypilotAzureOrchestratorSettings,
 )
+
 __all__ = [
-    "SkypilotBaseOrchestrator",
+    "SkypilotAzureOrchestratorConfig",
+    "SkypilotAzureOrchestratorFlavor",
+    "SkypilotAzureOrchestratorSettings",
 ]
