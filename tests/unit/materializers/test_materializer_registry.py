@@ -82,7 +82,7 @@ def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
     with does_not_raise():
         step_instance._finalize_configuration(
             input_artifacts={},
-            external_artifacts={},
+            external_artifact_ids={},
             model_artifacts_or_metadata={},
             client_lazy_loaders={},
         )
