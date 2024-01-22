@@ -163,7 +163,7 @@ jobs:
         python-version: ['3.8', '3.9', '3.10', '3.11']
         test_environment: [default]
       fail-fast: false
-    uses: ./.github/workflows/integration-test.yml
+    uses: ./.github/workflows/integration-test-slow.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
@@ -182,7 +182,7 @@ jobs:
         python-version: ['3.8', '3.9', '3.10', '3.11']
         test_environment: [default]
       fail-fast: false
-    uses: ./.github/workflows/integration-test.yml
+    uses: ./.github/workflows/integration-test-slow.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
