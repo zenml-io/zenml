@@ -15,7 +15,7 @@ Additionally, we've updated the documentation to include a new starter guide on 
 * Add some  tiny details and moved around a page by @htahir1 in https://github.com/zenml-io/zenml/pull/2297
 * Model links lazy evaluation in pipeline code by @avishniakov in https://github.com/zenml-io/zenml/pull/2205
 * Link artifact to MCP entity via function call or implicitly in `save_artifact` by @avishniakov in https://github.com/zenml-io/zenml/pull/2298
-* Extend MCP/ACP listing capabilties by @avishniakov in https://github.com/zenml-io/zenml/pull/2285
+* Extend MCP/ACP listing capabilities by @avishniakov in https://github.com/zenml-io/zenml/pull/2285
 * Add latest `zenml` version to migration testing scripts by @strickvl in https://github.com/zenml-io/zenml/pull/2294
 * Remove Python 3.7 check for Langchain Integration by @strickvl in https://github.com/zenml-io/zenml/pull/2308
 * Allow spellcheck to run for docs changes by @strickvl in https://github.com/zenml-io/zenml/pull/2307
