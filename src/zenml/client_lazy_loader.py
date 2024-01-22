@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Lazy loading functionality for Client methods."""
 
+import contextlib
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 
 from pydantic import BaseModel, PrivateAttr
@@ -167,22 +168,23 @@ def evaluate_all_lazy_load_args_in_client_methods(
 
     def _evaluate_args(func: Callable[..., Any]) -> Any:
         def _inner(*args: Any, **kwargs: Any) -> Any:
-            args = tuple(
-                [
-                    a.evaluate() if isinstance(a, ClientLazyLoader) else a
-                    for a in args
-                ]
-            )
-            kwargs = {
-                k: v.evaluate() if isinstance(v, ClientLazyLoader) else v
-                for k, v in kwargs.items()
-            }
-            return func(*args, **kwargs)
+            args_ = list(args)
+            for i in range(len(args_)):
+                if isinstance(args_[i], dict):
+                    with contextlib.suppress(ValueError):
+                        args_[i] = ClientLazyLoader(**args_[i]).evaluate()
+
+            for k, v in kwargs.items():
+                if isinstance(v, dict):
+                    with contextlib.suppress(ValueError):
+                        kwargs[k] = ClientLazyLoader(**v).evaluate()
+
+            return func(*args_, **kwargs)
 
         return _inner
 
     def _decorate() -> Type["Client"]:
-        for name, fn in inspect.getmembers(cls, inspect.ismethod):
+        for name, fn in inspect.getmembers(cls, inspect.isfunction):
             setattr(cls, name, _evaluate_args(fn))
         return cls
 
