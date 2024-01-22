@@ -12,11 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from uuid import uuid4
 
 from zenml.artifacts.external_artifact import ExternalArtifact
-
-GLOBAL_ARTIFACT_VERSION_ID = uuid4()
 
 
 def test_upload_by_value(sample_artifact_version_model, mocker):

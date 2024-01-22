@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 
 from datetime import datetime
-from unittest.mock import patch
+from typing import ClassVar
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
-from tests.unit.steps.test_external_artifact import MockZenmlClient
 from zenml.models import (
     ModelResponse,
     ModelResponseBody,
@@ -27,6 +27,55 @@ from zenml.models import (
     ModelVersionResponseBody,
     ModelVersionResponseMetadata,
 )
+
+GLOBAL_ARTIFACT_VERSION_ID = uuid4()
+
+
+class MockZenmlClient:
+    class Client:
+        ARTIFACT_STORE_ID: ClassVar[int] = 42
+
+        class MockArtifactVersionResponse:
+            def __init__(self, name, id=GLOBAL_ARTIFACT_VERSION_ID):
+                self.artifact_store_id = 42
+                self.name = name
+                self.id = id
+
+        class MockPipelineRunResponse:
+            def __init__(self):
+                self.name = "foo"
+                self.artifact_versions = [
+                    MockZenmlClient.Client.MockArtifactVersionResponse("foo"),
+                    MockZenmlClient.Client.MockArtifactVersionResponse("bar"),
+                ]
+
+        class MockPipelineResponse:
+            def __init__(self):
+                self.last_successful_run = (
+                    MockZenmlClient.Client.MockPipelineRunResponse()
+                )
+
+        def __init__(self):
+            self.active_stack = MagicMock()
+            self.active_stack.artifact_store.id = self.ARTIFACT_STORE_ID
+            self.active_stack.artifact_store.path = "foo"
+
+        def get_artifact_version(self, *args, **kwargs):
+            if len(args):
+                return MockZenmlClient.Client.MockArtifactVersionResponse(
+                    "foo", args[0]
+                )
+            else:
+                return MockZenmlClient.Client.MockArtifactVersionResponse(
+                    "foo"
+                )
+
+        def get_pipeline(self, *args, **kwargs):
+            return MockZenmlClient.Client.MockPipelineResponse()
+
+        def get_pipeline_run(self, *args, **kwargs):
+            return MockZenmlClient.Client.MockPipelineRunResponse()
+
 
 ARTIFACT_VERSION_IDS = [uuid4(), uuid4()]
 
