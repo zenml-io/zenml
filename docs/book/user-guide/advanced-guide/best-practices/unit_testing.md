@@ -46,7 +46,7 @@ def test_calculate_means():
 
 ```
 
-Let's say, Your `test_step_2` code is kept in `test_step.py` file in same directory. For running unit test for that `calculate_means` function, we use  `pytest test_step.py` which will envoke your python testcases file to run and show output.
+For running unit test, we can then execute `pytest test_embeddings_step.py` which will invoke the pytest framework to run the tests and show relevant output.
 
 
 ## Some tips and best practices to follow while writing unit testing for ZenML
