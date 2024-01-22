@@ -23,7 +23,7 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (
     SkypilotBaseOrchestrator,
 )
-from zenml.integrations.vm_gcp.flavors.skypilot_orchestrator_gcp_vm_flavor import (
+from zenml.integrations.skypilot_gcp.flavors.skypilot_orchestrator_gcp_vm_flavor import (
     SkypilotGCPOrchestratorConfig,
     SkypilotGCPOrchestratorSettings,
 )

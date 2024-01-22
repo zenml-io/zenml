@@ -11,15 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Skypilot AWS ZenML orchestrator."""
+"""Initialization of the Skypilot Azure ZenML orchestrator."""
 
 from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (  # noqa
     SkypilotBaseOrchestrator,
 )
-from zenml.integrations.vm_aws.orchestrators.skypilot_aws_vm_orchestrator import (  # noqa
-    SkypilotAWSOrchestrator,
+from zenml.integrations.skypilot_azure.orchestrators.skypilot_azure_vm_orchestrator import (  # noqa
+    SkypilotAzureOrchestrator,
 )
+
 __all__ = [
     "SkypilotBaseOrchestrator",
-    "SkypilotAWSOrchestrator",
+    "SkypilotAzureOrchestrator",
 ]

@@ -11,16 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Skypilot integration flavor for Skypilot AWS orchestrator."""
+"""Initialization of the Skypilot GCP ZenML orchestrator."""
 
-from zenml.integrations.vm_aws.flavors.skypilot_orchestrator_aws_vm_flavor import (
-    SkypilotAWSOrchestratorConfig,
-    SkypilotAWSOrchestratorFlavor,
-    SkypilotAWSOrchestratorSettings,
+from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (  # noqa
+    SkypilotBaseOrchestrator,
+)
+from zenml.integrations.skypilot_gcp.orchestrators.skypilot_gcp_vm_orchestrator import (  # noqa
+    SkypilotGCPOrchestrator,
 )
 
 __all__ = [
-    "SkypilotAWSOrchestratorConfig",
-    "SkypilotAWSOrchestratorFlavor",
-    "SkypilotAWSOrchestratorSettings",
+    "SkypilotBaseOrchestrator",
+    "SkypilotGCPOrchestrator",
 ]

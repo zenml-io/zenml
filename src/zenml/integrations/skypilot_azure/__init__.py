@@ -43,7 +43,7 @@ class SkypilotAzureIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.vm_azure.flavors import (
+        from zenml.integrations.skypilot_azure.flavors import (
             SkypilotAzureOrchestratorFlavor,
         )
 

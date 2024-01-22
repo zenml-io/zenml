@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Skypilot GCP integration for ZenML.
+"""Initialization of the Skypilot AWS integration for ZenML.
 
 The Skypilot integration sub-module powers an alternative to the local
 orchestrator for a remote orchestration of ZenML pipelines on VMs.
@@ -19,31 +19,33 @@ orchestrator for a remote orchestration of ZenML pipelines on VMs.
 from typing import List, Type
 
 from zenml.integrations.constants import (
-    SKYPILOT_GCP,
+    SKYPILOT_AWS,
 )
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-SKYPILOT_GCP_ORCHESTRATOR_FLAVOR = "vm_gcp"
+SKYPILOT_AWS_ORCHESTRATOR_FLAVOR = "vm_aws"
 
-class SkypilotGCPIntegration(Integration):
-    """Definition of Skypilot (GCP) Integration for ZenML."""
 
-    NAME = SKYPILOT_GCP
-    REQUIREMENTS = ["skypilot[gcp]<=0.4.1"]
+class SkypilotAWSIntegration(Integration):
+    """Definition of Skypilot AWS Integration for ZenML."""
+
+    NAME = SKYPILOT_AWS
+    REQUIREMENTS = ["skypilot[aws]<=0.4.1"]
     APT_PACKAGES = ["openssh-client","rsync"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Skypilot GCP integration.
+        """Declare the stack component flavors for the Skypilot AWS integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.vm_gcp.flavors import (
-            SkypilotGCPOrchestratorFlavor,
+        from zenml.integrations.skypilot_aws.flavors import (
+            SkypilotAWSOrchestratorFlavor,
         )
 
-        return [SkypilotGCPOrchestratorFlavor]
+        return [SkypilotAWSOrchestratorFlavor]
 
-SkypilotGCPIntegration.check_installation()
+
+SkypilotAWSIntegration.check_installation()
