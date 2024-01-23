@@ -11,17 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Docker Service Connector.
+"""HyperAI Service Connector.
 
-The Docker Service Connector is responsible for authenticating with a Docker
-(or compatible) registry.
+The HyperAI Service Connector allows authenticating to HyperAI (hyperai.ai)
+GPU equipped instances of their Dedicated offering.
 """
 import re
 import subprocess
 from typing import Any, List, Optional
 
-from docker.client import DockerClient
-from docker.errors import DockerException
 from pydantic import Field, SecretStr
 
 from zenml.constants import COMPUTE_INSTANCE_RESOURCE_TYPE
@@ -112,8 +110,6 @@ connector consumers, they are provided a pre-authenticated SSH client
 instance.
 """,
             auth_methods=HyperAIAuthenticationMethods.values(),
-            # Request a Docker repository to be configured in the
-            # connector or provided by the consumer.
             supports_instances=False,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/hyperai/hyperai.png",
             emoji=":robot_face:",
@@ -166,35 +162,32 @@ class HyperAIServiceConnector(ServiceConnector):
         )
 
     def _authorize_client(
-        self,
-        docker_client: DockerClient,
-        resource_id: str,
+        self
     ) -> None:
-        """Authorize a Docker client to have access to the configured Docker registry.
-
-        Args:
-            docker_client: The Docker client to authenticate.
-            resource_id: The resource ID to authorize the client for.
+        """Verify that the client can authenticate with the HyperAI instance.
 
         Raises:
-            AuthorizationException: If the client could not be authenticated.
+            BadHostKeyException: If the host key is invalid.
+            AuthenticationException: If the authentication credentials are
+                invalid.
+            SSHException: If there is an SSH related error.
         """
-        cfg = self.config
-        registry = self._parse_resource_id(resource_id)
+        
+        rsa_ssh_key = paramiko.RSAKey.from_private_key(
+            io.StringIO(self.config.rsa_ssh_key.get_secret_value()),
+            password=self.config.rsa_ssh_key_passphrase.get_secret_value(),
+        )
 
-        try:
-            docker_client.login(
-                username=cfg.username.get_secret_value(),
-                password=cfg.password.get_secret_value(),
-                registry=registry
-                if registry != DOCKER_REGISTRY_NAME
-                else None,
-                reauth=True,
-            )
-        except DockerException as e:
-            raise AuthorizationException(
-                f"failed to authenticate with Docker registry {registry}: {e}"
-            )
+        paramiko_client = paramiko.client.SSHClient()
+        paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        paramiko_client.connect(
+            hostname=self.config.ip_address,
+            username=self.config.username,
+            pkey=rsa_ssh_key,
+            timeout=30
+        )
+        paramiko_client.close()
+    
 
     def _connect_to_resource(
         self,
@@ -227,46 +220,6 @@ class HyperAIServiceConnector(ServiceConnector):
 
         return paramiko_client
 
-    def _configure_local_client(
-        self,
-        **kwargs: Any,
-    ) -> None:
-        """Configure the local Docker client to authenticate to a Docker/OCI registry.
-
-        Args:
-            kwargs: Additional implementation specific keyword arguments to use
-                to configure the client.
-
-        Raises:
-            AuthorizationException: If authentication failed.
-        """
-        # Call the docker CLI to authenticate to the Docker registry
-        cfg = self.config
-
-        assert self.resource_id is not None
-        registry = self._parse_resource_id(self.resource_id)
-
-        docker_login_cmd = [
-            "docker",
-            "login",
-            "-u",
-            cfg.username.get_secret_value(),
-            "--password-stdin",
-        ]
-        if registry != DOCKER_REGISTRY_NAME:
-            docker_login_cmd.append(registry)
-
-        try:
-            subprocess.run(
-                docker_login_cmd,
-                check=True,
-                input=cfg.password.get_secret_value().encode(),
-            )
-        except subprocess.CalledProcessError as e:
-            raise AuthorizationException(
-                f"Failed to authenticate to Docker registry "
-                f"'{self.resource_id}': {e}"
-            ) from e
 
     @classmethod
     def _auto_configure(
@@ -275,10 +228,10 @@ class HyperAIServiceConnector(ServiceConnector):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         **kwargs: Any,
-    ) -> "DockerServiceConnector":
+    ) -> "HyperAIServiceConnector":
         """Auto-configure the connector.
 
-        Not supported by the Docker connector.
+        Not supported by the HyperAI connector.
 
         Args:
             auth_method: The particular authentication method to use. If not
@@ -296,36 +249,24 @@ class HyperAIServiceConnector(ServiceConnector):
                 is not supported.
         """
         raise NotImplementedError(
-            "Auto-configuration is not supported by the Docker connector."
+            "Auto-configuration is not supported by the HyperAI connector."
         )
+
 
     def _verify(
         self,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> List[str]:
-        """Verify that the connector can authenticate and access resources.
+        """Verify that a connection can be established to the HyperAI instance.
 
         Args:
             resource_type: The type of resource to verify. Must be set to the
                 Docker resource type.
-            resource_id: The Docker registry name or URL to connect to.
+            resource_id: The HyperAI instance to verify.
 
         Returns:
-            The name of the Docker registry that this connector can access.
+            The resource ID if the connection can be established.
         """
-        # The docker server isn't available on the ZenML server, so we can't
-        # verify the credentials there.
-        try:
-            docker_client = DockerClient.from_env()
-        except DockerException as e:
-            logger.warning(
-                f"Failed to connect to Docker daemon: {e}"
-                f"\nSkipping Docker connector verification."
-            )
-        else:
-            assert resource_id is not None
-            self._authorize_client(docker_client, resource_id)
-            docker_client.close()
-
+        self._authorize_client()
         return [resource_id] if resource_id else []
