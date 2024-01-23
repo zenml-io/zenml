@@ -16,6 +16,10 @@
 from zenml.integrations.constants import HYPERAI
 from zenml.integrations.integration import Integration
 
+# Service connector constants
+HYPERAI_CONNECTOR_TYPE = "hyperai"
+HYPERAI_RESOURCE_TYPE = "hyperai-generic"
+
 
 class HyperAIIntegration(Integration):
     """Definition of HyperAI integration for ZenML."""
