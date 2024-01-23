@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 
 
-from typing import Any, Optional
+from typing import Any
 
+import pytest
 from typing_extensions import Annotated
 
 from zenml import pipeline, step
@@ -32,7 +33,7 @@ def producer(return_value: int) -> Annotated[int, ARTIFACT_NAME]:
 
 
 @step
-def consumer(external_artifact: int, expected_value: int):
+def consumer(external_artifact: Any, expected_value: int):
     """Step receiving external artifact and asserting it."""
     assert external_artifact == expected_value
 
@@ -49,17 +50,24 @@ def producer_pipeline_2(return_value: int):
 
 @pipeline(enable_cache=False)
 def consumer_pipeline(
-    expected_value: int,
-    value: Optional[Any] = None,
+    value: Any,
 ):
     consumer(
         ExternalArtifact(
             value=value,
         ),
-        expected_value=expected_value,
+        expected_value=value,
     )
 
 
-def test_external_artifact_by_value(clean_client: Client):
+def test_external_artifact_with_valid_value(clean_client: Client):
     """Test passing external artifact by value."""
-    consumer_pipeline(value=42, expected_value=42)
+    consumer_pipeline(value=42)
+
+
+def test_external_artifact_raises_on_empty_value(clean_client: Client):
+    """Test passing external artifact by value."""
+    with pytest.raises(RuntimeError):
+        consumer_pipeline(value="")
+    with pytest.raises(RuntimeError):
+        consumer_pipeline(value=None)
