@@ -11,45 +11,42 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Skypilot orchestrator GCP flavor."""
+"""Skypilot orchestrator Azure flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.integrations.gcp.google_credentials_mixin import (
-    GoogleCredentialsConfigMixin,
-)
-from zenml.integrations.skypilot import SKYPILOT_GCP_ORCHESTRATOR_FLAVOR
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorConfig,
     SkypilotBaseOrchestratorSettings,
+)
+from zenml.integrations.skypilot_azure import (
+    SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR,
 )
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
-logger = get_logger(__name__)
-
-
 if TYPE_CHECKING:
-    from zenml.integrations.skypilot.orchestrators import (
-        SkypilotGCPOrchestrator,
+    from zenml.integrations.skypilot_azure.orchestrators import (
+        SkypilotAzureOrchestrator,
     )
 
 
-class SkypilotGCPOrchestratorSettings(SkypilotBaseOrchestratorSettings):
-    """Skypilot orchestrator settings for GCP."""
+logger = get_logger(__name__)
 
 
-class SkypilotGCPOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    SkypilotBaseOrchestratorConfig,
-    GoogleCredentialsConfigMixin,
-    SkypilotGCPOrchestratorSettings,
+class SkypilotAzureOrchestratorSettings(SkypilotBaseOrchestratorSettings):
+    """Skypilot orchestrator settings for Azure."""
+
+
+class SkypilotAzureOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    SkypilotBaseOrchestratorConfig, SkypilotAzureOrchestratorSettings
 ):
-    """Skypilot orchestrator config for GCP."""
+    """Skypilot orchestrator config for Azure."""
 
 
-class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Skypilot orchestrator for GCP."""
+class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor for the Skypilot orchestrator for Azure."""
 
     @property
     def name(self) -> str:
@@ -58,7 +55,7 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Name of the orchestrator flavor.
         """
-        return SKYPILOT_GCP_ORCHESTRATOR_FLAVOR
+        return SKYPILOT_AZURE_ORCHESTRATOR_FLAVOR
 
     @property
     def service_connector_requirements(
@@ -74,7 +71,7 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
             connector is required for this flavor.
         """
         return ServiceConnectorRequirements(
-            resource_type="gcp-generic",
+            resource_type="azure-generic",
         )
 
     @property
@@ -102,7 +99,7 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/gcp-skypilot.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/azure-skypilot.png"
 
     @property
     def config_class(self) -> Type[BaseOrchestratorConfig]:
@@ -111,17 +108,17 @@ class SkypilotGCPOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The config class.
         """
-        return SkypilotGCPOrchestratorConfig
+        return SkypilotAzureOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["SkypilotGCPOrchestrator"]:
+    def implementation_class(self) -> Type["SkypilotAzureOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:
             Implementation class for this flavor.
         """
-        from zenml.integrations.skypilot.orchestrators import (
-            SkypilotGCPOrchestrator,
+        from zenml.integrations.skypilot_azure.orchestrators import (
+            SkypilotAzureOrchestrator,
         )
 
-        return SkypilotGCPOrchestrator
+        return SkypilotAzureOrchestrator
