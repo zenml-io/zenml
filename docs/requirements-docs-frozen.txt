@@ -419,7 +419,7 @@ pbr==5.11.1
 pendulum==2.1.2
 pexpect==4.8.0
 pickleshare==0.7.5
-Pillow==9.3.0
+Pillow==10.2.0
 pip-requirements-parser==32.0.1
 pip-tools==7.3.0
 pkginfo==1.9.6
