@@ -16,7 +16,7 @@ import os
 from asyncio.log import logger
 from typing import Any, List
 
-from fastapi import FastAPI, HTTPException, Request, APIRouter
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,7 +27,7 @@ from starlette.responses import FileResponse
 
 import zenml
 from zenml.analytics import source_context
-from zenml.constants import API, HEALTH, VERSION_1, EVENT_FLAVORS, EVENTS
+from zenml.constants import API, EVENTS, HEALTH, VERSION_1
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.events.event_flavor_registry import EventFlavorRegistry
 from zenml.zen_server.exceptions import error_detail

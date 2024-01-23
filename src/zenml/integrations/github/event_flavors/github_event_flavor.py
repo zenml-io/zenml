@@ -100,3 +100,6 @@ class GithubEventSourceFlavor(BaseEventFlavor):
         @router.post("/github-webhook")
         async def post_event(body: PushEvent):
             print(body)
+            # TODO: Process body
+            #  Filter triggers to find matching filter
+            #  Forward "Event/Trigger/.." Object to the Event Hub

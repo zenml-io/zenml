@@ -62,6 +62,8 @@ from sqlmodel import (
 )
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
+from zenml.actions.action_flavor_registry import ActionFlavorRegistry
+from zenml.actions.base_action_flavor import ActionFlavorResponse
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import analytics_disabler, track_decorator
 from zenml.config.global_config import GlobalConfiguration
@@ -91,6 +93,8 @@ from zenml.enums import (
     StoreType,
     TaggableResourceTypes,
 )
+from zenml.events.base_event_flavor import EventFlavorResponse
+from zenml.events.event_flavor_registry import EventFlavorRegistry
 from zenml.exceptions import (
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
@@ -1163,6 +1167,38 @@ class SqlZenStore(BaseZenStore):
                 )
             return identity.id
 
+    # -------------------- Action Flavors --------------------
+
+    def get_action_flavor(
+            self,
+            flavor_name: str,
+    ) -> ActionFlavorResponse:
+        """Get an action flavor by its name.
+
+        Args:
+            flavor_name: The name of the flavor to get.
+
+        Returns:
+            The action flavor.
+
+        Raises:
+            KeyError: if the action flavor doesn't exist.
+        """
+        try:
+            return ActionFlavorRegistry().get_action_flavor(
+                flavor_name)().to_model()
+        except KeyError:
+            raise KeyError("No action flavor by that name exists.")
+
+    def list_action_flavors(
+            self,
+    ) -> List[ActionFlavorResponse]:
+        """List all action flavors matching the given filter criteria.
+
+        Returns:
+            A list of all action flavors.
+        """
+        return [f().to_model() for _,f in ActionFlavorRegistry().action_flavors.items()]
 
     # ------------------------- API Keys -------------------------
 
@@ -2677,6 +2713,41 @@ class SqlZenStore(BaseZenStore):
                 ):
                     session.delete(device)
             session.commit()
+
+    # -------------------- Event Flavors --------------------
+
+    def get_event_flavor(
+            self,
+            flavor_name: str,
+    ) -> EventFlavorResponse:
+        """Get an event flavor by its name.
+
+        Args:
+            flavor_name: The name of the flavor to get.
+
+        Returns:
+            The event flavor.
+
+        Raises:
+            KeyError: if the event flavor doesn't exist.
+        """
+        try:
+            return EventFlavorRegistry().get_event_flavor(
+                flavor_name)().to_model()
+        except KeyError:
+            raise KeyError("No action flavor by that name exists.")
+
+
+    def list_event_flavors(
+            self,
+    ) -> List[EventFlavorResponse]:
+        """List all event flavors matching the given filter criteria.
+
+        Returns:
+            A list of all event flavors.
+        """
+        return [f().to_model() for _, f in
+                EventFlavorRegistry().event_flavors.items()]
 
     # ----------------------------- Flavors -----------------------------
 

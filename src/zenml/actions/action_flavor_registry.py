@@ -110,6 +110,3 @@ class ActionFlavorRegistry:
             A dictionary of registered action flavors.
         """
         return self.action_flavors
-
-
-action_flavor_registry = ActionFlavorRegistry()

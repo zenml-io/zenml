@@ -14,16 +14,13 @@
 """Abstract BaseEvent class that all Event implementations must implement."""
 from typing import Any
 
-from zenml.events.base_event_flavor import EventConfig, EventSourceConfig
 
-
-class BaseEvent:
+class BaseEventHandler:
     """Abstract BaseEvent class that all Event Flavors need to implement."""
 
     def __init__(
         self,
         flavor: str,
-        config: EventSourceConfig,
         *args: Any,
         **kwargs: Any,
     ):
@@ -31,22 +28,9 @@ class BaseEvent:
 
         Args:
             flavor: The flavor of the event.
-            config: The configuration needed to create the EventSource.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
         """
         self.flavor = flavor
-        self._config = config
 
-    @property
-    def config(self) -> EventConfig:
-        """Returns the configuration of the stack component.
-
-        This should be overwritten by any subclasses that define custom configs
-        to return the correct config class.
-
-        Returns:
-            The configuration of the stack component.
-        """
-        return self._config
-
+        # TODO: continue implementation

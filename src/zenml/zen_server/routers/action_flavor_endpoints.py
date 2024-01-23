@@ -12,11 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for action plans."""
-
+from typing import List
 
 from fastapi import APIRouter, Security
 
-from zenml.actions.action_flavor_registry import action_flavor_registry
 from zenml.actions.base_action_flavor import ActionFlavorResponse
 from zenml.constants import ACTIONS, API, VERSION_1
 from zenml.zen_server.auth import AuthContext, authorize
@@ -24,6 +23,7 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
 )
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 router = APIRouter(
     prefix=API + VERSION_1 + ACTIONS,
@@ -32,36 +32,23 @@ router = APIRouter(
 )
 
 
-# @router.get(
-#     "",
-#     response_model=Page[FlavorResponse],
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# @handle_exceptions
-# def list_action_flavors(
-#     flavor_filter_model: FlavorFilter = Depends(make_dependable(FlavorFilter)),
-#     hydrate: bool = False,
-#     _: AuthContext = Security(authorize),
-# ) -> Page[FlavorResponse]:
-#     """Returns all flavors.
-#
-#     Args:
-#         flavor_filter_model: Filter model used for pagination, sorting,
-#                              filtering
-#         hydrate: Flag deciding whether to hydrate the output model(s)
-#             by including metadata fields in the response.
-#
-#     Returns:
-#         All flavors.
-#     """
-#     return verify_permissions_and_list_entities(
-#         filter_model=flavor_filter_model,
-#         resource_type=ResourceType.FLAVOR,
-#         list_method=zen_store().list_flavors,
-#         hydrate=hydrate,
-#     )
+@router.get(
+    "",
+    response_model=List[ActionFlavorResponse],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_action_flavors(
+    _: AuthContext = Security(authorize),
+) -> List[ActionFlavorResponse]:
+    """Returns all action flavors.
 
-# TODO: Change response to a pydantic Model
+    Returns:
+        All flavors.
+    """
+    return SqlZenStore().list_action_flavors()
+
+
 @router.get(
     "/{flavor_name}",
     response_model=ActionFlavorResponse,
@@ -80,8 +67,4 @@ def get_flavor(
     Returns:
         The requested stack.
     """
-    try:
-        return action_flavor_registry.get_action_flavor(flavor_name)().to_model()
-    except KeyError:
-        raise KeyError("No action flavor by that name exists.")
-        # TODO: Implement this properly
+    return SqlZenStore().get_action_flavor(flavor_name=flavor_name)

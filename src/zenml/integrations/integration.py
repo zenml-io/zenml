@@ -17,6 +17,8 @@ from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
 
+from zenml.actions.base_action_flavor import BaseActionFlavor
+from zenml.events.base_event_flavor import BaseEventFlavor
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.stack.flavor import Flavor
@@ -136,7 +138,7 @@ class Integration(metaclass=IntegrationMeta):
         return []
 
     @classmethod
-    def action_flavors(cls) -> List[Type[Flavor]]:
+    def action_flavors(cls) -> List[Type["BaseActionFlavor"]]:
         """Abstract method to declare new stack component flavors.
 
         Returns:
@@ -145,7 +147,7 @@ class Integration(metaclass=IntegrationMeta):
         return []
 
     @classmethod
-    def event_flavors(cls) -> List[Type[Flavor]]:
+    def event_flavors(cls) -> List[Type["BaseEventFlavor"]]:
         """Abstract method to declare new stack component flavors.
 
         Returns:

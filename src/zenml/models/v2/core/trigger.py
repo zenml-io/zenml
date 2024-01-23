@@ -12,10 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
-from datetime import datetime
 from typing import Any, Dict
 
-from pydantic import Field, BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (

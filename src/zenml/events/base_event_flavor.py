@@ -15,12 +15,13 @@
 import json
 from abc import ABC, abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
     List,
     Optional,
-    Type, TYPE_CHECKING,
+    Type,
 )
 
 from pydantic import BaseModel, Extra
