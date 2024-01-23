@@ -117,9 +117,14 @@ dashboard and API functionality to support the full ML lifecycle.
 
 Model versions are created implicitly as you are running your machine learning
 training, so you don't have to immediately think about this. If you want more
-control over how and when these versions are controlled, our API has you
+control over how and when these versions are controlled, 
+
+> our API has you
 covered, with options for whether new model versions are created as well as for
-the deletion of new model versions when pipeline runs fail. [See
+the deletion of new model versions when pipeline runs fail.
+
+is this still true? can't find these options in ModelVersion anymore.
+ [See
 above](model-management.md#explicit-python-sdk-registration) for how to create
 model versions explicitly.
 
@@ -204,6 +209,7 @@ particular model version. Possible options for stages are:
 - `latest`: The latest version of the model. This is a virtual stage to retrieve the latest version only - versions cannot be promoted to `latest`.
 - `archived`: This is archived and no longer relevant. This stage occurs when a
   model moves out of any other stage.
+  > is this archived or "No stage"?
 
 Your own particular business or use case logic will determine which model
 version you choose to promote, and you can do this in the following ways:
@@ -233,7 +239,7 @@ can see how you would do this here:
 from zenml import Client
 
 MODEL_NAME = "iris_logistic_regression"
-from zenml.enum import ModelStages
+from zenml.enums import ModelStages
 
 model = Model(name=MODEL_NAME, version="1.2.3")
 model.set_stage(stage=ModelStages.PRODUCTION)
