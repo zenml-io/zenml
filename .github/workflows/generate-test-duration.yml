@@ -202,7 +202,7 @@ jobs:
             echo "No changes in .test_duration"
           fi
       - name: Create PR if changes found
-        if: success() && env.GITHUB_TOKEN
+        if: success()
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             gh pr create --base develop --head feature-branch --title "Update .test_duration" --body "Changes in .test_duration" --label "auto-merge"
