@@ -7,7 +7,7 @@ on:
     tags: ['*']
 jobs:
   setup-and-test:
-    uses: ./.github/workflows/setup-python-environment.yml
+    uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
       python-version: '3.8'
