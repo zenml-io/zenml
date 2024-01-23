@@ -106,5 +106,7 @@ class ExternalArtifact(BaseModel):
 
             logger.info("Finished uploading external artifact %s.", self._id)
         elif self._id is None:
-            raise RuntimeError("Cannot upload an empty artifact.")
+            raise RuntimeError(
+                f"Cannot upload an empty artifact. Provided value: `{self.value}`"
+            )
         return self._id
