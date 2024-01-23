@@ -195,7 +195,7 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code is leveraging advanced concept of a [late materialization](../advanced-guide/data-management/late-materialization.md) behind the scenes.
+Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../advanced-guide/data-management/late-materialization.md) behind the scenes.
 {% endhint %}
 
 ## Managing artifacts **not** produced by ZenML pipelines
