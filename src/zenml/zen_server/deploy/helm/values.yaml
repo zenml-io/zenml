@@ -207,6 +207,8 @@ zenml:
     #             persistent volume is not configured, the dump file will be
     #             stored in an emptyDir volume, which is not persisted.
     #             This is the default backup strategy.
+    #             NOTE: you should set the podSecurityContext.fsGroup option
+    #             if you are using a persistent volume to store the dump file.
     # database - the database is copied to a backup database in the same
     #            database server. This requires the `backupDatabase`
     #            option to be set to the name of the backup database.
@@ -814,7 +816,7 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext: {}
-  # fsGroup: 2000
+  # fsGroup: 2000 # if you're using a PVC for backup, this should necessarily be set.
 
 securityContext:
   runAsNonRoot: true
