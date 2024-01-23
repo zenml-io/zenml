@@ -69,14 +69,22 @@ class MigrationUtils(BaseModel):
 
     @property
     def engine(self) -> Engine:
-        """The SQLAlchemy engine."""
+        """The SQLAlchemy engine.
+
+        Returns:
+            The SQLAlchemy engine.
+        """
         if self._engine is None:
             self._engine = self.create_engine(database=self.url.database)
         return self._engine
 
     @property
     def master_engine(self) -> Engine:
-        """The SQLAlchemy engine for the master database."""
+        """The SQLAlchemy engine for the master database.
+
+        Returns:
+            The SQLAlchemy engine for the master database.
+        """
         if self._master_engine is None:
             self._master_engine = self.create_engine()
         return self._master_engine
