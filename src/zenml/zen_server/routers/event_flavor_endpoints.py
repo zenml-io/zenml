@@ -23,7 +23,7 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
 )
-from zenml.zen_stores.sql_zen_store import SqlZenStore
+from zenml.zen_server.utils import zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + EVENT_FLAVORS,
@@ -46,7 +46,7 @@ def list_event_flavors(
     Returns:
         All flavors.
     """
-    return SqlZenStore().list_event_flavors()
+    return zen_store().list_event_flavors()
 
 
 @router.get(
@@ -67,5 +67,5 @@ def get_flavor(
     Returns:
         The requested stack.
     """
-    return SqlZenStore().get_event_flavor(flavor_name=flavor_name)
+    return zen_store().get_event_flavor(flavor_name=flavor_name)
 
