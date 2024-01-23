@@ -272,7 +272,7 @@ The following code snippets show how to configure the orchestrator settings for 
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
+from zenml.integrations.skypilot_aws.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
 
 skypilot_settings = SkypilotAWSOrchestratorSettings(
     cpus="2",
@@ -308,7 +308,7 @@ skypilot_settings = SkypilotAWSOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_gcp_vm_flavor import SkypilotGCPOrchestratorSettings
+from zenml.integrations.skypilot_gcp.flavors.skypilot_orchestrator_gcp_vm_flavor import SkypilotGCPOrchestratorSettings
 
 
 skypilot_settings = SkypilotGCPOrchestratorSettings(
@@ -345,7 +345,7 @@ skypilot_settings = SkypilotGCPOrchestratorSettings(
 **Code Example:**
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_azure_vm_flavor import SkypilotAzureOrchestratorSettings
+from zenml.integrations.skypilot_azure.flavors.skypilot_orchestrator_azure_vm_flavor import SkypilotAzureOrchestratorSettings
 
 
 skypilot_settings = SkypilotAzureOrchestratorSettings(
@@ -393,7 +393,7 @@ zenml orchestrator update <ORCHESTRATOR_NAME> --disable_step_based_settings=True
 Here's an example of how to configure specific resources for a step for the AWS cloud:
 
 ```python
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
+from zenml.integrations.skypilot_aws.flavors.skypilot_orchestrator_aws_vm_flavor import SkypilotAWSOrchestratorSettings
 
 # Settings for a specific step that requires more resources
 high_resource_settings = SkypilotAWSOrchestratorSettings(
