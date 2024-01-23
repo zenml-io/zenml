@@ -181,6 +181,8 @@ def evaluate_all_lazy_load_args_in_client_methods(
                 if isinstance(args_[i], dict):
                     with contextlib.suppress(ValueError):
                         args_[i] = ClientLazyLoader(**args_[i]).evaluate()
+                elif isinstance(args_[i], ClientLazyLoader):
+                    args_[i] = args_[i].evaluate()
 
             for k, v in kwargs.items():
                 if isinstance(v, dict):
