@@ -168,11 +168,21 @@ def evaluate_all_lazy_load_args_in_client_methods(
 
     def _evaluate_args(func: Callable[..., Any]) -> Any:
         def _inner(*args: Any, **kwargs: Any) -> Any:
+            is_instance_method = "self" in inspect.getfullargspec(func).args
+
             args_ = list(args)
+            if not is_instance_method:
+                from zenml.client import Client
+
+                if args and isinstance(args[0], Client):
+                    args_ = list(args[1:])
+
             for i in range(len(args_)):
                 if isinstance(args_[i], dict):
                     with contextlib.suppress(ValueError):
                         args_[i] = ClientLazyLoader(**args_[i]).evaluate()
+                elif isinstance(args_[i], ClientLazyLoader):
+                    args_[i] = args_[i].evaluate()
 
             for k, v in kwargs.items():
                 if isinstance(v, dict):

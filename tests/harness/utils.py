@@ -164,7 +164,7 @@ def clean_repo_session(
     client = Client()
     orig_root = client.root
 
-    Client.initialize(dst_path)
+    client.initialize(dst_path)
     client.activate_root(dst_path)
 
     logging.info(f"Tests are running in clean repository: '{dst_path}'")
