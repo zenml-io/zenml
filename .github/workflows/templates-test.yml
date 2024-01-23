@@ -42,7 +42,8 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }} && github.repository
+      == 'zenml-io/zenml'
     defaults:
       run:
         shell: bash
