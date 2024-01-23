@@ -19,7 +19,6 @@ import logging
 import math
 import os
 import re
-import shutil
 import sys
 from datetime import datetime
 from functools import lru_cache
@@ -42,8 +41,7 @@ from uuid import UUID
 
 import pymysql
 from pydantic import SecretStr, root_validator, validator
-from pydantic.json import pydantic_encoder
-from sqlalchemy import MetaData, asc, desc, func, text
+from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -240,6 +238,7 @@ from zenml.zen_stores.base_zen_store import (
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
+from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
     APIKeySchema,
     ArtifactSchema,
@@ -375,11 +374,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     max_overflow: int = 20
     pool_pre_ping: bool = True
 
-    backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.DUMP_FILE
+    backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     # database backup directory
-    backup_directory: str = os.path.join(
-        GlobalConfiguration().config_directory, SQL_STORE_BACKUP_DIRECTORY_NAME
-    )
+    backup_directory: Optional[str] = None
     backup_database: Optional[str] = None
 
     @validator("secrets_store")
@@ -436,7 +433,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             values: All model attribute values.
 
         Returns:
-            The model attribute values
+            The model attribute values.
+
+        Raises:
+            ValueError: If the backup database name is not set when the backup
+                database is requested.
         """
         backup_strategy = values.get("backup_strategy")
         if backup_strategy == DatabaseBackupStrategy.DATABASE and (
@@ -445,6 +446,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             raise ValueError(
                 "The backup database name must be set if the backup strategy "
                 "is set to use a backup database."
+            )
+
+        if backup_strategy == DatabaseBackupStrategy.DUMP_FILE and (
+            not values.get("backup_directory")
+        ):
+            values["backup_directory"] = os.path.join(
+                GlobalConfiguration().config_directory,
+                SQL_STORE_BACKUP_DIRECTORY_NAME,
             )
 
         return values
@@ -676,8 +685,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Raises:
             NotImplementedError: If the SQL driver is not supported.
-            ValueError: If the backup database name is not set when the backup
-                database is requested.
         """
         sql_url = make_url(self.url)
         sqlalchemy_connect_args: Dict[str, Any] = {}
@@ -764,9 +771,11 @@ class SqlZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
+    _migration_utils: Optional[MigrationUtils] = None
     _alembic: Optional[Alembic] = None
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
+    _backup_database: Optional[Dict[str, Any]] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -808,6 +817,20 @@ class SqlZenStore(BaseZenStore):
         if not self._engine:
             raise ValueError("Store not initialized")
         return self._engine
+
+    @property
+    def migration_utils(self) -> MigrationUtils:
+        """The migration utils.
+
+        Returns:
+            The migration utils.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._migration_utils:
+            raise ValueError("Store not initialized")
+        return self._migration_utils
 
     @property
     def alembic(self) -> Alembic:
@@ -968,6 +991,11 @@ class SqlZenStore(BaseZenStore):
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
+        self._migration_utils = MigrationUtils(
+            url=url,
+            connect_args=connect_args,
+            engine_args=engine_args,
+        )
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
         # automatically create the database.
@@ -995,7 +1023,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
                 if _is_mysql_missing_database_error(e):
-                    self._create_drop_mysql_database()
+                    self.migration_utils.create_drop_mysql_database()
                 else:
                     raise
 
@@ -1045,39 +1073,14 @@ class SqlZenStore(BaseZenStore):
                 self._backup_secrets_store.config
             )
 
-    def _create_drop_mysql_database(
-        self,
-        database: Optional[str] = None,
-        create: bool = True,
-        drop: bool = False,
-    ) -> None:
-        """Creates and/or drop a mysql database.
+    def _initialize_database(self) -> None:
+        """Initialize the database on first use."""
+        self._get_or_create_default_workspace()
 
-        Args:
-            database: The name of the database to create. If not set, the
-                database name from the configuration will be used.
-            create: Whether to create the database.
-            drop: Whether to drop the database.
-        """
-        url, connect_args, engine_args = self.config.get_sqlalchemy_config(
-            database=database
-        )
-
-        database = url.database
-        logger.info(f"Trying to create database {database}")
-        master_url = url._replace(database=None)
-        master_engine = create_engine(
-            url=master_url, connect_args=connect_args, **engine_args
-        )
-        with master_engine.connect() as conn:
-            if drop:
-                # drop the database if it exists
-                conn.execute(text(f"DROP DATABASE IF EXISTS `{database}`"))
-
-            if create:
-                conn.execute(
-                    text(f"CREATE DATABASE IF NOT EXISTS `{database}`")
-                )
+        config = ServerConfiguration.get_server_config()
+        # If the auth scheme is external, don't create the default user
+        if config.auth_scheme != AuthScheme.EXTERNAL:
+            self._get_or_create_default_user()
 
     def _get_db_backup_file_path(self) -> str:
         """Get the path to the database backup file.
@@ -1085,6 +1088,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The path to the configured database backup file.
         """
+        # Guaranteed by the config validation that the backup directory exists
+        assert self.config.backup_directory is not None
+
         if self.config.driver == SQLDatabaseDriver.SQLITE:
             return os.path.join(
                 self.config.backup_directory,
@@ -1099,315 +1105,110 @@ class SqlZenStore(BaseZenStore):
             f"{self.engine.url.database}-backup.json",
         )
 
-    def _backup_database_to_file(self, dump_file: str) -> None:
-        """Backup the database to a file.
-
-        This method dumps the entire database into a JSON file. Instead of
-        using a SQL dump, we use a proprietary JSON dump because it is easier to
-        read and debug and it is also safer with respect to SQL injection
-        attacks.
-
-        The format of the dump is as depicted in the following example:
-
-        ```json
-        [
-          {
-            "name": "table1",
-            "create_stmt": "CREATE TABLE table1 (id INTEGER NOT NULL, "
-                "name VARCHAR(255), PRIMARY KEY (id))",
-            "data": [
-              {
-                "id": 1,
-                "name": "foo"
-              },
-              {
-                "id": 2,
-                "name": "bar"
-              }
-            ]
-          },
-          {
-            "name": "table2",
-            "create_stmt": "CREATE TABLE table2 (id INTEGER NOT NULL, "
-                "name VARCHAR(255), PRIMARY KEY (id))",
-            "data": [
-              {
-                "id": 1,
-                "name": "foo"
-              },
-              {
-                "id": 2,
-                "name": "bar"
-              }
-            ]
-          }
-        ]
-        ```
+    def backup_database(
+        self,
+        strategy: Optional[DatabaseBackupStrategy] = None,
+        location: Optional[str] = None,
+    ) -> Tuple[str, Any]:
+        """Backup the database.
 
         Args:
-            dump_file: The path to the dump file.
-        """
-        if self.config.driver == SQLDatabaseDriver.SQLITE:
-            # For a sqlite database, we can just make a copy of the database
-            # file
-            assert self.config.database is not None
-            shutil.copyfile(
-                self.config.database,
-                dump_file,
-            )
-            return
+            strategy: Custom backup strategy to use. If not set, the backup
+                strategy from the store configuration will be used.
+            location: Custom target location to backup the database to. If not
+                set, the configured backup location will be used. Depending on
+                the backup strategy, this can be a file path or a database name.
 
-        metadata = MetaData()
-        metadata.reflect(bind=self.engine)
-        from sqlalchemy.schema import CreateTable
-
-        with open(dump_file, "w") as f:
-            db_data: List[Dict[str, Any]] = []
-
-            with self.engine.connect() as conn:
-                for table in metadata.sorted_tables:
-                    # 1. extract the table creation statements
-
-                    create_table_construct = CreateTable(table)
-                    create_table_stmt = str(create_table_construct).strip()
-                    for column in create_table_construct.columns:
-                        # enclosing all column names in backticks. This is because
-                        # some column names are reserved keywords in MySQL. For
-                        # example, keys and values. So, instead of tracking all
-                        # keywords, we just enclose all column names in backticks.
-                        # enclose the first word in the column definition in
-                        # backticks
-                        words = str(column).split()
-                        words[0] = f"`{words[0]}`"
-                        create_table_stmt = create_table_stmt.replace(
-                            f"\n\t{str(column)}", " ".join(words)
-                        )
-                    # if any double quotes are used for column names, replace them
-                    # with backticks
-                    create_table_stmt = (
-                        create_table_stmt.replace('"', "") + ";"
-                    )
-
-                    # 2. extract the table data
-
-                    # If the table has a `created` column, we use it to sort
-                    # the rows in the table starting with the oldest rows.
-                    # This is to ensure that the rows are inserted in the
-                    # correct order, since some tables have inner foreign key
-                    # constraints.
-                    if "created" in table.columns:
-                        order_by = table.columns["created"]
-                    else:
-                        order_by = None
-
-                    table_data: List[Dict[str, Any]] = []
-                    for row in conn.execute(table.select().order_by(order_by)):
-                        # Convert the row into a JSON-serializable dict
-                        table_data.append(row._asdict())
-
-                    db_data.append(
-                        dict(
-                            name=table.name,
-                            create_stmt=create_table_stmt,
-                            data=table_data,
-                        )
-                    )
-
-            # Write the data dump to a JSON file. Use an encoder that can handle
-            # datetime, Decimal and other types.
-            json.dump(db_data, f, indent=4, default=pydantic_encoder)
-
-        logger.debug(f"Database backed up to {dump_file}")
-
-    def _restore_database_from_file(self, dump_file: str) -> None:
-        """Restore the database from a backup dump file.
-
-        See the documentation of the `backup_database_to_file` method for
-        details on the format of the dump file.
-
-        Args:
-            dump_file: The path to the dump file.
+        Returns:
+            The location where the database was backed up to and an accompanying
+            user-friendly message that describes the backup location.
 
         Raises:
-            RuntimeError: If the database cannot be restored successfully.
+            ValueError: If the backup database name is not set when the backup
+                database is requested or if the backup strategy is invalid.
         """
-        if not os.path.exists(dump_file):
-            raise RuntimeError(
-                f"Database backup file '{dump_file}' does not "
-                f"exist or is not accessible."
+        strategy = strategy or self.config.backup_strategy
+
+        if (
+            strategy == DatabaseBackupStrategy.DUMP_FILE
+            or self.config.driver == SQLDatabaseDriver.SQLITE
+        ):
+            dump_file = location or self._get_db_backup_file_path()
+            self.migration_utils.backup_database_to_file(dump_file=dump_file)
+            return f"the '{dump_file}' backup file", dump_file
+        elif strategy == DatabaseBackupStrategy.DATABASE:
+            backup_db_name = location or self.config.backup_database
+            if not backup_db_name:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
+
+            self.migration_utils.backup_database_to_db(
+                backup_db_name=backup_db_name
+            )
+            return f"the '{backup_db_name}' backup database", backup_db_name
+        elif strategy == DatabaseBackupStrategy.IN_MEMORY:
+            return (
+                "memory",
+                self.migration_utils.backup_database_to_memory(),
             )
 
-        if self.config.driver == SQLDatabaseDriver.SQLITE:
-            # For a sqlite database, we just overwrite the database file
-            # with the backup file
-            assert self.config.database is not None
-            shutil.copyfile(
-                dump_file,
-                self.config.database,
+        else:
+            raise ValueError(f"Invalid backup strategy: {strategy}.")
+
+    def restore_database(
+        self,
+        strategy: Optional[DatabaseBackupStrategy] = None,
+        location: Optional[Any] = None,
+    ) -> None:
+        """Restore the database.
+
+        Args:
+            strategy: Custom backup strategy to use. If not set, the backup
+                strategy from the store configuration will be used.
+            location: Custom target location to restore the database from. If
+                not set, the configured backup location will be used. Depending
+                on the backup strategy, this can be a file path, a database
+                name or an in-memory database representation.
+
+        Raises:
+            ValueError: If the backup database name is not set when the backup
+                database is requested or if the backup strategy is invalid.
+        """
+        strategy = strategy or self.config.backup_strategy
+
+        if (
+            strategy == DatabaseBackupStrategy.DUMP_FILE
+            or self.config.driver == SQLDatabaseDriver.SQLITE
+        ):
+            dump_file = location or self._get_db_backup_file_path()
+            self.migration_utils.restore_database_from_file(
+                dump_file=dump_file
             )
-            return
+        elif strategy == DatabaseBackupStrategy.DATABASE:
+            backup_db_name = location or self.config.backup_database
+            if not backup_db_name:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
 
-        # read the DB dump file
-        with open(dump_file, "r") as f:
-            db_data = json.load(f)
+            self.migration_utils.restore_database_from_db(
+                backup_db_name=backup_db_name
+            )
+        elif strategy == DatabaseBackupStrategy.IN_MEMORY:
+            if location is None or not isinstance(location, list):
+                raise ValueError(
+                    "The in-memory database representation must be provided "
+                    "to restore the database from an in-memory backup."
+                )
+            self.migration_utils.restore_database_from_memory(db_dump=location)
 
-        # Drop and re-create the primary database
-        self._create_drop_mysql_database(
-            create=True,
-            drop=True,
-        )
+        else:
+            raise ValueError(f"Invalid backup strategy: {strategy}.")
 
-        with self.engine.begin() as connection:
-            # execute the table creation statements first
-            for table_dump in db_data:
-                connection.execute(text(table_dump["create_stmt"]))
-
-            # remove any escaped characters like \n and \t and split based on ;
-            # but keep the ; at the end of each sentence
-            # statements = (
-            #     contents.replace("\\n", "").replace("\\t", "").split(";")
-            # )
-
-            # # execute each statement
-            # for statement in statements:
-            #     if statement.strip() != "":
-            #         connection.execute(text(statement + ";"))
-
-        # Reload the database metadata after creating the tables
-        metadata = MetaData(bind=self.engine)
-        metadata.reflect()
-
-        # insert the data into the database
-        with self.engine.begin() as connection:
-            for table_dump in db_data:
-                table_name = table_dump["name"]
-                table_data = table_dump["data"]
-                table = metadata.tables[table_name]
-                for row in table_data:
-                    # Convert column values to the correct type
-                    for column in table.columns:
-                        # Blob columns are stored as binary strings
-                        if column.type.python_type == bytes and isinstance(
-                            row[column.name], str
-                        ):
-                            # Convert the string to bytes
-                            row[column.name] = bytes(row[column.name], "utf-8")
-
-                # Insert the data into the table in batches
-                batch_size = 100
-                for i in range(0, len(table_data), batch_size):
-                    connection.execute(
-                        table.insert().values(table_data[i : i + batch_size])
-                    )
-
-        logger.info(f"Database successfully restored from '{dump_file}'")
-
-    def _copy_database(self, src_engine: Engine, dst_engine: Engine) -> None:
-        """Copy the database from one engine to another.
-
-        This method assumes that the destination database exists and is empty.
-
-        Args:
-            src_engine: The source SQLAlchemy engine.
-            dst_engine: The destination SQLAlchemy engine.
-        """
-        src_metadata = MetaData(bind=src_engine)
-        src_metadata.reflect()
-
-        dst_metadata = MetaData(bind=dst_engine)
-        dst_metadata.reflect()
-
-        # @event.listens_for(src_metadata, "column_reflect")
-        # def genericize_datatypes(inspector, tablename, column_dict):
-        # column_dict["type"] = column_dict["type"].as_generic(allow_nulltype=True)
-
-        # Create all tables in the target database
-        for table in src_metadata.sorted_tables:
-            table.create(bind=dst_engine)
-
-        # Refresh target metadata after creating the tables
-        dst_metadata.clear()
-        dst_metadata.reflect()
-
-        # Copy all data from the source database to the destination database
-        with src_engine.begin() as src_conn:
-            with dst_engine.begin() as dst_conn:
-                for src_table in src_metadata.sorted_tables:
-                    dst_table = dst_metadata.tables[src_table.name]
-                    insert = dst_table.insert()
-                    # If the table has a `created` column, we use it to sort
-                    # the rows in the table starting with the oldest rows.
-                    # This is to ensure that the rows are inserted in the
-                    # correct order, since some tables have inner foreign key
-                    # constraints.
-                    if "created" in src_table.columns:
-                        order_by = src_table.columns["created"]
-                    else:
-                        order_by = None
-                    for row in src_conn.execute(
-                        src_table.select().order_by(order_by)
-                    ):
-                        dst_conn.execute(insert, row._asdict())
-
-    def _backup_database_to_db(self, backup_db_name: str) -> None:
-        """Backup the database to a backup database.
-
-        Args:
-            backup_db_name: Custom name for the backup database. If not set,
-                the backup database name from the store configuration will be
-                used.
-        """
-        url, connect_args, engine_args = self.config.get_sqlalchemy_config(
-            database=backup_db_name
-        )
-
-        assert url.database is not None
-
-        # Re-create the backup database
-        self._create_drop_mysql_database(
-            database=url.database,
-            create=True,
-            drop=True,
-        )
-
-        backup_engine = create_engine(
-            url=url, connect_args=connect_args, **engine_args
-        )
-
-        self._copy_database(self.engine, backup_engine)
-
-        logger.debug(
-            f"Database backed up to the `{backup_db_name}` backup database."
-        )
-
-    def _restore_database_from_db(self, backup_db_name: str) -> None:
-        """Restore the database from the backup database.
-
-        Args:
-            backup_db_name: Backup database name to restore from.
-        """
-        url, connect_args, engine_args = self.config.get_sqlalchemy_config(
-            database=backup_db_name
-        )
-
-        backup_engine = create_engine(
-            url=url, connect_args=connect_args, **engine_args
-        )
-
-        # Drop and re-create the primary database
-        self._create_drop_mysql_database(
-            create=True,
-            drop=True,
-        )
-
-        self._copy_database(backup_engine, self.engine)
-
-        logger.debug(
-            f"Database restored from the `{backup_db_name}` "
-            "backup database."
-        )
-
-    def _cleanup_database_backup(self) -> None:
+    def cleanup_database_backup(self) -> None:
         """Delete the database backup files."""
         if self.config.backup_strategy == DatabaseBackupStrategy.DUMP_FILE:
             dump_file = self._get_db_backup_file_path()
@@ -1420,107 +1221,11 @@ class SqlZenStore(BaseZenStore):
                         f"{dump_file}."
                     )
         elif self.config.backup_strategy == DatabaseBackupStrategy.DATABASE:
-            self._create_drop_mysql_database(
+            self.migration_utils.create_drop_mysql_database(
                 database=self.config.backup_database,
                 create=False,
                 drop=True,
             )
-
-    def _initialize_database(self) -> None:
-        """Initialize the database on first use."""
-        self._get_or_create_default_workspace()
-
-        config = ServerConfiguration.get_server_config()
-        # If the auth scheme is external, don't create the default user
-        if config.auth_scheme != AuthScheme.EXTERNAL:
-            self._get_or_create_default_user()
-
-    def backup_database(
-        self,
-        strategy: Optional[DatabaseBackupStrategy] = None,
-        location: Optional[str] = None,
-    ) -> str:
-        """Backup the database.
-
-        Args:
-            strategy: Custom backup strategy to use. If not set, the backup
-                strategy from the store configuration will be used.
-            location: Custom target location to backup the database to. If not
-                set, the configured backup location will be used. Depending on
-                the backup strategy, this can be a file path or a database name.
-
-        Returns:
-            The location of the backup file or database.
-
-        Raises:
-            ValueError: If the backup database name is not set when the backup
-                database is requested.
-        """
-        strategy = strategy or self.config.backup_strategy
-
-        if (
-            strategy == DatabaseBackupStrategy.DUMP_FILE
-            or self.config.driver == SQLDatabaseDriver.SQLITE
-        ):
-            dump_file = location or self._get_db_backup_file_path()
-
-            # create the directory if it does not exist
-            dump_path = os.path.dirname(os.path.abspath(dump_file))
-            if not os.path.exists(dump_path):
-                os.makedirs(dump_path)
-
-            self._backup_database_to_file(dump_file=dump_file)
-
-            return dump_file
-        else:
-            backup_db_name = location or self.config.backup_database
-            if not backup_db_name:
-                raise ValueError(
-                    "The backup database name must be set in the store "
-                    "configuration to use the backup database strategy."
-                )
-
-            self._backup_database_to_db(backup_db_name=backup_db_name)
-
-            return backup_db_name
-
-    def restore_database(
-        self,
-        strategy: Optional[DatabaseBackupStrategy] = None,
-        location: Optional[str] = None,
-    ) -> None:
-        """Restore the database.
-
-        Args:
-            strategy: Custom backup strategy to use. If not set, the backup
-                strategy from the store configuration will be used.
-            location: Custom target location to restore the database from. If
-                not set, the configured backup location will be used. Depending
-                on the backup strategy, this can be a file path or a database
-                name.
-
-        Raises:
-            ValueError: If the backup database name is not set when the backup
-                database is requested.
-        """
-        strategy = strategy or self.config.backup_strategy
-
-        if (
-            strategy == DatabaseBackupStrategy.DUMP_FILE
-            or self.config.driver == SQLDatabaseDriver.SQLITE
-        ):
-            dump_file = location or self._get_db_backup_file_path()
-
-            self._restore_database_from_file(dump_file=dump_file)
-        else:
-            backup_db_name = location or self.config.backup_database
-            if not backup_db_name:
-                raise ValueError(
-                    "The backup database name must be set in the store "
-                    "configuration to use the backup database strategy."
-                )
-
-            self._restore_database_from_db(backup_db_name=backup_db_name)
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the python package.
@@ -1577,12 +1282,16 @@ class SqlZenStore(BaseZenStore):
                 self.config.backup_strategy != DatabaseBackupStrategy.DISABLED
                 and current_revisions[0] != head_revisions[0]
             )
-            backup_location: Optional[str] = None
+            backup_location: Optional[Any] = None
+            backup_location_msg: Optional[str] = None
 
             if backup_enabled:
                 try:
                     logger.info("Backing up the database before migration.")
-                    backup_location = self.backup_database()
+                    (
+                        backup_location_msg,
+                        backup_location,
+                    ) = self.backup_database()
                 except Exception:
                     logger.exception(
                         "Failed to backup the database. Please check the logs "
@@ -1591,10 +1300,10 @@ class SqlZenStore(BaseZenStore):
                     )
                 else:
                     logger.info(
-                        f"Database backup successfully created at the "
-                        f"`{backup_location}` backup location. If something "
-                        "goes wrong with the upgrade, ZenML will attempt to "
-                        "restore the database from this backup automatically."
+                        "Database successfully backed up to "
+                        f"{backup_location_msg}. If something goes wrong with "
+                        "the upgrade, ZenML will attempt to restore the "
+                        "database from this backup automatically."
                     )
 
             try:
@@ -1603,15 +1312,14 @@ class SqlZenStore(BaseZenStore):
                 if backup_enabled and backup_location:
                     logger.exception(
                         "Failed to migrate the database. Attempting to restore "
-                        f"the database from the '{backup_location}' "
-                        "backup location."
+                        f"the database from {backup_location_msg}."
                     )
                     try:
                         self.restore_database()
                     except Exception:
                         logger.exception(
-                            "Failed to restore the database from the "
-                            f"{backup_location} backup location. Please "
+                            "Failed to restore the database from "
+                            f"{backup_location_msg}. Please "
                             "check the logs for more details. You might need "
                             "to restore the database manually."
                         )
@@ -1628,7 +1336,7 @@ class SqlZenStore(BaseZenStore):
             else:
                 if backup_enabled and backup_location:
                     try:
-                        self._cleanup_database_backup()
+                        self.cleanup_database_backup()
                     except Exception:
                         logger.exception(
                             "Failed to cleanup the database backup."

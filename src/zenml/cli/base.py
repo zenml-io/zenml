@@ -704,11 +704,11 @@ def backup_database(
             store_config, skip_default_registrations=True, skip_migrations=True
         )
         assert isinstance(store, SqlZenStore)
-        location = store.backup_database(
+        msg, location = store.backup_database(
             strategy=DatabaseBackupStrategy(strategy) if strategy else None,
             location=location,
         )
-        cli_utils.declare(f"Database was backed up to '{location}'.")
+        cli_utils.declare(f"Database was backed up to {msg}.")
     else:
         cli_utils.warning(
             "Cannot backup database while connected to a ZenML server."

@@ -353,6 +353,8 @@ class DatabaseBackupStrategy(StrEnum):
 
     # Backup disabled
     DISABLED = "disabled"
+    # In-memory backup
+    IN_MEMORY = "in-memory"
     # Dump the database to a file
     DUMP_FILE = "dump-file"
     # Create a backup of the database in the remote database service
