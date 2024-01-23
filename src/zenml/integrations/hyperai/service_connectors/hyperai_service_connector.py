@@ -24,7 +24,7 @@ from docker.client import DockerClient
 from docker.errors import DockerException
 from pydantic import Field, SecretStr
 
-from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
+from zenml.constants import COMPUTE_INSTANCE_RESOURCE_TYPE
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.hyperai import (
     HYPERAI_CONNECTOR_TYPE,
@@ -48,10 +48,10 @@ logger = get_logger(__name__)
 class HyperAICredentials(AuthenticationConfig):
     """HyperAI client authentication credentials."""
 
-    ssh_key: SecretStr = Field(
+    rsa_ssh_key: SecretStr = Field(
         title="SSH key",
     )
-    ssh_key_passphrase: Optional[SecretStr] = Field(
+    rsa_ssh_key_passphrase: Optional[SecretStr] = Field(
         default=None,
         title="SSH key passphrase",
     )
@@ -64,6 +64,9 @@ class HyperAIConfiguration(HyperAICredentials):
         title="IP address of the HyperAI instance.",
     )
 
+    username: str = Field(
+        title="Username to use to connect to the HyperAI instance.",
+    )
 
 class HyperAIAuthenticationMethods(StrEnum):
     """HyperAI Authentication methods."""
@@ -96,30 +99,24 @@ Use an SSH key to authenticate with a HyperAI instance. The key may be
 encrypted with a passphrase. If the key is encrypted, the passphrase must be
 provided.
 """,
-            config_class=DockerConfiguration,
+            config_class=HyperAIConfiguration,
         ),
     ],
     resource_types=[
         ResourceTypeModel(
-            name="Docker/OCI container registry",
-            resource_type=DOCKER_REGISTRY_RESOURCE_TYPE,
+            name="HyperAI instance",
+            resource_type=COMPUTE_INSTANCE_RESOURCE_TYPE,
             description="""
-Allows users to access a Docker or OCI compatible container registry as a
-resource. When used by connector consumers, they are provided a
-pre-authenticated python-docker client instance.
-
-The resource name identifies a Docker/OCI registry using one of the following
-formats (the repository name is optional).
-            
-- DockerHub: docker.io or [https://]index.docker.io/v1/[/<repository-name>]
-- generic OCI registry URI: http[s]://host[:port][/<repository-name>]
+Allows users to access a HyperAI instance as a resource. When used by
+connector consumers, they are provided a pre-authenticated SSH client
+instance.
 """,
-            auth_methods=DockerAuthenticationMethods.values(),
+            auth_methods=HyperAIAuthenticationMethods.values(),
             # Request a Docker repository to be configured in the
             # connector or provided by the consumer.
             supports_instances=False,
-            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png",
-            emoji=":whale:",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/hyperai/hyperai.png",
+            emoji=":robot_face:",
         ),
     ],
 )
@@ -137,49 +134,7 @@ class HyperAIServiceConnector(ServiceConnector):
         Returns:
             The service connector specification.
         """
-        return DOCKER_SERVICE_CONNECTOR_TYPE_SPEC
-
-    @classmethod
-    def _parse_resource_id(
-        cls,
-        resource_id: str,
-    ) -> str:
-        """Validate and convert a Docker resource ID into a Docker registry name.
-
-        Args:
-            resource_id: The resource ID to convert.
-
-        Returns:
-            The Docker registry name.
-
-        Raises:
-            ValueError: If the provided resource ID is not a valid Docker
-                registry.
-        """
-        registry: Optional[str] = None
-        if re.match(
-            r"^(https?://)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(:[0-9]+)?(/.+)*$",
-            resource_id,
-        ):
-            # The resource ID is a repository URL
-            if resource_id.startswith("https://") or resource_id.startswith(
-                "http://"
-            ):
-                registry = resource_id.split("/")[2]
-            else:
-                registry = resource_id.split("/")[0]
-        else:
-            raise ValueError(
-                f"Invalid resource ID for a Docker registry: {resource_id}. "
-                f"Please provide a valid repository name or URL in the "
-                f"following format:\n"
-                "DockerHub: docker.io or [https://]index.docker.io/v1/[/<repository-name>]"
-                "generic OCI registry URI: http[s]://host[:port][/<repository-name>]"
-            )
-
-        if registry == f"index.{DOCKER_REGISTRY_NAME}":
-            registry = DOCKER_REGISTRY_NAME
-        return registry
+        return HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC
 
     def _canonical_resource_id(
         self, resource_type: str, resource_id: str
@@ -245,22 +200,32 @@ class HyperAIServiceConnector(ServiceConnector):
         self,
         **kwargs: Any,
     ) -> Any:
-        """Authenticate and connect to a Docker/OCI registry.
-
-        Initialize, authenticate and return a python-docker client.
+        """Connect to a HyperAI instance. Returns an authenticated SSH client.
 
         Args:
             kwargs: Additional implementation specific keyword arguments to pass
                 to the session or client constructor.
 
         Returns:
-            An authenticated python-docker client object.
+            An authenticated Paramiko SSH client.
         """
         assert self.resource_id is not None
-        docker_client = DockerClient.from_env()
-        self._authorize_client(docker_client, self.resource_id)
 
-        return docker_client
+        rsa_ssh_key = paramiko.RSAKey.from_private_key(
+            io.StringIO(self.config.rsa_ssh_key.get_secret_value()),
+            password=self.config.rsa_ssh_key_passphrase.get_secret_value(),
+        )
+
+        paramiko_client = paramiko.client.SSHClient()
+        paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        paramiko_client.connect(
+            hostname=self.config.ip_address,
+            username=self.config.username,
+            pkey=rsa_ssh_key,
+            timeout=30
+        )
+
+        return paramiko_client
 
     def _configure_local_client(
         self,

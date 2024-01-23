@@ -269,6 +269,7 @@ MLFLOW_MODEL_FORMAT = "MLflow"
 # Service connector constants
 DOCKER_REGISTRY_RESOURCE_TYPE = "docker-registry"
 KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"
+COMPUTE_INSTANCE_RESOURCE_TYPE = "compute-instance"
 
 # Stack Recipe constants
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"

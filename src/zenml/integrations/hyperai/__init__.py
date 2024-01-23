@@ -26,6 +26,7 @@ class HyperAIIntegration(Integration):
 
     NAME = HYPERAI
     REQUIREMENTS = [
+        "paramiko>=3.4.0",
     ]
 
     @classmethod
