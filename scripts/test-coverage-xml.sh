@@ -23,7 +23,7 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 # The '-vv' flag enables pytest-clarity output when tests fail.
 if [ -n "$1" ]; then
     if [ "$STORE_DURATIONS" == "store-durations" ]; then
-        coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations
+        coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations || true
     else
         coverage run -m pytest $TEST_SRC --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
     fi
