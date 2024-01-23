@@ -55,6 +55,7 @@ class EventFilterConfig(EventConfig):
 
 class EventFlavorResponse(BaseModel):
     """Response model for Event Flavors."""
+
     name: str
     source_config_schema: Dict[str, Any]
 
@@ -96,12 +97,12 @@ class BaseEventFlavor:
 
     source_filters: List[EventConfig]
 
-    register_endpoint: Optional[Callable[..., Callable[..., Type["APIRouter"]]]]
+    register_endpoint: Optional[
+        Callable[..., Callable[..., Type["APIRouter"]]]
+    ]
 
     def to_model(self) -> EventFlavorResponse:
         """Convert the Flavor into a Response Model."""
         return EventFlavorResponse(
-            name=self.name,
-            source_config_schema=self.config_schema
+            name=self.name, source_config_schema=self.config_schema
         )
-

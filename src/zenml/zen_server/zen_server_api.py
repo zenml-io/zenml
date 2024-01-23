@@ -27,7 +27,7 @@ from starlette.responses import FileResponse
 
 import zenml
 from zenml.analytics import source_context
-from zenml.constants import API, EVENTS, HEALTH, VERSION_1
+from zenml.constants import API, HEALTH, VERSION_1, WEBHOOKS
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.events.event_flavor_registry import EventFlavorRegistry
 from zenml.zen_server.exceptions import error_detail
@@ -38,7 +38,7 @@ from zenml.zen_server.routers import (
     auth_endpoints,
     code_repositories_endpoints,
     devices_endpoints,
-    event_flavor_endpoints,
+    event_endpoints,
     flavors_endpoints,
     model_versions_endpoints,
     models_endpoints,
@@ -205,12 +205,21 @@ def dashboard(request: Request) -> Any:
 # uvicorn zenml.zen_server.zen_server_api:app --reload
 
 app.include_router(action_flavor_endpoints.router)
+app.include_router(artifact_endpoint.artifact_router)
+app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
 app.include_router(devices_endpoints.router)
-app.include_router(pipelines_endpoints.router)
-app.include_router(workspaces_endpoints.router)
-app.include_router(event_flavor_endpoints.router)
+app.include_router(code_repositories_endpoints.router)
+app.include_router(event_endpoints.flavor_router)
+app.include_router(event_endpoints.event_source_router)
 app.include_router(flavors_endpoints.router)
+app.include_router(models_endpoints.router)
+app.include_router(model_versions_endpoints.router)
+app.include_router(model_versions_endpoints.model_version_artifacts_router)
+app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
+app.include_router(pipelines_endpoints.router)
+app.include_router(pipeline_builds_endpoints.router)
+app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
 app.include_router(schedule_endpoints.router)
@@ -224,33 +233,26 @@ app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
+app.include_router(tags_endpoints.router)
 app.include_router(triggers_endpoints.router)
-app.include_router(artifact_endpoint.artifact_router)
-app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
+app.include_router(workspaces_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.
 if server_config().auth_scheme != AuthScheme.EXTERNAL:
     app.include_router(users_endpoints.activation_router)
 
-app.include_router(pipeline_builds_endpoints.router)
-app.include_router(pipeline_deployments_endpoints.router)
-app.include_router(code_repositories_endpoints.router)
-app.include_router(models_endpoints.router)
-app.include_router(model_versions_endpoints.router)
-app.include_router(model_versions_endpoints.model_version_artifacts_router)
-app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
-app.include_router(tags_endpoints.router)
 
-events_router = APIRouter(prefix=API + VERSION_1 + EVENTS, tags=["events"])
+webhooks_router = APIRouter(
+    prefix=API + VERSION_1 + WEBHOOKS, tags=["webhooks"]
+)
 
 for _, event in EventFlavorRegistry().get_all_event_flavors().items():
-    event.register_endpoint(events_router)
+    event.register_endpoint(webhooks_router)
 
-app.include_router(events_router)
-
+app.include_router(webhooks_router)
 
 
 def get_root_static_files() -> List[str]:

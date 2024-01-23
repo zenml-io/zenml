@@ -95,6 +95,7 @@ from zenml.enums import (
 )
 from zenml.events.base_event_flavor import EventFlavorResponse
 from zenml.events.event_flavor_registry import EventFlavorRegistry
+from zenml.events.utils import fail_if_invalid_configuration
 from zenml.exceptions import (
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
@@ -1170,8 +1171,8 @@ class SqlZenStore(BaseZenStore):
     # -------------------- Action Flavors --------------------
 
     def get_action_flavor(
-            self,
-            flavor_name: str,
+        self,
+        flavor_name: str,
     ) -> ActionFlavorResponse:
         """Get an action flavor by its name.
 
@@ -1185,20 +1186,26 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the action flavor doesn't exist.
         """
         try:
-            return ActionFlavorRegistry().get_action_flavor(
-                flavor_name)().to_model()
+            return (
+                ActionFlavorRegistry()
+                .get_action_flavor(flavor_name)()
+                .to_model()
+            )
         except KeyError:
             raise KeyError("No action flavor by that name exists.")
 
     def list_action_flavors(
-            self,
+        self,
     ) -> List[ActionFlavorResponse]:
         """List all action flavors matching the given filter criteria.
 
         Returns:
             A list of all action flavors.
         """
-        return [f().to_model() for _,f in ActionFlavorRegistry().action_flavors.items()]
+        return [
+            f().to_model()
+            for _, f in ActionFlavorRegistry().action_flavors.items()
+        ]
 
     # ------------------------- API Keys -------------------------
 
@@ -2717,8 +2724,8 @@ class SqlZenStore(BaseZenStore):
     # -------------------- Event Flavors --------------------
 
     def get_event_flavor(
-            self,
-            flavor_name: str,
+        self,
+        flavor_name: str,
     ) -> EventFlavorResponse:
         """Get an event flavor by its name.
 
@@ -2732,22 +2739,26 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the event flavor doesn't exist.
         """
         try:
-            return EventFlavorRegistry().get_event_flavor(
-                flavor_name)().to_model()
+            return (
+                EventFlavorRegistry()
+                .get_event_flavor(flavor_name)()
+                .to_model()
+            )
         except KeyError:
             raise KeyError("No action flavor by that name exists.")
 
-
     def list_event_flavors(
-            self,
+        self,
     ) -> List[EventFlavorResponse]:
         """List all event flavors matching the given filter criteria.
 
         Returns:
             A list of all event flavors.
         """
-        return [f().to_model() for _, f in
-                EventFlavorRegistry().event_flavors.items()]
+        return [
+            f().to_model()
+            for _, f in EventFlavorRegistry().event_flavors.items()
+        ]
 
     # ----------------------------- Flavors -----------------------------
 
@@ -3349,8 +3360,38 @@ class SqlZenStore(BaseZenStore):
             session.delete(deployment)
             session.commit()
 
-
     # -------------------- Event Sources  --------------------
+
+    def _fail_if_event_source_with_name_exists(
+        self, event_source: EventSourceRequest, session: Session
+    ) -> None:
+        """Raise an exception if a stack with same name exists.
+
+        Args:
+            event_source: The event_source to create.
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            StackExistsError: If a stack with the given name already exists.
+        """
+        existing_domain_event_source = session.exec(
+            select(EventSourceSchema)
+            .where(EventSourceSchema.name == event_source.name)
+            .where(EventSourceSchema.workspace_id == event_source.workspace)
+        ).first()
+        if existing_domain_event_source is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=event_source.workspace, session=session
+            )
+            raise StackExistsError(
+                f"Unable to register event source with name "
+                f"'{event_source.name}': Found an existing event source with the same "
+                f"name in the active workspace, '{workspace.name}'."
+            )
+        return None
 
     def create_event_source(
         self, event_source: EventSourceRequest
@@ -3363,13 +3404,45 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created event_source.
         """
+        fail_if_invalid_configuration(
+            flavor=event_source.flavor,
+            configuration_dict=event_source.configuration,
+        )
         with Session(self.engine) as session:
+            self._fail_if_event_source_with_name_exists(
+                event_source=event_source,
+                session=session,
+            )
             new_event_source = EventSourceSchema.from_request(event_source)
             session.add(new_event_source)
             session.commit()
             session.refresh(new_event_source)
 
-        return new_event_source.to_model(hydrate=True)
+            return new_event_source.to_model(hydrate=True)
+
+    def _get_event_source(
+        self,
+        event_source_id: UUID,
+        session: Session,
+    ) -> EventSourceSchema:
+        """Get an event_source by ID.
+
+        Args:
+            event_source_id: The ID of the event_source to get.
+            session: The DB session.
+
+        Returns:
+            The event_source schema.
+
+        Raises:
+            KeyError: if the event_source doesn't exist.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=event_source_id,
+            schema_class=EventSourceSchema,
+            schema_name="event_source",
+            session=session,
+        )
 
     def get_event_source(
         self,
@@ -3390,15 +3463,9 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the stack event_source doesn't exist.
         """
         with Session(self.engine) as session:
-            event_source = session.exec(
-                select(EventSourceSchema).where(
-                    EventSourceSchema.id == event_source_id
-                )
-            ).first()
-
-            if event_source is None:
-                raise KeyError(f"Trigger with ID {event_source_id} not found.")
-            return event_source.to_model(hydrate=hydrate)
+            return self._get_event_source(
+                event_source_id=event_source_id, session=session
+            ).to_model(hydrate=hydrate)
 
     def list_event_sources(
         self,
@@ -3455,8 +3522,17 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the event_source doesn't exist.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        with Session(self.engine) as session:
+            event_source = self._get_event_source(
+                event_source_id=event_source_id, session=session
+            )
+            if event_source is None:
+                raise KeyError(
+                    f"Unable to delete event_source with ID `{event_source_id}`: "
+                    f"No event_source with this ID found."
+                )
+            session.delete(event_source)
+            session.commit()
 
     # ----------------------------- Pipeline runs -----------------------------
 

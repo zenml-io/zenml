@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
+from datetime import datetime
 from typing import Any, Dict
 
 from pydantic import BaseModel, Field
@@ -31,6 +32,7 @@ from zenml.models.v2.base.update import update_model
 
 class TriggerBase(BaseModel):
     """Base model for triggers."""
+
     name: str = Field(
         title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
     )
@@ -46,6 +48,7 @@ class TriggerBase(BaseModel):
 # ------------------ Request Model ------------------
 class TriggerRequest(TriggerBase, WorkspaceScopedRequest):
     """Model for creating a new Trigger."""
+
     # executions: somehow we need to link to executed Actions here
 
 
@@ -62,13 +65,13 @@ class TriggerUpdate(TriggerRequest):
 
 class TriggerResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for triggers."""
-    #
-    # created: datetime = Field(
-    #     title="The timestamp when this trigger was created."
-    # )
-    # updated: datetime = Field(
-    #     title="The timestamp when this trigger was last updated.",
-    # )
+
+    created: datetime = Field(
+        title="The timestamp when this trigger was created."
+    )
+    updated: datetime = Field(
+        title="The timestamp when this trigger was last updated.",
+    )
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -95,6 +98,7 @@ class TriggerResponse(
     action: Dict[str, Any] = Field(
         title="The actions that is executed by this trigger.",
     )
+
 
 # ------------------ Filter Model ------------------
 

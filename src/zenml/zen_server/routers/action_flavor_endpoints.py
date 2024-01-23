@@ -22,8 +22,8 @@ from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
+    zen_store,
 )
-from zenml.zen_server.utils import zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + ACTIONS,

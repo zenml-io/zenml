@@ -18,9 +18,9 @@ from typing import Any, Dict
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import BaseRequest
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
@@ -30,9 +30,13 @@ from zenml.models.v2.base.update import update_model
 # ------------------ Request Model ------------------
 
 
-class EventSourceRequest(BaseRequest):
+class EventSourceRequest(WorkspaceScopedRequest):
     """BaseModel for all event sources."""
 
+    name: str = Field(
+        title="The name of the stack component.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     flavor: str = Field(
         title="The flavor of event source.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -62,10 +66,6 @@ class EventSourceUpdate(EventSourceRequest):
 class EventSourceResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for event sources."""
 
-    flavor: str = Field(
-        title="The flavor of event.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     created: datetime = Field(
         title="The timestamp when this event filter was created."
     )
@@ -83,6 +83,10 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
+    configuration: Dict[str, Any] = Field(
+        title="The event source configuration.",
+    )
+
 
 class EventSourceResponse(
     WorkspaceScopedResponse[
@@ -90,6 +94,15 @@ class EventSourceResponse(
     ]
 ):
     """Response model for event sources."""
+
+    name: str = Field(
+        title="The name of the stack component.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    flavor: str = Field(
+        title="The flavor of event.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 # ------------------ Filter Model ------------------

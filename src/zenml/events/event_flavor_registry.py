@@ -27,9 +27,7 @@ class EventFlavorRegistry:
 
     def __init__(self) -> None:
         """Initialize the event flavor registry."""
-        self.event_flavors: Dict[
-            str, Type["BaseEventFlavor"]
-        ] = {}
+        self.event_flavors: Dict[str, Type["BaseEventFlavor"]] = {}
         self.register_event_flavors()
 
     @property
@@ -84,9 +82,7 @@ class EventFlavorRegistry:
                 f"Skipping registration of {flavor}."
             )
 
-    def get_event_flavor(
-        self, key: str
-    ) -> Type["BaseEventFlavor"]:
+    def get_event_flavor(self, key: str) -> Type["BaseEventFlavor"]:
         """Get a single event_source based on the key.
 
         Args:

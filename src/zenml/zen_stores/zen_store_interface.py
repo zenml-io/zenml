@@ -836,8 +836,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_event_flavor(
-            self,
-            flavor_name: str,
+        self,
+        flavor_name: str,
     ) -> EventFlavorResponse:
         """Get an event flavor by its name.
 
@@ -853,7 +853,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_event_flavors(
-            self,
+        self,
     ) -> List[EventFlavorResponse]:
         """List all event flavors matching the given filter criteria.
 

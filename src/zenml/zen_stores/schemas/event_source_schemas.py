@@ -12,16 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Action Plans."""
+import base64
 import json
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from pydantic import Field
 from pydantic.json import pydantic_encoder
-from sqlalchemy import Column, String
+from sqlalchemy import TEXT, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Relationship
 
+from zenml import EventSourceResponseMetadata
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
     EventSourceRequest,
@@ -29,12 +32,13 @@ from zenml.models import (
     EventSourceResponseBody,
     EventSourceUpdate,
 )
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
-class EventSourceSchema(BaseSchema, table=True):
+class EventSourceSchema(NamedSchema, table=True):
     """SQL Model for tag."""
 
     __tablename__ = "event_source"
@@ -49,7 +53,18 @@ class EventSourceSchema(BaseSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="event_sources")
 
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(back_populates="event_sources")
+
     flavor: str = Field(nullable=False)
+    description: str = Field(sa_column=Column(TEXT, nullable=True))
 
     configuration: str = Field(
         sa_column=Column(
@@ -59,7 +74,6 @@ class EventSourceSchema(BaseSchema, table=True):
             nullable=False,
         )
     )
-
 
     @classmethod
     def from_request(cls, request: EventSourceRequest) -> "EventSourceSchema":
@@ -71,13 +85,18 @@ class EventSourceSchema(BaseSchema, table=True):
         Returns:
             The converted schema.
         """
-        # TODO: complete this
         return cls(
+            workspace_id=request.workspace,
+            user_id=request.user,
             flavor=request.flavor,
-            configuration=json.dumps(
-                request.configuration,
-                sort_keys=False,
-                default=pydantic_encoder,
+            name=request.name,
+            description=request.description,
+            configuration=base64.b64encode(
+                json.dumps(
+                    request.configuration,
+                    sort_keys=False,
+                    default=pydantic_encoder,
+                ).encode("utf-8")
             ),
         )
 
@@ -91,12 +110,26 @@ class EventSourceSchema(BaseSchema, table=True):
         Returns:
             The created `EventSourceResponse`.
         """
-        # TODO: complete this
+        body = EventSourceResponseBody(
+            created=self.created,
+            updated=self.updated,
+            user=self.user.to_model() if self.user else None,
+        )
+        metadata = None
+        if hydrate:
+            metadata = EventSourceResponseMetadata(
+                workspace=self.workspace.to_model(),
+                description=self.description,
+                configuration=json.loads(
+                    base64.b64decode(self.configuration).decode()
+                ),
+            )
         return EventSourceResponse(
             id=self.id,
-            body=EventSourceResponseBody(
-                created=self.created, updated=self.updated
-            ),
+            name=self.name,
+            flavor=self.flavor,
+            body=body,
+            metadata=metadata,
         )
 
     def update(self, update: EventSourceUpdate) -> "EventSourceSchema":

@@ -355,6 +355,18 @@ ComponentResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
     ServiceConnectorResponse=ServiceConnectorResponse,
 )
+EventSourceResponse.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+)
+EventSourceResponseBody.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+)
+EventSourceResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+)
 FlavorResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )

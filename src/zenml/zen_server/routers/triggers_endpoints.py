@@ -48,7 +48,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_triggers(
-    trigger_filter_model: TriggerFilter = Depends(make_dependable(TriggerFilter)),
+    trigger_filter_model: TriggerFilter = Depends(
+        make_dependable(TriggerFilter)
+    ),
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[TriggerResponse]:

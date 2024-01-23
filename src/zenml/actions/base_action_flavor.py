@@ -36,6 +36,7 @@ class ActionPlanConfig(BaseModel, ABC):
 
 class ActionFlavorResponse(BaseModel):
     """Response model for Action Plans."""
+
     name: str
     config_schema: Dict[str, Any]
 
@@ -75,4 +76,6 @@ class BaseActionFlavor:
 
     def to_model(self) -> ActionFlavorResponse:
         """Convert the Flavor into a Response Model."""
-        return ActionFlavorResponse(name=self.name, config_schema=self.config_schema)
+        return ActionFlavorResponse(
+            name=self.name, config_schema=self.config_schema
+        )

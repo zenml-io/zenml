@@ -111,12 +111,12 @@ class TriggerSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             action_plan=base64.b64encode(
-                    json.dumps(request.action_plan).encode("utf-8")
-                ),
+                json.dumps(request.action_plan).encode("utf-8")
+            ),
             action_flavor=request.action_plan.get("flavor"),
             event_filter=base64.b64encode(
-                    json.dumps(request.event_filter).encode("utf-8")
-                ),
+                json.dumps(request.event_filter).encode("utf-8")
+            ),
             event_flavor=request.event_filter.get("flavor"),
             description=request.description,
         )

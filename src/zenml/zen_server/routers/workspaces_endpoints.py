@@ -17,11 +17,17 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml import TriggerRequest, TriggerResponse
+from zenml import (
+    EventSourceRequest,
+    EventSourceResponse,
+    TriggerRequest,
+    TriggerResponse,
+)
 from zenml.constants import (
     API,
     ARTIFACTS,
     CODE_REPOSITORIES,
+    EVENT_SOURCES,
     GET_OR_CREATE,
     MODEL_VERSIONS,
     MODELS,
@@ -390,7 +396,7 @@ def create_trigger(
     workspace_name_or_id: Union[str, UUID],
     trigger: TriggerRequest,
     _: AuthContext = Security(authorize),
-) -> ComponentResponse:
+) -> TriggerResponse:
     """Creates a trigger.
 
     Args:
@@ -413,8 +419,6 @@ def create_trigger(
             f"not supported."
         )
 
-
-
     # TODO: Validate event_source exists
     # TODO: Validate event_filter is valid
     # TODO: Validate action_plan is valid
@@ -423,6 +427,45 @@ def create_trigger(
         request_model=trigger,
         resource_type=ResourceType.TRIGGER,
         create_method=zen_store().create_trigger,
+    )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + EVENT_SOURCES,
+    response_model=EventSourceResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_event_source(
+    workspace_name_or_id: Union[str, UUID],
+    event_source: EventSourceRequest,
+    _: AuthContext = Security(authorize),
+) -> EventSourceResponse:
+    """Creates an event source.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        event_source: EventSource to register.
+
+    Returns:
+        The created event source.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the stack
+            component does not match the current workspace.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if event_source.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating event_source outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    return verify_permissions_and_create_entity(
+        request_model=event_source,
+        resource_type=ResourceType.EVENT_SOURCE,
+        create_method=zen_store().create_event_source,
     )
 
 

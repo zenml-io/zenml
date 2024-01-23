@@ -39,6 +39,7 @@ if TYPE_CHECKING:
         APIKeySchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionArtifactSchema,
@@ -81,6 +82,9 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     flavors: List["FlavorSchema"] = Relationship(back_populates="user")
+    event_sources: List["EventSourceSchema"] = Relationship(
+        back_populates="user"
+    )
     pipelines: List["PipelineSchema"] = Relationship(back_populates="user")
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="user",

@@ -46,4 +46,3 @@ class PipelineRunActionFlavor(BaseActionFlavor):
             The config class.
         """
         return PipelineRunActionConfiguration
-

@@ -17,12 +17,14 @@ from typing import Any, Dict
 from zenml.events.event_flavor_registry import EventFlavorRegistry
 
 
-def validate_event_config(
+def fail_if_invalid_configuration(
+    flavor: str,
     configuration_dict: Dict[str, Any],
 ) -> bool:
     """Validate the configuration of an event filter.
 
     Args:
+        flavor: Name of the flavor
         configuration_dict: The event filter configuration to validate.
 
     Returns:
@@ -31,20 +33,14 @@ def validate_event_config(
     Raises:
         ValueError: If the configuration is invalid.
     """
-    flavor = configuration_dict.get("name", None)
-    if flavor:
-        event_configuration_class = (
-            EventFlavorRegistry().get_event_flavor(
-                flavor
-            )
-        )
-    else:
-        raise ValueError(
-            f"Invalid event configuration {flavor}."
-        )
+    event_configuration_class = (
+        EventFlavorRegistry().get_event_flavor(flavor)().config_class
+    )
     try:
         event_configuration_class(**configuration_dict)
     except ValueError:
-        return False
+        raise ValueError("Invalid Configuration.")
+    except KeyError:
+        raise ValueError(f"Event Source Flavor {flavor} does not exist.")
     else:
         return True
