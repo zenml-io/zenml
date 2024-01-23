@@ -165,21 +165,26 @@ from zenml import step, pipeline
 from zenml.client import Client
 
 
-@step 
+@step
 def trainer(dataset: pd.DataFrame):
     ...
+
 
 @pipeline
 def training_pipeline():
     client = Client()
     # Fetch by ID
-    dataset_artifact = client.get_artifact_version(name_id_or_prefix=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
+    dataset_artifact = client.get_artifact_version(
+        name_id_or_prefix=UUID("3a92ae32-a764-4420-98ba-07da8f742b76")
+    )
 
     # Fetch by name alone - uses the latest version of this artifact
     dataset_artifact = client.get_artifact_version(name_id_or_prefix="iris_dataset")
 
     # Fetch by name and version
-    dataset_artifact = client.get_artifact_version(name_id_or_prefix="iris_dataset", version="raw_2023")
+    dataset_artifact = client.get_artifact_version(
+        name_id_or_prefix="iris_dataset", version="raw_2023"
+    )
 
     # Pass into any step
     trainer(dataset=dataset_artifact)
@@ -337,6 +342,7 @@ from zenml import ArtifactConfig, pipeline, step, log_artifact_metadata
 from zenml import save_artifact, load_artifact
 from zenml.client import Client
 
+
 @step
 def versioned_data_loader_step() -> (
     Annotated[
@@ -356,7 +362,8 @@ def versioned_data_loader_step() -> (
 def model_finetuner_step(
     model: ClassifierMixin, dataset: Tuple[np.ndarray, np.ndarray]
 ) -> Annotated[
-    ClassifierMixin, ArtifactConfig(name="my_model", is_model_artifact=True, tags=["SVC", "trained"])
+    ClassifierMixin,
+    ArtifactConfig(name="my_model", is_model_artifact=True, tags=["SVC", "trained"]),
 ]:
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])
@@ -373,13 +380,17 @@ def model_finetuning_pipeline(
     client = Client()
     # Either load a previous version of "my_dataset" or create a new one
     if dataset_version:
-        dataset = client.get_artifact_version(name_id_or_prefix="my_dataset", version=dataset_version)
+        dataset = client.get_artifact_version(
+            name_id_or_prefix="my_dataset", version=dataset_version
+        )
     else:
         dataset = versioned_data_loader_step()
 
     # Load the model to finetune
     # If no version is specified, the latest version of "my_model" is used
-    model = client.get_artifact_version(name_id_or_prefix="my_model", version=model_version)
+    model = client.get_artifact_version(
+        name_id_or_prefix="my_model", version=model_version
+    )
 
     # Finetune the model
     # This automatically creates a new version of "my_model"
@@ -403,6 +414,7 @@ def main():
     latest_trained_model = load_artifact("my_model")
     old_dataset = load_artifact("my_dataset", version="1")
     latest_trained_model.predict(old_dataset[0])
+
 
 if __name__ == "__main__":
     main()
