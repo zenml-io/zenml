@@ -74,8 +74,8 @@
             required: false
             default: 30
     jobs:
-      integration-tests-fast:
-        name: integration-tests-fast
+      generate-test-duration-file:
+        name: Generate test duration file
         runs-on: ${{ inputs.os }}
         strategy:
           fail-fast: false
