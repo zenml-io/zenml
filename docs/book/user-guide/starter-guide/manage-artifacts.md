@@ -150,14 +150,19 @@ if __name__ == "__main__":
 
 Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts/#zenml.artifacts.external_artifact.ExternalArtifact) for all available options.
 
+{% hint style="info" %}
+Using an `ExternalArtifact` for your step automatically disables caching for the step.
+{% endhint %}
+
 ### Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step.  As we have learned in the [previous section](fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly. However, in ZenML the best practice is not to use the `Client` for this use-case, but rather use the `ExternalArtifact` to pass existing artifacts from other pipeline runs into your steps. This is a more convenient interface:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step.  As we have learned in the [previous section](fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```python
 from uuid import UUID
 import pandas as pd
-from zenml import step, pipeline, ExternalArtifact
+from zenml import step, pipeline
+from zenml.client import Client
 
 
 @step 
@@ -166,14 +171,15 @@ def trainer(dataset: pd.DataFrame):
 
 @pipeline
 def training_pipeline():
+    client = Client()
     # Fetch by ID
-    dataset_artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
+    dataset_artifact = client.get_artifact_version(name_id_or_prefix=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
 
     # Fetch by name alone - uses the latest version of this artifact
-    dataset_artifact = ExternalArtifact(name="iris_dataset")
+    dataset_artifact = client.get_artifact_version(name_id_or_prefix="iris_dataset")
 
     # Fetch by name and version
-    dataset_artifact = ExternalArtifact(name="iris_dataset", version="raw_2023")
+    dataset_artifact = client.get_artifact_version(name_id_or_prefix="iris_dataset", version="raw_2023")
 
     # Pass into any step
     trainer(dataset=dataset_artifact)
@@ -184,7 +190,7 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
+Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code is leveraging advanced concept of a [late materialization](../advanced-guide/data-management/late-materialization.md) behind the scenes.
 {% endhint %}
 
 ## Managing artifacts **not** produced by ZenML pipelines
@@ -327,8 +333,9 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_digits
 from sklearn.svm import SVC
-from zenml import ArtifactConfig, ExternalArtifact, pipeline, step, log_artifact_metadata
+from zenml import ArtifactConfig, pipeline, step, log_artifact_metadata
 from zenml import save_artifact, load_artifact
+from zenml.client import Client
 
 @step
 def versioned_data_loader_step() -> (
@@ -363,15 +370,16 @@ def model_finetuning_pipeline(
     dataset_version: Optional[str] = None,
     model_version: Optional[str] = None,
 ):
+    client = Client()
     # Either load a previous version of "my_dataset" or create a new one
     if dataset_version:
-        dataset = ExternalArtifact(name="my_dataset", version=dataset_version)
+        dataset = client.get_artifact_version(name_id_or_prefix="my_dataset", version=dataset_version)
     else:
         dataset = versioned_data_loader_step()
 
     # Load the model to finetune
     # If no version is specified, the latest version of "my_model" is used
-    model = ExternalArtifact(name="my_model", version=model_version)
+    model = client.get_artifact_version(name_id_or_prefix="my_model", version=model_version)
 
     # Finetune the model
     # This automatically creates a new version of "my_model"
