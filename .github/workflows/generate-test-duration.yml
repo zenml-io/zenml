@@ -183,6 +183,7 @@ jobs:
         uses: mxschmitt/action-tmate@v3.17
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Generate test duration file
+        continue-on-error: true
             # Ubuntu integration tests run as 6 shards
         run: |
           bash scripts/test-coverage-xml.sh "" default "" "" store-durations
