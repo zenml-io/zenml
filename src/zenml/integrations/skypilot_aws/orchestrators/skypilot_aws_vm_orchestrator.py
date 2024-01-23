@@ -11,18 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the a Skypilot based Azure VM orchestrator."""
+"""Implementation of the a Skypilot based AWS VM orchestrator."""
 
+import os
 from typing import TYPE_CHECKING, Optional, Type, cast
 
 import sky
 
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_azure_vm_flavor import (
-    SkypilotAzureOrchestratorConfig,
-    SkypilotAzureOrchestratorSettings,
-)
 from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (
     SkypilotBaseOrchestrator,
+)
+from zenml.integrations.skypilot_aws.flavors.skypilot_orchestrator_aws_vm_flavor import (
+    SkypilotAWSOrchestratorConfig,
+    SkypilotAWSOrchestratorSettings,
 )
 from zenml.logger import get_logger
 
@@ -31,14 +32,16 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+ENV_AWS_PROFILE = "AWS_PROFILE"
 
-class SkypilotAzureOrchestrator(SkypilotBaseOrchestrator):
-    """Orchestrator responsible for running pipelines remotely in a VM on Azure.
+
+class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
+    """Orchestrator responsible for running pipelines remotely in a VM on AWS.
 
     This orchestrator does not support running on a schedule.
     """
 
-    DEFAULT_INSTANCE_TYPE: str = "Standard_B1ms"
+    DEFAULT_INSTANCE_TYPE: str = "t3.xlarge"
 
     @property
     def cloud(self) -> sky.clouds.Cloud:
@@ -47,16 +50,16 @@ class SkypilotAzureOrchestrator(SkypilotBaseOrchestrator):
         Returns:
             A `sky.clouds.Cloud` instance.
         """
-        return sky.clouds.Azure()
+        return sky.clouds.AWS()
 
     @property
-    def config(self) -> SkypilotAzureOrchestratorConfig:
-        """Returns the `SkypilotAzureOrchestratorConfig` config.
+    def config(self) -> SkypilotAWSOrchestratorConfig:
+        """Returns the `SkypilotAWSOrchestratorConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(SkypilotAzureOrchestratorConfig, self._config)
+        return cast(SkypilotAWSOrchestratorConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -65,12 +68,27 @@ class SkypilotAzureOrchestrator(SkypilotBaseOrchestrator):
         Returns:
             The settings class.
         """
-        return SkypilotAzureOrchestratorSettings
+        return SkypilotAWSOrchestratorSettings
 
     def prepare_environment_variable(self, set: bool = True) -> None:
         """Set up Environment variables that are required for the orchestrator.
 
         Args:
             set: Whether to set the environment variables or not.
+
+        Raises:
+            ValueError: If no service connector is found.
         """
-        pass
+        connector = self.get_connector()
+        if connector is None:
+            raise ValueError(
+                "No service connector found. Please make sure to set up a connector "
+                "that is compatible with this orchestrator."
+            )
+        if set:
+            # The AWS connector creates a local configuration profile with the name computed from
+            # the first 8 digits of its UUID.
+            aws_profile = f"zenml-{str(connector.id)[:8]}"
+            os.environ[ENV_AWS_PROFILE] = aws_profile
+        else:
+            os.environ.pop(ENV_AWS_PROFILE, None)

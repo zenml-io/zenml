@@ -18,6 +18,13 @@ You should use the GCP container registry if:
 
 ### How to deploy it
 
+{% hint style="warning" %}
+The GCP container registry (and GCP integration in general) currently only works
+for Python versions <3.11. The ZenML team is aware of this dependency
+clash/issue and is working on a fix. For now, please use Python <3.11 together
+with the GCP integration.
+{% endhint %}
+
 {% tabs %}
 {% tab title="Google Container Registry" %}
 When using the Google Container Registry, all you need to do is enable
