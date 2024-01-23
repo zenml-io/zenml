@@ -191,23 +191,23 @@ jobs:
         run: |
           git diff --quiet || echo "Changes found"
           if [ -n "$(git status --porcelain)" ]; then
-            # Generate feature branch name with the current date
-            feature_branch="misc/update-test-duration-file-$(date +'%Y%m%d')"
-            git checkout -b $feature_branch
-            # Make your changes here
-            git add .
-            git commit -m "new changes on test duration file detected at $(date +'%Y%m%d')"
-            git push origin $feature_branch
+              # Generate feature branch name with the current date
+              export FEATURE_BRANCH="misc/update-test-duration-file-$(date +'%Y%m%d')"
+              git checkout -b $FEATURE_BRANCH
+              # Make your changes here
+              git add .
+              git commit -m "new changes on test duration file detected at $(date +'%Y%m%d')"
+              git push origin $FEATURE_BRANCH
           else
-            echo "No changes in .test_duration"
+              echo "No changes in .test_duration"
           fi
       - name: Create PR if changes found
         if: success()
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            gh pr create --base develop --head feature-branch --title "Update .test_duration" --body "Changes in .test_duration" --label "auto-merge"
+          if [ -n "$FEATURE_BRANCH" ]; then
+              gh pr create --base develop --head $FEATURE_BRANCH --title "Update `.test_duration` due to detected changes" --body "This PR was automatically created by the CI pipeline. Please review and merge if you agree."
           else
-            echo "No changes in .test_duration"
+              echo "No changes in .test_duration"
           fi
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
