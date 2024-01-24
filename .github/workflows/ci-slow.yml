@@ -18,7 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     # if team member commented, not a draft, on a PR, using /fulltest
     if: >
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.pull_request.draft == false && contains(github.event.comment.body, '/fulltest')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+      github.event.pull_request.draft == false && contains(github.event.comment.body,
+      '/fulltest')) ||
       (github.event_name == 'workflow_dispatch')
     outputs:
       member_check: ${{ steps.is_member.outputs.member_check }}
@@ -31,6 +33,16 @@ jobs:
           else
             echo "::set-output name=member_check::false"
           fi
+  comment-workflow-link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post Comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Triggered Slow CI: [Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          reactions: rocket
   docstring-check:
     needs: check-membership
     # if team member commented, not a draft, on a PR, using /fulltest
