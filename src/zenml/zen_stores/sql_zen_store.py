@@ -37,7 +37,7 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pymysql
 from pydantic import SecretStr, root_validator, validator
@@ -164,6 +164,8 @@ from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
     PipelineFilter,
+    PipelineNamespaceFilter,
+    PipelineNamespaceResponse,
     PipelineRequest,
     PipelineResponse,
     PipelineRunFilter,
@@ -787,9 +789,7 @@ class SqlZenStore(BaseZenStore):
         query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
         table: Type[AnySchema],
         filter_model: BaseFilter,
-        custom_schema_to_model_conversion: Optional[
-            Callable[[AnySchema], B]
-        ] = None,
+        custom_schema_to_model_conversion: Optional[Callable[[Any], B]] = None,
         custom_fetch: Optional[
             Callable[
                 [
@@ -2950,6 +2950,39 @@ class SqlZenStore(BaseZenStore):
                 )
 
             return pipeline.to_model(hydrate=hydrate)
+
+    def list_pipeline_namespaces(
+        self,
+        filter_model: PipelineNamespaceFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineNamespaceResponse]:
+        """List all pipeline namespaces matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all pipeline namespaces matching the filter criteria.
+        """
+
+        def _custom_conversion(
+            name: str,
+        ) -> PipelineNamespaceResponse:
+            return PipelineNamespaceResponse(id=uuid4(), name=name)
+
+        with Session(self.engine) as session:
+            query = select(PipelineSchema.name).distinct()
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+                custom_schema_to_model_conversion=_custom_conversion,
+            )
 
     def list_pipelines(
         self,

@@ -266,3 +266,47 @@ class PipelineFilter(WorkspaceScopedFilter):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User of the Pipeline"
     )
+
+
+from zenml.models import (
+    BaseFilter,
+    BaseResponse,
+    BaseResponseBody,
+    BaseResponseMetadata,
+)
+
+
+class PipelineNamespaceResponseBody(BaseResponseBody):
+    """Response body for pipeline namespaces."""
+
+
+class PipelineNamespaceResponseMetadata(BaseResponseMetadata):
+    """Response metadata for pipeline namespaces."""
+
+
+class PipelineNamespaceResponse(
+    BaseResponse[
+        PipelineNamespaceResponseBody, PipelineNamespaceResponseMetadata
+    ]
+):
+    """Response model for pipeline namespaces."""
+
+    name: str = Field(
+        title="The name of the pipeline namespace.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    def get_hydrated_version(self) -> "PipelineNamespaceResponse":
+        """Get the hydrated version of this pipeline namespace.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
+        return self
+
+
+class PipelineNamespaceFilter(BaseFilter):
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the pipeline namespace.",
+    )

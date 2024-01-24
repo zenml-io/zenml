@@ -162,6 +162,10 @@ from zenml.models.v2.core.pipeline import (
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
+    PipelineNamespaceFilter,
+    PipelineNamespaceResponse,
+    PipelineNamespaceResponseBody,
+    PipelineNamespaceResponseMetadata,
 )
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildBase,
