@@ -1272,7 +1272,7 @@ class SqlZenStore(BaseZenStore):
 
         alembic_logger.addHandler(get_console_handler())
 
-        # We need to account for 2 distinct cases here:
+        # We need to account for 3 distinct cases here:
         # 1. the database is completely empty (not initialized)
         # 2. the database is not empty and has been migrated with alembic before
         # 3. the database is not empty, but has never been migrated with alembic
