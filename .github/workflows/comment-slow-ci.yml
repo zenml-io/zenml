@@ -1,0 +1,17 @@
+---
+name: Post CI Run URL on Comment
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  post-url:
+    if: contains(github.event.comment.body, '/fulltest') && github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create comment with CI Run URL
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Triggered Slow CI: [Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          reactions: '+1'
