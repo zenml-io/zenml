@@ -124,7 +124,7 @@ This use-case assumes you have already configured a GCP service account with the
 * the [Storage Object Creator Role](https://cloud.google.com/iam/docs/understanding-roles#storage.objectCreator) to be able to write the pipeline JSON file to the artifact store directly.
 
 It also assumes you have already created a service account key for this service account and downloaded it to your local machine (e.g. in a `connectors-vertex-ai-workload.json` file).
-service account, which is not recommended if you are conscious about security. The principle of least privilege is not applied here and the environment in which the pipeline steps are running has too many permissions that it doesn't need.
+This is not recommended if you are conscious about security. The principle of least privilege is not applied here and the environment in which the pipeline steps are running has many permissions that it doesn't need.
 zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@connectors-vertex-ai-workload.json --resource-type gcp-generic
 
 zenml orchestrator register <ORCHESTRATOR_NAME> \
