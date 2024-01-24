@@ -33,9 +33,6 @@ jobs:
           os: ubuntu-dind-runners
           runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
-      - name: Setup tmate session before tests
-        uses: mxschmitt/action-tmate@v3.17
-        timeout-minutes: 30
       - name: Generate test duration file
         continue-on-error: true
             # Ubuntu integration tests run as 6 shards
