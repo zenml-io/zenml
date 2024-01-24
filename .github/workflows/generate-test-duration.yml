@@ -44,20 +44,7 @@ on:
         type: choice
         options:
               # Default ZenML deployments
-          - default
-          - default-docker-orchestrator
-          - default-airflow-orchestrator
-              # Local ZenML server deployments
-          - local-server
-          - local-server-docker-orchestrator
-          - local-server-airflow-orchestrator
-              # Local ZenML docker-compose server deployments
-          - docker-server-mysql
-          - docker-server-mariadb
-          - docker-server-docker-orchestrator-mysql
-          - docker-server-docker-orchestrator-mariadb
-          - docker-server-airflow-orchestrator-mysql
-          - docker-server-airflow-orchestrator-mariadb
+[default, default-docker-orchestrator]
         required: false
         default: default
       enable_tmate:
@@ -71,6 +58,10 @@ on:
         type: number
         required: false
         default: 30
+  # schedule:
+  #  - cron: '0 8 * * 1'  # Run every Monday at 8 am
+  #  branches:
+  #    - develop
 jobs:
   generate-test-duration-file:
     name: Generate test duration file
@@ -191,23 +182,12 @@ jobs:
         run: |
           git diff --quiet || echo "Changes found"
           if [ -n "$(git status --porcelain)" ]; then
-              # Generate feature branch name with the current date
-              export FEATURE_BRANCH="misc/update-test-duration-file-$(date +'%Y%m%d')"
-              git checkout -b $FEATURE_BRANCH
-              # Make your changes here
-              git add .
-              git commit -m "new changes on test duration file detected at $(date +'%Y%m%d')"
-              git push origin $FEATURE_BRANCH
+            # Commit changes directly to the specified branch
+            git add .test_duration
+            git commit -m "new changes on test duration file detected at $(date +'%Y%m%d-%H%M%S')"
+            git push origin feature/OSSK-365-cron-test-duration-file-generate
           else
-              echo "No changes in .test_duration"
-          fi
-      - name: Create PR if changes found
-        if: success()
-        run: |
-          if [ -n "$FEATURE_BRANCH" ]; then
-              gh pr create --base develop --head $FEATURE_BRANCH --title "Update `.test_duration` due to detected changes" --body "This PR was automatically created by the CI pipeline. Please review and merge if you agree."
-          else
-              echo "No changes in .test_duration"
+            echo "No changes in .test_duration"
           fi
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
