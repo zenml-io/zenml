@@ -955,11 +955,7 @@ class SqlZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the SQL store.
-
-        Raises:
-            OperationalError: If connecting to the database failed.
-        """
+        """Initialize the SQL store."""
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
         url, connect_args, engine_args = self.config.get_sqlalchemy_config()
@@ -1210,6 +1206,10 @@ class SqlZenStore(BaseZenStore):
                 from. If not set, the configured backup location will be used.
                 Depending on the backup strategy, this can be a file path or a
                 database name.
+
+        Raises:
+            ValueError: If the backup database name is not set when the backup
+                database is requested.
         """
         strategy = strategy or self.config.backup_strategy
 

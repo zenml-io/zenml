@@ -124,6 +124,9 @@ class MigrationUtils(BaseModel):
 
         Returns:
             Whether the database exists.
+
+        Raises:
+            OperationalError: If connecting to the database failed.
         """
         database = database or self.url.database
 
