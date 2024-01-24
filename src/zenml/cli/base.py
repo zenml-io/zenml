@@ -679,9 +679,18 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     "a local path or a database name.",
     type=str,
 )
+@click.option(
+    "--overwrite",
+    "-o",
+    is_flag=True,
+    default=False,
+    help="Overwrite the existing backup.",
+    type=bool,
+)
 def backup_database(
     strategy: Optional[str] = None,
     location: Optional[str] = None,
+    overwrite: bool = False,
 ) -> None:
     """Backup the ZenML database.
 
@@ -691,6 +700,7 @@ def backup_database(
         location: Custom location to store the backup. Defaults to whatever is
             configured in the store config. Depending on the strategy, this can
             be a local path or a database name.
+        overwrite: Whether to overwrite the existing backup.
     """
     from zenml.zen_stores.base_zen_store import BaseZenStore
     from zenml.zen_stores.sql_zen_store import SqlZenStore
@@ -707,6 +717,7 @@ def backup_database(
         msg, location = store.backup_database(
             strategy=DatabaseBackupStrategy(strategy) if strategy else None,
             location=location,
+            overwrite=overwrite,
         )
         cli_utils.declare(f"Database was backed up to {msg}.")
     else:
@@ -735,9 +746,18 @@ def backup_database(
     "a local path or a database name.",
     type=str,
 )
+@click.option(
+    "--cleanup",
+    "-c",
+    is_flag=True,
+    default=False,
+    help="Cleanup the backup after restoring.",
+    type=bool,
+)
 def restore_database(
     strategy: Optional[str] = None,
     location: Optional[str] = None,
+    cleanup: bool = False,
 ) -> None:
     """Restore the ZenML database.
 
@@ -747,6 +767,7 @@ def restore_database(
         location: Custom location where the backup is stored. Defaults to
             whatever is configured in the store config. Depending on the
             strategy, this can be a local path or a database name.
+        cleanup: Whether to cleanup the backup after restoring.
     """
     from zenml.zen_stores.base_zen_store import BaseZenStore
     from zenml.zen_stores.sql_zen_store import SqlZenStore
@@ -763,6 +784,7 @@ def restore_database(
         store.restore_database(
             strategy=DatabaseBackupStrategy(strategy) if strategy else None,
             location=location,
+            cleanup=cleanup,
         )
         cli_utils.declare("Database restore finished.")
     else:

@@ -1144,6 +1144,7 @@ class SqlZenStore(BaseZenStore):
         self,
         strategy: Optional[DatabaseBackupStrategy] = None,
         location: Optional[Any] = None,
+        cleanup: bool = False,
     ) -> None:
         """Restore the database.
 
@@ -1154,6 +1155,7 @@ class SqlZenStore(BaseZenStore):
                 not set, the configured backup location will be used. Depending
                 on the backup strategy, this can be a file path, a database
                 name or an in-memory database representation.
+            cleanup: Whether to cleanup the backup after restoring the database.
 
         Raises:
             ValueError: If the backup database name is not set when the backup
@@ -1191,13 +1193,31 @@ class SqlZenStore(BaseZenStore):
         else:
             raise ValueError(f"Invalid backup strategy: {strategy}.")
 
-    def cleanup_database_backup(self) -> None:
-        """Delete the database backup files."""
+        if cleanup:
+            self.cleanup_database_backup()
+
+    def cleanup_database_backup(
+        self,
+        strategy: Optional[DatabaseBackupStrategy] = None,
+        location: Optional[Any] = None,
+    ) -> None:
+        """Delete the database backup.
+
+        Args:
+            strategy: Custom backup strategy to use. If not set, the backup
+                strategy from the store configuration will be used.
+            location: Custom target location to delete the database backup
+                from. If not set, the configured backup location will be used.
+                Depending on the backup strategy, this can be a file path or a
+                database name.
+        """
+        strategy = strategy or self.config.backup_strategy
+
         if (
-            self.config.backup_strategy == DatabaseBackupStrategy.DUMP_FILE
+            strategy == DatabaseBackupStrategy.DUMP_FILE
             or self.config.driver == SQLDatabaseDriver.SQLITE
         ):
-            dump_file = self._get_db_backup_file_path()
+            dump_file = location or self._get_db_backup_file_path()
             if dump_file is not None and os.path.isfile(dump_file):
                 try:
                     os.remove(dump_file)
@@ -1211,22 +1231,22 @@ class SqlZenStore(BaseZenStore):
                         f"Successfully cleaned up database dump file "
                         f"{dump_file}."
                     )
-        elif self.config.backup_strategy == DatabaseBackupStrategy.DATABASE:
-            if not self.config.backup_database:
+        elif strategy == DatabaseBackupStrategy.DATABASE:
+            backup_db_name = location or self.config.backup_database
+
+            if not backup_db_name:
                 raise ValueError(
                     "The backup database name must be set in the store "
                     "configuration to use the backup database strategy."
                 )
-            if self.migration_utils.database_exists(
-                self.config.backup_database
-            ):
+            if self.migration_utils.database_exists(backup_db_name):
                 # Drop the backup database
                 self.migration_utils.drop_database(
-                    database=self.config.backup_database,
+                    database=backup_db_name,
                 )
                 logger.info(
                     f"Successfully cleaned up backup database "
-                    f"{self.config.backup_database}."
+                    f"{backup_db_name}."
                 )
 
     def migrate_database(self) -> None:

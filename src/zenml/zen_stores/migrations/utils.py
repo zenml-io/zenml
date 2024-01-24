@@ -620,7 +620,15 @@ class MigrationUtils(BaseModel):
 
         Args:
             backup_db_name: Backup database name to restore from.
+
+        Raises:
+            RuntimeError: If the backup database does not exist.
         """
+        if not self.database_exists(database=backup_db_name):
+            raise RuntimeError(
+                f"Backup database `{backup_db_name}` does not exist."
+            )
+
         backup_engine = self.create_engine(database=backup_db_name)
 
         # Drop and re-create the primary database
