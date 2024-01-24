@@ -2,9 +2,76 @@
 
 # 0.55.0
 
-This release comes with a range of new features, bug fixes and documentation updates. The most notable changes are the ability to do lazy loading of Artifact Version, Artifact Version Metadata, and Model Version Metadata inside the pipeline code, and the ability to link Artifacts to Model Versions implicitly via the `save_artifact` function.
+This release comes with a range of new features, bug fixes and documentation updates. The most notable changes are the ability to do lazy loading of Artifacts and their Metadata and Model and its Metadata inside the pipeline code using pipeline context object, and the ability to link Artifacts to Model Versions implicitly via the `save_artifact` function.
 
 Additionally, we've updated the documentation to include a new starter guide on how to manage artifacts, and a new production guide that walks you through how to configure your pipelines to run in production.
+
+## Breaking Change
+
+The `ModelVersion` concept was renamed to `Model` going forward, which affects code bases using the Model Control Plane feature. **This change is not backward compatible.**
+
+### Pipeline decorator
+`@pipeline(model_version=ModelVersion(...))` -> `@pipeline(model=Model(...))`
+
+**Old syntax:**
+```python
+from zenml import pipeline, ModelVersion
+
+@pipeline(model_version=ModelVersion(name="model_name",version="v42"))
+def p():
+  ...
+```
+
+**New syntax:**
+```python
+from zenml import pipeline, Model
+
+@pipeline(model=Model(name="model_name",version="v42"))
+def p():
+  ...
+```
+### Step decorator
+`@step(model_version=ModelVersion(...))` -> `@step(model=Model(...))`
+
+**Old syntax:**
+```python
+from zenml import step, ModelVersion
+
+@step(model_version=ModelVersion(name="model_name",version="v42"))
+def s():
+  ...
+```
+
+**New syntax:**
+```python
+from zenml import step, Model
+
+@step(model=Model(name="model_name",version="v42"))
+def s():
+  ...
+```
+
+### Using `Model` class directly
+
+**Old syntax:**
+```python
+from zenml import ModelVersion
+
+def s():
+  model_version = ModelVersion(name="model_name",version="production")
+  some_metadata = model_version.run_metadata["some_metadata"].value
+  ... 
+```
+
+**New syntax:**
+```python
+from zenml import Model
+
+def s():
+  model = Model(name="model_name",version="production")
+  some_metadata = model.run_metadata["some_metadata"].value
+  ... 
+```
 
 ## What's Changed
 * Remove --name from service account creation in docs by @christianversloot in https://github.com/zenml-io/zenml/pull/2295
