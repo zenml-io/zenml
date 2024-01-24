@@ -117,16 +117,8 @@ dashboard and API functionality to support the full ML lifecycle.
 
 Model versions are created implicitly as you are running your machine learning
 training, so you don't have to immediately think about this. If you want more
-control over how and when these versions are controlled, 
-
-> our API has you
-covered, with options for whether new model versions are created as well as for
-the deletion of new model versions when pipeline runs fail.
-
-is this still true? can't find these options in ModelVersion anymore.
- [See
-above](model-management.md#explicit-python-sdk-registration) for how to create
-model versions explicitly.
+control over versions, our API has you covered, with an option to explicitly
+name your versions.
 
 ### Explicitly name your model version
 
@@ -209,7 +201,6 @@ particular model version. Possible options for stages are:
 - `latest`: The latest version of the model. This is a virtual stage to retrieve the latest version only - versions cannot be promoted to `latest`.
 - `archived`: This is archived and no longer relevant. This stage occurs when a
   model moves out of any other stage.
-  > is this archived or "No stage"?
 
 Your own particular business or use case logic will determine which model
 version you choose to promote, and you can do this in the following ways:
