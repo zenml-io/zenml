@@ -1,8 +1,6 @@
 ---
 name: Slow CI
 on:
-  workflow_dispatch:
-  workflow_call:
   issue_comment:
     types: [created]
 env:
