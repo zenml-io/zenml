@@ -58,8 +58,7 @@ class EventFlavorResponse(BaseModel):
 
     name: str
     source_config_schema: Dict[str, Any]
-
-    # TODO: add Filter config schemas
+    filter_config_schema: Dict[str, Any]
 
 
 class BaseEventFlavor:
@@ -76,26 +75,46 @@ class BaseEventFlavor:
 
     @property
     @abstractmethod
-    def config_class(self) -> Type[EventConfig]:
-        """Returns `StackComponentConfig` config class.
+    def event_source_config_class(self) -> Type[EventSourceConfig]:
+        """Returns `EventSourceConfig` config class.
 
         Returns:
             The config class.
         """
 
     @property
-    def config_schema(self) -> Dict[str, Any]:
+    def event_source_config_schema(self) -> Dict[str, Any]:
         """The config schema for a flavor.
 
         Returns:
             The config schema.
         """
         config_schema: Dict[str, Any] = json.loads(
-            self.config_class.schema_json()
+            self.event_source_config_class.schema_json()
         )
         return config_schema
 
-    source_filters: List[EventConfig]
+
+    @property
+    @abstractmethod
+    def event_filter_config_class(self) -> Type[EventFilterConfig]:
+        """Returns `EventFilterConfig` config class.
+
+        Returns:
+            The config class.
+        """
+
+    @property
+    def event_filter_config_schema(self) -> Dict[str, Any]:
+        """The config schema for a flavor.
+
+        Returns:
+            The config schema.
+        """
+        config_schema: Dict[str, Any] = json.loads(
+            self.event_filter_config_class.schema_json()
+        )
+        return config_schema
 
     register_endpoint: Optional[
         Callable[..., Callable[..., Type["APIRouter"]]]
@@ -104,5 +123,7 @@ class BaseEventFlavor:
     def to_model(self) -> EventFlavorResponse:
         """Convert the Flavor into a Response Model."""
         return EventFlavorResponse(
-            name=self.name, source_config_schema=self.config_schema
+            name=self.name,
+            source_config_schema=self.event_source_config_schema,
+            filter_config_schema=self.event_filter_config_schema
         )

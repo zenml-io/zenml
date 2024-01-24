@@ -15,7 +15,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import Field
@@ -36,6 +36,9 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import TriggerSchema
 
 
 class EventSourceSchema(NamedSchema, table=True):
@@ -62,6 +65,8 @@ class EventSourceSchema(NamedSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship(back_populates="event_sources")
+
+    triggers: List["TriggerSchema"] = Relationship(back_populates="event_source")
 
     flavor: str = Field(nullable=False)
     description: str = Field(sa_column=Column(TEXT, nullable=True))

@@ -18,6 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from zenml.events.base_event import Event
 from zenml.events.base_event_flavor import (
     BaseEventFlavor,
     EventFilterConfig,
@@ -44,7 +45,7 @@ class Repository(BaseModel):
     full_name: str
 
 
-class PushEvent(BaseModel):
+class PushEvent(Event):
     """Push Event from Github."""
 
     ref: str
@@ -66,7 +67,6 @@ class GithubEventSourceConfiguration(EventSourceConfig):
 class GithubEventFilterConfiguration(EventFilterConfig):
     """Configuration for github event filters."""
 
-    source_id: UUID
     branch: str
 
 
@@ -83,7 +83,7 @@ class GithubEventSourceFlavor(BaseEventFlavor):
         return GITHUB_EVENT_FLAVOR
 
     @property
-    def config_class(self) -> Type[EventSourceConfig]:
+    def event_source_config_class(self) -> Type[EventSourceConfig]:
         """Config class for the event source.
 
         Returns:
@@ -91,7 +91,14 @@ class GithubEventSourceFlavor(BaseEventFlavor):
         """
         return GithubEventSourceConfiguration
 
-    source_filters: List[Type[GithubEventFilterConfiguration]]
+    @property
+    def event_filter_config_class(self) -> Type[EventFilterConfig]:
+        """Config class for the event source.
+
+        Returns:
+            The config class.
+        """
+        return GithubEventFilterConfiguration
 
     @staticmethod
     def register_endpoint(router: APIRouter):

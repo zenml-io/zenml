@@ -32,6 +32,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 
 
 class TriggerSchema(NamedSchema, table=True):
@@ -59,11 +60,20 @@ class TriggerSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="triggers")
 
+    event_source_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=EventSourceSchema.__tablename__,
+        source_column="event_source_id",
+        target_column="id",
+        ondelete="CASCADE", # TODO: this should be set null and the trigger should be deactivated
+        nullable=False,
+    )
+    event_source: Optional["EventSourceSchema"] = Relationship(back_populates="triggers")
+
     event_filter: bytes
-    event_flavor: str  # TODO: Use an Enum
 
     action_plan: bytes
-    action_flavor: str  # TODO: Use an Enum
+    action_plan_flavor: str  # TODO: Use an Enum
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
@@ -113,11 +123,11 @@ class TriggerSchema(NamedSchema, table=True):
             action_plan=base64.b64encode(
                 json.dumps(request.action_plan).encode("utf-8")
             ),
-            action_flavor=request.action_plan.get("flavor"),
+            action_plan_flavor=request.action_plan_flavor,
+            event_source_id=request.event_source_id,
             event_filter=base64.b64encode(
                 json.dumps(request.event_filter).encode("utf-8")
             ),
-            event_flavor=request.event_filter.get("flavor"),
             description=request.description,
         )
 
@@ -136,6 +146,8 @@ class TriggerSchema(NamedSchema, table=True):
             description=self.description,
             created=self.created,
             updated=self.updated,
+            action_plan_flavor=self.action_plan_flavor,
+            event_flavor=self.event_source.flavor
         )
         metadata = None
         if hydrate:

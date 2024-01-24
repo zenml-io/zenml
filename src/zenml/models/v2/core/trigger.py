@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Union
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -41,8 +42,10 @@ class TriggerBase(BaseModel):
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    event_source_id: UUID
     event_filter: Dict[str, Any]
     action_plan: Dict[str, Any]
+    action_plan_flavor: str
 
 
 # ------------------ Request Model ------------------
@@ -72,11 +75,19 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
     updated: datetime = Field(
         title="The timestamp when this trigger was last updated.",
     )
+    action_plan_flavor: str
+    event_flavor: str
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for triggers."""
 
+    event_filter: Dict[str, Any] = Field(
+        title="The event that activates this trigger.",
+    )
+    action_plan: Dict[str, Any] = Field(
+        title="The actions that is executed by this trigger.",
+    )
 
 class TriggerResponse(
     WorkspaceScopedResponse[TriggerResponseBody, TriggerResponseMetadata]
@@ -92,12 +103,6 @@ class TriggerResponse(
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event: Dict[str, Any] = Field(
-        title="The event that activates this trigger.",
-    )
-    action: Dict[str, Any] = Field(
-        title="The actions that is executed by this trigger.",
-    )
 
 
 # ------------------ Filter Model ------------------
@@ -106,7 +111,11 @@ class TriggerResponse(
 class TriggerFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all TriggerModels."""
 
-    name: str = Field(
-        title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the trigger",
     )
-    # TODO: Enable filtering by event_filter
+    event_source_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="By the event source this trigger is attached to.",
+    )

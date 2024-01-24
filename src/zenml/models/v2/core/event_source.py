@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from pydantic import Field
 
@@ -110,3 +110,12 @@ class EventSourceResponse(
 
 class EventSourceFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all EventSourceModels."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Name of the event source",
+    )
+    flavor: Optional[str] = Field(
+        default=None,
+        description="Flavor of the event source",
+    )
