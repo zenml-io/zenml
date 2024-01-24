@@ -62,7 +62,8 @@ class BaseEventHandler(ABC):
         Args:
             event: THe inbound event.
         """
-        # narrow down to all sources that relate to the repo that is responsible for the event
+        # narrow down to all sources that relate to the repo that
+        #  is responsible for the event
         event_source_ids = self._get_all_relevant_event_sources(event=event)
 
         # get all triggers that have matching event filters configured
@@ -70,9 +71,10 @@ class BaseEventHandler(ABC):
             trigger_ids = self._get_matching_triggers(
                 event_source_ids=event_source_ids, event=event
             )
-            # TODO: Forward the event together with the list of trigger ids over to the EventHub
+            # TODO: Forward the event together with the list of trigger ids
+            #  over to the EventHub
             logger.info(
-                "An %s event came in and will be forwarded to "
+                "A %s event came in and will be forwarded to "
                 "the following subscriber %s",
                 self.flavor,
                 trigger_ids,

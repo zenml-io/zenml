@@ -58,7 +58,18 @@ class EventSourceRequest(WorkspaceScopedRequest):
 @update_model
 class EventSourceUpdate(EventSourceRequest):
     """Update model for event sources."""
-
+    name: str = Field(
+        title="The name of the stack component.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    description: str = Field(
+        default="",
+        title="The description of the event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    configuration: Dict[str, Any] = Field(
+        title="The event source configuration.",
+    )
 
 # ------------------ Response Model ------------------
 
@@ -76,12 +87,6 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
 
 class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for event sources."""
-
-    description: str = Field(
-        default="",
-        title="The description of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
 
     configuration: Dict[str, Any] = Field(
         title="The event source configuration.",
@@ -101,6 +106,11 @@ class EventSourceResponse(
     )
     flavor: str = Field(
         title="The flavor of event.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    description: str = Field(
+        default="",
+        title="The description of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 

@@ -176,7 +176,6 @@ def update_event_source(
     Returns:
         The updated event_source.
     """
-    # TODO: Look into updating event/action
     return verify_permissions_and_update_entity(
         id=event_source_id,
         update_model=event_source_update,

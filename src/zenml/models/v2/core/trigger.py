@@ -61,6 +61,16 @@ class TriggerRequest(TriggerBase, WorkspaceScopedRequest):
 @update_model
 class TriggerUpdate(TriggerRequest):
     """Update model for stacks."""
+    name: str = Field(
+        title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
+    )
+    description: str = Field(
+        default="",
+        title="The description of the trigger",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    event_filter: Dict[str, Any]
+    action_plan: Dict[str, Any]
 
 
 # ------------------ Response Model ------------------

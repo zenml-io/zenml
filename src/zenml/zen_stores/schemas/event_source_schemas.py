@@ -73,14 +73,7 @@ class EventSourceSchema(NamedSchema, table=True):
     flavor: str = Field(nullable=False)
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
-    configuration: str = Field(
-        sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
-            nullable=False,
-        )
-    )
+    configuration: bytes
 
     @classmethod
     def from_request(cls, request: EventSourceRequest) -> "EventSourceSchema":
@@ -149,6 +142,11 @@ class EventSourceSchema(NamedSchema, table=True):
             The updated `EventSourceSchema`.
         """
         for field, value in update.dict(exclude_unset=True).items():
-            setattr(self, field, value)
+            if field == "configuration":
+                self.configuration = base64.b64encode(
+                    json.dumps(update.configuration).encode("utf-8")
+                )
+            else:
+                setattr(self, field, value)
         self.updated = datetime.utcnow()
         return self

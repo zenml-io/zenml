@@ -95,13 +95,10 @@ class TriggerSchema(NamedSchema, table=True):
                 self.event_filter = base64.b64encode(
                     json.dumps(trigger_update.event_filter).encode("utf-8")
                 )
-                self.event_flavor = trigger_update.event_filter.get("flavor")
             elif field == "action_plan":
                 self.action_plan = base64.b64encode(
                     json.dumps(trigger_update.action_plan).encode("utf-8")
                 )
-                self.action_flavor = trigger_update.action_plan.get("flavor")
-
             else:
                 setattr(self, field, value)
 

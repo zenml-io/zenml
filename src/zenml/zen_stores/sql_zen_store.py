@@ -3513,8 +3513,15 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the event_source doesn't exist.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        with Session(self.engine) as session:
+            event_source = self._get_event_source(session=session, event_source_id=event_source_id)
+            event_source.update(update=event_source_update)
+            session.add(event_source)
+            session.commit()
+
+            # Refresh the event_source that was just created
+            session.refresh(event_source)
+            return event_source.to_model(hydrate=True)
 
     def delete_event_source(self, event_source_id: UUID) -> None:
         """Delete an event_source.
@@ -3536,6 +3543,9 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(event_source)
             session.commit()
+
+            # TODO: catch and throw proper error if it can't be deleted due to
+            #  not-null constraints on triggers
 
     # ----------------------------- Pipeline runs -----------------------------
 

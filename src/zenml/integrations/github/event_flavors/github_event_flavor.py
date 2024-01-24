@@ -72,11 +72,16 @@ class GithubEventSourceFlavor(BaseEventFlavor):
     @staticmethod
     def register_endpoint(router: APIRouter):
         """Register the github webhook to receive events from github."""
+        from fastapi import BackgroundTasks
 
         @router.post("/github-webhook")
-        async def post_event(event: GithubEvent):
+        async def post_event(background_tasks: BackgroundTasks, event: GithubEvent):
             from zenml.zen_server.utils import zen_store
 
-            GithubEventHandler(
+            handler = GithubEventHandler(
                 flavor=GITHUB_EVENT_FLAVOR, zen_store=zen_store()
-            ).process_event(event)
+            )
+
+            background_tasks.add_task(handler.process_event, event)
+
+            return {"message": "success"}
