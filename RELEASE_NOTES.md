@@ -51,6 +51,24 @@ def s():
   ...
 ```
 
+### Usage of model configuration inside pipeline YAML config file
+
+**Old syntax:**
+```yaml
+model_version:
+  name: model_name
+  version: v42
+  ...
+```
+
+**New syntax:**
+```yaml
+model:
+  name: model_name
+  version: v42
+  ...
+```
+
 ### Using `Model` class directly
 
 **Old syntax:**
