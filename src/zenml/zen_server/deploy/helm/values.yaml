@@ -221,15 +221,13 @@ zenml:
     #            option to be set to the name of the backup database.
     #            This backup strategy is only supported for MySQL
     #            compatible databases and the user specified in the
-    #            database URL must be able to manage (create, drop, and
+    #            database URL must have permissions to manage (create, drop, and
     #            modify) the backup database in addition to the main
     #            database.
     backupStrategy: in-memory
     # backupStorageClass: standard
     # backupStorageSize: 1Gi
     # backupDatabase: "zenml_backup"
-  
-    
 
 
   # Secrets store settings. This is used to store centralized secrets.

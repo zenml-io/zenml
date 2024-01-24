@@ -23,12 +23,17 @@ from typing import (
     Generator,
     List,
     Optional,
+    cast,
 )
 
+import pymysql
 from pydantic import BaseModel
 from pydantic.json import pydantic_encoder
 from sqlalchemy import MetaData, func, text
 from sqlalchemy.engine import URL, Engine
+from sqlalchemy.exc import (
+    OperationalError,
+)
 from sqlalchemy.schema import CreateTable
 from sqlmodel import (
     create_engine,
@@ -88,6 +93,53 @@ class MigrationUtils(BaseModel):
         if self._master_engine is None:
             self._master_engine = self.create_engine()
         return self._master_engine
+
+    @classmethod
+    def is_mysql_missing_database_error(cls, error: OperationalError) -> bool:
+        """Checks if the given error is due to a missing database.
+
+        Args:
+            error: The error to check.
+
+        Returns:
+            If the error because the MySQL database doesn't exist.
+        """
+        from pymysql.constants.ER import BAD_DB_ERROR
+
+        if not isinstance(error.orig, pymysql.err.OperationalError):
+            return False
+
+        error_code = cast(int, error.orig.args[0])
+        return error_code == BAD_DB_ERROR
+
+    def database_exists(
+        self,
+        database: Optional[str] = None,
+    ) -> bool:
+        """Check if a database exists.
+
+        Args:
+            database: The name of the database to check. If not set, the
+                database name from the configuration will be used.
+
+        Returns:
+            Whether the database exists.
+        """
+        database = database or self.url.database
+
+        engine = self.create_engine(database=database)
+        try:
+            engine.connect()
+        except OperationalError as e:
+            if self.is_mysql_missing_database_error(e):
+                return False
+            else:
+                logger.exception(
+                    f"Failed to connect to mysql database `{database}`.",
+                )
+                raise
+        else:
+            return True
 
     def create_drop_mysql_database(
         self,

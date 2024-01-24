@@ -39,7 +39,6 @@ from typing import (
 )
 from uuid import UUID
 
-import pymysql
 from pydantic import SecretStr, root_validator, validator
 from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
@@ -47,7 +46,6 @@ from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
     NoResultFound,
-    OperationalError,
 )
 from sqlalchemy.orm import noload
 from sqlmodel import (
@@ -298,24 +296,6 @@ logger = get_logger(__name__)
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
 
-def _is_mysql_missing_database_error(error: OperationalError) -> bool:
-    """Checks if the given error is due to a missing database.
-
-    Args:
-        error: The error to check.
-
-    Returns:
-        If the error because the MySQL database doesn't exist.
-    """
-    from pymysql.constants.ER import BAD_DB_ERROR
-
-    if not isinstance(error.orig, pymysql.err.OperationalError):
-        return False
-
-    error_code = cast(int, error.orig.args[0])
-    return error_code == BAD_DB_ERROR
-
-
 class SQLDatabaseDriver(StrEnum):
     """SQL database drivers supported by the SQL ZenML store."""
 
@@ -376,7 +356,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     # database backup directory
-    backup_directory: Optional[str] = None
+    backup_directory: str = os.path.join(
+        GlobalConfiguration().config_directory,
+        SQL_STORE_BACKUP_DIRECTORY_NAME,
+    )
     backup_database: Optional[str] = None
 
     @validator("secrets_store")
@@ -444,16 +427,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             not values.get("backup_database")
         ):
             raise ValueError(
-                "The backup database name must be set if the backup strategy "
-                "is set to use a backup database."
-            )
-
-        if backup_strategy == DatabaseBackupStrategy.DUMP_FILE and (
-            not values.get("backup_directory")
-        ):
-            values["backup_directory"] = os.path.join(
-                GlobalConfiguration().config_directory,
-                SQL_STORE_BACKUP_DIRECTORY_NAME,
+                "The `backup_database` attribute must also be set if the "
+                "backup strategy is set to use a backup database."
             )
 
         return values
@@ -1014,18 +989,8 @@ class SqlZenStore(BaseZenStore):
             self.config.driver == SQLDatabaseDriver.MYSQL
             and self.config.database
         ):
-            try:
-                self._engine.connect()
-            except OperationalError as e:
-                logger.debug(
-                    "Failed to connect to mysql database `%s`.",
-                    self._engine.url.database,
-                )
-
-                if _is_mysql_missing_database_error(e):
-                    self.migration_utils.create_drop_mysql_database()
-                else:
-                    raise
+            if not self.migration_utils.database_exists():
+                self.migration_utils.create_drop_mysql_database()
 
         self._alembic = Alembic(self.engine)
 
@@ -1088,9 +1053,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The path to the configured database backup file.
         """
-        # Guaranteed by the config validation that the backup directory exists
-        assert self.config.backup_directory is not None
-
         if self.config.driver == SQLDatabaseDriver.SQLITE:
             return os.path.join(
                 self.config.backup_directory,
@@ -1109,6 +1071,7 @@ class SqlZenStore(BaseZenStore):
         self,
         strategy: Optional[DatabaseBackupStrategy] = None,
         location: Optional[str] = None,
+        overwrite: bool = False,
     ) -> Tuple[str, Any]:
         """Backup the database.
 
@@ -1118,10 +1081,13 @@ class SqlZenStore(BaseZenStore):
             location: Custom target location to backup the database to. If not
                 set, the configured backup location will be used. Depending on
                 the backup strategy, this can be a file path or a database name.
+            overwrite: Whether to overwrite an existing backup if it exists.
+                If set to False, the existing backup will be reused.
 
         Returns:
             The location where the database was backed up to and an accompanying
-            user-friendly message that describes the backup location.
+            user-friendly message that describes the backup location, or None
+            if no backup was created (i.e. because the backup already exists).
 
         Raises:
             ValueError: If the backup database name is not set when the backup
@@ -1134,7 +1100,16 @@ class SqlZenStore(BaseZenStore):
             or self.config.driver == SQLDatabaseDriver.SQLITE
         ):
             dump_file = location or self._get_db_backup_file_path()
-            self.migration_utils.backup_database_to_file(dump_file=dump_file)
+
+            if not overwrite and os.path.isfile(dump_file):
+                logger.warning(
+                    f"A previous backup file already exists at '{dump_file}'. "
+                    "Reusing the existing backup."
+                )
+            else:
+                self.migration_utils.backup_database_to_file(
+                    dump_file=dump_file
+                )
             return f"the '{dump_file}' backup file", dump_file
         elif strategy == DatabaseBackupStrategy.DATABASE:
             backup_db_name = location or self.config.backup_database
@@ -1144,9 +1119,17 @@ class SqlZenStore(BaseZenStore):
                     "configuration to use the backup database strategy."
                 )
 
-            self.migration_utils.backup_database_to_db(
-                backup_db_name=backup_db_name
-            )
+            if not overwrite and self.migration_utils.database_exists(
+                backup_db_name
+            ):
+                logger.warning(
+                    "A previous backup database already exists at "
+                    f"'{backup_db_name}'. Reusing the existing backup."
+                )
+            else:
+                self.migration_utils.backup_database_to_db(
+                    backup_db_name=backup_db_name
+                )
             return f"the '{backup_db_name}' backup database", backup_db_name
         elif strategy == DatabaseBackupStrategy.IN_MEMORY:
             return (
@@ -1210,9 +1193,12 @@ class SqlZenStore(BaseZenStore):
 
     def cleanup_database_backup(self) -> None:
         """Delete the database backup files."""
-        if self.config.backup_strategy == DatabaseBackupStrategy.DUMP_FILE:
+        if (
+            self.config.backup_strategy == DatabaseBackupStrategy.DUMP_FILE
+            or self.config.driver == SQLDatabaseDriver.SQLITE
+        ):
             dump_file = self._get_db_backup_file_path()
-            if dump_file is not None:
+            if dump_file is not None and os.path.isfile(dump_file):
                 try:
                     os.remove(dump_file)
                 except OSError:
@@ -1220,12 +1206,29 @@ class SqlZenStore(BaseZenStore):
                         f"Failed to cleanup database dump file "
                         f"{dump_file}."
                     )
+                else:
+                    logger.info(
+                        f"Successfully cleaned up database dump file "
+                        f"{dump_file}."
+                    )
         elif self.config.backup_strategy == DatabaseBackupStrategy.DATABASE:
-            self.migration_utils.create_drop_mysql_database(
-                database=self.config.backup_database,
-                create=False,
-                drop=True,
-            )
+            if not self.config.backup_database:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
+            if self.migration_utils.database_exists(
+                self.config.backup_database
+            ):
+                self.migration_utils.create_drop_mysql_database(
+                    database=self.config.backup_database,
+                    create=False,
+                    drop=True,
+                )
+                logger.info(
+                    f"Successfully cleaned up backup database "
+                    f"{self.config.backup_database}."
+                )
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the python package.
@@ -1291,7 +1294,13 @@ class SqlZenStore(BaseZenStore):
                     (
                         backup_location_msg,
                         backup_location,
-                    ) = self.backup_database()
+                    ) = self.backup_database(
+                        # IMPORTANT: we don't want to overwrite a previous
+                        # backup here, because the existing database might
+                        # already be corrupted after a previous failed
+                        # recovery. Instead, we reuse the existing backup.
+                        overwrite=False
+                    )
                 except Exception:
                     logger.exception(
                         "Failed to backup the database. Please check the logs "
@@ -1299,12 +1308,13 @@ class SqlZenStore(BaseZenStore):
                         "but no recovery is possible if something goes wrong."
                     )
                 else:
-                    logger.info(
-                        "Database successfully backed up to "
-                        f"{backup_location_msg}. If something goes wrong with "
-                        "the upgrade, ZenML will attempt to restore the "
-                        "database from this backup automatically."
-                    )
+                    if backup_location is not None:
+                        logger.info(
+                            "Database successfully backed up to "
+                            f"{backup_location_msg}. If something goes wrong "
+                            "with the upgrade, ZenML will attempt to restore "
+                            "the database from this backup automatically."
+                        )
 
             try:
                 self.alembic.upgrade()
@@ -1315,7 +1325,7 @@ class SqlZenStore(BaseZenStore):
                         f"the database from {backup_location_msg}."
                     )
                     try:
-                        self.restore_database()
+                        self.restore_database(location=backup_location)
                     except Exception:
                         logger.exception(
                             "Failed to restore the database from "
@@ -1331,51 +1341,51 @@ class SqlZenStore(BaseZenStore):
                             "the previous version of ZenML. Please check the "
                             "logs for more details."
                         ) from e
-                raise
-
-            else:
-                if backup_enabled and backup_location:
-                    try:
-                        self.cleanup_database_backup()
-                    except Exception:
-                        logger.exception(
-                            "Failed to cleanup the database backup."
-                        )
-
-        else:
-            if self.alembic.db_is_empty():
-                # Case 1: the database is empty. We can just create the
-                # tables from scratch with from SQLModel. After tables are
-                # created we put an alembic revision to latest and populate
-                # identity table with needed info.
-                logger.info("Creating database tables")
-                with self.engine.begin() as conn:
-                    conn.run_callable(
-                        SQLModel.metadata.create_all  # type: ignore[arg-type]
-                    )
-                with Session(self.engine) as session:
-                    session.add(
-                        IdentitySchema(
-                            id=str(GlobalConfiguration().user_id).replace(
-                                "-", ""
-                            )
-                        )
-                    )
-                    session.commit()
-                self.alembic.stamp("head")
-            else:
-                # Case 3: the database is not empty, but has never been
-                # migrated with alembic before. We don't support this direct
-                # upgrade case anymore. The user needs to run a two-step
-                # upgrade.
                 raise RuntimeError(
-                    "The ZenML database has never been migrated with alembic "
-                    "before. This can happen if you are performing a direct "
-                    "upgrade from a really old version of ZenML. This direct "
-                    "upgrade path is not supported anymore. Please upgrade "
-                    "your ZenML installation first to 0.54.0 or an earlier "
-                    "version and then to the latest version."
+                    f"The database migration failed: {str(e)}"
+                ) from e
+
+            else:
+                # We always remove the backup after a successful upgrade,
+                # not just to avoid cluttering the disk, but also to avoid
+                # reusing an outdated database from the backup in case of
+                # future upgrade failures.
+                try:
+                    self.cleanup_database_backup()
+                except Exception:
+                    logger.exception("Failed to cleanup the database backup.")
+
+        elif self.alembic.db_is_empty():
+            # Case 1: the database is empty. We can just create the
+            # tables from scratch with from SQLModel. After tables are
+            # created we put an alembic revision to latest and populate
+            # identity table with needed info.
+            logger.info("Creating database tables")
+            with self.engine.begin() as conn:
+                conn.run_callable(
+                    SQLModel.metadata.create_all  # type: ignore[arg-type]
                 )
+            with Session(self.engine) as session:
+                session.add(
+                    IdentitySchema(
+                        id=str(GlobalConfiguration().user_id).replace("-", "")
+                    )
+                )
+                session.commit()
+            self.alembic.stamp("head")
+        else:
+            # Case 3: the database is not empty, but has never been
+            # migrated with alembic before. We don't support this direct
+            # upgrade case anymore. The user needs to run a two-step
+            # upgrade.
+            raise RuntimeError(
+                "The ZenML database has never been migrated with alembic "
+                "before. This can happen if you are performing a direct "
+                "upgrade from a really old version of ZenML. This direct "
+                "upgrade path is not supported anymore. Please upgrade "
+                "your ZenML installation first to 0.54.0 or an earlier "
+                "version and then to the latest version."
+            )
 
         # If an alembic migration took place, all non-custom flavors are purged
         #  and the FlavorRegistry recreates all in-built and integration

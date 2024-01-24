@@ -669,5 +669,35 @@ To configure a backup secrets store in the Helm chart, use the same approach and
         aws_secret_access_key: <your AWS secret access key>
 ```
 
+### Database backup and recovery
+
+The automated database backup and recovery feature is enabled by default for Helm deployments. This means that the ZenML server will automatically back up the database before every upgrade and restore it if the upgrade fails.
+
+Several database backup strategies are supported, depending on where and how the backup is stored. The strategy can be configured by means of the `zenml.database.backupStrategy` Helm value:
+
+* `disabled`` - No backup will be performed
+* `in-memory`` - the database schema and data are stored in memory. This is the fastest backup strategy, but the backup is not persisted across pod restarts, so no manual intervention is possible in case the automatic DB recovery fails after a failed DB migration. Adequate memory resources should be allocated to the ZenML server pod when using this backup strategy with larger databases. This is the default backup strategy.
+* `dump-file` - the database schema and data are dumped to a file local to the database initialization and upgrade job container. Users may optionally configure a persistent volume where the dump file will be stored by setting both the `backupStorageClass` and `backupStorageSize` options. If a persistent volume is not configured, the dump file will be stored in an emptyDir volume, which is not persisted.
+
+> **NOTE:** You should also set the `podSecurityContext.fsGroup` option if you are using a persistent volume to store the dump file.
+
+* database - the database is copied to a backup database in the same database server. This requires the `backupDatabase` option to be set to the name of the backup database. This backup strategy is only supported for MySQL compatible databases and the user specified in the database URL must have permissions to manage (create, drop, and modify) the backup database in addition to the main database.
+
+The following example shows how to configure the ZenML server to use a persistent volume to store the database dump file:
+
+```yaml
+ zenml:
+
+   # ...
+
+  database:
+    url: "mysql://admin:password@my.database.org:3306/zenml"
+
+    # Configure the database backup strategy
+    backupStrategy: dump-file
+    backupStorageClass: standard
+    backupStorageSize: 1Gi
+```
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
