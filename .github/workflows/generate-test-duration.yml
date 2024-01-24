@@ -1,6 +1,7 @@
 ---
 name: Generate test duration file
 on:
+  workflow_call:
   schedule:
     - cron: 0 8 * * 1  # Run every Monday at 8 am
 jobs:
