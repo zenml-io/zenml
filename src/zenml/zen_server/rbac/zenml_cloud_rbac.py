@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
 PERMISSIONS_ENDPOINT = "/rbac/check_permissions"
 ALLOWED_RESOURCE_IDS_ENDPOINT = "/rbac/allowed_resource_ids"
+RESOURCE_MEMBERSHIP_ENDPOINT = "/rbac/resource_members"
 
 SERVER_SCOPE_IDENTIFIER = "server"
 
@@ -211,6 +212,28 @@ class ZenMLCloudRBAC(RBACInterface):
 
         return full_resource_access, allowed_ids
 
+    def update_resource_membership(
+        self, user: "UserResponse", resource: Resource, actions: List[Action]
+    ) -> None:
+        """Update the resource membership of a user.
+
+        Args:
+            user: User for which the resource membership should be updated.
+            resource: The resource.
+            actions: The actions that the user should be able to perform on the
+                resource.
+        """
+        if user.is_service_account:
+            # Service accounts have full permissions for now
+            return
+
+        data = {
+            "user_id": str(user.external_user_id),
+            "resource": _convert_to_cloud_resource(resource),
+            "actions": [str(action) for action in actions],
+        }
+        self._post(endpoint=RESOURCE_MEMBERSHIP_ENDPOINT, data=data)
+
     def _get(self, endpoint: str, params: Dict[str, Any]) -> requests.Response:
         """Send a GET request using the active session.
 
@@ -232,6 +255,47 @@ class ZenMLCloudRBAC(RBACInterface):
             # Refresh the auth token and try again
             self._clear_session()
             response = self.session.get(url=url, params=params, timeout=7)
+
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            raise RuntimeError(
+                f"Failed while trying to contact RBAC service: {e}"
+            )
+
+        return response
+
+    def _post(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> requests.Response:
+        """Send a POST request using the active session.
+
+        Args:
+            endpoint: The endpoint to send the request to. This will be appended
+                to the base URL.
+            params: Parameters to include in the request.
+            data: Data to include in the request.
+
+        Raises:
+            RuntimeError: If the request failed.
+
+        Returns:
+            The response.
+        """
+        url = self._config.api_url + endpoint
+
+        response = self.session.post(
+            url=url, params=params, json=data, timeout=7
+        )
+        if response.status_code == 401:
+            # Refresh the auth token and try again
+            self._clear_session()
+            response = self.session.post(
+                url=url, params=params, json=data, timeout=7
+            )
 
         try:
             response.raise_for_status()

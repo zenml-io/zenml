@@ -1,5 +1,5 @@
 ---
-name: Integration Tests
+name: Integration Tests (Fast CI)
 on:
   workflow_call:
     inputs:
@@ -11,6 +11,11 @@ on:
         description: Python version
         type: string
         required: true
+      is-slow-ci:
+        description: Whether we're using the slow CI
+        type: boolean
+        required: false
+        default: false
       test_environment:
         description: The test environment
         type: string
@@ -43,6 +48,11 @@ on:
         options: ['3.8', '3.9', '3.10', '3.11']
         required: false
         default: '3.8'
+      is-slow-ci:
+        description: Whether we're using the slow CI
+        type: boolean
+        required: false
+        default: false
       test_environment:
         description: The test environment
         type: choice
@@ -76,11 +86,13 @@ on:
         required: false
         default: 30
 jobs:
-  integration-and-template-tests:
-    name: integration-and-template-tests
+  integration-tests-fast:
+    name: integration-tests-fast
     runs-on: ${{ inputs.os }}
     strategy:
       fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -146,7 +158,9 @@ jobs:
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
-        run: pip install docker-compose
+        run: |
+          pip install pyyaml==5.3.1
+          pip install docker-compose
       - name: Install Linux System Dependencies
         if: inputs.os=='ubuntu-latest'
         run: sudo apt install graphviz
@@ -209,16 +223,17 @@ jobs:
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
-        with:
-          timeout-minutes: ${{ inputs.tmate_timeout }}
-      - name: Test
+        timeout-minutes: ${{ inputs.tmate_timeout }}
+      - name: Sharded Integration Tests (Ubuntu) - Fast CI
+        # Ubuntu integration tests run as 6 shards
+        if: runner.os != 'macOS' && runner.os != 'Windows' && inputs.is-slow-ci ==
+          'false'
         run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
-        with:
-          timeout-minutes: ${{ inputs.tmate_timeout }}
+        timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list
