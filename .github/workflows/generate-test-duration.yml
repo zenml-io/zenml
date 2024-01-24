@@ -38,16 +38,16 @@ jobs:
             # Ubuntu integration tests run as 6 shards
         run: |
           bash scripts/test-coverage-xml.sh "" default "" "" store-durations
-      - name: Check difference in .test_duration
+      - name: Check difference in .test_durations
         run: |
           git diff --quiet || echo "Changes found"
           if [ -n "$(git status --porcelain)" ]; then
             # Commit changes directly to the specified branch
-            git add .test_duration
+            git add .test_durations
             git commit -m "new changes on test duration file detected at $(date +'%Y%m%d-%H%M%S')"
             git push origin feature/OSSK-365-cron-test-duration-file-generate
           else
-            echo "No changes in .test_duration"
+            echo "No changes in .test_durations"
           fi
       - name: Verify Python Env unaffected
         run: |-
