@@ -787,10 +787,10 @@ class SqlZenStore(BaseZenStore):
     def filter_and_paginate(
         cls,
         session: Session,
-        query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+        query: Union[Select[Any], SelectOfScalar[Any]],
         table: Type[AnySchema],
         filter_model: BaseFilter,
-        custom_schema_to_model_conversion: Optional[Callable[[Any], B]] = None,
+        custom_schema_to_model_conversion: Optional[Callable[..., B]] = None,
         custom_fetch: Optional[
             Callable[
                 [
