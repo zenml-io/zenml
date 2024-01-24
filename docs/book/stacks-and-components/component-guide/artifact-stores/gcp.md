@@ -33,6 +33,13 @@ Storage service.
 
 ### How do you deploy it?
 
+{% hint style="warning" %}
+The GCP artifact store (and GCP integration in general) currently only works
+for Python versions <3.11. The ZenML team is aware of this dependency
+clash/issue and is working on a fix. For now, please use Python <3.11 together
+with the GCP integration.
+{% endhint %}
+
 The GCS Artifact Store flavor is provided by the GCP ZenML integration, you need to install it on your local machine to
 be able to register a GCS Artifact Store and add it to your stack:
 

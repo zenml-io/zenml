@@ -6,6 +6,10 @@ jobs:
   publish_to_pypi:
     name: Publish Python 🐍 package 📦 to PyPI
     runs-on: ubuntu-latest
+    permissions:
+      # This permission is required for trusted publishing.
+      id-token: write
+      contents: read
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -26,12 +30,14 @@ jobs:
           virtualenvs-in-project: true
       - name: Include latest dashboard
         run: bash scripts/install-dashboard.sh
-      - name: publish
-        env:
-          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+      - name: Build package
+        run: poetry build
+      - name: Mint token
+        id: mint
+        uses: tschm/token-mint-action@v1.0.2
+      - name: Publish the package with poetry
         run: |-
           if [ "$(cat src/zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ];
-          then ./scripts/publish.sh;
+          then poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}';
           else echo "Version mismatch between src/zenml/VERSION and branch tag" && exit 1;
           fi
