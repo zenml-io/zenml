@@ -990,7 +990,7 @@ class SqlZenStore(BaseZenStore):
             and self.config.database
         ):
             if not self.migration_utils.database_exists():
-                self.migration_utils.create_drop_mysql_database()
+                self.migration_utils.create_database()
 
         self._alembic = Alembic(self.engine)
 
@@ -1220,10 +1220,9 @@ class SqlZenStore(BaseZenStore):
             if self.migration_utils.database_exists(
                 self.config.backup_database
             ):
-                self.migration_utils.create_drop_mysql_database(
+                # Drop the backup database
+                self.migration_utils.drop_database(
                     database=self.config.backup_database,
-                    create=False,
-                    drop=True,
                 )
                 logger.info(
                     f"Successfully cleaned up backup database "
@@ -1301,12 +1300,14 @@ class SqlZenStore(BaseZenStore):
                         # recovery. Instead, we reuse the existing backup.
                         overwrite=False
                     )
-                except Exception:
-                    logger.exception(
-                        "Failed to backup the database. Please check the logs "
-                        "for more details. The upgrade will continue as usual "
-                        "but no recovery is possible if something goes wrong."
-                    )
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to backup the database: {str(e)}. "
+                        "Please check the logs for more details."
+                        "If you would like to disable the database backup "
+                        "functionality, set the `backup_strategy` attribute "
+                        "of the store configuration to `disabled`."
+                    ) from e
                 else:
                     if backup_location is not None:
                         logger.info(

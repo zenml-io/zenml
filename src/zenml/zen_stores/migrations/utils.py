@@ -141,32 +141,41 @@ class MigrationUtils(BaseModel):
         else:
             return True
 
-    def create_drop_mysql_database(
+    def drop_database(
         self,
         database: Optional[str] = None,
-        create: bool = True,
+    ) -> None:
+        """Drops a mysql database.
+
+        Args:
+            database: The name of the database to drop. If not set, the
+                database name from the configuration will be used.
+        """
+        database = database or self.url.database
+        with self.master_engine.connect() as conn:
+            # drop the database if it exists
+            logger.info(f"Dropping database '{database}'")
+            conn.execute(text(f"DROP DATABASE IF EXISTS `{database}`"))
+
+    def create_database(
+        self,
+        database: Optional[str] = None,
         drop: bool = False,
     ) -> None:
-        """Creates and/or drop a mysql database.
+        """Creates a mysql database.
 
         Args:
             database: The name of the database to create. If not set, the
                 database name from the configuration will be used.
-            create: Whether to create the database.
-            drop: Whether to drop the database.
+            drop: Whether to drop the database if it already exists.
         """
         database = database or self.url.database
-        with self.master_engine.connect() as conn:
-            if drop:
-                # drop the database if it exists
-                logger.info(f"Dropping database '{database}'")
-                conn.execute(text(f"DROP DATABASE IF EXISTS `{database}`"))
+        if drop:
+            self.drop_database(database=database)
 
-            if create:
-                logger.info(f"Creating database '{database}'")
-                conn.execute(
-                    text(f"CREATE DATABASE IF NOT EXISTS `{database}`")
-                )
+        with self.master_engine.connect() as conn:
+            logger.info(f"Creating database '{database}'")
+            conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{database}`"))
 
     def backup_database_to_storage(
         self, store_db_info: Callable[[Dict[str, Any]], None]
@@ -272,8 +281,7 @@ class MigrationUtils(BaseModel):
                 information.
         """
         # Drop and re-create the primary database
-        self.create_drop_mysql_database(
-            create=True,
+        self.create_database(
             drop=True,
         )
 
@@ -594,9 +602,8 @@ class MigrationUtils(BaseModel):
             backup_db_name: Backup database name to backup to.
         """
         # Re-create the backup database
-        self.create_drop_mysql_database(
+        self.create_database(
             database=backup_db_name,
-            create=True,
             drop=True,
         )
 
@@ -617,8 +624,7 @@ class MigrationUtils(BaseModel):
         backup_engine = self.create_engine(database=backup_db_name)
 
         # Drop and re-create the primary database
-        self.create_drop_mysql_database(
-            create=True,
+        self.create_database(
             drop=True,
         )
 
