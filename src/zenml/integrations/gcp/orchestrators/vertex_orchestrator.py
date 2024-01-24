@@ -544,7 +544,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
             else:
                 logger.info(
-                    "No schedule detected. Creating one-off vertex job..."
+                    "No schedule detected. Creating one-off Vertex job..."
                 )
                 logger.info(
                     "Submitting pipeline job with job_id `%s` to Vertex AI Pipelines "
