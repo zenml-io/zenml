@@ -1,7 +1,7 @@
 """reduce external_artifact power [4ae374146807].
 
 Revision ID: 4ae374146807
-Revises: 4d688d8f7aff
+Revises: 0.55.0
 Create Date: 2024-01-22 15:09:20.856618
 
 """
@@ -11,7 +11,7 @@ from sqlmodel import Session
 
 # revision identifiers, used by Alembic.
 revision = "4ae374146807"
-down_revision = "4d688d8f7aff"
+down_revision = "0.55.0"
 branch_labels = None
 depends_on = None
 
