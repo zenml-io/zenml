@@ -49,7 +49,7 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.issue.number
             }
-            core.info(`Getting PR #${request.pull_number} from ${request.owner}/${request.repo}`)
+            core.info(`Getting PR  #${request.pull_number} from ${request.owner}/${request.repo}`)
             try {
               const result = await github.pulls.get(request)
               return result.data
@@ -90,7 +90,7 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.issue.number
             }
-            core.info(`Getting PR #${request.pull_number} from ${request.owner}/${request.repo}`)
+            core.info(`Getting PR  #${request.pull_number} from ${request.owner}/${request.repo}`)
             try {
               const result = await github.pulls.get(request)
               return result.data
@@ -129,7 +129,7 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.issue.number
             }
-            core.info(`Getting PR #${request.pull_number} from ${request.owner}/${request.repo}`)
+            core.info(`Getting PR  #${request.pull_number} from ${request.owner}/${request.repo}`)
             try {
               const result = await github.pulls.get(request)
               return result.data
