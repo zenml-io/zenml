@@ -34,7 +34,9 @@ def fail_if_invalid_event_source_configuration(
         ValueError: If the configuration is invalid.
     """
     event_configuration_class = (
-        EventFlavorRegistry().get_event_flavor(flavor)().event_source_config_class
+        EventFlavorRegistry()
+        .get_event_flavor(flavor)()
+        .event_source_config_class
     )
     try:
         event_configuration_class(**configuration_dict)
@@ -63,7 +65,9 @@ def fail_if_invalid_event_filter_configuration(
         ValueError: If the configuration is invalid.
     """
     event_configuration_class = (
-        EventFlavorRegistry().get_event_flavor(flavor)().event_filter_config_class
+        EventFlavorRegistry()
+        .get_event_flavor(flavor)()
+        .event_filter_config_class
     )
     try:
         event_configuration_class(**configuration_dict)

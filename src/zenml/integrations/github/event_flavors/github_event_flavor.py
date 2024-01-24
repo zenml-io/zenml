@@ -12,62 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an event Plugin could look like."""
-from typing import List, Type
-from uuid import UUID
+from typing import Type
 
 from fastapi import APIRouter
-from pydantic import BaseModel
 
-from zenml.events.base_event import Event
 from zenml.events.base_event_flavor import (
     BaseEventFlavor,
     EventFilterConfig,
     EventSourceConfig,
 )
 from zenml.integrations.github import GITHUB_EVENT_FLAVOR
-
-# -------------------- Github Event Models -----------------------------------
-
-
-class Commit(BaseModel):
-    """Github Event."""
-
-    id: str
-    message: str
-    url: str
-
-
-class Repository(BaseModel):
-    """Github Repository."""
-
-    id: int
-    name: str
-    full_name: str
-
-
-class PushEvent(Event):
-    """Push Event from Github."""
-
-    ref: str
-    before: str
-    after: str
-    repository: Repository
-    commits: List[Commit]
-
-
-# -------------------- Configuration Models ----------------------------------
-
-
-class GithubEventSourceConfiguration(EventSourceConfig):
-    """Configuration for github source filters."""
-
-    repo: str
-
-
-class GithubEventFilterConfiguration(EventFilterConfig):
-    """Configuration for github event filters."""
-
-    branch: str
+from zenml.integrations.github.event_handlers.github_event_handler import (
+    GithubEvent,
+    GithubEventFilterConfiguration,
+    GithubEventHandler,
+    GithubEventSourceConfiguration,
+)
 
 
 class GithubEventSourceFlavor(BaseEventFlavor):
@@ -81,6 +41,15 @@ class GithubEventSourceFlavor(BaseEventFlavor):
             The name of the flavor.
         """
         return GITHUB_EVENT_FLAVOR
+
+    @property
+    def event_handler_class(self) -> Type[GithubEventHandler]:
+        """Returns the flavor specific `BaseEventHandler` class.
+
+        Returns:
+            The event handler class.
+        """
+        return GithubEventHandler
 
     @property
     def event_source_config_class(self) -> Type[EventSourceConfig]:
@@ -105,8 +74,9 @@ class GithubEventSourceFlavor(BaseEventFlavor):
         """Register the github webhook to receive events from github."""
 
         @router.post("/github-webhook")
-        async def post_event(body: PushEvent):
-            print(body)
-            # TODO: Process body
-            #  Filter triggers to find matching filter
-            #  Forward "Event/Trigger/.." Object to the Event Hub
+        async def post_event(event: GithubEvent):
+            from zenml.zen_server.utils import zen_store
+
+            GithubEventHandler(
+                flavor=GITHUB_EVENT_FLAVOR, zen_store=zen_store()
+            ).process_event(event)

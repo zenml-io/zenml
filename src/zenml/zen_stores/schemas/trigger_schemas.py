@@ -29,10 +29,10 @@ from zenml.models.v2.core.trigger import (
     TriggerUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 
 
 class TriggerSchema(NamedSchema, table=True):
@@ -65,10 +65,12 @@ class TriggerSchema(NamedSchema, table=True):
         target=EventSourceSchema.__tablename__,
         source_column="event_source_id",
         target_column="id",
-        ondelete="CASCADE", # TODO: this should be set null and the trigger should be deactivated
+        ondelete="CASCADE",  # TODO: this should be set null and the trigger should be deactivated
         nullable=False,
     )
-    event_source: Optional["EventSourceSchema"] = Relationship(back_populates="triggers")
+    event_source: Optional["EventSourceSchema"] = Relationship(
+        back_populates="triggers"
+    )
 
     event_filter: bytes
 
@@ -147,7 +149,7 @@ class TriggerSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             action_plan_flavor=self.action_plan_flavor,
-            event_flavor=self.event_source.flavor
+            event_flavor=self.event_source.flavor,
         )
         metadata = None
         if hydrate:

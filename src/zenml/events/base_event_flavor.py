@@ -19,18 +19,22 @@ from typing import (
     Any,
     Callable,
     Dict,
-    List,
     Optional,
     Type,
 )
 
 from pydantic import BaseModel, Extra
 
+from zenml.events.base_event_handler import BaseEvent, BaseEventHandler
+
 if TYPE_CHECKING:
     from fastapi import APIRouter
 
 
-class EventConfig(BaseModel, ABC):
+# -------------------- Configuration Models ----------------------------------
+
+
+class BaseEventConfig(BaseModel, ABC):
     """Allows configuring of Event Source and Filter configuration."""
 
     class Config:
@@ -45,12 +49,28 @@ class EventConfig(BaseModel, ABC):
         extra = Extra.forbid
 
 
-class EventSourceConfig(EventConfig):
+class EventSourceConfig(BaseEventConfig):
     """The Event Source configuration."""
 
 
-class EventFilterConfig(EventConfig):
+class EventFilterConfig(BaseEventConfig, ABC):
     """The Event Filter configuration."""
+
+    @abstractmethod
+    def event_matches_filter(self, event: BaseEvent) -> bool:
+        """All implementations need to implement this check.
+
+        If the filter matches the inbound event instance, this should
+        return True, else False.
+
+        Args:
+            event: The inbound event instance.
+
+        Returns: Whether the filter matches the event.
+        """
+
+
+# -------------------- Flavors ----------------------------------
 
 
 class EventFlavorResponse(BaseModel):
@@ -75,6 +95,15 @@ class BaseEventFlavor:
 
     @property
     @abstractmethod
+    def event_handler_class(self) -> Type[BaseEventHandler]:
+        """Returns the flavor specific `BaseEventHandler` class.
+
+        Returns:
+            The event handler class.
+        """
+
+    @property
+    @abstractmethod
     def event_source_config_class(self) -> Type[EventSourceConfig]:
         """Returns `EventSourceConfig` config class.
 
@@ -93,7 +122,6 @@ class BaseEventFlavor:
             self.event_source_config_class.schema_json()
         )
         return config_schema
-
 
     @property
     @abstractmethod
@@ -125,5 +153,5 @@ class BaseEventFlavor:
         return EventFlavorResponse(
             name=self.name,
             source_config_schema=self.event_source_config_schema,
-            filter_config_schema=self.event_filter_config_schema
+            filter_config_schema=self.event_filter_config_schema,
         )

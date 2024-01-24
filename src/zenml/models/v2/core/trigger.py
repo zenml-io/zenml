@@ -89,6 +89,7 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The actions that is executed by this trigger.",
     )
 
+
 class TriggerResponse(
     WorkspaceScopedResponse[TriggerResponseBody, TriggerResponseMetadata]
 ):

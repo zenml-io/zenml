@@ -15,7 +15,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic import Field
@@ -66,7 +66,9 @@ class EventSourceSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="event_sources")
 
-    triggers: List["TriggerSchema"] = Relationship(back_populates="event_source")
+    triggers: List["TriggerSchema"] = Relationship(
+        back_populates="event_source"
+    )
 
     flavor: str = Field(nullable=False)
     description: str = Field(sa_column=Column(TEXT, nullable=True))

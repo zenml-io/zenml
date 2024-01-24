@@ -95,8 +95,10 @@ from zenml.enums import (
 )
 from zenml.events.base_event_flavor import EventFlavorResponse
 from zenml.events.event_flavor_registry import EventFlavorRegistry
-from zenml.events.utils import fail_if_invalid_event_source_configuration, \
-    fail_if_invalid_event_filter_configuration
+from zenml.events.utils import (
+    fail_if_invalid_event_filter_configuration,
+    fail_if_invalid_event_source_configuration,
+)
 from zenml.exceptions import (
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
@@ -6604,8 +6606,7 @@ class SqlZenStore(BaseZenStore):
             # Verify that the given event_source exists
             try:
                 event_source = self._get_event_source(
-                    event_source_id=trigger.event_source_id,
-                    session=session
+                    event_source_id=trigger.event_source_id, session=session
                 )
             except KeyError:
                 raise RuntimeError()  # TODO: actually raise the correct error.
