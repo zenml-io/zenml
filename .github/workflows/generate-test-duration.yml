@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.1
         with:
-          ref: feature/OSSK-365-cron-test-duration-file-generate
+          ref: develop
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
@@ -45,7 +45,7 @@ jobs:
             # Commit changes directly to the specified branch
             git add .test_durations
             git commit -m "new changes on test duration file detected at $(date +'%Y%m%d-%H%M%S')"
-            git push origin feature/OSSK-365-cron-test-duration-file-generate
+            git push origin develop
           else
             echo "No changes in .test_durations"
           fi
