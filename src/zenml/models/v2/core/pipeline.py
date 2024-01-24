@@ -278,6 +278,15 @@ class PipelineFilter(WorkspaceScopedFilter):
 class PipelineNamespaceResponseBody(BaseResponseBody):
     """Response body for pipeline namespaces."""
 
+    latest_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the latest run of the pipeline namespace.",
+    )
+    latest_run_status: Optional[ExecutionStatus] = Field(
+        default=None,
+        title="The status of the latest run of the pipeline namespace.",
+    )
+
 
 class PipelineNamespaceResponseMetadata(BaseResponseMetadata):
     """Response metadata for pipeline namespaces."""

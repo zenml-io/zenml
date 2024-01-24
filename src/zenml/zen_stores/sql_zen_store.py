@@ -166,6 +166,7 @@ from zenml.models import (
     PipelineFilter,
     PipelineNamespaceFilter,
     PipelineNamespaceResponse,
+    PipelineNamespaceResponseBody,
     PipelineRequest,
     PipelineResponse,
     PipelineRunFilter,
@@ -2971,7 +2972,20 @@ class SqlZenStore(BaseZenStore):
         def _custom_conversion(
             name: str,
         ) -> PipelineNamespaceResponse:
-            return PipelineNamespaceResponse(id=uuid4(), name=name)
+            runs = self.list_runs(
+                PipelineRunFilter(
+                    sort_by="desc:created", size=1, pipeline_name=name
+                )
+            )
+            if runs.items:
+                run = runs[0]
+                body = PipelineNamespaceResponseBody(
+                    latest_run_id=run.id, latest_run_status=run.status
+                )
+            else:
+                body = PipelineNamespaceResponseBody()
+
+            return PipelineNamespaceResponse(id=uuid4(), name=name, body=body)
 
         with Session(self.engine) as session:
             query = select(PipelineSchema.name).distinct()
