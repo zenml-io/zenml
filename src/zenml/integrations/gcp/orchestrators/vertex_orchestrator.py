@@ -233,14 +233,12 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         if deployment.schedule:
             if (
                 deployment.schedule.catchup
-                or deployment.schedule.start_time
-                or deployment.schedule.end_time
                 or deployment.schedule.interval_second
             ):
                 logger.warning(
                     "Vertex orchestrator only uses schedules with the "
-                    "`cron_expression` property. All other properties "
-                    "are ignored."
+                    "`cron_expression` property, with optionnally `start_time` and/or `end_time`. "
+                    "All other properties are ignored."
                 )
             if deployment.schedule.cron_expression is None:
                 raise ValueError(
@@ -538,6 +536,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 run.create_schedule(
                     display_name=schedule.name,
                     cron=schedule.cron_expression,
+                    start_time=schedule.utc_start_time,
+                    end_time=schedule.utc_end_time,
                     service_account=self.config.workload_service_account,
                     network=self.config.network,
                 )

@@ -228,10 +228,20 @@ pipeline_instance.run(
         cron_expression="*/5 * * * *"
     )
 )
+
+# Run a pipeline every hour
+# starting in one day from now and ending in three days from now
+pipeline_instance.run(
+    schedule=Schedule(
+        cron_expression="0 * * * *"
+        start_time=datetime.datetime.now() + datetime.timedelta(days=1),
+        end_time=datetime.datetime.now() + datetime.timedelta(days=3),
+    )
+)
 ```
 
 {% hint style="warning" %}
-The Vertex orchestrator only supports the `cron_expression` parameter in the `Schedule` object, and will ignore all
+The Vertex orchestrator only supports the `cron_expression`, `start_time` (optional) and `end_time` (optional) parameters in the `Schedule` object, and will ignore all
 other parameters supplied to define the schedule.
 {% endhint %}
 
