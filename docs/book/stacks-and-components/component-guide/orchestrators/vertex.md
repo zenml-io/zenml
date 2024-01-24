@@ -89,7 +89,7 @@ needs to be able to authenticate with GCP and needs to have the necessary permis
     * permissions to run a Vertex AI pipeline, (e.g. [the `Vertex AI Service Agent` role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.serviceAgent)).
 
 
-As you can see, there can be an dedicated service accounts involved in running a Vertex AI pipeline. That's 2 service accounts if you also use a service account to authenticate to GCP in *the ZenML client environment*. However, you can keep it simple an use the same service account everywhere. 
+As you can see, there can be dedicated service accounts involved in running a Vertex AI pipeline. That's two service accounts if you also use a service account to authenticate to GCP in *the ZenML client environment*. However, you can keep it simple and use the same service account everywhere. 
 
 #### Configuration use-case: local `gcloud` CLI with user account
 
