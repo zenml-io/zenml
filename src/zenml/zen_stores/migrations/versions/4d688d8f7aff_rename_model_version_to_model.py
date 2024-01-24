@@ -80,7 +80,7 @@ def downgrade() -> None:
     session = Session(bind=connection)
 
     for source_field, target_field in [
-        ("model", "model_version"),
+        ('"model"', '"model_version"'),
     ]:
         for update_stmt in update_stmts:
             session.execute(

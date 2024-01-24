@@ -207,6 +207,15 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualizatio
 
 Choosing [log metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact) or model versions depends on the scope and purpose of the information you wish to capture. Artifact metadata is best for details specific to individual outputs, while model version metadata is suitable for broader information relevant to the overall model. By utilizing ZenML's metadata logging capabilities and special types, you can enhance the traceability, reproducibility, and analysis of your ML workflows.
 
+Once metadata has been logged to a model, we can retrieve it easily with the client:
+
+```python
+from zenml.client import Client
+client = Client()
+model = client.get_model_version("my_model", "my_version")
+print(model.run_metadata)
+```
+
 For further depth, there is an [advanced metadata logging guide](../advanced-guide/data-management/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
 
 ## Using the stages of a model

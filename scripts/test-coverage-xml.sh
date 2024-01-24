@@ -21,19 +21,21 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 ./zen-test environment provision $TEST_ENVIRONMENT
 
 # The '-vv' flag enables pytest-clarity output when tests fail.
+# Reruns a failing test 3 times with a 5 second delay.
+# Shows errors instantly in logs when test fails.
 if [ -n "$1" ]; then
     if [ "$STORE_DURATIONS" == "store-durations" ]; then
-        coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations
+        coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations --reruns 3 --reruns-delay 5 --instafail
     else
-        coverage run -m pytest $TEST_SRC --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
+        coverage run -m pytest $TEST_SRC --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --reruns 3 --reruns-delay 5 --instafail
     fi
 else
     if [ "$STORE_DURATIONS" == "store-durations" ]; then
-        coverage run -m pytest tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --store-durations --durations-path=.test_durations
-        coverage run -m pytest tests/integration --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations
+        coverage run -m pytest tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --store-durations --durations-path=.test_durations --reruns 3 --reruns-delay 5 --instafail
+        coverage run -m pytest tests/integration --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations --reruns 3 --reruns-delay 5 --instafail
     else
-        coverage run -m pytest tests/unit --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision
-        coverage run -m pytest tests/integration --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker
+        coverage run -m pytest tests/unit --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision --reruns 3 --reruns-delay 5 --instafail
+        coverage run -m pytest tests/integration --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --reruns 3 --reruns-delay 5 --instafail
     fi
 fi
 
