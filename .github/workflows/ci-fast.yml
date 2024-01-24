@@ -86,6 +86,3 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
-  test-generate-test-duration:
-    uses: ./.github/workflows/generate-test-duration.yml
-    secrets: inherit
