@@ -44,7 +44,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             # Commit changes directly to the specified branch
             git add .test_durations
-            git commit -m "new changes on test duration file detected at $(date +'%Y%m%d-%H%M%S')"
+            git commit -m "Update with new changes for test duration file at $(date +'%Y%m%d-%H%M%S')"
             git push origin develop
           else
             echo "No changes in .test_durations"
