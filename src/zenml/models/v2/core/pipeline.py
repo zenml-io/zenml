@@ -22,6 +22,10 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.scoped import (
+    BaseFilter,
+    BaseResponse,
+    BaseResponseBody,
+    BaseResponseMetadata,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -242,7 +246,7 @@ class PipelineResponse(
 
 
 class PipelineFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all Workspaces."""
+    """Pipeline filter model."""
 
     name: Optional[str] = Field(
         default=None,
@@ -268,12 +272,7 @@ class PipelineFilter(WorkspaceScopedFilter):
     )
 
 
-from zenml.models import (
-    BaseFilter,
-    BaseResponse,
-    BaseResponseBody,
-    BaseResponseMetadata,
-)
+# ------------------ Pipeline Namespaces ------------------
 
 
 class PipelineNamespaceResponseBody(BaseResponseBody):
@@ -306,6 +305,8 @@ class PipelineNamespaceResponse(
 
 
 class PipelineNamespaceFilter(BaseFilter):
+    """Pipeline namespace filter model."""
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the pipeline namespace.",
