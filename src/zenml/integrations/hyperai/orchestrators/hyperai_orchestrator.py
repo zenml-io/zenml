@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the ZenML local Docker orchestrator."""
+"""Implementation of the ZenML HyperAI orchestrator."""
 
 import copy
 import json
@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
 from uuid import uuid4
 import yaml
 
-from docker.errors import ContainerError
 from pydantic import validator
 
 from zenml.config.base_settings import BaseSettings
@@ -47,7 +46,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID = "ZENML_DOCKER_ORCHESTRATOR_RUN_ID"
+ENV_ZENML_HYPERAI_RUN_ID = "ZENML_HYPERAI_ORCHESTRATOR_RUN_ID"
 
 
 class HyperAIOrchestrator(ContainerizedOrchestrator):
@@ -65,7 +64,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """Settings class for the Local Docker orchestrator.
+        """Settings class for the HyperAI orchestrator.
 
         Returns:
             The settings class.
@@ -94,11 +93,11 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             The orchestrator run id.
         """
         try:
-            return os.environ[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID]
+            return os.environ[ENV_ZENML_HYPERAI_RUN_ID]
         except KeyError:
             raise RuntimeError(
                 "Unable to read run id from environment variable "
-                f"{ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID}."
+                f"{ENV_ZENML_HYPERAI_RUN_ID}."
             )
 
     def prepare_or_run_pipeline(
@@ -107,7 +106,18 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
-        """Sequentially runs all pipeline steps in local Docker containers.
+        """Sequentially runs all pipeline steps in Docker containers on a HyperAI instance
+        orchestrated via Docker Compose.
+
+        Assumes that:
+        - A HyperAI (hyperai.ai) instance is running on the configured IP address.
+        - The HyperAI instance has been configured to allow SSH connections from the
+            machine running the pipeline.
+        - Docker and Docker Compose are installed on the HyperAI instance.
+        - A key pair has been generated and the public key has been added to the
+            HyperAI instance's `authorized_keys` file.
+        - The private key is available in a HyperAI service connector linked to this
+            orchestrator.
 
         Args:
             deployment: The pipeline deployment to prepare or run.
@@ -125,13 +135,13 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
-        # Basic docker-compose definition
+        # Basic Docker Compose definition
         compose_definition = {
             "version": "3",
             "services": {}
         }
 
-        # Add each step as a service to the docker-compose definition
+        # Add each step as a service to the Docker Compose definition
         dependency = None
         for step_name, step in deployment.step_configurations.items():
 
@@ -201,14 +211,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             f"mkdir -p {directory_name}"
         )
         
-        # Create temporary file and write docker-compose file to it
+        # Create temporary file and write Docker Compose file to it
         with tempfile.NamedTemporaryFile(mode="w", delete=True, delete_on_close=False) as f:
 
-            # Write docker-compose file to temporary file
+            # Write Docker Compose file to temporary file
             with f.file as f_:
                 f_.write(compose_definition)
 
-            # Scp docker-compose file to HyperAI instance
+            # Scp Docker Compose file to HyperAI instance
             scp_client = paramiko_client.open_sftp()
             scp_client.put(
                 f.name,
@@ -216,14 +226,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
             scp_client.close()
 
-        # Run docker-compose file
+        # Run Docker Compose file
         stdin, stdout, stderr = paramiko_client.exec_command(
             f"cd {directory_name} && docker compose up"
         )
 
 
 class HyperAIOrchestratorSettings(BaseSettings):
-    """Local Docker orchestrator settings.
+    """HyperAI orchestrator settings.
 
     Attributes:
         mounts_from_to: A dictionary mapping from paths on the HyperAI instance
@@ -254,8 +264,8 @@ class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyda
         return True
 
 
-class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the local Docker orchestrator."""
+class HyperAIOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor for the HyperAI orchestrator."""
 
     @property
     def name(self) -> str:
@@ -264,7 +274,7 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Name of the orchestrator flavor.
         """
-        return "local_docker"
+        return "hyperai"
 
     @property
     def docs_url(self) -> Optional[str]:
@@ -291,7 +301,7 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/docker.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/hyperai/hyperai.png"
 
     @property
     def config_class(self) -> Type[BaseOrchestratorConfig]:
@@ -303,10 +313,10 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
         return HyperAIOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["LocalDockerOrchestrator"]:
+    def implementation_class(self) -> Type["HyperAIOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:
             Implementation class for this flavor.
         """
-        return LocalDockerOrchestrator
+        return HyperAIOrchestrator
