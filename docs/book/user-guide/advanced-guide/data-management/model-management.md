@@ -117,11 +117,8 @@ dashboard and API functionality to support the full ML lifecycle.
 
 Model versions are created implicitly as you are running your machine learning
 training, so you don't have to immediately think about this. If you want more
-control over how and when these versions are controlled, our API has you
-covered, with options for whether new model versions are created as well as for
-the deletion of new model versions when pipeline runs fail. [See
-above](model-management.md#explicit-python-sdk-registration) for how to create
-model versions explicitly.
+control over versions, our API has you covered, with an option to explicitly
+name your versions.
 
 ### Explicitly name your model version
 
@@ -233,7 +230,7 @@ can see how you would do this here:
 from zenml import Client
 
 MODEL_NAME = "iris_logistic_regression"
-from zenml.enum import ModelStages
+from zenml.enums import ModelStages
 
 model = Model(name=MODEL_NAME, version="1.2.3")
 model.set_stage(stage=ModelStages.PRODUCTION)

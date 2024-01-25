@@ -8,7 +8,9 @@ Metadata plays a critical role in ZenML, providing context and additional inform
 
 This guide will explain how to log metadata for artifacts and models in ZenML and detail the types of metadata that can be logged.
 
-## Logging Metadata for Artifacts
+## Logging
+
+### Logging Metadata for Artifacts
 
 Artifacts in ZenML are outputs of steps within a pipeline, such as datasets, models, or evaluation results. Associating metadata with artifacts can help users understand the nature and characteristics of these outputs.
 
@@ -38,7 +40,7 @@ def process_data_step(dataframe: pd.DataFrame) -> pd.DataFrame:
     return processed_dataframe
 ```
 
-## Logging Metadata for Models
+### Logging Metadata for Models
 
 While artifact metadata is specific to individual outputs of steps, model metadata encapsulates broader and more general information that spans across multiple artifacts. For example, evaluation results or the name of a customer for whom the model is intended could be logged with the model.
 
@@ -81,7 +83,7 @@ specific classifier artifact. This is particularly useful when the metadata
 reflects an aggregation or summary of various steps and artifacts in the
 pipeline.
 
-## Logging Metadata for Steps
+### Logging Metadata for Steps
 
 You might want to log metadata and have that be attached to a specific step
 during the course of your work. This is possible by using the
@@ -142,6 +144,26 @@ log_step_metadata(
         step_name="my_step",
         run_id="my_step_run_id"
     )
+```
+
+## Fetching logged metadata
+
+Once metadata has been logged in an [artifact](#logging-metadata-for-artifacts), [model](#logging-metadata-for-models), or [step](#logging-metadata-for-steps), we can easily fetch the metadata with the ZenML Client:
+
+```python
+from zenml.client import Client
+
+client = Client()
+
+artifact = client.get_artifact_version("my_artifact", "my_version")
+
+model = client.get_model_version("my_model", "my_version")
+
+step = client.get_pipeline_run().steps["step_name"]
+
+print(artifact.run_metadata["metadata_key"].value)
+print(model.run_metadata["metadata_key"].value)
+print(step.run_metadata["metadata_key"].value)
 ```
 
 ## Grouping Metadata in the Dashboard
