@@ -2,8 +2,9 @@
 
 # 0.55.1
 
-This is patch release bringing backwards compatibility of breaking changes introduced in **0.55.0**, so appropriate migration actions can be performed at desired pace. Also we updated documentation to serve you better and introduced PipelineNamespace models in our API.
-**If you are actively using the Model Control Plane features, we suggest you to upgrade directly on 0.55.1 bypassing 0.55.0.**
+This is a patch release bringing backwards compatibility for breaking changes introduced in **0.55.0**, so that appropriate migration actions can be performed at desired pace. Please refer to [the 0.55.0 release notes](https://github.com/zenml-io/zenml/releases/tag/0.55.0) for specific information on breaking changes and how to update your code to align with the new way of doing things. We also have updated our documentation to serve you better and introduced `PipelineNamespace` models in our API.
+
+**If you are actively using the Model Control Plane features, we suggest that you directly upgrade to 0.55.1, bypassing 0.55.0.**
 
 ## What's Changed
 * Update skypilot docs by @safoinme in https://github.com/zenml-io/zenml/pull/2344
@@ -35,7 +36,7 @@ This release comes with a range of new features, bug fixes and documentation upd
 Additionally, we've updated the documentation to include a new starter guide on how to manage artifacts, and a new production guide that walks you through how to configure your pipelines to run in production.
 
 ## Breaking Change
-The `ModelVersion` concept was renamed to `Model` going forward, which affects code bases using the Model Control Plane feature. **This change is not backward compatible with 0.55.0, but are backward compatible again in 0.55.1**
+The `ModelVersion` concept was renamed to `Model` going forward, which affects code bases using the Model Control Plane feature. **This change is not backward compatible with 0.55.0, but is backward compatible again in 0.55.1**.
 
 ### Pipeline decorator
 `@pipeline(model_version=ModelVersion(...))` -> `@pipeline(model=Model(...))`
