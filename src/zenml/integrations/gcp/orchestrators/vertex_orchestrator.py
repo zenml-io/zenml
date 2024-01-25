@@ -237,7 +237,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             ):
                 logger.warning(
                     "Vertex orchestrator only uses schedules with the "
-                    "`cron_expression` property, with optionnally `start_time` and/or `end_time`. "
+                    "`cron_expression` property, with optionally `start_time` and/or `end_time`. "
                     "All other properties are ignored."
                 )
             if deployment.schedule.cron_expression is None:
