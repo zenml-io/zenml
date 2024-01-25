@@ -337,7 +337,8 @@ zenml:
         aws_access_key_id:
         aws_secret_access_key:
         # The AWS role ARN to use to authenticate with the AWS Secrets Manager
-        # instance. Required if the `authMethod` is set to `iam-role`.
+        # instance. Required if the `authMethod` is set to `iam-role`. Optional
+        # if the `authMethod` is set to `implicit`.
         role_arn:
         
       # The AWS region to use. This must be set to the region where the AWS

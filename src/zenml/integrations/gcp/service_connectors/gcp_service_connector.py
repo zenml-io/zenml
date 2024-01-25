@@ -1235,8 +1235,6 @@ class GCPServiceConnector(ServiceConnector):
             )
 
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
-            cls._check_implicit_auth_method_allowed()
-
             auth_config = GCPBaseConfig(
                 project_id=project_id,
             )
