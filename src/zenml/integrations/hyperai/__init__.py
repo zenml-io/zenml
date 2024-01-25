@@ -35,7 +35,6 @@ class HyperAIIntegration(Integration):
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.hyperai import service_connectors  # noqa
-        from zenml.integrations.hyperai import orchestrators # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

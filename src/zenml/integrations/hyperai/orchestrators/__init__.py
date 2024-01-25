@@ -13,11 +13,9 @@
 #  permissions and limitations under the License.
 """HyperAI orchestrator."""
 from zenml.integrations.hyperai.orchestrators.hyperai_orchestrator import (
-    HyperAIOrchestrator,
-    HyperAIOrchestratorFlavor
+    HyperAIOrchestrator
 )
 
 __all__ = [
-    "HyperAIOrchestrator",
-    "HyperAIOrchestratorFlavor"
+    "HyperAIOrchestrator"
 ]
