@@ -47,7 +47,7 @@ class HyperAICredentials(AuthenticationConfig):
     """HyperAI client authentication credentials."""
 
     rsa_ssh_key: SecretStr = Field(
-        title="SSH key",
+        title="SSH key (base64)",
     )
     rsa_ssh_key_passphrase: Optional[SecretStr] = Field(
         default=None,
