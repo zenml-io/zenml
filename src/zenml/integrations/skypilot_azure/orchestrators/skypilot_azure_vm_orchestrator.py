@@ -11,21 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the a Skypilot-based GCP VM orchestrator."""
+"""Implementation of the a Skypilot based Azure VM orchestrator."""
 
 from typing import TYPE_CHECKING, Optional, Type, cast
 
 import sky
 
-from zenml.integrations.gcp.google_credentials_mixin import (
-    GoogleCredentialsMixin,
-)
-from zenml.integrations.skypilot.flavors.skypilot_orchestrator_gcp_vm_flavor import (
-    SkypilotGCPOrchestratorConfig,
-    SkypilotGCPOrchestratorSettings,
-)
 from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (
     SkypilotBaseOrchestrator,
+)
+from zenml.integrations.skypilot_azure.flavors.skypilot_orchestrator_azure_vm_flavor import (
+    SkypilotAzureOrchestratorConfig,
+    SkypilotAzureOrchestratorSettings,
 )
 from zenml.logger import get_logger
 
@@ -35,15 +32,13 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class SkypilotGCPOrchestrator(
-    SkypilotBaseOrchestrator, GoogleCredentialsMixin
-):
-    """Orchestrator responsible for running pipelines remotely in a VM on GCP.
+class SkypilotAzureOrchestrator(SkypilotBaseOrchestrator):
+    """Orchestrator responsible for running pipelines remotely in a VM on Azure.
 
     This orchestrator does not support running on a schedule.
     """
 
-    DEFAULT_INSTANCE_TYPE: str = "n1-standard-4"
+    DEFAULT_INSTANCE_TYPE: str = "Standard_B1ms"
 
     @property
     def cloud(self) -> sky.clouds.Cloud:
@@ -52,16 +47,16 @@ class SkypilotGCPOrchestrator(
         Returns:
             A `sky.clouds.Cloud` instance.
         """
-        return sky.clouds.GCP()
+        return sky.clouds.Azure()
 
     @property
-    def config(self) -> SkypilotGCPOrchestratorConfig:
-        """Returns the `SkypilotGCPOrchestratorConfig` config.
+    def config(self) -> SkypilotAzureOrchestratorConfig:
+        """Returns the `SkypilotAzureOrchestratorConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(SkypilotGCPOrchestratorConfig, self._config)
+        return cast(SkypilotAzureOrchestratorConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -70,7 +65,7 @@ class SkypilotGCPOrchestrator(
         Returns:
             The settings class.
         """
-        return SkypilotGCPOrchestratorSettings
+        return SkypilotAzureOrchestratorSettings
 
     def prepare_environment_variable(self, set: bool = True) -> None:
         """Set up Environment variables that are required for the orchestrator.

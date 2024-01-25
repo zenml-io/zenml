@@ -46,8 +46,14 @@ jobs:
           poetry version $NIGHTLY_VERSION
       - name: Include latest dashboard
         run: bash scripts/install-dashboard.sh
-      - name: publish
-        env:
-          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: bash scripts/publish.sh
+      - name: Build package
+        run: poetry build
+      - name: Mint token
+        id: mint
+        uses: tschm/token-mint-action@v1.0.2
+      - name: Publish the package with poetry
+        run: |-
+          if [ "$(cat src/zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ];
+          then poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}';
+          else echo "Version mismatch between src/zenml/VERSION and branch tag" && exit 1;
+          fi

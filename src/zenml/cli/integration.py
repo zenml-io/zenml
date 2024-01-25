@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to install or uninstall ZenML integrations via the CLI."""
 
+import sys
 from typing import Optional, Tuple
 
 import click
@@ -224,6 +225,14 @@ def install(
     if not integrations:
         # no integrations specified, use all registered integrations
         integrations = set(integration_registry.integrations.keys())
+
+        # TODO: remove once python 3.11 gcp integration issue is resolved
+        if sys.version_info >= (3, 11) and "gcp" in integrations:
+            warning(
+                "We are aware of dependency resolution issues when using "
+                "Python 3.11.x with the GCP integration. For now, please use "
+                "Python 3.10 or lower instead while we work on a fix."
+            )
         for i in ignore_integration:
             try:
                 integrations.remove(i)
