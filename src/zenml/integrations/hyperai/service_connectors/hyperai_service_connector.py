@@ -69,7 +69,7 @@ class HyperAIConfiguration(HyperAICredentials):
 class HyperAIAuthenticationMethods(StrEnum):
     """HyperAI Authentication methods."""
 
-    KEY_OPTIONAL_PASSPHRASE = "key_optional_passphrase"
+    KEY_OPTIONAL_PASSPHRASE = "ssh-key"
 
 
 HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
