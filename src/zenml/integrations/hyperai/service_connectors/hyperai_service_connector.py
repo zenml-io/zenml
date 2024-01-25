@@ -25,7 +25,6 @@ from typing import Any, List, Optional
 
 from pydantic import Field, SecretStr
 
-from zenml.constants import COMPUTE_INSTANCE_RESOURCE_TYPE
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.hyperai import (
     HYPERAI_CONNECTOR_TYPE,
@@ -111,7 +110,7 @@ provided.
     resource_types=[
         ResourceTypeModel(
             name="HyperAI instance",
-            resource_type=COMPUTE_INSTANCE_RESOURCE_TYPE,
+            resource_type=HYPERAI_RESOURCE_TYPE,
             description="""
 Allows users to access a HyperAI instance as a resource. When used by
 connector consumers, they are provided a pre-authenticated SSH client

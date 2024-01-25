@@ -12,9 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the HyperAI integration."""
+from typing import List, Type
 
 from zenml.integrations.constants import HYPERAI
 from zenml.integrations.integration import Integration
+from zenml.stack import Flavor
 
 # Service connector constants
 HYPERAI_CONNECTOR_TYPE = "hyperai"
@@ -33,6 +35,19 @@ class HyperAIIntegration(Integration):
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.hyperai import service_connectors  # noqa
+        from zenml.integrations.hyperai import orchestrators # noqa
+
+    @classmethod
+    def flavors(cls) -> List[Type[Flavor]]:
+        """Declare the stack component flavors for the HyperAI integration.
+        Returns:
+            List of stack component flavors for this integration.
+        """
+        from zenml.integrations.hyperai.orchestrators import (
+            HyperAIOrchestratorFlavor
+        )
+
+        return [HyperAIOrchestratorFlavor]
 
 
 HyperAIIntegration.check_installation()

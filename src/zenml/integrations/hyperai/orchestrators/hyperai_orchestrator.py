@@ -32,7 +32,11 @@ from zenml.constants import (
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
+from zenml.integrations.hyperai import (
+    HYPERAI_RESOURCE_TYPE
+)
 from zenml.logger import get_logger
+from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
@@ -79,7 +83,10 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             A `StackValidator` instance.
         """
         return StackValidator(
-            required_components={StackComponentType.IMAGE_BUILDER}
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            }
         )
 
     def get_orchestrator_run_id(self) -> str:
@@ -275,6 +282,21 @@ class HyperAIOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return "hyperai"
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(resource_type=HYPERAI_RESOURCE_TYPE)
 
     @property
     def docs_url(self) -> Optional[str]:
