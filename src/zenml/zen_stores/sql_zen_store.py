@@ -750,7 +750,6 @@ class SqlZenStore(BaseZenStore):
     _alembic: Optional[Alembic] = None
     _secrets_store: Optional[BaseSecretsStore] = None
     _backup_secrets_store: Optional[BaseSecretsStore] = None
-    _backup_database: Optional[Dict[str, Any]] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
