@@ -252,6 +252,11 @@ training_pipeline = training_pipeline.with_options(
 training_pipeline()
 ```
 
+The reference to a local file will change depending on where you are executing
+the pipeline and code from, so please bear this in mind. It is best practice to
+put all config files in a configs directory at the root of your repository and
+check them into git history.
+
 A simple version of such a YAML file could be:
 
 ```yaml
