@@ -16,6 +16,7 @@
 import copy
 import json
 import os
+import tempfile
 import sys
 import time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
@@ -176,11 +177,22 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         stdin, stdout, stderr = paramiko_client.exec_command(
             f"mkdir -p {directory_name}"
         )
+        
+        # Create temporary file and write docker-compose file to it
+        with tempfile.NamedTemporaryFile(mode="w", delete=True, delete_on_close=False) as f:
 
-        # Write docker-compose file to HyperAI instance
-        stdin, stdout, stderr = paramiko_client.exec_command(
-            f"echo '{compose_definition}' > {directory_name}/docker-compose.yaml"
-        )
+            # Write docker-compose file to temporary file
+            with f.file as f_:
+                f_.write(compose_definition)
+
+            # Scp docker-compose file to HyperAI instance
+            scp_client = paramiko_client.open_sftp()
+            scp_client.put(
+                f.name,
+                f"{directory_name}/docker-compose.yaml"
+            )
+            scp_client.close()
+
 
         # Run docker-compose file
         stdin, stdout, stderr = paramiko_client.exec_command(
