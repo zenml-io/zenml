@@ -65,6 +65,11 @@ class HyperAIConfiguration(HyperAICredentials):
         title="IP address of the HyperAI instance.",
     )
 
+    instance_name: Optional[str] = Field(
+        default=None,
+        title="Name to identify the HyperAI instance, if any.",
+    )
+
     username: str = Field(
         title="Username to use to connect to the HyperAI instance.",
     )
@@ -160,7 +165,11 @@ class HyperAIServiceConnector(ServiceConnector):
         Returns:
             The default resource ID for the resource type.
         """
-        return self.config.ip_address
+        instance_name = self.config.instance_name
+        if instance_name is None:
+            instance_name = "Unnamed instance"
+
+        return f"{instance_name} (IP {self.config.ip_address})"
 
     def _authorize_client(
         self
