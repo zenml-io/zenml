@@ -158,7 +158,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             if not isinstance(paramiko_client, paramiko.SSHClient):
                 raise RuntimeError(
                     f"Expected to receive a `paramiko.SSHClient` object from the "
-                    f"linked connector, but got type `{type(boto_session)}`."
+                    f"linked connector, but got type `{type(paramiko_client)}`."
                 )
         else:
             raise RuntimeError(
