@@ -61,7 +61,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         Returns:
             The settings class.
         """
-        return LocalDockerOrchestratorSettings
+        return HyperAIOrchestratorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -202,63 +202,34 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         )
 
 
-class LocalDockerOrchestratorSettings(BaseSettings):
+class HyperAIOrchestratorSettings(BaseSettings):
     """Local Docker orchestrator settings.
 
     Attributes:
-        run_args: Arguments to pass to the `docker run` call. (See
-            https://docker-py.readthedocs.io/en/stable/containers.html for a list
-            of what can be passed.)
+        mounts_from_to: A dictionary mapping from paths on the HyperAI instance
+            to paths within the Docker container. This allows users to mount
+            directories from the HyperAI instance into the Docker container that runs
+            on it.
     """
 
-    run_args: Dict[str, Any] = {}
-
-    @validator("run_args", pre=True)
-    def _convert_json_string(
-        cls, value: Union[None, str, Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
-        """Converts potential JSON strings passed via the CLI to dictionaries.
-
-        Args:
-            value: The value to convert.
-
-        Returns:
-            The converted value.
-
-        Raises:
-            TypeError: If the value is not a `str`, `Dict` or `None`.
-            ValueError: If the value is an invalid json string or a json string
-                that does not decode into a dictionary.
-        """
-        if isinstance(value, str):
-            try:
-                dict_ = json.loads(value)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{value}'") from e
-
-            if not isinstance(dict_, Dict):
-                raise ValueError(
-                    f"Json string '{value}' did not decode into a dictionary."
-                )
-
-            return dict_
-        elif isinstance(value, Dict) or value is None:
-            return value
-        else:
-            raise TypeError(f"{value} is not a json string or a dictionary.")
+    mounts_from_to: Dict[str, str] = {}
 
 
-class LocalDockerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    BaseOrchestratorConfig, LocalDockerOrchestratorSettings
+class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseOrchestratorConfig, HyperAIOrchestratorSettings
 ):
-    """Local Docker orchestrator config."""
+    """HyperAI orchestrator config."""
 
     @property
-    def is_local(self) -> bool:
-        """Checks if this stack component is running locally.
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        This designation is used to determine if the stack component can be
+        used with a local ZenML database or if it requires a remote ZenML
+        server.
 
         Returns:
-            True if this config is for a local component, False otherwise.
+            True if this config is for a remote component, False otherwise.
         """
         return True
 
@@ -309,7 +280,7 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The config class.
         """
-        return LocalDockerOrchestratorConfig
+        return HyperAIOrchestratorConfig
 
     @property
     def implementation_class(self) -> Type["LocalDockerOrchestrator"]:
