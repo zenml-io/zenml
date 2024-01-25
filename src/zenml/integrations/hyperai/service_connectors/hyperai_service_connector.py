@@ -169,7 +169,9 @@ class HyperAIServiceConnector(ServiceConnector):
         if instance_name is None:
             instance_name = "Unnamed instance"
 
-        return f"{instance_name} (IP {self.config.ip_address})"
+        ip_address = str(self.config.ip_address).strip()
+
+        return f"{instance_name} (IP {ip_address})"
 
     def _authorize_client(
         self
