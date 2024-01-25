@@ -146,6 +146,8 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     }
                 }
 
+            dependency = step_name
+
         # Can we add multi dependency?
 
         # Convert into yaml
