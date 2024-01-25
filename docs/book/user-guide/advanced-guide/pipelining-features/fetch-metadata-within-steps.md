@@ -69,7 +69,7 @@ def my_step():
     mv = get_step_context().model
 
     # Get metadata
-    print(mv.run_metadata["some_value"].value)
+    print(mv.run_metadata["metadata_key"].value)
 
     # Directly fetch an artifact
     output = mv.get_artifact("my_dataset", "my_version")

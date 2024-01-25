@@ -162,6 +162,10 @@ from zenml.models.v2.core.pipeline import (
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
+    PipelineNamespaceFilter,
+    PipelineNamespaceResponse,
+    PipelineNamespaceResponseBody,
+    PipelineNamespaceResponseMetadata,
 )
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildBase,
@@ -574,6 +578,10 @@ __all__ = [
     "PipelineResponse",
     "PipelineResponseBody",
     "PipelineResponseMetadata",
+    "PipelineNamespaceFilter",
+    "PipelineNamespaceResponse",
+    "PipelineNamespaceResponseBody",
+    "PipelineNamespaceResponseMetadata",
     "PipelineBuildBase",
     "PipelineBuildRequest",
     "PipelineBuildFilter",

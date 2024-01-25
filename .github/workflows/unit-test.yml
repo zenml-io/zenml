@@ -73,9 +73,11 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4.1.1
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
         with:
-          ref: ${{ github.event.inputs.git-ref || github.ref }}
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:

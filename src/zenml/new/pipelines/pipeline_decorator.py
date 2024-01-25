@@ -24,6 +24,8 @@ from typing import (
     overload,
 )
 
+from zenml.logger import get_logger
+
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.model.model import Model
@@ -31,6 +33,8 @@ if TYPE_CHECKING:
 
     HookSpecification = Union[str, FunctionType]
     F = TypeVar("F", bound=Callable[..., None])
+
+logger = get_logger(__name__)
 
 
 @overload
@@ -63,6 +67,7 @@ def pipeline(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
+    model_version: Optional["Model"] = None,  # TODO: deprecate me
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -82,6 +87,7 @@ def pipeline(
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
+        model_version: DEPRECATED, please use `model` instead.
 
     Returns:
         A pipeline instance.
@@ -89,6 +95,11 @@ def pipeline(
 
     def inner_decorator(func: "F") -> "Pipeline":
         from zenml.new.pipelines.pipeline import Pipeline
+
+        if model_version:
+            logger.warning(
+                "Pipeline decorator argument `model_version` is deprecated. Please use `model` instead."
+            )
 
         p = Pipeline(
             name=name or func.__name__,
@@ -99,7 +110,7 @@ def pipeline(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model=model,
+            model=model or model_version,
             entrypoint=func,
         )
 
