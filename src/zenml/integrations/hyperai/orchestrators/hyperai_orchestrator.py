@@ -134,7 +134,16 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         # Add each step as a service to the docker-compose definition
         dependency = None
         for step_name, step in deployment.step_configurations.items():
+
+            # Get image
             image = self.get_image(deployment=deployment, step_name=step_name)
+
+            # Get settings
+            step_settings = cast(
+                HyperAIOrchestratorSettings, self.get_settings(step)
+            )
+
+            # Make Compose service definition for step
             compose_definition["services"][step_name] = {
                 "image": image,
                 "container_name": step_name,
@@ -144,10 +153,12 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 ),
                 "environment": environment,
                 "volumes": [
-                    
-                ],
+                    f"{mount_from}:{mount_to}"
+                    for mount_from, mount_to in step_settings.mounts_from_to.items()
+                ]
             }
 
+            # Add dependency on previous step if it exists
             if dependency:
                 compose_definition["services"][step_name]["depends_on"] = {
                     dependency: {
@@ -155,6 +166,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     }
                 }
 
+            # Set current step as dependency for next step
             dependency = step_name
 
         # Can we add multi dependency?
