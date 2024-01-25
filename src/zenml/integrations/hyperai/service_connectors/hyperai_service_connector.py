@@ -16,6 +16,9 @@
 The HyperAI Service Connector allows authenticating to HyperAI (hyperai.ai)
 GPU equipped instances of their Dedicated offering.
 """
+import base64
+import paramiko
+import io
 import re
 import subprocess
 from typing import Any, List, Optional
@@ -132,19 +135,19 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         return HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC
 
-    def _canonical_resource_id(
-        self, resource_type: str, resource_id: str
-    ) -> str:
-        """Convert a resource ID to its canonical form.
+    # def _canonical_resource_id(
+    #     self, resource_type: str, resource_id: str
+    # ) -> str:
+    #     """Convert a resource ID to its canonical form.
 
-        Args:
-            resource_type: The resource type to canonicalize.
-            resource_id: The resource ID to canonicalize.
+    #     Args:
+    #         resource_type: The resource type to canonicalize.
+    #         resource_id: The resource ID to canonicalize.
 
-        Returns:
-            The canonical resource ID.
-        """
-        return self._parse_resource_id(resource_id)
+    #     Returns:
+    #         The canonical resource ID.
+    #     """
+    #     return self._parse_resource_id(resource_id)
 
     def _get_default_resource_id(self, resource_type: str) -> str:
         """Get the default resource ID for a resource type.
@@ -157,9 +160,7 @@ class HyperAIServiceConnector(ServiceConnector):
         Returns:
             The default resource ID for the resource type.
         """
-        return self._canonical_resource_id(
-            resource_type, self.config.registry or DOCKER_REGISTRY_NAME
-        )
+        return self.config.ip_address
 
     def _authorize_client(
         self
@@ -172,21 +173,46 @@ class HyperAIServiceConnector(ServiceConnector):
                 invalid.
             SSHException: If there is an SSH related error.
         """
-        
-        rsa_ssh_key = paramiko.RSAKey.from_private_key(
-            io.StringIO(self.config.rsa_ssh_key.get_secret_value()),
-            password=self.config.rsa_ssh_key_passphrase.get_secret_value(),
-        )
+        if self.config.rsa_ssh_key_passphrase is None:
+            rsa_ssh_key_passphrase = None
+        else:
+            rsa_ssh_key_passphrase = self.config.rsa_ssh_key_passphrase.get_secret_value()
 
-        paramiko_client = paramiko.client.SSHClient()
-        paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        paramiko_client.connect(
-            hostname=self.config.ip_address,
-            username=self.config.username,
-            pkey=rsa_ssh_key,
-            timeout=30
-        )
-        paramiko_client.close()
+        # Convert the SSH key from base64 to string
+        base64_key_value = self.config.rsa_ssh_key.get_secret_value()
+        try:
+            ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
+        except Exception as e:
+            logger.error("Failed to decode SSH key from Base64 format: %s", e)
+        
+        # Attempt constructing an RSA key from the SSH key
+        try:
+            rsa_ssh_key = paramiko.RSAKey.from_private_key(
+                io.StringIO(ssh_key),
+                password=rsa_ssh_key_passphrase
+            )
+        except paramiko.ssh_exception.SSHException as e:
+            logger.error("Failed to parse SSH key: %s", e)
+
+        # Attempt logging in to the HyperAI instance
+        try:
+            paramiko_client = paramiko.client.SSHClient()
+            paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            paramiko_client.connect(
+                hostname=self.config.ip_address,
+                username=self.config.username,
+                pkey=rsa_ssh_key,
+                timeout=30
+            )
+            paramiko_client.close()
+        except paramiko.ssh_exception.BadHostKeyException as e:
+            logger.error("Bad host key: %s", e)
+        except paramiko.ssh_exception.AuthenticationException as e:
+            logger.error("Authentication failed: %s", e)
+        except paramiko.ssh_exception.SSHException as e:
+            logger.error("SSH error: %s", e)
+        except Exception as e:
+            logger.error("Unknown error: %s", e)
     
 
     def _connect_to_resource(
@@ -220,6 +246,15 @@ class HyperAIServiceConnector(ServiceConnector):
 
         return paramiko_client
 
+    def _configure_local_client(
+        self,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Configure a local client to authenticate and connect to a resource.
+        There is no local client for the HyperAI connector, so it does nothing.
+        """
+        pass
 
     @classmethod
     def _auto_configure(
