@@ -244,21 +244,50 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         assert self.resource_id is not None
 
-        rsa_ssh_key = paramiko.RSAKey.from_private_key(
-            io.StringIO(self.config.rsa_ssh_key.get_secret_value()),
-            password=self.config.rsa_ssh_key_passphrase.get_secret_value(),
-        )
+        if self.config.rsa_ssh_key_passphrase is None:
+            rsa_ssh_key_passphrase = None
+        else:
+            rsa_ssh_key_passphrase = self.config.rsa_ssh_key_passphrase.get_secret_value()
 
-        paramiko_client = paramiko.client.SSHClient()
-        paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        paramiko_client.connect(
-            hostname=self.config.ip_address,
-            username=self.config.username,
-            pkey=rsa_ssh_key,
-            timeout=30
-        )
+        # Convert the SSH key from base64 to string
+        base64_key_value = self.config.rsa_ssh_key.get_secret_value()
+        try:
+            ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
+        except Exception as e:
+            logger.error("Failed to decode SSH key from Base64 format: %s", e)
+        
+        # Attempt constructing an RSA key from the SSH key
+        try:
+            rsa_ssh_key = paramiko.RSAKey.from_private_key(
+                io.StringIO(ssh_key),
+                password=rsa_ssh_key_passphrase
+            )
+        except paramiko.ssh_exception.SSHException as e:
+            logger.error("Failed to parse SSH key: %s", e)
 
-        return paramiko_client
+        # Trim whitespace from the IP address
+        ip_address = str(self.config.ip_address).strip()
+
+        # Attempt logging in to the HyperAI instance
+        try:
+            paramiko_client = paramiko.client.SSHClient()
+            paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            paramiko_client.connect(
+                hostname=ip_address,
+                username=self.config.username,
+                pkey=rsa_ssh_key,
+                timeout=30
+            )
+            
+            return paramiko_client
+        except paramiko.ssh_exception.BadHostKeyException as e:
+            logger.error("Bad host key: %s", e)
+        except paramiko.ssh_exception.AuthenticationException as e:
+            logger.error("Authentication failed: %s", e)
+        except paramiko.ssh_exception.SSHException as e:
+            logger.error("SSH error: %s", e)
+        except Exception as e:
+            logger.error("Unknown error: %s", e)
 
     def _configure_local_client(
         self,
