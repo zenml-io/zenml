@@ -127,7 +127,12 @@ zenml integration install sklearn -y
 In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version directly.
 
 {% hint style="info" %}
-The `zenml integration install sklearn` command is simply doing a `pip install` of `sklearn` behind the scenes. If something goes wrong, one can always use `zenml integration requirements sklearn` to see which requirements are compatible and install using pip (or any other tool) directly.
+The `zenml integration install sklearn` command is simply doing a `pip install`
+of `sklearn` behind the scenes. If something goes wrong, one can always use
+`zenml integration requirements sklearn` to see which requirements are
+compatible and install using pip (or any other tool) directly. (If no specific
+requirements are mentioned for an integration then this means we support using
+all possible versions of that integration/package.)
 
 {% endhint %}
 
