@@ -161,9 +161,9 @@ model = client.get_model_version("my_model", "my_version")
 
 step = client.get_pipeline_run().steps["step_name"]
 
-print(artifact.run_metadata)
-print(model.run_metadata)
-print(step.run_metadata)
+print(artifact.run_metadata["metadata_key"].value)
+print(model.run_metadata["metadata_key"].value)
+print(step.run_metadata["metadata_key"].value)
 ```
 
 ## Grouping Metadata in the Dashboard
