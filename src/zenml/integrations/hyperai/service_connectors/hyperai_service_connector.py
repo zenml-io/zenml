@@ -205,12 +205,15 @@ class HyperAIServiceConnector(ServiceConnector):
         except paramiko.ssh_exception.SSHException as e:
             logger.error("Failed to parse SSH key: %s", e)
 
+        # Trim whitespace from the IP address
+        ip_address = str(self.config.ip_address).strip()
+
         # Attempt logging in to the HyperAI instance
         try:
             paramiko_client = paramiko.client.SSHClient()
             paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             paramiko_client.connect(
-                hostname=self.config.ip_address,
+                hostname=ip_address,
                 username=self.config.username,
                 pkey=rsa_ssh_key,
                 timeout=30
