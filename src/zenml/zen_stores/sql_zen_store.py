@@ -7354,6 +7354,7 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Model Versions -----------------------------
 
+    @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
     def create_model_version(
         self, model_version: ModelVersionRequest
     ) -> ModelVersionResponse:
