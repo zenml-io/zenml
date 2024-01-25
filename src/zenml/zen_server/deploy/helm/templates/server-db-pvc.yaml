@@ -1,22 +1,25 @@
-# if a storage class is set, create the pvc that will hold a backup of the database
-{{- if .Values.zenml.database.backupStorageClass }}
+{{- if and (eq .Values.zenml.database.backupStrategy "dump-file") .Values.zenml.database.backupPVStorageSize }}
+{{- $pvc_name := printf "%s-db-backup" (include "zenml.fullname" .) -}}
+{{- $pvc := (lookup "v1" "PersistentVolumeClaim" .Release.Namespace $pvc_name) }}
+{{- if not $pvc }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "zenml.fullname" . }}-db-backup
+  name: {{ $pvc_name }}
   labels:
     {{- include "zenml.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": "pre-install,pre-upgrade"
-    "helm.sh/hook-weight": "-3"
-    "helm.sh/hook-delete-policy": before-hook-creation{{ if not .Values.zenml.debug }},hook-succeeded{{ end }}
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: {{ .Values.zenml.database.backupStorageSize }}
-  {{- with .Values.zenml.database.backupStorageClass }}
+      storage: {{ .Values.zenml.database.backupPVStorageSize }}
+  {{- with .Values.zenml.database.backupPVStorageClass }}
   storageClassName: {{ . }}
   {{- end }}
+{{- end }}
 {{- end }}

@@ -1302,7 +1302,7 @@ class SqlZenStore(BaseZenStore):
             # unnecessary backups.
             backup_enabled = (
                 self.config.backup_strategy != DatabaseBackupStrategy.DISABLED
-                and current_revisions[0] != head_revisions[0]
+                and set(current_revisions) != set(head_revisions)
             )
             backup_location: Optional[Any] = None
             backup_location_msg: Optional[str] = None
@@ -1313,13 +1313,7 @@ class SqlZenStore(BaseZenStore):
                     (
                         backup_location_msg,
                         backup_location,
-                    ) = self.backup_database(
-                        # IMPORTANT: we don't want to overwrite a previous
-                        # backup here, because the existing database might
-                        # already be corrupted after a previous failed
-                        # recovery. Instead, we reuse the existing backup.
-                        overwrite=False
-                    )
+                    ) = self.backup_database(overwrite=True)
                 except Exception as e:
                     raise RuntimeError(
                         f"Failed to backup the database: {str(e)}. "

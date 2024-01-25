@@ -196,10 +196,13 @@ zenml:
     # sslVerifyServerCert: True
 
     # ZenML supports backing up the database before DB migrations are performed
-    # and restoring it in case of a DB migration failure. Several backup
-    # strategies are supported:
+    # and restoring it in case of a DB migration failure. For more information,
+    # see the following documentation:
+    # https://docs.zenml.io/deploying-zenml/zenml-self-hosted/deploy-with-helm#database-backup-and-recovery
     #
-    # disabled - No backup will be performed
+    # Several backup strategies are supported:
+    #
+    # disabled - no backup is performed
     # in-memory - the database schema and data are stored in memory. This is
     #             the fastest backup strategy, but the backup is not persisted
     #             across pod restarts, so no manual intervention is possible
@@ -210,8 +213,9 @@ zenml:
     #             This is the default backup strategy.
     # dump-file - the database schema and data are dumped to a local file.
     #             Users may optionally configure a persistent volume where
-    #             the dump file will be stored by setting both the
-    #             `backupStorageClass` and `backupStorageSize` options. If a
+    #             the dump file will be stored by setting the
+    #             `backupPVStorageSize` and optionally the
+    #             `backupPVStorageClass` options. If a
     #             persistent volume is not configured, the dump file will be
     #             stored in an emptyDir volume, which is not persisted.
     #             NOTE: you should set the podSecurityContext.fsGroup option
@@ -225,8 +229,8 @@ zenml:
     #            modify) the backup database in addition to the main
     #            database.
     backupStrategy: in-memory
-    # backupStorageClass: standard
-    # backupStorageSize: 1Gi
+    # backupPVStorageClass: standard
+    # backupPVStorageSize: 1Gi
     # backupDatabase: "zenml_backup"
 
 
@@ -821,7 +825,7 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext: {}
-  # fsGroup: 2000 # if you're using a PVC for backup, this should necessarily be set.
+  # fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
 
 securityContext:
   runAsNonRoot: true

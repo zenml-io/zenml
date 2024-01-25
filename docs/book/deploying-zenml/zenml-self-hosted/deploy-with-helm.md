@@ -671,17 +671,27 @@ To configure a backup secrets store in the Helm chart, use the same approach and
 
 ### Database backup and recovery
 
-The automated database backup and recovery feature is enabled by default for Helm deployments. This means that the ZenML server will automatically back up the database before every upgrade and restore it if the upgrade fails.
+An automated database backup and recovery feature is enabled by default for all Helm deployments. The ZenML server will automatically back up the database before every upgrade and restore it if the upgrade fails in a way that affects the database.
+
+{% hint style="info" %}
+The database backup automatically created by the ZenML server is only temporary and only used as an immediate recovery in case of database migration failures. It is not meant to be used as a long-term backup solution. If you need to back up your database for long-term storage, you should use a dedicated backup solution.
+{% endhint %}
 
 Several database backup strategies are supported, depending on where and how the backup is stored. The strategy can be configured by means of the `zenml.database.backupStrategy` Helm value:
 
-* `disabled`` - No backup will be performed
-* `in-memory`` - the database schema and data are stored in memory. This is the fastest backup strategy, but the backup is not persisted across pod restarts, so no manual intervention is possible in case the automatic DB recovery fails after a failed DB migration. Adequate memory resources should be allocated to the ZenML server pod when using this backup strategy with larger databases. This is the default backup strategy.
-* `dump-file` - the database schema and data are dumped to a file local to the database initialization and upgrade job container. Users may optionally configure a persistent volume where the dump file will be stored by setting both the `backupStorageClass` and `backupStorageSize` options. If a persistent volume is not configured, the dump file will be stored in an emptyDir volume, which is not persisted.
+* `disabled` - no backup is performed
+* `in-memory` - the database schema and data are stored in memory. This is the fastest backup strategy, but the backup is not persisted across pod restarts, so no manual intervention is possible in case the automatic DB recovery fails after a failed DB migration. Adequate memory resources should be allocated to the ZenML server pod when using this backup strategy with larger databases. This is the default backup strategy.
+* `database` - the database is copied to a backup database in the same database server. This requires the `backupDatabase` option to be set to the name of the backup database. This backup strategy is only supported for MySQL compatible databases and the user specified in the database URL must have permissions to manage (create, drop, and modify) the backup database in addition to the main database.
+* `dump-file` - the database schema and data are dumped to a file local to the database initialization and upgrade job. Users may optionally configure a persistent volume where the dump file will be stored by setting the `backupPVStorageSize` and optionally the `backupPVStorageClass` options. If a persistent volume is not configured, the dump file will be stored in an emptyDir volume, which is not persisted. If configured, the user is responsible for deleting the resulting PVC when uninstalling the Helm release.
 
 > **NOTE:** You should also set the `podSecurityContext.fsGroup` option if you are using a persistent volume to store the dump file.
 
-* database - the database is copied to a backup database in the same database server. This requires the `backupDatabase` option to be set to the name of the backup database. This backup strategy is only supported for MySQL compatible databases and the user specified in the database URL must have permissions to manage (create, drop, and modify) the backup database in addition to the main database.
+The following additional rules are applied concerning the creation and lifetime of the backup:
+
+* a backup is not attempted if the database doesn't need to undergo a migration (e.g. when the ZenML server is upgraded to a new version that doesn't require a database schema change or if the ZenML version doesn't change at all).
+* a backup file or database is created before every database migration attempt (i.e. during every Helm upgrade). If a backup already exists (i.e. persisted in a persistent volume or backup database), it is overwritten.
+* the persistent backup file or database is cleaned up after the migration is completed successfully or if the database doesn't need to undergo a migration. This includes backups created by previous failed migration attempts.
+* the persistent backup file or database is NOT cleaned up after a failed migration. This allows the user to manually inspect and/or apply the backup if the automatic recovery fails.
 
 The following example shows how to configure the ZenML server to use a persistent volume to store the database dump file:
 
@@ -695,8 +705,10 @@ The following example shows how to configure the ZenML server to use a persisten
 
     # Configure the database backup strategy
     backupStrategy: dump-file
-    backupStorageClass: standard
-    backupStorageSize: 1Gi
+    backupPVStorageSize: 1Gi
+
+podSecurityContext:
+  fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
 ```
 
 <!-- For scarf -->

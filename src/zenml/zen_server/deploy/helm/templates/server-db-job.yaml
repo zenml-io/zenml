@@ -10,7 +10,7 @@ metadata:
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": before-hook-creation{{ if not .Values.zenml.debug }},hook-succeeded{{ end }}
 spec:
-  backoffLimit: 2
+  backoffLimit: 0
   template:
     metadata:
       annotations:
@@ -37,8 +37,8 @@ spec:
       volumes:
         # define a volume that will hold a backup of the database
         - name: db-backup
-        # if a storage class is set, then use a pvc
-        {{- if .Values.zenml.database.backupStorageClass }}
+        # if a storage PVC is configured, then use it
+        {{- if .Values.zenml.database.backupPVStorageSize }}
           persistentVolumeClaim:
             claimName: {{ include "zenml.fullname" . }}-db-backup
         {{- else }}
