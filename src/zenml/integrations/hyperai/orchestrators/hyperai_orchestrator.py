@@ -216,7 +216,6 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
             scp_client.close()
 
-
         # Run docker-compose file
         stdin, stdout, stderr = paramiko_client.exec_command(
             f"cd {directory_name} && docker compose up"
