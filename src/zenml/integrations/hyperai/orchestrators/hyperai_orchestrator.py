@@ -55,6 +55,15 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
     """
 
     @property
+    def config(self) -> HyperAIOrchestratorConfig:
+        """Returns the `HyperAIOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(HyperAIOrchestratorConfig, self._config)
+
+    @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Local Docker orchestrator.
 
@@ -135,7 +144,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 ),
                 "environment": environment,
                 "volumes": [
-                    f"{GlobalConfiguration().local_stores_path}:{GlobalConfiguration().local_stores_path}"
+                    
                 ],
             }
 
