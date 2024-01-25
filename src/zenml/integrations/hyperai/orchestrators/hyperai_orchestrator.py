@@ -53,6 +53,40 @@ logger = get_logger(__name__)
 ENV_ZENML_HYPERAI_RUN_ID = "ZENML_HYPERAI_ORCHESTRATOR_RUN_ID"
 
 
+
+
+class HyperAIOrchestratorSettings(BaseSettings):
+    """HyperAI orchestrator settings.
+
+    Attributes:
+        mounts_from_to: A dictionary mapping from paths on the HyperAI instance
+            to paths within the Docker container. This allows users to mount
+            directories from the HyperAI instance into the Docker container that runs
+            on it.
+    """
+
+    mounts_from_to: Dict[str, str] = {}
+
+
+class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseOrchestratorConfig, HyperAIOrchestratorSettings
+):
+    """HyperAI orchestrator config."""
+
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        This designation is used to determine if the stack component can be
+        used with a local ZenML database or if it requires a remote ZenML
+        server.
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
+        return True
+
+
 class HyperAIOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines on HyperAI instances.
     """
@@ -237,38 +271,6 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         stdin, stdout, stderr = paramiko_client.exec_command(
             f"cd {directory_name} && docker compose up"
         )
-
-
-class HyperAIOrchestratorSettings(BaseSettings):
-    """HyperAI orchestrator settings.
-
-    Attributes:
-        mounts_from_to: A dictionary mapping from paths on the HyperAI instance
-            to paths within the Docker container. This allows users to mount
-            directories from the HyperAI instance into the Docker container that runs
-            on it.
-    """
-
-    mounts_from_to: Dict[str, str] = {}
-
-
-class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    BaseOrchestratorConfig, HyperAIOrchestratorSettings
-):
-    """HyperAI orchestrator config."""
-
-    @property
-    def is_remote(self) -> bool:
-        """Checks if this stack component is running remotely.
-
-        This designation is used to determine if the stack component can be
-        used with a local ZenML database or if it requires a remote ZenML
-        server.
-
-        Returns:
-            True if this config is for a remote component, False otherwise.
-        """
-        return True
 
 
 class HyperAIOrchestratorFlavor(BaseOrchestratorFlavor):
