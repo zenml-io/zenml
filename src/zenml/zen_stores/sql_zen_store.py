@@ -795,10 +795,10 @@ class SqlZenStore(BaseZenStore):
             Callable[
                 [
                     Session,
-                    Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+                    Union[Select[Any], SelectOfScalar[Any]],
                     BaseFilter,
                 ],
-                List[AnySchema],
+                List[Any],
             ]
         ] = None,
         hydrate: bool = False,
@@ -833,8 +833,10 @@ class SqlZenStore(BaseZenStore):
         query = filter_model.apply_filter(query=query, table=table)
 
         # Get the total amount of items in the database for a given query
+        custom_fetch_result: Optional[List[Any]] = None
         if custom_fetch:
-            total = len(custom_fetch(session, query, filter_model))
+            custom_fetch_result = custom_fetch(session, query, filter_model)
+            total = len(custom_fetch_result)
         else:
             total = session.scalar(
                 select([func.count("*")]).select_from(
@@ -866,7 +868,8 @@ class SqlZenStore(BaseZenStore):
         # Get a page of the actual data
         item_schemas: List[AnySchema]
         if custom_fetch:
-            item_schemas = custom_fetch(session, query, filter_model)
+            assert custom_fetch_result is not None
+            item_schemas = custom_fetch_result
             # select the items in the current page
             item_schemas = item_schemas[
                 filter_model.offset : filter_model.offset + filter_model.size
@@ -2970,31 +2973,62 @@ class SqlZenStore(BaseZenStore):
         """
 
         def _custom_conversion(
-            name: str,
+            row: Tuple[str, UUID, str],
         ) -> PipelineNamespaceResponse:
-            runs = self.list_runs(
-                PipelineRunFilter(
-                    sort_by="desc:created", size=1, pipeline_name=name
-                )
+            name, latest_run_id, latest_run_status = row
+
+            body = PipelineNamespaceResponseBody(
+                latest_run_id=latest_run_id,
+                latest_run_status=latest_run_status,
             )
-            if runs.items:
-                run = runs[0]
-                body = PipelineNamespaceResponseBody(
-                    latest_run_id=run.id, latest_run_status=run.status
-                )
-            else:
-                body = PipelineNamespaceResponseBody()
 
             return PipelineNamespaceResponse(id=uuid4(), name=name, body=body)
 
+        def _custom_fetch(
+            session: Session,
+            query: Union[Select[Any], SelectOfScalar[Any]],
+            filter: BaseFilter,
+        ) -> List[Any]:
+            return session.exec(query).unique().all()
+
         with Session(self.engine) as session:
-            query = select(PipelineSchema.name).distinct()
+            max_date_subquery = (
+                select(  # type: ignore[call-overload]
+                    PipelineSchema.name,
+                    func.max(PipelineRunSchema.created).label("max_created"),
+                )
+                .outerjoin(
+                    PipelineRunSchema,
+                    PipelineSchema.id == PipelineRunSchema.pipeline_id,
+                )
+                .group_by(PipelineSchema.name)
+                .subquery()
+            )
+
+            query = (
+                select(
+                    max_date_subquery.c.name,
+                    PipelineRunSchema.id,
+                    PipelineRunSchema.status,
+                )
+                .outerjoin(
+                    PipelineSchema,
+                    PipelineSchema.name == max_date_subquery.c.name,
+                )
+                .outerjoin(
+                    PipelineRunSchema,
+                    PipelineRunSchema.created
+                    == max_date_subquery.c.max_created,
+                )
+            )
+
             return self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=PipelineSchema,
                 filter_model=filter_model,
                 hydrate=hydrate,
+                custom_fetch=_custom_fetch,
                 custom_schema_to_model_conversion=_custom_conversion,
             )
 
