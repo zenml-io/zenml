@@ -31,6 +31,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.container_registries import BaseContainerRegistry
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.hyperai import (
@@ -79,10 +80,10 @@ class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyda
             automatically log in to the container registry specified in the stack
             configuration on the HyperAI instance. This is useful if the container
             registry requires authentication and the HyperAI instance has not been
-            manually logged in to the container registry.
+            manually logged in to the container registry. Defaults to `True`.
     
     """
-    container_registry_autologin: bool = False
+    container_registry_autologin: bool = True
 
     @property
     def is_remote(self) -> bool:
@@ -268,21 +269,32 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         container_registry_autologin = self.config.container_registry_autologin
         if container_registry_autologin:
             logger.info("Attempting to automatically log in to container registry used by stack.")
-            container_registry = stack.get_component(
-                StackComponentType.CONTAINER_REGISTRY
-            )
+            
+            # Select stack container registry
+            container_registry = None
+            for component in stack.components.values():
+                if isinstance(component, BaseContainerRegistry):
+                    container_registry = component
+                    break
+            
+            # Raise error if no container registry is found
             if not container_registry:
                 raise RuntimeError(
                     "Unable to find container registry in stack."
                 )
-            container_registry_username = container_registry.config.username
-            container_registry_password = container_registry.config.password
-            container_registry_url = container_registry.config.url
 
-            # Log in to container registry
+            # Get container registry credentials from its config
+            container_registry_url = container_registry.config.uri
+            container_registry_username, container_registry_password = container_registry.credentials
+
+            # Log in to container registry using --password-stdin
             stdin, stdout, stderr = paramiko_client.exec_command(
-                f"docker login -u {container_registry_username} -p {container_registry_password} {container_registry_url}"
+                f"docker login -u {container_registry_username} --password-stdin {container_registry_url} <<< {container_registry_password}"
             )
+
+            # Log stdout
+            for line in stdout.readlines():
+                logger.info(line)
 
         # Set up pipeline-runs directory if it doesn't exist
         nonscheduled_directory_name = "/home/zenml/pipeline-runs"
