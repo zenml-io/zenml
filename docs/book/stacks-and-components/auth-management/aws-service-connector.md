@@ -4,6 +4,11 @@ description: >-
   buckets, EKS Kubernetes clusters and ECR container registries.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # AWS Service Connector
 
 The ZenML AWS Service Connector facilitates the authentication and access to managed AWS services and resources. These encompass a range of resources, including S3 buckets, ECR container repositories, and EKS clusters. The connector provides support for various authentication methods, including explicit long-lived AWS secret keys, IAM roles, short-lived STS tokens, and implicit authentication.
