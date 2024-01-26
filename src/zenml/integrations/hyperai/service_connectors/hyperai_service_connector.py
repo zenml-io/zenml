@@ -77,7 +77,10 @@ class HyperAIConfiguration(HyperAICredentials):
 class HyperAIAuthenticationMethods(StrEnum):
     """HyperAI Authentication methods."""
 
-    KEY_OPTIONAL_PASSPHRASE = "ssh-key"
+    RSA_KEY_OPTIONAL_PASSPHRASE = "rsa-key"
+    DSA_KEY_OPTIONAL_PASSPHRASE = "dsa-key"
+    ECDSA_KEY_OPTIONAL_PASSPHRASE = "ecdsa-key"
+    ED25519_KEY_OPTIONAL_PASSPHRASE = "ed25519-key"
 
 
 HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
@@ -98,15 +101,45 @@ Docker and Docker Compose must be installed on the HyperAI instance.
     emoji=":robot_face:",
     auth_methods=[
         AuthenticationMethodModel(
-            name="SSH key with optional passphrase",
-            auth_method=HyperAIAuthenticationMethods.KEY_OPTIONAL_PASSPHRASE,
+            name="RSA key with optional passphrase",
+            auth_method=HyperAIAuthenticationMethods.RSA_KEY_OPTIONAL_PASSPHRASE,
             description="""
-Use an SSH key to authenticate with a HyperAI instance. The key may be
+Use an RSA key to authenticate with a HyperAI instance. The key may be
 encrypted with a passphrase. If the key is encrypted, the passphrase must be
 provided.
 """,
             config_class=HyperAIConfiguration,
         ),
+        AuthenticationMethodModel(
+            name="DSA/DSS key with optional passphrase",
+            auth_method=HyperAIAuthenticationMethods.DSA_KEY_OPTIONAL_PASSPHRASE,
+            description="""
+Use a DSA/DSS key to authenticate with a HyperAI instance. The key may be
+encrypted with a passphrase. If the key is encrypted, the passphrase must be
+provided.
+""",
+            config_class=HyperAIConfiguration,
+        ),
+        AuthenticationMethodModel(
+            name="ECDSA key with optional passphrase",
+            auth_method=HyperAIAuthenticationMethods.ECDSA_KEY_OPTIONAL_PASSPHRASE,
+            description="""
+Use an ECDSA key to authenticate with a HyperAI instance. The key may be
+encrypted with a passphrase. If the key is encrypted, the passphrase must be
+provided.
+""",
+            config_class=HyperAIConfiguration,
+        ),
+        AuthenticationMethodModel(
+            name="Ed25519 key with optional passphrase",
+            auth_method=HyperAIAuthenticationMethods.ED25519_KEY_OPTIONAL_PASSPHRASE,
+            description="""
+Use an Ed25519 key to authenticate with a HyperAI instance. The key may be
+encrypted with a passphrase. If the key is encrypted, the passphrase must be
+provided.
+""",
+            config_class=HyperAIConfiguration,
+        )
     ],
     resource_types=[
         ResourceTypeModel(
