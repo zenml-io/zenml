@@ -66,6 +66,21 @@ class PluginFlavorRegistry:
         """
         return list(self.plugin_flavors[flavor_name].keys())
 
+    def available_flavors_for_type(self, type_name: str) -> List[str]:
+        """Returns all available flavors for a given type.
+
+        Args:
+            type_name: The type_name.
+
+        Returns:
+            A list of available plugin flavors for this type.
+        """
+        return [
+            flavor
+            for flavor, types in self.plugin_flavors.items()
+            if type_name in types
+        ]
+
     @property
     def _builtin_flavors(self) -> List[Type["BasePluginFlavor"]]:
         """A list of all default in-built flavors.

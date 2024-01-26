@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 """Abstract BaseEvent class that all Event implementations must implement."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, List, Type
+from typing import TYPE_CHECKING, List, Type
 from uuid import UUID
 
-from zenml.enums import PluginType
 from zenml.event_sources.base_event_source_plugin import (
     BaseEvent,
     BaseEventSourcePlugin,
@@ -58,15 +57,13 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
     """Base implementation for all Webhook event sources."""
 
     @property
+    @abstractmethod
     def config_class(self) -> Type[WebhookEventSourceConfig]:
         """Returns the `BasePluginConfig` config.
 
         Returns:
             The configuration.
         """
-        return WebhookEventSourceConfig
-
-    """Abstract BaseEvent class that all Webhook Listeners need to implement."""
 
     def create_event_source(
         self, event_source_request: EventSourceRequest
@@ -135,5 +132,3 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
 
 class BaseWebhookEventPluginFlavor(BaseEventSourcePluginFlavor, ABC):
     """Base Event Plugin Flavor to access an event plugin along with its configurations."""
-
-    TYPE: ClassVar[PluginType] = PluginType.WEBHOOK_EVENT

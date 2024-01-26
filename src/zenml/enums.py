@@ -348,14 +348,8 @@ class MetadataResourceTypes(StrEnum):
     MODEL_VERSION = "model_version"
 
 
-class EventConfigurationType(StrEnum):
-    """All possible types an event configuration types."""
-
-    SOURCE = "SOURCE"
-    FILTER = "FILTER"
-
-
 class PluginType(StrEnum):
     """All possible types of Plugins."""
 
-    WEBHOOK_EVENT = "webhook_event_source"
+    EVENT_SOURCE = "event_source"
+    ACTION_PLAN = "action_plan"

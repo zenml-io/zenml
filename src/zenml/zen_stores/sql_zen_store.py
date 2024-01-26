@@ -62,8 +62,7 @@ from sqlmodel import (
 )
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
-from zenml.actions.action_flavor_registry import ActionFlavorRegistry
-from zenml.actions.base_action_flavor import ActionFlavorResponse
+from zenml.action_plans.base_action_plan_plugin import ActionFlavorResponse
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import analytics_disabler, track_decorator
 from zenml.config.global_config import GlobalConfiguration
@@ -84,6 +83,7 @@ from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
     ModelStages,
+    PluginType,
     SecretScope,
     SecretsStoreType,
     SorterOps,
@@ -92,6 +92,9 @@ from zenml.enums import (
     StepRunOutputArtifactType,
     StoreType,
     TaggableResourceTypes,
+)
+from zenml.event_sources.base_event_source_plugin import (
+    EventFlavorResponse,
 )
 from zenml.event_sources.utils import (
     fail_if_invalid_event_filter_configuration,
@@ -234,6 +237,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.component import InternalComponentRequest
 from zenml.models.v2.core.stack import InternalStackRequest
+from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -1187,25 +1191,26 @@ class SqlZenStore(BaseZenStore):
         """
         try:
             return (
-                ActionFlavorRegistry()
-                .get_action_flavor(flavor_name)()
-                .to_model()
+                PluginFlavorRegistry()
+                .get_flavor_class(
+                    name=flavor_name, _type=PluginType.EVENT_SOURCE
+                )
+                .get_plugin_flavor_response_model()
             )
         except KeyError:
             raise KeyError("No action flavor by that name exists.")
 
     def list_action_flavors(
         self,
-    ) -> List[ActionFlavorResponse]:
+    ) -> List[str]:
         """List all action flavors matching the given filter criteria.
 
         Returns:
             A list of all action flavors.
         """
-        return [
-            f().to_model()
-            for _, f in ActionFlavorRegistry().action_flavors.items()
-        ]
+        return PluginFlavorRegistry().available_flavors_for_type(
+            type_name=PluginType.ACTION_PLAN
+        )
 
     # ------------------------- API Keys -------------------------
 
@@ -2720,6 +2725,46 @@ class SqlZenStore(BaseZenStore):
                 ):
                     session.delete(device)
             session.commit()
+
+    # -------------------- Event Flavors --------------------
+
+    def get_event_flavor(
+        self,
+        flavor_name: str,
+    ) -> EventFlavorResponse:
+        """Get an event flavor by its name.
+
+        Args:
+            flavor_name: The name of the flavor to get.
+
+        Returns:
+            The event flavor.
+
+        Raises:
+            KeyError: if the event flavor doesn't exist.
+        """
+        try:
+            return (
+                PluginFlavorRegistry()
+                .get_flavor_class(
+                    name=flavor_name, _type=PluginType.EVENT_SOURCE
+                )
+                .get_plugin_flavor_response_model()
+            )
+        except KeyError:
+            raise KeyError("No action flavor by that name exists.")
+
+    def list_event_flavors(
+        self,
+    ) -> List[str]:
+        """List all event flavors matching the given filter criteria.
+
+        Returns:
+            A list of all event flavors.
+        """
+        return PluginFlavorRegistry().available_flavors_for_type(
+            type_name=PluginType.EVENT_SOURCE
+        )
 
     # ----------------------------- Flavors -----------------------------
 
@@ -6819,12 +6864,12 @@ class SqlZenStore(BaseZenStore):
             table = UserSchema.metadata.tables[target_schema.__tablename__]
             foreign_key_attr = None
             for fk in table.foreign_keys:
-                if fk.column.table.get_name != UserSchema.__tablename__:
+                if fk.column.table.name != UserSchema.__tablename__:
                     continue
-                if fk.column.get_name != "id":
+                if fk.column.name != "id":
                     continue
                 assert fk.parent is not None
-                foreign_key_attr = fk.parent.get_name
+                foreign_key_attr = fk.parent.name
                 break
 
             assert foreign_key_attr is not None

@@ -35,7 +35,7 @@ class GitHubIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.github.plugin_flavors import GithubWebhookEventSourceFlavor
+        from zenml.integrations.github.plugins import GithubWebhookEventSourceFlavor
 
         return [GithubWebhookEventSourceFlavor]
 

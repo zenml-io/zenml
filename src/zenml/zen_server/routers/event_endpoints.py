@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for event sources."""
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -22,7 +23,8 @@ from zenml import (
     EventSourceUpdate,
     Page,
 )
-from zenml.constants import API, EVENT_SOURCES, VERSION_1
+from zenml.constants import API, EVENT_FLAVORS, EVENT_SOURCES, VERSION_1
+from zenml.event_sources.base_event_source_plugin import EventFlavorResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -43,6 +45,52 @@ event_source_router = APIRouter(
     tags=["event-sources"],
     responses={401: error_response, 403: error_response},
 )
+flavor_router = APIRouter(
+    prefix=API + VERSION_1 + EVENT_FLAVORS,
+    tags=["event-flavors"],
+    responses={401: error_response, 403: error_response},
+)
+
+# -------------------- Event Flavors --------------------
+
+
+@flavor_router.get(
+    "",
+    response_model=List[str],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_event_source_flavors(
+    _: AuthContext = Security(authorize),
+) -> List[str]:
+    """Returns all event flavors.
+
+    Returns:
+        All flavors.
+    """
+    return zen_store().list_event_flavors()
+
+
+@flavor_router.get(
+    "/{flavor_name}",
+    response_model=EventFlavorResponse,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_event_source_flavor(
+    flavor_name: str,
+    _: AuthContext = Security(authorize),
+) -> EventFlavorResponse:
+    """Returns the requested flavor.
+
+    Args:
+        flavor_name: Name of the flavor.
+
+    Returns:
+        The requested stack.
+    """
+    return zen_store().get_event_flavor(flavor_name=flavor_name)
+
 
 # -------------------- Event Sources --------------------
 

@@ -45,11 +45,11 @@ def webhook(flavor_name: str, body: Dict[str, Any]):
     """
     try:
         plugin_cls = plugin_flavor_registry().get_plugin_implementation(
-            name=flavor_name, _type=PluginType.WEBHOOK_EVENT
+            name=flavor_name, _type=PluginType.EVENT_SOURCE
         )
     except KeyError as e:
         # TODO: raise the appropriate exception
         logger.exception(e)
     else:
-        assert issubclass(type(plugin_cls), BaseWebhookEventSourcePlugin)
+        assert isinstance(plugin_cls, BaseWebhookEventSourcePlugin)
         plugin_cls.process_event(body)

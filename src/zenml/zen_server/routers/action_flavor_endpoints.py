@@ -16,7 +16,7 @@ from typing import List
 
 from fastapi import APIRouter, Security
 
-from zenml.actions.base_action_flavor import ActionFlavorResponse
+from zenml.action_plans.base_action_plan_plugin import ActionFlavorResponse
 from zenml.constants import ACTIONS, API, VERSION_1
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response

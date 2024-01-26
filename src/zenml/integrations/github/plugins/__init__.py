@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Github event flavors."""
 
-from zenml.integrations.github.plugin_flavors.github_webhook_event_source_flavor import GithubWebhookEventSourceFlavor
+from zenml.integrations.github.plugins.github_webhook_event_source_flavor import GithubWebhookEventSourceFlavor
 __all__ = [
     "GithubWebhookEventSourceFlavor"
 ]

@@ -24,6 +24,7 @@ from typing import (
 
 from pydantic import BaseModel
 
+from zenml.enums import PluginType
 from zenml.models import EventSourceRequest, EventSourceResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
@@ -125,6 +126,8 @@ class EventFlavorResponse(BasePluginFlavorResponse):
 
 class BaseEventSourcePluginFlavor(BasePluginFlavor, ABC):
     """Base Event Plugin Flavor to access an event plugin along with its configurations."""
+
+    TYPE: ClassVar[PluginType] = PluginType.EVENT_SOURCE
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[Type[EventSourceConfig]]
