@@ -250,6 +250,26 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 "You must link a HyperAI service connector to the orchestrator."
             )
 
+        # Get container registry autologin setting
+        container_registry_autologin = self.config.container_registry_autologin
+        if container_registry_autologin:
+            logger.info("Attempting to automatically log in to container registry used by stack.")
+            container_registry = stack.get_component(
+                StackComponentType.CONTAINER_REGISTRY
+            )
+            if not container_registry:
+                raise RuntimeError(
+                    "Unable to find container registry in stack."
+                )
+            container_registry_username = container_registry.config.username
+            container_registry_password = container_registry.config.password
+            container_registry_url = container_registry.config.url
+
+            # Log in to container registry
+            stdin, stdout, stderr = paramiko_client.exec_command(
+                f"docker login -u {container_registry_username} -p {container_registry_password} {container_registry_url}"
+            )
+
         # Set up pipeline-runs directory if it doesn't exist
         nonscheduled_directory_name = "/home/zenml/pipeline-runs"
         directory_name = nonscheduled_directory_name if not deployment.schedule else "/home/zenml/scheduled-pipeline-runs"
