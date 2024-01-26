@@ -627,6 +627,8 @@ zenml service-connector list --name aws-sts-token
 
 Generates [temporary STS credentials](best-security-practices.md#impersonating-accounts-and-assuming-roles) by assuming an AWS IAM role.
 
+This authentication method still requires credentials to be explicitly configured. If your ZenML server is running in AWS and you're looking for an alternative that uses implicit credentials while at the same time benefits from all the security advantages of assuming an IAM role, you should [use the implicit authentication method with a configured IAM role](#implicit-authentication) instead.
+
 The connector needs to be configured with the IAM role to be assumed accompanied by an AWS secret key associated with an IAM user or an STS token associated with another IAM role. The IAM user or IAM role must have permission to assume the target IAM role. The connector will [generate temporary STS tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_assumerole).
 
 [The best practice implemented with this authentication scheme](best-security-practices.md#impersonating-accounts-and-assuming-roles) is to keep the set of permissions associated with the primary IAM user or IAM role down to the bare minimum and grant permissions to the privilege-bearing IAM role instead.

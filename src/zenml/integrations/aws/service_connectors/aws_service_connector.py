@@ -346,6 +346,12 @@ another IAM role. The IAM user or IAM role must have permissions to assume the
 target IAM role. The connector will generate temporary STS tokens upon
 request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole).
 
+This authentication method still requires credentials to be explicitly
+configured. If your ZenML server is running in AWS and you're looking for an
+alternative that uses implicit credentials while at the same time benefits from
+all the security advantages of assuming an IAM role, you should use the implicit
+authentication method with a configured IAM role instead.
+
 The best practice implemented with this authentication scheme is to keep the set
 of permissions associated with the primary IAM user or IAM role down to the bare
 minimum and grant permissions to the privilege bearing IAM role instead.
