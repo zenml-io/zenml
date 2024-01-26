@@ -201,10 +201,10 @@ class HyperAIServiceConnector(ServiceConnector):
             The Paramiko key type.
         """
         mapping = {
-            RSA_KEY_OPTIONAL_PASSPHRASE: paramiko.RSAKey,
-            DSA_KEY_OPTIONAL_PASSPHRASE: paramiko.DSSKey,
-            ECDSA_KEY_OPTIONAL_PASSPHRASE: paramiko.ECDSAKey,
-            ED25519_KEY_OPTIONAL_PASSPHRASE: paramiko.Ed25519Key,
+            HyperAIAuthenticationMethods.RSA_KEY_OPTIONAL_PASSPHRASE: paramiko.RSAKey,
+            HyperAIAuthenticationMethods.DSA_KEY_OPTIONAL_PASSPHRASE: paramiko.DSSKey,
+            HyperAIAuthenticationMethods.ECDSA_KEY_OPTIONAL_PASSPHRASE: paramiko.ECDSAKey,
+            HyperAIAuthenticationMethods.ED25519_KEY_OPTIONAL_PASSPHRASE: paramiko.Ed25519Key,
         }
 
         try:
@@ -272,7 +272,7 @@ class HyperAIServiceConnector(ServiceConnector):
         except paramiko.ssh_exception.AuthenticationException as e:
             logger.error("Authentication failed: %s", e)
         except paramiko.ssh_exception.SSHException as e:
-            logger.error("SSH error: %s", e)
+            logger.error("SSH error: %s. A common cause for this error is selection of the wrong key type in your service connector.", e)
         except Exception as e:
             logger.error("Unknown error: %s", e)
     
@@ -340,7 +340,7 @@ class HyperAIServiceConnector(ServiceConnector):
         except paramiko.ssh_exception.AuthenticationException as e:
             logger.error("Authentication failed: %s", e)
         except paramiko.ssh_exception.SSHException as e:
-            logger.error("SSH error: %s", e)
+            logger.error("SSH error: %s. A common cause for this error is selection of the wrong key type in your service connector.", e)
         except Exception as e:
             logger.error("Unknown error: %s", e)
 

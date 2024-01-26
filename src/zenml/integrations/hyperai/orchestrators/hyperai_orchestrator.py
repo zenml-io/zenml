@@ -244,7 +244,17 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         paramiko_client: paramiko.SSHClient
         if connector := self.get_connector():
             paramiko_client = connector.connect()
-            if not isinstance(paramiko_client, paramiko.SSHClient):
+            if isinstance(paramiko_client, None):
+                raise RuntimeError(
+                    "Expected to receive a `paramiko.SSHClient` object from the "
+                    "linked connector, but got `None`. This likely originates from "
+                    "a misconfigured service connector, typically caused by a wrong "
+                    "SSH key type being selected. Please check your "
+                    "`hyperai_orchestrator` configuration and make sure that the "
+                    "`ssh_key_type` of its connected service connector is set to the "
+                    "correct value."
+                )
+            elif not isinstance(paramiko_client, paramiko.SSHClient):
                 raise RuntimeError(
                     f"Expected to receive a `paramiko.SSHClient` object from the "
                     f"linked connector, but got type `{type(paramiko_client)}`."
