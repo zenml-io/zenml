@@ -193,6 +193,26 @@ class HyperAIServiceConnector(ServiceConnector):
 
         return f"{instance_name} (IP {ip_address})"
 
+
+    def _paramiko_key_type_given_auth_method(self) -> paramiko.PKey:
+        """Get the Paramiko key type given the authentication method.
+
+        Returns:
+            The Paramiko key type.
+        """
+        mapping = {
+            RSA_KEY_OPTIONAL_PASSPHRASE: paramiko.RSAKey,
+            DSA_KEY_OPTIONAL_PASSPHRASE: paramiko.DSSKey,
+            ECDSA_KEY_OPTIONAL_PASSPHRASE: paramiko.ECDSAKey,
+            ED25519_KEY_OPTIONAL_PASSPHRASE: paramiko.Ed25519Key,
+        }
+
+        try:
+            return mapping[self.auth_method]
+        except KeyError:
+            raise ValueError(f"Invalid authentication method: {self.auth_method}")
+
+
     def _authorize_client(
         self
     ) -> None:
@@ -229,7 +249,7 @@ class HyperAIServiceConnector(ServiceConnector):
                 with f.file as f_:
                     f_.write(ssh_key)
                     
-                paramiko_key = paramiko.Ed25519Key.from_private_key_file(
+                paramiko_key = self._paramiko_key_type_given_auth_method().from_private_key_file(
                     file_path,
                     password=ssh_passphrase
                 )
@@ -296,7 +316,7 @@ class HyperAIServiceConnector(ServiceConnector):
                 with f.file as f_:
                     f_.write(ssh_key)
                     
-                paramiko_key = paramiko.Ed25519Key.from_private_key_file(
+                paramiko_key = self._paramiko_key_type_given_auth_method().from_private_key_file(
                     file_path,
                     password=ssh_passphrase
                 )
