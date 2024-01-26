@@ -3,6 +3,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 mockers = [
+    "python_terraform",
     "aws_profile_manager",
     "azure.core.credentials",
     "azure.core.exceptions",
