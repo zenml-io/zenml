@@ -49,10 +49,10 @@ logger = get_logger(__name__)
 class HyperAICredentials(AuthenticationConfig):
     """HyperAI client authentication credentials."""
 
-    rsa_ssh_key: SecretStr = Field(
+    base64_ssh_key: SecretStr = Field(
         title="SSH key (base64)",
     )
-    rsa_ssh_key_passphrase: Optional[SecretStr] = Field(
+    ssh_passphrase: Optional[SecretStr] = Field(
         default=None,
         title="SSH key passphrase",
     )
@@ -219,16 +219,16 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         logger.info("Verifying connection to HyperAI instance...")
 
-        if self.config.rsa_ssh_key_passphrase is None:
-            rsa_ssh_key_passphrase = None
+        if self.config.ssh_passphrase is None:
+            ssh_passphrase = None
         else:
-            rsa_ssh_key_passphrase = self.config.rsa_ssh_key_passphrase.get_secret_value()
+            ssh_passphrase = self.config.ssh_passphrase.get_secret_value()
 
         # Connect to the HyperAI instance
         try:
 
             # Convert the SSH key from base64 to string
-            base64_key_value = self.config.rsa_ssh_key.get_secret_value()
+            base64_key_value = self.config.base64_ssh_key.get_secret_value()
             ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
             paramiko_key = None
 
@@ -244,7 +244,7 @@ class HyperAIServiceConnector(ServiceConnector):
                     
                 paramiko_key = paramiko.Ed25519Key.from_private_key_file(
                     file_path,
-                    password=rsa_ssh_key_passphrase
+                    password=ssh_passphrase
                 )
 
             # Trim whitespace from the IP address
@@ -286,16 +286,16 @@ class HyperAIServiceConnector(ServiceConnector):
         logger.info("Connecting to HyperAI instance...")
         assert self.resource_id is not None
 
-        if self.config.rsa_ssh_key_passphrase is None:
-            rsa_ssh_key_passphrase = None
+        if self.config.ssh_passphrase is None:
+            ssh_passphrase = None
         else:
-            rsa_ssh_key_passphrase = self.config.rsa_ssh_key_passphrase.get_secret_value()
+            ssh_passphrase = self.config.ssh_passphrase.get_secret_value()
 
         # Connect to the HyperAI instance
         try:
 
             # Convert the SSH key from base64 to string
-            base64_key_value = self.config.rsa_ssh_key.get_secret_value()
+            base64_key_value = self.config.base64_ssh_key.get_secret_value()
             ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
             paramiko_key = None
 
@@ -311,7 +311,7 @@ class HyperAIServiceConnector(ServiceConnector):
                     
                 paramiko_key = paramiko.Ed25519Key.from_private_key_file(
                     file_path,
-                    password=rsa_ssh_key_passphrase
+                    password=ssh_passphrase
                 )
 
             # Trim whitespace from the IP address
