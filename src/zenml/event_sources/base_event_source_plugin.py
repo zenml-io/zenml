@@ -19,12 +19,15 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    List,
     Type,
 )
+from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml.enums import PluginType
+from zenml.logger import get_logger
 from zenml.models import EventSourceRequest, EventSourceResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
@@ -36,6 +39,7 @@ from zenml.plugins.base_plugin_flavor import (
 if TYPE_CHECKING:
     pass
 
+logger = get_logger(__name__)
 
 # -------------------- Event Models -----------------------------------
 
@@ -83,7 +87,6 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         """
         return EventSourceConfig
 
-    @abstractmethod
     def create_event_source(
         self, event_source: EventSourceRequest
     ) -> EventSourceResponse:
@@ -101,7 +104,23 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         self._fail_if_event_source_configuration_invalid(
             event_source=event_source
         )
-        return self.zen_store.create_event_source(event_source=event_source)
+        return self._create_event_source(event_source=event_source)
+
+    @abstractmethod
+    def _create_event_source(
+        self, event_source: EventSourceRequest
+    ) -> EventSourceResponse:
+        """Wraps the zen_store creation method for plugin specific functionality.
+
+        All implementation of the BaseEventSource can overwrite this method to add
+        implementation specific functionality.
+
+        Args:
+            event_source: Request model for the event source.
+
+        Returns:
+            The created event source.
+        """
 
     def _fail_if_event_source_configuration_invalid(
         self, event_source: EventSourceRequest
@@ -112,6 +131,52 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
             raise ValueError("Invalid Configuration.")
         else:
             return
+
+    def process_event(self, event: BaseEvent):
+        """Process the incoming event and forward with trigger_ids to event hub.
+
+        Args:
+            event: THe inbound event.
+        """
+        # narrow down to all sources that relate to the repo that
+        #  is responsible for the event
+        event_source_ids = self._get_all_relevant_event_sources(
+            event=event,
+        )
+
+        # get all triggers that have matching event filters configured
+        if event_source_ids:
+            trigger_ids = self._get_matching_triggers(
+                event_source_ids=event_source_ids, event=event
+            )
+            # TODO: Forward the event together with the list of trigger ids
+            #  over to the EventHub
+            logger.info(
+                "An event came in and will be forwarded to "
+                "the following subscriber %s",
+                trigger_ids,
+            )
+
+    @abstractmethod
+    def _get_all_relevant_event_sources(self, event: BaseEvent) -> List[UUID]:
+        """Filter Event Sources for flavor and flavor specific properties.
+
+        Args:
+            event: The inbound Event.
+
+        Returns: A list of all matching Event Source IDs.
+        """
+
+    @abstractmethod
+    def _get_matching_triggers(
+        self, event_source_ids: List[UUID], event: BaseEvent
+    ) -> List[UUID]:
+        """Get all Triggers with matching event filters.
+
+        Args:
+            event_source_ids: All matching event source ids.
+            event: The inbound Event.
+        """
 
 
 # -------------------- Flavors ----------------------------------

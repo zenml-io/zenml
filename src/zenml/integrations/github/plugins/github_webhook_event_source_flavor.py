@@ -14,9 +14,8 @@
 """Example file of what an event Plugin could look like."""
 from typing import ClassVar, Type
 
-from zenml.enums import PluginType
 from zenml.event_sources.webhooks.base_webhook_event_plugin import (
-    BaseWebhookEventPluginFlavor,
+    BaseWebhookEventSourcePluginFlavor,
 )
 from zenml.integrations.github import GITHUB_EVENT_FLAVOR
 from zenml.integrations.github.plugins.event_sources.github_webhook_event_source import (
@@ -26,7 +25,7 @@ from zenml.integrations.github.plugins.event_sources.github_webhook_event_source
 )
 
 
-class GithubWebhookEventSourceFlavor(BaseWebhookEventPluginFlavor):
+class GithubWebhookEventSourceFlavor(BaseWebhookEventSourcePluginFlavor):
     """Enables users to configure github event sources."""
 
     FLAVOR: ClassVar[str] = GITHUB_EVENT_FLAVOR

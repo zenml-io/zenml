@@ -34,30 +34,30 @@ if TYPE_CHECKING:
 # -------------------- Event Models -----------------------------------
 
 
-class BaseWebhookEvent(BaseEvent):
-    """Base class for all inbound events."""
+class BaseScheduleEvent(BaseEvent):
+    """Base class for all schedule events."""
 
 
 # -------------------- Configuration Models ----------------------------------
 
 
-class WebhookEventSourceConfig(EventSourceConfig):
+class ScheduleEventSourceConfig(EventSourceConfig):
     """The Event Source configuration."""
 
 
-class WebhookEventFilterConfig(EventFilterConfig):
+class ScheduleEventFilterConfig(EventFilterConfig):
     """The Event Filter configuration."""
 
 
 # -------------------- Plugin -----------------------------------
 
 
-class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
+class BaseScheduleEventSourcePlugin(BaseEventSourcePlugin, ABC):
     """Base implementation for all Webhook event sources."""
 
     @property
     @abstractmethod
-    def config_class(self) -> Type[WebhookEventSourceConfig]:
+    def config_class(self) -> Type[ScheduleEventSourceConfig]:
         """Returns the `BasePluginConfig` config.
 
         Returns:
@@ -68,20 +68,16 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
         self, event_source_request: EventSourceRequest
     ) -> EventSourceResponse:
         """Wraps the zen_store creation method to add plugin specific functionality."""
-        secret_key_value = (
-            "something"  # TODO: this needs to actually create a zenml secret
-        )
-        print("Implementation not done:", secret_key_value)
-        # event_source_request.secret_id = ... # Here we add the secret_id to the event_source
+        # Implementations will be able to actually configure an external CronJobs
+        #  before storing them in the database
         created_event_source = self.zen_store.create_event_source(
             event_source=event_source_request
         )
-        # created_event_source.secret_value = ...
         return created_event_source
 
 
 # -------------------- Flavors ----------------------------------
 
 
-class BaseWebhookEventSourcePluginFlavor(BaseEventSourcePluginFlavor, ABC):
+class BaseScheduleEventSourcePluginFlavor(BaseEventSourcePluginFlavor, ABC):
     """Base Event Plugin Flavor to access an event plugin along with its configurations."""
