@@ -29,6 +29,7 @@ from zenml.constants import (
 from zenml.enums import ServerProviderType
 from zenml.exceptions import OAuthError
 from zenml.logger import get_logger
+from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.deploy.deployment import ServerDeployment
 from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
@@ -41,6 +42,7 @@ logger = get_logger(__name__)
 
 _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
+_plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -73,6 +75,21 @@ def rbac() -> RBACInterface:
     return _rbac
 
 
+def plugin_flavor_registry() -> PluginFlavorRegistry:
+    """Returns the fully initialized plugin flavor registry.
+
+    Raises:
+        RuntimeError: If the Plugin Flavor component is not initialized.
+
+    Returns:
+        The Plugin Flavor component.
+    """
+    global _plugin_flavor_registry
+    if _plugin_flavor_registry is None:
+        raise RuntimeError("PluginFlavorRegistry not initialized")
+    return _plugin_flavor_registry
+
+
 def initialize_rbac() -> None:
     """Initialize the RBAC component."""
     global _rbac
@@ -84,6 +101,13 @@ def initialize_rbac() -> None:
             rbac_source, expected_class=RBACInterface
         )
         _rbac = implementation_class()
+
+
+def initialize_plugins() -> None:
+    """Initialize the event plugins registry."""
+    global _plugin_flavor_registry
+    _plugin_flavor_registry = PluginFlavorRegistry()
+    _plugin_flavor_registry.initialize_plugins(zen_store())
 
 
 def initialize_zen_store() -> None:

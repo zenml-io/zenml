@@ -48,6 +48,7 @@ from zenml.constants import (
     WORKSPACES,
 )
 from zenml.enums import MetadataResourceTypes
+from zenml.event_sources.base_event_source_plugin import BaseEventSourcePlugin
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     CodeRepositoryFilter,
@@ -113,6 +114,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    plugin_flavor_registry,
     zen_store,
 )
 
@@ -462,10 +464,17 @@ def create_event_source(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
+    # TODO: Validate that teh flavor and plugin_type correspond to an event source implementation
+
+    plugin_impl = plugin_flavor_registry().get_plugin_implementation(
+        event_source.flavor, event_source.plugin_type
+    )
+
+    assert issubclass(type(plugin_impl), BaseEventSourcePlugin)  # We know this
     return verify_permissions_and_create_entity(
         request_model=event_source,
         resource_type=ResourceType.EVENT_SOURCE,
-        create_method=zen_store().create_event_source,
+        create_method=plugin_impl.create_event_source,
     )
 
 

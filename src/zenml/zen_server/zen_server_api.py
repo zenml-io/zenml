@@ -16,7 +16,7 @@ import os
 from asyncio.log import logger
 from typing import Any, List
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,9 +27,8 @@ from starlette.responses import FileResponse
 
 import zenml
 from zenml.analytics import source_context
-from zenml.constants import API, HEALTH, VERSION_1, WEBHOOKS
+from zenml.constants import API, HEALTH
 from zenml.enums import AuthScheme, SourceContextTypes
-from zenml.events.event_flavor_registry import EventFlavorRegistry
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     action_flavor_endpoints,
@@ -45,6 +44,7 @@ from zenml.zen_server.routers import (
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
     pipelines_endpoints,
+    plugin_endpoints,
     run_metadata_endpoints,
     runs_endpoints,
     schedule_endpoints,
@@ -58,9 +58,11 @@ from zenml.zen_server.routers import (
     tags_endpoints,
     triggers_endpoints,
     users_endpoints,
+    webhook_endpoints,
     workspaces_endpoints,
 )
 from zenml.zen_server.utils import (
+    initialize_plugins,
     initialize_rbac,
     initialize_zen_store,
     server_config,
@@ -155,6 +157,7 @@ def initialize() -> None:
     # race conditions
     initialize_zen_store()
     initialize_rbac()
+    initialize_plugins()
 
 
 app.mount(
@@ -210,7 +213,7 @@ app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
 app.include_router(devices_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
-app.include_router(event_endpoints.flavor_router)
+app.include_router(plugin_endpoints.plugin_router)
 app.include_router(event_endpoints.event_source_router)
 app.include_router(flavors_endpoints.router)
 app.include_router(models_endpoints.router)
@@ -237,22 +240,13 @@ app.include_router(tags_endpoints.router)
 app.include_router(triggers_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
+app.include_router(webhook_endpoints.router)
 app.include_router(workspaces_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.
 if server_config().auth_scheme != AuthScheme.EXTERNAL:
     app.include_router(users_endpoints.activation_router)
-
-
-webhooks_router = APIRouter(
-    prefix=API + VERSION_1 + WEBHOOKS, tags=["webhooks"]
-)
-
-for _, event in EventFlavorRegistry().get_all_event_flavors().items():
-    event.register_endpoint(webhooks_router)
-
-app.include_router(webhooks_router)
 
 
 def get_root_static_files() -> List[str]:

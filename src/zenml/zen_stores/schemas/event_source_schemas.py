@@ -20,12 +20,10 @@ from uuid import UUID
 
 from pydantic import Field
 from pydantic.json import pydantic_encoder
-from sqlalchemy import TEXT, Column, String
-from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy import TEXT, Column
 from sqlmodel import Relationship
 
 from zenml import EventSourceResponseMetadata
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
     EventSourceRequest,
     EventSourceResponse,
@@ -71,6 +69,7 @@ class EventSourceSchema(NamedSchema, table=True):
     )
 
     flavor: str = Field(nullable=False)
+    plugin_type: str = Field(nullable=False)
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
     configuration: bytes
@@ -89,6 +88,7 @@ class EventSourceSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             flavor=request.flavor,
+            plugin_type=request.plugin_type,
             name=request.name,
             description=request.description,
             configuration=base64.b64encode(
@@ -128,6 +128,7 @@ class EventSourceSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             flavor=self.flavor,
+            plugin_type=self.plugin_type,
             body=body,
             metadata=metadata,
         )
@@ -146,6 +147,8 @@ class EventSourceSchema(NamedSchema, table=True):
                 self.configuration = base64.b64encode(
                     json.dumps(update.configuration).encode("utf-8")
                 )
+            elif field in ["flavor", "plugin_type"]:
+                pass
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()

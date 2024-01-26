@@ -353,3 +353,9 @@ class EventConfigurationType(StrEnum):
 
     SOURCE = "SOURCE"
     FILTER = "FILTER"
+
+
+class PluginType(StrEnum):
+    """All possible types of Plugins."""
+
+    WEBHOOK_EVENT = "webhook_event_source"

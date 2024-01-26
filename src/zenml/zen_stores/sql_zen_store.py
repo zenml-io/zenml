@@ -93,11 +93,8 @@ from zenml.enums import (
     StoreType,
     TaggableResourceTypes,
 )
-from zenml.events.base_event_flavor import EventFlavorResponse
-from zenml.events.event_flavor_registry import EventFlavorRegistry
-from zenml.events.utils import (
+from zenml.event_sources.utils import (
     fail_if_invalid_event_filter_configuration,
-    fail_if_invalid_event_source_configuration,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -2724,45 +2721,6 @@ class SqlZenStore(BaseZenStore):
                     session.delete(device)
             session.commit()
 
-    # -------------------- Event Flavors --------------------
-
-    def get_event_flavor(
-        self,
-        flavor_name: str,
-    ) -> EventFlavorResponse:
-        """Get an event flavor by its name.
-
-        Args:
-            flavor_name: The name of the flavor to get.
-
-        Returns:
-            The event flavor.
-
-        Raises:
-            KeyError: if the event flavor doesn't exist.
-        """
-        try:
-            return (
-                EventFlavorRegistry()
-                .get_event_flavor(flavor_name)()
-                .to_model()
-            )
-        except KeyError:
-            raise KeyError("No action flavor by that name exists.")
-
-    def list_event_flavors(
-        self,
-    ) -> List[EventFlavorResponse]:
-        """List all event flavors matching the given filter criteria.
-
-        Returns:
-            A list of all event flavors.
-        """
-        return [
-            f().to_model()
-            for _, f in EventFlavorRegistry().event_flavors.items()
-        ]
-
     # ----------------------------- Flavors -----------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_FLAVOR)
@@ -3407,10 +3365,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created event_source.
         """
-        fail_if_invalid_event_source_configuration(
-            flavor=event_source.flavor,
-            configuration_dict=event_source.configuration,
-        )
         with Session(self.engine) as session:
             self._fail_if_event_source_with_name_exists(
                 event_source=event_source,
@@ -3514,7 +3468,9 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the event_source doesn't exist.
         """
         with Session(self.engine) as session:
-            event_source = self._get_event_source(session=session, event_source_id=event_source_id)
+            event_source = self._get_event_source(
+                session=session, event_source_id=event_source_id
+            )
             event_source.update(update=event_source_update)
             session.add(event_source)
             session.commit()
@@ -6624,6 +6580,7 @@ class SqlZenStore(BaseZenStore):
             # Validate the Event Filter configuration
             fail_if_invalid_event_filter_configuration(
                 flavor=event_source.flavor,
+                plugin_type=event_source.plugin_type,
                 configuration_dict=trigger.event_filter,
             )
 
@@ -6862,12 +6819,12 @@ class SqlZenStore(BaseZenStore):
             table = UserSchema.metadata.tables[target_schema.__tablename__]
             foreign_key_attr = None
             for fk in table.foreign_keys:
-                if fk.column.table.name != UserSchema.__tablename__:
+                if fk.column.table.get_name != UserSchema.__tablename__:
                     continue
-                if fk.column.name != "id":
+                if fk.column.get_name != "id":
                     continue
                 assert fk.parent is not None
-                foreign_key_attr = fk.parent.name
+                foreign_key_attr = fk.parent.get_name
                 break
 
             assert foreign_key_attr is not None

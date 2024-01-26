@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.enums import PluginType
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -41,6 +42,10 @@ class EventSourceRequest(WorkspaceScopedRequest):
         title="The flavor of event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    plugin_type: PluginType = Field(
+        title="The plugin type of the event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     description: str = Field(
         default="",
         title="The description of the event source.",
@@ -58,6 +63,7 @@ class EventSourceRequest(WorkspaceScopedRequest):
 @update_model
 class EventSourceUpdate(EventSourceRequest):
     """Update model for event sources."""
+
     name: str = Field(
         title="The name of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -70,6 +76,7 @@ class EventSourceUpdate(EventSourceRequest):
     configuration: Dict[str, Any] = Field(
         title="The event source configuration.",
     )
+
 
 # ------------------ Response Model ------------------
 
@@ -101,11 +108,15 @@ class EventSourceResponse(
     """Response model for event sources."""
 
     name: str = Field(
-        title="The name of the stack component.",
+        title="The name of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     flavor: str = Field(
-        title="The flavor of event.",
+        title="The flavor of event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    plugin_type: PluginType = Field(
+        title="The plugin type of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: str = Field(
@@ -128,4 +139,8 @@ class EventSourceFilter(WorkspaceScopedFilter):
     flavor: Optional[str] = Field(
         default=None,
         description="Flavor of the event source",
+    )
+    plugin_type: Optional[str] = Field(
+        title="The plugin type of the event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )

@@ -14,9 +14,9 @@
 """Initialization of the GitHub ZenML integration."""
 from typing import List, Type
 
-from zenml.events.base_event_flavor import BaseEventFlavor
 from zenml.integrations.constants import GITHUB
 from zenml.integrations.integration import Integration
+from zenml.plugins.base_plugin_flavor import BasePluginFlavor
 
 GITHUB_EVENT_FLAVOR = "github"
 
@@ -29,15 +29,15 @@ class GitHubIntegration(Integration):
 
 
     @classmethod
-    def event_flavors(cls) -> List[Type[BaseEventFlavor]]:
+    def plugin_flavors(cls) -> List[Type[BasePluginFlavor]]:
         """Declare the event flavors for the github integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.github.event_flavors import GithubEventSourceFlavor
+        from zenml.integrations.github.plugin_flavors import GithubWebhookEventSourceFlavor
 
-        return [GithubEventSourceFlavor]
+        return [GithubWebhookEventSourceFlavor]
 
 
 GitHubIntegration.check_installation()

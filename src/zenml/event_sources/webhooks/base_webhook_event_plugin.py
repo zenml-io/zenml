@@ -13,48 +13,75 @@
 #  permissions and limitations under the License.
 """Abstract BaseEvent class that all Event implementations must implement."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, ClassVar, List, Type
 from uuid import UUID
 
-from pydantic import BaseModel
-
+from zenml.enums import PluginType
+from zenml.event_sources.base_event_source_plugin import (
+    BaseEvent,
+    BaseEventSourcePlugin,
+    BaseEventSourcePluginFlavor,
+    EventFilterConfig,
+    EventSourceConfig,
+)
 from zenml.logger import get_logger
+from zenml.models import EventSourceRequest, EventSourceResponse
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+    pass
+
 
 # -------------------- Event Models -----------------------------------
 
 
-class BaseEvent(BaseModel):
+class BaseWebhookEvent(BaseEvent):
     """Base class for all inbound events."""
 
 
-# -------------------- Event Handler -----------------------------------
+# -------------------- Configuration Models ----------------------------------
 
 
-class BaseEventHandler(ABC):
-    """Abstract BaseEvent class that all Event Flavors need to implement."""
+class WebhookEventSourceConfig(EventSourceConfig):
+    """The Event Source configuration."""
 
-    def __init__(
-        self,
-        flavor: str,
-        zen_store: "BaseZenStore",
-        *args: Any,
-        **kwargs: Any,
-    ):
-        """Initializes a BaseEvent.
 
-        Args:
-            flavor: The flavor of the event.
-            zen_store: The zen_store to use.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+class WebhookEventFilterConfig(EventFilterConfig):
+    """The Event Filter configuration."""
+
+
+# -------------------- Plugin -----------------------------------
+
+
+class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
+    """Base implementation for all Webhook event sources."""
+
+    @property
+    def config_class(self) -> Type[WebhookEventSourceConfig]:
+        """Returns the `BasePluginConfig` config.
+
+        Returns:
+            The configuration.
         """
-        self.flavor = flavor
-        self.zen_store = zen_store
+        return WebhookEventSourceConfig
+
+    """Abstract BaseEvent class that all Webhook Listeners need to implement."""
+
+    def create_event_source(
+        self, event_source_request: EventSourceRequest
+    ) -> EventSourceResponse:
+        """Wraps the zen_store creation method to add plugin specific functionality."""
+        secret_key_value = (
+            "something"  # TODO: this needs to actually create a zenml secret
+        )
+        print("Implementation not done:", secret_key_value)
+        # event_source_request.secret_id = ... # Here we add the secret_id to the event_source
+        created_event_source = self.zen_store.create_event_source(
+            event_source=event_source_request
+        )
+        # created_event_source.secret_value = ...
+        return created_event_source
 
     def process_event(self, event: BaseEvent):
         """Process the incoming event and forward with trigger_ids to event hub.
@@ -64,7 +91,9 @@ class BaseEventHandler(ABC):
         """
         # narrow down to all sources that relate to the repo that
         #  is responsible for the event
-        event_source_ids = self._get_all_relevant_event_sources(event=event)
+        event_source_ids = self._get_all_relevant_event_sources(
+            event=event,
+        )
 
         # get all triggers that have matching event filters configured
         if event_source_ids:
@@ -74,9 +103,8 @@ class BaseEventHandler(ABC):
             # TODO: Forward the event together with the list of trigger ids
             #  over to the EventHub
             logger.info(
-                "A %s event came in and will be forwarded to "
+                "An event came in and will be forwarded to "
                 "the following subscriber %s",
-                self.flavor,
                 trigger_ids,
             )
 
@@ -100,3 +128,12 @@ class BaseEventHandler(ABC):
             event_source_ids: All matching event source ids.
             event: The inbound Event.
         """
+
+
+# -------------------- Flavors ----------------------------------
+
+
+class BaseWebhookEventPluginFlavor(BaseEventSourcePluginFlavor, ABC):
+    """Base Event Plugin Flavor to access an event plugin along with its configurations."""
+
+    TYPE: ClassVar[PluginType] = PluginType.WEBHOOK_EVENT

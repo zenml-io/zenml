@@ -13,13 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the github event handler."""
 from functools import partial
-from typing import List, Optional
+from typing import List, Optional, Type
 from uuid import UUID
 
 from pydantic import BaseModel
 
-from zenml.events.base_event_flavor import EventFilterConfig, EventSourceConfig
-from zenml.events.base_event_handler import BaseEvent, BaseEventHandler
+from zenml.event_sources.base_event_source_plugin import BaseEvent
+from zenml.event_sources.webhooks.base_webhook_event_plugin import (
+    BaseWebhookEventSourcePlugin,
+    WebhookEventFilterConfig,
+    WebhookEventSourceConfig,
+)
 from zenml.models import (
     EventSourceFilter,
     EventSourceResponse,
@@ -122,7 +126,7 @@ class GithubEvent(BaseEvent):
 # -------------------- Configuration Models ----------------------------------
 
 
-class GithubEventFilterConfiguration(EventFilterConfig):
+class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
     """Configuration for github event filters."""
 
     branch: Optional[str]
@@ -139,17 +143,26 @@ class GithubEventFilterConfiguration(EventFilterConfig):
         return True
 
 
-class GithubEventSourceConfiguration(EventSourceConfig):
+class GithubWebhookEventSourceConfiguration(WebhookEventSourceConfig):
     """Configuration for github source filters."""
 
     repo: str
 
 
-# -------------------- Event Handler -----------------------------------
+# -------------------- Github Webhook Plugin -----------------------------------
 
 
-class GithubEventHandler(BaseEventHandler):
+class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
     """Handler for all github events."""
+
+    @property
+    def config_class(self) -> Type[GithubWebhookEventSourceConfiguration]:
+        """Returns the `BasePluginConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return GithubWebhookEventSourceConfiguration
 
     def _get_all_relevant_event_sources(
         self, event: GithubEvent
@@ -168,17 +181,21 @@ class GithubEventHandler(BaseEventHandler):
         event_sources: List[EventSourceResponse] = depaginate(
             partial(
                 self.zen_store.list_event_sources,
-                event_source_filter_model=EventSourceFilter(
-                    flavor=self.flavor
-                ),
+                event_source_filter_model=EventSourceFilter(flavor="github"),
                 hydrate=True,
             )
         )  # TODO: investigate how this can be improved
 
         ids_list: List[UUID] = []
 
+        # TODO: improve this
+        if isinstance(event, dict):
+            event = GithubEvent(**event)
+
         for es in event_sources:
-            esc = GithubEventSourceConfiguration(**es.metadata.configuration)
+            esc = GithubWebhookEventSourceConfiguration(
+                **es.metadata.configuration
+            )
             if esc.repo == event.repository.name:
                 ids_list.append(es.id)
 
@@ -211,10 +228,14 @@ class GithubEventHandler(BaseEventHandler):
             )
         )
 
+        # TODO: improve this
+        if isinstance(event, dict):
+            event = GithubEvent(**event)
+
         ids_list: List[UUID] = []
 
         for trigger in triggers:
-            event_filter = GithubEventFilterConfiguration(
+            event_filter = GithubWebhookEventFilterConfiguration(
                 **trigger.metadata.event_filter
             )
             if event_filter.event_matches_filter(event=event):

@@ -11,20 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Endpoint definitions for event flavors."""
-from typing import List
+"""Endpoint definitions for event sources."""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, EVENT_FLAVORS, EVENT_SOURCES, VERSION_1
-from zenml.events.base_event_flavor import EventFlavorResponse
-from zenml.models import (
+from zenml import (
     EventSourceFilter,
     EventSourceResponse,
     EventSourceUpdate,
     Page,
 )
+from zenml.constants import API, EVENT_SOURCES, VERSION_1
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -40,60 +38,13 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-flavor_router = APIRouter(
-    prefix=API + VERSION_1 + EVENT_FLAVORS,
-    tags=["event-flavors"],
-    responses={401: error_response, 403: error_response},
-)
-
 event_source_router = APIRouter(
     prefix=API + VERSION_1 + EVENT_SOURCES,
     tags=["event-sources"],
     responses={401: error_response, 403: error_response},
 )
 
-
-# -------------------- Event Flavors --------------------
-
-
-@flavor_router.get(
-    "",
-    response_model=List[EventFlavorResponse],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_event_flavors(
-    _: AuthContext = Security(authorize),
-) -> List[EventFlavorResponse]:
-    """Returns all event flavors.
-
-    Returns:
-        All flavors.
-    """
-    return zen_store().list_event_flavors()
-
-
-@flavor_router.get(
-    "/{flavor_name}",
-    response_model=EventFlavorResponse,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_flavor(
-    flavor_name: str,
-    _: AuthContext = Security(authorize),
-) -> EventFlavorResponse:
-    """Returns the requested flavor.
-
-    Args:
-        flavor_name: Name of the flavor.
-
-    Returns:
-        The requested stack.
-    """
-    return zen_store().get_event_flavor(flavor_name=flavor_name)
-
-    # -------------------- Event Sources --------------------
+# -------------------- Event Sources --------------------
 
 
 @event_source_router.get(
@@ -167,7 +118,7 @@ def update_event_source(
     event_source_update: EventSourceUpdate,
     _: AuthContext = Security(authorize),
 ) -> EventSourceResponse:
-    """Updates a event_source.
+    """Updates an event_source.
 
     Args:
         event_source_id: Name of the event_source.
