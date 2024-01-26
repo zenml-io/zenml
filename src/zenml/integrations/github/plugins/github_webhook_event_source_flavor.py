@@ -14,7 +14,6 @@
 """Example file of what an event Plugin could look like."""
 from typing import ClassVar, Type
 
-from zenml.enums import PluginType
 from zenml.event_sources.webhooks.base_webhook_event_plugin import (
     BaseWebhookEventPluginFlavor,
 )
