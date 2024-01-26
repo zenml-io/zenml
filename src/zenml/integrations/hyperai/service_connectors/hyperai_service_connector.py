@@ -14,7 +14,7 @@
 """HyperAI Service Connector.
 
 The HyperAI Service Connector allows authenticating to HyperAI (hyperai.ai)
-GPU equipped instances of their Dedicated offering.
+GPU equipped instances.
 """
 import base64
 import paramiko
@@ -88,7 +88,7 @@ HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
     connector_type=HYPERAI_CONNECTOR_TYPE,
     description="""
 The ZenML HyperAI Service Connector allows authenticating to HyperAI (hyperai.ai)
-GPU equipped instances of their Dedicated offering.
+GPU equipped instances.
 
 This connector provides an SSH connection to your HyperAI instance, which can be
 used to run ZenML pipelines.
