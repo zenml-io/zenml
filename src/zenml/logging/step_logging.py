@@ -139,11 +139,18 @@ class StepLogsStorage:
                 self.disabled = True
 
                 if self.buffer:
+                    message_to_write = ''
+                    for message in self.buffer:
+                        message_to_write += remove_ansi_escape_codes(message) + '\n'
+                    try:
+                        with fileio.open(self.logs_uri, "r") as file:
+                            file_contents = file.read()
+                    except:
+                        file_contents = ''
                     with fileio.open(self.logs_uri, "a") as file:
-                        for message in self.buffer:
-                            file.write(
-                                remove_ansi_escape_codes(message) + "\n"
-                            )
+                        file.write(
+                            file_contents + message_to_write
+                        )
 
             except (OSError, IOError) as e:
                 # This exception can be raised if there are issues with the
