@@ -299,6 +299,8 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f"(crontab -l ; echo '{cron_expression} cd {directory_name} && docker compose up -d') | crontab -"
             )
 
+            logger.info("Pipeline scheduled successfully.")
+
 
 class HyperAIOrchestratorFlavor(BaseOrchestratorFlavor):
     """Flavor for the HyperAI orchestrator."""
