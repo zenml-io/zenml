@@ -245,6 +245,10 @@ The Vertex orchestrator only supports the `cron_expression`, `start_time` (optio
 other parameters supplied to define the schedule.
 {% endhint %}
 
+The `start_time` and `end_time` timestamp parameters are both optional and are to be specified in local time. They define the time window in which the pipeline runs will be triggered. If they are not specified, the pipeline will run indefinitely.
+
+The `cron_expression` parameter [supports timezones](https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/projects.locations.schedules) for example the expression `TZ=Europe/Paris 0 10 * * *` will trigger runs at 10:00 in the Europe/Paris timezone.
+
 **How to delete a scheduled pipeline**
 
 Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule is the
