@@ -207,6 +207,10 @@ mockers = [
 
 
 class BetterMagicMock(MagicMock):
+    def __init__(self, *args, **kwargs):
+        super(BetterMagicMock, self).__init__(*args, **kwargs)
+        self.__getitem__ = BetterMagicMock._getitem
+
     @property
     def __version__(self):
         return "1.0.0"
@@ -215,12 +219,16 @@ class BetterMagicMock(MagicMock):
     def __name__(self):
         return ""
     
+    @staticmethod
+    def _getitem(self, item):
+        return BetterMagicMock(name=f"{self._extract_mock_name()}[{item}]")
+    
     def __repr__(self) -> str:
-        return self._extract_mock_name().replace("mock.", "")
+        return self._extract_mock_name()
 
 
 for mocker in mockers:
-    sys.modules[mocker] = BetterMagicMock()
+    sys.modules[mocker] = BetterMagicMock(name=mocker)
 
 from zenml.materializers.base_materializer import BaseMaterializer
 
