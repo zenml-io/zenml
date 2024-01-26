@@ -21,6 +21,8 @@ from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.models import (
     Page,
     PipelineFilter,
+    PipelineNamespaceFilter,
+    PipelineNamespaceResponse,
     PipelineResponse,
     PipelineRunFilter,
     PipelineRunResponse,
@@ -35,6 +37,10 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.utils import (
+    dehydrate_page,
+    get_allowed_resource_ids,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -204,3 +210,42 @@ def get_pipeline_spec(
         id=pipeline_id, get_method=zen_store().get_pipeline
     )
     return pipeline.spec
+
+
+namespace_router = APIRouter(
+    prefix=API + VERSION_1 + "/pipeline_namespaces",
+    tags=["pipeline_namespaces"],
+    responses={401: error_response, 403: error_response},
+)
+
+
+@namespace_router.get(
+    "",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_pipeline_namespaces(
+    filter_model: PipelineNamespaceFilter = Depends(
+        make_dependable(PipelineNamespaceFilter)
+    ),
+    hydrate: bool = False,
+    auth_context: AuthContext = Security(authorize),
+) -> Page[PipelineNamespaceResponse]:
+    """Gets a list of pipeline namespaces.
+
+    Args:
+        filter_model: Filter model used for pagination, sorting,
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+        auth_context: Authentication context.
+
+    Returns:
+        List of pipeline namespace objects.
+    """
+    allowed_ids = get_allowed_resource_ids(resource_type=ResourceType.PIPELINE)
+    filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id, id=allowed_ids
+    )
+    page = zen_store().list_pipeline_namespaces(filter_model, hydrate=hydrate)
+    return dehydrate_page(page)

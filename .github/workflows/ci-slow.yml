@@ -1,82 +1,17 @@
 ---
 name: Slow CI
 on:
-  issue_comment:
-    types: [created]
-env:
-  TEAM_MEMBERS: '["@htahir1", "@hamza-zenml", "@bcdurak", "@baris-zenml", "@michael-zenml",
-    "@schustmi", "@strickvl", "@alex-zenml", "@alexej-zenml", "@AlexejPenner", "@stefannica",
-    "@wjayesh", "@safoinme", "@Cahllagerfeld", "@avishniakov", "@atzin-escandia"]'
+  pull_request:
+    types: [ready_for_review]
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  check-membership:
-    runs-on: ubuntu-latest
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-      (github.event_name == 'workflow_dispatch')
-    outputs:
-      member_check: ${{ steps.is_member.outputs.member_check }}
-    steps:
-      - name: Check if commenter is a team member
-        id: is_member
-        run: |
-          if echo ${{ env.TEAM_MEMBERS }} | grep -q "${{ github.event.comment.user.login }}"; then
-            echo "::set-output name=member_check::true"
-          else
-            echo "::set-output name=member_check::false"
-          fi
-  comment-workflow-link:
-    runs-on: ubuntu-latest
-    if: (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest'))
-    steps:
-      - name: Post Comment
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          body: |
-            Triggered Slow CI: [Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          reactions: rocket
   docstring-check:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-        (github.event_name == 'workflow_dispatch')
-      )
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v3
-        id: get-pr
-        with:
-          script: |
-            const request = {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            }
-            core.info(`Getting PR  #${request.pull_number} from ${request.owner}/${request.repo}`)
-            try {
-              const result = await github.pulls.get(request)
-              return result.data
-            } catch (err) {
-              core.setFailed(`Request failed with error ${err}`)
-            }
       - uses: actions/checkout@v4.1.1
-        with:
-          repository: ${{ fromJSON(steps.get-pr.outputs.result).head.repo.full_name }}
-          ref: ${{ fromJSON(steps.get-pr.outputs.result).head.sha }}
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
@@ -87,37 +22,8 @@ jobs:
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
     runs-on: ubuntu-dind-runners
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-        (github.event_name == 'workflow_dispatch')
-      )
     steps:
-      - uses: actions/github-script@v3
-        id: get-pr
-        with:
-          script: |
-            const request = {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            }
-            core.info(`Getting PR  #${request.pull_number} from ${request.owner}/${request.repo}`)
-            try {
-              const result = await github.pulls.get(request)
-              return result.data
-            } catch (err) {
-              core.setFailed(`Request failed with error ${err}`)
-            }
       - uses: actions/checkout@v4.1.1
-        with:
-          repository: ${{ fromJSON(steps.get-pr.outputs.result).head.repo.full_name }}
-          ref: ${{ fromJSON(steps.get-pr.outputs.result).head.sha }}
       - name: Set up Python 3.9
         uses: actions/setup-python@v5.0.0
         with:
@@ -125,38 +31,9 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations-mysql.sh sqlite
   small-checks:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-        (github.event_name == 'workflow_dispatch')
-      )
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v3
-        id: get-pr
-        with:
-          script: |
-            const request = {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            }
-            core.info(`Getting PR  #${request.pull_number} from ${request.owner}/${request.repo}`)
-            try {
-              const result = await github.pulls.get(request)
-              return result.data
-            } catch (err) {
-              core.setFailed(`Request failed with error ${err}`)
-            }
       - uses: actions/checkout@v4.1.1
-        with:
-          repository: ${{ fromJSON(steps.get-pr.outputs.result).head.repo.full_name }}
-          ref: ${{ fromJSON(steps.get-pr.outputs.result).head.sha }}
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
@@ -190,18 +67,6 @@ jobs:
           pip install alembic
           bash scripts/check-alembic-branches.sh
   update-templates-to-examples:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) && github.event.pull_request.head.repo.full_name == github.repository
-      ||
-        (github.event_name == 'workflow_dispatch') ||
-        (github.event_name == 'workflow_call')
-      )
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
     uses: ./.github/workflows/update-templates-to-examples.yml
@@ -210,16 +75,6 @@ jobs:
       os: ubuntu-latest
     secrets: inherit
   custom-ubuntu-unit-test:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-        (github.event_name == 'workflow_dispatch')
-      )
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
@@ -231,16 +86,6 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-unit-test:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-        (github.event_name == 'workflow_dispatch')
-      )
     strategy:
       matrix:
         os: [windows-latest]
@@ -252,16 +97,6 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   macos-unit-test:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-        (github.event_name == 'workflow_dispatch')
-      )
     strategy:
       matrix:
         os: [macos-latest]
@@ -273,16 +108,6 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-integration-test:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-        (github.event_name == 'workflow_dispatch')
-      )
     strategy:
       matrix:
         os: [windows-latest]
@@ -297,16 +122,6 @@ jobs:
       is-slow-ci: true
     secrets: inherit
   macos-integration-test:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-        (github.event_name == 'workflow_dispatch')
-      )
     strategy:
       matrix:
         os: [macos-latest]
@@ -321,16 +136,6 @@ jobs:
       is-slow-ci: true
     secrets: inherit
   custom-ubuntu-integration-test:
-    needs: check-membership
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      needs.check-membership.outputs.member_check == 'true' &&
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-        (github.event_name == 'workflow_dispatch')
-      )
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
@@ -361,33 +166,3 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
       is-slow-ci: true
     secrets: inherit
-  post-ready-to-merge-comment:
-    runs-on: ubuntu-latest
-    needs:
-      - check-membership
-      - comment-workflow-link
-      - small-checks
-      - sqlite-db-migration-testing
-      - custom-ubuntu-unit-test
-      - windows-unit-test
-      - macos-unit-test
-      - windows-integration-test
-      - macos-integration-test
-      - custom-ubuntu-integration-test
-      - update-templates-to-examples
-      - docstring-check
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: >
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-      github.event.pull_request.draft == false && contains(github.event.comment.body,
-      '/fulltest')) ||
-      (github.event_name == 'workflow_dispatch')
-    steps:
-      - name: Post Comment
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          body: |
-            🦭 All tests passed!
-            You are ready to merge this PR. 🚀
-          reactions: rocket
