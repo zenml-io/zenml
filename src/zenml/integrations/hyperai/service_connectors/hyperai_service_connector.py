@@ -21,6 +21,7 @@ import paramiko
 import io
 import re
 import subprocess
+import tempfile
 from typing import Any, List, Optional
 
 from pydantic import Field, SecretStr
@@ -183,41 +184,49 @@ class HyperAIServiceConnector(ServiceConnector):
                 invalid.
             SSHException: If there is an SSH related error.
         """
+        logger.info("Verifying connection to HyperAI instance...")
+
         if self.config.rsa_ssh_key_passphrase is None:
             rsa_ssh_key_passphrase = None
         else:
             rsa_ssh_key_passphrase = self.config.rsa_ssh_key_passphrase.get_secret_value()
 
-        # Convert the SSH key from base64 to string
-        base64_key_value = self.config.rsa_ssh_key.get_secret_value()
+        # Connect to the HyperAI instance
         try:
+
+            # Convert the SSH key from base64 to string
+            base64_key_value = self.config.rsa_ssh_key.get_secret_value()
             ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
-        except Exception as e:
-            logger.error("Failed to decode SSH key from Base64 format: %s", e)
-        
-        # Attempt constructing an RSA key from the SSH key
-        try:
-            rsa_ssh_key = paramiko.RSAKey.from_private_key(
-                io.StringIO(ssh_key),
-                password=rsa_ssh_key_passphrase
-            )
-        except paramiko.ssh_exception.SSHException as e:
-            logger.error("Failed to parse SSH key: %s", e)
+            paramiko_key = None
 
-        # Trim whitespace from the IP address
-        ip_address = str(self.config.ip_address).strip()
+            # Create temporary file and write Docker Compose file to it
+            with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
 
-        # Attempt logging in to the HyperAI instance
-        try:
+                # Get file path
+                file_path = f.name
+
+                # Write Docker Compose file to temporary file
+                with f.file as f_:
+                    f_.write(ssh_key)
+                    
+                paramiko_key = paramiko.Ed25519Key.from_private_key_file(
+                    file_path,
+                    password=rsa_ssh_key_passphrase
+                )
+
+            # Trim whitespace from the IP address
+            ip_address = str(self.config.ip_address).strip()
+            
             paramiko_client = paramiko.client.SSHClient()
             paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             paramiko_client.connect(
                 hostname=ip_address,
                 username=self.config.username,
-                pkey=rsa_ssh_key,
+                pkey=paramiko_key,
                 timeout=30
             )
             paramiko_client.close()
+
         except paramiko.ssh_exception.BadHostKeyException as e:
             logger.error("Bad host key: %s", e)
         except paramiko.ssh_exception.AuthenticationException as e:
@@ -241,6 +250,7 @@ class HyperAIServiceConnector(ServiceConnector):
         Returns:
             An authenticated Paramiko SSH client.
         """
+        logger.info("Connecting to HyperAI instance...")
         assert self.resource_id is not None
 
         if self.config.rsa_ssh_key_passphrase is None:
@@ -248,37 +258,43 @@ class HyperAIServiceConnector(ServiceConnector):
         else:
             rsa_ssh_key_passphrase = self.config.rsa_ssh_key_passphrase.get_secret_value()
 
-        # Convert the SSH key from base64 to string
-        base64_key_value = self.config.rsa_ssh_key.get_secret_value()
+        # Connect to the HyperAI instance
         try:
+
+            # Convert the SSH key from base64 to string
+            base64_key_value = self.config.rsa_ssh_key.get_secret_value()
             ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
-        except Exception as e:
-            logger.error("Failed to decode SSH key from Base64 format: %s", e)
-        
-        # Attempt constructing an RSA key from the SSH key
-        try:
-            rsa_ssh_key = paramiko.RSAKey.from_private_key(
-                io.StringIO(ssh_key),
-                password=rsa_ssh_key_passphrase
-            )
-        except paramiko.ssh_exception.SSHException as e:
-            logger.error("Failed to parse SSH key: %s", e)
+            paramiko_key = None
 
-        # Trim whitespace from the IP address
-        ip_address = str(self.config.ip_address).strip()
+            # Create temporary file and write Docker Compose file to it
+            with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
 
-        # Attempt logging in to the HyperAI instance
-        try:
+                # Get file path
+                file_path = f.name
+
+                # Write Docker Compose file to temporary file
+                with f.file as f_:
+                    f_.write(ssh_key)
+                    
+                paramiko_key = paramiko.Ed25519Key.from_private_key_file(
+                    file_path,
+                    password=rsa_ssh_key_passphrase
+                )
+
+            # Trim whitespace from the IP address
+            ip_address = str(self.config.ip_address).strip()
+            
             paramiko_client = paramiko.client.SSHClient()
             paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             paramiko_client.connect(
                 hostname=ip_address,
                 username=self.config.username,
-                pkey=rsa_ssh_key,
+                pkey=paramiko_key,
                 timeout=30
             )
             
             return paramiko_client
+
         except paramiko.ssh_exception.BadHostKeyException as e:
             logger.error("Bad host key: %s", e)
         except paramiko.ssh_exception.AuthenticationException as e:
@@ -287,6 +303,7 @@ class HyperAIServiceConnector(ServiceConnector):
             logger.error("SSH error: %s", e)
         except Exception as e:
             logger.error("Unknown error: %s", e)
+
 
     def _configure_local_client(
         self,

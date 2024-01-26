@@ -16,6 +16,7 @@
 import copy
 import json
 import os
+import paramiko
 import tempfile
 import sys
 import time
@@ -182,8 +183,16 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             "services": {}
         }
 
+        # Get deployment id
+        deployment_id = deployment.id
+
+        # Set environment
+        os.environ[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
+
         # Add each step as a service to the Docker Compose definition
         dependency = None
+        logger.info("Preparing pipeline steps for deployment.")
+
         for step_name, step in deployment.step_configurations.items():
 
             # Get image
@@ -194,10 +203,13 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 HyperAIOrchestratorSettings, self.get_settings(step)
             )
 
+            # Define container name as combination between deployment id and step name
+            container_name = f"{deployment_id}-{step_name}"
+
             # Make Compose service definition for step
-            compose_definition["services"][step_name] = {
+            compose_definition["services"][container_name] = {
                 "image": image,
-                "container_name": step_name,
+                "container_name": container_name,
                 "entrypoint": StepEntrypointConfiguration.get_entrypoint_command(),
                 "command": StepEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name, deployment_id=deployment.id
@@ -211,21 +223,23 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Add dependency on previous step if it exists
             if dependency:
-                compose_definition["services"][step_name]["depends_on"] = {
+                compose_definition["services"][container_name]["depends_on"] = {
                     dependency: {
                         "condition": "service_completed_successfully"
                     }
                 }
 
             # Set current step as dependency for next step
-            dependency = step_name
+            dependency = container_name
 
         # Can we add multi dependency?
 
         # Convert into yaml
+        logger.info("Finalizing Docker Compose definition.")
         compose_definition = yaml.dump(compose_definition)
 
         # Connect to configured HyperAI instance
+        logger.info("Connecting to HyperAI instance and placing Docker Compose file.")
         paramiko_client: paramiko.SSHClient
         if connector := self.get_connector():
             paramiko_client = connector.connect()
@@ -251,9 +265,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         stdin, stdout, stderr = paramiko_client.exec_command(
             f"mkdir -p {directory_name}"
         )
+
+        # Remove all folders from directory_name if they are 7
+        stdin, stdout, stderr = paramiko_client.exec_command(
+            f"find {directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
+        )
         
         # Create temporary file and write Docker Compose file to it
-        with tempfile.NamedTemporaryFile(mode="w", delete=True, delete_on_close=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
 
             # Write Docker Compose file to temporary file
             with f.file as f_:
@@ -268,9 +287,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             scp_client.close()
 
         # Run Docker Compose file
+        logger.info("Starting ZenML pipeline on HyperAI instance.")
         stdin, stdout, stderr = paramiko_client.exec_command(
-            f"cd {directory_name} && docker compose up"
+            f"cd {directory_name} && docker compose up -d"
         )
+        
+        # Log errors in case of failure
+        for line in stderr.readlines():
+            logger.info(line)
 
 
 class HyperAIOrchestratorFlavor(BaseOrchestratorFlavor):

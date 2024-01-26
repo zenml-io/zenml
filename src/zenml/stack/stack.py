@@ -805,15 +805,15 @@ class Stack:
                     f"for more information."
                 )
 
-        if self.requires_remote_server and Client().zen_store.is_local_store():
-            raise RuntimeError(
-                "Stacks with remote components such as remote orchestrators "
-                "and step operators require a remote "
-                "ZenML server. To run a pipeline with this stack you need to "
-                "connect to a remote ZenML server first. Check out "
-                "https://docs.zenml.io/user-guide/starter-guide/switch-to-production "
-                "for more information on how to deploy ZenML."
-            )
+        # if self.requires_remote_server and Client().zen_store.is_local_store():
+        #     raise RuntimeError(
+        #         "Stacks with remote components such as remote orchestrators "
+        #         "and step operators require a remote "
+        #         "ZenML server. To run a pipeline with this stack you need to "
+        #         "connect to a remote ZenML server first. Check out "
+        #         "https://docs.zenml.io/user-guide/starter-guide/switch-to-production "
+        #         "for more information on how to deploy ZenML."
+        #     )
 
         for component in self.components.values():
             component.prepare_pipeline_deployment(
