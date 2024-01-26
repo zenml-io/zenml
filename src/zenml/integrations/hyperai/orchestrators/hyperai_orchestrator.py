@@ -244,7 +244,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         paramiko_client: paramiko.SSHClient
         if connector := self.get_connector():
             paramiko_client = connector.connect()
-            if isinstance(paramiko_client, None):
+            if paramiko_client is None:
                 raise RuntimeError(
                     "Expected to receive a `paramiko.SSHClient` object from the "
                     "linked connector, but got `None`. This likely originates from "
