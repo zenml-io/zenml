@@ -188,6 +188,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
         # Set environment
         os.environ[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
+        environment[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
 
         # Add each step as a service to the Docker Compose definition
         dependency = None
