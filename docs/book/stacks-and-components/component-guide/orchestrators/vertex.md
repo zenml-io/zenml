@@ -2,6 +2,11 @@
 description: Orchestrating your pipelines to run on Vertex AI.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Google Cloud VertexAI Orchestrator
 
 [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)

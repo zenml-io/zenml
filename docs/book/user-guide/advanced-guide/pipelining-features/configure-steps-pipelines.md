@@ -2,6 +2,11 @@
 description: Understanding how to configure a ZenML pipeline
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Configuring a step and a pipeline
 
 The configuration of a step and/or a pipeline determines various details of how a run is executed. It is an important aspect of running workloads in production, and as such deserves a dedicated section in these docs.
