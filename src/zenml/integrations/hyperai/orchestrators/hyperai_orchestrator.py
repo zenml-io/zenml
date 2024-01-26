@@ -170,12 +170,6 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If a step fails.
         """
-        if deployment.schedule:
-            logger.warning(
-                "HyperAI orchestrator currently does not support the"
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
 
         # Basic Docker Compose definition
         compose_definition = {
@@ -251,7 +245,8 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
 
         # Set up pipeline-runs directory if it doesn't exist
-        directory_name = "/home/zenml/pipeline-runs"
+        nonscheduled_directory_name = "/home/zenml/pipeline-runs"
+        directory_name = nonscheduled_directory_name if not deployment.schedule else "/home/zenml/scheduled-pipeline-runs"
         stdin, stdout, stderr = paramiko_client.exec_command(
             f"mkdir -p {directory_name}"
         )
@@ -263,9 +258,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             f"mkdir -p {directory_name}"
         )
 
-        # Remove all folders from directory_name if they are 7
+        # Remove all folders from nonscheduled pipelines if they are 7 days old or older
         stdin, stdout, stderr = paramiko_client.exec_command(
-            f"find {directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
+            f"find {nonscheduled_directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
         )
         
         # Create temporary file and write Docker Compose file to it
@@ -283,15 +278,26 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
             scp_client.close()
 
-        # Run Docker Compose file
-        logger.info("Starting ZenML pipeline on HyperAI instance.")
-        stdin, stdout, stderr = paramiko_client.exec_command(
-            f"cd {directory_name} && docker compose up -d"
-        )
+        # Run or schedule Docker Compose file depending on settings
+        if not deployment.schedule:
+            logger.info("Starting ZenML pipeline on HyperAI instance.")
+            stdin, stdout, stderr = paramiko_client.exec_command(
+                f"cd {directory_name} && docker compose up -d"
+            )
         
-        # Log errors in case of failure
-        for line in stderr.readlines():
-            logger.info(line)
+            # Log errors in case of failure
+            for line in stderr.readlines():
+                logger.info(line)
+        else:
+            # Get cron expression for scheduled pipeline
+            cron_expression = deployment.schedule.cron_expression
+            logger.info("Scheduling ZenML pipeline on HyperAI instance.")
+            logger.info(f"Cron expression: {cron_expression}")
+
+            # Create cron job for scheduled pipeline on HyperAI instance
+            stdin, stdout, stderr = paramiko_client.exec_command(
+                f"(crontab -l ; echo '{cron_expression} cd {directory_name} && docker compose up -d') | crontab -"
+            )
 
 
 class HyperAIOrchestratorFlavor(BaseOrchestratorFlavor):
