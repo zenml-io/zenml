@@ -64,11 +64,6 @@ class HyperAIOrchestratorSettings(BaseSettings):
             to paths within the Docker container. This allows users to mount
             directories from the HyperAI instance into the Docker container that runs
             on it.
-        container_registry_autologin: If True, the orchestrator will attempt to
-            automatically log in to the container registry specified in the stack
-            configuration on the HyperAI instance. This is useful if the container
-            registry requires authentication and the HyperAI instance has not been
-            manually logged in to the container registry.
     """
 
     mounts_from_to: Dict[str, str] = {}
@@ -77,7 +72,16 @@ class HyperAIOrchestratorSettings(BaseSettings):
 class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseOrchestratorConfig, HyperAIOrchestratorSettings
 ):
-    """Configuration for the HyperAI orchestrator."""
+    """Configuration for the HyperAI orchestrator.
+
+    Attributes:
+        container_registry_autologin: If True, the orchestrator will attempt to
+            automatically log in to the container registry specified in the stack
+            configuration on the HyperAI instance. This is useful if the container
+            registry requires authentication and the HyperAI instance has not been
+            manually logged in to the container registry.
+    
+    """
     container_registry_autologin: bool = False
 
     @property
