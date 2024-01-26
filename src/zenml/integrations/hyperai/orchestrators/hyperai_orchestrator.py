@@ -191,9 +191,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         environment[ENV_ZENML_HYPERAI_RUN_ID] = str(deployment_id)
 
         # Add each step as a service to the Docker Compose definition
-        dependency = None
         logger.info("Preparing pipeline steps for deployment.")
-
         for step_name, step in deployment.step_configurations.items():
 
             # Get image
@@ -222,18 +220,16 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 ]
             }
 
-            # Add dependency on previous step if it exists
-            if dependency:
-                compose_definition["services"][container_name]["depends_on"] = {
-                    dependency: {
-                        "condition": "service_completed_successfully"
+            # Add dependency on upstream steps if applicable
+            upstream_steps = step.spec.upstream_steps
+            if isinstance(upstream_steps, list) and len(upstream_steps) > 0:
+                for upstream_step_name in upstream_steps:
+                    upstream_container_name = f"{deployment_id}-{upstream_step_name}"
+                    compose_definition["services"][container_name]["depends_on"] = {
+                        upstream_container_name: {
+                            "condition": "service_completed_successfully"
+                        }
                     }
-                }
-
-            # Set current step as dependency for next step
-            dependency = container_name
-
-        # Can we add multi dependency?
 
         # Convert into yaml
         logger.info("Finalizing Docker Compose definition.")
