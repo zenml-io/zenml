@@ -93,9 +93,10 @@ GPU equipped instances of their Dedicated offering.
 This connector provides an SSH connection to your HyperAI instance, which can be
 used to run ZenML pipelines.
 
-The connector requires a HyperAI Dedicated instance in order to work. The
-instance must be configured to allow SSH connections from the ZenML server.
-Docker and Docker Compose must be installed on the HyperAI instance.
+The instance must be configured to allow SSH connections from the ZenML server.
+Docker and Docker Compose must be installed on the HyperAI instance. If you want
+to use scheduled pipeline runs, also ensure that a working cron daemon is installed
+and running on the HyperAI instance.
 """,
     logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/hyperai/hyperai.png",
     emoji=":robot_face:",
