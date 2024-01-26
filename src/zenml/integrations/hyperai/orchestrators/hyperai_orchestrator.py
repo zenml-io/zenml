@@ -72,13 +72,13 @@ class HyperAIOrchestratorSettings(BaseSettings):
     """
 
     mounts_from_to: Dict[str, str] = {}
-    container_registry_autologin: bool = False
 
 
 class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseOrchestratorConfig, HyperAIOrchestratorSettings
 ):
     """Configuration for the HyperAI orchestrator."""
+    container_registry_autologin: bool = False
 
     @property
     def is_remote(self) -> bool:
