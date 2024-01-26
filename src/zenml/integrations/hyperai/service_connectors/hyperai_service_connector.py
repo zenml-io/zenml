@@ -104,9 +104,9 @@ Docker and Docker Compose must be installed on the HyperAI instance.
             name="RSA key with optional passphrase",
             auth_method=HyperAIAuthenticationMethods.RSA_KEY_OPTIONAL_PASSPHRASE,
             description="""
-Use an RSA key to authenticate with a HyperAI instance. The key may be
+Use an RSA private key to authenticate with a HyperAI instance. The key may be
 encrypted with a passphrase. If the key is encrypted, the passphrase must be
-provided.
+provided. Make sure to provide the key as a Base64 encoded string.
 """,
             config_class=HyperAIConfiguration,
         ),
@@ -114,9 +114,9 @@ provided.
             name="DSA/DSS key with optional passphrase",
             auth_method=HyperAIAuthenticationMethods.DSA_KEY_OPTIONAL_PASSPHRASE,
             description="""
-Use a DSA/DSS key to authenticate with a HyperAI instance. The key may be
+Use a DSA/DSS private key to authenticate with a HyperAI instance. The key may be
 encrypted with a passphrase. If the key is encrypted, the passphrase must be
-provided.
+provided. Make sure to provide the key as a Base64 encoded string.
 """,
             config_class=HyperAIConfiguration,
         ),
@@ -124,9 +124,9 @@ provided.
             name="ECDSA key with optional passphrase",
             auth_method=HyperAIAuthenticationMethods.ECDSA_KEY_OPTIONAL_PASSPHRASE,
             description="""
-Use an ECDSA key to authenticate with a HyperAI instance. The key may be
+Use an ECDSA private key to authenticate with a HyperAI instance. The key may be
 encrypted with a passphrase. If the key is encrypted, the passphrase must be
-provided.
+provided. Make sure to provide the key as a Base64 encoded string.
 """,
             config_class=HyperAIConfiguration,
         ),
@@ -134,9 +134,9 @@ provided.
             name="Ed25519 key with optional passphrase",
             auth_method=HyperAIAuthenticationMethods.ED25519_KEY_OPTIONAL_PASSPHRASE,
             description="""
-Use an Ed25519 key to authenticate with a HyperAI instance. The key may be
+Use an Ed25519 private key to authenticate with a HyperAI instance. The key may be
 encrypted with a passphrase. If the key is encrypted, the passphrase must be
-provided.
+provided. Make sure to provide the key as a Base64 encoded string.
 """,
             config_class=HyperAIConfiguration,
         )
