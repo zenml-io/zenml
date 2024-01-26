@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 
 
 @pytest.mark.parametrize(
@@ -19,8 +19,8 @@ from zenml.model.model_version import ModelVersion
     ],
 )
 def test_init_warns(version_name, logger):
-    with patch(f"zenml.model.model_version.logger.{logger}") as logger:
-        ModelVersion(
+    with patch(f"zenml.model.model.logger.{logger}") as logger:
+        Model(
             name="foo",
             version=version_name,
         )

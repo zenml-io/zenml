@@ -7,7 +7,7 @@ on:
     tags: ['*']
 jobs:
   setup-and-test:
-    uses: ./.github/workflows/setup-python-environment.yml
+    uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
       python-version: '3.8'
@@ -62,6 +62,7 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations-mariadb.sh
   publish-python-package:
+    if: github.repository == 'zenml-io/zenml'
     needs:
       - setup-and-test
       - mlstacks-compatibility-check
@@ -78,10 +79,12 @@ jobs:
         run: sleep 240
         shell: bash
   publish-docker-image:
+    if: github.repository == 'zenml-io/zenml'
     needs: wait-for-package-release
     uses: ./.github/workflows/publish_docker_image.yml
     secrets: inherit
   publish-helm-chart:
+    if: github.repository == 'zenml-io/zenml'
     needs: publish-docker-image
     uses: ./.github/workflows/publish_helm_chart.yml
     secrets: inherit

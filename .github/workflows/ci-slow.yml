@@ -1,25 +1,39 @@
 ---
-name: Build, Lint, Unit, Integration and Templates Tests
+name: Slow CI
 on:
-  workflow_dispatch:
-  workflow_call:
-  push:
-    branches: [main]
-    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
   pull_request:
-    types: [opened, synchronize, ready_for_review]
-    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
+    types: [ready_for_review]
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  mlstacks-compatibility-check:
-    if: github.event.pull_request.draft == false
+  docstring-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.1.1
+      - name: Set up Python
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.10'
+      - name: Install current package as editable
+        run: pip install -U darglint
+      - name: Check docstrings
+        run: bash scripts/docstring.sh
+  sqlite-db-migration-testing:
+    runs-on: ubuntu-dind-runners
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.9'
+      - name: Test migrations across versions
+        run: bash scripts/test-migrations-mysql.sh sqlite
+  small-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.1
       - name: Set up Python
         uses: actions/setup-python@v5.0.0
         with:
@@ -32,87 +46,100 @@ jobs:
         run: pip install mlstacks
       - name: Check for broken dependencies
         run: pip check
-  custom-ubuntu-runners-setup-and-test-python:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-dind-runners]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  windows-setup-and-test-python:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  macos-setup-and-test-python:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-      fail-fast: false
-    uses: ./.github/workflows/setup-python-environment.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
+      - name: Markdown link check
+        uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          folder-path: ./examples, ./docs/book, ./src
+          file-path: ./README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md,
+            CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md
+          config-file: .github/workflows/markdown_check_config.json
+        continue-on-error: true
+      - name: Security check
+        run: |
+          pip install bandit
+          bash scripts/check-security.sh
+      - name: Check for alembic branch divergence
+        env:
+          ZENML_DEBUG: 0
+        run: |
+          pip install alembic
+          bash scripts/check-alembic-branches.sh
   update-templates-to-examples:
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
-    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml'
     uses: ./.github/workflows/update-templates-to-examples.yml
     with:
       python-version: '3.8'
       os: ubuntu-latest
     secrets: inherit
+  custom-ubuntu-unit-test:
+    strategy:
+      matrix:
+        os: [ubuntu-dind-runners]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  windows-unit-test:
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+  macos-unit-test:
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   windows-integration-test:
-    needs: [windows-setup-and-test-python]
     strategy:
       matrix:
         os: [windows-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11']
         test_environment: [default]
       fail-fast: false
-    uses: ./.github/workflows/integration-test.yml
+    uses: ./.github/workflows/integration-test-slow.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      is-slow-ci: true
     secrets: inherit
   macos-integration-test:
-    needs: [macos-setup-and-test-python]
     strategy:
       matrix:
         os: [macos-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11']
         test_environment: [default]
       fail-fast: false
-    uses: ./.github/workflows/integration-test.yml
+    uses: ./.github/workflows/integration-test-slow.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      is-slow-ci: true
     secrets: inherit
-  custom-ubuntu-runners-integration-test:
-    needs: [custom-ubuntu-runners-setup-and-test-python]
+  custom-ubuntu-integration-test:
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
-        # Disabled temporarily while CI is overhauled
-        python-version: ['3.8', '3.9', '3.10']
-        # python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql
@@ -132,9 +159,10 @@ jobs:
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.11'
       fail-fast: false
-    uses: ./.github/workflows/integration-test.yml
+    uses: ./.github/workflows/integration-test-slow.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      is-slow-ci: true
     secrets: inherit

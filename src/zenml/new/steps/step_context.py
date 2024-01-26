@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.models import (
         ArtifactVersionResponse,
         PipelineResponse,
@@ -163,33 +163,46 @@ class StepContext(metaclass=SingletonMetaClass):
         )
 
     @property
-    def model_version(self) -> "ModelVersion":
-        """Returns configured ModelVersion.
+    def model(self) -> "Model":
+        """Returns configured Model.
 
-        Order of resolution to search for ModelVersion is:
-            1. ModelVersion from @step
-            2. ModelVersion from @pipeline
+        Order of resolution to search for Model is:
+            1. Model from @step
+            2. Model from @pipeline
 
         Returns:
-            The `ModelVersion` object associated with the current step.
+            The `Model` object associated with the current step.
 
         Raises:
-            StepContextError: If the `ModelVersion` object is not set in `@step` or `@pipeline`.
+            StepContextError: If the `Model` object is not set in `@step` or `@pipeline`.
         """
-        if self.step_run.config.model_version is not None:
-            model_version = self.step_run.config.model_version
-        elif self.pipeline_run.config.model_version is not None:
-            model_version = self.pipeline_run.config.model_version
+        if self.step_run.config.model is not None:
+            model = self.step_run.config.model
+        elif self.pipeline_run.config.model is not None:
+            model = self.pipeline_run.config.model
         else:
             raise StepContextError(
-                f"Unable to get ModelVersion in step '{self.step_name}' of pipeline "
+                f"Unable to get Model in step '{self.step_name}' of pipeline "
                 f"run '{self.pipeline_run.id}': it was not set in `@step` or `@pipeline`."
             )
 
         # warm-up the model version
-        model_version._get_or_create_model_version()
+        model._get_or_create_model_version()
 
-        return model_version
+        return model
+
+    # TODO: deprecate me
+    @property
+    def model_version(self) -> "Model":
+        """DEPRECATED, use `model` instead.
+
+        Returns:
+            The `Model` object associated with the current step.
+        """
+        logger.warning(
+            "Step context `model_version` is deprecated. Please use `model` instead."
+        )
+        return self.model
 
     @property
     def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:

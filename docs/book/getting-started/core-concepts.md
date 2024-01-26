@@ -14,15 +14,23 @@ First, let's look at the main concepts which play a role during the development 
 
 #### Step
 
-Steps are functions annotated with the `@step` decorator. These functions have inputs and outputs. For ZenML to work properly, these should preferably be typed.
+Steps are functions annotated with the `@step` decorator. The easiest one could look like this.
+
+```python
+@step
+def step_1() -> str:
+    """Returns a string."""
+    return "world"
+```
+
+These functions can also have inputs and outputs. For ZenML to work properly, these should preferably be typed.
 
 ```python
 @step(enable_cache=False)
-def step_2(input_one: str, input_two: str) -> None:
+def step_2(input_one: str, input_two: str) -> str:
     """Combines the two strings passed in."""
     combined_str = f"{input_one} {input_two}"
     return combined_str
-```
 
 #### Pipelines
 
@@ -76,9 +84,9 @@ All materializers use the base abstraction called the `BaseMaterializer` class. 
 
 When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation workflow in time, so you can return to them exactly as you run them. On top of the parameters that you provide for your steps, you can also use different `Setting`s to configure runtime configurations for your infrastructure and pipelines.
 
-#### Model and Model Versions
+#### Model and model versions
 
-ZenML exposes the concept of a `Model`, which consists of multiple different `Model Versions`. A `Model Version` represents a unified view of the ML models that are created, tracked, and managed as part of a ZenML project. Model Versions link all other entities to a centralized view.
+ZenML exposes the concept of a `Model`, which consists of multiple different model versions. A model version represents a unified view of the ML models that are created, tracked, and managed as part of a ZenML project. Model versions link all other entities to a centralized view.
 
 ## 2. Execution
 

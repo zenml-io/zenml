@@ -17,7 +17,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 
 
 class ModelVersionDataLazyLoader(BaseModel):
@@ -28,7 +28,7 @@ class ModelVersionDataLazyLoader(BaseModel):
     model version during runtime time of the step.
     """
 
-    model_version: ModelVersion
+    model: Model
     artifact_name: Optional[str] = None
     artifact_version: Optional[str] = None
     metadata_name: Optional[str] = None

@@ -26,6 +26,13 @@ You should use the Vertex step operator if:
 
 ### How to use it
 
+{% hint style="warning" %}
+The GCP step operator (and GCP integration in general) currently only works
+for Python versions <3.11. The ZenML team is aware of this dependency
+clash/issue and is working on a fix. For now, please use Python <3.11 together
+with the GCP integration.
+{% endhint %}
+
 To use the Vertex step operator, we need:
 
 * The ZenML `gcp` integration installed. If you haven't done so, run

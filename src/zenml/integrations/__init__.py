@@ -40,7 +40,9 @@ from zenml.integrations.kserve import KServeIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa
 from zenml.integrations.kubernetes import KubernetesIntegration  # noqa
 from zenml.integrations.label_studio import LabelStudioIntegration  # noqa
+from zenml.integrations.langchain import LangchainIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
+# from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neptune import NeptuneIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
@@ -56,9 +58,9 @@ from zenml.integrations.s3 import S3Integration  # noqa
 from zenml.integrations.scipy import ScipyIntegration  # noqa
 from zenml.integrations.seldon import SeldonIntegration  # noqa
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
-from zenml.integrations.skypilot import SkypilotAWSIntegration  # noqa
-from zenml.integrations.skypilot import SkypilotGCPIntegration  # noqa
-from zenml.integrations.skypilot import SkypilotAzureIntegration  # noqa
+from zenml.integrations.skypilot_aws import SkypilotAWSIntegration  # noqa
+from zenml.integrations.skypilot_gcp import SkypilotGCPIntegration  # noqa
+from zenml.integrations.skypilot_azure import SkypilotAzureIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.spark import SparkIntegration  # noqa
 from zenml.integrations.tekton import TektonIntegration  # noqa
@@ -67,7 +69,3 @@ from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa
-
-if sys.version_info > (3, 7):
-    # from zenml.integrations.llama_index import LlamaIndexIntegration  # noqa
-    from zenml.integrations.langchain import LangchainIntegration  # noqa

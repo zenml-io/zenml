@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.54.1"
+version = "0.55.1"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -137,6 +137,10 @@ pytest = { version = "^7.4.0", optional = true }
 pytest-randomly = { version = "^3.10.1", optional = true }
 pytest-mock = { version = "^3.6.1", optional = true }
 pytest-clarity = { version = "^1.0.1", optional = true }
+pytest-instafail = { version = ">=0.5.0", optional = true }
+pytest-rerunfailures = { version = ">=13.0", optional = true }
+pytest-split = { version = "^0.8.1", optional = true }
+
 # mkdocs including plugins
 mkdocs = { version = "^1.2.3", optional = true }
 mkdocs-material = { version = "^8.1.7", optional = true }
@@ -216,6 +220,9 @@ dev = [
     "pytest-randomly",
     "pytest-mock",
     "pytest-clarity",
+    "pytest-instafail",
+    "pytest-rerunfailures",
+    "pytest-split",
     "mkdocs",
     "mkdocs-material",
     "mkdocs-awesome-pages-plugin",
@@ -288,6 +295,7 @@ exclude = [
     "__pypackages__",
     "_build",
     "buck-out",
+    ".test_durations",
     "build",
     "dist",
     "node_modules",

@@ -19,18 +19,18 @@ from zenml import pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
 from zenml.enums import ModelStages
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 
 MODEL_NAME = "foo"
 
 
-@step(model_version=ModelVersion(name=MODEL_NAME))
+@step(model=Model(name=MODEL_NAME))
 def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
     """Untyped single output linked as Artifact from step context."""
     return 1
 
 
-@step(model_version=ModelVersion(name=MODEL_NAME))
+@step(model=Model(name=MODEL_NAME))
 def single_output_step_from_context_model() -> (
     Annotated[int, ArtifactConfig(is_model_artifact=True)]
 ):
@@ -38,7 +38,7 @@ def single_output_step_from_context_model() -> (
     return 1
 
 
-@step(model_version=ModelVersion(name=MODEL_NAME))
+@step(model=Model(name=MODEL_NAME))
 def single_output_step_from_context_endpoint() -> (
     Annotated[int, ArtifactConfig(is_deployment_artifact=True)]
 ):
@@ -93,7 +93,7 @@ def test_link_minimalistic(clean_client: "Client"):
     assert one_is_data_artifact
 
 
-@step(model_version=ModelVersion(name=MODEL_NAME))
+@step(model=Model(name=MODEL_NAME))
 def multi_named_output_step_from_context() -> (
     Tuple[
         Annotated[int, "1"],
@@ -129,7 +129,7 @@ def test_link_multiple_named_outputs(clean_client: "Client"):
     assert al.size == 3
 
 
-@step(model_version=ModelVersion(name=MODEL_NAME))
+@step(model=Model(name=MODEL_NAME))
 def multi_named_output_step_not_tracked() -> (
     Tuple[
         Annotated[int, "1"],
@@ -137,13 +137,13 @@ def multi_named_output_step_not_tracked() -> (
         Annotated[int, "3"],
     ]
 ):
-    """Here links would be implicitly created based on step ModelVersion."""
+    """Here links would be implicitly created based on step Model."""
     return 1, 2, 3
 
 
 @pipeline(enable_cache=False)
 def multi_named_pipeline_not_tracked():
-    """Here links would be implicitly created based on step ModelVersion."""
+    """Here links would be implicitly created based on step Model."""
     multi_named_output_step_not_tracked()
 
 
@@ -203,10 +203,10 @@ def test_link_multiple_named_outputs_with_self_context_and_caching(
     ws = clean_client.active_workspace.id
 
     # manual creation needed, as we work with specific versions
-    m1 = ModelVersion(
+    m1 = Model(
         name=MODEL_NAME,
     )._get_or_create_model()
-    m2 = ModelVersion(
+    m2 = Model(
         name="bar",
     )._get_or_create_model()
 
@@ -244,7 +244,7 @@ def test_link_multiple_named_outputs_with_self_context_and_caching(
                 )
 
 
-@step(model_version=ModelVersion(name="step", version="step"))
+@step(model=Model(name="step", version="step"))
 def multi_named_output_step_mixed_linkage() -> (
     Tuple[
         Annotated[
@@ -279,7 +279,7 @@ def some_plain_outputs():
     return "bar", 42.0
 
 
-@step(model_version=ModelVersion(name="step", version="step"))
+@step(model=Model(name="step", version="step"))
 def and_some_typed_outputs() -> int:
     """This artifact can be implicitly tracked with step config."""
     return 1
@@ -287,7 +287,7 @@ def and_some_typed_outputs() -> int:
 
 @pipeline(
     enable_cache=False,
-    model_version=ModelVersion(name="pipe", version="pipe"),
+    model=Model(name="pipe", version="pipe"),
 )
 def multi_named_pipeline_mixed_linkage():
     """Mixed linking cases, see steps description."""
@@ -309,7 +309,7 @@ def test_link_multiple_named_outputs_with_mixed_linkage(
     mvs = []
     for n in ["pipe", "step", "artifact"]:
         models.append(
-            ModelVersion(
+            Model(
                 name=n,
             )._get_or_create_model()
         )
@@ -369,7 +369,7 @@ def test_artifacts_linked_from_cache_steps(clean_client: "Client"):
     """Test that artifacts are linked from cache steps."""
 
     @pipeline(
-        model_version=ModelVersion(name="foo"),
+        model=Model(name="foo"),
         enable_cache=False,
     )
     def _inner_pipeline(force_disable_cache: bool = False):
@@ -385,7 +385,7 @@ def test_artifacts_linked_from_cache_steps(clean_client: "Client"):
         _non_cacheable_step()
 
     for i in range(1, 3):
-        ModelVersion(name="bar")._get_or_create_model_version()
+        Model(name="bar")._get_or_create_model_version()
         _inner_pipeline(i != 1)
 
         mvrm = clean_client.get_model_version(
@@ -419,7 +419,7 @@ def test_artifacts_linked_from_cache_steps_same_id(clean_client: "Client"):
     """
 
     @pipeline(
-        model_version=ModelVersion(name="foo"),
+        model=Model(name="foo"),
         enable_cache=False,
     )
     def _inner_pipeline(force_disable_cache: bool = False):
@@ -429,7 +429,7 @@ def test_artifacts_linked_from_cache_steps_same_id(clean_client: "Client"):
         _non_cacheable_step()
 
     for i in range(1, 3):
-        ModelVersion(name="bar")._get_or_create_model_version()
+        Model(name="bar")._get_or_create_model_version()
         _inner_pipeline(i != 1)
 
         mvrm = clean_client.get_model_version(

@@ -40,6 +40,8 @@ class Action(StrEnum):
     # Secrets
     BACKUP_RESTORE = "backup_restore"
 
+    SHARE = "share"
+
 
 class ResourceType(StrEnum):
     """Resource types of the server API."""
