@@ -174,20 +174,6 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         return HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC
 
-    # def _canonical_resource_id(
-    #     self, resource_type: str, resource_id: str
-    # ) -> str:
-    #     """Convert a resource ID to its canonical form.
-
-    #     Args:
-    #         resource_type: The resource type to canonicalize.
-    #         resource_id: The resource ID to canonicalize.
-
-    #     Returns:
-    #         The canonical resource ID.
-    #     """
-    #     return self._parse_resource_id(resource_id)
-
     def _get_default_resource_id(self, resource_type: str) -> str:
         """Get the default resource ID for a resource type.
 
