@@ -31,7 +31,6 @@ from zenml.constants import API, HEALTH
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
-    action_flavor_endpoints,
     artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
@@ -207,7 +206,6 @@ def dashboard(request: Request) -> Any:
 # to run this file locally, execute:
 # uvicorn zenml.zen_server.zen_server_api:app --reload
 
-app.include_router(action_flavor_endpoints.router)
 app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)

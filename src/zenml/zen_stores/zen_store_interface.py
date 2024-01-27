@@ -16,8 +16,6 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
-from zenml.action_plans.base_action_plan_plugin import ActionFlavorResponse
-from zenml.event_sources.base_event_source_plugin import EventFlavorResponse
 from zenml.models import (
     APIKeyFilter,
     APIKeyRequest,
@@ -223,35 +221,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The ID of the deployment.
-        """
-
-    # -------------------- Action Flavors --------------------
-
-    @abstractmethod
-    def get_action_flavor(
-        self,
-        flavor_name: str,
-    ) -> ActionFlavorResponse:
-        """Get an action flavor by its name.
-
-        Args:
-            flavor_name: The name of the flavor to get.
-
-        Returns:
-            The action flavor.
-
-        Raises:
-            KeyError: if the action flavor doesn't exist.
-        """
-
-    @abstractmethod
-    def list_action_flavors(
-        self,
-    ) -> List[ActionFlavorResponse]:
-        """List all action flavors matching the given filter criteria.
-
-        Returns:
-            A list of all action flavors.
         """
 
     # -------------------- API Keys --------------------
@@ -830,35 +799,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no device with the given ID exists.
-        """
-
-    # -------------------- Event Flavors --------------------
-
-    @abstractmethod
-    def get_event_flavor(
-        self,
-        flavor_name: str,
-    ) -> EventFlavorResponse:
-        """Get an event flavor by its name.
-
-        Args:
-            flavor_name: The name of the flavor to get.
-
-        Returns:
-            The event flavor.
-
-        Raises:
-            KeyError: if the event flavor doesn't exist.
-        """
-
-    @abstractmethod
-    def list_event_flavors(
-        self,
-    ) -> List[EventFlavorResponse]:
-        """List all event flavors matching the given filter criteria.
-
-        Returns:
-            A list of all event flavors.
         """
 
     # -------------------- Flavors --------------------

@@ -132,7 +132,7 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         else:
             return
 
-    def process_event(self, event: BaseEvent):
+    def process_event(self, event: Dict[str, Any]):
         """Process the incoming event and forward with trigger_ids to event hub.
 
         Args:
@@ -158,7 +158,9 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
             )
 
     @abstractmethod
-    def _get_all_relevant_event_sources(self, event: BaseEvent) -> List[UUID]:
+    def _get_all_relevant_event_sources(
+        self, event: Dict[str, Any]
+    ) -> List[UUID]:
         """Filter Event Sources for flavor and flavor specific properties.
 
         Args:
@@ -169,7 +171,7 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
 
     @abstractmethod
     def _get_matching_triggers(
-        self, event_source_ids: List[UUID], event: BaseEvent
+        self, event_source_ids: List[UUID], event: Dict[str, Any]
     ) -> List[UUID]:
         """Get all Triggers with matching event filters.
 

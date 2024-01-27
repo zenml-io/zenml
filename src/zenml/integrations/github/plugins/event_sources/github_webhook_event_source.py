@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the github event handler."""
 from functools import partial
-from typing import List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -165,7 +165,7 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         return GithubWebhookEventSourceConfiguration
 
     def _get_all_relevant_event_sources(
-        self, event: GithubEvent
+        self, event: Dict[str, Any]
     ) -> List[UUID]:
         """Filter Event Sources for flavor and flavor specific properties.
 
@@ -189,8 +189,7 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         ids_list: List[UUID] = []
 
         # TODO: improve this
-        if isinstance(event, dict):
-            event = GithubEvent(**event)
+        event = GithubEvent(**event)
 
         for es in event_sources:
             esc = GithubWebhookEventSourceConfiguration(
@@ -202,7 +201,7 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         return ids_list
 
     def _get_matching_triggers(
-        self, event_source_ids: List[UUID], event: GithubEvent
+        self, event_source_ids: List[UUID], event: Dict[str, Any]
     ) -> List[UUID]:
         """Get all Triggers with matching event filters.
 

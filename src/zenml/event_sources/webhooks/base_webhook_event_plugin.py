@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Abstract BaseEvent class that all Event implementations must implement."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, ClassVar, Type
 
+from zenml.enums import PluginSubType
 from zenml.event_sources.base_event_source_plugin import (
     BaseEvent,
     BaseEventSourcePlugin,
@@ -85,3 +86,5 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
 
 class BaseWebhookEventSourcePluginFlavor(BaseEventSourcePluginFlavor, ABC):
     """Base Event Plugin Flavor to access an event plugin along with its configurations."""
+
+    SUBTYPE: ClassVar[PluginSubType] = PluginSubType.WEBHOOK

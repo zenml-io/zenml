@@ -17,7 +17,8 @@ from typing import TYPE_CHECKING, ClassVar, Type
 
 from pydantic import BaseModel, Extra
 
-from zenml.enums import PluginType
+from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import PluginSubType, PluginType
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -41,13 +42,14 @@ class BasePluginConfig(BaseModel, ABC):
 class BasePlugin(ABC):
     """Base Class for all Plugins."""
 
-    def __init__(self, zen_store: "BaseZenStore"):
-        """Initialize the plugin implementation.
+    @property
+    def zen_store(self) -> "BaseZenStore":
+        """Returns the `BasePluginConfig` config.
 
-        Args:
-            zen_store: The active zen_store.
+        Returns:
+            The configuration.
         """
-        self.zen_store: "BaseZenStore" = zen_store
+        return GlobalConfiguration().zen_store
 
     @property
     @abstractmethod
@@ -70,6 +72,7 @@ class BasePluginFlavor(ABC):
     """Base Class for all PluginFlavors."""
 
     TYPE: ClassVar[PluginType]
+    SUBTYPE: ClassVar[PluginSubType]
     FLAVOR: ClassVar[str]
     PLUGIN_CLASS: ClassVar[Type[BasePlugin]]
 
