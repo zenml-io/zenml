@@ -14,13 +14,15 @@
 """Utils for event sources and event filters."""
 from typing import Any, Dict
 
-from zenml.enums import PluginType
-from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
+from zenml.enums import PluginType, PluginSubType
+from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry, \
+    plugin_flavor_registry
 
 
 def fail_if_invalid_event_filter_configuration(
     flavor: str,
     plugin_type: PluginType,
+    plugin_subtype: PluginSubType,
     configuration_dict: Dict[str, Any],
 ) -> bool:
     """Validate the configuration of an event filter.
@@ -28,6 +30,7 @@ def fail_if_invalid_event_filter_configuration(
     Args:
         flavor: Name of the flavor
         plugin_type: The type of plugin
+        plugin_subtype: The subtype of plugin
         configuration_dict: The event filter configuration to validate.
 
     Returns:
@@ -37,8 +40,8 @@ def fail_if_invalid_event_filter_configuration(
         ValueError: If the configuration is invalid.
     """
     event_configuration_class = (
-        PluginFlavorRegistry()
-        .get_flavor_class(flavor, plugin_type)
+        plugin_flavor_registry
+        .get_flavor_class(flavor=flavor, _type=plugin_type, subtype=plugin_subtype)
         .EVENT_FILTER_CONFIG_CLASS
     )
     try:

@@ -6917,6 +6917,7 @@ class SqlZenStore(BaseZenStore):
             fail_if_invalid_event_filter_configuration(
                 flavor=event_source.flavor,
                 plugin_type=event_source.plugin_type,
+                plugin_subtype=event_source.plugin_subtype,
                 configuration_dict=trigger.event_filter,
             )
 

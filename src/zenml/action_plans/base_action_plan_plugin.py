@@ -18,11 +18,11 @@ from typing import Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginType
 from zenml.event_sources.base_event_source_plugin import EventSourceConfig
+from zenml.models.v2.plugin.action_flavor import ActionFlavorResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
     BasePluginConfig,
     BasePluginFlavor,
-    BasePluginFlavorResponse,
 )
 
 # -------------------- Configuration Models ----------------------------------
@@ -30,12 +30,6 @@ from zenml.plugins.base_plugin_flavor import (
 
 class ActionPlanConfig(BasePluginConfig):
     """Allows configuring the action configuration."""
-
-
-class ActionFlavorResponse(BasePluginFlavorResponse):
-    """Response model for Action Plans."""
-
-    config_schema: Dict[str, Any]
 
 
 # -------------------- Plugin -----------------------------------

@@ -70,6 +70,7 @@ class EventSourceSchema(NamedSchema, table=True):
 
     flavor: str = Field(nullable=False)
     plugin_type: str = Field(nullable=False)
+    plugin_subtype: str = Field(nullable=False)
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
     configuration: bytes
@@ -89,6 +90,7 @@ class EventSourceSchema(NamedSchema, table=True):
             user_id=request.user,
             flavor=request.flavor,
             plugin_type=request.plugin_type,
+            plugin_subtype=request.plugin_subtype,
             name=request.name,
             description=request.description,
             configuration=base64.b64encode(
@@ -129,6 +131,7 @@ class EventSourceSchema(NamedSchema, table=True):
             name=self.name,
             flavor=self.flavor,
             plugin_type=self.plugin_type,
+            plugin_subtype=self.plugin_subtype,
             body=body,
             metadata=metadata,
         )
@@ -147,7 +150,7 @@ class EventSourceSchema(NamedSchema, table=True):
                 self.configuration = base64.b64encode(
                     json.dumps(update.configuration).encode("utf-8")
                 )
-            elif field in ["flavor", "plugin_type"]:
+            elif field in ["flavor", "plugin_type", "plugin_subtype"]:
                 pass
             else:
                 setattr(self, field, value)

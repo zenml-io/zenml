@@ -66,7 +66,7 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
         """
 
     def _create_event_source(
-        self, event_source_request: EventSourceRequest
+        self, event_source: EventSourceRequest
     ) -> EventSourceResponse:
         """Wraps the zen_store creation method to add plugin specific functionality."""
         secret_key_value = (
@@ -75,7 +75,7 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
         print("Implementation not done:", secret_key_value)
         # event_source_request.secret_id = ... # Here we add the secret_id to the event_source
         created_event_source = self.zen_store.create_event_source(
-            event_source=event_source_request
+            event_source=event_source
         )
         # created_event_source.secret_value = ...
         return created_event_source

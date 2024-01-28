@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import PluginType
+from zenml.enums import PluginType, PluginSubType
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -44,6 +44,10 @@ class EventSourceRequest(WorkspaceScopedRequest):
     )
     plugin_type: PluginType = Field(
         title="The plugin type of the event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    plugin_subtype: PluginSubType = Field(
+        title="The plugin subtype of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: str = Field(
@@ -119,6 +123,10 @@ class EventSourceResponse(
         title="The plugin type of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    plugin_subtype: PluginSubType = Field(
+        title="The plugin subtype of the event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     description: str = Field(
         default="",
         title="The description of the event source.",
@@ -142,5 +150,9 @@ class EventSourceFilter(WorkspaceScopedFilter):
     )
     plugin_type: Optional[str] = Field(
         title="The plugin type of the event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    plugin_subtype: Optional[str] = Field(
+        title="The plugin sub type of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )

@@ -66,13 +66,13 @@ class BaseScheduleEventSourcePlugin(BaseEventSourcePlugin, ABC):
         """
 
     def _create_event_source(
-        self, event_source_request: EventSourceRequest
+        self, event_source: EventSourceRequest
     ) -> EventSourceResponse:
         """Wraps the zen_store creation method to add plugin specific functionality."""
         # Implementations will be able to actually configure an external CronJobs
         #  before storing them in the database
         created_event_source = self.zen_store.create_event_source(
-            event_source=event_source_request
+            event_source=event_source
         )
         return created_event_source
 
