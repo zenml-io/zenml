@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Action flavor model definitions."""
-from typing import Dict, Any
+from typing import Any, Dict
 
 from zenml.plugins.base_plugin_flavor import BasePluginFlavorResponse
 

@@ -14,9 +14,8 @@
 """Utils for event sources and event filters."""
 from typing import Any, Dict
 
-from zenml.enums import PluginType, PluginSubType
-from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry, \
-    plugin_flavor_registry
+from zenml.enums import PluginSubType, PluginType
+from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 
 
 def fail_if_invalid_event_filter_configuration(
@@ -39,11 +38,9 @@ def fail_if_invalid_event_filter_configuration(
     Raises:
         ValueError: If the configuration is invalid.
     """
-    event_configuration_class = (
-        plugin_flavor_registry
-        .get_flavor_class(flavor=flavor, _type=plugin_type, subtype=plugin_subtype)
-        .EVENT_FILTER_CONFIG_CLASS
-    )
+    event_configuration_class = plugin_flavor_registry.get_flavor_class(
+        flavor=flavor, _type=plugin_type, subtype=plugin_subtype
+    ).EVENT_FILTER_CONFIG_CLASS
     try:
         event_configuration_class(**configuration_dict)
     except ValueError:

@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
 from zenml.plugins.base_plugin_flavor import BasePluginFlavorResponse
 

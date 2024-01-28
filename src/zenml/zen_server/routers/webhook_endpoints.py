@@ -17,7 +17,7 @@ from typing import Any, Dict
 from fastapi import APIRouter
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
-from zenml.enums import PluginType, PluginSubType
+from zenml.enums import PluginSubType, PluginType
 from zenml.event_sources.webhooks.base_webhook_event_plugin import (
     BaseWebhookEventSourcePlugin,
 )
@@ -46,7 +46,9 @@ def webhook(flavor_name: str, body: Dict[str, Any]):
     """
     try:
         plugin_cls = plugin_flavor_registry.get_plugin_implementation(
-            flavor=flavor_name, _type=PluginType.EVENT_SOURCE, subtype=PluginSubType.WEBHOOK
+            flavor=flavor_name,
+            _type=PluginType.EVENT_SOURCE,
+            subtype=PluginSubType.WEBHOOK,
         )
         #
     except KeyError as e:
