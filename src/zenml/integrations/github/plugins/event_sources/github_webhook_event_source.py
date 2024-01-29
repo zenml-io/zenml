@@ -33,6 +33,7 @@ from zenml.models import (
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.pagination_utils import depaginate
+
 logger = get_logger(__name__)
 
 # -------------------- Utils -----------------------------------
