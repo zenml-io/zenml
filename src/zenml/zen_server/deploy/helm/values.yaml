@@ -669,6 +669,8 @@ zenml:
       # - user-account - Use a GCP user account
       # - service-account - Use a GCP service account
       # - impersonation - Use the GCP service account impersonation feature
+      # - external-account - Use workload identity federation to authenticate
+      #                      with the GCP Secrets Manager API
       authMethod: service-account
 
       # The GCP Service Connector authentication configuration. This should
@@ -694,6 +696,11 @@ zenml:
         # GCP Secrets Manager instance. Required if the `authMethod` is set to
         # `impersonation`.
         target_principal:
+
+        # The GCP workload identity credentials to use to authenticate with the
+        # GCP Secrets Manager instance. Required if the `authMethod` is set to
+        # `external-account`.
+        external_account_json:
 
     # Azure backup Key Vault secrets store configuration. Only relevant if the
     # `azure` backup secrets store type is configured.
