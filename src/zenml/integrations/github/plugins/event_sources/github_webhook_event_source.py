@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the github event handler."""
+"""Implementation of the github webhook event source."""
 from functools import partial
 from typing import Any, Dict, List, Optional, Type
 from uuid import UUID
@@ -24,6 +24,7 @@ from zenml.event_sources.webhooks.base_webhook_event_plugin import (
     WebhookEventFilterConfig,
     WebhookEventSourceConfig,
 )
+from zenml.logger import get_logger
 from zenml.models import (
     EventSourceFilter,
     EventSourceResponse,
@@ -32,6 +33,7 @@ from zenml.models import (
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.pagination_utils import depaginate
+logger = get_logger(__name__)
 
 # -------------------- Utils -----------------------------------
 
@@ -188,17 +190,20 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
 
         ids_list: List[UUID] = []
 
-        # TODO: improve this
-        event = GithubEvent(**event)
+        try:
+            event = GithubEvent(**event)
+        except ValueError as e:
+            logger.exception(e)
+            return []
+        else:
+            for es in event_sources:
+                esc = GithubWebhookEventSourceConfiguration(
+                    **es.metadata.configuration
+                )
+                if esc.repo == event.repository.name:
+                    ids_list.append(es.id)
 
-        for es in event_sources:
-            esc = GithubWebhookEventSourceConfiguration(
-                **es.metadata.configuration
-            )
-            if esc.repo == event.repository.name:
-                ids_list.append(es.id)
-
-        return ids_list
+            return ids_list
 
     def _get_matching_triggers(
         self, event_source_ids: List[UUID], event: Dict[str, Any]
