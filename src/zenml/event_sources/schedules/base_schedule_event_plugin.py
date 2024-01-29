@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Abstract BaseEvent class that all Event implementations must implement."""
+"""Abstract Schedule class that all Schedule event sources must implement."""
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar, Type
 
