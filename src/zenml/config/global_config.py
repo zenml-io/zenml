@@ -669,11 +669,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             The current zen store.
         """
-        if not self.store:
+        if self._zen_store is None:
             self.set_default_store()
-        elif self._zen_store is None:
-            self._configure_store(self.store)
-
         assert self._zen_store is not None
 
         return self._zen_store
