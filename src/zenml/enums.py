@@ -346,3 +346,16 @@ class MetadataResourceTypes(StrEnum):
     STEP_RUN = "step_run"
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
+
+
+class DatabaseBackupStrategy(StrEnum):
+    """All available database backup strategies."""
+
+    # Backup disabled
+    DISABLED = "disabled"
+    # In-memory backup
+    IN_MEMORY = "in-memory"
+    # Dump the database to a file
+    DUMP_FILE = "dump-file"
+    # Create a backup of the database in the remote database service
+    DATABASE = "database"

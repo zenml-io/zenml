@@ -2,9 +2,11 @@
 
 # 0.55.1
 
+**If you are actively using the Model Control Plane features, we suggest that you directly upgrade to 0.55.1, bypassing 0.55.0.**
+
 This is a patch release bringing backwards compatibility for breaking changes introduced in **0.55.0**, so that appropriate migration actions can be performed at desired pace. Please refer to [the 0.55.0 release notes](https://github.com/zenml-io/zenml/releases/tag/0.55.0) for specific information on breaking changes and how to update your code to align with the new way of doing things. We also have updated our documentation to serve you better and introduced `PipelineNamespace` models in our API.
 
-**If you are actively using the Model Control Plane features, we suggest that you directly upgrade to 0.55.1, bypassing 0.55.0.**
+Also this release is packed with Database recovery in case upgrade failed to migrate Database to a newer version of ZenML.
 
 ## What's Changed
 * Update skypilot docs by @safoinme in https://github.com/zenml-io/zenml/pull/2344
@@ -23,6 +25,8 @@ This is a patch release bringing backwards compatibility for breaking changes in
 * Add MVP pipeline namespace support by @schustmi in https://github.com/zenml-io/zenml/pull/2353
 * Apply docker run args to skypilot orchestrator VM by @schustmi in https://github.com/zenml-io/zenml/pull/2342
 * 📝 Minor docs improvements (basic step example) by @plattenschieber in https://github.com/zenml-io/zenml/pull/2348
+* Add DB backup and recovery during DB schema migrations by @wjayesh in https://github.com/zenml-io/zenml/pull/2158
+* Fix CI issues by @strickvl in https://github.com/zenml-io/zenml/pull/2363
 
 ## New Contributors
 * @plattenschieber made their first contribution in https://github.com/zenml-io/zenml/pull/2348
