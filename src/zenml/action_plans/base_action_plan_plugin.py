@@ -73,7 +73,7 @@ class BaseActionPlanFlavor(BasePluginFlavor, ABC):
 
     @classmethod
     def to_model(self) -> ActionFlavorResponse:
-        """Convert the Flavor into a Response Model."""
+        """Convert the Flavor into a Flavor Response Model."""
         return ActionFlavorResponse(
             name=self.FLAVOR,
             config_schema=self.get_action_plan_config_schema(),
