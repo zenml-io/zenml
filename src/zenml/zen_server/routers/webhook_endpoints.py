@@ -36,13 +36,16 @@ router = APIRouter(
 )
 @handle_exceptions
 def webhook(
-    flavor_name: str, body: Dict[str, Any], background_tasks: BackgroundTasks
+    flavor_name: str,
+    body: Dict[str, Any],
+    background_tasks: BackgroundTasks
 ):
     """Webhook to receive events from external event sources.
 
     Args:
         flavor_name: Path param that indicates which plugin flavor will handle the event.
         body: The request body.
+        background_tasks: BackgroundTask fixture
     """
     background_tasks.add_task(
         event_hub.process_event,
