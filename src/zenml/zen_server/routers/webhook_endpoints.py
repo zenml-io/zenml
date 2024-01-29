@@ -36,9 +36,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def webhook(
-    flavor_name: str,
-    body: Dict[str, Any],
-    background_tasks: BackgroundTasks
+    flavor_name: str, body: Dict[str, Any], background_tasks: BackgroundTasks
 ):
     """Webhook that can be used by external tools.
 
