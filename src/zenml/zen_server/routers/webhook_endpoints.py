@@ -40,7 +40,7 @@ def webhook(
     body: Dict[str, Any],
     background_tasks: BackgroundTasks
 ):
-    """Webhook that can be used by external tools.
+    """Webhook to receive events from external event sources.
 
     Args:
         flavor_name: Path param that indicates which plugin flavor will handle the event.
