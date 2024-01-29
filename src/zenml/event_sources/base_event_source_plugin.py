@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base implementation of the event source configuration."""
+"""Base implementation for event sources."""
 import json
 from abc import ABC, abstractmethod
 from typing import (
