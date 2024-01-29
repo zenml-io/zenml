@@ -15,6 +15,7 @@
 from typing import Any, Dict
 
 from fastapi import APIRouter
+from starlette.background import BackgroundTasks
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import PluginSubType
@@ -34,14 +35,19 @@ router = APIRouter(
     "/{flavor_name}",
 )
 @handle_exceptions
-def webhook(flavor_name: str, body: Dict[str, Any]):
+def webhook(
+    flavor_name: str,
+    body: Dict[str, Any],
+    background_tasks: BackgroundTasks
+):
     """Webhook that can be used by external tools.
 
     Args:
         flavor_name: Path param that indicates which plugin flavor will handle the event.
         body: The request body.
     """
-    event_hub.process_event(
+    background_tasks.add_task(
+        event_hub.process_event,
         incoming_event=body,
         flavor=flavor_name,
         event_source_subtype=PluginSubType.WEBHOOK,
