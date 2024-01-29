@@ -159,6 +159,6 @@ class stack_context:
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
-        """Restores the original active stak."""
+        """Restores the original active stack."""
         if self._default_stack.id != Client().active_stack:
             Client().activate_stack(self._default_stack.id)
