@@ -17,16 +17,12 @@ The HyperAI Service Connector allows authenticating to HyperAI (hyperai.ai)
 GPU equipped instances.
 """
 import base64
-import paramiko
-import io
-import re
-import subprocess
 import tempfile
 from typing import Any, List, Optional
 
+import paramiko
 from pydantic import Field, SecretStr
 
-from zenml.exceptions import AuthorizationException
 from zenml.integrations.hyperai import (
     HYPERAI_CONNECTOR_TYPE,
     HYPERAI_RESOURCE_TYPE,
@@ -73,6 +69,7 @@ class HyperAIConfiguration(HyperAICredentials):
     username: str = Field(
         title="Username to use to connect to the HyperAI instance.",
     )
+
 
 class HyperAIAuthenticationMethods(StrEnum):
     """HyperAI Authentication methods."""
@@ -140,7 +137,7 @@ encrypted with a passphrase. If the key is encrypted, the passphrase must be
 provided. Make sure to provide the key as a Base64 encoded string.
 """,
             config_class=HyperAIConfiguration,
-        )
+        ),
     ],
     resource_types=[
         ResourceTypeModel(
@@ -193,7 +190,6 @@ class HyperAIServiceConnector(ServiceConnector):
 
         return f"{instance_name} (IP {ip_address})"
 
-
     def _paramiko_key_type_given_auth_method(self) -> paramiko.PKey:
         """Get the Paramiko key type given the authentication method.
 
@@ -210,12 +206,11 @@ class HyperAIServiceConnector(ServiceConnector):
         try:
             return mapping[self.auth_method]
         except KeyError:
-            raise ValueError(f"Invalid authentication method: {self.auth_method}")
+            raise ValueError(
+                f"Invalid authentication method: {self.auth_method}"
+            )
 
-
-    def _authorize_client(
-        self
-    ) -> None:
+    def _authorize_client(self) -> None:
         """Verify that the client can authenticate with the HyperAI instance.
 
         Raises:
@@ -233,7 +228,6 @@ class HyperAIServiceConnector(ServiceConnector):
 
         # Connect to the HyperAI instance
         try:
-
             # Convert the SSH key from base64 to string
             base64_key_value = self.config.base64_ssh_key.get_secret_value()
             ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
@@ -241,29 +235,29 @@ class HyperAIServiceConnector(ServiceConnector):
 
             # Create temporary file and write Docker Compose file to it
             with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
-
                 # Get file path
                 file_path = f.name
 
                 # Write Docker Compose file to temporary file
                 with f.file as f_:
                     f_.write(ssh_key)
-                    
+
                 paramiko_key = self._paramiko_key_type_given_auth_method().from_private_key_file(
-                    file_path,
-                    password=ssh_passphrase
+                    file_path, password=ssh_passphrase
                 )
 
             # Trim whitespace from the IP address
             ip_address = str(self.config.ip_address).strip()
-            
+
             paramiko_client = paramiko.client.SSHClient()
-            paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            paramiko_client.set_missing_host_key_policy(
+                paramiko.AutoAddPolicy()
+            )
             paramiko_client.connect(
                 hostname=ip_address,
                 username=self.config.username,
                 pkey=paramiko_key,
-                timeout=30
+                timeout=30,
             )
             paramiko_client.close()
 
@@ -272,10 +266,12 @@ class HyperAIServiceConnector(ServiceConnector):
         except paramiko.ssh_exception.AuthenticationException as e:
             logger.error("Authentication failed: %s", e)
         except paramiko.ssh_exception.SSHException as e:
-            logger.error("SSH error: %s. A common cause for this error is selection of the wrong key type in your service connector.", e)
+            logger.error(
+                "SSH error: %s. A common cause for this error is selection of the wrong key type in your service connector.",
+                e,
+            )
         except Exception as e:
             logger.error("Unknown error: %s", e)
-    
 
     def _connect_to_resource(
         self,
@@ -300,7 +296,6 @@ class HyperAIServiceConnector(ServiceConnector):
 
         # Connect to the HyperAI instance
         try:
-
             # Convert the SSH key from base64 to string
             base64_key_value = self.config.base64_ssh_key.get_secret_value()
             ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
@@ -308,31 +303,31 @@ class HyperAIServiceConnector(ServiceConnector):
 
             # Create temporary file and write Docker Compose file to it
             with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
-
                 # Get file path
                 file_path = f.name
 
                 # Write Docker Compose file to temporary file
                 with f.file as f_:
                     f_.write(ssh_key)
-                    
+
                 paramiko_key = self._paramiko_key_type_given_auth_method().from_private_key_file(
-                    file_path,
-                    password=ssh_passphrase
+                    file_path, password=ssh_passphrase
                 )
 
             # Trim whitespace from the IP address
             ip_address = str(self.config.ip_address).strip()
-            
+
             paramiko_client = paramiko.client.SSHClient()
-            paramiko_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            paramiko_client.set_missing_host_key_policy(
+                paramiko.AutoAddPolicy()
+            )
             paramiko_client.connect(
                 hostname=ip_address,
                 username=self.config.username,
                 pkey=paramiko_key,
-                timeout=30
+                timeout=30,
             )
-            
+
             return paramiko_client
 
         except paramiko.ssh_exception.BadHostKeyException as e:
@@ -340,19 +335,18 @@ class HyperAIServiceConnector(ServiceConnector):
         except paramiko.ssh_exception.AuthenticationException as e:
             logger.error("Authentication failed: %s", e)
         except paramiko.ssh_exception.SSHException as e:
-            logger.error("SSH error: %s. A common cause for this error is selection of the wrong key type in your service connector.", e)
+            logger.error(
+                "SSH error: %s. A common cause for this error is selection of the wrong key type in your service connector.",
+                e,
+            )
         except Exception as e:
             logger.error("Unknown error: %s", e)
-
 
     def _configure_local_client(
         self,
         **kwargs: Any,
     ) -> None:
-        """
-        Configure a local client to authenticate and connect to a resource.
-        There is no local client for the HyperAI connector, so it does nothing.
-        """
+        """There is no local client for the HyperAI connector, so it does nothing."""
         pass
 
     @classmethod
@@ -385,7 +379,6 @@ class HyperAIServiceConnector(ServiceConnector):
         raise NotImplementedError(
             "Auto-configuration is not supported by the HyperAI connector."
         )
-
 
     def _verify(
         self,

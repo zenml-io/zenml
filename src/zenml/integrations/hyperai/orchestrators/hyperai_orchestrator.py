@@ -13,30 +13,18 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML HyperAI orchestrator."""
 
-import copy
-import json
 import os
-import paramiko
 import tempfile
-import sys
-import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+
+import paramiko
 import yaml
 
-from pydantic import validator
-
 from zenml.config.base_settings import BaseSettings
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import (
-    ENV_ZENML_LOCAL_STORES_PATH,
-)
 from zenml.container_registries import BaseContainerRegistry
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
-from zenml.integrations.hyperai import (
-    HYPERAI_RESOURCE_TYPE
-)
+from zenml.integrations.hyperai import HYPERAI_RESOURCE_TYPE
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import (
@@ -45,7 +33,6 @@ from zenml.orchestrators import (
     ContainerizedOrchestrator,
 )
 from zenml.stack import Stack, StackValidator
-from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse
@@ -53,8 +40,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ENV_ZENML_HYPERAI_RUN_ID = "ZENML_HYPERAI_ORCHESTRATOR_RUN_ID"
-
-
 
 
 class HyperAIOrchestratorSettings(BaseSettings):
@@ -81,8 +66,9 @@ class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyda
             configuration on the HyperAI instance. This is useful if the container
             registry requires authentication and the HyperAI instance has not been
             manually logged in to the container registry. Defaults to `True`.
-    
+
     """
+
     container_registry_autologin: bool = False
 
     @property
@@ -100,8 +86,7 @@ class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyda
 
 
 class HyperAIOrchestrator(ContainerizedOrchestrator):
-    """Orchestrator responsible for running pipelines on HyperAI instances.
-    """
+    """Orchestrator responsible for running pipelines on HyperAI instances."""
 
     @property
     def config(self) -> HyperAIOrchestratorConfig:
@@ -159,8 +144,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         stack: "Stack",
         environment: Dict[str, str],
     ) -> Any:
-        """Sequentially runs all pipeline steps in Docker containers on a HyperAI instance
-        orchestrated via Docker Compose.
+        """Sequentially runs all pipeline steps in Docker containers.
 
         Assumes that:
         - A HyperAI (hyperai.ai) instance is running on the configured IP address.
@@ -181,12 +165,8 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If a step fails.
         """
-
         # Basic Docker Compose definition
-        compose_definition = {
-            "version": "3",
-            "services": {}
-        }
+        compose_definition = {"version": "3", "services": {}}
 
         # Get deployment id
         deployment_id = deployment.id
@@ -198,7 +178,6 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         # Add each step as a service to the Docker Compose definition
         logger.info("Preparing pipeline steps for deployment.")
         for step_name, step in deployment.step_configurations.items():
-
             # Get image
             image = self.get_image(deployment=deployment, step_name=step_name)
 
@@ -222,15 +201,19 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 "volumes": [
                     f"{mount_from}:{mount_to}"
                     for mount_from, mount_to in step_settings.mounts_from_to.items()
-                ]
+                ],
             }
 
             # Add dependency on upstream steps if applicable
             upstream_steps = step.spec.upstream_steps
             if isinstance(upstream_steps, list) and len(upstream_steps) > 0:
                 for upstream_step_name in upstream_steps:
-                    upstream_container_name = f"{deployment_id}-{upstream_step_name}"
-                    compose_definition["services"][container_name]["depends_on"] = {
+                    upstream_container_name = (
+                        f"{deployment_id}-{upstream_step_name}"
+                    )
+                    compose_definition["services"][container_name][
+                        "depends_on"
+                    ] = {
                         upstream_container_name: {
                             "condition": "service_completed_successfully"
                         }
@@ -241,7 +224,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         compose_definition = yaml.dump(compose_definition)
 
         # Connect to configured HyperAI instance
-        logger.info("Connecting to HyperAI instance and placing Docker Compose file.")
+        logger.info(
+            "Connecting to HyperAI instance and placing Docker Compose file."
+        )
         paramiko_client: paramiko.SSHClient
         if connector := self.get_connector():
             paramiko_client = connector.connect()
@@ -268,15 +253,17 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         # Get container registry autologin setting
         container_registry_autologin = self.config.container_registry_autologin
         if container_registry_autologin:
-            logger.info("Attempting to automatically log in to container registry used by stack.")
-            
+            logger.info(
+                "Attempting to automatically log in to container registry used by stack."
+            )
+
             # Select stack container registry
             container_registry = None
             for component in stack.components.values():
                 if isinstance(component, BaseContainerRegistry):
                     container_registry = component
                     break
-            
+
             # Raise error if no container registry is found
             if not container_registry:
                 raise RuntimeError(
@@ -285,7 +272,10 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Get container registry credentials from its config
             container_registry_url = container_registry.config.uri
-            container_registry_username, container_registry_password = container_registry.credentials
+            (
+                container_registry_username,
+                container_registry_password,
+            ) = container_registry.credentials
 
             # Log in to container registry using --password-stdin
             stdin, stdout, stderr = paramiko_client.exec_command(
@@ -298,7 +288,11 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
         # Set up pipeline-runs directory if it doesn't exist
         nonscheduled_directory_name = "/home/zenml/pipeline-runs"
-        directory_name = nonscheduled_directory_name if not deployment.schedule else "/home/zenml/scheduled-pipeline-runs"
+        directory_name = (
+            nonscheduled_directory_name
+            if not deployment.schedule
+            else "/home/zenml/scheduled-pipeline-runs"
+        )
         stdin, stdout, stderr = paramiko_client.exec_command(
             f"mkdir -p {directory_name}"
         )
@@ -314,20 +308,16 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         stdin, stdout, stderr = paramiko_client.exec_command(
             f"find {nonscheduled_directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
         )
-        
+
         # Create temporary file and write Docker Compose file to it
         with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
-
             # Write Docker Compose file to temporary file
             with f.file as f_:
                 f_.write(compose_definition)
 
             # Scp Docker Compose file to HyperAI instance
             scp_client = paramiko_client.open_sftp()
-            scp_client.put(
-                f.name,
-                f"{directory_name}/docker-compose.yaml"
-            )
+            scp_client.put(f.name, f"{directory_name}/docker-compose.yaml")
             scp_client.close()
 
         # Run or schedule Docker Compose file depending on settings
@@ -336,7 +326,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             stdin, stdout, stderr = paramiko_client.exec_command(
                 f"cd {directory_name} && docker compose up -d"
             )
-        
+
             # Log errors in case of failure
             for line in stderr.readlines():
                 logger.info(line)
@@ -379,7 +369,9 @@ class HyperAIOrchestratorFlavor(BaseOrchestratorFlavor):
             Requirements for compatible service connectors, if a service
             connector is required for this flavor.
         """
-        return ServiceConnectorRequirements(resource_type=HYPERAI_RESOURCE_TYPE)
+        return ServiceConnectorRequirements(
+            resource_type=HYPERAI_RESOURCE_TYPE
+        )
 
     @property
     def docs_url(self) -> Optional[str]:
