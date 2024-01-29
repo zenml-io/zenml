@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Util functions for handling stacks, components, and flavors."""
 
-from typing import Any, Dict, Optional
+from types import TracebackType
+from typing import Any, Dict, Optional, Type
 
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
@@ -139,3 +140,25 @@ def get_flavor_by_name_and_type_from_zen_store(
             f"'{component_type}' exists."
         )
     return flavors[0]
+
+
+class stack_context:
+    """Context handler to reset the original active stack."""
+
+    def __init__(self) -> None:
+        """Constructor for stack_context saves active stack."""
+        self._default_stack = Client().active_stack
+
+    def __enter__(self):
+        """Enters in the stack context."""
+        pass
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        """Restores the original active stak."""
+        if self._default_stack.id != Client().active_stack:
+            Client().activate_stack(self._default_stack.id)

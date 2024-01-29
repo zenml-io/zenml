@@ -73,6 +73,7 @@ from zenml.new.pipelines import build_utils
 from zenml.new.pipelines.model_utils import NewModelRequest
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Stack
+from zenml.stack.utils import stack_context
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
     StepArtifact,
@@ -534,7 +535,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The build output.
         """
-        with track_handler(event=AnalyticsEvent.BUILD_PIPELINE):
+        with track_handler(
+            event=AnalyticsEvent.BUILD_PIPELINE
+        ), stack_context():
             self._prepare_if_possible()
             deployment, pipeline_spec, _, _ = self._compile(
                 config_path=config_path,
@@ -620,7 +623,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
 
-        with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
+        with track_handler(
+            AnalyticsEvent.RUN_PIPELINE
+        ) as analytics_handler, stack_context():
             deployment, pipeline_spec, schedule, build = self._compile(
                 config_path=config_path,
                 run_name=run_name,
@@ -1151,6 +1156,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         # Update with the values in code so they take precedence
         run_config = pydantic_utils.update_model(run_config, update=update)
 
+        self._update_stack_from_config(run_config)
+
         deployment, pipeline_spec = Compiler().compile(
             pipeline=self,
             stack=Client().active_stack,
@@ -1560,3 +1567,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 )
             else:
                 self.prepare()
+
+    def _update_stack_from_config(
+        self, run_configuration: PipelineRunConfiguration
+    ) -> None:
+        """Active the stack from the pupeline run configuation if one is given.
+
+        Args:
+            run_configuration: The run configuration for this pipeline.
+        """
+        if run_configuration.active_stack is not None:
+            Client().activate_stack(run_configuration.active_stack)
