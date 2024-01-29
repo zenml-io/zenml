@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import PluginType, PluginSubType
+from zenml.enums import PluginSubType, PluginType
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,

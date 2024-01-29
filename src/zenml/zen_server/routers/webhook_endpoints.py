@@ -17,12 +17,9 @@ from typing import Any, Dict
 from fastapi import APIRouter
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
-from zenml.enums import PluginType, PluginSubType
-from zenml.event_sources.webhooks.base_webhook_event_plugin import (
-    BaseWebhookEventSourcePlugin,
-)
+from zenml.enums import PluginSubType
+from zenml.event_hub.event_hub import event_hub
 from zenml.logger import get_logger
-from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.utils import handle_exceptions
 
 logger = get_logger(__name__)
@@ -44,14 +41,8 @@ def webhook(flavor_name: str, body: Dict[str, Any]):
         flavor_name: Path param that indicates which plugin flavor will handle the event.
         body: The request body.
     """
-    try:
-        plugin_cls = plugin_flavor_registry.get_plugin_implementation(
-            flavor=flavor_name, _type=PluginType.EVENT_SOURCE, subtype=PluginSubType.WEBHOOK
-        )
-        #
-    except KeyError as e:
-        # TODO: raise the appropriate exception
-        logger.exception(e)
-    else:
-        assert isinstance(plugin_cls, BaseWebhookEventSourcePlugin)
-        plugin_cls.process_event(body)
+    event_hub.process_event(
+        incoming_event=body,
+        flavor=flavor_name,
+        event_source_subtype=PluginSubType.WEBHOOK,
+    )

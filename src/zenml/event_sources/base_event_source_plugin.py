@@ -132,7 +132,9 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         else:
             return
 
-    def process_event(self, event: Dict[str, Any]):
+    def get_matching_triggers_for_event(
+        self, event: Dict[str, Any]
+    ) -> List[UUID]:
         """Process the incoming event and forward with trigger_ids to event hub.
 
         Args:
@@ -152,10 +154,11 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
             # TODO: Forward the event together with the list of trigger ids
             #  over to the EventHub
             logger.info(
-                "An event came in and will be forwarded to "
-                "the following subscriber %s",
+                "An event came in, the following triggers will be"
+                " used: %s ",
                 trigger_ids,
             )
+            return trigger_ids
 
     @abstractmethod
     def _get_all_relevant_event_sources(

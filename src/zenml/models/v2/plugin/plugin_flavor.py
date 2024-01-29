@@ -14,7 +14,7 @@
 """Plugin flavor model definitions."""
 from pydantic import BaseModel
 
-from zenml.enums import PluginType, PluginSubType
+from zenml.enums import PluginSubType, PluginType
 
 
 class BasePluginFlavorResponse(BaseModel):

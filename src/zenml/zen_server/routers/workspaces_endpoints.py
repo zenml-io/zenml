@@ -467,7 +467,9 @@ def create_event_source(
     # TODO: Validate that teh flavor and plugin_type correspond to an event source implementation
 
     plugin_impl = plugin_flavor_registry.get_plugin_implementation(
-        event_source.flavor, event_source.plugin_type, event_source.plugin_subtype
+        event_source.flavor,
+        event_source.plugin_type,
+        event_source.plugin_subtype,
     )
 
     assert issubclass(type(plugin_impl), BaseEventSourcePlugin)  # We know this

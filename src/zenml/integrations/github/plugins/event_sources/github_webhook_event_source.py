@@ -202,7 +202,7 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
 
     def _get_matching_triggers(
         self, event_source_ids: List[UUID], event: Dict[str, Any]
-    ) -> List[UUID]:
+    ) -> List[TriggerResponse]:
         """Get all Triggers with matching event filters.
 
         For github events this will compare the configured event filters
@@ -231,13 +231,13 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         if isinstance(event, dict):
             event = GithubEvent(**event)
 
-        ids_list: List[UUID] = []
+        trigger_list: List[TriggerResponse] = []
 
         for trigger in triggers:
             event_filter = GithubWebhookEventFilterConfiguration(
                 **trigger.metadata.event_filter
             )
             if event_filter.event_matches_filter(event=event):
-                ids_list.append(trigger.id)
+                trigger_list.append(trigger)
 
-        return ids_list
+        return trigger_list
