@@ -83,7 +83,7 @@ class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyda
             manually logged in to the container registry. Defaults to `True`.
     
     """
-    container_registry_autologin: bool = True
+    container_registry_autologin: bool = False
 
     @property
     def is_remote(self) -> bool:
