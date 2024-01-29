@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Registry all event source configurations."""
+"""Registry for all plugins."""
 from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
 from pydantic import BaseModel
