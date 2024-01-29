@@ -30,8 +30,12 @@ class EventHub:
     ):
         """Process an incoming event and execute all configured actions.
 
+        This will first check for any subscribers/triggers for this event,
+        then log the event for later reference and finally perform the
+        configured action(s).
+
         Args:
-            incoming_event: Generic Event
+            incoming_event: Generic event
             flavor: Flavor of Event
             event_source_subtype: Subtype of Event
 
