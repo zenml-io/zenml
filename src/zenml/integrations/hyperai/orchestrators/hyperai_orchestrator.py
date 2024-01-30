@@ -232,8 +232,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
 
         # Get container registry autologin setting
-        container_registry_autologin = self.config.container_registry_autologin
-        if container_registry_autologin:
+        if self.config.container_registry_autologin:
             logger.info(
                 "Attempting to automatically log in to container registry used by stack."
             )
