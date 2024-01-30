@@ -204,6 +204,7 @@ def dashboard(request: Request) -> Any:
 app.include_router(auth_endpoints.router)
 app.include_router(devices_endpoints.router)
 app.include_router(pipelines_endpoints.router)
+app.include_router(pipelines_endpoints.namespace_router)
 app.include_router(workspaces_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(runs_endpoints.router)

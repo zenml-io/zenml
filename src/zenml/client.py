@@ -2478,6 +2478,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
+        pipeline_name: Optional[str] = None,
         user_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
@@ -2504,6 +2505,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             pipeline_id: The id of the pipeline to filter by.
+            pipeline_name: The name of the pipeline to filter by.
             user_id: The id of the user to filter by.
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
@@ -2534,6 +2536,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             pipeline_id=pipeline_id,
+            pipeline_name=pipeline_name,
             schedule_id=schedule_id,
             build_id=build_id,
             deployment_id=deployment_id,
