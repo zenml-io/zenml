@@ -11,7 +11,7 @@ $ zenml service-connector list-types --type hyperai
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃           NAME            │ TYPE       │ RESOURCE TYPES     │ AUTH METHODS │ LOCAL │ REMOTE ┃
 ┠───────────────────────────┼────────────┼────────────────────┼──────────────┼───────┼────────┨
-┃ HyperAI Service Connector │ 🤖 hyperai │ 🤖 hyperai-generic │ rsa-key      │ ✅    │ ✅     ┃
+┃ HyperAI Service Connector │ 🤖 hyperai │ 🤖 hyperai-instance │ rsa-key      │ ✅    │ ✅     ┃
 ┃                           │            │                    │ dsa-key      │       │        ┃
 ┃                           │            │                    │ ecdsa-key    │       │        ┃
 ┃                           │            │                    │ ed25519-key  │       │        ┃
@@ -38,7 +38,7 @@ ZenML creates an SSH connection to the HyperAI instance in the background when u
 SSH private keys configured in the connector will be distributed to all clients that use them to run pipelines with the HyperAI orchestrator. SSH keys are long-lived credentials that give unrestricted access to HyperAI instances.
 {% endhint %}
 
-When configuring the Service Connector, it is required to provide the `ip_address` of the instance and the `username` with which to login. Optionally, it is possible to provide an `instance_name` (for easily recognizing the particular instance) and an `ssh_passphrase` if applicable.
+When configuring the Service Connector, it is required to provide the `hostname` of the instance and the `username` with which to login. Optionally, it is possible to provide an `instance_name` (for easily recognizing the particular instance) and an `ssh_passphrase` if applicable.
 
 ## Auto-configuration
 
