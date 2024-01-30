@@ -167,7 +167,6 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         return HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC
 
-
     def _paramiko_key_type_given_auth_method(self) -> paramiko.PKey:
         """Get the Paramiko key type given the authentication method.
 
@@ -188,7 +187,9 @@ class HyperAIServiceConnector(ServiceConnector):
                 f"Invalid authentication method: {self.auth_method}"
             )
 
-    def _create_paramiko_client(self, hostname: str) -> paramiko.client.SSHClient:
+    def _create_paramiko_client(
+        self, hostname: str
+    ) -> paramiko.client.SSHClient:
         """Create a Paramiko SSH client based on the configuration.
 
         Args:
@@ -254,7 +255,7 @@ class HyperAIServiceConnector(ServiceConnector):
 
     def _authorize_client(self, hostname: str) -> None:
         """Verify that the client can authenticate with the HyperAI instance.
-        
+
         Args:
             hostname: The hostname of the HyperAI instance.
         """
@@ -341,5 +342,5 @@ class HyperAIServiceConnector(ServiceConnector):
         for hostname in self.config.hostnames:
             self._authorize_client(hostname)
             resources.append(hostname)
-        
+
         return resources
