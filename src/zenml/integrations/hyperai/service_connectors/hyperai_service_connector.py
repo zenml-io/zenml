@@ -58,13 +58,8 @@ class HyperAICredentials(AuthenticationConfig):
 class HyperAIConfiguration(HyperAICredentials):
     """HyperAI client configuration."""
 
-    hostname: str = Field(
-        title="IP address of the HyperAI instance.",
-    )
-
-    instance_name: Optional[str] = Field(
-        default=None,
-        title="Name to identify the HyperAI instance, if any.",
+    hostname: List[str] = Field(
+        title="Hostnames of the supported HyperAI instances.",
     )
 
     username: str = Field(
@@ -150,7 +145,7 @@ connector consumers, they are provided a pre-authenticated SSH client
 instance.
 """,
             auth_methods=HyperAIAuthenticationMethods.values(),
-            supports_instances=False,
+            supports_instances=True,
             logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/hyperai/hyperai.png",
             emoji=":robot_face:",
         ),
@@ -172,24 +167,6 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         return HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC
 
-    def _get_default_resource_id(self, resource_type: str) -> str:
-        """Get the default resource ID for a resource type.
-
-        Args:
-            resource_type: The type of the resource to get a default resource ID
-                for. Only called with resource types that do not support
-                multiple instances.
-
-        Returns:
-            The default resource ID for the resource type.
-        """
-        instance_name = self.config.instance_name
-        if instance_name is None:
-            instance_name = "Unnamed instance"
-
-        hostname = str(self.config.hostname).strip()
-
-        return f"{instance_name} (host {hostname})"
 
     def _paramiko_key_type_given_auth_method(self) -> paramiko.PKey:
         """Get the Paramiko key type given the authentication method.
@@ -211,8 +188,11 @@ class HyperAIServiceConnector(ServiceConnector):
                 f"Invalid authentication method: {self.auth_method}"
             )
 
-    def _create_paramiko_client(self) -> paramiko.client.SSHClient:
+    def _create_paramiko_client(self, hostname: str) -> paramiko.client.SSHClient:
         """Create a Paramiko SSH client based on the configuration.
+
+        Args:
+            hostname: The hostname of the HyperAI instance.
 
         Returns:
             A Paramiko SSH client.
@@ -238,7 +218,7 @@ class HyperAIServiceConnector(ServiceConnector):
                 )
 
             # Trim whitespace from the IP address
-            hostname = self.config.hostname.strip()
+            hostname = hostname.strip()
 
             paramiko_client = paramiko.client.SSHClient()
             paramiko_client.set_missing_host_key_policy(
@@ -272,11 +252,15 @@ class HyperAIServiceConnector(ServiceConnector):
             "Could not create SSH client for HyperAI instance."
         )
 
-    def _authorize_client(self) -> None:
-        """Verify that the client can authenticate with the HyperAI instance."""
+    def _authorize_client(self, hostname: str) -> None:
+        """Verify that the client can authenticate with the HyperAI instance.
+        
+        Args:
+            hostname: The hostname of the HyperAI instance.
+        """
         logger.info("Verifying connection to HyperAI instance...")
 
-        paramiko_client = self._create_paramiko_client()
+        paramiko_client = self._create_paramiko_client(hostname)
         paramiko_client.close()
 
     def _connect_to_resource(
@@ -351,5 +335,9 @@ class HyperAIServiceConnector(ServiceConnector):
         Returns:
             The resource ID if the connection can be established.
         """
-        self._authorize_client()
-        return [resource_id] if resource_id else []
+        resources = []
+        for hostname in self.config.hostnames:
+            client = self._authorize_client(hostname)
+            resources.append(resource)
+        
+        return resources
