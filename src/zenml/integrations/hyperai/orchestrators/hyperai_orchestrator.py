@@ -240,11 +240,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
 
             # Select stack container registry
-            container_registry = None
-            for component in stack.components.values():
-                if isinstance(component, BaseContainerRegistry):
-                    container_registry = component
-                    break
+            container_registry = stack.container_registry
 
             # Raise error if no container registry is found
             if not container_registry:
