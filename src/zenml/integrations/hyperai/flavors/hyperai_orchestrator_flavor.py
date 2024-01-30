@@ -54,10 +54,15 @@ class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyda
             configuration on the HyperAI instance. This is useful if the container
             registry requires authentication and the HyperAI instance has not been
             manually logged in to the container registry. Defaults to `False`.
+        automatic_cleanup_pipeline_files: If True, the orchestrator will
+            automatically clean up old pipeline files that are on the HyperAI
+            instance. Pipeline files will be cleaned up if they are 7 days old or
+            older. Defaults to `True`.
 
     """
 
     container_registry_autologin: bool = False
+    automatic_cleanup_pipeline_files: bool = True
 
     @property
     def is_remote(self) -> bool:
