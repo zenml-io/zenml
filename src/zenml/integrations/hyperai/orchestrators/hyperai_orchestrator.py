@@ -222,8 +222,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 ),
                 "environment": environment,
                 "volumes": [
-                    self._generate_valid_path_format(
-                        f"{mount_from}:{mount_to}"
+                    "{}:{}".format(
+                        self._generate_valid_path_format(mount_from),
+                        self._generate_valid_path_format(mount_to),
                     )
                     for mount_from, mount_to in step_settings.mounts_from_to.items()
                 ],
