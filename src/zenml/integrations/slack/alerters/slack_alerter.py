@@ -76,7 +76,7 @@ class SlackAlerter(BaseAlerter):
 
     @property
     def settings_class(self) -> Type[SlackAlerterSettings]:
-        """Settings class for the Kubeflow orchestrator.
+        """Settings class for the Slack alerter.
 
         Returns:
             The settings class.
