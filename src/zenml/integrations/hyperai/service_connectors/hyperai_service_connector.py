@@ -338,8 +338,15 @@ class HyperAIServiceConnector(ServiceConnector):
         Returns:
             The resource ID if the connection can be established.
         """
+        if resource_id not in self.config.hostnames:
+            raise ValueError(
+                f"The supplied hostname '{resource_id}' is not in the list of "
+                f"configured hostnames: {self.config.hostnames}. Please check "
+                f"your configuration."
+            )
+        hostnames = self.config.hostnames if not resource_id else [resource_id]
         resources = []
-        for hostname in self.config.hostnames:
+        for hostname in hostnames:
             self._authorize_client(hostname)
             resources.append(hostname)
 
