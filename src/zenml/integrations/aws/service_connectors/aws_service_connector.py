@@ -251,7 +251,7 @@ have permissions to assume the target IAM role. Configuring an IAM role has all
 the advantages of the AWS IAM Role authentication method plus the added benefit
 of not requiring any explicit credentials to be configured and stored:
 
-* the connector will generate temporary STS tokens upon request by
+* The connector will generate temporary STS tokens upon request by
 [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole).
 * Allows implementing a two layer authentication scheme that keeps the set of
 permissions associated with implicit credentials down to the bare minimum and
