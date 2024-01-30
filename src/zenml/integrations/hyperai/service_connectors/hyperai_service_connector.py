@@ -281,14 +281,8 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         logger.info("Verifying connection to HyperAI instance...")
 
-        try:
-            paramiko_client = self._create_paramiko_client()
-            paramiko_client.close()
-        except Exception as e:
-            logger.error(
-                "Unknown error while connecting to HyperAI instance: %s. Please check your network connection, IP address, and authentication details.",
-                e,
-            )
+        paramiko_client = self._create_paramiko_client()
+        paramiko_client.close()
 
     def _connect_to_resource(
         self,
