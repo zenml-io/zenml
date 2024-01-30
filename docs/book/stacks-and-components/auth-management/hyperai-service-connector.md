@@ -34,6 +34,10 @@ ZenML creates an SSH connection to the HyperAI instance in the background when u
 3. ECDSA key based authentication.
 4. ED25519 key based authentication.
 
+{% hint style="warning" %}
+SSH private keys configured in the connector will be distributed to all clients that use them to run pipelines with the HyperAI orchestrator. SSH keys are long-lived credentials that give unrestricted access to HyperAI instances.
+{% endhint %}
+
 When configuring the Service Connector, it is required to provide the `ip_address` of the instance and the `username` with which to login. Optionally, it is possible to provide an `instance_name` (for easily recognizing the particular instance) and an `ssh_passphrase` if applicable.
 
 ## Auto-configuration
