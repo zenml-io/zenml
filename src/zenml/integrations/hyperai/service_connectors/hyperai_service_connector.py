@@ -27,6 +27,7 @@ from zenml.integrations.hyperai import (
     HYPERAI_CONNECTOR_TYPE,
     HYPERAI_RESOURCE_TYPE,
 )
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -215,6 +216,9 @@ class HyperAIServiceConnector(ServiceConnector):
 
         Returns:
             A Paramiko SSH client.
+
+        Raises:
+            AuthorizationException: If the client cannot be created.
         """
         if self.config.ssh_passphrase is None:
             ssh_passphrase = None
@@ -264,7 +268,7 @@ class HyperAIServiceConnector(ServiceConnector):
                 e,
             )
 
-        return None
+        raise AuthorizationException("Could not create SSH client for HyperAI instance.")
 
     def _authorize_client(self) -> None:
         """Verify that the client can authenticate with the HyperAI instance.
