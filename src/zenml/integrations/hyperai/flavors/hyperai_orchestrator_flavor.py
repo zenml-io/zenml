@@ -145,4 +145,6 @@ class HyperAIOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Implementation class for this flavor.
         """
+        from zenml.integrations.hyperai.orchestrators import HyperAIOrchestrator
+        
         return HyperAIOrchestrator
