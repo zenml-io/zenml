@@ -271,7 +271,10 @@ class HyperAIServiceConnector(ServiceConnector):
                 e,
             )
         except Exception as e:
-            logger.error("Unknown error: %s", e)
+            logger.error(
+                "Unknown error while connecting to HyperAI instance: %s. Please check your network connection, IP address, and authentication details.",
+                e,
+            )
 
     def _connect_to_resource(
         self,
@@ -340,7 +343,10 @@ class HyperAIServiceConnector(ServiceConnector):
                 e,
             )
         except Exception as e:
-            logger.error("Unknown error: %s", e)
+            logger.error(
+                "Unknown error while connecting to HyperAI instance: %s. Please check your network connection, IP address, and authentication details.",
+                e,
+            )
 
     def _configure_local_client(
         self,
