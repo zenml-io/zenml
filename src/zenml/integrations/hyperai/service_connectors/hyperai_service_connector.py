@@ -57,7 +57,7 @@ class HyperAICredentials(AuthenticationConfig):
 class HyperAIConfiguration(HyperAICredentials):
     """HyperAI client configuration."""
 
-    ip_address: str = Field(
+    hostname: str = Field(
         title="IP address of the HyperAI instance.",
     )
 
@@ -186,9 +186,9 @@ class HyperAIServiceConnector(ServiceConnector):
         if instance_name is None:
             instance_name = "Unnamed instance"
 
-        ip_address = str(self.config.ip_address).strip()
+        hostname = str(self.config.hostname).strip()
 
-        return f"{instance_name} (IP {ip_address})"
+        return f"{instance_name} (host {hostname})"
 
     def _paramiko_key_type_given_auth_method(self) -> paramiko.PKey:
         """Get the Paramiko key type given the authentication method.
@@ -242,14 +242,14 @@ class HyperAIServiceConnector(ServiceConnector):
                 )
 
             # Trim whitespace from the IP address
-            ip_address = self.config.ip_address.strip()
+            hostname = self.config.hostname.strip()
 
             paramiko_client = paramiko.client.SSHClient()
             paramiko_client.set_missing_host_key_policy(
                 paramiko.AutoAddPolicy()
             )
             paramiko_client.connect(
-                hostname=ip_address,
+                hostname=hostname,
                 username=self.config.username,
                 pkey=paramiko_key,
                 timeout=30,
