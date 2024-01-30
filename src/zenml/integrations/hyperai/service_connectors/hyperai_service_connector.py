@@ -272,12 +272,6 @@ class HyperAIServiceConnector(ServiceConnector):
 
     def _authorize_client(self) -> None:
         """Verify that the client can authenticate with the HyperAI instance.
-
-        Raises:
-            BadHostKeyException: If the host key is invalid.
-            AuthenticationException: If the authentication credentials are
-                invalid.
-            SSHException: If there is an SSH related error.
         """
         logger.info("Verifying connection to HyperAI instance...")
 
