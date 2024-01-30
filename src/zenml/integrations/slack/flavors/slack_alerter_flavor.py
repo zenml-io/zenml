@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 class SlackAlerterSettings(BaseSettings):
     """Settings for the Slack alerter.
 
-    Args:
+    Attributes:
         default_slack_channel_id: The ID of the Slack channel to use for communication.
     """
 
