@@ -279,7 +279,7 @@ class HyperAIServiceConnector(ServiceConnector):
         logger.info("Connecting to HyperAI instance...")
         assert self.resource_id is not None
 
-        paramiko_client = self._create_paramiko_client()
+        paramiko_client = self._create_paramiko_client(self.resource_id)
         return paramiko_client
 
     def _configure_local_client(
