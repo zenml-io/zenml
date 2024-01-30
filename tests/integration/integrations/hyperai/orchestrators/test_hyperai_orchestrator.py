@@ -15,11 +15,11 @@ from datetime import datetime
 from uuid import uuid4
 
 from zenml.enums import StackComponentType
-from zenml.integrations.hyperai.orchestrators.hyperai_orchestrator import (
-    HyperAIOrchestrator,
-)
 from zenml.integrations.hyperai.flavors.hyperai_orchestrator_flavor import (
     HyperAIOrchestratorConfig,
+)
+from zenml.integrations.hyperai.orchestrators.hyperai_orchestrator import (
+    HyperAIOrchestrator,
 )
 
 

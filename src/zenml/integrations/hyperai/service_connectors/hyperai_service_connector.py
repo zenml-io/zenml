@@ -16,19 +16,18 @@
 The HyperAI Service Connector allows authenticating to HyperAI (hyperai.ai)
 GPU equipped instances.
 """
-import io
 import base64
-import tempfile
+import io
 from typing import Any, List, Optional
 
 import paramiko
 from pydantic import Field, SecretStr
 
+from zenml.exceptions import AuthorizationException
 from zenml.integrations.hyperai import (
     HYPERAI_CONNECTOR_TYPE,
     HYPERAI_RESOURCE_TYPE,
 )
-from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
     AuthenticationMethodModel,
@@ -269,11 +268,12 @@ class HyperAIServiceConnector(ServiceConnector):
                 e,
             )
 
-        raise AuthorizationException("Could not create SSH client for HyperAI instance.")
+        raise AuthorizationException(
+            "Could not create SSH client for HyperAI instance."
+        )
 
     def _authorize_client(self) -> None:
-        """Verify that the client can authenticate with the HyperAI instance.
-        """
+        """Verify that the client can authenticate with the HyperAI instance."""
         logger.info("Verifying connection to HyperAI instance...")
 
         paramiko_client = self._create_paramiko_client()
