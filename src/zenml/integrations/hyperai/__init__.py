@@ -20,7 +20,7 @@ from zenml.stack import Flavor
 
 # Service connector constants
 HYPERAI_CONNECTOR_TYPE = "hyperai"
-HYPERAI_RESOURCE_TYPE = "hyperai-generic"
+HYPERAI_RESOURCE_TYPE = "hyperai-instance"
 
 
 class HyperAIIntegration(Integration):
