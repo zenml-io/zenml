@@ -100,7 +100,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         """Validates if a given string is in a valid path format.
 
         Args:
-            path (str): The path to be validated.
+            path: The path to be validated.
 
         Returns:
             str: The path in a valid format.
