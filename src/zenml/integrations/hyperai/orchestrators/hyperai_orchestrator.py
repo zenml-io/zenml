@@ -189,18 +189,17 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Add dependency on upstream steps if applicable
             upstream_steps = step.spec.upstream_steps
-            if isinstance(upstream_steps, list) and len(upstream_steps) > 0:
-                for upstream_step_name in upstream_steps:
-                    upstream_container_name = (
-                        f"{deployment_id}-{upstream_step_name}"
-                    )
-                    compose_definition["services"][container_name][
-                        "depends_on"
-                    ] = {
-                        upstream_container_name: {
-                            "condition": "service_completed_successfully"
-                        }
+            for upstream_step_name in upstream_steps:
+                upstream_container_name = (
+                    f"{deployment_id}-{upstream_step_name}"
+                )
+                compose_definition["services"][container_name][
+                    "depends_on"
+                ] = {
+                    upstream_container_name: {
+                        "condition": "service_completed_successfully"
                     }
+                }
 
         # Convert into yaml
         logger.info("Finalizing Docker Compose definition.")
