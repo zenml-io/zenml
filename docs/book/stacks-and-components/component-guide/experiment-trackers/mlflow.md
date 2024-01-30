@@ -224,8 +224,8 @@ from zenml.client import Client
 
 last_run = client.get_pipeline("<PIPELINE_NAME>").last_run
 trainer_step = last_run.get_step("<STEP_NAME>")
-tracking_url = trainer_step.run_metadata.get("experiment_tracker_url")
-print(tracking_url.value)
+tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
+print(tracking_url)
 ```
 
 This will be the URL of the corresponding experiment in your deployed MLflow
