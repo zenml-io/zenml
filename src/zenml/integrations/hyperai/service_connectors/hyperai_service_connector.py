@@ -58,7 +58,7 @@ class HyperAICredentials(AuthenticationConfig):
 class HyperAIConfiguration(HyperAICredentials):
     """HyperAI client configuration."""
 
-    hostname: List[str] = Field(
+    hostnames: List[str] = Field(
         title="Hostnames of the supported HyperAI instances.",
     )
 
