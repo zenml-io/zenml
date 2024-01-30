@@ -139,7 +139,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_ZENML_HYPERAI_RUN_ID}."
             )
 
-    def _generate_valid_path_format(self, path) -> str:
+    def _validate_mount_path(self, path) -> str:
         """Validates if a given string is in a valid path format.
 
         Args:
@@ -223,8 +223,8 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 "environment": environment,
                 "volumes": [
                     "{}:{}".format(
-                        self._generate_valid_path_format(mount_from),
-                        self._generate_valid_path_format(mount_to),
+                        self._validate_mount_path(mount_from),
+                        self._validate_mount_path(mount_to),
                     )
                     for mount_from, mount_to in step_settings.mounts_from_to.items()
                 ],
