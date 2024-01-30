@@ -1395,6 +1395,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 {k: v for k, v in _from_config_file.items() if k in matcher}
             )
 
+            # TODO: deprecate me
+            if "model_version" in _from_config_file:
+                logger.warning(
+                    "YAML config option `model_version` is deprecated. Please use `model`."
+                )
+                _from_config_file["model"] = _from_config_file["model_version"]
+                del _from_config_file["model_version"]
+
             if "model" in _from_config_file:
                 if "model" in self._from_config_file:
                     _from_config_file["model"] = self._from_config_file[
@@ -1447,7 +1455,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         pipeline_copy._parse_config_file(
             config_path=config_path,
-            matcher=inspect.getfullargspec(self.configure)[0],
+            matcher=inspect.getfullargspec(self.configure)[0]
+            + ["model_version"],  # TODO: deprecate `model_version` later on
         )
         pipeline_copy._from_config_file = dict_utils.recursive_update(
             pipeline_copy._from_config_file, kwargs

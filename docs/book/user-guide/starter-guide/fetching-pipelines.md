@@ -143,7 +143,7 @@ Depending on the stack components you use, you might have additional component-s
 ```python
 run_metadata = run.run_metadata
 # The following only works for runs on certain remote orchestrators
-orchestrator_url = run_metadata["orchestrator_url"]
+orchestrator_url = run_metadata["orchestrator_url"].value
 
 ## Steps
 

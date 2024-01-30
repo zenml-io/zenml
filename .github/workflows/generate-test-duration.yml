@@ -1,0 +1,56 @@
+---
+name: Generate test duration file
+on:
+  workflow_call:
+  schedule:
+    - cron: 0 8 * * 1  # Run every Monday at 8 am
+jobs:
+  generate-test-duration-file:
+    name: Generate test duration file
+    runs-on: ubuntu-dind-runners
+    strategy:
+      fail-fast: false
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+          # on MAC OS, we need to set this environment variable
+          # to fix problems with the fork() calls (see this thread
+          # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          ref: develop
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: '3.10'
+          os: ubuntu-dind-runners
+          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
+          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
+      - name: Generate test duration file
+        continue-on-error: true
+            # Ubuntu integration tests run as 6 shards
+        run: |
+          bash scripts/test-coverage-xml.sh "" default "" "" store-durations
+      - name: Check difference in .test_durations
+        run: |
+          git diff --quiet || echo "Changes found"
+          if [ -n "$(git status --porcelain)" ]; then
+            # Commit changes directly to the specified branch
+            git add .test_durations
+            git commit -m "Update with new changes for test duration file at $(date +'%Y%m%d-%H%M%S')"
+            git push origin develop
+          else
+            echo "No changes in .test_durations"
+          fi
+      - name: Verify Python Env unaffected
+        run: |-
+          zenml integration list
+          pip list
+          pip check || true

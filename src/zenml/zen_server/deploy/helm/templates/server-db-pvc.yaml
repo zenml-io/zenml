@@ -1,0 +1,25 @@
+{{- if and (eq .Values.zenml.database.backupStrategy "dump-file") .Values.zenml.database.backupPVStorageSize }}
+{{- $pvc_name := printf "%s-db-backup" (include "zenml.fullname" .) -}}
+{{- $pvc := (lookup "v1" "PersistentVolumeClaim" .Release.Namespace $pvc_name) }}
+{{- if not $pvc }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $pvc_name }}
+  labels:
+    {{- include "zenml.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": "pre-install,pre-upgrade"
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.zenml.database.backupPVStorageSize }}
+  {{- with .Values.zenml.database.backupPVStorageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+{{- end }}
+{{- end }}

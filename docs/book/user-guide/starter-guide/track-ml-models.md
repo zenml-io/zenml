@@ -213,7 +213,7 @@ Once metadata has been logged to a model, we can retrieve it easily with the cli
 from zenml.client import Client
 client = Client()
 model = client.get_model_version("my_model", "my_version")
-print(model.run_metadata)
+print(model.run_metadata["metadata_key"].value)
 ```
 
 For further depth, there is an [advanced metadata logging guide](../advanced-guide/data-management/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
