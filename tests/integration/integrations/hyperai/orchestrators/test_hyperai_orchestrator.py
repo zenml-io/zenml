@@ -58,8 +58,7 @@ def test_validate_mount_path():
     # Valid POSIX path
     valid_posix_path = "/mnt/hello/there"
     assert (
-        orchestrator._validate_mount_path(valid_posix_path)
-        == valid_posix_path
+        orchestrator._validate_mount_path(valid_posix_path) == valid_posix_path
     )
 
     # Valid Windows path
