@@ -210,16 +210,12 @@ class HyperAIServiceConnector(ServiceConnector):
                 f"Invalid authentication method: {self.auth_method}"
             )
 
-    def _authorize_client(self) -> None:
-        """Verify that the client can authenticate with the HyperAI instance.
+    def _create_paramiko_client(self) -> paramiko.client.SSHClient:
+        """Create a Paramiko SSH client based on the configuration.
 
-        Raises:
-            BadHostKeyException: If the host key is invalid.
-            AuthenticationException: If the authentication credentials are
-                invalid.
-            SSHException: If there is an SSH related error.
+        Returns:
+            A Paramiko SSH client.
         """
-        logger.info("Verifying connection to HyperAI instance...")
 
         if self.config.ssh_passphrase is None:
             ssh_passphrase = None
@@ -259,7 +255,8 @@ class HyperAIServiceConnector(ServiceConnector):
                 pkey=paramiko_key,
                 timeout=30,
             )
-            paramiko_client.close()
+            
+            return paramiko_client
 
         except paramiko.ssh_exception.BadHostKeyException as e:
             logger.error("Bad host key: %s", e)
@@ -270,6 +267,31 @@ class HyperAIServiceConnector(ServiceConnector):
                 "SSH error: %s. A common cause for this error is selection of the wrong key type in your service connector.",
                 e,
             )
+        except Exception as e:
+            logger.error(
+                "Unknown error while connecting to HyperAI instance: %s. Please check your network connection, IP address, and authentication details.",
+                e,
+            )
+
+        return None
+
+    def _authorize_client(self) -> None:
+        """Verify that the client can authenticate with the HyperAI instance.
+
+        Raises:
+            BadHostKeyException: If the host key is invalid.
+            AuthenticationException: If the authentication credentials are
+                invalid.
+            SSHException: If there is an SSH related error.
+        """
+        logger.info("Verifying connection to HyperAI instance...")
+
+        try:
+            paramiko_client = self._create_paramiko_client()
+            if paramiko_client is None:
+                raise RuntimeError("Could not authorize client due to missing paramiko client.")
+            else:
+                paramiko_client.close()
         except Exception as e:
             logger.error(
                 "Unknown error while connecting to HyperAI instance: %s. Please check your network connection, IP address, and authentication details.",
@@ -291,57 +313,14 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         logger.info("Connecting to HyperAI instance...")
         assert self.resource_id is not None
+        
 
-        if self.config.ssh_passphrase is None:
-            ssh_passphrase = None
-        else:
-            ssh_passphrase = self.config.ssh_passphrase.get_secret_value()
-
-        # Connect to the HyperAI instance
         try:
-            # Convert the SSH key from base64 to string
-            base64_key_value = self.config.base64_ssh_key.get_secret_value()
-            ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
-            paramiko_key = None
-
-            # Create temporary file and write Docker Compose file to it
-            with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
-                # Get file path
-                file_path = f.name
-
-                # Write Docker Compose file to temporary file
-                with f.file as f_:
-                    f_.write(ssh_key)
-
-                paramiko_key = self._paramiko_key_type_given_auth_method().from_private_key_file(
-                    file_path, password=ssh_passphrase
-                )
-
-            # Trim whitespace from the IP address
-            ip_address = str(self.config.ip_address).strip()
-
-            paramiko_client = paramiko.client.SSHClient()
-            paramiko_client.set_missing_host_key_policy(
-                paramiko.AutoAddPolicy()
-            )
-            paramiko_client.connect(
-                hostname=ip_address,
-                username=self.config.username,
-                pkey=paramiko_key,
-                timeout=30,
-            )
-
-            return paramiko_client
-
-        except paramiko.ssh_exception.BadHostKeyException as e:
-            logger.error("Bad host key: %s", e)
-        except paramiko.ssh_exception.AuthenticationException as e:
-            logger.error("Authentication failed: %s", e)
-        except paramiko.ssh_exception.SSHException as e:
-            logger.error(
-                "SSH error: %s. A common cause for this error is selection of the wrong key type in your service connector.",
-                e,
-            )
+            paramiko_client = self._create_paramiko_client()
+            if paramiko_client is None:
+                raise RuntimeError("Could not connect to instance due to missing paramiko client.")
+            else:
+                return paramiko_client
         except Exception as e:
             logger.error(
                 "Unknown error while connecting to HyperAI instance: %s. Please check your network connection, IP address, and authentication details.",
