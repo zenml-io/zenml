@@ -12,10 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for deployments."""
+from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, BackgroundTasks, Depends, Security
 
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
 from zenml.models import (
     Page,
@@ -24,6 +26,9 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
+    get_workload_manager,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -33,6 +38,7 @@ from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    server_config,
     zen_store,
 )
 
@@ -122,3 +128,78 @@ def delete_deployment(
         get_method=zen_store().get_deployment,
         delete_method=zen_store().delete_deployment,
     )
+
+
+if server_config().workload_manager_enabled:
+
+    @router.post(
+        "/{deployment_id}/runs",
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+        },
+    )
+    @handle_exceptions
+    def create_deployment_run(
+        deployment_id: UUID,
+        background_tasks: BackgroundTasks,
+        config: Optional[PipelineRunConfiguration] = None,
+        auth_context: AuthContext = Security(authorize),
+    ) -> UUID:
+        """Run a pipeline from a pipeline deployment.
+
+        Args:
+            deployment_id: The ID of the deployment.
+            background_tasks: Background tasks.
+            config: Configuration for the pipeline run.
+            auth_context: Authentication context.
+
+        Returns:
+            The ID of the new run.
+        """
+        from zenml.zen_server.pipeline_deployment.pipeline_execution_utils import (
+            redeploy_pipeline,
+        )
+
+        deployment = verify_permissions_and_get_entity(
+            id=deployment_id,
+            get_method=zen_store().get_deployment,
+            hydrate=True,
+        )
+
+        return redeploy_pipeline(
+            deployment=deployment,
+            run_config=config,
+            background_tasks=background_tasks,
+            auth_context=auth_context,
+        )
+
+    @router.get(
+        "/{deployment_id}/logs",
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+        },
+    )
+    @handle_exceptions
+    def deployment_logs(
+        deployment_id: UUID,
+        _: AuthContext = Security(authorize),
+    ) -> str:
+        """Get deployment logs.
+
+        Args:
+            deployment_id: ID of the deployment.
+
+        Returns:
+            The deployment logs.
+        """
+        deployment = verify_permissions_and_get_entity(
+            id=deployment_id,
+            get_method=zen_store().get_deployment,
+            hydrate=True,
+        )
+
+        return get_workload_manager(workload_id=deployment.id).get_logs()

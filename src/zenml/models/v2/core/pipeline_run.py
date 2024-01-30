@@ -137,6 +137,7 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     code_reference: Optional["CodeReferenceResponse"] = Field(
         default=None, title="The code reference that was used for this run."
     )
+    deployment_id: Optional[UUID] = None
 
 
 class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
