@@ -566,6 +566,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             config = StoreConfiguration(
                 **env_store_config,
             )
+        elif self.store:
+            config = self.store
         else:
             config = BaseZenStore.get_default_store_config(
                 path=os.path.join(
