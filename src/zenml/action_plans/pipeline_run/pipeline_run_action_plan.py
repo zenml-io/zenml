@@ -15,9 +15,9 @@
 from typing import ClassVar, Type
 from uuid import UUID
 
-from zenml.action_plans.base_action_plan_plugin import (
+from zenml.action_plans.base_action_plan import (
     ActionPlanConfig,
-    BaseActionPlanFlavor,
+    BaseActionPlanFlavor, BaseActionPlan,
 )
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 
@@ -34,7 +34,7 @@ class PipelineRunActionPlanConfiguration(ActionPlanConfig):
 # -------------------- Pipeline Run Plugin -----------------------------------
 
 
-class PipelineRunActionPlanPlugin(BaseActionPlanFlavor):
+class PipelineRunActionPlan(BaseActionPlan):
     """Handler for all github events."""
 
     @property
@@ -50,13 +50,13 @@ class PipelineRunActionPlanPlugin(BaseActionPlanFlavor):
 # -------------------- Pipeline Run Flavor -----------------------------------
 
 
-class PipelineRunActionFlavor(BaseActionPlanFlavor):
+class PipelineRunActionPlanFlavor(BaseActionPlanFlavor):
     """Enables users to configure pipeline run action."""
 
     FLAVOR: ClassVar[str] = "builtin"
     PLUGIN_CLASS: ClassVar[
-        Type[PipelineRunActionPlanPlugin]
-    ] = PipelineRunActionPlanPlugin
+        Type[PipelineRunActionPlan]
+    ] = PipelineRunActionPlan
 
     # EventPlugin specific
     ACTION_PLAN_CONFIG_CLASS: ClassVar[
