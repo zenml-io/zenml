@@ -287,7 +287,9 @@ class HyperAIServiceConnector(ServiceConnector):
         **kwargs: Any,
     ) -> None:
         """There is no local client for the HyperAI connector, so it does nothing."""
-        pass
+        raise NotImplementedError(
+            "There is no local client for the HyperAI connector."
+        )
 
     @classmethod
     def _auto_configure(
