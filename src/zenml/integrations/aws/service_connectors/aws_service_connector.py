@@ -252,7 +252,7 @@ the advantages of the AWS IAM Role authentication method plus the added benefit
 of not requiring any explicit credentials to be configured and stored:
 
 * the connector will generate temporary STS tokens upon request by
-[calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_assumerole).
+[calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole).
 * allows implementing a two layer authentication scheme that keeps the set of
 permissions associated with implicit credentials down to the bare minimum and
 grants permissions to the privilege-bearing IAM role instead.
