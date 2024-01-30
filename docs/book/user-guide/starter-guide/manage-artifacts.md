@@ -156,7 +156,7 @@ Using an `ExternalArtifact` for your step automatically disables caching for the
 
 ### Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step.  As we have learned in the [previous section](fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```python
 from uuid import UUID

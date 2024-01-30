@@ -86,7 +86,7 @@ class ExternalArtifact(BaseModel):
 
             artifact_name = f"external_{uuid4()}"
             uri = os.path.join("external_artifacts", artifact_name)
-            logger.info("Uploading external artifact to '%s'.", uri)
+            logger.info(f"Uploading external artifact to '{uri}'.")
 
             artifact = save_artifact(
                 name=artifact_name,
@@ -104,7 +104,7 @@ class ExternalArtifact(BaseModel):
             self._id = artifact.id
             self.value = None
 
-            logger.info("Finished uploading external artifact %s.", self._id)
+            logger.info(f"Finished uploading external artifact {self._id}.")
         elif self._id is None:
             raise RuntimeError(
                 f"Cannot upload an empty artifact. Provided value: `{self.value}`"
