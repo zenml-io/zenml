@@ -16,6 +16,7 @@
 The HyperAI Service Connector allows authenticating to HyperAI (hyperai.ai)
 GPU equipped instances.
 """
+import io
 import base64
 import tempfile
 from typing import Any, List, Optional
