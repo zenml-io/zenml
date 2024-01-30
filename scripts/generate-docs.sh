@@ -65,7 +65,7 @@ rm docs/mkdocs/index.md || true
 # deprecated in 3.1.0 but mkdocstring depends on this method
 
 if [ -z "$SKIP_INSTALL" ]; then
-  pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs]"
+  pip install -e ".[server,dev]"
 fi
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################

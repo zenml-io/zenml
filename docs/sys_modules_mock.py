@@ -1,5 +1,4 @@
 import sys
-from typing import Any
 from unittest.mock import MagicMock
 
 mockers = [
@@ -202,33 +201,57 @@ mockers = [
     "google.auth.compute_engine",
     "google.api_core",
     "google.auth.credentials",
-    'google.oauth2.credentials'
+    "google.oauth2.credentials",
+    "s3fs",
+    "gcsfs",
+    "boto3",
+    "adlfs",
+    "azure.keyvault",
+    "hvac",
+    "botocore",
+    "azure.keyvault.secrets",
+    "hvac.exceptions",
+    "botocore.exceptions",
+    "botocore.client",
+    "botocore.signers",
 ]
 
 
-class BetterMagicMock(MagicMock):
+class DocsMocker(MagicMock):
+    _DOCS_BUILDING_MODE: bool = True
+
     def __init__(self, *args, **kwargs):
-        super(BetterMagicMock, self).__init__(*args, **kwargs)
-        self.__getitem__ = BetterMagicMock._getitem
+        super(DocsMocker, self).__init__(*args, **kwargs)
+        self.__getitem__ = DocsMocker._getitem
+        self._full_name: str = self._extract_mock_name()
+        self.__name__ = self._full_name.split(".")[-1]
+        self.__module__ = ".".join(self._full_name.split(".")[:-1])
+        self.__version__ = "1.0.0"
+        self.__mro_entries__ = lambda _: (self._factory(),)
 
-    @property
-    def __version__(self):
-        return "1.0.0"
+    def _factory(self, name: str = None):
+        if name:
+            class _(self.__class__):
+                __module__ = ".".join(name.split(".")[:-1])
+                __qualname__ = name.split(".")[-1]
+            return _(name=name)
+        else:
+            class _(self.__class__):
+                __module__ = self.__module__
+                __qualname__ = self.__name__
 
-    @property
-    def __name__(self):
-        return ""
-    
+            return _
+
     @staticmethod
-    def _getitem(self, item):
-        return BetterMagicMock(name=f"{self._extract_mock_name()}[{item}]")
-    
+    def _getitem(self: "DocsMocker", item):
+        return self._factory()(name=f"{self._full_name}[{item}]")
+
     def __repr__(self) -> str:
-        return self._extract_mock_name()
+        return self._full_name
 
 
 for mocker in mockers:
-    sys.modules[mocker] = BetterMagicMock(name=mocker)
+    sys.modules[mocker] = DocsMocker(name=mocker)
 
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -243,12 +266,12 @@ if __name__ == "__main__":
 
     modules_to_add = []
     empty_dirs = []
-    meaningful_files = [".py",".tf",".yaml",".yml"]
+    meaningful_files = [".py", ".tf", ".yaml", ".yml"]
     for root, subdirs, files in os.walk("src/zenml"):
         if not root.endswith("__pycache__"):
             root = root[len("src/") :]
 
-            no_meaningful_files = len(subdirs)==0
+            no_meaningful_files = len(subdirs) == 0
             for file in files:
                 for mf in meaningful_files:
                     if file.endswith(mf):
@@ -273,7 +296,12 @@ if __name__ == "__main__":
         modules_to_add = set(modules_to_add)
         logger.error("Consider mocking :", modules_to_add.difference(set(mockers)))
     if empty_dirs:
-        logger.warning(f"Directories without any 'meaningful_files' {meaningful_files} files detected. This might affect docs building process:",empty_dirs)
+        logger.warning(
+            f"Directories without any 'meaningful_files' {meaningful_files} files detected. This might affect docs building process:",
+            empty_dirs,
+        )
     if modules_to_add:
-        logger.error("Returning non-zero status code to indicate that docs building failed. Please fix the above errors and try again.")
+        logger.error(
+            "Returning non-zero status code to indicate that docs building failed. Please fix the above errors and try again."
+        )
         exit(1)
