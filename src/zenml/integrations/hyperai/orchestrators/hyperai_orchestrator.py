@@ -281,9 +281,13 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         )
 
         # Remove all folders from nonscheduled pipelines if they are 7 days old or older
-        stdin, stdout, stderr = paramiko_client.exec_command(
-            f"find {nonscheduled_directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
-        )
+        if self.config.automatic_cleanup_pipeline_files:
+            logger.info(
+                "Cleaning up old pipeline files on HyperAI instance. This may take a while."
+            )
+            stdin, stdout, stderr = paramiko_client.exec_command(
+                f"find {nonscheduled_directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
+            )
 
         # Create temporary file and write Docker Compose file to it
         with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
