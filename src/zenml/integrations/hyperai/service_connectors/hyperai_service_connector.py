@@ -283,12 +283,7 @@ class HyperAIServiceConnector(ServiceConnector):
 
         try:
             paramiko_client = self._create_paramiko_client()
-            if paramiko_client is None:
-                raise RuntimeError(
-                    "Could not authorize client due to missing paramiko client."
-                )
-            else:
-                paramiko_client.close()
+            paramiko_client.close()
         except Exception as e:
             logger.error(
                 "Unknown error while connecting to HyperAI instance: %s. Please check your network connection, IP address, and authentication details.",
@@ -313,12 +308,7 @@ class HyperAIServiceConnector(ServiceConnector):
 
         try:
             paramiko_client = self._create_paramiko_client()
-            if paramiko_client is None:
-                raise RuntimeError(
-                    "Could not connect to instance due to missing paramiko client."
-                )
-            else:
-                return paramiko_client
+            return paramiko_client
         except Exception as e:
             logger.error(
                 "Unknown error while connecting to HyperAI instance: %s. Please check your network connection, IP address, and authentication details.",
