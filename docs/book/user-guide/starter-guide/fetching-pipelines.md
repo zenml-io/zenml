@@ -101,6 +101,16 @@ Calling a pipeline executes it and then returns the response of the freshly exec
 last_run = training_pipeline()
 ```
 
+{% hint style="warning" %}
+The run that you get back is the model stored in the ZenML database at the point of the method call. This means the pipeline run is still initializing and no steps have been run. To get the latest state can get a refreshed version from the client:
+
+```python
+from zenml.client import Client
+
+Client().get_pipeline_run(last_run.id) to get a refreshed version
+```
+{% endhint %}
+
 ### Get a run via the client
 
 If you already know the exact run that you want to fetch (e.g., from looking at the dashboard), you can use the [`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.get\_pipeline\_run) method to fetch the run directly without having to query the pipeline first:
