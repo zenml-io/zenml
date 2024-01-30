@@ -587,8 +587,13 @@ picked up when auto-configuration is used.
 Use [GCP workload identity federation](https://cloud.google.com/iam/docs/workload-identity-federation)
 to authenticate to GCP services using AWS IAM credentials, Azure Active
 Directory credentials or generic OIDC tokens.
-This method requires a GCP external account JSON file that contains the
-configuration for the external account.
+
+This authentication method only requires a GCP workload identity external
+account JSON file that only contains the configuration for the external account
+without any sensitive credentials. It allows implementing a two layer
+authentication scheme that keeps the set of permissions associated with implicit
+credentials down to the bare minimum and grants permissions to the
+privilege-bearing GCP service account instead.
 
 This authentication method can be used to authenticate to GCP services using
 credentials from other cloud providers or identity providers. When used with
