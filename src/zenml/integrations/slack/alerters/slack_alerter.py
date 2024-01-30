@@ -14,19 +14,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Dict, List, Optional, cast, Type
+from typing import Any, Dict, List, Optional, Type, cast
 
 from pydantic import BaseModel
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_sdk.rtm import RTMClient
 
+from zenml import get_step_context
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
 from zenml.integrations.slack.flavors.slack_alerter_flavor import (
     SlackAlerterConfig,
     SlackAlerterSettings,
 )
-from zenml import get_step_context
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -114,7 +114,8 @@ class SlackAlerter(BaseAlerter):
             return self.config.default_slack_channel_id
 
         settings = cast(
-            SlackAlerterSettings, self.get_settings(get_step_context().step_run)
+            SlackAlerterSettings,
+            self.get_settings(get_step_context().step_run),
         )
         if settings.default_slack_channel_id is not None:
             return settings.default_slack_channel_id
@@ -220,7 +221,9 @@ class SlackAlerter(BaseAlerter):
                     },
                 ]
             else:
-                logger.info("No custom blocks or payload set for Slack alerter.")
+                logger.info(
+                    "No custom blocks or payload set for Slack alerter."
+                )
                 return []
         else:
             logger.info(

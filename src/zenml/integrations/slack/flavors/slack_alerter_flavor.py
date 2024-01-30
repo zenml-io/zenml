@@ -16,10 +16,10 @@
 from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.alerter.base_alerter import BaseAlerterConfig, BaseAlerterFlavor
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
 from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
-from zenml.config.base_settings import BaseSettings
 
 logger = get_logger(__name__)
 
