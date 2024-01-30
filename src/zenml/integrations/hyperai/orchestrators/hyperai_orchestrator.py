@@ -22,7 +22,6 @@ import paramiko
 import yaml
 
 from zenml.config.base_settings import BaseSettings
-from zenml.container_registries import BaseContainerRegistry
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.hyperai.flavors.hyperai_orchestrator_flavor import (

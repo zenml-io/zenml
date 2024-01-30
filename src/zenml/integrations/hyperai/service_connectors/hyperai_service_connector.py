@@ -216,7 +216,6 @@ class HyperAIServiceConnector(ServiceConnector):
         Returns:
             A Paramiko SSH client.
         """
-
         if self.config.ssh_passphrase is None:
             ssh_passphrase = None
         else:
@@ -255,7 +254,7 @@ class HyperAIServiceConnector(ServiceConnector):
                 pkey=paramiko_key,
                 timeout=30,
             )
-            
+
             return paramiko_client
 
         except paramiko.ssh_exception.BadHostKeyException as e:
@@ -289,7 +288,9 @@ class HyperAIServiceConnector(ServiceConnector):
         try:
             paramiko_client = self._create_paramiko_client()
             if paramiko_client is None:
-                raise RuntimeError("Could not authorize client due to missing paramiko client.")
+                raise RuntimeError(
+                    "Could not authorize client due to missing paramiko client."
+                )
             else:
                 paramiko_client.close()
         except Exception as e:
@@ -313,12 +314,13 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         logger.info("Connecting to HyperAI instance...")
         assert self.resource_id is not None
-        
 
         try:
             paramiko_client = self._create_paramiko_client()
             if paramiko_client is None:
-                raise RuntimeError("Could not connect to instance due to missing paramiko client.")
+                raise RuntimeError(
+                    "Could not connect to instance due to missing paramiko client."
+                )
             else:
                 return paramiko_client
         except Exception as e:
