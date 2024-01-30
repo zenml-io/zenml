@@ -337,7 +337,7 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         resources = []
         for hostname in self.config.hostnames:
-            client = self._authorize_client(hostname)
+            self._authorize_client(hostname)
             resources.append(hostname)
         
         return resources
