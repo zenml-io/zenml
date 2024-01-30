@@ -66,7 +66,7 @@ class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyda
             automatically log in to the container registry specified in the stack
             configuration on the HyperAI instance. This is useful if the container
             registry requires authentication and the HyperAI instance has not been
-            manually logged in to the container registry. Defaults to `True`.
+            manually logged in to the container registry. Defaults to `False`.
 
     """
 
