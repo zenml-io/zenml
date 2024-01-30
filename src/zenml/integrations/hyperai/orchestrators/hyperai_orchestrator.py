@@ -14,6 +14,7 @@
 """Implementation of the ZenML HyperAI orchestrator."""
 
 import os
+import re
 import tempfile
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
@@ -138,6 +139,28 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_ZENML_HYPERAI_RUN_ID}."
             )
 
+    def _generate_valid_path_format(self, path) -> str:
+        """Validates if a given string is in a valid path format.
+
+        Args:
+            path (str): The path to be validated.
+
+        Returns:
+            bool: True if the path has a valid format, False otherwise.
+
+        Raises:
+            RuntimeError: If the path is not in a valid format.
+        """
+        # Define a regular expression pattern to match a valid path format
+        pattern = r'^(?:[a-zA-Z]:\\(\\[^\\/:*?"<>|]*)*$|^/([^\0]*)*$)'
+
+        if bool(re.match(pattern, path)):
+            return path
+        else:
+            raise RuntimeError(
+                f"Path '{path}' is not in a valid format, so a mount cannot be established."
+            )
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
@@ -199,7 +222,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 ),
                 "environment": environment,
                 "volumes": [
-                    f"{mount_from}:{mount_to}"
+                    self._generate_valid_path_format(
+                        f"{mount_from}:{mount_to}"
+                    )
                     for mount_from, mount_to in step_settings.mounts_from_to.items()
                 ],
             }

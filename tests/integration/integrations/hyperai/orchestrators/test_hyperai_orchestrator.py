@@ -39,3 +39,48 @@ def test_hyperai_orchestrator_attributes():
     assert orchestrator.flavor == "hyperai"
     assert orchestrator.config.remote is True
     assert orchestrator.config.container_registry_autologin is False
+
+
+def test_generate_valid_path_format():
+    """Tests that only valid mount paths are accepted by the HyperAI orchestrator."""
+    orchestrator = HyperAIOrchestrator(
+        name="",
+        id=uuid4(),
+        config=HyperAIOrchestratorConfig(),
+        flavor="hyperai",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    # Valid POSIX path
+    valid_posix_path = "/mnt/hello/there"
+    assert (
+        orchestrator._generate_valid_path_format(valid_posix_path)
+        == valid_posix_path
+    )
+
+    # Valid Windows path
+    valid_windows_path = r"C:\\Users\\user\\Documents"
+    assert (
+        orchestrator._generate_valid_path_format(valid_windows_path)
+        == valid_windows_path
+    )
+
+    # Invalid POSIX path
+    invalid_posix_path = "echo '>something>' ; /mnt/hello/there/.."
+    try:
+        orchestrator._generate_valid_path_format(invalid_posix_path)
+    except RuntimeError:
+        pass
+
+    # Invalid Windows path
+    invalid_windows_path = (
+        "set SOMETHING=123; C:\\Users\\user\\Documents\\..\\file.txt"
+    )
+    try:
+        orchestrator._generate_valid_path_format(invalid_windows_path)
+    except RuntimeError:
+        pass
