@@ -253,17 +253,17 @@ of not requiring any explicit credentials to be configured and stored:
 
 * the connector will generate temporary STS tokens upon request by
 [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole).
-* allows implementing a two layer authentication scheme that keeps the set of
+* Allows implementing a two layer authentication scheme that keeps the set of
 permissions associated with implicit credentials down to the bare minimum and
 grants permissions to the privilege-bearing IAM role instead.
-* one or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html#policies\_session)
+* One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_session)
 may also be configured to further restrict the permissions of the generated
 STS tokens. If not specified, IAM session policies are automatically configured
 for the generated STS tokens to restrict them to the minimum set of permissions
 required to access the target resource. Refer to the documentation for each
 supported Resource Type for the complete list of AWS permissions automatically
 granted to the generated STS tokens.
-* the default expiration period for generated STS tokens is 1 hour with a
+* The default expiration period for generated STS tokens is 1 hour with a
 minimum of 15 minutes up to the maximum session duration setting configured for
 the IAM role (default is 1 hour). If you need longer-lived tokens, you can
 configure the IAM role to use a higher maximum expiration value (up to 12 hours)
