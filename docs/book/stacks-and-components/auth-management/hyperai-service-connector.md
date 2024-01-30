@@ -38,7 +38,10 @@ ZenML creates an SSH connection to the HyperAI instance in the background when u
 SSH private keys configured in the connector will be distributed to all clients that use them to run pipelines with the HyperAI orchestrator. SSH keys are long-lived credentials that give unrestricted access to HyperAI instances.
 {% endhint %}
 
-When configuring the Service Connector, it is required to provide the `hostname` of the instance and the `username` with which to login. Optionally, it is possible to provide an `instance_name` (for easily recognizing the particular instance) and an `ssh_passphrase` if applicable.
+When configuring the Service Connector, it is required to provide at least one hostname via `hostnames` and the `username` with which to login. Optionally, it is possible to provide an `ssh_passphrase` if applicable. This way, it is possible to use the HyperAI service connector in multiple ways:
+
+1. Create one service connector per HyperAI instance with different SSH keys.
+2. Configure a reused SSH key just once for multiple HyperAI instances, then select the individual instance when creating the HyperAI orchestrator component.
 
 ## Auto-configuration
 
