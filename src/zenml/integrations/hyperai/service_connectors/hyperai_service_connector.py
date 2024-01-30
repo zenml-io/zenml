@@ -247,7 +247,7 @@ class HyperAIServiceConnector(ServiceConnector):
                 )
 
             # Trim whitespace from the IP address
-            ip_address = str(self.config.ip_address).strip()
+            ip_address = self.config.ip_address.strip()
 
             paramiko_client = paramiko.client.SSHClient()
             paramiko_client.set_missing_host_key_policy(
