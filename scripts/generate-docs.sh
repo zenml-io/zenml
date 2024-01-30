@@ -66,13 +66,13 @@ rm docs/mkdocs/index.md || true
 
 if [ -z "$SKIP_INSTALL" ]; then
   pip install -e ".[server,dev]"
+  pip3 install "Jinja2==3.0.3"
 fi
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################
 
 # env.py leads to errors in the build as run_migrations() gets executed
 # the migration versions are not necessary parts of the api docs
-zenml status # to initialize the db
 rm -rf src/zenml/zen_stores/migrations/env.py
 rm -rf src/zenml/zen_stores/migrations/versions
 rm -rf src/zenml/zen_stores/migrations/script.py.mako
