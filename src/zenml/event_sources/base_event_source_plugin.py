@@ -132,38 +132,36 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         else:
             return
 
+    @abstractmethod
     def get_matching_triggers_for_event(
-        self, event: Dict[str, Any]
+        self,
+        incoming_event: Dict[str, Any],
+        raw_body: bytes,
+        signature_header: str,  # TODO: Not all Event Sources will need this
     ) -> List[UUID]:
         """Process the incoming event and forward with trigger_ids to event hub.
 
         Args:
-            event: THe inbound event.
+            incoming_event: THe inbound event.
+            raw_body: Raw body of the incoming request
+            signature_header: Signature header sent to webhooks.
         """
-        # narrow down to all sources that relate to the repo that
-        #  is responsible for the event
-        event_source_ids = self._get_all_relevant_event_sources(
-            event=event,
-        )
 
-        # get all triggers that have matching event filters configured
-        if event_source_ids:
-            trigger_ids = self._get_matching_triggers(
-                event_source_ids=event_source_ids, event=event
-            )
-            # TODO: Forward the event together with the list of trigger ids
-            #  over to the EventHub
-            logger.info(
-                "An event came in, the following triggers will be"
-                " used: %s ",
-                trigger_ids,
-            )
-            return trigger_ids
+    @abstractmethod
+    def _interpret_event(self, event: Dict[str, Any]) -> BaseEvent:
+        """Converts the generic event body into a event-source specific pydantic model.
+
+        Args:
+            event: The generic event body
+
+        Return:
+            An instance of the event source specific pydantic model.
+        """
 
     @abstractmethod
     def _get_all_relevant_event_sources(
-        self, event: Dict[str, Any]
-    ) -> List[UUID]:
+        self, event: BaseEvent
+    ) -> List[EventSourceResponse]:
         """Filter Event Sources for flavor and flavor specific properties.
 
         Args:
@@ -174,12 +172,12 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
 
     @abstractmethod
     def _get_matching_triggers(
-        self, event_source_ids: List[UUID], event: Dict[str, Any]
+        self, event_sources: List[EventSourceResponse], event: BaseEvent
     ) -> List[UUID]:
         """Get all Triggers with matching event filters.
 
         Args:
-            event_source_ids: All matching event source ids.
+            event_sources: All matching event sources.
             event: The inbound Event.
         """
 

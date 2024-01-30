@@ -12,11 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the github webhook event source."""
+import hashlib
+import hmac
+import json
+from datetime import datetime
 from functools import partial
 from typing import Any, Dict, List, Optional, Type
-from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 
 from zenml.event_sources.base_event_source_plugin import BaseEvent
 from zenml.event_sources.webhooks.base_webhook_event_plugin import (
@@ -50,13 +53,21 @@ class GithubEventType(StrEnum):
 # -------------------- Github Event Models -----------------------------------
 
 
+class User(BaseModel):
+    """Github User."""
+
+    name: str
+    email: str
+    username: str
+
+
 class Commit(BaseModel):
     """Github Event."""
 
     id: str
     message: str
     url: str
-    author: str
+    author: User
 
 
 class Tag(BaseModel):
@@ -65,14 +76,6 @@ class Tag(BaseModel):
     id: str
     name: str
     commit: Commit
-
-
-class User(BaseModel):
-    """Github User."""
-
-    id: int
-    username: str
-    email: str
 
 
 class PullRequest(BaseModel):
@@ -92,7 +95,7 @@ class Repository(BaseModel):
     id: int
     name: str
     full_name: str
-    owner: User
+    html_url: str
 
 
 class GithubEvent(BaseEvent):
@@ -103,14 +106,20 @@ class GithubEvent(BaseEvent):
     after: str
     repository: Repository
     commits: List[Commit]
-    tags: List[Tag]
-    pull_requests: List[PullRequest]
+    head_commit: Optional[Commit]
+    tags: Optional[List[Tag]]
+    pull_requests: Optional[List[PullRequest]]
+
+    class Config:
+        """Pydantic configuration class."""
+
+        extra = Extra.allow
 
     @property
     def branch(self) -> Optional[str]:
         """THe branch the event happened on."""
         if self.ref.startswith("refs/heads/"):
-            return self.ref.split("/")[-1]
+            return "/".join(self.ref.split("/")[2:])
         return None
 
     @property
@@ -167,9 +176,61 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         """
         return GithubWebhookEventSourceConfiguration
 
+    @staticmethod
+    def is_valid_signature(
+        body: bytes, secret_token: str, signature_header: str
+    ) -> bool:
+        """Verify that the payload was sent from GitHub by validating SHA256.
+
+        Raise and return 403 if not authorized.
+
+        Args:
+            body: original request body to verify (request.body())
+            secret_token: GitHub app webhook token (WEBHOOK_SECRET)
+            signature_header: header received from GitHub (x-hub-signature-256)
+
+        Returns:
+            Boolean if the signature is valid.
+        """
+        hash_object = hmac.new(
+            secret_token.encode("utf-8"),
+            msg=body,
+            digestmod=hashlib.sha256
+        )
+        expected_signature = "sha256=" + hash_object.hexdigest()
+
+        if not hmac.compare_digest(expected_signature, signature_header):
+            return False
+        return True
+
+    def _interpret_event(self, event: Dict[str, Any]) -> GithubEvent:
+        """Converts the generic event body into a event-source specific pydantic model.
+
+        Args:
+            event: The generic event body
+
+        Return:
+            An instance of the event source specific pydantic model.
+
+        Raises:
+            ValueError: If the event body can not be parsed into the pydantic model.
+        """
+        try:
+            event = GithubEvent(**event)
+        except ValueError as e:
+            logger.exception(e)
+            # TODO: Remove this - currently useful for debugging
+            with open(
+                f'{datetime.now().strftime("%Y%m%d%H%M%S")}.json', "w"
+            ) as f:
+                json.dump(event, f)
+            raise ValueError("Event did not match the pydantic model.")
+        else:
+            return event
+
     def _get_all_relevant_event_sources(
-        self, event: Dict[str, Any]
-    ) -> List[UUID]:
+        self, event: GithubEvent
+    ) -> List[EventSourceResponse]:
         """Filter Event Sources for flavor and flavor specific properties.
 
         For github event sources this will compare the configured repository
@@ -187,27 +248,21 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
                 event_source_filter_model=EventSourceFilter(flavor="github"),
                 hydrate=True,
             )
-        )  # TODO: investigate how this can be improved
+        )
 
-        ids_list: List[UUID] = []
+        event_source_list: List[EventSourceResponse] = []
 
-        try:
-            event = GithubEvent(**event)
-        except ValueError as e:
-            logger.exception(e)
-            return []
-        else:
-            for es in event_sources:
-                esc = GithubWebhookEventSourceConfiguration(
-                    **es.metadata.configuration
-                )
-                if esc.repo == event.repository.name:
-                    ids_list.append(es.id)
+        for es in event_sources:
+            esc = GithubWebhookEventSourceConfiguration(
+                **es.metadata.configuration
+            )
+            if esc.repo == event.repository.full_name:
+                event_source_list.append(es)
 
-            return ids_list
+        return event_source_list
 
     def _get_matching_triggers(
-        self, event_source_ids: List[UUID], event: Dict[str, Any]
+        self, event_sources: List[EventSourceResponse], event: GithubEvent
     ) -> List[TriggerResponse]:
         """Get all Triggers with matching event filters.
 
@@ -215,7 +270,7 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         of all matching triggers with the inbound event.
 
         Args:
-            event_source_ids: All matching event source ids.
+            event_sources: All matching event source.
             event: The inbound Event.
 
         Returns: A list of all matching Event Source IDs.
@@ -225,17 +280,13 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
             partial(
                 self.zen_store.list_triggers,
                 trigger_filter_model=TriggerFilter(
-                    event_source_id=event_source_ids[
+                    event_source_id=event_sources[
                         0
-                    ]  # TODO: Handle for multiple source_ids
+                    ].id  # TODO: Handle for multiple source_ids
                 ),
                 hydrate=True,
             )
         )
-
-        # TODO: improve this
-        if isinstance(event, dict):
-            event = GithubEvent(**event)
 
         trigger_list: List[TriggerResponse] = []
 

@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for webhooks."""
-from typing import Any, Dict
+import hashlib
+from typing import Any, Dict, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, HTTPException, Request, Depends
 from starlette.background import BackgroundTasks
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
@@ -30,24 +31,46 @@ router = APIRouter(
     tags=["webhook"],
 )
 
+async def get_body(request: Request):
+    return await request.body()
 
 @router.post(
     "/{flavor_name}",
 )
 @handle_exceptions
 def webhook(
-    flavor_name: str, body: Dict[str, Any], background_tasks: BackgroundTasks
+    flavor_name: str,
+    body: Dict[str, Any],
+    background_tasks: BackgroundTasks,
+    signature_header: Optional[str] = Header(
+        None, alias="x-hub-signature-256"
+    ),
+    raw_body: bytes = Depends(get_body),
 ):
     """Webhook to receive events from external event sources.
 
     Args:
         flavor_name: Path param that indicates which plugin flavor will handle the event.
+        raw_body: The raw request body
         body: The request body.
         background_tasks: BackgroundTask fixture
+        signature_header: The signature header
     """
-    background_tasks.add_task(
-        event_hub.process_event,
+    if not signature_header:
+        raise HTTPException(
+            status_code=403, detail="x-hub-signature-256 header is missing!"
+        )
+
+    # background_tasks.add_task(
+    #     event_hub.process_event,
+    #     incoming_event=body,
+    #     flavor=flavor_name,
+    #     event_source_subtype=PluginSubType.WEBHOOK,
+    # )
+    event_hub.process_event(
         incoming_event=body,
+        raw_body=raw_body,
         flavor=flavor_name,
         event_source_subtype=PluginSubType.WEBHOOK,
+        signature_header=signature_header,
     )

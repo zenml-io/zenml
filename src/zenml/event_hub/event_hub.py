@@ -25,8 +25,10 @@ class EventHub:
     def process_event(
         self,
         incoming_event: Dict[str, Any],
+        raw_body:bytes,
         flavor: str,
         event_source_subtype: PluginSubType,
+        signature_header: str,
     ):
         """Process an incoming event and execute all configured actions.
 
@@ -36,9 +38,10 @@ class EventHub:
 
         Args:
             incoming_event: Generic event
+            raw_body: Raw request body
             flavor: Flavor of Event
             event_source_subtype: Subtype of Event
-
+            signature_header: The signature header
         """
         try:
             plugin_cls = plugin_flavor_registry.get_plugin_implementation(
@@ -46,8 +49,6 @@ class EventHub:
                 _type=PluginType.EVENT_SOURCE,
                 subtype=event_source_subtype,
             )
-            # # Store event for future reference
-        # Get all actions to be executed
         except KeyError as e:
             # TODO: raise the appropriate exception
             logger.exception(e)
@@ -55,8 +56,11 @@ class EventHub:
         else:
             assert isinstance(plugin_cls, BaseEventSourcePlugin)
             triggers = plugin_cls.get_matching_triggers_for_event(
-                incoming_event
+                incoming_event=incoming_event,
+                raw_body=raw_body,
+                signature_header=signature_header
             )
+
         # TODO: Store event for future reference
         # TODO: Create a trigger execution linked to the event and the trigger
         logger.debug(triggers)
