@@ -221,7 +221,7 @@ def test_model_version_list(clean_client_with_models: "Client"):
     list_command = cli.commands["model"].commands["version"].commands["list"]
     result = runner.invoke(
         list_command,
-        args=[NAME],
+        args=["-n", NAME],
     )
     assert result.exit_code == 0, result.stderr
 
@@ -234,7 +234,7 @@ def test_model_version_list_fails_on_bad_model(
     list_command = cli.commands["model"].commands["version"].commands["list"]
     result = runner.invoke(
         list_command,
-        args=["foo"],
+        args=["-n", "foo"],
     )
     assert result.exit_code != 0, result.stderr
 

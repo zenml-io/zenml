@@ -23,6 +23,13 @@ Cloud project.
 
 ### How to use it
 
+{% hint style="warning" %}
+The GCP image builder (and GCP integration in general) currently only works
+for Python versions <3.11. The ZenML team is aware of this dependency
+clash/issue and is working on a fix. For now, please use Python <3.11 together
+with the GCP integration.
+{% endhint %}
+
 To use the Google Cloud image builder, we need:
 
 * The ZenML `gcp` integration installed. If you haven't done so, run:
@@ -213,7 +220,7 @@ authenticated and therefore use other GCP services.
 By default, the GCP Image Builder is executing the build command of the ZenML Pipeline Docker image with the
 option `--network=cloudbuild`, so the ADC provided by the `cloudbuild` network can also be used in the build. This is
 useful if you want to install a private dependency from a GCP Artifact Registry, but you will also need to use
-a [custom base parent image](/docs/book/user-guide/advanced-guide/environment-management/containerize-your-pipeline.md#using-a-custom-parent-image)
+a [custom base parent image](/docs/book/user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md#using-a-custom-parent-image)
 with the [`keyrings.google-artifactregistry-auth`](https://pypi.org/project/keyrings.google-artifactregistry-auth/)
 installed, so `pip` can connect and authenticate in the private artifact registry to download the dependency.
 

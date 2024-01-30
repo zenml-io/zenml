@@ -21,9 +21,8 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 from typing_extensions import Annotated
 
-from zenml import get_step_context, step
+from zenml import Model, get_step_context, step
 from zenml.logger import get_logger
-from zenml.model.model_version import ModelVersion
 
 logger = get_logger(__name__)
 
@@ -61,10 +60,8 @@ def compute_performance_metrics_on_current_data(
     logger.info("Evaluating model metrics...")
 
     # Get model version numbers from Model Control Plane
-    latest_version = get_step_context().model_version
-    current_version = ModelVersion(
-        name=latest_version.name, version=target_env
-    )
+    latest_version = get_step_context().model
+    current_version = Model(name=latest_version.name, version=target_env)
 
     latest_version_number = latest_version.number
     current_version_number = current_version.number

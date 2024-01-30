@@ -142,12 +142,14 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
         "only_data_artifacts",
         "only_model_artifacts",
         "only_deployment_artifacts",
+        "has_custom_name",
     ]
     CLI_EXCLUDE_FIELDS = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         "only_data_artifacts",
         "only_model_artifacts",
         "only_deployment_artifacts",
+        "has_custom_name",
         "model_id",
         "model_version_id",
         "user_id",
@@ -178,6 +180,7 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
     only_data_artifacts: Optional[bool] = False
     only_model_artifacts: Optional[bool] = False
     only_deployment_artifacts: Optional[bool] = False
+    has_custom_name: Optional[bool] = None
 
     def get_custom_filters(
         self,
@@ -232,5 +235,14 @@ class ModelVersionArtifactFilter(WorkspaceScopedFilter):
                 ModelVersionArtifactSchema.is_deployment_artifact.is_(True),  # type: ignore[attr-defined]
             )
             custom_filters.append(deployment_artifact_filter)
+
+        if self.has_custom_name is not None:
+            custom_name_filter = and_(  # type: ignore[type-var]
+                ModelVersionArtifactSchema.artifact_version_id
+                == ArtifactVersionSchema.id,
+                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                ArtifactSchema.has_custom_name == self.has_custom_name,
+            )
+            custom_filters.append(custom_name_filter)
 
         return custom_filters

@@ -8,6 +8,7 @@ on:
 jobs:
   update_docs:
     runs-on: ubuntu-latest
+    if: github.repository == 'zenml-io/zenml'
 
     steps:
     - name: Check out branch

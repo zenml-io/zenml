@@ -15,6 +15,7 @@ Throughout this guide, we'll cover essential topics including:
 - [Fetching objects after pipelines have run](fetching-pipelines.md)
 - [Managing data and data versioning](manage-artifacts.md)
 - [Tracking your machine learning models](track-ml-models.md)
+- [Structuring your pipelines, models, and artifacts](structuring-a-project.md)
 
 Before jumping in, make sure you have a Python environment ready and `virtualenv` installed to follow along with ease.
 By the end, you will have completed a [starter project](starter-project.md), marking the beginning of your journey into MLOps with ZenML.

@@ -70,7 +70,7 @@ from zenml.models import (
     ScheduleRequest,
 )
 from zenml.new.pipelines import build_utils
-from zenml.new.pipelines.model_utils import NewModelVersionRequest
+from zenml.new.pipelines.model_utils import NewModelRequest
 from zenml.orchestrators.utils import get_run_name
 from zenml.stack import Stack
 from zenml.steps import BaseStep
@@ -92,7 +92,8 @@ if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.lazy_load import ModelVersionDataLazyLoader
+    from zenml.model.model import Model
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -125,7 +126,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_version: Optional["ModelVersion"] = None,
+        model: Optional["Model"] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -146,7 +147,7 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model_version: configuration of the model version in the Model Control Plane.
+            model: configuration of the model in the Model Control Plane.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
@@ -165,7 +166,7 @@ class Pipeline:
                 extra=extra,
                 on_failure=on_failure,
                 on_success=on_success,
-                model_version=model_version,
+                model=model,
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
@@ -304,7 +305,7 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
-        model_version: Optional["ModelVersion"] = None,
+        model: Optional["Model"] = None,
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
     ) -> T:
@@ -340,7 +341,7 @@ class Pipeline:
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
-            model_version: configuration of the model version in the Model Control Plane.
+            model: configuration of the model version in the Model Control Plane.
             parameters: input parameters for the pipeline.
 
         Returns:
@@ -366,7 +367,7 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
-                "model_version": model_version,
+                "model": model,
                 "parameters": parameters,
             }
         )
@@ -871,34 +872,32 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def _update_new_requesters(
         self,
         requester_name: str,
-        model_version: "ModelVersion",
+        model: "Model",
         new_versions_requested: Dict[
-            Tuple[str, Optional[str]], NewModelVersionRequest
+            Tuple[str, Optional[str]], NewModelRequest
         ],
-        other_model_versions: Set["ModelVersion"],
+        other_models: Set["Model"],
     ) -> None:
         key = (
-            model_version.name,
-            str(model_version.version) if model_version.version else None,
+            model.name,
+            str(model.version) if model.version else None,
         )
-        if model_version.version is None:
+        if model.version is None:
             version_existed = False
         else:
             try:
-                model_version._get_model_version()
+                model._get_model_version()
                 version_existed = key not in new_versions_requested
             except KeyError:
                 version_existed = False
         if not version_existed:
-            model_version.was_created_in_this_run = True
+            model.was_created_in_this_run = True
             new_versions_requested[key].update_request(
-                model_version,
-                NewModelVersionRequest.Requester(
-                    source="step", name=requester_name
-                ),
+                model,
+                NewModelRequest.Requester(source="step", name=requester_name),
             )
         else:
-            other_model_versions.add(model_version)
+            other_models.add(model)
 
     def prepare_model_versions(
         self, deployment: "PipelineDeploymentBase"
@@ -909,35 +908,32 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             deployment: The pipeline deployment configuration.
         """
         new_versions_requested: Dict[
-            Tuple[str, Optional[str]], NewModelVersionRequest
-        ] = defaultdict(NewModelVersionRequest)
-        other_model_versions: Set["ModelVersion"] = set()
+            Tuple[str, Optional[str]], NewModelRequest
+        ] = defaultdict(NewModelRequest)
+        other_models: Set["Model"] = set()
         all_steps_have_own_config = True
         for step in deployment.step_configurations.values():
-            step_model_version = step.config.model_version
+            step_model = step.config.model
             all_steps_have_own_config = (
-                all_steps_have_own_config
-                and step.config.model_version is not None
+                all_steps_have_own_config and step.config.model is not None
             )
-            if step_model_version:
+            if step_model:
                 self._update_new_requesters(
-                    model_version=step_model_version,
+                    model=step_model,
                     requester_name=step.config.name,
                     new_versions_requested=new_versions_requested,
-                    other_model_versions=other_model_versions,
+                    other_models=other_models,
                 )
         if not all_steps_have_own_config:
-            pipeline_model_version = (
-                deployment.pipeline_configuration.model_version
-            )
-            if pipeline_model_version:
+            pipeline_model = deployment.pipeline_configuration.model
+            if pipeline_model:
                 self._update_new_requesters(
-                    model_version=pipeline_model_version,
+                    model=pipeline_model,
                     requester_name=self.name,
                     new_versions_requested=new_versions_requested,
-                    other_model_versions=other_model_versions,
+                    other_models=other_models,
                 )
-        elif deployment.pipeline_configuration.model_version is not None:
+        elif deployment.pipeline_configuration.model is not None:
             logger.warning(
                 f"ModelConfig of pipeline `{self.name}` is overridden in all "
                 f"steps. "
@@ -945,13 +941,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         self._validate_new_version_requests(new_versions_requested)
 
-        for other_model_version in other_model_versions:
-            other_model_version._validate_config_in_runtime()
+        for other_model in other_models:
+            other_model._validate_config_in_runtime()
 
     def _validate_new_version_requests(
         self,
         new_versions_requested: Dict[
-            Tuple[str, Optional[str]], NewModelVersionRequest
+            Tuple[str, Optional[str]], NewModelRequest
         ],
     ) -> None:
         """Validate the model version that are used in the pipeline run.
@@ -966,13 +962,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 logger.warning(
                     f"New version of model version `{model_name}::{model_version or 'NEW'}` "
                     f"requested in multiple decorators:\n{data.requesters}\n We recommend "
-                    "that `ModelVersion` requesting new version is configured only in one "
+                    "that `Model` requesting new version is configured only in one "
                     "place of the pipeline."
                 )
-            data.model_version._validate_config_in_runtime()
+            data.model._validate_config_in_runtime()
             self.__new_unnamed_model_versions_in_current_run__[
-                data.model_version.name
-            ] = data.model_version.number
+                data.model.name
+            ] = data.model.number
 
     def get_runs(self, **kwargs: Any) -> List["PipelineRunResponse"]:
         """(Deprecated) Get runs of this pipeline.
@@ -1259,7 +1255,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         step: "BaseStep",
         input_artifacts: Dict[str, StepArtifact],
         external_artifacts: Dict[str, "ExternalArtifact"],
+        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         parameters: Dict[str, Any],
+        default_parameters: Dict[str, Any],
         upstream_steps: Set[str],
         custom_id: Optional[str] = None,
         allow_id_suffix: bool = True,
@@ -1270,7 +1268,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             step: The step for which to add an invocation.
             input_artifacts: The input artifacts for the invocation.
             external_artifacts: The external artifacts for the invocation.
+            model_artifacts_or_metadata: The model artifacts or metadata for
+                the invocation.
             parameters: The parameters for the invocation.
+            default_parameters: The default parameters for the invocation.
             upstream_steps: The upstream steps for the invocation.
             custom_id: Custom ID to use for the invocation.
             allow_id_suffix: Whether a suffix can be appended to the invocation
@@ -1305,7 +1306,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             step=step,
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
+            model_artifacts_or_metadata=model_artifacts_or_metadata,
             parameters=parameters,
+            default_parameters=default_parameters,
             upstream_steps=upstream_steps,
             pipeline=self,
         )
@@ -1392,18 +1395,24 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 {k: v for k, v in _from_config_file.items() if k in matcher}
             )
 
+            # TODO: deprecate me
             if "model_version" in _from_config_file:
-                if "model_version" in self._from_config_file:
-                    _from_config_file[
-                        "model_version"
-                    ] = self._from_config_file["model_version"]
-                else:
-                    from zenml.model.model_version import ModelVersion
+                logger.warning(
+                    "YAML config option `model_version` is deprecated. Please use `model`."
+                )
+                _from_config_file["model"] = _from_config_file["model_version"]
+                del _from_config_file["model_version"]
 
-                    _from_config_file[
-                        "model_version"
-                    ] = ModelVersion.parse_obj(
-                        _from_config_file["model_version"]
+            if "model" in _from_config_file:
+                if "model" in self._from_config_file:
+                    _from_config_file["model"] = self._from_config_file[
+                        "model"
+                    ]
+                else:
+                    from zenml.model.model import Model
+
+                    _from_config_file["model"] = Model.parse_obj(
+                        _from_config_file["model"]
                     )
         self._from_config_file = _from_config_file
 
@@ -1446,7 +1455,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         pipeline_copy._parse_config_file(
             config_path=config_path,
-            matcher=inspect.getfullargspec(self.configure)[0],
+            matcher=inspect.getfullargspec(self.configure)[0]
+            + ["model_version"],  # TODO: deprecate `model_version` later on
         )
         pipeline_copy._from_config_file = dict_utils.recursive_update(
             pipeline_copy._from_config_file, kwargs

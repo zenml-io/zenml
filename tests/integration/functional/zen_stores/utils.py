@@ -496,12 +496,15 @@ class SecretContext:
         self.created_secret = self.store.create_secret(new_secret)
         return self.created_secret
 
+    def cleanup(self):
+        try:
+            self.store.delete_secret(self.created_secret.id)
+        except KeyError:
+            pass
+
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.delete:
-            try:
-                self.store.delete_secret(self.created_secret.id)
-            except KeyError:
-                pass
+            self.cleanup()
 
 
 class CodeRepositoryContext:
@@ -612,7 +615,7 @@ class ServiceConnectorContext:
             self.cleanup()
 
 
-class ModelVersionContext:
+class ModelContext:
     def __init__(
         self,
         create_version: bool = False,
@@ -644,7 +647,7 @@ class ModelVersionContext:
         try:
             model = client.get_model(self.model)
         except KeyError:
-            model = client.create_model(name=self.model)
+            model = client.create_model(name=self.model, tags=["foo", "bar"])
         if self.create_version:
             try:
                 mv = client.get_model_version(self.model, self.model_version)

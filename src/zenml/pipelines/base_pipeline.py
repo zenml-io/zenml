@@ -49,7 +49,7 @@ PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
 PARAM_ON_FAILURE = "on_failure"
 PARAM_ON_SUCCESS = "on_success"
-PARAM_MODEL_VERSION = "model_version"
+PARAM_MODEL = "model"
 
 TEMPLATE_NAME_ATTRIBUTE = "_template_name"
 

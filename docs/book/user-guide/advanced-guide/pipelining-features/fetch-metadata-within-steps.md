@@ -57,7 +57,7 @@ def my_step():
 ```
 
 You can also use the [active model](../../starter-guide/track-ml-models.md) to get the 
-model version metadata, or the associated artifacts directly as described in the
+model metadata, or the associated artifacts directly as described in the
 [starter guide](../../starter-guide/track-ml-models.md):
 
 ```python
@@ -66,10 +66,10 @@ from zenml import step, pipeline, get_step_context
 @step
 def my_step():
     # Get active step context
-    mv = get_step_context().model_version
+    mv = get_step_context().model
 
     # Get metadata
-    print(mv.run_metadata["some_value"].value)
+    print(mv.run_metadata["metadata_key"].value)
 
     # Directly fetch an artifact
     output = mv.get_artifact("my_dataset", "my_version")

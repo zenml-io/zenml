@@ -37,20 +37,27 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
-import pymysql
 from pydantic import SecretStr, root_validator, validator
-from sqlalchemy import asc, desc, func, text
+from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
     NoResultFound,
-    OperationalError,
 )
 from sqlalchemy.orm import noload
-from sqlmodel import Session, SQLModel, create_engine, or_, select
+from sqlmodel import (
+    Session,
+    SQLModel,
+    and_,
+    col,
+    create_engine,
+    delete,
+    or_,
+    select,
+)
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -66,14 +73,17 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
 )
 from zenml.enums import (
     AuthScheme,
+    DatabaseBackupStrategy,
     ExecutionStatus,
     LoggingLevels,
     ModelStages,
     SecretScope,
+    SecretsStoreType,
     SorterOps,
     StackComponentType,
     StepRunInputArtifactType,
@@ -83,8 +93,10 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     AuthorizationException,
+    BackupSecretsStoreNotConfiguredError,
     EntityExistsError,
     IllegalOperationError,
+    SecretsStoreNotConfiguredError,
     StackComponentExistsError,
     StackExistsError,
 )
@@ -152,6 +164,9 @@ from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
     PipelineFilter,
+    PipelineNamespaceFilter,
+    PipelineNamespaceResponse,
+    PipelineNamespaceResponseBody,
     PipelineRequest,
     PipelineResponse,
     PipelineRunFilter,
@@ -168,6 +183,8 @@ from zenml.models import (
     ScheduleUpdate,
     SecretFilter,
     SecretRequest,
+    SecretResponse,
+    SecretUpdate,
     ServerDatabaseType,
     ServerModel,
     ServiceAccountFilter,
@@ -219,11 +236,10 @@ from zenml.utils.string_utils import random_str
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
-from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.migrations.alembic import (
-    ZENML_ALEMBIC_START_REVISION,
     Alembic,
 )
+from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
     APIKeySchema,
     ArtifactSchema,
@@ -245,6 +261,7 @@ from zenml.zen_stores.schemas import (
     PipelineSchema,
     RunMetadataSchema,
     ScheduleSchema,
+    SecretSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
     StackSchema,
@@ -261,6 +278,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -281,24 +299,6 @@ logger = get_logger(__name__)
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
 
-def _is_mysql_missing_database_error(error: OperationalError) -> bool:
-    """Checks if the given error is due to a missing database.
-
-    Args:
-        error: The error to check.
-
-    Returns:
-        If the error because the MySQL database doesn't exist.
-    """
-    from pymysql.constants.ER import BAD_DB_ERROR
-
-    if not isinstance(error.orig, pymysql.err.OperationalError):
-        return False
-
-    error_code = cast(int, error.orig.args[0])
-    return error_code == BAD_DB_ERROR
-
-
 class SQLDatabaseDriver(StrEnum):
     """SQL database drivers supported by the SQL ZenML store."""
 
@@ -314,6 +314,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         secrets_store: The configuration of the secrets store to use.
             This defaults to a SQL secrets store that extends the SQL ZenML
             store.
+        backup_secrets_store: The configuration of a backup secrets store to
+            use in addition to the primary one as an intermediate step during
+            the migration to a new secrets store.
         driver: The SQL database driver.
         database: database name. If not already present on the server, it will
             be created automatically on first access.
@@ -340,6 +343,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     type: StoreType = StoreType.SQL
 
     secrets_store: Optional[SecretsStoreConfiguration] = None
+    backup_secrets_store: Optional[SecretsStoreConfiguration] = None
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
@@ -352,6 +356,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
     pool_pre_ping: bool = True
+
+    backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
+    # database backup directory
+    backup_directory: str = os.path.join(
+        GlobalConfiguration().config_directory,
+        SQL_STORE_BACKUP_DIRECTORY_NAME,
+    )
+    backup_database: Optional[str] = None
 
     @validator("secrets_store")
     def validate_secrets_store(
@@ -393,6 +405,33 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "The GRPC attributes %s are unused and will be removed soon. "
                 "Please remove them from SQLZenStore configuration. This will "
                 "become an error in future versions of ZenML."
+            )
+
+        return values
+
+    @root_validator
+    def _validate_backup_strategy(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Validate the backup strategy.
+
+        Args:
+            values: All model attribute values.
+
+        Returns:
+            The model attribute values.
+
+        Raises:
+            ValueError: If the backup database name is not set when the backup
+                database is requested.
+        """
+        backup_strategy = values.get("backup_strategy")
+        if backup_strategy == DatabaseBackupStrategy.DATABASE and (
+            not values.get("backup_database")
+        ):
+            raise ValueError(
+                "The `backup_database` attribute must also be set if the "
+                "backup strategy is set to use a backup database."
             )
 
         return values
@@ -609,13 +648,18 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return config
 
-    def get_sqlmodel_config(
+    def get_sqlalchemy_config(
         self,
-    ) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
-        """Get the SQLModel engine configuration for the SQL ZenML store.
+        database: Optional[str] = None,
+    ) -> Tuple[URL, Dict[str, Any], Dict[str, Any]]:
+        """Get the SQLAlchemy engine configuration for the SQL ZenML store.
+
+        Args:
+            database: Custom database name to use. If not set, the database name
+                from the configuration will be used.
 
         Returns:
-            The URL and connection arguments for the SQLModel engine.
+            The URL and connection arguments for the SQLAlchemy engine.
 
         Raises:
             NotImplementedError: If the SQL driver is not supported.
@@ -637,6 +681,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             assert self.password is not None
             assert sql_url.host is not None
 
+            if not database:
+                database = self.database
+
             engine_args = {
                 "pool_size": self.pool_size,
                 "max_overflow": self.max_overflow,
@@ -647,7 +694,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 drivername="mysql+pymysql",
                 username=self.username,
                 password=self.password,
-                database=self.database,
+                database=database,
             )
 
             sqlalchemy_ssl_args: Dict[str, Any] = {}
@@ -672,7 +719,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 f"SQL driver `{sql_url.drivername}` is not supported."
             )
 
-        return str(sql_url), sqlalchemy_connect_args, engine_args
+        return sql_url, sqlalchemy_connect_args, engine_args
 
     class Config:
         """Pydantic configuration class."""
@@ -702,7 +749,37 @@ class SqlZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
+    _migration_utils: Optional[MigrationUtils] = None
     _alembic: Optional[Alembic] = None
+    _secrets_store: Optional[BaseSecretsStore] = None
+    _backup_secrets_store: Optional[BaseSecretsStore] = None
+
+    @property
+    def secrets_store(self) -> "BaseSecretsStore":
+        """The secrets store associated with this store.
+
+        Returns:
+            The secrets store associated with this store.
+
+        Raises:
+            SecretsStoreNotConfiguredError: If no secrets store is configured.
+        """
+        if self._secrets_store is None:
+            raise SecretsStoreNotConfiguredError(
+                "No secrets store is configured. Please configure a secrets "
+                "store to create and manage ZenML secrets."
+            )
+
+        return self._secrets_store
+
+    @property
+    def backup_secrets_store(self) -> Optional["BaseSecretsStore"]:
+        """The backup secrets store associated with this store.
+
+        Returns:
+            The backup secrets store associated with this store.
+        """
+        return self._backup_secrets_store
 
     @property
     def engine(self) -> Engine:
@@ -717,6 +794,20 @@ class SqlZenStore(BaseZenStore):
         if not self._engine:
             raise ValueError("Store not initialized")
         return self._engine
+
+    @property
+    def migration_utils(self) -> MigrationUtils:
+        """The migration utils.
+
+        Returns:
+            The migration utils.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._migration_utils:
+            raise ValueError("Store not initialized")
+        return self._migration_utils
 
     @property
     def alembic(self) -> Alembic:
@@ -736,20 +827,18 @@ class SqlZenStore(BaseZenStore):
     def filter_and_paginate(
         cls,
         session: Session,
-        query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+        query: Union[Select[Any], SelectOfScalar[Any]],
         table: Type[AnySchema],
         filter_model: BaseFilter,
-        custom_schema_to_model_conversion: Optional[
-            Callable[[AnySchema], B]
-        ] = None,
+        custom_schema_to_model_conversion: Optional[Callable[..., B]] = None,
         custom_fetch: Optional[
             Callable[
                 [
                     Session,
-                    Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+                    Union[Select[Any], SelectOfScalar[Any]],
                     BaseFilter,
                 ],
-                List[AnySchema],
+                List[Any],
             ]
         ] = None,
         hydrate: bool = False,
@@ -784,8 +873,10 @@ class SqlZenStore(BaseZenStore):
         query = filter_model.apply_filter(query=query, table=table)
 
         # Get the total amount of items in the database for a given query
+        custom_fetch_result: Optional[List[Any]] = None
         if custom_fetch:
-            total = len(custom_fetch(session, query, filter_model))
+            custom_fetch_result = custom_fetch(session, query, filter_model)
+            total = len(custom_fetch_result)
         else:
             total = session.scalar(
                 select([func.count("*")]).select_from(
@@ -817,7 +908,8 @@ class SqlZenStore(BaseZenStore):
         # Get a page of the actual data
         item_schemas: List[AnySchema]
         if custom_fetch:
-            item_schemas = custom_fetch(session, query, filter_model)
+            assert custom_fetch_result is not None
+            item_schemas = custom_fetch_result
             # select the items in the current page
             item_schemas = item_schemas[
                 filter_model.offset : filter_model.offset + filter_model.size
@@ -866,16 +958,17 @@ class SqlZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the SQL store.
-
-        Raises:
-            OperationalError: If connecting to the database failed.
-        """
+        """Initialize the SQL store."""
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
-        url, connect_args, engine_args = self.config.get_sqlmodel_config()
+        url, connect_args, engine_args = self.config.get_sqlalchemy_config()
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
+        )
+        self._migration_utils = MigrationUtils(
+            url=url,
+            connect_args=connect_args,
+            engine_args=engine_args,
         )
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
@@ -895,29 +988,54 @@ class SqlZenStore(BaseZenStore):
             self.config.driver == SQLDatabaseDriver.MYSQL
             and self.config.database
         ):
-            try:
-                self._engine.connect()
-            except OperationalError as e:
-                logger.debug(
-                    "Failed to connect to mysql database `%s`.",
-                    self._engine.url.database,
-                )
-
-                if _is_mysql_missing_database_error(e):
-                    self._create_mysql_database(
-                        url=self._engine.url,
-                        connect_args=connect_args,
-                        engine_args=engine_args,
-                    )
-                else:
-                    raise
+            if not self.migration_utils.database_exists():
+                self.migration_utils.create_database()
 
         self._alembic = Alembic(self.engine)
+
         if (
             not self.skip_migrations
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+
+        secrets_store_config = self.config.secrets_store
+
+        # Initialize the secrets store
+        if (
+            secrets_store_config
+            and secrets_store_config.type != SecretsStoreType.NONE
+        ):
+            secrets_store_class = BaseSecretsStore.get_store_class(
+                secrets_store_config
+            )
+            self._secrets_store = secrets_store_class(
+                zen_store=self,
+                config=secrets_store_config,
+            )
+            # Update the config with the actual secrets store config
+            # to reflect the default values in the saved configuration
+            self.config.secrets_store = self._secrets_store.config
+
+        backup_secrets_store_config = self.config.backup_secrets_store
+
+        # Initialize the backup secrets store, if configured
+        if (
+            backup_secrets_store_config
+            and backup_secrets_store_config.type != SecretsStoreType.NONE
+        ):
+            secrets_store_class = BaseSecretsStore.get_store_class(
+                backup_secrets_store_config
+            )
+            self._backup_secrets_store = secrets_store_class(
+                zen_store=self,
+                config=backup_secrets_store_config,
+            )
+            # Update the config with the actual secrets store config
+            # to reflect the default values in the saved configuration
+            self.config.backup_secrets_store = (
+                self._backup_secrets_store.config
+            )
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
@@ -928,34 +1046,219 @@ class SqlZenStore(BaseZenStore):
         if config.auth_scheme != AuthScheme.EXTERNAL:
             self._get_or_create_default_user()
 
-    def _create_mysql_database(
+    def _get_db_backup_file_path(self) -> str:
+        """Get the path to the database backup file.
+
+        Returns:
+            The path to the configured database backup file.
+        """
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            return os.path.join(
+                self.config.backup_directory,
+                # Add the -backup suffix to the database filename
+                ZENML_SQLITE_DB_FILENAME[:-3] + "-backup.db",
+            )
+
+        # For a MySQL database, we need to dump the database to a JSON
+        # file
+        return os.path.join(
+            self.config.backup_directory,
+            f"{self.engine.url.database}-backup.json",
+        )
+
+    def backup_database(
         self,
-        url: URL,
-        connect_args: Dict[str, Any],
-        engine_args: Dict[str, Any],
-    ) -> None:
-        """Creates a mysql database.
+        strategy: Optional[DatabaseBackupStrategy] = None,
+        location: Optional[str] = None,
+        overwrite: bool = False,
+    ) -> Tuple[str, Any]:
+        """Backup the database.
 
         Args:
-            url: The URL of the database to create.
-            connect_args: Connect arguments for the SQLAlchemy engine.
-            engine_args: Additional initialization arguments for the SQLAlchemy
-                engine
+            strategy: Custom backup strategy to use. If not set, the backup
+                strategy from the store configuration will be used.
+            location: Custom target location to backup the database to. If not
+                set, the configured backup location will be used. Depending on
+                the backup strategy, this can be a file path or a database name.
+            overwrite: Whether to overwrite an existing backup if it exists.
+                If set to False, the existing backup will be reused.
+
+        Returns:
+            The location where the database was backed up to and an accompanying
+            user-friendly message that describes the backup location, or None
+            if no backup was created (i.e. because the backup already exists).
+
+        Raises:
+            ValueError: If the backup database name is not set when the backup
+                database is requested or if the backup strategy is invalid.
         """
-        logger.info("Trying to create database %s.", url.database)
-        master_url = url._replace(database=None)
-        master_engine = create_engine(
-            url=master_url, connect_args=connect_args, **engine_args
-        )
-        query = f"CREATE DATABASE IF NOT EXISTS {self.config.database}"
-        try:
-            connection = master_engine.connect()
-            connection.execute(text(query))
-        finally:
-            connection.close()
+        strategy = strategy or self.config.backup_strategy
+
+        if (
+            strategy == DatabaseBackupStrategy.DUMP_FILE
+            or self.config.driver == SQLDatabaseDriver.SQLITE
+        ):
+            dump_file = location or self._get_db_backup_file_path()
+
+            if not overwrite and os.path.isfile(dump_file):
+                logger.warning(
+                    f"A previous backup file already exists at '{dump_file}'. "
+                    "Reusing the existing backup."
+                )
+            else:
+                self.migration_utils.backup_database_to_file(
+                    dump_file=dump_file
+                )
+            return f"the '{dump_file}' backup file", dump_file
+        elif strategy == DatabaseBackupStrategy.DATABASE:
+            backup_db_name = location or self.config.backup_database
+            if not backup_db_name:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
+
+            if not overwrite and self.migration_utils.database_exists(
+                backup_db_name
+            ):
+                logger.warning(
+                    "A previous backup database already exists at "
+                    f"'{backup_db_name}'. Reusing the existing backup."
+                )
+            else:
+                self.migration_utils.backup_database_to_db(
+                    backup_db_name=backup_db_name
+                )
+            return f"the '{backup_db_name}' backup database", backup_db_name
+        elif strategy == DatabaseBackupStrategy.IN_MEMORY:
+            return (
+                "memory",
+                self.migration_utils.backup_database_to_memory(),
+            )
+
+        else:
+            raise ValueError(f"Invalid backup strategy: {strategy}.")
+
+    def restore_database(
+        self,
+        strategy: Optional[DatabaseBackupStrategy] = None,
+        location: Optional[Any] = None,
+        cleanup: bool = False,
+    ) -> None:
+        """Restore the database.
+
+        Args:
+            strategy: Custom backup strategy to use. If not set, the backup
+                strategy from the store configuration will be used.
+            location: Custom target location to restore the database from. If
+                not set, the configured backup location will be used. Depending
+                on the backup strategy, this can be a file path, a database
+                name or an in-memory database representation.
+            cleanup: Whether to cleanup the backup after restoring the database.
+
+        Raises:
+            ValueError: If the backup database name is not set when the backup
+                database is requested or if the backup strategy is invalid.
+        """
+        strategy = strategy or self.config.backup_strategy
+
+        if (
+            strategy == DatabaseBackupStrategy.DUMP_FILE
+            or self.config.driver == SQLDatabaseDriver.SQLITE
+        ):
+            dump_file = location or self._get_db_backup_file_path()
+            self.migration_utils.restore_database_from_file(
+                dump_file=dump_file
+            )
+        elif strategy == DatabaseBackupStrategy.DATABASE:
+            backup_db_name = location or self.config.backup_database
+            if not backup_db_name:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
+
+            self.migration_utils.restore_database_from_db(
+                backup_db_name=backup_db_name
+            )
+        elif strategy == DatabaseBackupStrategy.IN_MEMORY:
+            if location is None or not isinstance(location, list):
+                raise ValueError(
+                    "The in-memory database representation must be provided "
+                    "to restore the database from an in-memory backup."
+                )
+            self.migration_utils.restore_database_from_memory(db_dump=location)
+
+        else:
+            raise ValueError(f"Invalid backup strategy: {strategy}.")
+
+        if cleanup:
+            self.cleanup_database_backup()
+
+    def cleanup_database_backup(
+        self,
+        strategy: Optional[DatabaseBackupStrategy] = None,
+        location: Optional[Any] = None,
+    ) -> None:
+        """Delete the database backup.
+
+        Args:
+            strategy: Custom backup strategy to use. If not set, the backup
+                strategy from the store configuration will be used.
+            location: Custom target location to delete the database backup
+                from. If not set, the configured backup location will be used.
+                Depending on the backup strategy, this can be a file path or a
+                database name.
+
+        Raises:
+            ValueError: If the backup database name is not set when the backup
+                database is requested.
+        """
+        strategy = strategy or self.config.backup_strategy
+
+        if (
+            strategy == DatabaseBackupStrategy.DUMP_FILE
+            or self.config.driver == SQLDatabaseDriver.SQLITE
+        ):
+            dump_file = location or self._get_db_backup_file_path()
+            if dump_file is not None and os.path.isfile(dump_file):
+                try:
+                    os.remove(dump_file)
+                except OSError:
+                    logger.warning(
+                        f"Failed to cleanup database dump file "
+                        f"{dump_file}."
+                    )
+                else:
+                    logger.info(
+                        f"Successfully cleaned up database dump file "
+                        f"{dump_file}."
+                    )
+        elif strategy == DatabaseBackupStrategy.DATABASE:
+            backup_db_name = location or self.config.backup_database
+
+            if not backup_db_name:
+                raise ValueError(
+                    "The backup database name must be set in the store "
+                    "configuration to use the backup database strategy."
+                )
+            if self.migration_utils.database_exists(backup_db_name):
+                # Drop the backup database
+                self.migration_utils.drop_database(
+                    database=backup_db_name,
+                )
+                logger.info(
+                    f"Successfully cleaned up backup database "
+                    f"{backup_db_name}."
+                )
 
     def migrate_database(self) -> None:
-        """Migrate the database to the head as defined by the python package."""
+        """Migrate the database to the head as defined by the python package.
+
+        Raises:
+            RuntimeError: If the database exists and is not empty but has never
+                been migrated with alembic before.
+        """
         alembic_logger = logging.getLogger("alembic")
 
         # remove all existing handlers
@@ -974,57 +1277,140 @@ class SqlZenStore(BaseZenStore):
 
         # We need to account for 3 distinct cases here:
         # 1. the database is completely empty (not initialized)
-        # 2. the database is not empty, but has never been migrated with alembic
+        # 2. the database is not empty and has been migrated with alembic before
+        # 3. the database is not empty, but has never been migrated with alembic
         #   before (i.e. was created with SQLModel back when alembic wasn't
-        #   used)
-        # 3. the database is not empty and has been migrated with alembic before
-        revisions = self.alembic.current_revisions()
-        if len(revisions) >= 1:
-            if len(revisions) > 1:
+        #   used). We don't support this direct upgrade case anymore.
+        current_revisions = self.alembic.current_revisions()
+        head_revisions = self.alembic.head_revisions()
+        if len(current_revisions) >= 1:
+            # Case 2: the database has been migrated with alembic before. Just
+            # upgrade to the latest revision.
+            if len(current_revisions) > 1:
                 logger.warning(
                     "The ZenML database has more than one migration head "
                     "revision. This is not expected and might indicate a "
                     "database migration problem. Please raise an issue on "
                     "GitHub if you encounter this."
                 )
-            # Case 3: the database has been migrated with alembic before. Just
-            # upgrade to the latest revision.
-            self.alembic.upgrade()
-        else:
-            if self.alembic.db_is_empty():
-                # Case 1: the database is empty. We can just create the
-                # tables from scratch with from SQLModel. After tables are
-                # created we put an alembic revision to latest and populate
-                # identity table with needed info.
-                logger.info("Creating database tables")
-                with self.engine.begin() as conn:
-                    conn.run_callable(
-                        SQLModel.metadata.create_all  # type: ignore[arg-type]
-                    )
-                with Session(self.engine) as session:
-                    session.add(
-                        IdentitySchema(
-                            id=str(GlobalConfiguration().user_id).replace(
-                                "-", ""
-                            )
+
+            logger.debug("Current revisions: %s", current_revisions)
+            logger.debug("Head revisions: %s", head_revisions)
+
+            # If the current revision and head revision don't match, a database
+            # migration that changes the database structure or contents may
+            # actually be performed, in which case we enable the backup
+            # functionality. We only enable the backup functionality if the
+            # database will actually be changed, to avoid the overhead for
+            # unnecessary backups.
+            backup_enabled = (
+                self.config.backup_strategy != DatabaseBackupStrategy.DISABLED
+                and set(current_revisions) != set(head_revisions)
+            )
+            backup_location: Optional[Any] = None
+            backup_location_msg: Optional[str] = None
+
+            if backup_enabled:
+                try:
+                    logger.info("Backing up the database before migration.")
+                    (
+                        backup_location_msg,
+                        backup_location,
+                    ) = self.backup_database(overwrite=True)
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to backup the database: {str(e)}. "
+                        "Please check the logs for more details."
+                        "If you would like to disable the database backup "
+                        "functionality, set the `backup_strategy` attribute "
+                        "of the store configuration to `disabled`."
+                    ) from e
+                else:
+                    if backup_location is not None:
+                        logger.info(
+                            "Database successfully backed up to "
+                            f"{backup_location_msg}. If something goes wrong "
+                            "with the upgrade, ZenML will attempt to restore "
+                            "the database from this backup automatically."
                         )
-                    )
-                    session.commit()
-                self.alembic.stamp("head")
-            else:
-                # Case 2: the database is not empty, but has never been
-                # migrated with alembic before. We need to create the alembic
-                # version table, initialize it with the first revision where we
-                # introduced alembic and then upgrade to the latest revision.
-                self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
+
+            try:
                 self.alembic.upgrade()
+            except Exception as e:
+                if backup_enabled and backup_location:
+                    logger.exception(
+                        "Failed to migrate the database. Attempting to restore "
+                        f"the database from {backup_location_msg}."
+                    )
+                    try:
+                        self.restore_database(location=backup_location)
+                    except Exception:
+                        logger.exception(
+                            "Failed to restore the database from "
+                            f"{backup_location_msg}. Please "
+                            "check the logs for more details. You might need "
+                            "to restore the database manually."
+                        )
+                    else:
+                        raise RuntimeError(
+                            "The database migration failed, but the database "
+                            "was successfully restored from the backup. "
+                            "You can safely retry the upgrade or revert to "
+                            "the previous version of ZenML. Please check the "
+                            "logs for more details."
+                        ) from e
+                raise RuntimeError(
+                    f"The database migration failed: {str(e)}"
+                ) from e
+
+            else:
+                # We always remove the backup after a successful upgrade,
+                # not just to avoid cluttering the disk, but also to avoid
+                # reusing an outdated database from the backup in case of
+                # future upgrade failures.
+                try:
+                    self.cleanup_database_backup()
+                except Exception:
+                    logger.exception("Failed to cleanup the database backup.")
+
+        elif self.alembic.db_is_empty():
+            # Case 1: the database is empty. We can just create the
+            # tables from scratch with from SQLModel. After tables are
+            # created we put an alembic revision to latest and populate
+            # identity table with needed info.
+            logger.info("Creating database tables")
+            with self.engine.begin() as conn:
+                conn.run_callable(
+                    SQLModel.metadata.create_all  # type: ignore[arg-type]
+                )
+            with Session(self.engine) as session:
+                session.add(
+                    IdentitySchema(
+                        id=str(GlobalConfiguration().user_id).replace("-", "")
+                    )
+                )
+                session.commit()
+            self.alembic.stamp("head")
+        else:
+            # Case 3: the database is not empty, but has never been
+            # migrated with alembic before. We don't support this direct
+            # upgrade case anymore. The user needs to run a two-step
+            # upgrade.
+            raise RuntimeError(
+                "The ZenML database has never been migrated with alembic "
+                "before. This can happen if you are performing a direct "
+                "upgrade from a really old version of ZenML. This direct "
+                "upgrade path is not supported anymore. Please upgrade "
+                "your ZenML installation first to 0.54.0 or an earlier "
+                "version and then to the latest version."
+            )
 
         # If an alembic migration took place, all non-custom flavors are purged
         #  and the FlavorRegistry recreates all in-built and integration
         #  flavors in the db.
         revisions_afterwards = self.alembic.current_revisions()
 
-        if revisions != revisions_afterwards:
+        if current_revisions != revisions_afterwards:
             self._sync_flavors()
 
     def _sync_flavors(self) -> None:
@@ -1624,7 +2010,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_version is None:
                 raise KeyError(
                     f"Unable to get artifact version with ID "
-                    f"{artifact_version_id}: No artifact versionwith this ID "
+                    f"{artifact_version_id}: No artifact version with this ID "
                     f"found."
                 )
             return artifact_version.to_model(hydrate=hydrate)
@@ -1729,6 +2115,56 @@ class SqlZenStore(BaseZenStore):
                     "found."
                 )
             session.delete(artifact_version)
+            session.commit()
+
+    def prune_artifact_versions(
+        self,
+        only_versions: bool = True,
+    ) -> None:
+        """Prunes unused artifact versions and their artifacts.
+
+        Args:
+            only_versions: Only delete artifact versions, keeping artifacts
+        """
+        with Session(self.engine) as session:
+            unused_artifact_versions = [
+                a[0]
+                for a in session.execute(
+                    select(ArtifactVersionSchema.id).where(
+                        and_(
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(StepRunOutputArtifactSchema.artifact_id)
+                            ),
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(StepRunInputArtifactSchema.artifact_id)
+                            ),
+                        )
+                    )
+                ).fetchall()
+            ]
+            session.execute(
+                delete(ArtifactVersionSchema).where(
+                    col(ArtifactVersionSchema.id).in_(
+                        unused_artifact_versions
+                    ),
+                )
+            )
+            if not only_versions:
+                unused_artifacts = [
+                    a[0]
+                    for a in session.execute(
+                        select(ArtifactSchema.id).where(
+                            col(ArtifactSchema.id).notin_(
+                                select(ArtifactVersionSchema.artifact_id)
+                            )
+                        )
+                    ).fetchall()
+                ]
+                session.execute(
+                    delete(ArtifactSchema).where(
+                        col(ArtifactSchema.id).in_(unused_artifacts)
+                    )
+                )
             session.commit()
 
     # ------------------------ Artifact Visualizations ------------------------
@@ -2815,6 +3251,83 @@ class SqlZenStore(BaseZenStore):
 
             return pipeline.to_model(hydrate=hydrate)
 
+    def list_pipeline_namespaces(
+        self,
+        filter_model: PipelineNamespaceFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineNamespaceResponse]:
+        """List all pipeline namespaces matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all pipeline namespaces matching the filter criteria.
+        """
+
+        def _custom_conversion(
+            row: Tuple[str, UUID, str],
+        ) -> PipelineNamespaceResponse:
+            name, latest_run_id, latest_run_status = row
+
+            body = PipelineNamespaceResponseBody(
+                latest_run_id=latest_run_id,
+                latest_run_status=latest_run_status,
+            )
+
+            return PipelineNamespaceResponse(id=uuid4(), name=name, body=body)
+
+        def _custom_fetch(
+            session: Session,
+            query: Union[Select[Any], SelectOfScalar[Any]],
+            filter: BaseFilter,
+        ) -> List[Any]:
+            return session.exec(query).unique().all()
+
+        with Session(self.engine) as session:
+            max_date_subquery = (
+                select(  # type: ignore[call-overload]
+                    PipelineSchema.name,
+                    func.max(PipelineRunSchema.created).label("max_created"),
+                )
+                .outerjoin(
+                    PipelineRunSchema,
+                    PipelineSchema.id == PipelineRunSchema.pipeline_id,
+                )
+                .group_by(PipelineSchema.name)
+                .subquery()
+            )
+
+            query = (
+                select(
+                    max_date_subquery.c.name,
+                    PipelineRunSchema.id,
+                    PipelineRunSchema.status,
+                )
+                .outerjoin(
+                    PipelineSchema,
+                    PipelineSchema.name == max_date_subquery.c.name,
+                )
+                .outerjoin(
+                    PipelineRunSchema,
+                    PipelineRunSchema.created
+                    == max_date_subquery.c.max_created,
+                )
+            )
+
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+                custom_fetch=_custom_fetch,
+                custom_schema_to_model_conversion=_custom_conversion,
+            )
+
     def list_pipelines(
         self,
         pipeline_filter_model: PipelineFilter,
@@ -3676,6 +4189,761 @@ class SqlZenStore(BaseZenStore):
             session.delete(schedule)
             session.commit()
 
+    # ------------------------- Secrets -------------------------
+
+    def _check_sql_secret_scope(
+        self,
+        session: Session,
+        secret_name: str,
+        scope: SecretScope,
+        workspace: UUID,
+        user: UUID,
+        exclude_secret_id: Optional[UUID] = None,
+    ) -> Tuple[bool, str]:
+        """Checks if a secret with the given name already exists in the given scope.
+
+        This method enforces the following scope rules:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            session: The SQLAlchemy session.
+            secret_name: The name of the secret.
+            scope: The scope of the secret.
+            workspace: The ID of the workspace to which the secret belongs.
+            user: The ID of the user to which the secret belongs.
+            exclude_secret_id: The ID of a secret to exclude from the check
+                (used e.g. during an update to exclude the existing secret).
+
+        Returns:
+            True if a secret with the given name already exists in the given
+            scope, False otherwise, and an error message.
+        """
+        scope_filter = (
+            select(SecretSchema)
+            .where(SecretSchema.name == secret_name)
+            .where(SecretSchema.scope == scope.value)
+        )
+
+        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+            scope_filter = scope_filter.where(
+                SecretSchema.workspace_id == workspace
+            )
+        if scope == SecretScope.USER:
+            scope_filter = scope_filter.where(SecretSchema.user_id == user)
+        if exclude_secret_id is not None:
+            scope_filter = scope_filter.where(
+                SecretSchema.id != exclude_secret_id
+            )
+
+        existing_secret = session.exec(scope_filter).first()
+
+        if existing_secret is not None:
+            existing_secret_model = existing_secret.to_model(hydrate=True)
+
+            msg = (
+                f"Found an existing {scope.value} scoped secret with the "
+                f"same '{secret_name}' name"
+            )
+            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+                msg += (
+                    f" in the same '{existing_secret_model.workspace.name}' "
+                    f"workspace"
+                )
+            if scope == SecretScope.USER:
+                assert existing_secret_model.user
+                msg += (
+                    f" for the same '{existing_secret_model.user.name}' user"
+                )
+
+            return True, msg
+
+        return False, ""
+
+    def _set_secret_values(
+        self, secret_id: UUID, values: Dict[str, str], backup: bool = True
+    ) -> None:
+        """Sets the values of a secret in the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret to set the values of.
+            values: The values to set.
+            backup: Whether to back up the values in the backup secrets store,
+                if configured.
+
+        # noqa: DAR401
+        """
+
+        def do_backup() -> bool:
+            """Backs up the values of a secret in the configured backup secrets store.
+
+            Returns:
+                True if the backup succeeded, False otherwise.
+            """
+            if not backup or not self.backup_secrets_store:
+                return False
+            logger.info(
+                f"Storing secret {secret_id} in the backup secrets store. "
+            )
+            try:
+                self._backup_secret_values(secret_id=secret_id, values=values)
+            except Exception:
+                logger.exception(
+                    f"Failed to store secret values for secret with ID "
+                    f"{secret_id} in the backup secrets store. "
+                )
+                return False
+            return True
+
+        try:
+            self.secrets_store.store_secret_values(
+                secret_id=secret_id, secret_values=values
+            )
+        except Exception:
+            logger.exception(
+                f"Failed to store secret values for secret with ID "
+                f"{secret_id} in the primary secrets store. "
+            )
+            if not do_backup():
+                raise
+        else:
+            do_backup()
+
+    def _backup_secret_values(
+        self, secret_id: UUID, values: Dict[str, str]
+    ) -> None:
+        """Backs up the values of a secret in the configured backup secrets store.
+
+        Args:
+            secret_id: The ID of the secret the values of which to backup.
+            values: The values to back up.
+        """
+        if self.backup_secrets_store:
+            # We attempt either an update or a create operation depending on
+            # whether the secret values are already stored in the backup secrets
+            # store. This is to account for any inconsistencies in the backup
+            # secrets store without impairing the backup functionality.
+            try:
+                self.backup_secrets_store.get_secret_values(
+                    secret_id=secret_id,
+                )
+            except KeyError:
+                self.backup_secrets_store.store_secret_values(
+                    secret_id=secret_id, secret_values=values
+                )
+            else:
+                self.backup_secrets_store.update_secret_values(
+                    secret_id=secret_id, secret_values=values
+                )
+
+    def _get_secret_values(
+        self, secret_id: UUID, use_backup: bool = True
+    ) -> Dict[str, str]:
+        """Gets the values of a secret from the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret to get the values of.
+            use_backup: Whether to use the backup secrets store if the primary
+                secrets store fails to retrieve the values and if a backup
+                secrets store is configured.
+
+        Returns:
+            The values of the secret.
+
+        # noqa: DAR401
+        """
+        try:
+            return self.secrets_store.get_secret_values(
+                secret_id=secret_id,
+            )
+        except Exception as e:
+            if use_backup and self.backup_secrets_store:
+                logger.exception(
+                    f"Failed to get secret values for secret with ID "
+                    f"{secret_id} from the primary secrets store. "
+                    f"Trying to get them from the backup secrets store. "
+                )
+                try:
+                    backup_values = self._get_backup_secret_values(
+                        secret_id=secret_id
+                    )
+                    if isinstance(e, KeyError):
+                        # Attempt to automatically restore the values in the
+                        # primary secrets store if the backup secrets store
+                        # succeeds in retrieving them and if the values are
+                        # missing in the primary secrets store.
+                        try:
+                            self.secrets_store.store_secret_values(
+                                secret_id=secret_id,
+                                secret_values=backup_values,
+                            )
+                        except Exception:
+                            logger.exception(
+                                f"Failed to restore secret values for secret "
+                                f"with ID {secret_id} in the primary secrets "
+                                "store. "
+                            )
+                    return backup_values
+                except Exception:
+                    logger.exception(
+                        f"Failed to get secret values for secret with ID "
+                        f"{secret_id} from the backup secrets store. "
+                    )
+            raise
+
+    def _get_backup_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+        """Gets the backup values of a secret from the configured backup secrets store.
+
+        Args:
+            secret_id: The ID of the secret to get the values of.
+
+        Returns:
+            The backup values of the secret.
+
+        Raises:
+            KeyError: If no backup secrets store is configured.
+        """
+        if self.backup_secrets_store:
+            return self.backup_secrets_store.get_secret_values(
+                secret_id=secret_id,
+            )
+        raise KeyError(
+            f"Unable to get backup secret values for secret with ID "
+            f"{secret_id}: No backup secrets store is configured."
+        )
+
+    def _update_secret_values(
+        self,
+        secret_id: UUID,
+        values: Dict[str, Optional[str]],
+        overwrite: bool = False,
+        backup: bool = True,
+    ) -> Dict[str, str]:
+        """Updates the values of a secret in the configured secrets store.
+
+        This method will update the existing values with the new values
+        and drop `None` values.
+
+        Args:
+            secret_id: The ID of the secret to set the values of.
+            values: The updated values to set.
+            overwrite: Whether to overwrite the existing values with the new
+                values. If set to False, the new values will be merged with the
+                existing values.
+            backup: Whether to back up the updated values in the backup secrets
+                store, if configured.
+
+        Returns:
+            The updated values.
+
+        # noqa: DAR401
+        """
+        try:
+            existing_values = self._get_secret_values(
+                secret_id=secret_id, use_backup=backup
+            )
+        except KeyError:
+            logger.error(
+                f"Unable to update secret values for secret with ID "
+                f"{secret_id}: No secret with this ID found in the secrets "
+                f"store back-end. Creating a new secret instead."
+            )
+            # If no secret values are yet stored in the secrets store,
+            # we simply treat this as a create operation. This is to account
+            # for cases in which secrets are manually deleted in the secrets
+            # store backend or when the secrets store backend is reconfigured to
+            # a different account, provider, region etc. without migrating
+            # the actual existing secrets themselves.
+            new_values: Dict[str, str] = {
+                k: v for k, v in values.items() if v is not None
+            }
+            self._set_secret_values(
+                secret_id=secret_id, values=new_values, backup=backup
+            )
+            return new_values
+
+        if overwrite:
+            existing_values = {
+                k: v for k, v in values.items() if v is not None
+            }
+        else:
+            for k, v in values.items():
+                if v is not None:
+                    existing_values[k] = v
+                # Drop values removed in the update
+                if v is None and k in existing_values:
+                    del existing_values[k]
+
+        def do_backup() -> bool:
+            """Backs up the values of a secret in the configured backup secrets store.
+
+            Returns:
+                True if the backup succeeded, False otherwise.
+            """
+            if not backup or not self.backup_secrets_store:
+                return False
+            logger.info(
+                f"Storing secret {secret_id} in the backup secrets store. "
+            )
+            try:
+                self._backup_secret_values(
+                    secret_id=secret_id, values=existing_values
+                )
+            except Exception:
+                logger.exception(
+                    f"Failed to store secret values for secret with ID "
+                    f"{secret_id} in the backup secrets store. "
+                )
+                return False
+            return True
+
+        try:
+            self.secrets_store.update_secret_values(
+                secret_id=secret_id, secret_values=existing_values
+            )
+        except Exception:
+            logger.exception(
+                f"Failed to update secret values for secret with ID "
+                f"{secret_id} in the primary secrets store. "
+            )
+            if not do_backup():
+                raise
+        else:
+            do_backup()
+
+        return existing_values
+
+    def _delete_secret_values(
+        self,
+        secret_id: UUID,
+        delete_backup: bool = True,
+    ) -> None:
+        """Deletes the values of a secret in the configured secrets store.
+
+        Args:
+            secret_id: The ID of the secret for which to delete the values.
+            delete_backup: Whether to delete the backup values of the secret
+                from the backup secrets store, if configured.
+
+        # noqa: DAR401
+        """
+
+        def do_delete_backup() -> bool:
+            """Deletes the backup values of a secret in the configured backup secrets store.
+
+            Returns:
+                True if the backup deletion succeeded, False otherwise.
+            """
+            if not delete_backup or not self.backup_secrets_store:
+                return False
+
+            logger.info(
+                f"Deleting secret {secret_id} from the backup secrets store."
+            )
+            try:
+                self._delete_backup_secret_values(secret_id=secret_id)
+            except KeyError:
+                # If the secret doesn't exist in the backup secrets store, we
+                # consider this a success.
+                return True
+            except Exception:
+                logger.exception(
+                    f"Failed to delete secret values for secret with ID "
+                    f"{secret_id} from the backup secrets store. "
+                )
+                return False
+
+            return True
+
+        try:
+            self.secrets_store.delete_secret_values(secret_id=secret_id)
+        except KeyError:
+            # If the secret doesn't exist in the primary secrets store, we
+            # consider this a success.
+            do_delete_backup()
+        except Exception:
+            logger.exception(
+                f"Failed to delete secret values for secret with ID "
+                f"{secret_id} from the primary secrets store. "
+            )
+            if not do_delete_backup():
+                raise
+        else:
+            do_delete_backup()
+
+    def _delete_backup_secret_values(
+        self,
+        secret_id: UUID,
+    ) -> None:
+        """Deletes the backup values of a secret in the configured backup secrets store.
+
+        Args:
+            secret_id: The ID of the secret for which to delete the backup values.
+        """
+        if self.backup_secrets_store:
+            self.backup_secrets_store.delete_secret_values(secret_id=secret_id)
+
+    @track_decorator(AnalyticsEvent.CREATED_SECRET)
+    def create_secret(self, secret: SecretRequest) -> SecretResponse:
+        """Creates a new secret.
+
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret: The secret to create.
+
+        Returns:
+            The newly created secret.
+
+        Raises:
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+        with Session(self.engine) as session:
+            # Check if a secret with the same name already exists in the same
+            # scope.
+            secret_exists, msg = self._check_sql_secret_scope(
+                session=session,
+                secret_name=secret.name,
+                scope=secret.scope,
+                workspace=secret.workspace,
+                user=secret.user,
+            )
+            if secret_exists:
+                raise EntityExistsError(msg)
+
+            new_secret = SecretSchema.from_request(
+                secret,
+            )
+            session.add(new_secret)
+            session.commit()
+
+            secret_model = new_secret.to_model(hydrate=True)
+
+        try:
+            # Set the secret values in the configured secrets store
+            self._set_secret_values(
+                secret_id=new_secret.id, values=secret.secret_values
+            )
+        except:
+            # If setting the secret values fails, delete the secret from the
+            # database.
+            with Session(self.engine) as session:
+                session.delete(new_secret)
+                session.commit()
+            raise
+
+        secret_model.set_secrets(secret.secret_values)
+        return secret_model
+
+    def get_secret(
+        self, secret_id: UUID, hydrate: bool = True
+    ) -> SecretResponse:
+        """Get a secret by ID.
+
+        Args:
+            secret_id: The ID of the secret to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The secret.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+        """
+        with Session(self.engine) as session:
+            secret_in_db = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).first()
+            if secret_in_db is None:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+            secret_model = secret_in_db.to_model(hydrate=hydrate)
+
+        secret_model.set_secrets(self._get_secret_values(secret_id=secret_id))
+
+        return secret_model
+
+    def list_secrets(
+        self, secret_filter_model: SecretFilter, hydrate: bool = False
+    ) -> Page[SecretResponse]:
+        """List all secrets matching the given filter criteria.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
+        Args:
+            secret_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all secrets matching the filter criteria, with pagination
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
+        """
+        with Session(self.engine) as session:
+            query = select(SecretSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=SecretSchema,
+                filter_model=secret_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_secret(
+        self, secret_id: UUID, secret_update: SecretUpdate
+    ) -> SecretResponse:
+        """Updates a secret.
+
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret_id: The ID of the secret to be updated.
+            secret_update: The update to be applied.
+
+        Returns:
+            The updated secret.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+        """
+        with Session(self.engine) as session:
+            existing_secret = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).first()
+
+            if not existing_secret:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+
+            # A change in name or scope requires a check of the scoping rules.
+            if (
+                secret_update.name is not None
+                and existing_secret.name != secret_update.name
+                or secret_update.scope is not None
+                and existing_secret.scope != secret_update.scope
+            ):
+                secret_exists, msg = self._check_sql_secret_scope(
+                    session=session,
+                    secret_name=secret_update.name or existing_secret.name,
+                    scope=secret_update.scope
+                    or SecretScope(existing_secret.scope),
+                    workspace=existing_secret.workspace.id,
+                    user=existing_secret.user.id,
+                    exclude_secret_id=secret_id,
+                )
+
+                if secret_exists:
+                    raise EntityExistsError(msg)
+
+            existing_secret.update(
+                secret_update=secret_update,
+            )
+            session.add(existing_secret)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_secret)
+            secret_model = existing_secret.to_model(hydrate=True)
+
+        if secret_update.values is not None:
+            # Update the secret values in the configured secrets store
+            updated_values = self._update_secret_values(
+                secret_id=secret_id,
+                values=secret_update.get_secret_values_update(),
+            )
+            secret_model.set_secrets(updated_values)
+        else:
+            secret_model.set_secrets(self._get_secret_values(secret_id))
+
+        return secret_model
+
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Delete a secret.
+
+        Args:
+            secret_id: The id of the secret to delete.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+        """
+        # Delete the secret values in the configured secrets store
+        try:
+            self._delete_secret_values(secret_id=secret_id)
+        except KeyError:
+            # If the secret values don't exist in the secrets store, we don't
+            # need to raise an error.
+            pass
+
+        with Session(self.engine) as session:
+            try:
+                secret_in_db = session.exec(
+                    select(SecretSchema).where(SecretSchema.id == secret_id)
+                ).one()
+                session.delete(secret_in_db)
+                session.commit()
+            except NoResultFound:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+
+    def backup_secrets(
+        self, ignore_errors: bool = True, delete_secrets: bool = False
+    ) -> None:
+        """Backs up all secrets to the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the backup
+                process and attempt to backup all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully backed up from the primary secrets store. Setting
+                this flag effectively moves all secrets from the primary secrets
+                store to the backup secrets store.
+
+        # noqa: DAR401
+        Raises:
+            BackupSecretsStoreNotConfiguredError: if no backup secrets store is
+                configured.
+        """
+        if not self.backup_secrets_store:
+            raise BackupSecretsStoreNotConfiguredError(
+                "Unable to backup secrets: No backup secrets store is "
+                "configured."
+            )
+
+        with Session(self.engine) as session:
+            secrets_in_db = session.exec(select(SecretSchema)).all()
+
+        for secret in secrets_in_db:
+            try:
+                values = self._get_secret_values(
+                    secret_id=secret.id, use_backup=False
+                )
+            except Exception:
+                logger.exception(
+                    f"Failed to get secret values for secret with ID "
+                    f"{secret.id}."
+                )
+                if ignore_errors:
+                    continue
+                raise
+
+            try:
+                self._backup_secret_values(secret_id=secret.id, values=values)
+            except Exception:
+                logger.exception(
+                    f"Failed to backup secret with ID {secret.id}. "
+                )
+                if ignore_errors:
+                    continue
+                raise
+
+            if delete_secrets:
+                try:
+                    self._delete_secret_values(
+                        secret_id=secret.id, delete_backup=False
+                    )
+                except Exception:
+                    logger.exception(
+                        f"Failed to delete secret with ID {secret.id} from the "
+                        f"primary secrets store after backing it up to the "
+                        f"backup secrets store."
+                    )
+                    if ignore_errors:
+                        continue
+                    raise
+
+    def restore_secrets(
+        self, ignore_errors: bool = False, delete_secrets: bool = False
+    ) -> None:
+        """Restore all secrets from the configured backup secrets store.
+
+        Args:
+            ignore_errors: Whether to ignore individual errors during the
+                restore process and attempt to restore all secrets.
+            delete_secrets: Whether to delete the secrets that have been
+                successfully restored from the backup secrets store. Setting
+                this flag effectively moves all secrets from the backup secrets
+                store to the primary secrets store.
+
+        # noqa: DAR401
+        Raises:
+            BackupSecretsStoreNotConfiguredError: if no backup secrets store is
+                configured.
+        """
+        if not self.backup_secrets_store:
+            raise BackupSecretsStoreNotConfiguredError(
+                "Unable to restore secrets: No backup secrets store is "
+                "configured."
+            )
+
+        with Session(self.engine) as session:
+            secrets_in_db = session.exec(select(SecretSchema)).all()
+
+        for secret in secrets_in_db:
+            try:
+                values = self._get_backup_secret_values(secret_id=secret.id)
+            except Exception:
+                logger.exception(
+                    f"Failed to get backup secret values for secret with ID "
+                    f"{secret.id}."
+                )
+                if ignore_errors:
+                    continue
+                raise
+
+            try:
+                self._update_secret_values(
+                    secret_id=secret.id,
+                    values=cast(Dict[str, Optional[str]], values),
+                    overwrite=True,
+                    backup=False,
+                )
+            except Exception:
+                logger.exception(
+                    f"Failed to restore secret with ID {secret.id}. "
+                )
+                if ignore_errors:
+                    continue
+                raise
+
+            if delete_secrets:
+                try:
+                    self._delete_backup_secret_values(secret_id=secret.id)
+                except Exception:
+                    logger.exception(
+                        f"Failed to delete backup secret with ID {secret.id} "
+                        f"from the backup secrets store after restoring it to "
+                        f"the primary secrets store."
+                    )
+                    if ignore_errors:
+                        continue
+                    raise
+
     # ------------------------- Service Accounts -------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
@@ -3929,9 +5197,9 @@ class SqlZenStore(BaseZenStore):
                 session.refresh(new_service_connector)
             except Exception:
                 # Delete the secret if it was created
-                if secret_id and self.secrets_store:
+                if secret_id:
                     try:
-                        self.secrets_store.delete_secret(secret_id)
+                        self.delete_secret(secret_id)
                     except Exception:
                         # Ignore any errors that occur while deleting the
                         # secret
@@ -4227,11 +5495,9 @@ class SqlZenStore(BaseZenStore):
                 else:
                     session.delete(service_connector)
 
-                if service_connector.secret_id and self.secrets_store:
+                if service_connector.secret_id:
                     try:
-                        self.secrets_store.delete_secret(
-                            service_connector.secret_id
-                        )
+                        self.delete_secret(service_connector.secret_id)
                     except KeyError:
                         # If the secret doesn't exist anymore, we can ignore
                         # this error
@@ -4292,18 +5558,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The ID of the newly created secret or None, if the service connector
             does not contain any secret credentials.
-
-        Raises:
-            NotImplementedError: If a secrets store is not configured or
-                supported.
         """
         if not secrets:
             return None
-
-        if not self.secrets_store:
-            raise NotImplementedError(
-                "A secrets store is not configured or supported."
-            )
 
         # Generate a unique name for the secret
         # Replace all non-alphanumeric characters with a dash because
@@ -4314,14 +5571,14 @@ class SqlZenStore(BaseZenStore):
         # that is not already in use
         while True:
             secret_name = f"connector-{connector_name}-{random_str(4)}".lower()
-            existing_secrets = self.secrets_store.list_secrets(
+            existing_secrets = self.list_secrets(
                 SecretFilter(
                     name=secret_name,
                 )
             )
             if not existing_secrets.size:
                 try:
-                    return self.secrets_store.create_secret(
+                    return self.create_secret(
                         SecretRequest(
                             name=secret_name,
                             user=user,
@@ -4417,16 +5674,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The ID of the updated secret or None, if the new service connector
             does not contain any secret credentials.
-
-        Raises:
-            NotImplementedError: If a secrets store is not configured or
-                supported.
         """
-        if not self.secrets_store:
-            raise NotImplementedError(
-                "A secrets store is not configured or supported."
-            )
-
         if updated_connector.secrets is None:
             # If the connector update does not contain a secrets update, keep
             # the existing secret (if any)
@@ -4435,7 +5683,7 @@ class SqlZenStore(BaseZenStore):
         # Delete the existing secret (if any), to be replaced by the new secret
         if existing_connector.secret_id:
             try:
-                self.secrets_store.delete_secret(existing_connector.secret_id)
+                self.delete_secret(existing_connector.secret_id)
             except KeyError:
                 # Ignore if the secret no longer exists
                 pass
@@ -5471,10 +6719,8 @@ class SqlZenStore(BaseZenStore):
             and attr
             not in
             # These are not resources owned by the user or  are resources that
-            # are deleted automatically when the user is deleted. Secrets in
-            # particular are left out because they are automatically deleted
-            # even when stored in an external secret store.
-            ["api_keys", "auth_devices", "secrets"]
+            # are deleted automatically when the user is deleted.
+            ["api_keys", "auth_devices"]
         ]
 
         # This next part is crucial in preserving scalability: we don't fetch
@@ -5778,8 +7024,6 @@ class SqlZenStore(BaseZenStore):
                     "account or consider deactivating it instead."
                 )
 
-            self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
-
             session.delete(user)
             session.commit()
 
@@ -5968,10 +7212,6 @@ class SqlZenStore(BaseZenStore):
                     "The default workspace cannot be deleted."
                 )
 
-            self._trigger_event(
-                StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
-            )
-
             session.delete(workspace)
             session.commit()
 
@@ -6020,6 +7260,25 @@ class SqlZenStore(BaseZenStore):
             entity_count = session.scalar(query)
 
         return int(entity_count)
+
+    def object_exists(
+        self, object_id: UUID, schema_class: Type[AnySchema]
+    ) -> bool:
+        """Check whether an object exists in the database.
+
+        Args:
+            object_id: The ID of the object to check.
+            schema_class: The schema class.
+
+        Returns:
+            If the object exists.
+        """
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(schema_class.id).where(schema_class.id == object_id)
+            ).first()
+
+            return False if schema is None else True
 
     @staticmethod
     def _get_schema_by_name_or_id(
@@ -6375,7 +7634,9 @@ class SqlZenStore(BaseZenStore):
             return model.to_model(hydrate=hydrate)
 
     def list_models(
-        self, model_filter_model: ModelFilter, hydrate: bool = False
+        self,
+        model_filter_model: ModelFilter,
+        hydrate: bool = False,
     ) -> Page[ModelResponse]:
         """Get all models by filter.
 
@@ -6470,6 +7731,7 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Model Versions -----------------------------
 
+    @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
     def create_model_version(
         self, model_version: ModelVersionRequest
     ) -> ModelVersionResponse:
@@ -6587,6 +7849,7 @@ class SqlZenStore(BaseZenStore):
                 model_version_filter_model.set_scope_model(model.id)
 
             query = select(ModelVersionSchema)
+
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -6825,6 +8088,43 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(model_version_artifact_link)
+            session.commit()
+
+    def delete_all_model_version_artifact_links(
+        self,
+        model_version_id: UUID,
+        only_links: bool = True,
+    ) -> None:
+        """Deletes all model version to artifact links.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+            only_links: Whether to only delete the link to the artifact.
+        """
+        with Session(self.engine) as session:
+            if not only_links:
+                artifact_version_ids = session.execute(
+                    select(
+                        ModelVersionArtifactSchema.artifact_version_id
+                    ).where(
+                        ModelVersionArtifactSchema.model_version_id
+                        == model_version_id
+                    )
+                ).fetchall()
+                session.execute(
+                    delete(ArtifactVersionSchema).where(
+                        col(ArtifactVersionSchema.id).in_(
+                            [a[0] for a in artifact_version_ids]
+                        )
+                    ),
+                )
+            session.execute(
+                delete(ModelVersionArtifactSchema).where(
+                    ModelVersionArtifactSchema.model_version_id
+                    == model_version_id
+                )
+            )
+
             session.commit()
 
     # ---------------------- Model Versions Pipeline Runs ----------------------
