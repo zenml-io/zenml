@@ -228,17 +228,9 @@ class HyperAIServiceConnector(ServiceConnector):
             ssh_key = base64.b64decode(base64_key_value).decode("utf-8")
             paramiko_key = None
 
-            # Create temporary file and write Docker Compose file to it
-            with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
-                # Get file path
-                file_path = f.name
-
-                # Write SSH key file to temporary file
-                with f.file as f_:
-                    f_.write(ssh_key)
-
-                paramiko_key = self._paramiko_key_type_given_auth_method().from_private_key_file(
-                    file_path, password=ssh_passphrase
+            with io.StringIO(ssh_key) as f:
+                paramiko_key = self._paramiko_key_type_given_auth_method().from_private_key(
+                    f, password=ssh_passphrase
                 )
 
             # Trim whitespace from the IP address
