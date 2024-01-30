@@ -40,7 +40,7 @@ class SlackAlerterSettings(BaseSettings):
 class SlackAlerterConfig(BaseAlerterConfig, SlackAlerterSettings):
     """Slack alerter config.
 
-    Args:
+    Attributes:
         slack_token: The Slack token tied to the Slack account to be used.
     """
 
