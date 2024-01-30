@@ -103,7 +103,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             path: The path to be validated.
 
         Returns:
-            str: The path in a valid format.
+            The path in a valid format.
 
         Raises:
             RuntimeError: If the path is not in a valid format.
