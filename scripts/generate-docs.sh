@@ -19,18 +19,18 @@ die() {
 
 while :; do
   case "${1-}" in
-  -p | --push) PUSH="true";;
-  -si | --skip_install) SKIP_INSTALL="true";;
-  -l | --latest) LATEST="latest";;
-  -s | --source)
+  -p | --push) PUSH="true";; # push to gh-pages branch
+  -si | --skip_install) SKIP_INSTALL="true";; # skip pip install
+  -l | --latest) LATEST="latest";; # set this docs version as latest
+  -s | --source) # specify source directory
     SRC="${2-}"
     shift
     ;;
-  -v | --version)
+  -v | --version) # specify version
     VERSION="${2-}"
     shift
     ;;
-  -c | --only-check) ONLY_CHECK="true";;
+  -c | --only-check) ONLY_CHECK="true";; # only check if docs are buildable with mockers
   -?*) die "Unknown option: $1" ;;
   *) break ;;
   esac
@@ -65,7 +65,7 @@ rm docs/mkdocs/index.md || true
 # deprecated in 3.1.0 but mkdocstring depends on this method
 
 if [ -z "$SKIP_INSTALL" ]; then
-  pip install -e ".[server,dev]"
+  pip3 install -e ".[server,dev]"
   pip3 install "Jinja2==3.0.3"
 fi
 
@@ -79,7 +79,7 @@ rm -rf src/zenml/zen_stores/migrations/script.py.mako
 
 
 ########################################## Generate Structure of API docs ##############################################
-python docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
+python3 docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
 
 
 ############################################## Build the API docs ####################################################
