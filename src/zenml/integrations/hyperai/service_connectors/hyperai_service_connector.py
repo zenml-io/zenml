@@ -181,7 +181,7 @@ class HyperAIServiceConnector(ServiceConnector):
         }
 
         try:
-            return mapping[self.auth_method]
+            return mapping[HyperAIAuthenticationMethods(self.auth_method)]
         except KeyError:
             raise ValueError(
                 f"Invalid authentication method: {self.auth_method}"
@@ -338,13 +338,17 @@ class HyperAIServiceConnector(ServiceConnector):
         Returns:
             The resource ID if the connection can be established.
         """
-        if resource_id not in self.config.hostnames:
-            raise ValueError(
-                f"The supplied hostname '{resource_id}' is not in the list of "
-                f"configured hostnames: {self.config.hostnames}. Please check "
-                f"your configuration."
-            )
-        hostnames = self.config.hostnames if not resource_id else [resource_id]
+        if resource_id:
+            if resource_id not in self.config.hostnames:
+                raise ValueError(
+                    f"The supplied hostname '{resource_id}' is not in the list "
+                    f"of configured hostnames: {self.config.hostnames}. Please "
+                    f"check your configuration."
+                )
+            hostnames = [resource_id]
+        else:
+            hostnames = self.config.hostnames
+
         resources = []
         for hostname in hostnames:
             self._authorize_client(hostname)
