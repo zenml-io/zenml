@@ -42,7 +42,7 @@ To use the HyperAI orchestrator, we must configure a HyperAI Service Connector f
 methods. For example, for authentication with an RSA-based key, create the service connector as follows:
 
 ```shell
-zenml service-connector register <SERVICE_CONNECTOR_NAME> --type=hyperai --auth-method=rsa-key --base64_ssh_key=<BASE64_SSH_KEY> --ip_address=<INSTANCE_IP> --username=<INSTANCE_USERNAME>
+zenml service-connector register <SERVICE_CONNECTOR_NAME> --type=hyperai --auth-method=rsa-key --base64_ssh_key=<BASE64_SSH_KEY> --hostname=<INSTANCE_IP> --username=<INSTANCE_USERNAME>
 ```
 
 Optionally, it is possible to provide a recognizable name for the HyperAI instance (`--instance_name`) and a passphrase for the key (`--ssh_passphrase`).
