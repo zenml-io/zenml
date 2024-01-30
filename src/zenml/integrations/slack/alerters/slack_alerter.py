@@ -14,7 +14,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast, Type
 
 from pydantic import BaseModel
 from slack_sdk import WebClient
@@ -24,7 +24,9 @@ from slack_sdk.rtm import RTMClient
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
 from zenml.integrations.slack.flavors.slack_alerter_flavor import (
     SlackAlerterConfig,
+    SlackAlerterSettings,
 )
+from zenml import get_step_context
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -72,6 +74,15 @@ class SlackAlerter(BaseAlerter):
         """
         return cast(SlackAlerterConfig, self._config)
 
+    @property
+    def settings_class(self) -> Type[SlackAlerterSettings]:
+        """Settings class for the Kubeflow orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return SlackAlerterSettings
+
     def _get_channel_id(
         self, params: Optional[BaseAlerterStepParameters] = None
     ) -> str:
@@ -101,6 +112,13 @@ class SlackAlerter(BaseAlerter):
             return params.slack_channel_id
         if self.config.default_slack_channel_id is not None:
             return self.config.default_slack_channel_id
+
+        settings = cast(
+            SlackAlerterSettings, self.get_settings(get_step_context().step_run)
+        )
+        if settings.default_slack_channel_id is not None:
+            return settings.default_slack_channel_id
+
         raise ValueError(
             "Neither the `SlackAlerterConfig.slack_channel_id` in the runtime "
             "configuration, nor the `default_slack_channel_id` in the alerter "
@@ -202,9 +220,7 @@ class SlackAlerter(BaseAlerter):
                     },
                 ]
             else:
-                logger.info(
-                    "No custom blocks or payload set for Slack alerter."
-                )
+                logger.info("No custom blocks or payload set for Slack alerter.")
                 return []
         else:
             logger.info(
