@@ -238,7 +238,7 @@ class HyperAIServiceConnector(ServiceConnector):
                 # Get file path
                 file_path = f.name
 
-                # Write Docker Compose file to temporary file
+                # Write SSH key file to temporary file
                 with f.file as f_:
                     f_.write(ssh_key)
 
