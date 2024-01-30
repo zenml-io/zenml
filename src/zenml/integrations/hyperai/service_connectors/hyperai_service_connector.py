@@ -306,14 +306,8 @@ class HyperAIServiceConnector(ServiceConnector):
         logger.info("Connecting to HyperAI instance...")
         assert self.resource_id is not None
 
-        try:
-            paramiko_client = self._create_paramiko_client()
-            return paramiko_client
-        except Exception as e:
-            logger.error(
-                "Unknown error while connecting to HyperAI instance: %s. Please check your network connection, IP address, and authentication details.",
-                e,
-            )
+        paramiko_client = self._create_paramiko_client()
+        return paramiko_client
 
     def _configure_local_client(
         self,
