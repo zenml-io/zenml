@@ -15,19 +15,22 @@ jobs:
   run-slow-ci-label-is-set:
     runs-on: ubuntu-latest
     steps:
-      # this step just fakes config
-      - name: Make empty .github/labeler.yml
-        run: |
-          mkdir .github && touch .github/labeler.yml
       # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
       # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
       # With dynamic approach dev can set label and rerun this flow to make it running.
       - name: Get PR labels
         id: pr-labels
-        uses: actions/labeler@v5
+        uses: actions/github-script@v5
         with:
-          pr-number: ${{ github.event.pull_request.number }}
-          configuration-path: .github/labeler.yml
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const labelNames = labels.map(label => label.name);
+            core.setOutput('all-labels', labelNames.join(','));
 
       - name: Slow CI label not set
         if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
@@ -97,9 +100,9 @@ jobs:
           pip install alembic
           bash scripts/check-alembic-branches.sh
   update-templates-to-examples:
-    needs: run-slow-ci-label-is-set
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
+    needs: run-slow-ci-label-is-set
     uses: ./.github/workflows/update-templates-to-examples.yml
     with:
       python-version: '3.8'
