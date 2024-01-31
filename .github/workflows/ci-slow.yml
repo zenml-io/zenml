@@ -11,9 +11,6 @@ concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-permissions:
-  contents: read
-  pull-requests: write
 jobs:
   run-slow-ci-label-is-set:
     runs-on: ubuntu-latest
