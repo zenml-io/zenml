@@ -514,6 +514,7 @@ TriggerResponseMetadata.update_forward_refs(
 )
 TriggerExecutionResponseBody.update_forward_refs(
     UserResponse=UserResponse,
+    TriggerResponse=TriggerResponse
 )
 TriggerResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,

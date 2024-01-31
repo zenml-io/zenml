@@ -18,6 +18,7 @@ from typing import Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginType
 from zenml.event_sources.base_event_source_plugin import EventSourceConfig
+from zenml.models import TriggerExecutionResponse
 from zenml.models.v2.plugin.action_flavor import ActionFlavorResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
@@ -46,6 +47,14 @@ class BaseActionPlanPlugin(BasePlugin, ABC):
         Returns:
             The configuration.
         """
+
+    @abstractmethod
+    def run(
+        self,
+        config: Dict[str, Any],
+        trigger_execution: TriggerExecutionResponse,
+    ) -> None:
+        pass
 
 
 # -------------------- Flavors ---------------------------------------------

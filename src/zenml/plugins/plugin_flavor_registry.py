@@ -101,7 +101,11 @@ class PluginFlavorRegistry:
         Returns:
             A list of builtin flavors.
         """
-        flavors = []
+        from zenml.action_plans.pipeline_run.pipeline_run_action_flavor import (
+            PipelineRunActionFlavor,
+        )
+
+        flavors = [PipelineRunActionFlavor]
         return flavors
 
     @property

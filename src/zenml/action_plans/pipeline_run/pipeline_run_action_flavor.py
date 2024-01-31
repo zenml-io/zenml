@@ -12,12 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an action Plugin could look like."""
-from typing import ClassVar, Type
+from typing import Any, ClassVar, Dict, Type, Optional 
 from uuid import UUID
+from zenml.enums import PluginType, PluginSubType
 
 from zenml.action_plans.base_action_plan_plugin import (
     ActionPlanConfig,
     BaseActionPlanFlavor,
+    BaseActionPlanPlugin,
 )
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 
@@ -28,15 +30,13 @@ class PipelineRunActionPlanConfiguration(ActionPlanConfig):
     """Configuration class to configure a pipeline run action."""
 
     pipeline_build_id: UUID
-    pipeline_config: PipelineRunConfiguration
+    pipeline_config: Optional[PipelineRunConfiguration] = None
 
 
 # -------------------- Pipeline Run Plugin -----------------------------------
 
 
-class PipelineRunActionPlanPlugin(BaseActionPlanFlavor):
-    """Handler for all github events."""
-
+class PipelineRunActionPlanPlugin(BaseActionPlanPlugin):
     @property
     def config_class(self) -> Type[PipelineRunActionPlanConfiguration]:
         """Returns the `BasePluginConfig` config.
@@ -46,6 +46,9 @@ class PipelineRunActionPlanPlugin(BaseActionPlanFlavor):
         """
         return PipelineRunActionPlanConfiguration
 
+    def run(self, config: Dict[str, Any], TriggerExecutionResponse) -> None:
+        print("######### RUNNING PIPELINE ###############")
+
 
 # -------------------- Pipeline Run Flavor -----------------------------------
 
@@ -54,6 +57,7 @@ class PipelineRunActionFlavor(BaseActionPlanFlavor):
     """Enables users to configure pipeline run action."""
 
     FLAVOR: ClassVar[str] = "builtin"
+    SUBTYPE: ClassVar[PluginSubType] = PluginSubType.PIPELINE_RUN
     PLUGIN_CLASS: ClassVar[
         Type[PipelineRunActionPlanPlugin]
     ] = PipelineRunActionPlanPlugin

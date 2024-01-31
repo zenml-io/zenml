@@ -14,6 +14,7 @@
 """Base class for all the Event Hub."""
 from typing import Any, Dict
 
+from zenml.action_plans.base_action_plan_plugin import BaseActionPlanPlugin
 from zenml.enums import PluginSubType, PluginType
 from zenml.event_sources.base_event_source_plugin import BaseEventSourcePlugin
 from zenml.models import TriggerExecutionRequest
@@ -58,17 +59,29 @@ class EventHub:
             triggers = plugin_cls.get_matching_triggers_for_event(
                 incoming_event
             )
-        # TODO: Store event for future reference
-        # TODO: Create a trigger execution linked to the event and the trigger
-        logger.debug(triggers)
 
         for trigger_id in triggers:
             from zenml.zen_server.utils import zen_store
 
             request = TriggerExecutionRequest(
-                trigger=trigger_id, metadata=incoming_event
+                trigger=trigger_id, event_metadata=incoming_event
             )
-            zen_store().create_trigger_execution(request)
+            trigger_execution = zen_store().create_trigger_execution(request)
+
+            action_plan_config = (
+                trigger_execution.trigger.get_metadata().action_plan
+            )
+            action_plan_plugin_cls = (
+                plugin_flavor_registry.get_plugin_implementation(
+                    flavor=trigger_execution.trigger.body.action_plan_flavor,
+                    type_=PluginType.ACTION_PLAN,
+                    subtype=PluginSubType.PIPELINE_RUN,
+                )
+            )
+            assert issubclass(action_plan_plugin_cls, BaseActionPlanPlugin)
+            action_plan_plugin_cls().run(
+                config=action_plan_config, trigger_execution=trigger_execution
+            )
 
 
 event_hub = EventHub()
