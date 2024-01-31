@@ -31,13 +31,11 @@ jobs:
             });
             const labelNames = labels.map(label => label.name);
             core.setOutput('all-labels', labelNames.join(','));
-
       - name: Slow CI label not set
         if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
         run: |
           echo "Please add the 'run-slow-ci' label to this PR before merging."
           exit 1
-  
   docstring-check:
     needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
