@@ -18,9 +18,10 @@ jobs:
       pull-requests: write # this premission is a bit too much, but it is required
     runs-on: ubuntu-latest
     steps:
-      - name: Make .github/labler.yml
+      # this step just fakes config
+      - name: Make empty .github/labeler.yml
         run: |
-          mkdir .github && touch .github/labler.yml
+          mkdir .github && touch .github/labeler.yml
       # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
       # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
       # With dynamic approach dev can set label and rerun this flow to make it running.
@@ -29,6 +30,7 @@ jobs:
         uses: actions/labeler@v5
         with:
           pr-number: ${{ github.event.pull_request.number }}
+          configuration-path: .github/labeler.yml
 
       - name: Slow CI label not set
         if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
