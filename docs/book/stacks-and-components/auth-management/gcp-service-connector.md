@@ -14,15 +14,16 @@ This connector serves as a general means of accessing any GCP service by issuing
 
 ```
 $ zenml service-connector list-types --type gcp
-┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
-┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS    │ LOCAL │ REMOTE ┃
-┠───────────────────────┼────────┼───────────────────────┼─────────────────┼───────┼────────┨
-┃ GCP Service Connector │ 🔵 gcp │ 🔵 gcp-generic        │ implicit        │ ✅    │ ✅     ┃
-┃                       │        │ 📦 gcs-bucket         │ user-account    │       │        ┃
-┃                       │        │ 🌀 kubernetes-cluster │ service-account │       │        ┃
-┃                       │        │ 🐳 docker-registry    │ oauth2-token    │       │        ┃
-┃                       │        │                       │ impersonation   │       │        ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
+┃         NAME          │ TYPE   │ RESOURCE TYPES        │ AUTH METHODS     │ LOCAL │ REMOTE ┃
+┠───────────────────────┼────────┼───────────────────────┼──────────────────┼───────┼────────┨
+┃ GCP Service Connector │ 🔵 gcp │ 🔵 gcp-generic        │ implicit         │ ✅    │ ✅     ┃
+┃                       │        │ 📦 gcs-bucket         │ user-account     │       │        ┃
+┃                       │        │ 🌀 kubernetes-cluster │ service-account  │       │        ┃
+┃                       │        │ 🐳 docker-registry    │ external-account │       │        ┃
+┃                       │        │                       │ oauth2-token     │       │        ┃
+┃                       │        │                       │ impersonation    │       │        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┷━━━━━━━┷━━━━━━━━┛
 ```
 
 ## Prerequisites
@@ -522,6 +523,140 @@ Successfully registered service connector `gcp-impersonate-sa` with access to th
 ┠───────────────┼──────────────────────┨
 ┃ 📦 gcs-bucket │ gs://zenml-bucket-sl ┃
 ┗━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+</details>
+
+### External Account (GCP Workload Identity)
+
+Use [GCP workload identity federation](https://cloud.google.com/iam/docs/workload-identity-federation) to authenticate to GCP services using AWS IAM credentials, Azure Active Directory credentials or generic OIDC tokens.
+
+This authentication method only requires a GCP workload identity external account JSON file that only contains the configuration for the external account without any sensitive credentials. It allows implementing [a two layer authentication scheme](best-security-practices.md#impersonating-accounts-and-assuming-roles) that keeps the set of permissions associated with implicit credentials down to the bare minimum and grants permissions to the privilege-bearing GCP service account instead.
+
+This authentication method can be used to authenticate to GCP services using credentials from other cloud providers or identity providers. When used with workloads running on AWS or Azure, it involves automatically picking up credentials from the AWS IAM or Azure AD identity associated with the workload and using them to authenticate to GCP services. This means that the result depends on the environment where the ZenML server is deployed and is thus not fully reproducible.
+
+{% hint style="warning" %}
+When used with AWS or Azure implicit in-cloud authentication, this method may constitute a security risk, because it can give users access to the identity (e.g. AWS IAM role or Azure AD principal) implicitly associated with the environment where the ZenML server is running. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
+{% endhint %}
+
+By default, the GCP connector generates temporary OAuth 2.0 tokens from the external account credentials and distributes them to clients. The tokens have a limited lifetime of 1 hour. This behavior can be disabled by setting the `generate_temporary_tokens` configuration option to `False`, in which case, the connector will distribute the external account credentials JSON to clients instead (not recommended).
+
+A GCP project is required and the connector may only be used to access GCP resources in the specified roject. This project must be the same as the one for which the external account was configured.
+
+If you already have the GOOGLE_APPLICATION_CREDENTIALS environment variable configured to point to an external account key JSON file, it will be automatically picked up when auto-configuration is used.
+
+<details>
+
+<summary>Example configuration</summary>
+
+The following assumes the following prerequisites are met, as covered in [the GCP documentation on how to configure workload identity federation with AWS](https://cloud.google.com/iam/docs/workload-identity-federation-with-other-clouds):
+
+* the ZenML server is deployed in AWS in an EKS cluster (or any other AWS compute environment)
+* the ZenML server EKS pods are associated with an AWS IAM role by means of an IAM OIDC provider, as covered in the [AWS documentation on how to associate a IAM role with a service account](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html). Alternatively, [the IAM role associated with the EKS/EC2 nodes](https://docs.aws.amazon.com/eks/latest/userguide/create-node-role.html) can be used instead. This AWS IAM role provides the implicit AWS IAM identity and credentials that will be used to authenticate to GCP services.
+* a GCP workload identity pool and AWS provider are configured for the GCP project where the target resources are located, as covered in [the GCP documentation on how to configure workload identity federation with AWS](https://cloud.google.com/iam/docs/workload-identity-federation-with-other-clouds).
+* a GCP service account is configured with permissions to access the target resources and granted the `roles/iam.workloadIdentityUser` role for the workload identity pool and AWS provider
+* a GCP external account JSON file is generated for the GCP service account. This is used to configure the GCP connector.
+
+```sh
+zenml service-connector register gcp-workload-identity --type gcp \
+    --auth-method external-account --project_id=zenml-core \
+    --external_account_json=@clientLibraryConfig-aws-zenml.json
+```
+
+{% code title="Example Command Output" %}
+```text
+Successfully registered service connector `gcp-workload-identity` with access to the following resources:
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃    🔵 gcp-generic     │ zenml-core                                      ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃     📦 gcs-bucket     │ gs://zenml-bucket-sl                            ┃
+┃                       │ gs://zenml-core.appspot.com                     ┃
+┃                       │ gs://zenml-core_cloudbuild                      ┃
+┃                       │ gs://zenml-datasets                             ┃
+┃                       │ gs://zenml-internal-artifact-store              ┃
+┃                       │ gs://zenml-kubeflow-artifact-store              ┃
+┃                       │ gs://zenml-project-time-series-bucket           ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃ 🌀 kubernetes-cluster │ zenml-test-cluster                              ┃
+┠───────────────────────┼─────────────────────────────────────────────────┨
+┃  🐳 docker-registry   │ gcr.io/zenml-core                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+{% endcode %}
+
+No sensitive credentials are stored with the Service Connector, just meta-information about the external provider and the external account:
+
+```sh
+zenml service-connector describe gcp-workload-identity -x
+```
+
+{% code title="Example Command Output" %}
+```text
+Service connector 'gcp-workload-identity' of type 'gcp' with id '37b6000e-3f7f-483e-b2c5-7a5db44fe66b' is
+owned by user 'default'.
+                        'gcp-workload-identity' gcp Service Connector Details                        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY               │ VALUE                                                                    ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ ID                     │ 37b6000e-3f7f-483e-b2c5-7a5db44fe66b                                     ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ NAME                   │ gcp-workload-identity                                                    ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ TYPE                   │ 🔵 gcp                                                                   ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ AUTH METHOD            │ external-account                                                         ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE TYPES         │ 🔵 gcp-generic, 📦 gcs-bucket, 🌀 kubernetes-cluster, 🐳 docker-registry ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ RESOURCE NAME          │ <multiple>                                                               ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SECRET ID              │ 1ff6557f-7f60-4e63-b73d-650e64f015b5                                     ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ SESSION DURATION       │ N/A                                                                      ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ EXPIRES IN             │ N/A                                                                      ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ EXPIRES_SKEW_TOLERANCE │ N/A                                                                      ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ OWNER                  │ default                                                                  ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ WORKSPACE              │ default                                                                  ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ CREATED_AT             │ 2024-01-30 20:44:14.020514                                               ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────┨
+┃ UPDATED_AT             │ 2024-01-30 20:44:14.020516                                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                              Configuration                                              
+┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PROPERTY              │ VALUE                                                                         ┃
+┠───────────────────────┼───────────────────────────────────────────────────────────────────────────────┨
+┃ project_id            │ zenml-core                                                                    ┃
+┠───────────────────────┼───────────────────────────────────────────────────────────────────────────────┨
+┃ external_account_json │ {                                                                             ┃
+┃                       │   "type": "external_account",                                                 ┃
+┃                       │   "audience":                                                                 ┃
+┃                       │ "//iam.googleapis.com/projects/30267569827/locations/global/workloadIdentityP ┃
+┃                       │ ools/mypool/providers/myprovider",                                            ┃
+┃                       │   "subject_token_type": "urn:ietf:params:aws:token-type:aws4_request",        ┃
+┃                       │   "service_account_impersonation_url":                                        ┃
+┃                       │ "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/myrole@  ┃
+┃                       │ zenml-core.iam.gserviceaccount.com:generateAccessToken",                      ┃
+┃                       │   "token_url": "https://sts.googleapis.com/v1/token",                         ┃
+┃                       │   "credential_source": {                                                      ┃
+┃                       │     "environment_id": "aws1",                                                 ┃
+┃                       │     "region_url":                                                             ┃
+┃                       │ "http://169.254.169.254/latest/meta-data/placement/availability-zone",        ┃
+┃                       │     "url":                                                                    ┃
+┃                       │ "http://169.254.169.254/latest/meta-data/iam/security-credentials",           ┃
+┃                       │     "regional_cred_verification_url":                                         ┃
+┃                       │ "https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06- ┃
+┃                       │ 15"                                                                           ┃
+┃                       │   }                                                                           ┃
+┃                       │ }                                                                             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
 

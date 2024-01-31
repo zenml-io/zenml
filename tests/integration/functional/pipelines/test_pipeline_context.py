@@ -129,10 +129,6 @@ def test_pipeline_context_can_load_model_artifacts_and_metadata_in_lazy_mode(
     @pipeline(model=Model(name=model_name), enable_cache=False)
     def dummy():
         producer()
-        with pytest.raises(KeyError):
-            clean_client.get_model(model_name)
-        with pytest.raises(KeyError):
-            clean_client.get_artifact_version("bar")
         model = get_pipeline_context().model
         artifact = model.get_artifact("bar")
         artifact_metadata = artifact.run_metadata["foobar"]
@@ -141,4 +137,8 @@ def test_pipeline_context_can_load_model_artifacts_and_metadata_in_lazy_mode(
             artifact, artifact_metadata, model_metadata, after=["producer"]
         )
 
+    with pytest.raises(KeyError):
+        clean_client.get_model(model_name)
+    with pytest.raises(KeyError):
+        clean_client.get_artifact_version("bar")
     dummy()
