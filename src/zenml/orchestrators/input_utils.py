@@ -46,6 +46,8 @@ def resolve_step_inputs(
         The IDs of the input artifact versions and the IDs of parent steps of
             the current step.
     """
+    from zenml.models import ArtifactVersionResponse, RunMetadataResponse
+
     list_run_steps = functools.partial(
         Client().list_run_steps, pipeline_run_id=run_id
     )
@@ -123,6 +125,14 @@ def resolve_step_inputs(
                 f"key `{config_.metadata_name}` passed into "
                 f"the step `{step.config.name}`."
             )
+    for name, cll_ in step.config.client_lazy_loaders.items():
+        value_ = cll_.evaluate()
+        if isinstance(value_, ArtifactVersionResponse):
+            input_artifacts[name] = value_
+        elif isinstance(value_, RunMetadataResponse):
+            step.config.parameters[name] = value_.value
+        else:
+            step.config.parameters[name] = value_
 
     parent_step_ids = [
         current_run_steps[upstream_step].id

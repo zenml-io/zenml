@@ -104,28 +104,6 @@ class AWSBaseConfig(AuthenticationConfig):
     )
 
 
-class AWSImplicitConfig(AWSBaseConfig):
-    """AWS implicit configuration."""
-
-    profile_name: Optional[str] = Field(
-        default=None,
-        title="AWS Profile Name",
-    )
-
-
-class AWSSecretKeyConfig(AWSBaseConfig, AWSSecretKey):
-    """AWS secret key authentication configuration."""
-
-
-class STSTokenConfig(AWSBaseConfig, STSToken):
-    """AWS STS token authentication configuration."""
-
-    expires_at: Optional[datetime.datetime] = Field(
-        default=None,
-        title="AWS STS Token Expiration",
-    )
-
-
 class AWSSessionPolicy(AuthenticationConfig):
     """AWS session IAM policy configuration."""
 
@@ -139,6 +117,32 @@ class AWSSessionPolicy(AuthenticationConfig):
         default=None,
         title="An IAM policy in JSON format that you want to use as an inline "
         "session policy",
+    )
+
+
+class AWSImplicitConfig(AWSBaseConfig, AWSSessionPolicy):
+    """AWS implicit configuration."""
+
+    profile_name: Optional[str] = Field(
+        default=None,
+        title="AWS Profile Name",
+    )
+    role_arn: Optional[str] = Field(
+        default=None,
+        title="Optional AWS IAM Role ARN to assume",
+    )
+
+
+class AWSSecretKeyConfig(AWSBaseConfig, AWSSecretKey):
+    """AWS secret key authentication configuration."""
+
+
+class STSTokenConfig(AWSBaseConfig, STSToken):
+    """AWS STS token authentication configuration."""
+
+    expires_at: Optional[datetime.datetime] = Field(
+        default=None,
+        title="AWS STS Token Expiration",
     )
 
 
@@ -241,13 +245,39 @@ the ZenML server is running (e.g. an EKS cluster). The IAM role permissions may
 need to be adjusted to allows listing and accessing/describing the AWS resources
 that the connector is configured to access.
 
+An IAM role may optionally be specified to be assumed by the connector on top of
+the implicit credentials. This is only possible when the implicit credentials
+have permissions to assume the target IAM role. Configuring an IAM role has all
+the advantages of the AWS IAM Role authentication method plus the added benefit
+of not requiring any explicit credentials to be configured and stored:
+
+* The connector will generate temporary STS tokens upon request by
+[calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole).
+* Allows implementing a two layer authentication scheme that keeps the set of
+permissions associated with implicit credentials down to the bare minimum and
+grants permissions to the privilege-bearing IAM role instead.
+* One or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_session)
+may also be configured to further restrict the permissions of the generated
+STS tokens. If not specified, IAM session policies are automatically configured
+for the generated STS tokens to restrict them to the minimum set of permissions
+required to access the target resource. Refer to the documentation for each
+supported Resource Type for the complete list of AWS permissions automatically
+granted to the generated STS tokens.
+* The default expiration period for generated STS tokens is 1 hour with a
+minimum of 15 minutes up to the maximum session duration setting configured for
+the IAM role (default is 1 hour). If you need longer-lived tokens, you can
+configure the IAM role to use a higher maximum expiration value (up to 12 hours)
+or use the AWS Federation Token or AWS Session Token authentication methods.
+
 Note that the discovered credentials inherit the full set of permissions of the
-local AWS client configuration, environment variables or remote AWS IAM role.
+local AWS client configuration, environment variables or attached AWS IAM role.
 Depending on the extent of those permissions, this authentication method might
 not be recommended for production use, as it can lead to accidental privilege
-escalation. Instead, it is recommended to use the AWS IAM Role, AWS Session
-Token or AWS Federation Token authentication methods to limit the validity
-and/or permissions of the credentials being issued to connector clients.
+escalation. It is recommended to also configure an IAM role when using
+the implicit authentication method, or to use the AWS IAM Role, AWS Session
+Token or AWS Federation Token authentication methods instead to limit the
+validity and/or permissions of the credentials being issued to connector
+clients.
 
 If you need to access an EKS kubernetes cluster with this authentication method,
 please be advised that the EKS cluster's aws-auth ConfigMap may need to be
@@ -256,9 +286,10 @@ picked up by the Service Connector. For more information,
 [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
 
 An AWS region is required and the connector may only be used to access AWS
-resources in the specified region. When used with a remote IAM role, the region
-has to be the same as the region where the IAM role is configured.
+resources in the specified region.
 """,
+            min_expiration_seconds=900,  # 15 minutes
+            default_expiration_seconds=DEFAULT_IAM_ROLE_TOKEN_EXPIRATION,  # 1 hour
             config_class=AWSImplicitConfig,
         ),
         AuthenticationMethodModel(
@@ -314,6 +345,12 @@ by an AWS secret key associated with an IAM user or an STS token associated with
 another IAM role. The IAM user or IAM role must have permissions to assume the
 target IAM role. The connector will generate temporary STS tokens upon
 request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerole).
+
+This authentication method still requires credentials to be explicitly
+configured. If your ZenML server is running in AWS and you're looking for an
+alternative that uses implicit credentials while at the same time benefits from
+all the security advantages of assuming an IAM role, you should use the implicit
+authentication method with a configured IAM role instead.
 
 The best practice implemented with this authentication scheme is to keep the set
 of permissions associated with the primary IAM user or IAM role down to the bare
@@ -818,6 +855,8 @@ class AWSServiceConnector(ServiceConnector):
             NotImplementedError: If the authentication method is not supported.
         """
         cfg = self.config
+        policy_kwargs: Dict[str, Any] = {}
+
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
             self._check_implicit_auth_method_allowed()
 
@@ -826,6 +865,50 @@ class AWSServiceConnector(ServiceConnector):
             session = boto3.Session(
                 profile_name=cfg.profile_name, region_name=cfg.region
             )
+
+            if cfg.role_arn:
+                # If an IAM role is configured, assume it
+                policy = cfg.policy
+                if not cfg.policy and not cfg.policy_arns:
+                    policy = self._get_iam_policy(
+                        region_id=cfg.region,
+                        resource_type=resource_type,
+                        resource_id=resource_id,
+                    )
+                if policy:
+                    policy_kwargs["Policy"] = policy
+                elif cfg.policy_arns:
+                    policy_kwargs["PolicyArns"] = cfg.policy_arns
+
+                sts = session.client("sts", region_name=cfg.region)
+                session_name = "zenml-connector"
+                if self.id:
+                    session_name += f"-{self.id}"
+
+                try:
+                    response = sts.assume_role(
+                        RoleArn=cfg.role_arn,
+                        RoleSessionName=session_name,
+                        DurationSeconds=self.expiration_seconds,
+                        **policy_kwargs,
+                    )
+                except (ClientError, BotoCoreError) as e:
+                    raise AuthorizationException(
+                        f"Failed to assume IAM role {cfg.role_arn} "
+                        f"using the implicit AWS credentials: {e}"
+                    ) from e
+
+                session = boto3.Session(
+                    aws_access_key_id=response["Credentials"]["AccessKeyId"],
+                    aws_secret_access_key=response["Credentials"][
+                        "SecretAccessKey"
+                    ],
+                    aws_session_token=response["Credentials"]["SessionToken"],
+                )
+                expiration = response["Credentials"]["Expiration"]
+                # Add the UTC timezone to the expiration time
+                expiration = expiration.replace(tzinfo=datetime.timezone.utc)
+                return session, expiration
 
             credentials = session.get_credentials()
             if not credentials:
@@ -895,7 +978,6 @@ class AWSServiceConnector(ServiceConnector):
                 AWSAuthenticationMethods.FEDERATION_TOKEN,
             ]:
                 assert isinstance(cfg, AWSSessionPolicy)
-                policy_kwargs = {}
                 policy = cfg.policy
                 if not cfg.policy and not cfg.policy_arns:
                     policy = self._get_iam_policy(
@@ -1453,8 +1535,6 @@ class AWSServiceConnector(ServiceConnector):
         expiration_seconds: Optional[int] = None
         expires_at: Optional[datetime.datetime] = None
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
-            cls._check_implicit_auth_method_allowed()
-
             if region_name is None:
                 raise ValueError(
                     "The AWS region name must be specified when using the "
