@@ -299,7 +299,7 @@ knack==0.10.1
 korean-lunar-calendar==0.3.1
 kserve==0.11.0
 kubernetes==27.2.0
-label-studio==1.7.3
+label-studio==1.11.0
 label-studio-converter==0.0.51
 label-studio-sdk==0.0.24
 label-studio-tools==0.0.2
