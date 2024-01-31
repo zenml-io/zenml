@@ -1090,6 +1090,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Args:
             deployment: The pipeline deployment to track.
             stack: The stack on which the pipeline will be deployed.
+            run_id: The ID of the pipeline run.
 
         Returns:
             the metadata about the pipeline deployment
