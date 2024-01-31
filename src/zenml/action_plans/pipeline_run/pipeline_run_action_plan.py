@@ -12,17 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an action Plugin could look like."""
-from typing import Any, ClassVar, Dict, Type, Optional 
+from typing import Any, ClassVar, Dict, Optional, Type
 from uuid import UUID
-from zenml.enums import PluginType, PluginSubType
 
 from zenml.action_plans.base_action_plan import (
     ActionPlanConfig,
     BaseActionPlan,
     BaseActionPlanFlavor,
-    BaseActionPlanPlugin,
 )
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.enums import PluginSubType
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -38,7 +37,6 @@ class PipelineRunActionPlanConfiguration(ActionPlanConfig):
 
 
 class PipelineRunActionPlan(BaseActionPlan):
-
     @property
     def config_class(self) -> Type[PipelineRunActionPlanConfiguration]:
         """Returns the `BasePluginConfig` config.
@@ -59,14 +57,8 @@ class PipelineRunActionPlanFlavor(BaseActionPlanFlavor):
     """Enables users to configure pipeline run action."""
 
     FLAVOR: ClassVar[str] = "builtin"
-<<<<<<< HEAD:src/zenml/action_plans/pipeline_run/pipeline_run_action_flavor.py
     SUBTYPE: ClassVar[PluginSubType] = PluginSubType.PIPELINE_RUN
-    PLUGIN_CLASS: ClassVar[
-        Type[PipelineRunActionPlanPlugin]
-    ] = PipelineRunActionPlanPlugin
-=======
     PLUGIN_CLASS: ClassVar[Type[PipelineRunActionPlan]] = PipelineRunActionPlan
->>>>>>> feature/CLOUD-504-trigger-blueprint:src/zenml/action_plans/pipeline_run/pipeline_run_action_plan.py
 
     # EventPlugin specific
     ACTION_PLAN_CONFIG_CLASS: ClassVar[

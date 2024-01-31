@@ -14,8 +14,8 @@
 """Base class for all the Event Hub."""
 from typing import Any, Dict
 
-from zenml.action_plans.base_action_plan import BaseActionPlan
 from zenml import EventSourceResponse
+from zenml.action_plans.base_action_plan import BaseActionPlan
 from zenml.enums import PluginSubType, PluginType
 from zenml.event_sources.base_event_source_plugin import BaseEventSourcePlugin
 from zenml.models import TriggerExecutionRequest
