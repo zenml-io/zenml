@@ -35,6 +35,7 @@ def promote_in_model_registry(
         target_env: stage for promotion
     """
     model_registry = Client().active_stack.model_registry
+    model_registry.configure_mlflow()
     if latest_version != current_version:
         model_registry.update_model_version(
             name=model_name,

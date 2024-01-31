@@ -84,6 +84,7 @@ def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
             input_artifacts={},
             external_artifacts={},
             model_artifacts_or_metadata={},
+            client_lazy_loaders={},
         )
 
     # The step uses the materializer registered for the earliest class in the
