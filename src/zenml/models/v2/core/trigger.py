@@ -100,7 +100,7 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The event that activates this trigger.",
     )
     action_plan: Dict[str, Any] = Field(
-        title="The actions that is executed by this trigger.",
+        title="The action that is executed by this trigger.",
     )
     description: str = Field(
         default="",
