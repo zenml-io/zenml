@@ -6684,7 +6684,7 @@ class SqlZenStore(BaseZenStore):
             step_statuses=[step_run.status for step_run in step_runs],
             num_steps=num_steps,
         )
-        
+
         if new_status != pipeline_run.status:
             run_update = PipelineRunUpdate(status=new_status)
             if new_status in {
