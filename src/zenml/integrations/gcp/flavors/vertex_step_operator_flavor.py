@@ -44,12 +44,18 @@ class VertexStepOperatorSettings(BaseSettings):
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
         machine_type: Machine type specified here
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types.
+        disk_type: Disk type specified here
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
+        disk_size_gb: Disk size in GB.
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
 
     """
 
     accelerator_type: Optional[str] = None
     accelerator_count: int = 0
     machine_type: str = "n1-standard-4"
+    disk_type: Optional[str] = None
+    disk_size_gb: Optional[int] = None
 
 
 class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
@@ -62,6 +68,13 @@ class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydan
     Attributes:
         region: Region name, e.g., `europe-west1`.
         encryption_spec_key_name: Encryption spec key name.
+        network: The full name of the Compute Engine network to which the Job should be peered.
+            For example, projects/12345/global/networks/myVPC
+        reservedIpRanges: A list of names for the reserved ip ranges under the VPC network that can be used
+            for this job. If set, we will deploy the job within the provided ip ranges. Otherwise, the job
+            will be deployed to any ip ranges under the provided VPC network.
+        service_account: Specifies the service account for workload run-as account. Users submitting jobs
+            must have act-as permission on this run-as account.
     """
 
     region: str
@@ -69,6 +82,12 @@ class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydan
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
     encryption_spec_key_name: Optional[str] = None
+
+    network: Optional[str] = None
+
+    reservedIpRanges: Optional[str] = None
+
+    service_account: Optional[str] = None
 
     @property
     def is_remote(self) -> bool:

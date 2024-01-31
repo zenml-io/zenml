@@ -236,6 +236,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                             if settings.accelerator_type
                             else 0,
                         },
+                        "disk_spec": {
+                            "boot_disk_type": settings.disk_type,
+                            "boot_disk_size_gb": settings.disk_size_gb,
+                        },
                         "replica_count": 1,
                         "container_spec": {
                             "image_uri": image_name,
@@ -247,7 +251,12 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                             ],
                         },
                     }
-                ]
+                ],
+                "service_account": self.config.service_account,
+                "network": self.config.network,
+                "reserved_ip_ranges": self.config.reservedIpRanges
+                if self.config.reservedIpRanges
+                else [],
             },
             "labels": job_labels,
             "encryption_spec": {
