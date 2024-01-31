@@ -65,8 +65,7 @@ rm docs/mkdocs/index.md || true
 # deprecated in 3.1.0 but mkdocstring depends on this method
 
 if [ -z "$SKIP_INSTALL" ]; then
-  pip3 install -e ".[server,dev]"
-  pip3 install "Jinja2==3.0.3"
+  pip3 install -e ".[server,dev,templates]"
 fi
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################

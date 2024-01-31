@@ -3,6 +3,9 @@ name: Publish SDK Docs
 on:
   push:
     branches: [release/**]
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
 jobs:
   publish:
     name: Build 🔨 and publish 📰 the api docs 📁 to gh-pages
@@ -36,4 +39,4 @@ jobs:
           git config --global user.email 'codemonkey@zenml.io'
       - name: Runs docs generation
         run: |-
-          bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${{ steps.get_version.outputs.VERSION }}
+          bash scripts/generate-docs.sh -s src/zenml/ -v ${{ steps.get_version.outputs.VERSION }}
