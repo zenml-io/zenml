@@ -13,6 +13,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   run-slow-ci-label-is-set:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
