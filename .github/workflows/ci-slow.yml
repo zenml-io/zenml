@@ -18,6 +18,9 @@ jobs:
       pull-requests: write # this premission is a bit too much, but it is required
     runs-on: ubuntu-latest
     steps:
+      - name: Make .github/labler.yml
+        run: |
+          touch .github/labler.yml
       # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
       # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
       # With dynamic approach dev can set label and rerun this flow to make it running.
