@@ -17,12 +17,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml import (
-    EventSourceRequest,
-    EventSourceResponse,
-    TriggerRequest,
-    TriggerResponse,
-)
 from zenml.constants import (
     API,
     ARTIFACTS,
@@ -56,6 +50,8 @@ from zenml.models import (
     CodeRepositoryResponse,
     ComponentFilter,
     ComponentResponse,
+    EventSourceRequest,
+    EventSourceResponse,
     ModelRequest,
     ModelResponse,
     ModelVersionArtifactRequest,
@@ -90,6 +86,8 @@ from zenml.models import (
     StackFilter,
     StackRequest,
     StackResponse,
+    TriggerRequest,
+    TriggerResponse,
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
@@ -464,7 +462,7 @@ def create_event_source(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
-    # TODO: Validate that teh flavor and plugin_type correspond to an event source implementation
+    # TODO: Validate that the flavor and plugin_type correspond to an event source implementation
 
     plugin_impl = plugin_flavor_registry.get_plugin_implementation(
         event_source.flavor,

@@ -88,9 +88,21 @@ def webhook(
         _type=PluginType.EVENT_SOURCE,
         subtype=PluginSubType.WEBHOOK,
     )
+
+    # Temporary solution to get the secret value for the Event Source
+    webhook_secret_id = event_source.metadata.configuration[
+        "webhook_secret_id"
+    ]
+    secret_value = (
+        zen_store()
+        .get_secret(secret_id=webhook_secret_id)
+        .body.values["webhook_secret"]
+        .get_secret_value()
+    )
+
     if not webhook_cls.is_valid_signature(
         raw_body=raw_body,
-        secret_token="asdf",  # event_source.secret,
+        secret_token=secret_value,
         signature_header=signature_header,
     ):
         raise HTTPException(

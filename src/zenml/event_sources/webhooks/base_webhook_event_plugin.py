@@ -25,7 +25,7 @@ from zenml.event_sources.base_event_source_plugin import (
     EventSourceConfig,
 )
 from zenml.logger import get_logger
-from zenml.models import EventSourceRequest, EventSourceResponse
+from zenml.models import EventSourceResponse
 
 logger = get_logger(__name__)
 
@@ -65,21 +65,6 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
         Returns:
             The configuration.
         """
-
-    def _create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Wraps the zen_store creation method to add plugin specific functionality."""
-        secret_key_value = (
-            "something"  # TODO: this needs to actually create a zenml secret
-        )
-        print("Implementation not done:", secret_key_value)
-        # event_source_request.secret_id = ... # Here we add the secret_id to the event_source
-        created_event_source = self.zen_store.create_event_source(
-            event_source=event_source
-        )
-        # created_event_source.secret_value = ...
-        return created_event_source
 
     @staticmethod
     @abstractmethod

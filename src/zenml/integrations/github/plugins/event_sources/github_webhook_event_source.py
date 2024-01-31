@@ -18,9 +18,11 @@ import json
 from datetime import datetime
 from functools import partial
 from typing import Any, Dict, List, Optional, Type
+from uuid import UUID
 
 from pydantic import BaseModel, Extra
 
+from zenml import EventSourceRequest, SecretRequest
 from zenml.event_sources.base_event_source_plugin import BaseEvent
 from zenml.event_sources.webhooks.base_webhook_event_plugin import (
     BaseWebhookEventSourcePlugin,
@@ -35,6 +37,8 @@ from zenml.models import (
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.pagination_utils import depaginate
+from zenml.utils.secret_utils import SecretField
+from zenml.utils.string_utils import random_str
 
 logger = get_logger(__name__)
 
@@ -161,6 +165,9 @@ class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
 class GithubWebhookEventSourceConfiguration(WebhookEventSourceConfig):
     """Configuration for github source filters."""
 
+    webhook_secret: Optional[str] = SecretField()
+    webhook_secret_id: Optional[UUID]
+
 
 # -------------------- Github Webhook Plugin -----------------------------------
 
@@ -264,3 +271,51 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
                 trigger_list.append(trigger)
 
         return trigger_list
+
+    def _create_event_source(
+        self, event_source: EventSourceRequest
+    ) -> EventSourceResponse:
+        """Wraps the zen_store creation method to add plugin specific functionality."""
+        try:
+            config = GithubWebhookEventSourceConfiguration(
+                **event_source.configuration
+            )
+        except ValueError:
+            raise ValueError("Event Source configuration invalid.")
+
+        secret_key_value = random_str(12)
+        webhook_secret = SecretRequest(
+            name=f"event_source-{event_source.name}-{random_str(4)}".lower(),
+            values={"webhook_secret": secret_key_value},
+            workspace=event_source.workspace,
+            user=event_source.user,
+        )
+        secret = self.zen_store.create_secret(webhook_secret)
+
+        config.webhook_secret_id = secret.id
+        event_source.configuration = config.dict()
+
+        created_event_source = self.zen_store.create_event_source(
+            event_source=event_source
+        )
+        created_event_source.metadata.configuration[
+            "webhook_secret"
+        ] = secret_key_value
+        return created_event_source
+
+    def _get_event_source(self, event_source_id: UUID) -> EventSourceResponse:
+        """Wraps the zen_store getter method to add plugin specific functionality."""
+        created_event_source = self.zen_store.get_event_source(
+            event_source_id=event_source_id
+        )
+        webhook_secret_id = created_event_source.metadata.configuration[
+            "webhook_secret_id"
+        ]
+
+        secret_value = self.zen_store.get_secret(
+            secret_id=webhook_secret_id
+        ).body["webhook_secret"]
+        created_event_source.metadata.configuration[
+            "webhook_secret"
+        ] = secret_value
+        return created_event_source
