@@ -17,8 +17,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, TRIGGERS, VERSION_1
-from zenml.models import Page, TriggerFilter, TriggerResponse, TriggerUpdate
+from zenml.constants import API, TRIGGER_EXECUTIONS, TRIGGERS, VERSION_1
+from zenml.models import (
+    Page,
+    TriggerExecutionFilter,
+    TriggerExecutionResponse,
+    TriggerFilter,
+    TriggerResponse,
+    TriggerUpdate,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -146,4 +153,90 @@ def delete_trigger(
         id=trigger_id,
         get_method=zen_store().get_trigger,
         delete_method=zen_store().delete_trigger,
+    )
+
+
+executions_router = APIRouter(
+    prefix=API + VERSION_1 + TRIGGER_EXECUTIONS,
+    tags=["trigger_executions"],
+    responses={401: error_response, 403: error_response},
+)
+
+
+@executions_router.get(
+    "",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_trigger_executions(
+    trigger_execution_filter_model: TriggerExecutionFilter = Depends(
+        make_dependable(TriggerExecutionFilter)
+    ),
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize),
+) -> Page[TriggerExecutionResponse]:
+    """List trigger executions.
+
+    Args:
+        trigger_execution_filter_model: Filter model used for pagination,
+            sorting, filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+
+    Returns:
+        Page of trigger executions.
+    """
+    return verify_permissions_and_list_entities(
+        filter_model=trigger_execution_filter_model,
+        resource_type=ResourceType.TRIGGER_EXECUTION,
+        list_method=zen_store().list_trigger_executions,
+        hydrate=hydrate,
+    )
+
+
+@executions_router.get(
+    "/{trigger_execution_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_trigger_execution(
+    trigger_execution_id: UUID,
+    hydrate: bool = True,
+    _: AuthContext = Security(authorize),
+) -> TriggerExecutionResponse:
+    """Returns the requested trigger execution.
+
+    Args:
+        trigger_execution_id: ID of the trigger execution.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+
+    Returns:
+        The requested trigger execution.
+    """
+    return verify_permissions_and_get_entity(
+        id=trigger_execution_id,
+        get_method=zen_store().get_trigger_execution,
+        hydrate=hydrate,
+    )
+
+
+@executions_router.delete(
+    "/{trigger_execution_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_trigger_execution(
+    trigger_execution_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Deletes a trigger execution.
+
+    Args:
+        trigger_execution_id: ID of the trigger execution.
+    """
+    verify_permissions_and_delete_entity(
+        id=trigger_execution_id,
+        get_method=zen_store().get_trigger_execution,
+        delete_method=zen_store().delete_trigger_execution,
     )

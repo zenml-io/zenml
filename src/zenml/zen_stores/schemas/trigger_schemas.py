@@ -15,20 +15,24 @@
 import base64
 import json
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.models.v2.core.trigger import (
+from zenml.models import (
+    TriggerExecutionRequest,
+    TriggerExecutionResponse,
+    TriggerExecutionResponseBody,
+    TriggerExecutionResponseMetadata,
     TriggerRequest,
     TriggerResponse,
     TriggerResponseBody,
     TriggerResponseMetadata,
     TriggerUpdate,
 )
-from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -70,6 +74,10 @@ class TriggerSchema(NamedSchema, table=True):
     )
     event_source: Optional["EventSourceSchema"] = Relationship(
         back_populates="triggers"
+    )
+
+    executions: List["TriggerExecutionSchema"] = Relationship(
+        back_populates="trigger"
     )
 
     event_filter: bytes
@@ -163,6 +171,96 @@ class TriggerSchema(NamedSchema, table=True):
         return TriggerResponse(
             id=self.id,
             name=self.name,
+            body=body,
+            metadata=metadata,
+        )
+
+
+class TriggerExecutionSchema(BaseSchema, table=True):
+    """SQL Model for trigger executions."""
+
+    __tablename__ = "trigger_execution"
+
+    workspace_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    workspace: "WorkspaceSchema" = Relationship()
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship()
+
+    trigger_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=TriggerSchema.__tablename__,
+        source_column="trigger_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    trigger: TriggerSchema = Relationship(back_populates="executions")
+
+    metadata: Optional[bytes] = None
+
+    @classmethod
+    def from_request(
+        cls, request: "TriggerExecutionRequest"
+    ) -> "TriggerExecutionSchema":
+        """Convert a `TriggerExecutionRequest` to a `TriggerExecutionSchema`.
+
+        Args:
+            request: The request model to convert.
+
+        Returns:
+            The converted schema.
+        """
+        return cls(
+            workspace_id=request.workspace,
+            user_id=request.user,
+            trigger_id=request.trigger,
+            metadata=base64.b64encode(
+                json.dumps(request.metadata).encode("utf-8")
+            ),
+        )
+
+    def to_model(self, hydrate: bool = False) -> "TriggerExecutionResponse":
+        """Converts the schema to a model.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
+
+        Returns:
+            The converted model.
+        """
+        body = TriggerExecutionResponseBody(
+            user=self.user.to_model() if self.user else None,
+            trigger=self.trigger.to_model(),
+            created=self.created,
+            updated=self.updated,
+        )
+        metadata = None
+        if hydrate:
+            metadata = TriggerExecutionResponseMetadata(
+                workspace=self.workspace.to_model(),
+                metadata=json.loads(base64.b64decode(self.metadata).decode())
+                if self.metadata
+                else {},
+            )
+
+        return TriggerExecutionResponse(
+            id=self.id,
             body=body,
             metadata=metadata,
         )

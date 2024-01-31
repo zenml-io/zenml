@@ -219,6 +219,9 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerExecutionFilter,
+    TriggerExecutionRequest,
+    TriggerExecutionResponse,
     TriggerFilter,
     TriggerRequest,
     TriggerResponse,
@@ -284,6 +287,7 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
     TagResourceSchema,
     TagSchema,
+    TriggerExecutionSchema,
     UserSchema,
     WorkspaceSchema,
 )
@@ -7085,6 +7089,111 @@ class SqlZenStore(BaseZenStore):
                 f"name in the active workspace, '{workspace.name}'."
             )
         return None
+
+    # -------------------- Trigger Executions --------------------
+
+    def create_trigger_execution(
+        self, trigger_execution: TriggerExecutionRequest
+    ) -> TriggerExecutionResponse:
+        """Create a trigger execution.
+
+        Args:
+            trigger_execution: The trigger execution to create.
+
+        Returns:
+            The created trigger execution.
+        """
+        with Session(self.engine) as session:
+            # TODO: Verify that the given trigger exists
+            new_execution = TriggerExecutionSchema.from_request(
+                trigger_execution
+            )
+            session.add(new_execution)
+            session.commit()
+            session.refresh(new_execution)
+
+            return new_execution.to_model(hydrate=True)
+
+    def get_trigger_execution(
+        self,
+        trigger_execution_id: UUID,
+        hydrate: bool = True,
+    ) -> TriggerExecutionResponse:
+        """Get an trigger execution by ID.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger execution.
+
+        Raises:
+            KeyError: If the trigger execution doesn't exist.
+        """
+        with Session(self.engine) as session:
+            execution = session.exec(
+                select(TriggerExecutionSchema).where(
+                    TriggerExecutionSchema.id == trigger_execution_id
+                )
+            ).first()
+
+            if execution is None:
+                raise KeyError(
+                    f"Trigger execution with ID {trigger_execution_id} not found."
+                )
+            return execution.to_model(hydrate=hydrate)
+
+    def list_trigger_executions(
+        self,
+        trigger_execution_filter_model: TriggerExecutionFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerExecutionResponse]:
+        """List all trigger executions matching the given filter criteria.
+
+        Args:
+            trigger_execution_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all trigger executions matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(TriggerExecutionSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TriggerExecutionSchema,
+                filter_model=trigger_execution_filter_model,
+                hydrate=hydrate,
+            )
+
+    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
+        """Delete a trigger execution.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to delete.
+
+        Raises:
+            KeyError: If the trigger execution doesn't exist.
+        """
+        with Session(self.engine) as session:
+            try:
+                execution = session.exec(
+                    select(TriggerExecutionSchema).where(
+                        TriggerExecutionSchema.id == trigger_execution_id
+                    )
+                ).one()
+
+                session.delete(execution)
+                session.commit()
+            except NoResultFound:
+                raise KeyError(
+                    f"Execution with ID {trigger_execution_id} not found."
+                )
 
     # ----------------------------- Users -----------------------------
 

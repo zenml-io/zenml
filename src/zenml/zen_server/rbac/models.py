@@ -66,6 +66,7 @@ class ResourceType(StrEnum):
     STACK_COMPONENT = "stack_component"
     TAG = "tag"
     TRIGGER = "trigger"
+    TRIGGER_EXECUTION = "trigger_execution"
     WORKSPACE = "workspace"
 
 
