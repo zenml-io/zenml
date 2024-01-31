@@ -7261,24 +7261,53 @@ class SqlZenStore(BaseZenStore):
 
         return int(entity_count)
 
-    def object_exists(
-        self, object_id: UUID, schema_class: Type[AnySchema]
+    def entity_exists(
+        self, entity_id: UUID, schema_class: Type[AnySchema]
     ) -> bool:
-        """Check whether an object exists in the database.
+        """Check whether an entity exists in the database.
 
         Args:
-            object_id: The ID of the object to check.
+            entity_id: The ID of the entity to check.
             schema_class: The schema class.
 
         Returns:
-            If the object exists.
+            If the entity exists.
         """
         with Session(self.engine) as session:
             schema = session.exec(
-                select(schema_class.id).where(schema_class.id == object_id)
+                select(schema_class.id).where(schema_class.id == entity_id)
             ).first()
 
             return False if schema is None else True
+
+    def get_entity_by_id(
+        self, entity_id: UUID, schema_class: Type[AnySchema]
+    ) -> Optional[BaseResponse]:
+        """Get an entity by ID.
+
+        Args:
+            entity_id: The ID of the entity to get.
+            schema_class: The schema class.
+
+        Raises:
+            RuntimeError: If the schema to model conversion failed.
+
+        Returns:
+            The entity if it exists, None otherwise
+        """
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(schema_class).where(schema_class.id == entity_id)
+            ).first()
+
+            if not schema:
+                return None
+
+            to_model = getattr(schema, "to_model", None)
+            if callable(to_model):
+                return to_model(hydrate=True)
+            else:
+                raise RuntimeError("Unable to convert schema to model.")
 
     @staticmethod
     def _get_schema_by_name_or_id(
