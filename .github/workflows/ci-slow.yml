@@ -15,7 +15,7 @@ jobs:
   run-slow-ci-label-is-set:
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # this premission is a bit too much, but it is required
     runs-on: ubuntu-latest
     steps:
       # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
