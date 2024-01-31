@@ -182,26 +182,6 @@ class TriggerExecutionSchema(BaseSchema, table=True):
 
     __tablename__ = "trigger_execution"
 
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship()
-
-    user_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="user_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    user: Optional["UserSchema"] = Relationship()
-
     trigger_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=TriggerSchema.__tablename__,
@@ -227,8 +207,6 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             The converted schema.
         """
         return cls(
-            workspace_id=request.workspace,
-            user_id=request.user,
             trigger_id=request.trigger,
             event_metadata=base64.b64encode(
                 json.dumps(request.event_metadata).encode("utf-8")
@@ -246,7 +224,6 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             The converted model.
         """
         body = TriggerExecutionResponseBody(
-            user=self.user.to_model() if self.user else None,
             trigger=self.trigger.to_model(),
             created=self.created,
             updated=self.updated,
@@ -254,7 +231,6 @@ class TriggerExecutionSchema(BaseSchema, table=True):
         metadata = None
         if hydrate:
             metadata = TriggerExecutionResponseMetadata(
-                workspace=self.workspace.to_model(),
                 event_metadata=json.loads(
                     base64.b64decode(self.event_metadata).decode()
                 )

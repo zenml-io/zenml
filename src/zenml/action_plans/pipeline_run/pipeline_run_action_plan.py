@@ -22,6 +22,7 @@ from zenml.action_plans.base_action_plan import (
 )
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import PluginSubType
+from zenml.models import TriggerExecutionResponse
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -46,7 +47,11 @@ class PipelineRunActionPlan(BaseActionPlan):
         """
         return PipelineRunActionPlanConfiguration
 
-    def run(self, config: Dict[str, Any], TriggerExecutionResponse) -> None:
+    def run(
+        self,
+        config: Dict[str, Any],
+        trigger_execution: TriggerExecutionResponse,
+    ) -> None:
         print("######### RUNNING PIPELINE ###############")
 
 

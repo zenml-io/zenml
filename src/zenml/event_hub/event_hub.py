@@ -60,26 +60,26 @@ class EventHub:
                 incoming_event=incoming_event, event_source=event_source
             )
 
-        for trigger_id in triggers:
+        for trigger in triggers:
             from zenml.zen_server.utils import zen_store
 
             request = TriggerExecutionRequest(
-                trigger=trigger_id, event_metadata=incoming_event
+                trigger=trigger.id, event_metadata=incoming_event
             )
             trigger_execution = zen_store().create_trigger_execution(request)
 
             action_plan_config = (
                 trigger_execution.trigger.get_metadata().action_plan
             )
-            action_plan_plugin_cls = (
+            action_plan_plugin = (
                 plugin_flavor_registry.get_plugin_implementation(
-                    flavor=trigger_execution.trigger.body.action_plan_flavor,
-                    type_=PluginType.ACTION_PLAN,
+                    flavor="builtin",
+                    _type=PluginType.ACTION_PLAN,
                     subtype=PluginSubType.PIPELINE_RUN,
                 )
             )
-            assert issubclass(action_plan_plugin_cls, BaseActionPlan)
-            action_plan_plugin_cls().run(
+            assert isinstance(action_plan_plugin, BaseActionPlan)
+            action_plan_plugin.run(
                 config=action_plan_config, trigger_execution=trigger_execution
             )
 
