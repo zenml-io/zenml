@@ -42,7 +42,7 @@ class SlackAlerterConfig(BaseAlerterConfig):
 
     Attributes:
         slack_token: The Slack token tied to the Slack account to be used.
-        default_slack_channel_id: The default ID of the Slack channel to use for communication.
+        default_slack_channel_id: The ID of the default Slack channel to use for communication.
     """
 
     slack_token: str = SecretField()
