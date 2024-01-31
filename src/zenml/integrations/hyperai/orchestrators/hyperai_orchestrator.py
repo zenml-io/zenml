@@ -193,7 +193,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 compose_definition["services"][container_name]["env_file"] = [
                     ".env"
                 ]
-            
+
             compose_definition["services"][container_name][
                 "environment"
             ] = environment
