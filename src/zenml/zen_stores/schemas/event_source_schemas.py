@@ -116,6 +116,9 @@ class EventSourceSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             user=self.user.to_model() if self.user else None,
+            flavor=self.flavor,
+            plugin_type=self.plugin_type,
+            plugin_subtype=self.plugin_subtype,
         )
         metadata = None
         if hydrate:
@@ -129,9 +132,6 @@ class EventSourceSchema(NamedSchema, table=True):
         return EventSourceResponse(
             id=self.id,
             name=self.name,
-            flavor=self.flavor,
-            plugin_type=self.plugin_type,
-            plugin_subtype=self.plugin_subtype,
             body=body,
             metadata=metadata,
         )

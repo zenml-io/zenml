@@ -504,6 +504,7 @@ TriggerResponseBody.update_forward_refs(
 TriggerResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
     UserResponse=UserResponse,
+    EventSourceResponse=EventSourceResponse,
 )
 __all__ = [
     # V2 Base
