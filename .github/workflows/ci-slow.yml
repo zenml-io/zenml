@@ -15,7 +15,9 @@ jobs:
   run-slow-ci-label-is-set:
     runs-on: ubuntu-latest
     steps:
-      # using this instead of 
+      # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
+      # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
+      # With dynamic approach dev can set label and rerun this flow to make it running.
       - name: Get PR labels
         id: pr-labels
         uses: joerick/pr-labels-action@v1.0.8
