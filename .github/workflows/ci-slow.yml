@@ -24,6 +24,8 @@ jobs:
       - name: Get PR labels
         id: pr-labels
         uses: actions/labeler@v5
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
 
       - name: Slow CI label not set
         if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
