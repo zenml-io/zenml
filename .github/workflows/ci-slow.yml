@@ -12,7 +12,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  slow-label-not-set:
+  run-slow-ci-label-not-set:
     if: ${{ !contains( github.event.pull_request.labels.*.name, 'run-slow-ci' ) }}
     runs-on: ubuntu-latest
     steps:
