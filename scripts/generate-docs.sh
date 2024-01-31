@@ -50,20 +50,6 @@ rm -rf docs/mkdocs/integration_code_docs || true
 rm docs/mkdocs/index.md || true
 
 ################################################ Install Requirements ##################################################
-# IMPORTANT: there's a strategy to installing integrations here in a way
-# that avoids conflicts while at the same time making it possible for all
-# ZenML Python modules to be imported, especially the integration modules:
-# 1. install zenml with all extras
-# 2. install more restrictive integrations first: feast and
-# label_studio are currently the ones known to be very restrictive in
-# terms of what versions of dependencies they require
-# 3. Install bentoml because of its attrs version
-# 4. Install airflow because of its attrs version>=22.1.0
-# 5. install the rest of the integrations (where aws depends on attrs==20.3.0)
-# 6. as the last step, install zenml again (step 1. repeated)
-# 7. Reinstall jinja in the correct version as the contexthandler is
-# deprecated in 3.1.0 but mkdocstring depends on this method
-
 if [ -z "$SKIP_INSTALL" ]; then
   pip3 install -e ".[server,dev,templates]"
 fi
