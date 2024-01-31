@@ -176,7 +176,6 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 "command": StepEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name, deployment_id=deployment.id
                 ),
-                "environment": environment,
                 "volumes": [
                     "{}:{}".format(
                         self._validate_mount_path(mount_from),
@@ -185,6 +184,19 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     for mount_from, mount_to in step_settings.mounts_from_to.items()
                 ],
             }
+
+            # Depending on whether it is a scheduled or a realtime pipeline, add
+            # potential .env file to service definition for deployment ID override.
+            if deployment.schedule:
+                # drop ZENML_HYPERAI_ORCHESTRATOR_RUN_ID from environment
+                del environment[ENV_ZENML_HYPERAI_RUN_ID]
+                compose_definition["services"][container_name]["env_file"] = [
+                    ".env"
+                ]
+            
+            compose_definition["services"][container_name][
+                "environment"
+            ] = environment
 
             # Add dependency on upstream steps if applicable
             upstream_steps = step.spec.upstream_steps
@@ -318,7 +330,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Create cron job for scheduled pipeline on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(
-                f"(crontab -l ; echo '{cron_expression} cd {directory_name} && docker compose up -d') | crontab -"
+                f"(crontab -l ; echo '{cron_expression} cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}=\"{deployment_id}_$(date +\%s)\" > .env && docker compose up -d') | crontab -"
             )
 
             logger.info("Pipeline scheduled successfully.")
