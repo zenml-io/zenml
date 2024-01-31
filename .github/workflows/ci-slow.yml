@@ -12,22 +12,22 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  
-  run-slow-ci-label-not-set:
+  run-slow-ci-label-is-set:
     runs-on: ubuntu-latest
     steps:
+      # using this instead of 
       - name: Get PR labels
         id: pr-labels
         uses: joerick/pr-labels-action@v1.0.8
 
       - name: Slow CI label not set
-        if: contains(steps.pr-labels.outputs.labels, ' run-slow-ci ')
+        if: ${{ !contains(steps.pr-labels.outputs.labels, ' run-slow-ci ') }}
         run: |
           echo "Please add the 'run-slow-ci' label to this PR before merging."
           exit 1
   
   docstring-check:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
@@ -40,7 +40,7 @@ jobs:
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     runs-on: ubuntu-dind-runners
     steps:
       - uses: actions/checkout@v4.1.1
@@ -51,7 +51,7 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations-mysql.sh sqlite
   small-checks:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
@@ -88,7 +88,7 @@ jobs:
           pip install alembic
           bash scripts/check-alembic-branches.sh
   update-templates-to-examples:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
     uses: ./.github/workflows/update-templates-to-examples.yml
@@ -97,7 +97,7 @@ jobs:
       os: ubuntu-latest
     secrets: inherit
   custom-ubuntu-unit-test:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
@@ -109,7 +109,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-unit-test:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [windows-latest]
@@ -121,7 +121,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   macos-unit-test:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [macos-latest]
@@ -133,7 +133,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-integration-test:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [windows-latest]
@@ -148,7 +148,7 @@ jobs:
       is-slow-ci: true
     secrets: inherit
   macos-integration-test:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [macos-latest]
@@ -163,7 +163,7 @@ jobs:
       is-slow-ci: true
     secrets: inherit
   custom-ubuntu-integration-test:
-    needs: run-slow-ci-label-not-set
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
