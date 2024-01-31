@@ -57,18 +57,11 @@ if __name__ == "__main__":
     logger = get_logger(__name__)
 
     modules_to_add = []
-    empty_dirs = []
-    meaningful_files = [".py", ".tf", ".yaml", ".yml"]
     for root, subdirs, files in os.walk("src/zenml"):
         if not root.endswith("__pycache__"):
             root = root[len("src/") :]
 
-            no_meaningful_files = len(subdirs) == 0
             for file in files:
-                for mf in meaningful_files:
-                    if file.endswith(mf):
-                        no_meaningful_files = False
-                        break
                 if file.endswith(".py") and not file == "__init__.py":
                     # removes '.py' and builds something like `zenml.something.something`
                     module_name = root.replace("/", ".") + "." + file[:-3]
@@ -89,8 +82,6 @@ if __name__ == "__main__":
                             logger.error(e.args[0])
                         else:
                             break
-            if no_meaningful_files:
-                empty_dirs.append(root)
     if modules_to_add:
         modules_to_add = set(modules_to_add)
         missing_modules = sorted(list(modules_to_add.difference(set(mockers))))
@@ -102,11 +93,6 @@ if __name__ == "__main__":
         )
         logger.error(msg)
 
-    if empty_dirs:
-        logger.warning(
-            f"Directories without any 'meaningful_files' {meaningful_files} files detected. This might affect docs building process:",
-            empty_dirs,
-        )
     if modules_to_add:
         logger.error(
             "Returning non-zero status code to indicate that docs building failed. Please fix the above errors and try again."
