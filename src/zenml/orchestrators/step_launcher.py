@@ -231,7 +231,7 @@ class StepLauncher:
                             pipeline_run=pipeline_run,
                             step_run=step_run_response,
                         )
-                    except Exception as e:  # noqa: E722
+                    except BaseException as e:  # noqa: E722
                         logger.error(
                             f"Failed to run step `{self._step_name}`."
                         )

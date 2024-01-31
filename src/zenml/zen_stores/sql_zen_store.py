@@ -6684,7 +6684,7 @@ class SqlZenStore(BaseZenStore):
             step_statuses=[step_run.status for step_run in step_runs],
             num_steps=num_steps,
         )
-
+        
         if new_status != pipeline_run.status:
             run_update = PipelineRunUpdate(status=new_status)
             if new_status in {
@@ -6692,6 +6692,8 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
             }:
                 run_update.end_time = datetime.utcnow()
+                duration_time = run_update.end_time - pipeline_run.start_time
+                duration_seconds = duration_time.total_seconds()
                 with track_handler(
                     AnalyticsEvent.RUN_PIPELINE_ENDED
                 ) as analytics_handler:
@@ -6705,6 +6707,7 @@ class SqlZenStore(BaseZenStore):
                         "end_time": run_update.end_time.strftime(
                             "%Y-%m-%dT%H:%M:%S.%fZ"
                         ),
+                        "duration_seconds": duration_seconds
                     }
             pipeline_run.update(run_update)
             session.add(pipeline_run)
