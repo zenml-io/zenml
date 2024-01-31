@@ -6707,7 +6707,7 @@ class SqlZenStore(BaseZenStore):
                         "end_time": run_update.end_time.strftime(
                             "%Y-%m-%dT%H:%M:%S.%fZ"
                         ),
-                        "duration_seconds": duration_seconds
+                        "duration_seconds": duration_seconds,
                     }
             pipeline_run.update(run_update)
             session.add(pipeline_run)
