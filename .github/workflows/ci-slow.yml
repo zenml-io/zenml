@@ -20,10 +20,10 @@ jobs:
       # With dynamic approach dev can set label and rerun this flow to make it running.
       - name: Get PR labels
         id: pr-labels
-        uses: joerick/pr-labels-action@v1.0.8
+        uses: actions/labeler@v5
 
       - name: Slow CI label not set
-        if: ${{ !contains(steps.pr-labels.outputs.labels, ' run-slow-ci ') }}
+        if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
         run: |
           echo "Please add the 'run-slow-ci' label to this PR before merging."
           exit 1
