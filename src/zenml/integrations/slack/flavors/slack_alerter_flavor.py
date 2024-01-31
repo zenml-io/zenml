@@ -31,20 +31,22 @@ class SlackAlerterSettings(BaseSettings):
     """Settings for the Slack alerter.
 
     Args:
-        default_slack_channel_id: The ID of the Slack channel to use for communication.
+        slack_channel_id: The ID of the Slack channel to use for communication.
     """
 
-    default_slack_channel_id: Optional[str] = None
+    slack_channel_id: Optional[str] = None
 
 
-class SlackAlerterConfig(BaseAlerterConfig, SlackAlerterSettings):
+class SlackAlerterConfig(BaseAlerterConfig):
     """Slack alerter config.
 
     Args:
         slack_token: The Slack token tied to the Slack account to be used.
+        default_slack_channel_id: The default ID of the Slack channel to use for communication.
     """
 
     slack_token: str = SecretField()
+    default_slack_channel_id: Optional[str] = None
 
     @property
     def is_valid(self) -> bool:

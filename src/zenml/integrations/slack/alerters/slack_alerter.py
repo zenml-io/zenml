@@ -117,11 +117,11 @@ class SlackAlerter(BaseAlerter):
             SlackAlerterSettings,
             self.get_settings(get_step_context().step_run),
         )
-        if settings.default_slack_channel_id is not None:
-            return settings.default_slack_channel_id
+        if settings.slack_channel_id is not None:
+            return settings.slack_channel_id
 
         raise ValueError(
-            "Neither the `SlackAlerterConfig.slack_channel_id` in the runtime "
+            "Neither the `slack_channel_id` in the runtime "
             "configuration, nor the `default_slack_channel_id` in the alerter "
             "stack component is specified. Please specify at least one."
         )
