@@ -124,13 +124,9 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         ).wait(timeout=POLLING_TIMEOUT)
 
         if self.hf_endpoint.url is not None:
-            logger.info(
-                "Huggingface inference endpoint successfully deployed."
-            )
+            logger.info("Huggingface inference endpoint successfully deployed.")
         else:
-            logger.info(
-                "Failed to start huggingface inference endpoint service..."
-            )
+            logger.info("Failed to start huggingface inference endpoint service...")
 
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the the current operational state of the HuggingFace deployment.
