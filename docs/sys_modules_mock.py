@@ -231,11 +231,14 @@ class DocsMocker(MagicMock):
 
     def _factory(self, name: str = None):
         if name:
+
             class _(self.__class__):
                 __module__ = ".".join(name.split(".")[:-1])
                 __qualname__ = name.split(".")[-1]
+
             return _(name=name)
         else:
+
             class _(self.__class__):
                 __module__ = self.__module__
                 __qualname__ = self.__name__
@@ -278,13 +281,16 @@ if __name__ == "__main__":
                         no_meaningful_files = False
                         break
                 if file.endswith(".py") and not file == "__init__.py":
+                    # removes '.py' and builds something like `zenml.something.something`
                     module_name = root.replace("/", ".") + "." + file[:-3]
                     try:
                         importlib.import_module(module_name)
                     except ModuleNotFoundError as e:
                         msg: str = e.args[0]
+                        # extract failed to import module from error message
                         module = msg[msg.find("'") + 1 :]
                         module = module[: module.find("'")]
+
                         modules_to_add.append(module)
                         logger.warning(msg)
                     except Exception as e:
