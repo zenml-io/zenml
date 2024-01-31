@@ -99,15 +99,6 @@ jobs:
         run: |
           pip install alembic
           bash scripts/check-alembic-branches.sh
-  update-templates-to-examples:
-    # this doesn't work on forked repositories (i.e. outside contributors)
-    # so we disable template updates for those PRs / branches
-    needs: run-slow-ci-label-is-set
-    uses: ./.github/workflows/update-templates-to-examples.yml
-    with:
-      python-version: '3.8'
-      os: ubuntu-latest
-    secrets: inherit
   custom-ubuntu-unit-test:
     needs: run-slow-ci-label-is-set
     strategy:
