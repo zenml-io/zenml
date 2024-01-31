@@ -31,9 +31,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
     """Huggingface endpoint model deployer."""
 
     NAME: ClassVar[str] = "HuggingFace"
-    FLAVOR: ClassVar[
-        Type[BaseModelDeployerFlavor]
-    ] = HuggingFaceModelDeployerFlavor
+    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = HuggingFaceModelDeployerFlavor
 
     @property
     def config(self) -> HuggingFaceModelDeployerConfig:
@@ -65,9 +63,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             namespace=self.config.namespace,
         )
 
-    def modify_endpoint_name(
-        self, endpoint_name: str, artifact_version: str
-    ) -> str:
+    def modify_endpoint_name(self, endpoint_name: str, artifact_version: str) -> str:
         """Modify endpoint name by adding suffix and prefix.
 
         It adds a prefix "zenml-" if not present and a suffix
@@ -80,12 +76,9 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         Returns:
             Modified endpoint name with added prefix and suffix
         """
-        # Add zenml prefix if endpoint name is not set
-        # or it does not start with "zenml-"
-        if not endpoint_name and not endpoint_name.startswith("zenml-"):
+        # Add zenml prefix if it does not start with "zenml-"
+        if not endpoint_name.startswith("zenml-"):
             endpoint_name = "zenml-" + endpoint_name
-        else:
-            endpoint_name = "zenml-"
 
         # Add first 8 characters of UUID to endpoint name
         endpoint_name += artifact_version
@@ -179,9 +172,6 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
                 to 0, the method will return immediately after the Huggingface
                 server is provisioned, without waiting for it to fully start.
 
-        Raises:
-            RuntimeError: _description_
-
         Returns:
             The ZenML Huggingface deployment service object that can be used to
             interact with the remote Huggingface inference endpoint server.
@@ -190,7 +180,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         service = None
 
         # if replace is True, remove all existing services
-        if replace is True:
+        if replace:
             existing_services = self.find_model_server(
                 pipeline_name=config.pipeline_name,
                 pipeline_step_name=config.pipeline_step_name,
@@ -199,9 +189,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             for existing_service in existing_services:
                 if service is None:
                     # keep the most recently created service
-                    service = cast(
-                        HuggingFaceDeploymentService, existing_service
-                    )
+                    service = cast(HuggingFaceDeploymentService, existing_service)
                 try:
                     # delete the older services and don't wait for them to
                     # be deprovisioned
@@ -311,15 +299,11 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
                         HUGGINGFACE_SERVICE_ARTIFACT
                     ].value
 
-                    existing_service = (
-                        ServiceRegistry().load_service_from_dict(
-                            hf_deployment_service_dict
-                        )
+                    existing_service = ServiceRegistry().load_service_from_dict(
+                        hf_deployment_service_dict
                     )
 
-                    if not isinstance(
-                        existing_service, HuggingFaceDeploymentService
-                    ):
+                    if not isinstance(existing_service, HuggingFaceDeploymentService):
                         raise TypeError(
                             f"Expected service type HuggingFaceDeploymentService but got "
                             f"{type(existing_service)} instead"
@@ -328,10 +312,10 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
                     existing_service.update_status()
                     if self._matches_search_criteria(existing_service, config):
                         if not running or existing_service.is_running:
-                            services.append(
-                                cast(BaseService, existing_service)
-                            )
+                            services.append(cast(BaseService, existing_service))
 
+                # if endpoint is provisioned externally
+                # we do not have saved artifact for it.
                 except KeyError:
                     pass
 
@@ -364,8 +348,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         if (
             (
                 not config.pipeline_name
-                or existing_service_config.pipeline_name
-                == config.pipeline_name
+                or existing_service_config.pipeline_name == config.pipeline_name
             )
             and (
                 not config.pipeline_step_name

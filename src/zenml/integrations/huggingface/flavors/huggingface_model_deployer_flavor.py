@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class HuggingFaceBaseConfig(BaseModel):
     """Huggingface Inference Endpoint configuration."""
 
-    endpoint_name: Optional[str] = ""
+    endpoint_name: Optional[str] = "zenml-"
     repository: Optional[str] = None
     framework: Optional[str] = None
     accelerator: Optional[str] = None
