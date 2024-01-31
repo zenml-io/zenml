@@ -142,7 +142,7 @@ class StepLauncher:
         """Launches the step.
 
         Raises:
-            Exception: If the step failed to launch, run, or publish.
+            BaseException: If the step failed to launch, run, or publish.
         """
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
