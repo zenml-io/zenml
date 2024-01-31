@@ -134,17 +134,13 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
 
     @abstractmethod
     def get_matching_triggers_for_event(
-        self,
-        incoming_event: Dict[str, Any],
-        raw_body: bytes,
-        signature_header: str,  # TODO: Not all Event Sources will need this
+        self, incoming_event: Dict[str, Any], event_source: EventSourceResponse
     ) -> List[UUID]:
         """Process the incoming event and forward with trigger_ids to event hub.
 
         Args:
             incoming_event: THe inbound event.
-            raw_body: Raw body of the incoming request
-            signature_header: Signature header sent to webhooks.
+            event_source: The Event Source
         """
 
     @abstractmethod
@@ -159,25 +155,13 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         """
 
     @abstractmethod
-    def _get_all_relevant_event_sources(
-        self, event: BaseEvent
-    ) -> List[EventSourceResponse]:
-        """Filter Event Sources for flavor and flavor specific properties.
-
-        Args:
-            event: The inbound Event.
-
-        Returns: A list of all matching Event Source IDs.
-        """
-
-    @abstractmethod
     def _get_matching_triggers(
-        self, event_sources: List[EventSourceResponse], event: BaseEvent
+        self, event_source: EventSourceResponse, event: BaseEvent
     ) -> List[UUID]:
         """Get all Triggers with matching event filters.
 
         Args:
-            event_sources: All matching event sources.
+            event_source: The event sources.
             event: The inbound Event.
         """
 

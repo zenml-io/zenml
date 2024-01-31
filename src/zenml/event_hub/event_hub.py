@@ -14,6 +14,7 @@
 """Base class for all the Event Hub."""
 from typing import Any, Dict
 
+from zenml import EventSourceResponse
 from zenml.enums import PluginSubType, PluginType
 from zenml.event_sources.base_event_source_plugin import BaseEventSourcePlugin
 from zenml.plugins.plugin_flavor_registry import logger, plugin_flavor_registry
@@ -22,13 +23,12 @@ from zenml.plugins.plugin_flavor_registry import logger, plugin_flavor_registry
 class EventHub:
     """Handler for all events."""
 
+    @staticmethod
     def process_event(
-        self,
         incoming_event: Dict[str, Any],
-        raw_body:bytes,
         flavor: str,
+        event_source: EventSourceResponse,
         event_source_subtype: PluginSubType,
-        signature_header: str,
     ):
         """Process an incoming event and execute all configured actions.
 
@@ -38,10 +38,9 @@ class EventHub:
 
         Args:
             incoming_event: Generic event
-            raw_body: Raw request body
             flavor: Flavor of Event
+            event_source: The Event Source
             event_source_subtype: Subtype of Event
-            signature_header: The signature header
         """
         try:
             plugin_cls = plugin_flavor_registry.get_plugin_implementation(
@@ -56,9 +55,7 @@ class EventHub:
         else:
             assert isinstance(plugin_cls, BaseEventSourcePlugin)
             triggers = plugin_cls.get_matching_triggers_for_event(
-                incoming_event=incoming_event,
-                raw_body=raw_body,
-                signature_header=signature_header
+                incoming_event=incoming_event, event_source=event_source
             )
 
         # TODO: Store event for future reference

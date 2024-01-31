@@ -97,68 +97,26 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
         """
 
     def get_matching_triggers_for_event(
-        self,
-        incoming_event: Dict[str, Any],
-        raw_body: bytes,
-        signature_header: str
+        self, incoming_event: Dict[str, Any], event_source: EventSourceResponse
     ) -> List[UUID]:
         """Process the incoming event and forward with trigger_ids to event hub.
 
         Args:
             incoming_event: The inbound event.
-            raw_body: Raw body of the incoming request
-            signature_header: Signature header sent to the webhook.
+            event_source: The Event Source
         """
         event = self._interpret_event(incoming_event)
 
-        # narrow down to all sources that relate to the repo that
-        #  is responsible for the event
-        event_sources = self._get_all_relevant_event_sources(
-            event=event,
-        )
-
-        self.remove_event_sources_with_wrong_signature(
-            raw_event_body=raw_body,
-            event_sources=event_sources,
-            signature_header=signature_header,
-        )
-
         # get all triggers that have matching event filters configured
-        if event_sources:
-            trigger_ids = self._get_matching_triggers(
-                event_sources=event_sources, event=event
-            )
+        trigger_ids = self._get_matching_triggers(
+            event_source=event_source, event=event
+        )
 
-            # TODO: Forward the event together with the list of trigger ids
-            #  over to the EventHub
-            logger.info(
-                "An event came in, the following triggers will be"
-                " used: %s ",
-                trigger_ids,
-            )
-            return trigger_ids
-
-    def remove_event_sources_with_wrong_signature(
-        self,
-        event_sources: List[EventSourceResponse],
-        raw_event_body: bytes,
-        signature_header: str,
-    ):
-        """Removes all event_sources with mismatching signature.
-
-        Args:
-            event_sources: List of theoretically matching event sources.
-            raw_event_body: The Body received by the webhook endpoint.
-            signature_header: The signature header
-        """
-        for es in event_sources[:]:  # TO make sure we iterate over a list copy
-            if not self.is_valid_signature(
-                body=raw_event_body,
-                secret_token="asdf",  # TODO: Replace with actual secret
-                signature_header=signature_header,
-            ):
-                logger.info("Request signatures didn't match!")
-                event_sources.remove(es)
+        logger.info(
+            "An event came in, the following triggers will be" " used: %s ",
+            trigger_ids,
+        )
+        return trigger_ids
 
 
 # -------------------- Flavors ----------------------------------
