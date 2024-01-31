@@ -16,6 +16,7 @@ from typing import Any, Dict
 
 from zenml.enums import PluginSubType, PluginType
 from zenml.event_sources.base_event_source_plugin import BaseEventSourcePlugin
+from zenml.models import TriggerExecutionRequest
 from zenml.plugins.plugin_flavor_registry import logger, plugin_flavor_registry
 
 
@@ -60,6 +61,14 @@ class EventHub:
         # TODO: Store event for future reference
         # TODO: Create a trigger execution linked to the event and the trigger
         logger.debug(triggers)
+
+        for trigger_id in triggers:
+            from zenml.zen_server.utils import zen_store
+
+            request = TriggerExecutionRequest(
+                trigger=trigger_id, metadata=incoming_event
+            )
+            zen_store().create_trigger_execution(request)
 
 
 event_hub = EventHub()

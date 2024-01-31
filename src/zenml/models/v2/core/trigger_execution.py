@@ -17,12 +17,12 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
+from zenml.models import (
+    BaseFilter,
+    BaseRequest,
+    BaseResponse,
+    BaseResponseBody,
+    BaseResponseMetadata,
 )
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class TriggerExecutionRequest(WorkspaceScopedRequest):
+class TriggerExecutionRequest(BaseRequest):
     """Model for creating a new Trigger execution."""
 
     trigger: UUID
@@ -45,20 +45,20 @@ class TriggerExecutionRequest(WorkspaceScopedRequest):
 # ------------------ Response Model ------------------
 
 
-class TriggerExecutionResponseBody(WorkspaceScopedResponseBody):
+class TriggerExecutionResponseBody(BaseResponseBody):
     """Response body for trigger executions."""
 
     trigger: "TriggerResponse"
 
 
-class TriggerExecutionResponseMetadata(WorkspaceScopedResponseMetadata):
+class TriggerExecutionResponseMetadata(BaseResponseMetadata):
     """Response metadata for trigger executions."""
 
     metadata: Dict[str, Any] = {}
 
 
 class TriggerExecutionResponse(
-    WorkspaceScopedResponse[
+    BaseResponse[
         TriggerExecutionResponseBody, TriggerExecutionResponseMetadata
     ]
 ):
@@ -68,7 +68,7 @@ class TriggerExecutionResponse(
 # ------------------ Filter Model ------------------
 
 
-class TriggerExecutionFilter(WorkspaceScopedFilter):
+class TriggerExecutionFilter(BaseFilter):
     """Model to enable advanced filtering of all trigger executions."""
 
     trigger_id: Optional[Union[UUID, str]] = Field(

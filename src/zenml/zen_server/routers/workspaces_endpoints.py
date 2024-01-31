@@ -43,7 +43,6 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    TRIGGER_EXECUTIONS,
     TRIGGERS,
     VERSION_1,
     WORKSPACES,
@@ -91,8 +90,6 @@ from zenml.models import (
     StackFilter,
     StackRequest,
     StackResponse,
-    TriggerExecutionRequest,
-    TriggerExecutionResponse,
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
@@ -432,45 +429,6 @@ def create_trigger(
         request_model=trigger,
         resource_type=ResourceType.TRIGGER,
         create_method=zen_store().create_trigger,
-    )
-
-
-@router.post(
-    WORKSPACES + "/{workspace_name_or_id}" + TRIGGER_EXECUTIONS,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def create_trigger_execution(
-    workspace_name_or_id: Union[str, UUID],
-    trigger_execution: TriggerExecutionRequest,
-    _: AuthContext = Security(authorize),
-) -> TriggerExecutionResponse:
-    """Creates a trigger execution.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        trigger_execution: Trigger execution to register.
-
-    Returns:
-        The created trigger execution.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the stack
-            component does not match the current workspace.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-
-    if trigger_execution.workspace != workspace.id:
-        raise IllegalOperationError(
-            "Creating trigger execution outside of the workspace scope "
-            f"of this endpoint `{workspace_name_or_id}` is "
-            f"not supported."
-        )
-
-    return verify_permissions_and_create_entity(
-        request_model=trigger_execution,
-        resource_type=ResourceType.TRIGGER_EXECUTION,
-        create_method=zen_store().create_trigger_execution,
     )
 
 

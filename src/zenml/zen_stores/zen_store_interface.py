@@ -116,7 +116,6 @@ from zenml.models import (
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
-    TriggerExecutionRequest,
     TriggerExecutionResponse,
     TriggerFilter,
     TriggerRequest,
@@ -2148,19 +2147,6 @@ class ZenStoreInterface(ABC):
         """
 
     # -------------------- Trigger Executions --------------------
-
-    @abstractmethod
-    def create_trigger_execution(
-        self, trigger_execution: TriggerExecutionRequest
-    ) -> TriggerExecutionResponse:
-        """Create a trigger execution.
-
-        Args:
-            trigger_execution: The trigger execution to create.
-
-        Returns:
-            The created trigger execution.
-        """
 
     @abstractmethod
     def get_trigger_execution(
