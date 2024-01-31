@@ -27,7 +27,9 @@ to ensure that pipeline steps will only run if their connected upstream steps ha
 If configured for it, the HyperAI orchestrator will connect the HyperAI instance to the stack's container registry to ensure
 a smooth transfer of Docker images.
 
-Scheduled pipelines are supported by the HyperAI orchestrator. When pipeline runs are scheduled, they are added as a crontab entry
+### Scheduled pipelines
+
+[Scheduled pipelines](../../../user-guide/advanced-guide/pipelining-features/schedule-pipeline-runs.md) are supported by the HyperAI orchestrator. Currently, only cron expressions are supported via `cron_expression`. When pipeline runs are scheduled, they are added as a crontab entry
 on the HyperAI instance.
 
 ### How to deploy it
