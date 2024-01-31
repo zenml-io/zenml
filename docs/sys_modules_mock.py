@@ -97,7 +97,7 @@ if __name__ == "__main__":
         msg = (
             "Consider mocking : \n["
             + ", ".join([f'"{mm}"' for mm in missing_modules])
-            + "]\n  To do so, add this list entires to `mocked_libs.json` "
+            + "]\n  To do so, add this list entries to `mocked_libs.json` "
             "in `docs` folder and retry."
         )
         logger.error(msg)
