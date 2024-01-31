@@ -211,7 +211,7 @@ class TriggerExecutionSchema(BaseSchema, table=True):
     )
     trigger: TriggerSchema = Relationship(back_populates="executions")
 
-    metadata: Optional[bytes] = None
+    event_metadata: Optional[bytes] = None
 
     @classmethod
     def from_request(
@@ -229,8 +229,8 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             trigger_id=request.trigger,
-            metadata=base64.b64encode(
-                json.dumps(request.metadata).encode("utf-8")
+            event_metadata=base64.b64encode(
+                json.dumps(request.event_metadata).encode("utf-8")
             ),
         )
 
@@ -254,8 +254,10 @@ class TriggerExecutionSchema(BaseSchema, table=True):
         if hydrate:
             metadata = TriggerExecutionResponseMetadata(
                 workspace=self.workspace.to_model(),
-                metadata=json.loads(base64.b64decode(self.metadata).decode())
-                if self.metadata
+                event_metadata=json.loads(
+                    base64.b64decode(self.event_metadata).decode()
+                )
+                if self.event_metadata
                 else {},
             )
 

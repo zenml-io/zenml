@@ -36,7 +36,7 @@ class TriggerExecutionRequest(BaseRequest):
     """Model for creating a new Trigger execution."""
 
     trigger: UUID
-    metadata: Dict[str, Any] = {}
+    event_metadata: Dict[str, Any] = {}
 
 
 # ------------------ Update Model ------------------
@@ -54,7 +54,7 @@ class TriggerExecutionResponseBody(BaseResponseBody):
 class TriggerExecutionResponseMetadata(BaseResponseMetadata):
     """Response metadata for trigger executions."""
 
-    metadata: Dict[str, Any] = {}
+    event_metadata: Dict[str, Any] = {}
 
 
 class TriggerExecutionResponse(
@@ -63,6 +63,36 @@ class TriggerExecutionResponse(
     ]
 ):
     """Response model for trigger executions."""
+
+    def get_hydrated_version(self) -> "TriggerExecutionResponse":
+        """Get the hydrated version of this trigger execution.
+
+        Returns:
+            an instance of the same entity with the metadata field attached.
+        """
+        from zenml.client import Client
+
+        return Client().zen_store.get_trigger_execution(self.id)
+
+    # Body and metadata properties
+
+    @property
+    def trigger(self) -> "TriggerResponse":
+        """The `trigger` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().trigger
+
+    @property
+    def event_metadata(self) -> Dict[str, Any]:
+        """The `event_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().event_metadata
 
 
 # ------------------ Filter Model ------------------
