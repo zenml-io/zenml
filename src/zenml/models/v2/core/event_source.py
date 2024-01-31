@@ -35,7 +35,7 @@ class EventSourceRequest(WorkspaceScopedRequest):
     """BaseModel for all event sources."""
 
     name: str = Field(
-        title="The name of the stack component.",
+        title="The name of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     flavor: str = Field(
