@@ -31,7 +31,7 @@ class BasePluginConfig(BaseModel, ABC):
         """Pydantic configuration class."""
 
         # public attributes are immutable
-        allow_mutation = False
+        allow_mutation = True
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True

@@ -12,16 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for webhooks."""
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from starlette.background import BackgroundTasks
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
-from zenml.enums import PluginSubType
+from zenml.enums import PluginSubType, PluginType
 from zenml.event_hub.event_hub import event_hub
 from zenml.logger import get_logger
-from zenml.zen_server.utils import handle_exceptions
+from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
+from zenml.zen_server.utils import handle_exceptions, zen_store
 
 logger = get_logger(__name__)
 
@@ -31,23 +33,91 @@ router = APIRouter(
 )
 
 
+async def get_body(request: Request) -> bytes:
+    """Get access to the raw body.
+
+    Args:
+        request: The request
+
+    Returns:
+        The raw request body.
+    """
+    return await request.body()
+
+
 @router.post(
-    "/{flavor_name}",
+    "/{event_source_id}",
 )
 @handle_exceptions
 def webhook(
-    flavor_name: str, body: Dict[str, Any], background_tasks: BackgroundTasks
+    event_source_id: UUID,
+    body: Dict[str, Any],
+    background_tasks: BackgroundTasks,
+    signature_header: Optional[str] = Header(
+        None, alias="x-hub-signature-256"
+    ),
+    raw_body: bytes = Depends(get_body),
 ):
     """Webhook to receive events from external event sources.
 
     Args:
-        flavor_name: Path param that indicates which plugin flavor will handle the event.
+        event_source_id: The event_source_id
         body: The request body.
+        raw_body: The raw request body
         background_tasks: BackgroundTask fixture
+        signature_header: The signature header
     """
-    background_tasks.add_task(
-        event_hub.process_event,
+    if not signature_header:
+        raise HTTPException(
+            status_code=403, detail="x-hub-signature-256 header is missing!"
+        )
+
+    # Get the Event Source
+    try:
+        event_source = zen_store().get_event_source(event_source_id)
+    except KeyError:
+        raise KeyError(
+            f"No webhook is registered at "
+            f"'{router.prefix}/{event_source_id}'"
+        )
+
+    # Validate the signature
+    flavor = event_source.flavor
+    webhook_cls = plugin_flavor_registry.get_plugin_implementation(
+        flavor=flavor,
+        _type=PluginType.EVENT_SOURCE,
+        subtype=PluginSubType.WEBHOOK,
+    )
+
+    # Temporary solution to get the secret value for the Event Source
+    webhook_secret_id = event_source.metadata.configuration[
+        "webhook_secret_id"
+    ]
+    secret_value = (
+        zen_store()
+        .get_secret(secret_id=webhook_secret_id)
+        .body.values["webhook_secret"]
+        .get_secret_value()
+    )
+
+    if not webhook_cls.is_valid_signature(
+        raw_body=raw_body,
+        secret_token=secret_value,
+        signature_header=signature_header,
+    ):
+        raise HTTPException(
+            status_code=403, detail="Request signatures didn't match!"
+        )
+
+    # background_tasks.add_task(
+    #     event_hub.process_event,
+    #     incoming_event=body,
+    #     flavor=flavor_name,
+    #     event_source_subtype=PluginSubType.WEBHOOK,
+    # )
+    event_hub.process_event(
         incoming_event=body,
-        flavor=flavor_name,
+        flavor=flavor,
+        event_source=event_source,
         event_source_subtype=PluginSubType.WEBHOOK,
     )

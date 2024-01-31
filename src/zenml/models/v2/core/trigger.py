@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -27,6 +27,9 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.update import update_model
+
+if TYPE_CHECKING:
+    from zenml.models.v2.core.event_source import EventSourceResponse
 
 # ------------------ Base Model ------------------
 
@@ -80,14 +83,14 @@ class TriggerUpdate(TriggerRequest):
 class TriggerResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for triggers."""
 
+    event_source_flavor: str
+    action_plan_flavor: str
     created: datetime = Field(
         title="The timestamp when this trigger was created."
     )
     updated: datetime = Field(
         title="The timestamp when this trigger was last updated.",
     )
-    action_plan_flavor: str
-    event_flavor: str
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -98,6 +101,14 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     )
     action_plan: Dict[str, Any] = Field(
         title="The actions that is executed by this trigger.",
+    )
+    description: str = Field(
+        default="",
+        title="The description of the trigger",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    event_source: "EventSourceResponse" = Field(
+        title="The event source that activates this trigger.",
     )
 
 
@@ -110,11 +121,88 @@ class TriggerResponse(
         title="The name of the model",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    description: str = Field(
-        default="",
-        title="The description of the trigger",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+
+    def get_hydrated_version(self) -> "TriggerResponse":
+        """Get the hydrated version of this trigger.
+
+        Returns:
+            An instance of the same entity with the metadata field attached.
+        """
+        from zenml.client import Client
+
+        return Client().zen_store.get_trigger(self.id)
+
+    @property
+    def event_source_flavor(self) -> str:
+        """The `event_source_flavor` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().event_source_flavor
+
+    @property
+    def action_plan_flavor(self) -> str:
+        """The `action_plan_flavor` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().action_plan_flavor
+
+    @property
+    def created(self) -> datetime:
+        """The `created` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().created
+
+    @property
+    def updated(self) -> datetime:
+        """The `updated` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().updated
+
+    @property
+    def event_filter(self) -> Dict[str, Any]:
+        """The `event_filter` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().event_filter
+
+    @property
+    def action_plan(self) -> Dict[str, Any]:
+        """The `action_plan` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().action_plan
+
+    @property
+    def description(self) -> str:
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().description
+
+    @property
+    def event_source(self) -> "EventSourceResponse":
+        """The `event_source` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().event_source
 
 
 # ------------------ Filter Model ------------------

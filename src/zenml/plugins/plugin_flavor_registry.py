@@ -62,7 +62,6 @@ class PluginFlavorRegistry:
         Returns:
             A list of available plugin types for this flavor.
 
-
         Raises:
             KeyError: If the flavor has no registry entries.
         """

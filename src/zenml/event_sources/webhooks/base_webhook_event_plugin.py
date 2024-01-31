@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Abstract BaseEvent class that all Event implementations must implement."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type
+from uuid import UUID
 
 from zenml.enums import PluginSubType
 from zenml.event_sources.base_event_source_plugin import (
@@ -24,7 +25,7 @@ from zenml.event_sources.base_event_source_plugin import (
     EventSourceConfig,
 )
 from zenml.logger import get_logger
-from zenml.models import EventSourceRequest, EventSourceResponse
+from zenml.models import EventSourceResponse
 
 logger = get_logger(__name__)
 
@@ -65,20 +66,42 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
             The configuration.
         """
 
-    def _create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Wraps the zen_store creation method to add plugin specific functionality."""
-        secret_key_value = (
-            "something"  # TODO: this needs to actually create a zenml secret
+    @staticmethod
+    @abstractmethod
+    def is_valid_signature(
+        body: bytes, secret_token: str, signature_header: str
+    ) -> bool:
+        """Verify that the payload was sent from GitHub by validating SHA256.
+
+        Raise and return 403 if not authorized.
+
+        Args:
+            body: original request body to verify (request.body())
+            secret_token: GitHub app webhook token (WEBHOOK_SECRET)
+            signature_header: header received from GitHub (x-hub-signature-256)
+        """
+
+    def get_matching_triggers_for_event(
+        self, incoming_event: Dict[str, Any], event_source: EventSourceResponse
+    ) -> List[UUID]:
+        """Process the incoming event and forward with trigger_ids to event hub.
+
+        Args:
+            incoming_event: The inbound event.
+            event_source: The Event Source
+        """
+        event = self._interpret_event(incoming_event)
+
+        # get all triggers that have matching event filters configured
+        trigger_ids = self._get_matching_triggers(
+            event_source=event_source, event=event
         )
-        print("Implementation not done:", secret_key_value)
-        # event_source_request.secret_id = ... # Here we add the secret_id to the event_source
-        created_event_source = self.zen_store.create_event_source(
-            event_source=event_source
+
+        logger.info(
+            "An event came in, the following triggers will be" " used: %s ",
+            trigger_ids,
         )
-        # created_event_source.secret_value = ...
-        return created_event_source
+        return trigger_ids
 
 
 # -------------------- Flavors ----------------------------------

@@ -150,11 +150,10 @@ class TriggerSchema(NamedSchema, table=True):
         """
         body = TriggerResponseBody(
             user=self.user.to_model() if self.user else None,
-            description=self.description,
             created=self.created,
             updated=self.updated,
             action_plan_flavor=self.action_plan_flavor,
-            event_flavor=self.event_source.flavor,
+            event_source_flavor=self.event_source.flavor,
         )
         metadata = None
         if hydrate:
@@ -166,6 +165,8 @@ class TriggerSchema(NamedSchema, table=True):
                 action_plan=json.loads(
                     base64.b64decode(self.action_plan).decode()
                 ),
+                description=self.description,
+                event_source=self.event_source.to_model(),
             )
 
         return TriggerResponse(

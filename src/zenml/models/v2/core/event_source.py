@@ -88,6 +88,18 @@ class EventSourceUpdate(EventSourceRequest):
 class EventSourceResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for event sources."""
 
+    flavor: str = Field(
+        title="The flavor of event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    plugin_type: PluginType = Field(
+        title="The plugin type of the event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    plugin_subtype: PluginSubType = Field(
+        title="The plugin subtype of the event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     created: datetime = Field(
         title="The timestamp when this event filter was created."
     )
@@ -99,6 +111,11 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
 class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for event sources."""
 
+    description: str = Field(
+        default="",
+        title="The description of the event source.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     configuration: Dict[str, Any] = Field(
         title="The event source configuration.",
     )
@@ -115,23 +132,80 @@ class EventSourceResponse(
         title="The name of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    flavor: str = Field(
-        title="The flavor of event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    plugin_type: PluginType = Field(
-        title="The plugin type of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    plugin_subtype: PluginSubType = Field(
-        title="The plugin subtype of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    description: str = Field(
-        default="",
-        title="The description of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
+
+    def get_hydrated_version(self) -> "EventSourceResponse":
+        """Get the hydrated version of this event source.
+
+        Returns:
+            An instance of the same entity with the metadata field attached.
+        """
+        from zenml.client import Client
+
+        return Client().zen_store.get_event_source(self.id)
+
+    # Body and metadata properties
+    @property
+    def flavor(self) -> str:
+        """The `flavor` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().flavor
+
+    @property
+    def plugin_type(self) -> PluginType:
+        """The `plugin_type` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().plugin_type
+
+    @property
+    def plugin_subtype(self) -> PluginSubType:
+        """The `plugin_subtype` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().plugin_subtype
+
+    @property
+    def created(self) -> datetime:
+        """The`created` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().created
+
+    @property
+    def updated(self) -> datetime:
+        """The `updated` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().updated
+
+    @property
+    def description(self) -> str:
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().description
+
+    @property
+    def configuration(self) -> Dict[str, Any]:
+        """The `configuration` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().configuration
 
 
 # ------------------ Filter Model ------------------

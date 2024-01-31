@@ -14,7 +14,8 @@
 """Base class for all the Event Hub."""
 from typing import Any, Dict
 
-from zenml.action_plans.base_action_plan_plugin import BaseActionPlanPlugin
+from zenml.action_plans.base_action_plan import BaseActionPlan
+from zenml import EventSourceResponse
 from zenml.enums import PluginSubType, PluginType
 from zenml.event_sources.base_event_source_plugin import BaseEventSourcePlugin
 from zenml.models import TriggerExecutionRequest
@@ -24,10 +25,11 @@ from zenml.plugins.plugin_flavor_registry import logger, plugin_flavor_registry
 class EventHub:
     """Handler for all events."""
 
+    @staticmethod
     def process_event(
-        self,
         incoming_event: Dict[str, Any],
         flavor: str,
+        event_source: EventSourceResponse,
         event_source_subtype: PluginSubType,
     ):
         """Process an incoming event and execute all configured actions.
@@ -39,8 +41,8 @@ class EventHub:
         Args:
             incoming_event: Generic event
             flavor: Flavor of Event
+            event_source: The Event Source
             event_source_subtype: Subtype of Event
-
         """
         try:
             plugin_cls = plugin_flavor_registry.get_plugin_implementation(
@@ -48,8 +50,6 @@ class EventHub:
                 _type=PluginType.EVENT_SOURCE,
                 subtype=event_source_subtype,
             )
-            # # Store event for future reference
-        # Get all actions to be executed
         except KeyError as e:
             # TODO: raise the appropriate exception
             logger.exception(e)
@@ -57,7 +57,7 @@ class EventHub:
         else:
             assert isinstance(plugin_cls, BaseEventSourcePlugin)
             triggers = plugin_cls.get_matching_triggers_for_event(
-                incoming_event
+                incoming_event=incoming_event, event_source=event_source
             )
 
         for trigger_id in triggers:
@@ -78,7 +78,7 @@ class EventHub:
                     subtype=PluginSubType.PIPELINE_RUN,
                 )
             )
-            assert issubclass(action_plan_plugin_cls, BaseActionPlanPlugin)
+            assert issubclass(action_plan_plugin_cls, BaseActionPlan)
             action_plan_plugin_cls().run(
                 config=action_plan_config, trigger_execution=trigger_execution
             )

@@ -36,7 +36,7 @@ class ActionPlanConfig(BasePluginConfig):
 # -------------------- Plugin -----------------------------------
 
 
-class BaseActionPlanPlugin(BasePlugin, ABC):
+class BaseActionPlan(BasePlugin, ABC):
     """Implementation for an EventPlugin."""
 
     @property
