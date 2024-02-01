@@ -332,7 +332,9 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
                 # if endpoint is provisioned externally
                 # we do not have saved artifact for it.
                 except KeyError:
-                    pass
+                    logger.error(
+                        f"No key found for endpoint {endpoint.name} provisioned externally"
+                    )
 
         return services
 
