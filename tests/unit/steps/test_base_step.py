@@ -325,7 +325,7 @@ def test_step_uses_config_class_default_values_if_no_config_is_passed():
 
     # don't pass the config when initializing the step
     step_instance = some_step()
-    step_instance._finalize_configuration({}, {}, {})
+    step_instance._finalize_configuration({}, {}, {}, {})
 
     assert (
         step_instance.configuration.parameters["params"]["some_parameter"] == 1
