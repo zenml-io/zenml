@@ -117,30 +117,42 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
 
     def provision(self) -> None:
         """Provision or update remote Huggingface deployment instance."""
-        _ = create_inference_endpoint(
-            name=self.config.endpoint_name,
-            repository=self.config.repository,
-            framework=self.config.framework,
-            accelerator=self.config.accelerator,
-            instance_size=self.config.instance_size,
-            instance_type=self.config.instance_type,
-            region=self.config.region,
-            vendor=self.config.vendor,
-            account_id=self.config.account_id,
-            min_replica=self.config.min_replica,
-            max_replica=self.config.max_replica,
-            revision=self.config.revision,
-            task=self.config.task,
-            custom_image=self.config.custom_image,
-            type=self.config.endpoint_type,
-            namespace=self.config.namespace,
-            token=self.config.token,
-        ).wait(timeout=POLLING_TIMEOUT)
+        try:
+            # Attempt to create and wait for the inference endpoint
+            _ = create_inference_endpoint(
+                name=self.config.endpoint_name,
+                repository=self.config.repository,
+                framework=self.config.framework,
+                accelerator=self.config.accelerator,
+                instance_size=self.config.instance_size,
+                instance_type=self.config.instance_type,
+                region=self.config.region,
+                vendor=self.config.vendor,
+                account_id=self.config.account_id,
+                min_replica=self.config.min_replica,
+                max_replica=self.config.max_replica,
+                revision=self.config.revision,
+                task=self.config.task,
+                custom_image=self.config.custom_image,
+                type=self.config.endpoint_type,
+                namespace=self.config.namespace,
+                token=self.config.token,
+            ).wait(timeout=POLLING_TIMEOUT)
 
-        if self.hf_endpoint.url is not None:
-            logger.info("Huggingface inference endpoint successfully deployed.")
-        else:
-            logger.info("Failed to start huggingface inference endpoint service...")
+            # Check if the endpoint URL is available after provisioning
+            if self.hf_endpoint.url is not None:
+                logger.info("Huggingface inference endpoint successfully deployed.")
+            else:
+                logger.error(
+                    "Failed to start huggingface inference endpoint service: No URL available."
+                )
+
+        except Exception as e:
+            self.status.update(new_state=ServiceState.ERROR, error=str(e))
+            # Catch-all for any other unexpected errors
+            raise Exception(
+                f"An unexpected error occurred while provisioning the Huggingface inference endpoint: {e}"
+            )
 
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the the current operational state of the HuggingFace deployment.

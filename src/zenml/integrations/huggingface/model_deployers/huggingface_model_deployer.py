@@ -40,6 +40,9 @@ from zenml.services import BaseService, ServiceConfig, ServiceRegistry
 
 logger = get_logger(__name__)
 
+ZENM_ENDPOINT_PREFIX: str = "zenml-"
+UUID_SLICE_LENGTH: int = 8
+
 
 class HuggingFaceModelDeployer(BaseModelDeployer):
     """Huggingface endpoint model deployer."""
@@ -90,11 +93,10 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         Returns:
             Modified endpoint name with added prefix and suffix
         """
-        # Add zenml prefix if it does not start with "zenml-"
-        if not endpoint_name.startswith("zenml-"):
-            endpoint_name = "zenml-" + endpoint_name
+        # Add zenml prefix if it does not start with ZENM_ENDPOINT_PREFIX
+        if not endpoint_name.startswith(ZENM_ENDPOINT_PREFIX):
+            endpoint_name = ZENM_ENDPOINT_PREFIX + endpoint_name
 
-        # Add first 8 characters of UUID to endpoint name
         endpoint_name += artifact_version
         return endpoint_name
 
@@ -118,7 +120,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         # Use first 8 characters of UUID as artifact version
         # Add same 8 characters as suffix to endpoint name
         service_metadata = service.dict()
-        artifact_version = str(service_metadata["uuid"])[:8]
+        artifact_version = str(service_metadata["uuid"])[:UUID_SLICE_LENGTH]
 
         service.config.endpoint_name = self.modify_endpoint_name(
             service.config.endpoint_name, artifact_version
@@ -129,16 +131,17 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             " If there's an active pipeline and/or model this artifact will be associated with it."
         )
 
-        service_metadata = service.dict()
-
         save_artifact(
             service,
             HUGGINGFACE_SERVICE_ARTIFACT,
             version=artifact_version,
             is_deployment_artifact=True,
         )
+
+        service_metadata = service.dict()
         # UUID object is not json serializable
         service_metadata["uuid"] = str(service_metadata["uuid"])
+
         log_artifact_metadata(
             artifact_name=HUGGINGFACE_SERVICE_ARTIFACT,
             artifact_version=artifact_version,
@@ -224,10 +227,8 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
                 f"Updating an existing Huggingface deployment service: {service}"
             )
 
-            # Default endpoint name is set to ""
-            # Using same name as endpoint name results in Bad name
             service_metadata = service.dict()
-            artifact_version = str(service_metadata["uuid"])[:8]
+            artifact_version = str(service_metadata["uuid"])[:UUID_SLICE_LENGTH]
             config.endpoint_name = self.modify_endpoint_name(
                 config.endpoint_name, artifact_version
             )
