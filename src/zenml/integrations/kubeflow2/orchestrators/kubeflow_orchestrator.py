@@ -88,7 +88,9 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
     support initialization from an existing Kubernetes client.
     """
 
-    def __init__(self, client: k8s_client.ApiClient, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self, client: k8s_client.ApiClient, *args: Any, **kwargs: Any
+    ) -> None:
         """Initializes the KFP client from a Kubernetes client.
 
         Args:
@@ -239,7 +241,10 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
             connector = self.get_connector()
 
             if not connector:
-                if not kubernetes_context and not self.config.kubeflow_hostname:
+                if (
+                    not kubernetes_context
+                    and not self.config.kubeflow_hostname
+                ):
                     return False, (
                         f"{msg}the Kubeflow orchestrator is incompletely "
                         "configured. For a multi-tenant Kubeflow deployment, "
@@ -267,7 +272,10 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
                 f"--skip_local_validations=True'\n"
             )
 
-            if not self.config.skip_local_validations and not self.config.is_local:
+            if (
+                not self.config.skip_local_validations
+                and not self.config.is_local
+            ):
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
@@ -293,7 +301,8 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
                         f"orchestrator, otherwise you may run into pipeline "
                         f"execution problems. You should use a flavor of "
                         f"{stack_comp.type.value} other than "
-                        f"'{stack_comp.flavor}'.\n" + silence_local_validations_msg
+                        f"'{stack_comp.flavor}'.\n"
+                        + silence_local_validations_msg
                     )
 
                 # if the orchestrator is remote, the container registry must
@@ -392,9 +401,11 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
                 # Run KFP containers in the context of the local UID/GID
                 # to ensure that the local stores can be shared
                 # with the local pipeline runs.
-                container_op.container.security_context = k8s_client.V1SecurityContext(
-                    run_as_user=os.getuid(),
-                    run_as_group=os.getgid(),
+                container_op.container.security_context = (
+                    k8s_client.V1SecurityContext(
+                        run_as_user=os.getuid(),
+                        run_as_group=os.getgid(),
+                    )
                 )
                 logger.debug(
                     "Setting security context UID and GID to local user/group "
@@ -421,7 +432,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
 
         # Disable caching in KFP v1 only works like this, replace by the second
         # line in the future
-        container_op.execution_options.caching_strategy.max_cache_staleness = "P0D"
+        container_op.execution_options.caching_strategy.max_cache_staleness = (
+            "P0D"
+        )
         # container_op.set_caching_options(enable_caching=False)
 
     @staticmethod
@@ -437,10 +450,14 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
                 container.
         """
         if resource_settings.cpu_count is not None:
-            container_op = container_op.set_cpu_limit(str(resource_settings.cpu_count))
+            container_op = container_op.set_cpu_limit(
+                str(resource_settings.cpu_count)
+            )
 
         if resource_settings.gpu_count is not None:
-            container_op = container_op.set_gpu_limit(resource_settings.gpu_count)
+            container_op = container_op.set_gpu_limit(
+                resource_settings.gpu_count
+            )
 
         if resource_settings.memory is not None:
             memory_limit = resource_settings.memory[:-1]
@@ -517,7 +534,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.step_configurations.items():
-                image = self.get_image(deployment=deployment, step_name=step_name)
+                image = self.get_image(
+                    deployment=deployment, step_name=step_name
+                )
 
                 # The command will be needed to eventually call the python step
                 # within the docker container
@@ -525,8 +544,10 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
 
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
-                arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, deployment_id=deployment.id
+                arguments = (
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name, deployment_id=deployment.id
+                    )
                 )
 
                 # Create a container_op - the kubeflow equivalent of a step. It
@@ -543,7 +564,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
                     arguments=arguments,
                 )
 
-                settings = cast(Kubeflow2OrchestratorSettings, self.get_settings(step))
+                settings = cast(
+                    Kubeflow2OrchestratorSettings, self.get_settings(step)
+                )
                 self._configure_container_op(
                     container_op=container_op,
                     settings=settings,
@@ -590,7 +613,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
             pipeline_name=deployment.pipeline_configuration.name,
             package_path=pipeline_file_path,
         )
-        logger.info("Writing Kubeflow workflow definition to `%s`.", pipeline_file_path)
+        logger.info(
+            "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path
+        )
 
         # using the kfp client uploads the pipeline to kubeflow pipelines and
         # runs it there
@@ -617,7 +642,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
             RuntimeError: If Kubeflow API returns an error.
         """
         pipeline_name = deployment.pipeline_configuration.name
-        settings = cast(Kubeflow2OrchestratorSettings, self.get_settings(deployment))
+        settings = cast(
+            Kubeflow2OrchestratorSettings, self.get_settings(deployment)
+        )
         user_namespace = settings.user_namespace
 
         kubernetes_context = self.config.kubernetes_context
@@ -682,7 +709,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
 
                 logger.info("Started recurring run with ID '%s'.", result.id)
             else:
-                logger.info("No schedule detected. Creating a one-off pipeline run..")
+                logger.info(
+                    "No schedule detected. Creating a one-off pipeline run.."
+                )
                 try:
                     result = client.create_run_from_pipeline_package(
                         pipeline_file_path,
@@ -698,7 +727,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
                         "configuration!"
                     )
 
-                logger.info("Started one-off pipeline run with ID '%s'.", result.run_id)
+                logger.info(
+                    "Started one-off pipeline run with ID '%s'.", result.run_id
+                )
 
                 if settings.synchronous:
                     client.wait_for_run_completion(
@@ -738,7 +769,8 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
             return os.environ[ENV_KFP_RUN_ID]
         except KeyError:
             raise RuntimeError(
-                "Unable to read run id from environment variable " f"{ENV_KFP_RUN_ID}."
+                "Unable to read run id from environment variable "
+                f"{ENV_KFP_RUN_ID}."
             )
 
     def _get_kfp_client(
@@ -842,7 +874,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
             requests.exceptions.Timeout,
             requests.exceptions.RequestException,
         ) as e:
-            raise RuntimeError(f"Error while trying to fetch kubeflow cookie: {e}")
+            raise RuntimeError(
+                f"Error while trying to fetch kubeflow cookie: {e}"
+            )
 
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -852,7 +886,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
             response = session.post(response.url, headers=headers, data=data)
             response.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            raise RuntimeError(f"Error while trying to fetch kubeflow cookie: {errh}")
+            raise RuntimeError(
+                f"Error while trying to fetch kubeflow cookie: {errh}"
+            )
         cookie_dict = session.cookies.get_dict()  # type: ignore[no-untyped-call]
 
         if "authservice_session" not in cookie_dict:
@@ -862,7 +898,9 @@ class Kubeflow2Orchestrator(ContainerizedOrchestrator):
 
         return "authservice_session=" + str(cookie_dict["authservice_session"])
 
-    def get_pipeline_run_metadata(self, run_id: UUID) -> Dict[str, "MetadataType"]:
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:

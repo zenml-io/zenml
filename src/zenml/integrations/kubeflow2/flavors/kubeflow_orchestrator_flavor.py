@@ -27,7 +27,9 @@ from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from zenml.integrations.kubeflow2.orchestrators import Kubeflow2Orchestrator
+    from zenml.integrations.kubeflow2.orchestrators import (
+        Kubeflow2Orchestrator,
+    )
 
 logger = get_logger(__name__)
 
