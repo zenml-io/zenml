@@ -1,14 +1,43 @@
 ---
 name: Slow CI
 on:
+  push:
+    branches: [main]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
   pull_request:
-    types: [ready_for_review]
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  run-slow-ci-label-is-set:
+    runs-on: ubuntu-latest
+    steps:
+      # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
+      # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
+      # With dynamic approach dev can set label and rerun this flow to make it running.
+      - name: Get PR labels
+        id: pr-labels
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const labelNames = labels.map(label => label.name);
+            core.setOutput('all-labels', labelNames.join(','));
+      - name: Slow CI label not set
+        if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
+        run: |
+          echo "Please add the 'run-slow-ci' label to this PR before merging."
+          exit 1
   docstring-check:
+    needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
@@ -21,6 +50,7 @@ jobs:
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
+    needs: run-slow-ci-label-is-set
     runs-on: ubuntu-dind-runners
     steps:
       - uses: actions/checkout@v4.1.1
@@ -31,6 +61,7 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations-mysql.sh sqlite
   small-checks:
+    needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
@@ -66,15 +97,8 @@ jobs:
         run: |
           pip install alembic
           bash scripts/check-alembic-branches.sh
-  update-templates-to-examples:
-    # this doesn't work on forked repositories (i.e. outside contributors)
-    # so we disable template updates for those PRs / branches
-    uses: ./.github/workflows/update-templates-to-examples.yml
-    with:
-      python-version: '3.8'
-      os: ubuntu-latest
-    secrets: inherit
   custom-ubuntu-unit-test:
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
@@ -86,6 +110,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-unit-test:
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [windows-latest]
@@ -97,6 +122,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   macos-unit-test:
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [macos-latest]
@@ -108,6 +134,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-integration-test:
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [windows-latest]
@@ -119,9 +146,9 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      is-slow-ci: true
     secrets: inherit
   macos-integration-test:
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [macos-latest]
@@ -133,9 +160,9 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      is-slow-ci: true
     secrets: inherit
   custom-ubuntu-integration-test:
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
@@ -164,5 +191,4 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      is-slow-ci: true
     secrets: inherit

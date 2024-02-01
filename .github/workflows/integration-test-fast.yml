@@ -11,11 +11,6 @@ on:
         description: Python version
         type: string
         required: true
-      is-slow-ci:
-        description: Whether we're using the slow CI
-        type: boolean
-        required: false
-        default: false
       test_environment:
         description: The test environment
         type: string
@@ -48,11 +43,6 @@ on:
         options: ['3.8', '3.9', '3.10', '3.11']
         required: false
         default: '3.8'
-      is-slow-ci:
-        description: Whether we're using the slow CI
-        type: boolean
-        required: false
-        default: false
       test_environment:
         description: The test environment
         type: choice
@@ -123,12 +113,12 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           build-mount-path: /var/lib/docker/
-        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - name: Reload Docker
         run: sudo systemctl restart docker
-        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - uses: actions/checkout@v4.1.1
@@ -162,7 +152,7 @@ jobs:
           pip install pyyaml==5.3.1
           pip install docker-compose
       - name: Install Linux System Dependencies
-        if: inputs.os=='ubuntu-latest'
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
         run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
@@ -189,7 +179,7 @@ jobs:
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: inputs.os=='ubuntu-latest'
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
       - name: Install kubectl on MacOS
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
@@ -226,8 +216,7 @@ jobs:
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Sharded Integration Tests (Ubuntu) - Fast CI
         # Ubuntu integration tests run as 6 shards
-        if: runner.os != 'macOS' && runner.os != 'Windows' && inputs.is-slow-ci ==
-          'false'
+        if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
       - name: Setup tmate session after tests
