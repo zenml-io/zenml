@@ -120,7 +120,8 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         # Use first 8 characters of UUID as artifact version
         # Add same 8 characters as suffix to endpoint name
         service_metadata = service.dict()
-        artifact_version = str(service_metadata["uuid"])[:UUID_SLICE_LENGTH]
+        service_metadata["uuid"] = str(service_metadata["uuid"])
+        artifact_version = service_metadata["uuid"][:UUID_SLICE_LENGTH]
 
         service.config.endpoint_name = self.modify_endpoint_name(
             service.config.endpoint_name, artifact_version
@@ -138,8 +139,6 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             is_deployment_artifact=True,
         )
 
-        # UUID object is not json serializable
-        service_metadata["uuid"] = str(service_metadata["uuid"])
         log_artifact_metadata(
             artifact_name=HUGGINGFACE_SERVICE_ARTIFACT,
             artifact_version=artifact_version,
