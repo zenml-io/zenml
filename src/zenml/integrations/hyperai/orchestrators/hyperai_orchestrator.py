@@ -185,6 +185,23 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 ],
             }
 
+            # Depending on GPU setting, add GPU support to service definition
+            if self.config.gpu_enabled_in_container:
+                compose_definition["services"][container_name]["deploy"] = {
+                    "resources": {
+                        "reservations": {
+                            "devices": [
+                                {
+                                    "driver": "nvidia",
+                                    "capabilities": [
+                                        "gpu"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+
             # Depending on whether it is a scheduled or a realtime pipeline, add
             # potential .env file to service definition for deployment ID override.
             if deployment.schedule:

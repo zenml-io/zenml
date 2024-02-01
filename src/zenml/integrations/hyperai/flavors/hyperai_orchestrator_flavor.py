@@ -58,11 +58,15 @@ class HyperAIOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyda
             automatically clean up old pipeline files that are on the HyperAI
             instance. Pipeline files will be cleaned up if they are 7 days old or
             older. Defaults to `True`.
+        gpu_enabled_in_container: If True, the orchestrator will enable GPU
+            support in the Docker container that runs on the HyperAI instance.
+            Defaults to `True`.
 
     """
 
     container_registry_autologin: bool = False
     automatic_cleanup_pipeline_files: bool = True
+    gpu_enabled_in_container: bool = True
 
     @property
     def is_remote(self) -> bool:
