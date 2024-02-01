@@ -121,14 +121,16 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           build-mount-path: /var/lib/docker/
-        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners') &&
+          (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment,
+          'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment,
+          'kubernetes'))
       - name: Reload Docker
         run: sudo systemctl restart docker
-        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners') &&
+          (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment,
+          'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment,
+          'kubernetes'))
       - uses: actions/checkout@v4.1.1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -160,7 +162,7 @@ jobs:
           pip install pyyaml==5.3.1
           pip install docker-compose
       - name: Install Linux System Dependencies
-        if: inputs.os=='ubuntu-latest'
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
         run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
@@ -187,7 +189,7 @@ jobs:
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: inputs.os=='ubuntu-latest'
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
       - name: Install kubectl on MacOS
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
