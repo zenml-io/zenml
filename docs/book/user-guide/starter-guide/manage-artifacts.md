@@ -121,6 +121,66 @@ The Cloud dashboard visualizes version history for your review.
 {% endtab %}
 {% endtabs %}
 
+### Add metadata and tags to artifacts
+
+If you would like to extend your Artifacts with extra metadata or tags you can do it following patterns demonstrated below:
+
+```python
+from zenml import step, get_step_context, ArtifactConfig
+from typing_extensions import Annotated
+
+
+# below we annotate output with `ArtifactConfig` giving it a name,
+# run_metadata and tags. As a result, created artifact `artifact_name`
+# will get configured metadata and tags
+@step
+def annotation_approach() -> (
+    Annotated[
+        str,
+        ArtifactConfig(
+            name="artifact_name",
+            run_metadata={"metadata_key": "metadata_value"},
+            tags=["tag_name"],
+        ),
+    ]
+):
+    return "string"
+
+
+# below we annotate output using functional approach with
+# run_metadata and tags. As a result, created artifact `artifact_name`
+# will get configured metadata and tags
+@step
+def annotation_approach() -> Annotated[str, "artifact_name"]:
+    step_context = get_step_context()
+    step_context.add_output_metadata(
+        output_name="artifact_name", metadata={"metadata_key": "metadata_value"}
+    )
+    step_context.add_output_tags(output_name="artifact_name", tags=["tag_name"])
+    return "string"
+
+
+# below we combine both approaches, so artifact will get
+# metadata and tags from both sources
+@step
+def annotation_approach() -> (
+    Annotated[
+        str,
+        ArtifactConfig(
+            name="artifact_name",
+            run_metadata={"metadata_key": "metadata_value"},
+            tags=["tag_name"],
+        ),
+    ]
+):
+    step_context = get_step_context()
+    step_context.add_output_metadata(
+        output_name="artifact_name", metadata={"metadata_key2": "metadata_value2"}
+    )
+    step_context.add_output_tags(output_name="artifact_name", tags=["tag_name2"])
+    return "string"
+```
+
 ### Consuming external artifacts within a pipeline
 
 While most pipelines start with a step that produces an artifact, it is often the case to want to consume artifacts external from the pipeline. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitrary data type.
