@@ -43,6 +43,7 @@
     * [Visualize artifacts](user-guide/advanced-guide/data-management/visualize-artifacts.md)
     * [Organize data with tags](user-guide/advanced-guide/data-management/tagging.md)
     * [Model management](user-guide/advanced-guide/data-management/model-management.md)
+    * [Late materialization in pipelines](user-guide/advanced-guide/data-management/late-materialization.md)
   * [Managing infrastructure](user-guide/advanced-guide/infrastructure-management/infrastructure-management.md)
     * [Understanding environments](user-guide/advanced-guide/infrastructure-management/understanding-environments.md)
     * [Containerize your pipeline](user-guide/advanced-guide/infrastructure-management/containerize-your-pipeline.md)
