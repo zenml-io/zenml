@@ -274,12 +274,15 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             for line in stdout.readlines():
                 logger.info(line)
 
+        # Get username from connector
+        username = connector.config.username
+
         # Set up pipeline-runs directory if it doesn't exist
-        nonscheduled_directory_name = "/home/zenml/pipeline-runs"
+        nonscheduled_directory_name = f"/home/{username}/pipeline-runs"
         directory_name = (
             nonscheduled_directory_name
             if not deployment.schedule
-            else "/home/zenml/scheduled-pipeline-runs"
+            else f"/home/{username}/scheduled-pipeline-runs"
         )
         stdin, stdout, stderr = paramiko_client.exec_command(
             f"mkdir -p {directory_name}"
