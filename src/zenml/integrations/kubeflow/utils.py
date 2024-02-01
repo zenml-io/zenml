@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 def apply_pod_settings(
-    pipeline_task: "ContainerOp",
+    container_op: "ContainerOp",
     settings: KubernetesPodSettings,
 ) -> None:
     """Applies Kubernetes Pod settings to a KFP container.
@@ -50,7 +50,7 @@ def apply_pod_settings(
         )
 
     for key, value in settings.node_selectors.items():
-        pipeline_task.add_node_selector_constraint(label_name=key, value=value)
+        container_op.add_node_selector_constraint(label_name=key, value=value)
 
     if settings.affinity:
         affinity: (
@@ -58,7 +58,7 @@ def apply_pod_settings(
         ) = serialization_utils.deserialize_kubernetes_model(
             settings.affinity, "V1Affinity"
         )
-        pipeline_task.add_affinity(affinity)
+        container_op.add_affinity(affinity)
 
     for toleration_dict in settings.tolerations:
         toleration: (
@@ -66,7 +66,7 @@ def apply_pod_settings(
         ) = serialization_utils.deserialize_kubernetes_model(
             toleration_dict, "V1Toleration"
         )
-        pipeline_task.add_toleration(toleration)
+        container_op.add_toleration(toleration)
 
     if settings.volumes:
         for v in settings.volumes:
@@ -86,11 +86,11 @@ def apply_pod_settings(
 
     resource_requests = settings.resources.get("requests") or {}
     for name, value in resource_requests.items():
-        pipeline_task.add_resource_request(name, value)
+        container_op.add_resource_request(name, value)
 
     resource_limits = settings.resources.get("limits") or {}
     for name, value in resource_limits.items():
-        pipeline_task.add_resource_limit(name, value)
+        container_op.add_resource_limit(name, value)
 
     for name, value in settings.annotations.items():
-        pipeline_task.add_pod_annotation(name, value)
+        container_op.add_pod_annotation(name, value)
