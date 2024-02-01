@@ -6692,8 +6692,15 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
             }:
                 run_update.end_time = datetime.utcnow()
-                duration_time = run_update.end_time - pipeline_run.start_time
-                duration_seconds = duration_time.total_seconds()
+                if pipeline_run.start_time and isinstance(pipeline_run.start_time, datetime):
+                    duration_time = run_update.end_time - pipeline_run.start_time
+                    duration_seconds = duration_time.total_seconds()
+                    start_time_str = pipeline_run.start_time.strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    )
+                else:
+                    start_time_str = None
+                    duration_seconds = None
                 with track_handler(
                     AnalyticsEvent.RUN_PIPELINE_ENDED
                 ) as analytics_handler:
@@ -6701,9 +6708,7 @@ class SqlZenStore(BaseZenStore):
                         "pipeline_run_id": pipeline_run_id,
                         "status": new_status,
                         "num_steps": num_steps,
-                        "start_time": pipeline_run.start_time.strftime(
-                            "%Y-%m-%dT%H:%M:%S.%fZ"
-                        ),
+                        "start_time": start_time_str,
                         "end_time": run_update.end_time.strftime(
                             "%Y-%m-%dT%H:%M:%S.%fZ"
                         ),
