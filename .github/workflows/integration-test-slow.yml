@@ -126,7 +126,7 @@ jobs:
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - name: Reload Docker
         run: sudo systemctl restart docker
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners') &&
+        if: inputs.os == 'ubuntu-latest' &&
           (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment,
           'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment,
           'kubernetes'))
