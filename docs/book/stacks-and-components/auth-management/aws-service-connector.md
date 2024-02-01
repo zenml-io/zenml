@@ -161,13 +161,20 @@ This is the quickest and easiest way to authenticate to AWS services. However, t
 * when used with the default local ZenML deployment or a local ZenML server, the credentials are the same as those used by the AWS CLI or extracted from local environment variables
 * when connected to a ZenML server, this method only works if the ZenML server is deployed in AWS and will use the IAM role attached to the AWS resource where the ZenML server is running (e.g. an EKS cluster). The IAM role permissions may need to be adjusted to allow listing and accessing/describing the AWS resources that the connector is configured to access.
 
-Note that the discovered credentials inherit the full set of permissions of the local AWS client configuration, environment variables, or remote AWS IAM role. Depending on the extent of those permissions, this authentication method might not be recommended for production use, as it can lead to accidental privilege escalation. Instead, it is recommended to use the [AWS IAM Role](aws-service-connector.md#aws-iam-role), [AWS Session Token](aws-service-connector.md#aws-session-token), or [AWS Federation Token](aws-service-connector.md#aws-federation-token) authentication methods to limit the validity and/or permissions of the credentials being issued to connector clients.
+An IAM role may optionally be specified to be assumed by the connector on top of the implicit credentials. This is only possible when the implicit credentials have permissions to assume the target IAM role. Configuring an IAM role has all the advantages of the [AWS IAM Role](#aws-iam-role) authentication method plus the added benefit of not requiring any explicit credentials to be configured and stored:
+
+* the connector will [generate temporary STS tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_assumerole).
+* allows implementing [a two layer authentication scheme](best-security-practices.md#impersonating-accounts-and-assuming-roles) that keeps the set of permissions associated with implicit credentials down to the bare minimum and grants permissions to the privilege-bearing IAM role instead.
+* one or more optional [IAM session policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access\_policies.html#policies\_session) may also be configured to further restrict the permissions of the generated STS tokens. If not specified, IAM session policies are automatically configured for the generated STS tokens [to restrict them to the minimum set of permissions required to access the target resource](best-security-practices.md#generating-temporary-and-down-scoped-credentials). Refer to the documentation for each supported Resource Type for the complete list of AWS permissions automatically granted to the generated STS tokens.
+* the default expiration period for generated STS tokens is 1 hour with a minimum of 15 minutes up to the maximum session duration setting configured for the IAM role (default is 1 hour). If you need longer-lived tokens, you can configure the IAM role to use a higher maximum expiration value (up to 12 hours) or use the AWS Federation Token or AWS Session Token authentication methods.
+
+Note that the discovered credentials inherit the full set of permissions of the local AWS client configuration, environment variables, or remote AWS IAM role. Depending on the extent of those permissions, this authentication instead method might not be recommended for production use, as it can lead to accidental privilege escalation. It is recommended to also configure an IAM role when using the implicit authentication method, or to use the [AWS IAM Role](aws-service-connector.md#aws-iam-role), [AWS Session Token](aws-service-connector.md#aws-session-token), or [AWS Federation Token](aws-service-connector.md#aws-federation-token) authentication methods instead to limit the validity and/or permissions of the credentials being issued to connector clients.
 
 {% hint style="info" %}
 If you need to access an EKS Kubernetes cluster with this authentication method, please be advised that the EKS cluster's `aws-auth` ConfigMap may need to be manually configured to allow authentication with the implicit IAM user or role picked up by the Service Connector. For more information, [see this documentation](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html).
 {% endhint %}
 
-An AWS region is required and the connector may only be used to access AWS resources in the specified region. When used with a remote IAM role, the region has to be the same as the region where the IAM role is configured.
+An AWS region is required and the connector may only be used to access AWS resources in the specified region.
 
 <details>
 
@@ -619,6 +626,8 @@ zenml service-connector list --name aws-sts-token
 ### AWS IAM Role
 
 Generates [temporary STS credentials](best-security-practices.md#impersonating-accounts-and-assuming-roles) by assuming an AWS IAM role.
+
+This authentication method still requires credentials to be explicitly configured. If your ZenML server is running in AWS and you're looking for an alternative that uses implicit credentials while at the same time benefits from all the security advantages of assuming an IAM role, you should [use the implicit authentication method with a configured IAM role](#implicit-authentication) instead.
 
 The connector needs to be configured with the IAM role to be assumed accompanied by an AWS secret key associated with an IAM user or an STS token associated with another IAM role. The IAM user or IAM role must have permission to assume the target IAM role. The connector will [generate temporary STS tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) upon request by [calling the AssumeRole STS API](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_temp\_request.html#api\_assumerole).
 
