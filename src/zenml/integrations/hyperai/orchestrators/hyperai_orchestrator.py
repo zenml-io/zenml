@@ -191,12 +191,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     "resources": {
                         "reservations": {
                             "devices": [
-                                {
-                                    "driver": "nvidia",
-                                    "capabilities": [
-                                        "gpu"
-                                    ]
-                                }
+                                {"driver": "nvidia", "capabilities": ["gpu"]}
                             ]
                         }
                     }
