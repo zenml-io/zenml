@@ -35,14 +35,14 @@ def _get_kubeflow_orchestrator(
     """Helper function to get a Kubeflow orchestrator."""
 
     from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
-        KubeflowOrchestratorConfig,
+        Kubeflow2OrchestratorConfig,
     )
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
     return KubeflowOrchestrator(
         name="",
         id=uuid4(),
-        config=KubeflowOrchestratorConfig(
+        config=Kubeflow2OrchestratorConfig(
             kubernetes_context=K8S_CONTEXT,
             local=local,
             skip_local_validations=skip_local_validations,
@@ -90,9 +90,7 @@ def test_kubeflow_orchestrator_remote_stack(
             artifact_store=s3_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
-    orchestrator = _get_kubeflow_orchestrator(
-        local=True, skip_local_validations=True
-    )
+    orchestrator = _get_kubeflow_orchestrator(local=True, skip_local_validations=True)
     with does_not_raise():
         Stack(
             id=uuid4(),

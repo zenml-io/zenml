@@ -11,39 +11,39 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Kubeflow integration for ZenML.
+"""Initialization of the Kubeflow 2 integration for ZenML.
 
-The Kubeflow integration sub-module powers an alternative to the local
+The Kubeflow 2 integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Kubeflow orchestrator with
 the CLI tool.
 """
 from typing import List, Type
 
-from zenml.integrations.constants import KUBEFLOW
+from zenml.integrations.constants import KUBEFLOW2
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-KUBEFLOW_ORCHESTRATOR_FLAVOR = "kubeflow"
+KUBEFLOW2_ORCHESTRATOR_FLAVOR = "kubeflow2"
 
 
-class KubeflowIntegration(Integration):
-    """Definition of Kubeflow Integration for ZenML."""
+class Kubeflow2Integration(Integration):
+    """Definition of Kubeflow 2 Integration for ZenML."""
 
-    NAME = KUBEFLOW
+    NAME = KUBEFLOW2
     REQUIREMENTS = ["kfp>=2.0.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Kubeflow integration.
+        """Declare the stack component flavors for the Kubeflow 2 integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.kubeflow.flavors import (
-            KubeflowOrchestratorFlavor,
+        from zenml.integrations.kubeflow2.flavors import (
+            Kubeflow2OrchestratorFlavor,
         )
 
-        return [KubeflowOrchestratorFlavor]
+        return [Kubeflow2OrchestratorFlavor]
 
 
-KubeflowIntegration.check_installation()
+Kubeflow2Integration.check_installation()

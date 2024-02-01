@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Kubeflow orchestrator flavor."""
+"""Kubeflow 2 orchestrator flavor."""
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
@@ -19,7 +19,7 @@ from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
-from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
+from zenml.integrations.kubeflow2 import KUBEFLOW2_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
@@ -27,15 +27,15 @@ from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
+    from zenml.integrations.kubeflow2.orchestrators import Kubeflow2Orchestrator
 
 logger = get_logger(__name__)
 
 DEFAULT_KFP_UI_PORT = 8080
 
 
-class KubeflowOrchestratorSettings(BaseSettings):
-    """Settings for the Kubeflow orchestrator.
+class Kubeflow2OrchestratorSettings(BaseSettings):
+    """Settings for the Kubeflow 2 orchestrator.
 
     Attributes:
         synchronous: If `True`, the client running a pipeline using this
@@ -153,10 +153,10 @@ class KubeflowOrchestratorSettings(BaseSettings):
         return values
 
 
-class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    BaseOrchestratorConfig, KubeflowOrchestratorSettings
+class Kubeflow2OrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseOrchestratorConfig, Kubeflow2OrchestratorSettings
 ):
-    """Configuration for the Kubeflow orchestrator.
+    """Configuration for the Kubeflow 2 orchestrator.
 
     Attributes:
         kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
@@ -238,8 +238,8 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         return self.local
 
 
-class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Kubeflow orchestrator flavor."""
+class Kubeflow2OrchestratorFlavor(BaseOrchestratorFlavor):
+    """Kubeflow 2 orchestrator flavor."""
 
     @property
     def name(self) -> str:
@@ -248,7 +248,7 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The name of the flavor.
         """
-        return KUBEFLOW_ORCHESTRATOR_FLAVOR
+        return KUBEFLOW2_ORCHESTRATOR_FLAVOR
 
     @property
     def service_connector_requirements(
@@ -295,23 +295,23 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubeflow.png"
 
     @property
-    def config_class(self) -> Type[KubeflowOrchestratorConfig]:
+    def config_class(self) -> Type[Kubeflow2OrchestratorConfig]:
         """Returns `KubeflowOrchestratorConfig` config class.
 
         Returns:
                 The config class.
         """
-        return KubeflowOrchestratorConfig
+        return Kubeflow2OrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["KubeflowOrchestrator"]:
+    def implementation_class(self) -> Type["Kubeflow2Orchestrator"]:
         """Implementation class for this flavor.
 
         Returns:
             The implementation class.
         """
-        from zenml.integrations.kubeflow.orchestrators import (
-            KubeflowOrchestrator,
+        from zenml.integrations.kubeflow2.orchestrators import (
+            Kubeflow2Orchestrator,
         )
 
-        return KubeflowOrchestrator
+        return Kubeflow2Orchestrator

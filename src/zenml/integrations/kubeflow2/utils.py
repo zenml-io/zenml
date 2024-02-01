@@ -73,7 +73,7 @@ def apply_pod_settings(
             volume: (
                 V1Volume
             ) = serialization_utils.deserialize_kubernetes_model(v, "V1Volume")
-            container_op.add_volume(volume)
+            pipeline_task.add_volume(volume)
 
     if settings.volume_mounts:
         for v in settings.volume_mounts:
@@ -82,7 +82,7 @@ def apply_pod_settings(
             ) = serialization_utils.deserialize_kubernetes_model(
                 v, "V1VolumeMount"
             )
-            container_op.container.add_volume_mount(volume_mount)
+            pipeline_task.container.add_volume_mount(volume_mount)
 
     resource_requests = settings.resources.get("requests") or {}
     for name, value in resource_requests.items():

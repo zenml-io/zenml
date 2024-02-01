@@ -86,12 +86,8 @@ class KubeflowOrchestratorSettings(BaseSettings):
         """
         has_pod_settings = bool(values.get("pod_settings"))
 
-        node_selectors = cast(
-            Dict[str, str], values.get("node_selectors") or {}
-        )
-        node_affinity = cast(
-            Dict[str, List[str]], values.get("node_affinity") or {}
-        )
+        node_selectors = cast(Dict[str, str], values.get("node_selectors") or {})
+        node_affinity = cast(Dict[str, List[str]], values.get("node_affinity") or {})
 
         has_old_settings = any([node_selectors, node_affinity])
 
@@ -144,7 +140,9 @@ class KubeflowOrchestratorSettings(BaseSettings):
         # Validate username and password for auth cookie logic
         username = values.get("client_username")
         password = values.get("client_password")
-        client_creds_error = "`client_username` and `client_password` both need to be set together."
+        client_creds_error = (
+            "`client_username` and `client_password` both need to be set together."
+        )
         if username and password is None:
             raise ValueError(client_creds_error)
         if password and username is None:
@@ -187,9 +185,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     skip_local_validations: bool = False
 
     @root_validator(pre=True)
-    def _validate_deprecated_attrs(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _validate_deprecated_attrs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Pydantic root_validator for deprecated attributes.
 
         This root validator is used for backwards compatibility purposes. E.g.

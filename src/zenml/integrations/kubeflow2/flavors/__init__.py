@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Kubeflow integration flavors."""
+"""Kubeflow 2 integration flavors."""
 
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
-    KubeflowOrchestratorConfig,
-    KubeflowOrchestratorFlavor,
+    Kubeflow2OrchestratorConfig,
+    Kubeflow2OrchestratorFlavor,
 )
 
 __all__ = [
-    "KubeflowOrchestratorFlavor",
-    "KubeflowOrchestratorConfig",
+    "Kubeflow2OrchestratorFlavor",
+    "Kubeflow2OrchestratorConfig",
 ]

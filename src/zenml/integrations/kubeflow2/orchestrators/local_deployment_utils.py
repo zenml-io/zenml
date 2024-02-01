@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Utils for the local Kubeflow deployment behaviors."""
+"""Utils for the local Kubeflow 2 deployment behaviors."""
 
 import json
 import shutil
@@ -24,7 +24,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import networking_utils, yaml_utils
 
-KFP_VERSION = "1.8.1"
+KFP_VERSION = "2.6.0"
 # Name of the K3S image to use for the local K3D cluster.
 # The version (e.g. v1.23.5) refers to a specific kubernetes release and is
 # fixed as KFP doesn't support the newest releases immediately.
