@@ -90,7 +90,9 @@ def test_kubeflow_orchestrator_remote_stack(
             artifact_store=s3_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
-    orchestrator = _get_kubeflow_orchestrator(local=True, skip_local_validations=True)
+    orchestrator = _get_kubeflow_orchestrator(
+        local=True, skip_local_validations=True
+    )
     with does_not_raise():
         Stack(
             id=uuid4(),

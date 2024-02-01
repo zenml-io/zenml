@@ -38,6 +38,7 @@ from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.kaniko import KanikoIntegration  # noqa
 from zenml.integrations.kserve import KServeIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa
+from zenml.integrations.kubeflow2 import Kubeflow2Integration  # noqa
 from zenml.integrations.kubernetes import KubernetesIntegration  # noqa
 from zenml.integrations.label_studio import LabelStudioIntegration  # noqa
 from zenml.integrations.langchain import LangchainIntegration  # noqa
