@@ -329,7 +329,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
         # Run or schedule Docker Compose file depending on settings
         if not deployment.schedule:
-            logger.info("Starting ZenML pipeline on HyperAI instance.")
+            logger.info("Starting ZenML pipeline on HyperAI instance. Depending on the size of your container image, this may take a while...")
             stdin, stdout, stderr = paramiko_client.exec_command(
                 f"cd {directory_name} && docker compose up -d"
             )
