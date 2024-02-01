@@ -146,7 +146,6 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      is-slow-ci: true
     secrets: inherit
   macos-integration-test:
     needs: run-slow-ci-label-is-set
@@ -161,7 +160,6 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      is-slow-ci: true
     secrets: inherit
   custom-ubuntu-integration-test:
     needs: run-slow-ci-label-is-set
@@ -193,5 +191,4 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      is-slow-ci: true
     secrets: inherit
