@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.alerter.base_alerter import BaseAlerterConfig, BaseAlerterFlavor
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
 from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
@@ -26,18 +27,26 @@ if TYPE_CHECKING:
     from zenml.integrations.slack.alerters import SlackAlerter
 
 
+class SlackAlerterSettings(BaseSettings):
+    """Settings for the Slack alerter.
+
+    Attributes:
+        slack_channel_id: The ID of the Slack channel to use for communication.
+    """
+
+    slack_channel_id: Optional[str] = None
+
+
 class SlackAlerterConfig(BaseAlerterConfig):
     """Slack alerter config.
 
     Attributes:
         slack_token: The Slack token tied to the Slack account to be used.
-        default_slack_channel_id: The ID of the Slack channel to use for
-            communication if no channel ID is provided in the step config.
-
+        default_slack_channel_id: The ID of the default Slack channel to use for communication.
     """
 
     slack_token: str = SecretField()
-    default_slack_channel_id: Optional[str] = None  # TODO: Potential setting
+    default_slack_channel_id: Optional[str] = None
 
     @property
     def is_valid(self) -> bool:
