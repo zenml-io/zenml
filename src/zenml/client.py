@@ -37,6 +37,10 @@ from uuid import UUID, uuid4
 
 from pydantic import SecretStr
 
+from zenml.client_lazy_loader import (
+    client_lazy_loader,
+    evaluate_all_lazy_load_args_in_client_methods,
+)
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
@@ -281,6 +285,7 @@ class ClientMetaClass(ABCMeta):
         return cls._global_client
 
 
+@evaluate_all_lazy_load_args_in_client_methods
 class Client(metaclass=ClientMetaClass):
     """ZenML client class.
 
@@ -2473,6 +2478,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
+        pipeline_name: Optional[str] = None,
         user_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
@@ -2499,6 +2505,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             pipeline_id: The id of the pipeline to filter by.
+            pipeline_name: The name of the pipeline to filter by.
             user_id: The id of the user to filter by.
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
@@ -2529,6 +2536,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             workspace_id=workspace_id,
             pipeline_id=pipeline_id,
+            pipeline_name=pipeline_name,
             schedule_id=schedule_id,
             build_id=build_id,
             deployment_id=deployment_id,
@@ -2713,6 +2721,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
+        tag: Optional[str] = None,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
 
@@ -2728,6 +2737,7 @@ class Client(metaclass=ClientMetaClass):
             has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tag: Filter artifacts by tag.
 
         Returns:
             A list of artifacts.
@@ -2742,6 +2752,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             has_custom_name=has_custom_name,
+            tag=tag,
         )
         return self.zen_store.list_artifacts(
             artifact_filter_model,
@@ -2834,6 +2845,13 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The artifact version.
         """
+        if cll := client_lazy_loader(
+            method_name="get_artifact_version",
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+            hydrate=hydrate,
+        ):
+            return cll  # type: ignore[return-value]
         return self._get_entity_version_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_artifact_version,
             list_method=self.list_artifact_versions,
@@ -2865,6 +2883,7 @@ class Client(metaclass=ClientMetaClass):
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
         hydrate: bool = False,
+        tag: Optional[str] = None,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
 
@@ -2892,6 +2911,7 @@ class Client(metaclass=ClientMetaClass):
             has_custom_name: Filter artifacts with/without custom names.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tag: A tag to filter by.
 
         Returns:
             A list of artifact versions.
@@ -2917,6 +2937,7 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
+            tag=tag,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
@@ -4773,6 +4794,10 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of interest.
         """
+        if cll := client_lazy_loader(
+            "get_model", model_name_or_id=model_name_or_id, hydrate=hydrate
+        ):
+            return cll  # type: ignore[return-value]
         return self.zen_store.get_model(
             model_name_or_id=model_name_or_id,
             hydrate=hydrate,
@@ -4788,6 +4813,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         hydrate: bool = False,
+        tag: Optional[str] = None,
     ) -> Page[ModelResponse]:
         """Get models by filter from Model Control Plane.
 
@@ -4801,6 +4827,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the model to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tag: The tag of the model to filter by.
 
         Returns:
             A page object with all models.
@@ -4813,11 +4840,11 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             created=created,
             updated=updated,
+            tag=tag,
         )
 
         return self.zen_store.list_models(
-            model_filter_model=filter,
-            hydrate=hydrate,
+            model_filter_model=filter, hydrate=hydrate
         )
 
     #################
@@ -4895,6 +4922,14 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: In case method inputs don't adhere to restrictions.
             KeyError: In case no model version with the identifiers exists.
         """
+        if cll := client_lazy_loader(
+            "get_model_version",
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+            hydrate=hydrate,
+        ):
+            return cll  # type: ignore[return-value]
+
         if model_version_name_or_number_or_id is None:
             model_version_name_or_number_or_id = ModelStages.LATEST
 
@@ -4976,6 +5011,7 @@ class Client(metaclass=ClientMetaClass):
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
         hydrate: bool = False,
+        tag: Optional[str] = None,
     ) -> Page[ModelVersionResponse]:
         """Get model versions by filter from Model Control Plane.
 
@@ -4993,6 +5029,7 @@ class Client(metaclass=ClientMetaClass):
             stage: stage of the model version.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            tag: The tag to filter by.
 
         Returns:
             A page object with all model versions.
@@ -5007,6 +5044,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             number=number,
             stage=stage,
+            tag=tag,
         )
 
         return self.zen_store.list_model_versions(
@@ -5383,8 +5421,8 @@ class Client(metaclass=ClientMetaClass):
 
     # ---- utility prefix matching get functions -----
 
-    @staticmethod
     def _get_entity_by_id_or_name_or_prefix(
+        self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
@@ -5430,7 +5468,7 @@ class Client(metaclass=ClientMetaClass):
 
         # If still no match, try with prefix now
         if entity.total == 0:
-            return Client._get_entity_by_prefix(
+            return self._get_entity_by_prefix(
                 get_method=get_method,
                 list_method=list_method,
                 partial_id_or_name=name_id_or_prefix,
@@ -5454,8 +5492,8 @@ class Client(metaclass=ClientMetaClass):
             f"only one of the {entity_label}s."
         )
 
-    @staticmethod
     def _get_entity_version_by_id_or_name_or_prefix(
+        self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
@@ -5519,8 +5557,8 @@ class Client(metaclass=ClientMetaClass):
                 f"only one of the {entity_label}s."
             )
 
-    @staticmethod
     def _get_entity_by_prefix(
+        self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
         partial_id_or_name: str,

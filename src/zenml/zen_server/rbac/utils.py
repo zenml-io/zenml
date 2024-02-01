@@ -14,12 +14,14 @@
 """RBAC utility functions."""
 
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     List,
     Optional,
     Sequence,
     Set,
+    Type,
     TypeVar,
 )
 from uuid import UUID
@@ -27,14 +29,13 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.exceptions import IllegalOperationError
-from zenml.models import (
-    BaseResponse,
-    Page,
-    UserScopedResponse,
-)
+from zenml.models import BaseResponse, Page, UserResponse, UserScopedResponse
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.utils import rbac, server_config
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import BaseSchema
 
 AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
 AnyModel = TypeVar("AnyModel", bound=BaseModel)
@@ -500,3 +501,79 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
         return set.union(*resources_list) if resources_list else set()
     else:
         return set()
+
+
+def get_schema_for_resource_type(
+    resource_type: ResourceType,
+) -> Type["BaseSchema"]:
+    """Get the database schema for a resource type.
+
+    Args:
+        resource_type: The resource type for which to get the database schema.
+
+    Returns:
+        The database schema.
+    """
+    from zenml.zen_stores.schemas import (
+        ArtifactSchema,
+        ArtifactVersionSchema,
+        CodeRepositorySchema,
+        FlavorSchema,
+        ModelSchema,
+        ModelVersionSchema,
+        PipelineBuildSchema,
+        PipelineDeploymentSchema,
+        PipelineRunSchema,
+        PipelineSchema,
+        RunMetadataSchema,
+        SecretSchema,
+        ServiceConnectorSchema,
+        StackComponentSchema,
+        StackSchema,
+        TagSchema,
+        UserSchema,
+        WorkspaceSchema,
+    )
+
+    mapping: Dict[ResourceType, Type["BaseSchema"]] = {
+        ResourceType.STACK: StackSchema,
+        ResourceType.FLAVOR: FlavorSchema,
+        ResourceType.STACK_COMPONENT: StackComponentSchema,
+        ResourceType.PIPELINE: PipelineSchema,
+        ResourceType.CODE_REPOSITORY: CodeRepositorySchema,
+        ResourceType.MODEL: ModelSchema,
+        ResourceType.MODEL_VERSION: ModelVersionSchema,
+        ResourceType.SERVICE_CONNECTOR: ServiceConnectorSchema,
+        ResourceType.ARTIFACT: ArtifactSchema,
+        ResourceType.ARTIFACT_VERSION: ArtifactVersionSchema,
+        ResourceType.SECRET: SecretSchema,
+        ResourceType.TAG: TagSchema,
+        ResourceType.SERVICE_ACCOUNT: UserSchema,
+        ResourceType.WORKSPACE: WorkspaceSchema,
+        ResourceType.PIPELINE_RUN: PipelineRunSchema,
+        ResourceType.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
+        ResourceType.PIPELINE_BUILD: PipelineBuildSchema,
+        ResourceType.RUN_METADATA: RunMetadataSchema,
+        ResourceType.USER: UserSchema,
+    }
+
+    return mapping[resource_type]
+
+
+def update_resource_membership(
+    user: UserResponse, resource: Resource, actions: List[Action]
+) -> None:
+    """Update the resource membership of a user.
+
+    Args:
+        user: User for which the resource membership should be updated.
+        resource: The resource.
+        actions: The actions that the user should be able to perform on the
+            resource.
+    """
+    if not server_config().rbac_enabled:
+        return
+
+    rbac().update_resource_membership(
+        user=user, resource=resource, actions=actions
+    )

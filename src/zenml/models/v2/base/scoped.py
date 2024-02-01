@@ -23,10 +23,12 @@ from typing import (
     Optional,
     Type,
     TypeVar,
+    Union,
 )
 from uuid import UUID
 
 from pydantic import Field
+from sqlmodel import col
 
 from zenml.models.v2.base.base import (
     BaseRequest,
@@ -37,6 +39,8 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+
     from zenml.models.v2.core.user import UserResponse
     from zenml.models.v2.core.workspace import WorkspaceResponse
     from zenml.zen_stores.schemas import BaseSchema
@@ -274,3 +278,58 @@ class WorkspaceScopedFilter(BaseFilter):
             query = query.where(scope_filter)
 
         return query
+
+
+class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
+    """Model to enable advanced scoping with workspace and tagging."""
+
+    tag: Optional[str] = Field(
+        description="Tag to apply to the filter query.", default=None
+    )
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "tag",
+    ]
+
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from zenml.zen_stores.schemas import TagResourceSchema
+
+        query = super().apply_filter(query=query, table=table)
+        if self.tag:
+            query = (
+                query.join(getattr(table, "tags"))
+                .join(TagResourceSchema.tag)
+                .distinct()
+            )
+
+        return query
+
+    def get_custom_filters(
+        self,
+    ) -> List[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+        """Get custom tag filters.
+
+        Returns:
+            A list of custom filters.
+        """
+        from zenml.zen_stores.schemas import TagSchema
+
+        custom_filters = super().get_custom_filters()
+        if self.tag:
+            custom_filters.append(col(TagSchema.name) == self.tag)  # type: ignore[arg-type]
+
+        return custom_filters

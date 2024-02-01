@@ -18,7 +18,7 @@ from uuid import UUID
 from pydantic import BaseModel, root_validator
 
 from zenml.logger import get_logger
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 
 logger = get_logger(__name__)
@@ -33,13 +33,13 @@ class ExternalArtifactConfiguration(BaseModel):
     id: Optional[UUID] = None
     name: Optional[str] = None
     version: Optional[str] = None
-    model_version: Optional[ModelVersion] = None
+    model: Optional[Model] = None
 
     @root_validator
     def _validate_all_eac(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if values.get("version", None) and values.get("model_version", None):
+        if values.get("version", None) and values.get("model", None):
             raise ValueError(
-                "Cannot provide both `version` and `model_version` when "
+                "Cannot provide both `version` and `model` when "
                 "creating an external artifact."
             )
         return values
@@ -67,13 +67,13 @@ class ExternalArtifactConfiguration(BaseModel):
                 response = client.get_artifact_version(
                     self.name, version=self.version
                 )
-            elif self.model_version:
-                response_ = self.model_version.get_artifact(self.name)
+            elif self.model:
+                response_ = self.model.get_artifact(self.name)
                 if not isinstance(response_, ArtifactVersionResponse):
                     raise RuntimeError(
                         f"Failed to pull artifact `{self.name}` from the Model "
-                        f"Version (name=`{self.model_version.name}`, version="
-                        f"`{self.model_version.version}`). Please validate the "
+                        f"(name=`{self.model.name}`, version="
+                        f"`{self.model.version}`). Please validate the "
                         "input and try again."
                     )
                 response = response_

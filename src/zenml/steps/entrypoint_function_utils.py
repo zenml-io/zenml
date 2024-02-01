@@ -157,6 +157,11 @@ class EntrypointFunctionDefinition(NamedTuple):
         from zenml.artifacts.unmaterialized_artifact import (
             UnmaterializedArtifact,
         )
+        from zenml.client_lazy_loader import ClientLazyLoader
+        from zenml.models import (
+            ArtifactVersionResponse,
+            RunMetadataResponse,
+        )
 
         if key not in self.inputs:
             raise KeyError(
@@ -165,7 +170,16 @@ class EntrypointFunctionDefinition(NamedTuple):
 
         parameter = self.inputs[key]
 
-        if isinstance(value, (StepArtifact, ExternalArtifact)):
+        if isinstance(
+            value,
+            (
+                StepArtifact,
+                ExternalArtifact,
+                ArtifactVersionResponse,
+                RunMetadataResponse,
+                ClientLazyLoader,
+            ),
+        ):
             # If we were to do any type validation for artifacts here, we
             # would not be able to leverage pydantics type coercion (e.g.
             # providing an `int` artifact for a `float` input)

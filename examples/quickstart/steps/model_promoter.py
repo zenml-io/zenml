@@ -51,26 +51,24 @@ def model_promoter(accuracy: float, stage: str = "production") -> bool:
         is_promoted = True
 
         # Get the model in the current context
-        current_model_version = get_step_context().model_version
+        current_model = get_step_context().model
 
         # Get the model that is in the production stage
         client = Client()
         try:
-            stage_model_version = client.get_model_version(
-                current_model_version.name, stage
-            )
+            stage_model = client.get_model_version(current_model.name, stage)
             # We compare their metrics
             prod_accuracy = (
-                stage_model_version.get_artifact("sklearn_classifier")
+                stage_model.get_artifact("sklearn_classifier")
                 .run_metadata["test_accuracy"]
                 .value
             )
             if float(accuracy) > float(prod_accuracy):
                 # If current model has better metrics, we promote it
                 is_promoted = True
-                current_model_version.set_stage(stage, force=True)
+                current_model.set_stage(stage, force=True)
         except KeyError:
             # If no such model exists, current one is promoted
             is_promoted = True
-            current_model_version.set_stage(stage, force=True)
+            current_model.set_stage(stage, force=True)
     return is_promoted

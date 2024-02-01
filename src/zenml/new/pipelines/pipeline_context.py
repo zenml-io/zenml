@@ -13,17 +13,22 @@
 #  permissions and limitations under the License.
 """Pipeline context class."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
+from zenml.logger import get_logger
 
 if TYPE_CHECKING:
+    from zenml import Model
     from zenml.config.pipeline_configurations import PipelineConfiguration
+
+logger = get_logger(__name__)
 
 
 def get_pipeline_context() -> "PipelineContext":
-    """Get the context of the currently composing pipeline.
+    """Get the context of the current pipeline.
 
     Returns:
-        The context of the currently composing pipeline.
+        The context of the current pipeline.
 
     Raises:
         RuntimeError: If no active pipeline is found.
@@ -50,7 +55,7 @@ def get_pipeline_context() -> "PipelineContext":
 
 
 class PipelineContext:
-    """Provides pipeline configuration during it's composition.
+    """Provides pipeline configuration context.
 
     Usage example:
 
@@ -90,7 +95,7 @@ class PipelineContext:
     """
 
     def __init__(self, pipeline_configuration: "PipelineConfiguration"):
-        """Initialize the context of the currently composing pipeline.
+        """Initialize the context of the current pipeline.
 
         Args:
             pipeline_configuration: The configuration of the pipeline derived
@@ -107,4 +112,18 @@ class PipelineContext:
         self.enable_step_logs = pipeline_configuration.enable_step_logs
         self.settings = pipeline_configuration.settings
         self.extra = pipeline_configuration.extra
-        self.model_version = pipeline_configuration.model_version
+        self.model = pipeline_configuration.model
+        self._model_version = pipeline_configuration.model
+
+    # TODO: deprecate me
+    @property
+    def model_version(self) -> Optional["Model"]:
+        """DEPRECATED, use `model` instead.
+
+        Returns:
+            The `Model` object associated with the current pipeline.
+        """
+        logger.warning(
+            "Pipeline context `model_version` is deprecated. Please use `model` instead."
+        )
+        return self.model

@@ -27,13 +27,15 @@ from typing import (
     overload,
 )
 
+from zenml.logger import get_logger
+
 if TYPE_CHECKING:
     from types import FunctionType
 
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.steps import BaseStep
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
@@ -45,6 +47,9 @@ if TYPE_CHECKING:
         Mapping[str, Sequence[MaterializerClassOrSource]],
     ]
     F = TypeVar("F", bound=Callable[..., Any])
+
+
+logger = get_logger(__name__)
 
 
 @overload
@@ -67,7 +72,8 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_version: Optional["ModelVersion"] = None,
+    model: Optional["Model"] = None,
+    model_version: Optional["Model"] = None,  # TODO: deprecate me
 ) -> Callable[["F"], "BaseStep"]:
     ...
 
@@ -87,7 +93,8 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
-    model_version: Optional["ModelVersion"] = None,
+    model: Optional["Model"] = None,
+    model_version: Optional["Model"] = None,  # TODO: deprecate me
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -117,7 +124,8 @@ def step(
         on_success: Callback function in event of success of the step. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
-        model_version: configuration of the model version in the Model Control Plane.
+        model: configuration of the model in the Model Control Plane.
+        model_version: DEPRECATED, please use `model` instead.
 
     Returns:
         The step instance.
@@ -125,6 +133,12 @@ def step(
 
     def inner_decorator(func: "F") -> "BaseStep":
         from zenml.new.steps.decorated_step import _DecoratedStep
+
+        # TODO: deprecate me
+        if model_version:
+            logger.warning(
+                "Step decorator argument `model_version` is deprecated. Please use `model` instead."
+            )
 
         class_: Type["BaseStep"] = type(
             func.__name__,
@@ -149,7 +163,7 @@ def step(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
-            model_version=model_version,
+            model=model or model_version,
         )
 
         return step_instance

@@ -188,12 +188,50 @@ zenml:
   # used, which will not be persisted across pod restarts.
   # NOTE: the certificate files need to be copied in the helm chart folder and
   # the paths configured here need to be relative to the root of the helm chart.
-  database: {}
+  database:
     # url: "mysql://admin:password@zenml-mysql:3306/database"
     # sslCa: /path/to/ca.pem
     # sslCert: /path/to/client-cert.pem
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
+
+    # ZenML supports backing up the database before DB migrations are performed
+    # and restoring it in case of a DB migration failure. For more information,
+    # see the following documentation:
+    # https://docs.zenml.io/deploying-zenml/zenml-self-hosted/deploy-with-helm#database-backup-and-recovery
+    #
+    # Several backup strategies are supported:
+    #
+    # disabled - no backup is performed
+    # in-memory - the database schema and data are stored in memory. This is
+    #             the fastest backup strategy, but the backup is not persisted
+    #             across pod restarts, so no manual intervention is possible
+    #             in case the automatic DB recovery fails after a failed DB
+    #             migration. Adequate memory resources should be allocated to
+    #             the ZenML server pod when using this backup strategy with
+    #             large databases.
+    #             This is the default backup strategy.
+    # dump-file - the database schema and data are dumped to a local file.
+    #             Users may optionally configure a persistent volume where
+    #             the dump file will be stored by setting the
+    #             `backupPVStorageSize` and optionally the
+    #             `backupPVStorageClass` options. If a
+    #             persistent volume is not configured, the dump file will be
+    #             stored in an emptyDir volume, which is not persisted.
+    #             NOTE: you should set the podSecurityContext.fsGroup option
+    #             if you are using a persistent volume to store the dump file.
+    # database - the database is copied to a backup database in the same
+    #            database server. This requires the `backupDatabase`
+    #            option to be set to the name of the backup database.
+    #            This backup strategy is only supported for MySQL
+    #            compatible databases and the user specified in the
+    #            database URL must have permissions to manage (create, drop, and
+    #            modify) the backup database in addition to the main
+    #            database.
+    backupStrategy: in-memory
+    # backupPVStorageClass: standard
+    # backupPVStorageSize: 1Gi
+    # backupDatabase: "zenml_backup"
 
 
   # Secrets store settings. This is used to store centralized secrets.
@@ -299,7 +337,8 @@ zenml:
         aws_access_key_id:
         aws_secret_access_key:
         # The AWS role ARN to use to authenticate with the AWS Secrets Manager
-        # instance. Required if the `authMethod` is set to `iam-role`.
+        # instance. Required if the `authMethod` is set to `iam-role`. Optional
+        # if the `authMethod` is set to `implicit`.
         role_arn:
         
       # The AWS region to use. This must be set to the region where the AWS
@@ -630,6 +669,8 @@ zenml:
       # - user-account - Use a GCP user account
       # - service-account - Use a GCP service account
       # - impersonation - Use the GCP service account impersonation feature
+      # - external-account - Use workload identity federation to authenticate
+      #                      with the GCP Secrets Manager API
       authMethod: service-account
 
       # The GCP Service Connector authentication configuration. This should
@@ -655,6 +696,11 @@ zenml:
         # GCP Secrets Manager instance. Required if the `authMethod` is set to
         # `impersonation`.
         target_principal:
+
+        # The GCP workload identity credentials to use to authenticate with the
+        # GCP Secrets Manager instance. Required if the `authMethod` is set to
+        # `external-account`.
+        external_account_json:
 
     # Azure backup Key Vault secrets store configuration. Only relevant if the
     # `azure` backup secrets store type is configured.
@@ -787,7 +833,7 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext: {}
-  # fsGroup: 2000
+  # fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
 
 securityContext:
   runAsNonRoot: true

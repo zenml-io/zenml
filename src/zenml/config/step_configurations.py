@@ -29,12 +29,14 @@ from pydantic import root_validator, validator
 from zenml.artifacts.external_artifact_config import (
     ExternalArtifactConfiguration,
 )
+from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.source import Source, convert_source_validator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
-from zenml.model.model_version import ModelVersion
+from zenml.model.lazy_load import ModelVersionDataLazyLoader
+from zenml.model.model import Model
 from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
@@ -134,7 +136,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[Source] = None
     success_hook_source: Optional[Source] = None
-    model_version: Optional[ModelVersion] = None
+    model: Optional[Model] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
@@ -152,6 +154,8 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     name: str
     caching_parameters: Mapping[str, Any] = {}
     external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
+    model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}
+    client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
     # Override the deprecation validator as we do not want to deprecate the
