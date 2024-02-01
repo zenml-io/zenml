@@ -138,10 +138,8 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             is_deployment_artifact=True,
         )
 
-        service_metadata = service.dict()
         # UUID object is not json serializable
         service_metadata["uuid"] = str(service_metadata["uuid"])
-
         log_artifact_metadata(
             artifact_name=HUGGINGFACE_SERVICE_ARTIFACT,
             artifact_version=artifact_version,
