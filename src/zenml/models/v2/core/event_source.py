@@ -80,6 +80,9 @@ class EventSourceUpdate(EventSourceRequest):
     configuration: Dict[str, Any] = Field(
         title="The event source configuration.",
     )
+    rotate_secret: Optional[bool] = Field(
+        title="In case the secret needs to be rotated."
+    )
 
 
 # ------------------ Response Model ------------------

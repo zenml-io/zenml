@@ -462,19 +462,22 @@ def create_event_source(
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
+
     # TODO: Validate that the flavor and plugin_type correspond to an event source implementation
 
-    plugin_impl = plugin_flavor_registry.get_plugin_implementation(
+    event_source_impl = plugin_flavor_registry.get_plugin_implementation(
         event_source.flavor,
         event_source.plugin_type,
         event_source.plugin_subtype,
     )
 
-    assert issubclass(type(plugin_impl), BaseEventSourcePlugin)  # We know this
+    assert issubclass(
+        type(event_source_impl), BaseEventSourcePlugin
+    )  # We know this
     return verify_permissions_and_create_entity(
         request_model=event_source,
         resource_type=ResourceType.EVENT_SOURCE,
-        create_method=plugin_impl.create_event_source,
+        create_method=event_source_impl.create_event_source,
     )
 
 
