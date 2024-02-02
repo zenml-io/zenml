@@ -55,6 +55,7 @@ class ArtifactUpdate(BaseModel):
     name: Optional[str] = None
     add_tags: Optional[List[str]] = None
     remove_tags: Optional[List[str]] = None
+    has_custom_name: Optional[bool] = None
 
 
 # ------------------ Response Model ------------------
