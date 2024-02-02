@@ -19,7 +19,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Extra
 
-from zenml import EventSourceRequest, SecretRequest
 from zenml.event_sources.base_event_source_plugin import BaseEvent
 from zenml.event_sources.webhooks.base_webhook_event_plugin import (
     BaseWebhookEventSourcePlugin,
@@ -28,7 +27,11 @@ from zenml.event_sources.webhooks.base_webhook_event_plugin import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    EventSourceRequest,
     EventSourceResponse,
+    EventSourceUpdate,
+    SecretRequest,
+    SecretUpdate,
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import SecretField
@@ -214,10 +217,57 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         else:
             return event
 
+    def _update_event_source(
+            self,
+            event_source_id: UUID,
+            event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Wraps the zen_store update method to add plugin specific functionality.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The event source response body.
+        """
+        original_event_source = self.zen_store.get_event_source(
+            event_source_id=event_source_id
+        )
+
+        updated_event_source = self.zen_store.update_event_source(
+            event_source_id=event_source_id,
+            event_source_update=event_source_update,
+        )
+
+        if event_source_update.rotate_secret:
+            # In case the secret is being rotated
+            secret_key_value = random_str(12)
+            webhook_secret = SecretUpdate(
+                values={"webhook_secret": secret_key_value}
+            )
+            self.zen_store.update_secret(
+                secret_id=original_event_source.metadata.configuration[
+                    "webhook_secret_id"
+                ],
+                secret_update=webhook_secret,
+            )
+            updated_event_source.metadata.configuration[
+                "webhook_secret"
+            ] = secret_key_value
+        return updated_event_source
+
     def _create_event_source(
         self, event_source: EventSourceRequest
     ) -> EventSourceResponse:
-        """Wraps the zen_store creation method to add plugin specific functionality."""
+        """Wraps the zen_store creation method for plugin specific functionality.
+
+        Args:
+            event_source: Request model for the event source.
+
+        Returns:
+            The created event source.
+        """
         try:
             config = GithubWebhookEventSourceConfiguration(
                 **event_source.configuration

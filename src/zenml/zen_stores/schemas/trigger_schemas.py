@@ -78,6 +78,7 @@ class TriggerSchema(NamedSchema, table=True):
     action_plan_flavor: str  # TODO: Use an Enum
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
+    is_active: bool = Field(nullable=False)
 
     def update(self, trigger_update: "TriggerUpdate") -> "TriggerSchema":
         """Updates a trigger schema with a trigger update model.
@@ -128,6 +129,7 @@ class TriggerSchema(NamedSchema, table=True):
                 json.dumps(request.event_filter).encode("utf-8")
             ),
             description=request.description,
+            is_active=True,  # Makes no sense for it to be created inactive
         )
 
     def to_model(self, hydrate: bool = False) -> "TriggerResponse":
@@ -149,6 +151,7 @@ class TriggerSchema(NamedSchema, table=True):
             # triggers are deprovisioned and deleted before the event source is
             # deleted, or make it optional in the model
             event_source_flavor=self.event_source.flavor,
+            is_active=self.is_active,
         )
         metadata = None
         if hydrate:

@@ -76,6 +76,8 @@ class TriggerUpdate(TriggerRequest):
     event_filter: Dict[str, Any]
     action_plan: Dict[str, Any]
 
+    is_active: Optional[bool]
+
 
 # ------------------ Response Model ------------------
 
@@ -91,6 +93,8 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
     updated: datetime = Field(
         title="The timestamp when this trigger was last updated.",
     )
+
+    is_active: bool
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):

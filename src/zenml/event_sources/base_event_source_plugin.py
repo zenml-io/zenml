@@ -26,7 +26,11 @@ from pydantic import BaseModel
 
 from zenml.enums import PluginType
 from zenml.logger import get_logger
-from zenml.models import EventSourceRequest, EventSourceResponse
+from zenml.models import (
+    EventSourceRequest,
+    EventSourceResponse,
+    EventSourceUpdate,
+)
 from zenml.models.v2.plugin.event_flavor import EventFlavorResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
@@ -110,6 +114,44 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         """
         self.validate_event_source_configuration(event_source.configuration)
         return self._create_event_source(event_source=event_source)
+
+    def update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Wraps the zen_store creation method for plugin specific functionality.
+
+        All implementation of the BaseEventSource can overwrite this method to add
+        implementation specific functionality.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The created event source.
+        """
+        return self._update_event_source(
+            event_source_id=event_source_id,
+            event_source_update=event_source_update,
+        )
+
+    @abstractmethod
+    def _update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Wraps the zen_store update method to add plugin specific functionality.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The event source response body.
+        """
 
     @abstractmethod
     def _create_event_source(
