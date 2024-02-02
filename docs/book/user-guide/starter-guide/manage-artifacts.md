@@ -148,8 +148,8 @@ def annotation_approach() -> (
 
 
 # below we annotate output using functional approach with
-# run_metadata and tags. As a result, created artifact `artifact_name`
-# will get configured metadata and tags
+# run_metadata and tags. As a result, the created artifact 
+# `artifact_name` will get configured with metadata and tags
 @step
 def annotation_approach() -> Annotated[str, "artifact_name"]:
     step_context = get_step_context()
