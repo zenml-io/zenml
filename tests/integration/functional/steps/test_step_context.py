@@ -137,25 +137,40 @@ def step_context_metadata_and_tags_adder(
 @pytest.mark.parametrize(
     "inner_name,full_name,metadata,tags",
     [
-        *[
-            names + data
-            for names in [
-                [
-                    "custom_name",
-                ]
-                * 2,
-                [
-                    "output_1",
-                    "_pipeline::step_context_metadata_and_tags_adder::output_1",
-                ],
-            ]
-            for data in [
-                [{}, []],
-                [{"some": "foo"}, []],
-                [{}, ["foo"]],
-                [{"some": "foo"}, ["foo"]],
-                [{"some": "foo"}, ["foo", "foo"]],
-            ]
+        ["custom_name", "custom_name", {}, []],
+        ["custom_name", "custom_name", {"some": "foo"}, []],
+        ["custom_name", "custom_name", {}, ["foo"]],
+        ["custom_name", "custom_name", {"some": "foo"}, ["foo"]],
+        ["custom_name", "custom_name", {"some": "foo"}, ["foo", "foo"]],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {},
+            [],
+        ],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {"some": "foo"},
+            [],
+        ],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {},
+            ["foo"],
+        ],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {"some": "foo"},
+            ["foo"],
+        ],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {"some": "foo"},
+            ["foo", "foo"],
         ],
     ],
     ids=[
