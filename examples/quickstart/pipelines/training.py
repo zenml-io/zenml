@@ -23,7 +23,8 @@ from steps import model_evaluator, model_promoter, model_trainer
 from pipelines import (
     feature_engineering,
 )
-from zenml import ExternalArtifact, pipeline
+from zenml import pipeline
+from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -58,8 +59,13 @@ def training(
     if train_dataset_id is None or test_dataset_id is None:
         dataset_trn, dataset_tst = feature_engineering()
     else:
-        dataset_trn = ExternalArtifact(id=train_dataset_id)
-        dataset_tst = ExternalArtifact(id=test_dataset_id)
+        client = Client()
+        dataset_trn = client.get_artifact_version(
+            name_id_or_prefix=train_dataset_id
+        )
+        dataset_tst = client.get_artifact_version(
+            name_id_or_prefix=test_dataset_id
+        )
 
     model = model_trainer(
         dataset_trn=dataset_trn, target=target, model_type=model_type
