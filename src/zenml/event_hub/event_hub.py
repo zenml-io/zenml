@@ -115,9 +115,7 @@ class EventHub:
 
             # Get the filter class from the plugin flavor class
             event_filter_config_class = plugin_flavor.EVENT_FILTER_CONFIG_CLASS
-            event_filter = event_filter_config_class(
-                **trigger.event_filter
-            )
+            event_filter = event_filter_config_class(**trigger.event_filter)
             if event_filter.event_matches_filter(event=event):
                 trigger_list.append(trigger)
 

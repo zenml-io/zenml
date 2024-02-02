@@ -134,9 +134,7 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
             raise ValueError(f"Invalid JSON body received: {e}")
 
         # Temporary solution to get the secret value for the Event Source
-        webhook_secret_id = event_source.metadata.configuration[
-            "webhook_secret_id"
-        ]
+        webhook_secret_id = event_source.configuration["webhook_secret_id"]
         try:
             secret_value = self.zen_store.get_secret(
                 secret_id=webhook_secret_id
@@ -160,7 +158,7 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
         event = self._interpret_event(json_body)
 
         event_hub.process_event(
-            incoming_event=event,
+            event=event,
             event_source=event_source,
         )
 
