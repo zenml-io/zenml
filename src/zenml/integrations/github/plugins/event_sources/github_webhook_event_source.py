@@ -218,9 +218,9 @@ class GithubWebhookEventSource(BaseWebhookEventSource):
             return event
 
     def _update_event_source(
-            self,
-            event_source_id: UUID,
-            event_source_update: EventSourceUpdate,
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
     ) -> EventSourceResponse:
         """Wraps the zen_store update method to add plugin specific functionality.
 

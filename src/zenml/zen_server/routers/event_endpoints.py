@@ -141,9 +141,7 @@ def update_event_source(
         event_source.plugin_subtype,
     )
 
-    assert issubclass(
-        type(event_source_impl), BaseEventSource
-    )  # We know this
+    assert issubclass(type(event_source_impl), BaseEventSource)  # We know this
     return verify_permissions_and_update_entity(
         id=event_source_id,
         update_model=event_source_update,

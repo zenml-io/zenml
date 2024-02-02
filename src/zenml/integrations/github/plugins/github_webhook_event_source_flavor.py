@@ -20,8 +20,8 @@ from zenml.event_sources.webhooks.base_webhook_event import (
 from zenml.integrations.github import GITHUB_EVENT_FLAVOR
 from zenml.integrations.github.plugins.event_sources.github_webhook_event_source import (
     GithubWebhookEventFilterConfiguration,
-    GithubWebhookEventSourceConfiguration,
     GithubWebhookEventSource,
+    GithubWebhookEventSourceConfiguration,
 )
 
 
