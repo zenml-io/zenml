@@ -16,9 +16,9 @@ from typing import Type
 from uuid import UUID
 
 from zenml.event_sources.base_event_source import BaseEvent
-from zenml.event_sources.schedules.base_schedule_event import (
+from zenml.event_sources.schedules.base_schedule_event_source import (
     BaseScheduleEvent,
-    BaseScheduleEventSource,
+    BaseScheduleEventSourcePlugin,
     ScheduleEventFilterConfig,
     ScheduleEventSourceConfig,
 )
@@ -59,8 +59,8 @@ class SchedulerEventSourceConfiguration(ScheduleEventSourceConfig):
 # -------------------- Scheduler Event Source --------------------------
 
 
-class SchedulerEventSource(BaseScheduleEventSource):
-    """Scheduler event source."""
+class SchedulerEventSourcePlugin(BaseScheduleEventSourcePlugin):
+    """Scheduler event source plugin."""
 
     @property
     def config_class(self) -> Type[ScheduleEventSourceConfig]:

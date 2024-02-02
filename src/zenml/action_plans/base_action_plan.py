@@ -17,7 +17,6 @@ from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginType
-from zenml.event_sources.base_event_source import EventSourceConfig
 from zenml.models.v2.plugin.action_flavor import ActionFlavorResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
@@ -35,7 +34,7 @@ class ActionPlanConfig(BasePluginConfig):
 # -------------------- Plugin -----------------------------------
 
 
-class BaseActionPlan(BasePlugin, ABC):
+class BaseActionPlanPlugin(BasePlugin, ABC):
     """Implementation for an action plan."""
 
     @property
@@ -57,7 +56,7 @@ class BaseActionPlanFlavor(BasePluginFlavor, ABC):
     TYPE: ClassVar[PluginType] = PluginType.ACTION_PLAN
 
     # Action Plan specific
-    ACTION_PLAN_CONFIG_CLASS: ClassVar[Type[EventSourceConfig]]
+    ACTION_PLAN_CONFIG_CLASS: ClassVar[Type[ActionPlanConfig]]
 
     @classmethod
     def get_action_plan_config_schema(cls) -> Dict[str, Any]:

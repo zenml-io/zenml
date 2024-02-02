@@ -22,8 +22,8 @@ from zenml.enums import PluginSubType
 from zenml.event_hub.event_hub import event_hub
 from zenml.event_sources.base_event_source import (
     BaseEvent,
-    BaseEventSource,
     BaseEventSourceFlavor,
+    BaseEventSourcePlugin,
     EventFilterConfig,
     EventSourceConfig,
 )
@@ -58,7 +58,7 @@ class WebhookEventFilterConfig(EventFilterConfig):
 # -------------------- Webhook Event Source -----------------------
 
 
-class BaseWebhookEventSource(BaseEventSource, ABC):
+class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
     """Base implementation for all Webhook event sources."""
 
     @property

@@ -20,8 +20,8 @@ from uuid import UUID
 from pydantic import BaseModel, Extra
 
 from zenml.event_sources.base_event_source import BaseEvent
-from zenml.event_sources.webhooks.base_webhook_event import (
-    BaseWebhookEventSource,
+from zenml.event_sources.webhooks.base_webhook_event_source import (
+    BaseWebhookEventSourcePlugin,
     WebhookEventFilterConfig,
     WebhookEventSourceConfig,
 )
@@ -129,7 +129,7 @@ class GithubEvent(BaseEvent):
             return GithubEventType.PUSH_EVENT
         elif self.ref.startswith("refs/tags/"):
             return GithubEventType.TAG_EVENT
-        elif len(self.pull_requests) > 0:
+        elif self.pull_requests and len(self.pull_requests) > 0:
             return GithubEventType.PR_EVENT
         else:
             return "unknown"
@@ -171,7 +171,7 @@ class GithubWebhookEventSourceConfiguration(WebhookEventSourceConfig):
 # -------------------- Github Webhook Plugin -----------------------------------
 
 
-class GithubWebhookEventSource(BaseWebhookEventSource):
+class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
     """Handler for all github events."""
 
     @property
@@ -205,7 +205,7 @@ class GithubWebhookEventSource(BaseWebhookEventSource):
             ValueError: If the event body can not be parsed into the pydantic model.
         """
         try:
-            event = GithubEvent(**event)
+            github_event = GithubEvent(**event)
         except ValueError as e:
             logger.exception(e)
             # TODO: Remove this - currently useful for debugging
@@ -215,7 +215,7 @@ class GithubWebhookEventSource(BaseWebhookEventSource):
                 json.dump(event, f)
             raise ValueError("Event did not match the pydantic model.")
         else:
-            return event
+            return github_event
 
     def _update_event_source(
         self,
@@ -243,16 +243,16 @@ class GithubWebhookEventSource(BaseWebhookEventSource):
         if event_source_update.rotate_secret:
             # In case the secret is being rotated
             secret_key_value = random_str(12)
-            webhook_secret = SecretUpdate(
+            webhook_secret = SecretUpdate(  # type: ignore[call-arg]
                 values={"webhook_secret": secret_key_value}
             )
             self.zen_store.update_secret(
-                secret_id=original_event_source.metadata.configuration[
+                secret_id=original_event_source.configuration[
                     "webhook_secret_id"
                 ],
                 secret_update=webhook_secret,
             )
-            updated_event_source.metadata.configuration[
+            updated_event_source.configuration[
                 "webhook_secret"
             ] = secret_key_value
         return updated_event_source
@@ -290,9 +290,7 @@ class GithubWebhookEventSource(BaseWebhookEventSource):
         created_event_source = self.zen_store.create_event_source(
             event_source=event_source
         )
-        created_event_source.metadata.configuration[
-            "webhook_secret"
-        ] = secret_key_value
+        created_event_source.configuration["webhook_secret"] = secret_key_value
         return created_event_source
 
     def _get_event_source(self, event_source_id: UUID) -> EventSourceResponse:
@@ -300,14 +298,14 @@ class GithubWebhookEventSource(BaseWebhookEventSource):
         created_event_source = self.zen_store.get_event_source(
             event_source_id=event_source_id
         )
-        webhook_secret_id = created_event_source.metadata.configuration[
+        webhook_secret_id = created_event_source.configuration[
             "webhook_secret_id"
         ]
 
-        secret_value = self.zen_store.get_secret(
-            secret_id=webhook_secret_id
-        ).body["webhook_secret"]
-        created_event_source.metadata.configuration[
-            "webhook_secret"
-        ] = secret_value
+        secret = self.zen_store.get_secret(secret_id=webhook_secret_id)
+        secret_value = secret.secret_values["webhook_secret"]
+
+        assert secret_value is not None, "Webhook secret value not found"
+
+        created_event_source.configuration["webhook_secret"] = secret_value
         return created_event_source

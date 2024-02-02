@@ -14,14 +14,14 @@
 """Example file of what an event Plugin could look like."""
 from typing import ClassVar, Type
 
-from zenml.event_sources.webhooks.base_webhook_event import (
+from zenml.event_sources.webhooks.base_webhook_event_source import (
     BaseWebhookEventSourceFlavor,
 )
 from zenml.integrations.github import GITHUB_EVENT_FLAVOR
 from zenml.integrations.github.plugins.event_sources.github_webhook_event_source import (
     GithubWebhookEventFilterConfiguration,
-    GithubWebhookEventSource,
     GithubWebhookEventSourceConfiguration,
+    GithubWebhookEventSourcePlugin,
 )
 
 
@@ -30,8 +30,8 @@ class GithubWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
 
     FLAVOR: ClassVar[str] = GITHUB_EVENT_FLAVOR
     PLUGIN_CLASS: ClassVar[
-        Type[GithubWebhookEventSource]
-    ] = GithubWebhookEventSource
+        Type[GithubWebhookEventSourcePlugin]
+    ] = GithubWebhookEventSourcePlugin
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[

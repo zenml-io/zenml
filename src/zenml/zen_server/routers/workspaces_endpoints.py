@@ -42,7 +42,7 @@ from zenml.constants import (
     WORKSPACES,
 )
 from zenml.enums import MetadataResourceTypes
-from zenml.event_sources.base_event_source import BaseEventSource
+from zenml.event_sources.base_event_source import BaseEventSourcePlugin
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     CodeRepositoryFilter,
@@ -471,7 +471,7 @@ def create_event_source(
 
     # Validate that the flavor and plugin_type correspond to an event source
     # implementation
-    if not isinstance(event_source_impl, BaseEventSource):
+    if not isinstance(event_source_impl, BaseEventSourcePlugin):
         raise ValueError(
             f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
             f"for flavor {event_source.flavor} is not a valid event source "
