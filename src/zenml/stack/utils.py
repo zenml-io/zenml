@@ -149,7 +149,7 @@ class stack_context:
         """Constructor for stack_context saves active stack."""
         self._default_stack = Client().active_stack
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Enters in the stack context."""
         pass
 
