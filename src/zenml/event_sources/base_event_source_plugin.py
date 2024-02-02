@@ -77,13 +77,22 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
     """Implementation for an EventPlugin."""
 
     @property
-    def config_class(self) -> Type[BasePluginConfig]:
-        """Returns the `BasePluginConfig` config.
+    @abstractmethod
+    def config_class(self) -> Type[EventSourceConfig]:
+        """Returns the event source configuration class.
 
         Returns:
             The configuration.
         """
-        return EventSourceConfig
+
+    @property
+    @abstractmethod
+    def filter_class(self) -> Type[EventFilterConfig]:
+        """Returns the event filter configuration class.
+
+        Returns:
+            The event filter configuration class.
+        """
 
     def create_event_source(
         self, event_source: EventSourceRequest
@@ -99,9 +108,7 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         Returns:
             The created event source.
         """
-        self._fail_if_event_source_configuration_invalid(
-            event_source=event_source
-        )
+        self.validate_event_source_configuration(event_source.configuration)
         return self._create_event_source(event_source=event_source)
 
     @abstractmethod
@@ -120,15 +127,42 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
             The created event source.
         """
 
-    def _fail_if_event_source_configuration_invalid(
-        self, event_source: EventSourceRequest
-    ):
+    def validate_event_source_configuration(
+        self, event_source_config: Dict[str, Any]
+    ) -> None:
+        """Validates the event source configuration.
+
+        Args:
+            event_source_config: The event source configuration to validate.
+
+        Raises:
+            ValueError: if the configuration is invalid.
+        """
         try:
-            self.config_class(**event_source.configuration)
-        except ValueError:
-            raise ValueError("Invalid Configuration.")
-        else:
-            return
+            self.config_class(**event_source_config)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid configuration for event source: {e}."
+            ) from e
+
+    def validate_event_filter_configuration(
+        self,
+        configuration: Dict[str, Any],
+    ) -> None:
+        """Validate the configuration of an event filter.
+
+        Args:
+            configuration: The configuration to validate.
+
+        Raises:
+            ValueError: if the configuration is invalid.
+        """
+        try:
+            self.filter_class(**configuration)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid configuration for event filter: {e}."
+            ) from e
 
 
 # -------------------- Flavors ----------------------------------

@@ -145,6 +145,9 @@ class TriggerSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             action_plan_flavor=self.action_plan_flavor,
+            # TODO: make event_source mandatory in the schema and ensure
+            # triggers are deprovisioned and deleted before the event source is
+            # deleted, or make it optional in the model
             event_source_flavor=self.event_source.flavor,
         )
         metadata = None
@@ -158,6 +161,9 @@ class TriggerSchema(NamedSchema, table=True):
                     base64.b64decode(self.action_plan).decode()
                 ),
                 description=self.description,
+                # TODO: make event_source mandatory in the schema and ensure
+                # triggers are deprovisioned and deleted before the event source is
+                # deleted, or make it optional in the model
                 event_source=self.event_source.to_model(),
             )
 

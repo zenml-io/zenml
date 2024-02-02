@@ -64,10 +64,19 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
     @property
     @abstractmethod
     def config_class(self) -> Type[WebhookEventSourceConfig]:
-        """Returns the `BasePluginConfig` config.
+        """Returns the webhook event source configuration class.
 
         Returns:
             The configuration.
+        """
+
+    @property
+    @abstractmethod
+    def filter_class(self) -> Type[WebhookEventFilterConfig]:
+        """Returns the webhook event filter configuration class.
+
+        Returns:
+            The event filter configuration class.
         """
 
     def is_valid_signature(

@@ -171,12 +171,21 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
 
     @property
     def config_class(self) -> Type[GithubWebhookEventSourceConfiguration]:
-        """Returns the `BasePluginConfig` config.
+        """Returns the webhook event source configuration class.
 
         Returns:
             The configuration.
         """
         return GithubWebhookEventSourceConfiguration
+
+    @property
+    def filter_class(self) -> Type[GithubWebhookEventFilterConfiguration]:
+        """Returns the webhook event filter configuration class.
+
+        Returns:
+            The event filter configuration class.
+        """
+        return GithubWebhookEventFilterConfiguration
 
     def _interpret_event(self, event: Dict[str, Any]) -> GithubEvent:
         """Converts the generic event body into a event-source specific pydantic model.

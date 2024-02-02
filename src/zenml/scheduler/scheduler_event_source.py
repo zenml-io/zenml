@@ -14,6 +14,7 @@
 """Implementation of the internal scheduler event source plugin."""
 from typing import Type
 
+from zenml.event_sources.base_event_source_plugin import BaseEvent
 from zenml.event_sources.schedules.base_schedule_event_plugin import (
     BaseScheduleEvent,
     BaseScheduleEventSourcePlugin,
@@ -35,7 +36,7 @@ class SchedulerEventFilterConfiguration(ScheduleEventFilterConfig):
 
     cron_expression: str
 
-    def event_matches_filter(self, event: ScheduleEvent) -> bool:
+    def event_matches_filter(self, event: BaseEvent) -> bool:
         """Checks the filter against the inbound event."""
         return True
 

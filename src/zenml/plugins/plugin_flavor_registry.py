@@ -23,7 +23,7 @@ from zenml.plugins.base_plugin_flavor import BasePlugin, BasePluginFlavor
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+    pass
 
 
 class RegistryEntry(BaseModel):
@@ -53,7 +53,7 @@ class PluginFlavorRegistry:
         """Returns all available flavors."""
         return list(self.plugin_flavors.keys())
 
-    def get_available_types_for_flavor(self, flavor_name) -> List[str]:
+    def get_available_types_for_flavor(self, flavor_name: str) -> List[str]:
         """Returns all available types for a given flavor.
 
         Args:
@@ -214,22 +214,32 @@ class PluginFlavorRegistry:
 
         Returns:
             Plugin instance associated with the flavor, type and subtype.
+
+        Raises:
+            KeyError: If no plugin is found for the given flavor, type and
+                subtype.
+            RuntimeError: If the plugin was not initialized.
         """
         try:
-            return self._get_registry_entry(
+            plugin_entry = self._get_registry_entry(
                 flavor=flavor, _type=_type, subtype=subtype
-            ).plugin_instance
+            )
+            if plugin_entry.plugin_instance is None:
+                raise RuntimeError(
+                    f"Plugin {plugin_entry.flavor_class} was not initialized."
+                )
+            return plugin_entry.plugin_instance
         except KeyError:
             raise KeyError(
-                f"No flavor class found for flavor name {flavor} and type "
+                f"No flavor found for flavor name {flavor} and type "
                 f"{_type} and subtype {subtype}."
             )
 
-    def initialize_plugins(self, zen_store: "BaseZenStore"):
-        """Initializes an instance of the plugin class and stores it in the registry."""
-        for flavor, types_dict in self.plugin_flavors.items():
-            for type_, subtype_dict in types_dict.items():
-                for subtype, registry_entry in subtype_dict.items():
+    def initialize_plugins(self) -> None:
+        """Initializes all registered plugins."""
+        for _, types_dict in self.plugin_flavors.items():
+            for _, subtype_dict in types_dict.items():
+                for _, registry_entry in subtype_dict.items():
                     # TODO: Only initialize if the integration is active
                     registry_entry.plugin_instance = (
                         registry_entry.flavor_class.PLUGIN_CLASS()

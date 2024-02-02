@@ -18,6 +18,7 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, PLUGINS, VERSION_1
 from zenml.enums import PluginSubType, PluginType
+from zenml.models import BasePluginFlavorResponse
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -112,7 +113,7 @@ def get_flavor(
     plugin_type: PluginType,
     plugin_subtype: PluginSubType,
     _: AuthContext = Security(authorize),
-):
+) -> BasePluginFlavorResponse:
     """Returns the requested flavor.
 
     Args:
