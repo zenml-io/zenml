@@ -19,10 +19,8 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    List,
     Type,
 )
-from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -83,13 +81,22 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
     """Implementation for an EventPlugin."""
 
     @property
-    def config_class(self) -> Type[BasePluginConfig]:
-        """Returns the `BasePluginConfig` config.
+    @abstractmethod
+    def config_class(self) -> Type[EventSourceConfig]:
+        """Returns the event source configuration class.
 
         Returns:
             The configuration.
         """
-        return EventSourceConfig
+
+    @property
+    @abstractmethod
+    def filter_class(self) -> Type[EventFilterConfig]:
+        """Returns the event filter configuration class.
+
+        Returns:
+            The event filter configuration class.
+        """
 
     def create_event_source(
         self, event_source: EventSourceRequest
@@ -105,9 +112,7 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         Returns:
             The created event source.
         """
-        self._fail_if_event_source_configuration_invalid(
-            event_source=event_source
-        )
+        self.validate_event_source_configuration(event_source.configuration)
         return self._create_event_source(event_source=event_source)
 
     def update_event_source(
@@ -164,48 +169,42 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
             The created event source.
         """
 
-    def _fail_if_event_source_configuration_invalid(
-        self, event_source: EventSourceRequest
-    ):
+    def validate_event_source_configuration(
+        self, event_source_config: Dict[str, Any]
+    ) -> None:
+        """Validates the event source configuration.
+
+        Args:
+            event_source_config: The event source configuration to validate.
+
+        Raises:
+            ValueError: if the configuration is invalid.
+        """
         try:
-            self.config_class(**event_source.configuration)
-        except ValueError:
-            raise ValueError("Invalid Configuration.")
-        else:
-            return
+            self.config_class(**event_source_config)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid configuration for event source: {e}."
+            ) from e
 
-    @abstractmethod
-    def get_matching_triggers_for_event(
-        self, incoming_event: Dict[str, Any], event_source: EventSourceResponse
-    ) -> List[UUID]:
-        """Process the incoming event and forward with trigger_ids to event hub.
-
-        Args:
-            incoming_event: THe inbound event.
-            event_source: The Event Source
-        """
-
-    @abstractmethod
-    def _interpret_event(self, event: Dict[str, Any]) -> BaseEvent:
-        """Converts the generic event body into a event-source specific pydantic model.
+    def validate_event_filter_configuration(
+        self,
+        configuration: Dict[str, Any],
+    ) -> None:
+        """Validate the configuration of an event filter.
 
         Args:
-            event: The generic event body
+            configuration: The configuration to validate.
 
-        Return:
-            An instance of the event source specific pydantic model.
+        Raises:
+            ValueError: if the configuration is invalid.
         """
-
-    @abstractmethod
-    def _get_matching_triggers(
-        self, event_source: EventSourceResponse, event: BaseEvent
-    ) -> List[UUID]:
-        """Get all Triggers with matching event filters.
-
-        Args:
-            event_source: The event sources.
-            event: The inbound Event.
-        """
+        try:
+            self.filter_class(**configuration)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid configuration for event filter: {e}."
+            ) from e
 
 
 # -------------------- Flavors ----------------------------------

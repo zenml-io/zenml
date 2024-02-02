@@ -12,15 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for webhooks."""
-from typing import Any, Dict, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
-from starlette.background import BackgroundTasks
+from fastapi import APIRouter, Depends, Request
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import PluginSubType, PluginType
-from zenml.event_hub.event_hub import event_hub
+from zenml.event_sources.webhooks.base_webhook_event_plugin import (
+    BaseWebhookEventSourcePlugin,
+    WebhookEventSourceConfig,
+)
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.utils import handle_exceptions, zen_store
@@ -51,73 +53,57 @@ async def get_body(request: Request) -> bytes:
 @handle_exceptions
 def webhook(
     event_source_id: UUID,
-    body: Dict[str, Any],
-    background_tasks: BackgroundTasks,
-    signature_header: Optional[str] = Header(
-        None, alias="x-hub-signature-256"
-    ),
+    request: Request,
     raw_body: bytes = Depends(get_body),
-):
+) -> None:
     """Webhook to receive events from external event sources.
 
     Args:
         event_source_id: The event_source_id
-        body: The request body.
+        request: The request object
         raw_body: The raw request body
-        background_tasks: BackgroundTask fixture
-        signature_header: The signature header
     """
-    if not signature_header:
-        raise HTTPException(
-            status_code=403, detail="x-hub-signature-256 header is missing!"
-        )
-
     # Get the Event Source
     try:
         event_source = zen_store().get_event_source(event_source_id)
     except KeyError:
-        raise KeyError(
+        logger.error(
+            f"Webhook HTTP request received for unknown event source "
+            f"'{event_source_id}'."
+        )
+        raise AuthorizationException(
             f"No webhook is registered at "
             f"'{router.prefix}/{event_source_id}'"
         )
 
-    # Validate the signature
     flavor = event_source.flavor
-    webhook_cls = plugin_flavor_registry.get_plugin_implementation(
-        flavor=flavor,
-        _type=PluginType.EVENT_SOURCE,
-        subtype=PluginSubType.WEBHOOK,
-    )
-
-    # Temporary solution to get the secret value for the Event Source
-    webhook_secret_id = event_source.metadata.configuration[
-        "webhook_secret_id"
-    ]
-    secret_value = (
-        zen_store()
-        .get_secret(secret_id=webhook_secret_id)
-        .body.values["webhook_secret"]
-        .get_secret_value()
-    )
-
-    if not webhook_cls.is_valid_signature(
-        raw_body=raw_body,
-        secret_token=secret_value,
-        signature_header=signature_header,
-    ):
-        raise HTTPException(
-            status_code=403, detail="Request signatures didn't match!"
+    try:
+        plugin = plugin_flavor_registry.get_plugin(
+            flavor=flavor,
+            _type=PluginType.EVENT_SOURCE,
+            subtype=PluginSubType.WEBHOOK,
+        )
+    except KeyError:
+        logger.error(
+            f"Webhook HTTP request received for event source "
+            f"'{event_source_id}' and flavor {flavor} but no matching "
+            f"plugin was found."
+        )
+        raise KeyError(
+            f"No listener plugin found for event source {event_source_id}."
         )
 
-    # background_tasks.add_task(
-    #     event_hub.process_event,
-    #     incoming_event=body,
-    #     flavor=flavor_name,
-    #     event_source_subtype=PluginSubType.WEBHOOK,
-    # )
-    event_hub.process_event(
-        incoming_event=body,
-        flavor=flavor,
+    if not isinstance(plugin, BaseWebhookEventSourcePlugin) or not isinstance(
+        event_source, WebhookEventSourceConfig
+    ):
+        raise ValueError(
+            f"Event Source {event_source_id} is not a valid Webhook event "
+            "source!"
+        )
+
+    # Pass the raw event and headers to the plugin
+    plugin.process_webhook_event(
         event_source=event_source,
-        event_source_subtype=PluginSubType.WEBHOOK,
+        raw_body=raw_body,
+        headers=dict(request.headers.items()),
     )

@@ -191,6 +191,9 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
 )
+from zenml.models.v2.plugin.action_flavor import ActionFlavorResponse
+from zenml.models.v2.plugin.event_flavor import EventFlavorResponse
+from zenml.models.v2.plugin.plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
     RunMetadataFilter,
@@ -739,4 +742,8 @@ __all__ = [
     "OAuthDeviceVerificationRequest",
     "OAuthRedirectResponse",
     "OAuthTokenResponse",
+    # V2 Plugin
+    "ActionFlavorResponse",
+    "BasePluginFlavorResponse",
+    "EventFlavorResponse",
 ]

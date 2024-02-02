@@ -15,15 +15,18 @@
 from typing import Any, Dict
 
 from zenml.enums import PluginSubType, PluginType
+from zenml.event_sources.base_event_source_plugin import (
+    BaseEventSourcePlugin,
+)
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 
 
-def fail_if_invalid_event_filter_configuration(
+def validate_event_filter_configuration(
     flavor: str,
     plugin_type: PluginType,
     plugin_subtype: PluginSubType,
     configuration_dict: Dict[str, Any],
-) -> bool:
+) -> None:
     """Validate the configuration of an event filter.
 
     Args:
@@ -32,20 +35,18 @@ def fail_if_invalid_event_filter_configuration(
         plugin_subtype: The subtype of plugin
         configuration_dict: The event filter configuration to validate.
 
-    Returns:
-        True if the configuration is valid
-
     Raises:
-        ValueError: If the configuration is invalid.
+        RuntimeError: If an event source plugin does not exist for the plugin
+            flavor, type, and subtype.
     """
-    event_configuration_class = plugin_flavor_registry.get_flavor_class(
+    event_source_plugin = plugin_flavor_registry.get_plugin(
         flavor=flavor, _type=plugin_type, subtype=plugin_subtype
-    ).EVENT_FILTER_CONFIG_CLASS
-    try:
-        event_configuration_class(**configuration_dict)
-    except ValueError:
-        raise ValueError("Invalid Configuration.")
-    except KeyError:
-        raise ValueError(f"Event Filter Flavor {flavor} does not exist.")
-    else:
-        return True
+    )
+
+    if not isinstance(event_source_plugin, BaseEventSourcePlugin):
+        raise RuntimeError(
+            f"Event source plugin does not exist for flavor {flavor}, "
+            f"type {plugin_type}, and subtype {plugin_subtype}."
+        )
+
+    event_source_plugin.validate_event_filter_configuration(configuration_dict)

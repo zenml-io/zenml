@@ -19,6 +19,7 @@ from pydantic import BaseModel, Extra
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PluginSubType, PluginType
+from zenml.models import BasePluginFlavorResponse
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -44,10 +45,10 @@ class BasePlugin(ABC):
 
     @property
     def zen_store(self) -> "BaseZenStore":
-        """Returns the `BasePluginConfig` config.
+        """Returns the active zen store.
 
         Returns:
-            The configuration.
+            The active zen store.
         """
         return GlobalConfiguration().zen_store
 
@@ -59,13 +60,6 @@ class BasePlugin(ABC):
         Returns:
             The configuration.
         """
-
-
-class BasePluginFlavorResponse(BaseModel):
-    """Base response for all Plugin Flavors."""
-
-    flavor_name: str
-    plugin_type: PluginType
 
 
 class BasePluginFlavor(ABC):

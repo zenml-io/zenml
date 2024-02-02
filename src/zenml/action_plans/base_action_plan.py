@@ -35,8 +35,8 @@ class ActionPlanConfig(BasePluginConfig):
 # -------------------- Plugin -----------------------------------
 
 
-class BaseActionPlan(BasePlugin, ABC):
-    """Implementation for an EventPlugin."""
+class BaseActionPlanPlugin(BasePlugin, ABC):
+    """Implementation for an action plan plugin."""
 
     @property
     @abstractmethod

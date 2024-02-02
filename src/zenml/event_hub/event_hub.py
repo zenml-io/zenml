@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,24 +12,43 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for all the Event Hub."""
-from typing import Any, Dict
+from functools import partial
+from typing import TYPE_CHECKING, List
 
 from zenml import EventSourceResponse
-from zenml.enums import PluginSubType, PluginType
-from zenml.event_sources.base_event_source_plugin import BaseEventSourcePlugin
-from zenml.plugins.plugin_flavor_registry import logger, plugin_flavor_registry
+from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import PluginType
+from zenml.event_sources.base_event_source_plugin import (
+    BaseEvent,
+    BaseEventSourcePluginFlavor,
+)
+from zenml.logger import get_logger
+from zenml.models import TriggerFilter, TriggerResponse
+from zenml.utils.pagination_utils import depaginate
+
+logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
 class EventHub:
     """Handler for all events."""
 
-    @staticmethod
+    @property
+    def zen_store(self) -> "BaseZenStore":
+        """Returns the active zen store.
+
+        Returns:
+            The active zen store.
+        """
+        return GlobalConfiguration().zen_store
+
     def process_event(
-        incoming_event: Dict[str, Any],
-        flavor: str,
+        self,
+        event: BaseEvent,
         event_source: EventSourceResponse,
-        event_source_subtype: PluginSubType,
-    ):
+    ) -> None:
         """Process an incoming event and execute all configured actions.
 
         This will first check for any subscribers/triggers for this event,
@@ -37,30 +56,79 @@ class EventHub:
         configured action(s).
 
         Args:
-            incoming_event: Generic event
-            flavor: Flavor of Event
+            event: Generic event
             event_source: The Event Source
-            event_source_subtype: Subtype of Event
         """
-        try:
-            plugin_cls = plugin_flavor_registry.get_plugin_implementation(
-                flavor=flavor,
-                _type=PluginType.EVENT_SOURCE,
-                subtype=event_source_subtype,
-            )
-        except KeyError as e:
-            # TODO: raise the appropriate exception
-            logger.exception(e)
-            raise KeyError(e)
-        else:
-            assert isinstance(plugin_cls, BaseEventSourcePlugin)
-            triggers = plugin_cls.get_matching_triggers_for_event(
-                incoming_event=incoming_event, event_source=event_source
-            )
+        triggers = self.get_matching_triggers_for_event(
+            event=event, event_source=event_source
+        )
 
         # TODO: Store event for future reference
         # TODO: Create a trigger execution linked to the event and the trigger
         logger.debug(triggers)
+
+    def get_matching_triggers_for_event(
+        self, event: BaseEvent, event_source: EventSourceResponse
+    ) -> List[TriggerResponse]:
+        """Get all triggers that match an incoming event.
+
+        Args:
+            event: The inbound event.
+            event_source: The event source which emitted the event.
+
+        Returns:
+            The list of matching triggers.
+        """
+        from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
+
+        # get all event sources configured for this flavor
+        triggers: List[TriggerResponse] = depaginate(
+            partial(
+                self.zen_store.list_triggers,
+                trigger_filter_model=TriggerFilter(
+                    event_source_id=event_source.id  # TODO: Handle for multiple source_ids
+                ),
+                hydrate=True,
+            )
+        )
+
+        trigger_list: List[TriggerResponse] = []
+
+        for trigger in triggers:
+            # For now, the matching of trigger filters vs event is implemented
+            # in each filter class. This is not ideal and should be refactored
+            # to a more generic solution that doesn't require the plugin
+            # implementation to be imported here.
+            try:
+                plugin_flavor = plugin_flavor_registry.get_flavor_class(
+                    flavor=event_source.flavor,
+                    _type=PluginType.EVENT_SOURCE,
+                    subtype=event_source.plugin_subtype,
+                )
+            except KeyError:
+                logger.exception(
+                    f"Could not find plugin flavor for event source "
+                    f"{event_source.id} and flavor {event_source.flavor}."
+                )
+                raise KeyError(
+                    f"No plugin flavor found for event source "
+                    f"{event_source.id}."
+                )
+
+            assert issubclass(plugin_flavor, BaseEventSourcePluginFlavor)
+
+            # Get the filter class from the plugin flavor class
+            event_filter_config_class = plugin_flavor.EVENT_FILTER_CONFIG_CLASS
+            event_filter = event_filter_config_class(**trigger.event_filter)
+            if event_filter.event_matches_filter(event=event):
+                trigger_list.append(trigger)
+
+        logger.debug(
+            f"For event {event} and event source {event_source}, "
+            f"the following triggers matched: {trigger_list}"
+        )
+
+        return trigger_list
 
 
 event_hub = EventHub()

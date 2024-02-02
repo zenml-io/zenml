@@ -89,7 +89,7 @@ def initialize_rbac() -> None:
 
 def initialize_plugins() -> None:
     """Initialize the event plugins registry."""
-    plugin_flavor_registry.initialize_plugins(zen_store())
+    plugin_flavor_registry.initialize_plugins()
 
 
 def initialize_zen_store() -> None:
