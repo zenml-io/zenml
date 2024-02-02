@@ -7282,7 +7282,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_entity_by_id(
         self, entity_id: UUID, schema_class: Type[AnySchema]
-    ) -> Optional[BaseResponse]:
+    ) -> Optional[B]:
         """Get an entity by ID.
 
         Args:
@@ -7305,7 +7305,7 @@ class SqlZenStore(BaseZenStore):
 
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                return to_model(hydrate=True)
+                return cast(B, to_model(hydrate=True))
             else:
                 raise RuntimeError("Unable to convert schema to model.")
 
