@@ -101,12 +101,12 @@ def model_trainer(
     # keep track of mlflow version for future use
     model_registry = Client().active_stack.model_registry
     if model_registry:
-        versions = model_registry.list_model_versions(name=name)
-        if versions:
+        version = model_registry.get_latest_model_version(
+            name=name, stage=None
+        )
+        if version:
             model_ = get_step_context().model
-            model_.log_metadata(
-                {"model_registry_version": versions[-1].version}
-            )
+            model_.log_metadata({"model_registry_version": version.version})
     ### YOUR CODE ENDS HERE ###
 
     return model
