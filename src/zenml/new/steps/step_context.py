@@ -17,6 +17,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    List,
     Mapping,
     Optional,
     Sequence,
@@ -331,7 +332,33 @@ class StepContext(metaclass=SingletonMetaClass):
         Returns:
             Metadata for the given output.
         """
-        return self._get_output(output_name).run_metadata or {}
+        output = self._get_output(output_name)
+        custom_metadata = output.run_metadata or {}
+        if output.artifact_config:
+            custom_metadata.update(
+                **(output.artifact_config.run_metadata or {})
+            )
+        return custom_metadata
+
+    def get_output_tags(self, output_name: Optional[str] = None) -> List[str]:
+        """Returns the tags for a given step output.
+
+        Args:
+            output_name: Optional name of the output for which to get the
+                metadata. If no name is given and the step only has a single
+                output, the metadata of this output will be returned. If the
+                step has multiple outputs, an exception will be raised.
+
+        Returns:
+            Tags for the given output.
+        """
+        output = self._get_output(output_name)
+        custom_tags = set(output.tags or [])
+        if output.artifact_config:
+            return list(
+                set(output.artifact_config.tags or []).union(custom_tags)
+            )
+        return list(custom_tags)
 
     def add_output_metadata(
         self,
@@ -351,6 +378,25 @@ class StepContext(metaclass=SingletonMetaClass):
         if not output.run_metadata:
             output.run_metadata = {}
         output.run_metadata.update(**metadata)
+
+    def add_output_tags(
+        self,
+        tags: List[str],
+        output_name: Optional[str] = None,
+    ) -> None:
+        """Adds tags for a given step output.
+
+        Args:
+            tags: The tags to add.
+            output_name: Optional name of the output for which to add the
+                tags. If no name is given and the step only has a single
+                output, the tags of this output will be added. If the
+                step has multiple outputs, an exception will be raised.
+        """
+        output = self._get_output(output_name)
+        if not output.tags:
+            output.tags = []
+        output.tags += tags
 
     def _set_artifact_config(
         self,
@@ -386,6 +432,7 @@ class StepContextOutput:
     artifact_uri: str
     run_metadata: Optional[Dict[str, "MetadataType"]] = None
     artifact_config: Optional["ArtifactConfig"]
+    tags: Optional[List[str]] = None
 
     def __init__(
         self,

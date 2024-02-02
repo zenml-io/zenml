@@ -19,6 +19,8 @@ plugins:
       default_handler: python
       handlers:
         python:
+          setup_commands:
+            - import docs.sys_modules_mock           
           rendering:
             show_source: true
       watch:

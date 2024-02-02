@@ -121,6 +121,66 @@ The Cloud dashboard visualizes version history for your review.
 {% endtab %}
 {% endtabs %}
 
+### Add metadata and tags to artifacts
+
+If you would like to extend your artifacts with extra metadata or tags you can do so by following the patterns demonstrated below:
+
+```python
+from zenml import step, get_step_context, ArtifactConfig
+from typing_extensions import Annotated
+
+
+# below we annotate output with `ArtifactConfig` giving it a name,
+# run_metadata and tags. As a result, the created artifact
+# `artifact_name` will get configured with metadata and tags
+@step
+def annotation_approach() -> (
+    Annotated[
+        str,
+        ArtifactConfig(
+            name="artifact_name",
+            run_metadata={"metadata_key": "metadata_value"},
+            tags=["tag_name"],
+        ),
+    ]
+):
+    return "string"
+
+
+# below we annotate output using functional approach with
+# run_metadata and tags. As a result, the created artifact 
+# `artifact_name` will get configured with metadata and tags
+@step
+def annotation_approach() -> Annotated[str, "artifact_name"]:
+    step_context = get_step_context()
+    step_context.add_output_metadata(
+        output_name="artifact_name", metadata={"metadata_key": "metadata_value"}
+    )
+    step_context.add_output_tags(output_name="artifact_name", tags=["tag_name"])
+    return "string"
+
+
+# below we combine both approaches, so the artifact will get
+# metadata and tags from both sources
+@step
+def annotation_approach() -> (
+    Annotated[
+        str,
+        ArtifactConfig(
+            name="artifact_name",
+            run_metadata={"metadata_key": "metadata_value"},
+            tags=["tag_name"],
+        ),
+    ]
+):
+    step_context = get_step_context()
+    step_context.add_output_metadata(
+        output_name="artifact_name", metadata={"metadata_key2": "metadata_value2"}
+    )
+    step_context.add_output_tags(output_name="artifact_name", tags=["tag_name2"])
+    return "string"
+```
+
 ### Consuming external artifacts within a pipeline
 
 While most pipelines start with a step that produces an artifact, it is often the case to want to consume artifacts external from the pipeline. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitrary data type.
@@ -150,30 +210,40 @@ if __name__ == "__main__":
 
 Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](../advanced-guide/data-management/handle-custom-data-types.md) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts/#zenml.artifacts.external_artifact.ExternalArtifact) for all available options.
 
+{% hint style="info" %}
+Using an `ExternalArtifact` for your step automatically disables caching for the step.
+{% endhint %}
+
 ### Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step.  As we have learned in the [previous section](fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly. However, in ZenML the best practice is not to use the `Client` for this use-case, but rather use the `ExternalArtifact` to pass existing artifacts from other pipeline runs into your steps. This is a more convenient interface:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```python
 from uuid import UUID
 import pandas as pd
-from zenml import step, pipeline, ExternalArtifact
+from zenml import step, pipeline
+from zenml.client import Client
 
 
-@step 
+@step
 def trainer(dataset: pd.DataFrame):
     ...
 
 @pipeline
 def training_pipeline():
+    client = Client()
     # Fetch by ID
-    dataset_artifact = ExternalArtifact(id=UUID("3a92ae32-a764-4420-98ba-07da8f742b76"))
+    dataset_artifact = client.get_artifact_version(
+        name_id_or_prefix=UUID("3a92ae32-a764-4420-98ba-07da8f742b76")
+    )
 
     # Fetch by name alone - uses the latest version of this artifact
-    dataset_artifact = ExternalArtifact(name="iris_dataset")
+    dataset_artifact = client.get_artifact_version(name_id_or_prefix="iris_dataset")
 
     # Fetch by name and version
-    dataset_artifact = ExternalArtifact(name="iris_dataset", version="raw_2023")
+    dataset_artifact = client.get_artifact_version(
+        name_id_or_prefix="iris_dataset", version="raw_2023"
+    )
 
     # Pass into any step
     trainer(dataset=dataset_artifact)
@@ -184,7 +254,7 @@ if __name__ == "__main__":
 ```
 
 {% hint style="info" %}
-Using an `ExternalArtifact` with input data for your step automatically disables caching for the step.
+Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../advanced-guide/data-management/late-materialization.md) behind the scenes.
 {% endhint %}
 
 ## Managing artifacts **not** produced by ZenML pipelines
@@ -327,8 +397,10 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_digits
 from sklearn.svm import SVC
-from zenml import ArtifactConfig, ExternalArtifact, pipeline, step, log_artifact_metadata
+from zenml import ArtifactConfig, pipeline, step, log_artifact_metadata
 from zenml import save_artifact, load_artifact
+from zenml.client import Client
+
 
 @step
 def versioned_data_loader_step() -> (
@@ -349,7 +421,8 @@ def versioned_data_loader_step() -> (
 def model_finetuner_step(
     model: ClassifierMixin, dataset: Tuple[np.ndarray, np.ndarray]
 ) -> Annotated[
-    ClassifierMixin, ArtifactConfig(name="my_model", is_model_artifact=True, tags=["SVC", "trained"])
+    ClassifierMixin,
+    ArtifactConfig(name="my_model", is_model_artifact=True, tags=["SVC", "trained"]),
 ]:
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])
@@ -363,15 +436,20 @@ def model_finetuning_pipeline(
     dataset_version: Optional[str] = None,
     model_version: Optional[str] = None,
 ):
+    client = Client()
     # Either load a previous version of "my_dataset" or create a new one
     if dataset_version:
-        dataset = ExternalArtifact(name="my_dataset", version=dataset_version)
+        dataset = client.get_artifact_version(
+            name_id_or_prefix="my_dataset", version=dataset_version
+        )
     else:
         dataset = versioned_data_loader_step()
 
     # Load the model to finetune
     # If no version is specified, the latest version of "my_model" is used
-    model = ExternalArtifact(name="my_model", version=model_version)
+    model = client.get_artifact_version(
+        name_id_or_prefix="my_model", version=model_version
+    )
 
     # Finetune the model
     # This automatically creates a new version of "my_model"
@@ -395,6 +473,7 @@ def main():
     latest_trained_model = load_artifact("my_model")
     old_dataset = load_artifact("my_dataset", version="1")
     latest_trained_model.predict(old_dataset[0])
+
 
 if __name__ == "__main__":
     main()

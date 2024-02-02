@@ -131,7 +131,7 @@ def resolve(
         attribute_name = obj.__name__  # type: ignore[union-attr]
 
     if (
-        not skip_validation
+        not (skip_validation or getattr(obj, "_DOCS_BUILDING_MODE", False))
         and attribute_name
         and getattr(module, attribute_name, None) is not obj
     ):
