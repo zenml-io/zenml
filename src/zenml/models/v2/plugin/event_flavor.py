@@ -14,7 +14,7 @@
 """Models representing event source flavors.."""
 from typing import Any, Dict
 
-from zenml.plugins.base_plugin_flavor import BasePluginFlavorResponse
+from zenml.models.v2.plugin.plugin_flavor import BasePluginFlavorResponse
 
 
 class EventFlavorResponse(BasePluginFlavorResponse):

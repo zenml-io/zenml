@@ -55,7 +55,7 @@ def webhook(
     event_source_id: UUID,
     request: Request,
     raw_body: bytes = Depends(get_body),
-):
+) -> None:
     """Webhook to receive events from external event sources.
 
     Args:

@@ -22,9 +22,11 @@ from zenml.event_sources.base_event_source_plugin import (
     BaseEvent,
     BaseEventSourcePluginFlavor,
 )
+from zenml.logger import get_logger
 from zenml.models import TriggerFilter, TriggerResponse
-from zenml.plugins.plugin_flavor_registry import logger, plugin_flavor_registry
 from zenml.utils.pagination_utils import depaginate
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -46,7 +48,7 @@ class EventHub:
         self,
         event: BaseEvent,
         event_source: EventSourceResponse,
-    ):
+    ) -> None:
         """Process an incoming event and execute all configured actions.
 
         This will first check for any subscribers/triggers for this event,
@@ -77,6 +79,8 @@ class EventHub:
         Returns:
             The list of matching triggers.
         """
+        from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
+
         # get all event sources configured for this flavor
         triggers: List[TriggerResponse] = depaginate(
             partial(

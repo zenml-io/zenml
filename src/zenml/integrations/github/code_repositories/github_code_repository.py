@@ -152,7 +152,7 @@ class GitHubCodeRepository(BaseCodeRepository):
         os.makedirs(directory, exist_ok=True)
 
         for content in contents:
-            local_path = os.path.join(directory, content.get_name)
+            local_path = os.path.join(directory, content.name)
             if content.type == "dir":
                 self.download_files(
                     commit=commit,
