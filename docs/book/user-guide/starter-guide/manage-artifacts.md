@@ -123,7 +123,7 @@ The Cloud dashboard visualizes version history for your review.
 
 ### Add metadata and tags to artifacts
 
-If you would like to extend your Artifacts with extra metadata or tags you can do it following patterns demonstrated below:
+If you would like to extend your artifacts with extra metadata or tags you can do so by following the patterns demonstrated below:
 
 ```python
 from zenml import step, get_step_context, ArtifactConfig
@@ -131,8 +131,8 @@ from typing_extensions import Annotated
 
 
 # below we annotate output with `ArtifactConfig` giving it a name,
-# run_metadata and tags. As a result, created artifact `artifact_name`
-# will get configured metadata and tags
+# run_metadata and tags. As a result, the created artifact
+# `artifact_name` will get configured with metadata and tags
 @step
 def annotation_approach() -> (
     Annotated[
@@ -160,7 +160,7 @@ def annotation_approach() -> Annotated[str, "artifact_name"]:
     return "string"
 
 
-# below we combine both approaches, so artifact will get
+# below we combine both approaches, so the artifact will get
 # metadata and tags from both sources
 @step
 def annotation_approach() -> (

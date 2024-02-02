@@ -45,7 +45,7 @@ class ArtifactRequest(BaseRequest):
         default=False,
     )
     tags: Optional[List[str]] = Field(
-        title="Tags of the artifact.",
+        title="Artifact tags.",
         description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
         default=None,
     )
