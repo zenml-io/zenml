@@ -18,6 +18,16 @@ You should use the HyperAI orchestrator if:
 * you're looking for a managed solution for running your pipelines.
 * you're a HyperAI customer.
 
+### Prerequisites
+You will need to do the following to start using the HyperAI orchestrator:
+
+* Have a running HyperAI instance. It must be accessible from the internet (or at least from the IP addresses of your ZenML users) and allow SSH key based access (passwords are not supported).
+* Ensure that a recent version of Docker is installed. This version must include Docker Compose, meaning that the command `docker compose` works.
+* Ensure that the appropriate [NVIDIA Driver](https://www.nvidia.com/en-us/drivers/unix/) is installed on the HyperAI instance (if not already installed by the HyperAI team).
+* Ensure that the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) is installed and configured on the HyperAI instance.
+
+Note that it is possible to omit installing the NVIDIA Driver and NVIDIA Container Toolkit. However, you will then be unable to use the GPU from within your ZenML pipeline. Additionally, you will then need to disable GPU access within the container when configuring the Orchestrator component, or the pipeline will not start correctly.
+
 ## How it works
 The HyperAI orchestrator works with Docker Compose, which can be used to construct machine learning pipelines.
 Under the hood, it creates a Docker Compose file which it then deploys and executes on the configured HyperAI instance.
