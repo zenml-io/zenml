@@ -135,7 +135,7 @@ def update_event_source(
         event_source_id=event_source_id
     )
 
-    event_source_impl = plugin_flavor_registry.get_plugin_implementation(
+    event_source_impl = plugin_flavor_registry.get_plugin(
         event_source.flavor,
         event_source.plugin_type,
         event_source.plugin_subtype,

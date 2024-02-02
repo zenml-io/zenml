@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the internal scheduler event source plugin."""
 from typing import Type
+from uuid import UUID
 
 from zenml.event_sources.base_event_source import BaseEvent
 from zenml.event_sources.schedules.base_schedule_event import (
@@ -22,13 +23,23 @@ from zenml.event_sources.schedules.base_schedule_event import (
     ScheduleEventSourceConfig,
 )
 from zenml.logger import get_logger
-from zenml.models import EventSourceRequest, EventSourceResponse
+from zenml.models import (
+    EventSourceRequest,
+    EventSourceResponse,
+    EventSourceUpdate,
+)
 
 logger = get_logger(__name__)
 
 
+# -------------------- Scheduler Event Models ---------------------------
+
+
 class ScheduleEvent(BaseScheduleEvent):
     """Schedule event."""
+
+
+# -------------------- Configuration Models -----------------------------
 
 
 class SchedulerEventFilterConfiguration(ScheduleEventFilterConfig):
@@ -45,8 +56,11 @@ class SchedulerEventSourceConfiguration(ScheduleEventSourceConfig):
     """Configuration for scheduler source filters."""
 
 
-class SchedulerEventSourcePlugin(BaseScheduleEventSource):
-    """Handler for all github events."""
+# -------------------- Scheduler Event Source --------------------------
+
+
+class SchedulerEventSource(BaseScheduleEventSource):
+    """Scheduler event source."""
 
     @property
     def config_class(self) -> Type[ScheduleEventSourceConfig]:
@@ -56,6 +70,15 @@ class SchedulerEventSourcePlugin(BaseScheduleEventSource):
             The configuration.
         """
         return SchedulerEventSourceConfiguration
+
+    @property
+    def filter_class(self) -> Type[SchedulerEventFilterConfiguration]:
+        """Returns the webhook event filter configuration class.
+
+        Returns:
+            The event filter configuration class.
+        """
+        return SchedulerEventFilterConfiguration
 
     def _create_event_source(
         self, event_source: EventSourceRequest
@@ -67,3 +90,23 @@ class SchedulerEventSourcePlugin(BaseScheduleEventSource):
             event_source=event_source
         )
         return created_event_source
+
+    def _update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Wraps the zen_store update method to add plugin specific functionality.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The event source response body.
+        """
+        updated_event_source = self.zen_store.update_event_source(
+            event_source_id=event_source_id,
+            event_source_update=event_source_update,
+        )
+        return updated_event_source
