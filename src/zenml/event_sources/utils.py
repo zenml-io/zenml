@@ -15,8 +15,8 @@
 from typing import Any, Dict
 
 from zenml.enums import PluginSubType, PluginType
-from zenml.event_sources.base_event_source_plugin import (
-    BaseEventSourcePlugin,
+from zenml.event_sources.base_event_source import (
+    BaseEventSource,
 )
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 
@@ -43,7 +43,7 @@ def validate_event_filter_configuration(
         flavor=flavor, _type=plugin_type, subtype=plugin_subtype
     )
 
-    if not isinstance(event_source_plugin, BaseEventSourcePlugin):
+    if not isinstance(event_source_plugin, BaseEventSource):
         raise RuntimeError(
             f"Event source plugin does not exist for flavor {flavor}, "
             f"type {plugin_type}, and subtype {plugin_subtype}."

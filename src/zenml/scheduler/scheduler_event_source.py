@@ -14,10 +14,10 @@
 """Implementation of the internal scheduler event source plugin."""
 from typing import Type
 
-from zenml.event_sources.base_event_source_plugin import BaseEvent
-from zenml.event_sources.schedules.base_schedule_event_plugin import (
+from zenml.event_sources.base_event_source import BaseEvent
+from zenml.event_sources.schedules.base_schedule_event import (
     BaseScheduleEvent,
-    BaseScheduleEventSourcePlugin,
+    BaseScheduleEventSource,
     ScheduleEventFilterConfig,
     ScheduleEventSourceConfig,
 )
@@ -45,7 +45,7 @@ class SchedulerEventSourceConfiguration(ScheduleEventSourceConfig):
     """Configuration for scheduler source filters."""
 
 
-class SchedulerEventSourcePlugin(BaseScheduleEventSourcePlugin):
+class SchedulerEventSourcePlugin(BaseScheduleEventSource):
     """Handler for all github events."""
 
     @property

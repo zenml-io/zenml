@@ -18,9 +18,9 @@ from typing import TYPE_CHECKING, List
 from zenml import EventSourceResponse
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PluginType
-from zenml.event_sources.base_event_source_plugin import (
+from zenml.event_sources.base_event_source import (
     BaseEvent,
-    BaseEventSourcePluginFlavor,
+    BaseEventSourceFlavor,
 )
 from zenml.logger import get_logger
 from zenml.models import TriggerFilter, TriggerResponse
@@ -115,7 +115,7 @@ class EventHub:
                     f"{event_source.id}."
                 )
 
-            assert issubclass(plugin_flavor, BaseEventSourcePluginFlavor)
+            assert issubclass(plugin_flavor, BaseEventSourceFlavor)
 
             # Get the filter class from the plugin flavor class
             event_filter_config_class = plugin_flavor.EVENT_FILTER_CONFIG_CLASS

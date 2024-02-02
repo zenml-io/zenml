@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginType
-from zenml.event_sources.base_event_source_plugin import EventSourceConfig
+from zenml.event_sources.base_event_source import EventSourceConfig
 from zenml.models.v2.plugin.action_flavor import ActionFlavorResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
@@ -35,8 +35,8 @@ class ActionPlanConfig(BasePluginConfig):
 # -------------------- Plugin -----------------------------------
 
 
-class BaseActionPlanPlugin(BasePlugin, ABC):
-    """Implementation for an action plan plugin."""
+class BaseActionPlan(BasePlugin, ABC):
+    """Implementation for an action plan."""
 
     @property
     @abstractmethod

@@ -16,10 +16,10 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar, Type
 
 from zenml.enums import PluginSubType
-from zenml.event_sources.base_event_source_plugin import (
+from zenml.event_sources.base_event_source import (
     BaseEvent,
-    BaseEventSourcePlugin,
-    BaseEventSourcePluginFlavor,
+    BaseEventSource,
+    BaseEventSourceFlavor,
     EventFilterConfig,
     EventSourceConfig,
 )
@@ -50,10 +50,10 @@ class ScheduleEventFilterConfig(EventFilterConfig):
     """The Event Filter configuration."""
 
 
-# -------------------- Plugin -----------------------------------
+# -------------------- Schedule Event Source ---------------------
 
 
-class BaseScheduleEventSourcePlugin(BaseEventSourcePlugin, ABC):
+class BaseScheduleEventSource(BaseEventSource, ABC):
     """Base implementation for all Webhook event sources."""
 
     @property
@@ -80,7 +80,7 @@ class BaseScheduleEventSourcePlugin(BaseEventSourcePlugin, ABC):
 # -------------------- Flavors ----------------------------------
 
 
-class BaseScheduleEventSourcePluginFlavor(BaseEventSourcePluginFlavor, ABC):
+class BaseScheduleEventSourceFlavor(BaseEventSourceFlavor, ABC):
     """Base Event Plugin Flavor to access an event plugin along with its configurations."""
 
     SUBTYPE: ClassVar[PluginSubType] = PluginSubType.SCHEDULE

@@ -20,10 +20,10 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginSubType
 from zenml.event_hub.event_hub import event_hub
-from zenml.event_sources.base_event_source_plugin import (
+from zenml.event_sources.base_event_source import (
     BaseEvent,
-    BaseEventSourcePlugin,
-    BaseEventSourcePluginFlavor,
+    BaseEventSource,
+    BaseEventSourceFlavor,
     EventFilterConfig,
     EventSourceConfig,
 )
@@ -55,10 +55,10 @@ class WebhookEventFilterConfig(EventFilterConfig):
     """The Event Filter configuration."""
 
 
-# -------------------- Plugin -----------------------------------
+# -------------------- Webhook Event Source -----------------------
 
 
-class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
+class BaseWebhookEventSource(BaseEventSource, ABC):
     """Base implementation for all Webhook event sources."""
 
     @property
@@ -175,7 +175,7 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
 # -------------------- Flavors ----------------------------------
 
 
-class BaseWebhookEventSourcePluginFlavor(BaseEventSourcePluginFlavor, ABC):
+class BaseWebhookEventSourceFlavor(BaseEventSourceFlavor, ABC):
     """Base Event Plugin Flavor to access an event plugin along with its configurations."""
 
     SUBTYPE: ClassVar[PluginSubType] = PluginSubType.WEBHOOK

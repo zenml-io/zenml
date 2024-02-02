@@ -21,6 +21,7 @@ from typing import (
     Dict,
     Type,
 )
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -74,10 +75,10 @@ class EventFilterConfig(BaseModel, ABC):
         """
 
 
-# -------------------- Plugin -----------------------------------
+# -------------------- Event Source -----------------------------
 
 
-class BaseEventSourcePlugin(BasePlugin, ABC):
+class BaseEventSource(BasePlugin, ABC):
     """Implementation for an EventPlugin."""
 
     @property
@@ -210,7 +211,7 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
 # -------------------- Flavors ----------------------------------
 
 
-class BaseEventSourcePluginFlavor(BasePluginFlavor, ABC):
+class BaseEventSourceFlavor(BasePluginFlavor, ABC):
     """Base Event Plugin Flavor to access an event plugin along with its configurations."""
 
     TYPE: ClassVar[PluginType] = PluginType.EVENT_SOURCE

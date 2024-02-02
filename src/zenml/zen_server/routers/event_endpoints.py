@@ -23,7 +23,7 @@ from zenml import (
     Page,
 )
 from zenml.constants import API, EVENT_SOURCES, VERSION_1
-from zenml.event_sources.base_event_source_plugin import BaseEventSourcePlugin
+from zenml.event_sources.base_event_source import BaseEventSource
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -142,7 +142,7 @@ def update_event_source(
     )
 
     assert issubclass(
-        type(event_source_impl), BaseEventSourcePlugin
+        type(event_source_impl), BaseEventSource
     )  # We know this
     return verify_permissions_and_update_entity(
         id=event_source_id,
