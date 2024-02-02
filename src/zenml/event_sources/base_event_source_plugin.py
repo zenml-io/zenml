@@ -19,10 +19,8 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    List,
     Type,
 )
-from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -131,39 +129,6 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
             raise ValueError("Invalid Configuration.")
         else:
             return
-
-    @abstractmethod
-    def get_matching_triggers_for_event(
-        self, incoming_event: Dict[str, Any], event_source: EventSourceResponse
-    ) -> List[UUID]:
-        """Process the incoming event and forward with trigger_ids to event hub.
-
-        Args:
-            incoming_event: THe inbound event.
-            event_source: The Event Source
-        """
-
-    @abstractmethod
-    def _interpret_event(self, event: Dict[str, Any]) -> BaseEvent:
-        """Converts the generic event body into a event-source specific pydantic model.
-
-        Args:
-            event: The generic event body
-
-        Return:
-            An instance of the event source specific pydantic model.
-        """
-
-    @abstractmethod
-    def _get_matching_triggers(
-        self, event_source: EventSourceResponse, event: BaseEvent
-    ) -> List[UUID]:
-        """Get all Triggers with matching event filters.
-
-        Args:
-            event_source: The event sources.
-            event: The inbound Event.
-        """
 
 
 # -------------------- Flavors ----------------------------------

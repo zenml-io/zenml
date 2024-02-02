@@ -12,11 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Abstract BaseEvent class that all Event implementations must implement."""
+import hashlib
+import hmac
+import json
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginSubType
+from zenml.event_hub.event_hub import event_hub
 from zenml.event_sources.base_event_source_plugin import (
     BaseEvent,
     BaseEventSourcePlugin,
@@ -24,6 +27,7 @@ from zenml.event_sources.base_event_source_plugin import (
     EventFilterConfig,
     EventSourceConfig,
 )
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import EventSourceResponse
 
@@ -66,42 +70,99 @@ class BaseWebhookEventSourcePlugin(BaseEventSourcePlugin, ABC):
             The configuration.
         """
 
-    @staticmethod
-    @abstractmethod
     def is_valid_signature(
-        body: bytes, secret_token: str, signature_header: str
+        self, raw_body: bytes, secret_token: str, signature_header: str
     ) -> bool:
-        """Verify that the payload was sent from GitHub by validating SHA256.
-
-        Raise and return 403 if not authorized.
+        """Verify the SHA256 signature of the payload.
 
         Args:
-            body: original request body to verify (request.body())
-            secret_token: GitHub app webhook token (WEBHOOK_SECRET)
-            signature_header: header received from GitHub (x-hub-signature-256)
-        """
+            raw_body: original request body to verify
+            secret_token: secret token used to generate the signature
+            signature_header: signature header to verify (x-hub-signature-256)
 
-    def get_matching_triggers_for_event(
-        self, incoming_event: Dict[str, Any], event_source: EventSourceResponse
-    ) -> List[UUID]:
-        """Process the incoming event and forward with trigger_ids to event hub.
+        Returns:
+            Whether if the signature is valid.
+        """
+        hash_object = hmac.new(
+            secret_token.encode("utf-8"),
+            msg=raw_body,
+            digestmod=hashlib.sha256,
+        )
+        expected_signature = "sha256=" + hash_object.hexdigest()
+
+        if not hmac.compare_digest(expected_signature, signature_header):
+            return False
+        return True
+
+    @abstractmethod
+    def _interpret_event(self, event: Dict[str, Any]) -> BaseEvent:
+        """Converts the generic event body into a event-source specific pydantic model.
 
         Args:
-            incoming_event: The inbound event.
-            event_source: The Event Source
+            event: The generic event body
+
+        Return:
+            An instance of the event source specific pydantic model.
         """
-        event = self._interpret_event(incoming_event)
 
-        # get all triggers that have matching event filters configured
-        trigger_ids = self._get_matching_triggers(
-            event_source=event_source, event=event
-        )
+    def process_webhook_event(
+        self,
+        event_source: EventSourceResponse,
+        raw_body: bytes,
+        headers: Dict[str, str],
+    ) -> None:
+        """Process the incoming webhook event.
 
-        logger.info(
-            "An event came in, the following triggers will be" " used: %s ",
-            trigger_ids,
+        Args:
+            event_source: The event source that the event belongs to.
+            raw_body: The raw inbound webhook event.
+            headers: The headers of the inbound webhook event.
+        """
+        # For now assume the x-hub-signature-256 authentication method
+        # is used for all webhook events.
+        signature_header = headers.get("x-hub-signature-256")
+        if not signature_header:
+            raise AuthorizationException(
+                "x-hub-signature-256 header is missing!"
+            )
+
+        # For now assume all webhook events are json encoded and parse
+        # the body as such.
+        try:
+            json_body = json.loads(raw_body)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON body received: {e}")
+
+        # Temporary solution to get the secret value for the Event Source
+        webhook_secret_id = event_source.metadata.configuration[
+            "webhook_secret_id"
+        ]
+        try:
+            secret_value = self.zen_store.get_secret(
+                secret_id=webhook_secret_id
+            ).secret_values["webhook_secret"]
+        except KeyError:
+            logger.exception(
+                f"Could not retrieve secret value for secret id "
+                f"'{webhook_secret_id}'"
+            )
+            raise AuthorizationException(
+                "Could not retrieve webhook signature."
+            )
+
+        if not self.is_valid_signature(
+            raw_body=raw_body,
+            secret_token=secret_value,
+            signature_header=signature_header,
+        ):
+            raise AuthorizationException("Request signatures didn't match!")
+
+        event = self._interpret_event(json_body)
+
+        event_hub.process_event(
+            incoming_event=event,
+            event_source=event_source,
         )
-        return trigger_ids
 
 
 # -------------------- Flavors ----------------------------------

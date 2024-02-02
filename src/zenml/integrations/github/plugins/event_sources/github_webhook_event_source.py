@@ -12,11 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the github webhook event source."""
-import hashlib
-import hmac
 import json
 from datetime import datetime
-from functools import partial
 from typing import Any, Dict, List, Optional, Type
 from uuid import UUID
 
@@ -32,11 +29,8 @@ from zenml.event_sources.webhooks.base_webhook_event_plugin import (
 from zenml.logger import get_logger
 from zenml.models import (
     EventSourceResponse,
-    TriggerFilter,
-    TriggerResponse,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.pagination_utils import depaginate
 from zenml.utils.secret_utils import SecretField
 from zenml.utils.string_utils import random_str
 
@@ -184,33 +178,6 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         """
         return GithubWebhookEventSourceConfiguration
 
-    @staticmethod
-    def is_valid_signature(
-        raw_body: bytes, secret_token: str, signature_header: str
-    ) -> bool:
-        """Verify that the payload was sent from GitHub by validating SHA256.
-
-        Raise and return 403 if not authorized.
-
-        Args:
-            raw_body: original request body to verify (request.body())
-            secret_token: GitHub app webhook token (WEBHOOK_SECRET)
-            signature_header: header received from GitHub (x-hub-signature-256)
-
-        Returns:
-            Boolean if the signature is valid.
-        """
-        hash_object = hmac.new(
-            secret_token.encode("utf-8"),
-            msg=raw_body,
-            digestmod=hashlib.sha256,
-        )
-        expected_signature = "sha256=" + hash_object.hexdigest()
-
-        if not hmac.compare_digest(expected_signature, signature_header):
-            return False
-        return True
-
     def _interpret_event(self, event: Dict[str, Any]) -> GithubEvent:
         """Converts the generic event body into a event-source specific pydantic model.
 
@@ -235,42 +202,6 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
             raise ValueError("Event did not match the pydantic model.")
         else:
             return event
-
-    def _get_matching_triggers(
-        self, event_source: EventSourceResponse, event: GithubEvent
-    ) -> List[TriggerResponse]:
-        """Get all Triggers with matching event filters.
-
-        For github events this will compare the configured event filters
-        of all matching triggers with the inbound event.
-
-        Args:
-            event_source: The event source.
-            event: The inbound Event.
-
-        Returns: A list of all matching Event Source IDs.
-        """
-        # get all event sources configured for this flavor
-        triggers: List[TriggerResponse] = depaginate(
-            partial(
-                self.zen_store.list_triggers,
-                trigger_filter_model=TriggerFilter(
-                    event_source_id=event_source.id  # TODO: Handle for multiple source_ids
-                ),
-                hydrate=True,
-            )
-        )
-
-        trigger_list: List[TriggerResponse] = []
-
-        for trigger in triggers:
-            event_filter = GithubWebhookEventFilterConfiguration(
-                **trigger.metadata.event_filter
-            )
-            if event_filter.event_matches_filter(event=event):
-                trigger_list.append(trigger)
-
-        return trigger_list
 
     def _create_event_source(
         self, event_source: EventSourceRequest

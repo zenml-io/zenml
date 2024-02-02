@@ -44,10 +44,10 @@ class BasePlugin(ABC):
 
     @property
     def zen_store(self) -> "BaseZenStore":
-        """Returns the `BasePluginConfig` config.
+        """Returns the active zen store.
 
         Returns:
-            The configuration.
+            The active zen store.
         """
         return GlobalConfiguration().zen_store
 

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Registry for all plugins."""
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Type
 
 from pydantic import BaseModel
 
@@ -94,17 +94,21 @@ class PluginFlavorRegistry:
         return []
 
     @property
-    def _builtin_flavors(self) -> List[Type["BasePluginFlavor"]]:
+    def _builtin_flavors(self) -> Sequence[Type["BasePluginFlavor"]]:
         """A list of all default in-built flavors.
 
         Returns:
             A list of builtin flavors.
         """
-        flavors = []
+        from zenml.scheduler.scheduler_event_source_flavor import (
+            SchedulerEventSourceFlavor,
+        )
+
+        flavors = [SchedulerEventSourceFlavor]
         return flavors
 
     @property
-    def _integration_flavors(self) -> List[Type["BasePluginFlavor"]]:
+    def _integration_flavors(self) -> Sequence[Type["BasePluginFlavor"]]:
         """A list of all integration event flavors.
 
         Returns:
@@ -198,10 +202,10 @@ class PluginFlavorRegistry:
                 f"No flavor class found for flavor name {flavor} and type {_type} and subtype {subtype}."
             )
 
-    def get_plugin_implementation(
+    def get_plugin(
         self, flavor: str, _type: PluginType, subtype: PluginSubType
     ) -> "BasePlugin":
-        """Get a single event_source based on the key.
+        """Get the plugin based on the flavor, type and subtype.
 
         Args:
             flavor: The name of the plugin flavor.
@@ -209,7 +213,7 @@ class PluginFlavorRegistry:
             subtype: The subtype of plugin.
 
         Returns:
-            `BaseEventConfiguration` subclass that was registered for this key.
+            Plugin instance associated with the flavor, type and subtype.
         """
         try:
             return self._get_registry_entry(
@@ -217,7 +221,8 @@ class PluginFlavorRegistry:
             ).plugin_instance
         except KeyError:
             raise KeyError(
-                f"No flavor class found for flavor name {flavor} and type {_type} and subtype {subtype}."
+                f"No flavor class found for flavor name {flavor} and type "
+                f"{_type} and subtype {subtype}."
             )
 
     def initialize_plugins(self, zen_store: "BaseZenStore"):
