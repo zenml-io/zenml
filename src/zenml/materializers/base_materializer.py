@@ -51,51 +51,51 @@ class BaseMaterializerMeta(type):
         cls = cast(
             Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
         )
+        if not cls._DOCS_BUILDING_MODE:
+            # Skip the following validation and registration for base classes.
+            if cls.SKIP_REGISTRATION:
+                # Reset the flag so subclasses don't have it set automatically.
+                cls.SKIP_REGISTRATION = False
+                return cls
 
-        # Skip the following validation and registration for base classes.
-        if cls.SKIP_REGISTRATION:
-            # Reset the flag so subclasses don't have it set automatically.
-            cls.SKIP_REGISTRATION = False
-            return cls
-
-        # Validate that the class is properly defined.
-        if not cls.ASSOCIATED_TYPES:
-            raise MaterializerInterfaceError(
-                f"Invalid materializer class '{name}'. When creating a "
-                f"custom materializer, make sure to specify at least one "
-                f"type in its ASSOCIATED_TYPES class variable.",
-                url="https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types",
-            )
-
-        # Validate associated artifact type.
-        if cls.ASSOCIATED_ARTIFACT_TYPE:
-            try:
-                cls.ASSOCIATED_ARTIFACT_TYPE = ArtifactType(
-                    cls.ASSOCIATED_ARTIFACT_TYPE
-                )
-            except ValueError:
+            # Validate that the class is properly defined.
+            if not cls.ASSOCIATED_TYPES:
                 raise MaterializerInterfaceError(
                     f"Invalid materializer class '{name}'. When creating a "
-                    f"custom materializer, make sure to specify a valid "
-                    f"artifact type in its ASSOCIATED_ARTIFACT_TYPE class "
-                    f"variable.",
+                    f"custom materializer, make sure to specify at least one "
+                    f"type in its ASSOCIATED_TYPES class variable.",
                     url="https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types",
                 )
 
-        # Validate associated data types.
-        for associated_type in cls.ASSOCIATED_TYPES:
-            if not inspect.isclass(associated_type):
-                raise MaterializerInterfaceError(
-                    f"Associated type {associated_type} for materializer "
-                    f"{name} is not a class.",
-                    url="https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types",
-                )
+            # Validate associated artifact type.
+            if cls.ASSOCIATED_ARTIFACT_TYPE:
+                try:
+                    cls.ASSOCIATED_ARTIFACT_TYPE = ArtifactType(
+                        cls.ASSOCIATED_ARTIFACT_TYPE
+                    )
+                except ValueError:
+                    raise MaterializerInterfaceError(
+                        f"Invalid materializer class '{name}'. When creating a "
+                        f"custom materializer, make sure to specify a valid "
+                        f"artifact type in its ASSOCIATED_ARTIFACT_TYPE class "
+                        f"variable.",
+                        url="https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types",
+                    )
 
-        # Register the materializer.
-        for associated_type in cls.ASSOCIATED_TYPES:
-            materializer_registry.register_materializer_type(
-                associated_type, cls
-            )
+            # Validate associated data types.
+            for associated_type in cls.ASSOCIATED_TYPES:
+                if not inspect.isclass(associated_type):
+                    raise MaterializerInterfaceError(
+                        f"Associated type {associated_type} for materializer "
+                        f"{name} is not a class.",
+                        url="https://docs.zenml.io/user-guide/advanced-guide/artifact-management/handle-custom-data-types",
+                    )
+
+            # Register the materializer.
+            for associated_type in cls.ASSOCIATED_TYPES:
+                materializer_registry.register_materializer_type(
+                    associated_type, cls
+                )
 
         return cls
 
@@ -111,6 +111,8 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     # Subclasses will automatically have this set to False unless they override
     # it themselves.
     SKIP_REGISTRATION: ClassVar[bool] = True
+
+    _DOCS_BUILDING_MODE: ClassVar[bool] = False
 
     def __init__(self, uri: str):
         """Initializes a materializer with the given URI.
