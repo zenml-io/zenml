@@ -1575,7 +1575,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def _update_stack_from_config(
         self, run_configuration: PipelineRunConfiguration
     ) -> None:
-        """Activate the stack from the pipeline run configuation if one is given.
+        """Activate the stack from the pipeline run configuration if one is given.
 
         Args:
             run_configuration: The run configuration for this pipeline.
