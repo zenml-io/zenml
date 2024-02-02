@@ -276,36 +276,44 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         return trigger_list
 
     def _update_event_source(
-        self, event_source: EventSourceUpdate
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
     ) -> EventSourceResponse:
         """Wraps the zen_store update method to add plugin specific functionality.
 
         Args:
-            event_source: The event source update model
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
 
         Returns:
             The event source response body.
         """
-        try:
-            GithubWebhookEventSourceConfiguration(**event_source.configuration)
-        except ValueError:
-            raise ValueError("Event Source configuration invalid.")
-
-        created_event_source = self.zen_store.create_event_source(
-            event_source=event_source
+        original_event_source = self.zen_store.get_event_source(
+            event_source_id=event_source_id
         )
 
-        if event_source.rotate_secret:
+        updated_event_source = self.zen_store.update_event_source(
+            event_source_id=event_source_id,
+            event_source_update=event_source_update,
+        )
+
+        if event_source_update.rotate_secret:
             # In case the secret is being rotated
             secret_key_value = random_str(12)
             webhook_secret = SecretUpdate(
                 values={"webhook_secret": secret_key_value}
             )
-            self.zen_store.update_secret(webhook_secret)
-            created_event_source.metadata.configuration[
+            self.zen_store.update_secret(
+                secret_id=original_event_source.metadata.configuration[
+                    "webhook_secret_id"
+                ],
+                secret_update=webhook_secret,
+            )
+            updated_event_source.metadata.configuration[
                 "webhook_secret"
             ] = secret_key_value
-        return created_event_source
+        return updated_event_source
 
     def _create_event_source(
         self, event_source: EventSourceRequest

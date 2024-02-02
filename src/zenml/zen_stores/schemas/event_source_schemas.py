@@ -74,6 +74,7 @@ class EventSourceSchema(NamedSchema, table=True):
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
     configuration: bytes
+    is_active: bool = Field(nullable=False)
 
     @classmethod
     def from_request(cls, request: EventSourceRequest) -> "EventSourceSchema":
@@ -100,6 +101,7 @@ class EventSourceSchema(NamedSchema, table=True):
                     default=pydantic_encoder,
                 ).encode("utf-8")
             ),
+            is_active=True,  # Makes no sense to create an inactive event source
         )
 
     def to_model(self, hydrate: bool = False) -> EventSourceResponse:
@@ -119,6 +121,7 @@ class EventSourceSchema(NamedSchema, table=True):
             flavor=self.flavor,
             plugin_type=self.plugin_type,
             plugin_subtype=self.plugin_subtype,
+            is_active=self.is_active,
         )
         metadata = None
         if hydrate:

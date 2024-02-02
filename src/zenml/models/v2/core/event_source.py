@@ -83,6 +83,7 @@ class EventSourceUpdate(EventSourceRequest):
     rotate_secret: Optional[bool] = Field(
         title="In case the secret needs to be rotated."
     )
+    is_active: Optional[bool]
 
 
 # ------------------ Response Model ------------------
@@ -109,6 +110,8 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
     updated: datetime = Field(
         title="The timestamp when this event filter was last updated.",
     )
+
+    is_active: bool
 
 
 class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
