@@ -39,6 +39,7 @@ class HyperAIIntegration(Integration):
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the HyperAI integration.
+        
         Returns:
             List of stack component flavors for this integration.
         """

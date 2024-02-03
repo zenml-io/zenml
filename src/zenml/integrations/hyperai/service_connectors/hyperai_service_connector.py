@@ -172,6 +172,9 @@ class HyperAIServiceConnector(ServiceConnector):
 
         Returns:
             The Paramiko key type.
+
+        Raises:
+            ValueError: If the authentication method is invalid.
         """
         mapping = {
             HyperAIAuthenticationMethods.RSA_KEY_OPTIONAL_PASSPHRASE: paramiko.RSAKey,
@@ -287,7 +290,16 @@ class HyperAIServiceConnector(ServiceConnector):
         self,
         **kwargs: Any,
     ) -> None:
-        """There is no local client for the HyperAI connector, so it does nothing."""
+        """There is no local client for the HyperAI connector, so it does nothing.
+
+        Args:
+            kwargs: Additional implementation specific keyword arguments to pass
+                to the session or client constructor.
+
+        Raises:
+            NotImplementedError: If there is no local client for the HyperAI
+                connector.
+        """
         raise NotImplementedError(
             "There is no local client for the HyperAI connector."
         )
@@ -337,6 +349,10 @@ class HyperAIServiceConnector(ServiceConnector):
 
         Returns:
             The resource ID if the connection can be established.
+
+        Raises:
+            ValueError: If the resource ID is not in the list of configured
+                hostnames.
         """
         if resource_id:
             if resource_id not in self.config.hostnames:
