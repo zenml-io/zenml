@@ -1810,6 +1810,15 @@ class SqlZenStore(BaseZenStore):
 
             # Create the artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
+
+            # Save tags of the artifact.
+            if artifact.tags:
+                self._attach_tags_to_resource(
+                    tag_names=artifact.tags,
+                    resource_id=artifact_schema.id,
+                    resource_type=TaggableResourceTypes.ARTIFACT,
+                )
+
             session.add(artifact_schema)
             session.commit()
             return artifact_schema.to_model(hydrate=True)
@@ -5948,7 +5957,11 @@ class SqlZenStore(BaseZenStore):
             The registered stack.
         """
         with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists(stack=stack, session=session)
+            self._fail_if_stack_with_name_exists(
+                stack=stack,
+                workspace_id=stack.workspace,
+                session=session,
+            )
 
             # Get the Schemas of all components mentioned
             component_ids = (
@@ -6070,7 +6083,9 @@ class SqlZenStore(BaseZenStore):
             if stack_update.name:
                 if existing_stack.name != stack_update.name:
                     self._fail_if_stack_with_name_exists(
-                        stack=stack_update, session=session
+                        stack=stack_update,
+                        session=session,
+                        workspace_id=existing_stack.workspace_id,
                     )
 
             components = []
@@ -6139,12 +6154,14 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_stack_with_name_exists(
         self,
         stack: StackRequest,
+        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a stack with same name exists.
 
         Args:
             stack: The Stack
+            workspace_id: The ID of the workspace
             session: The Session
 
         Returns:
@@ -6156,7 +6173,7 @@ class SqlZenStore(BaseZenStore):
         existing_domain_stack = session.exec(
             select(StackSchema)
             .where(StackSchema.name == stack.name)
-            .where(StackSchema.workspace_id == stack.workspace)
+            .where(StackSchema.workspace_id == workspace_id)
         ).first()
         if existing_domain_stack is not None:
             workspace = self._get_workspace_schema(
