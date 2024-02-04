@@ -132,6 +132,7 @@ python run.py
 <summary>An example of a generated YAML configuration template</summary>
 
 ```yaml
+active_stack: Optional[str]
 build: Union[PipelineBuildBase, UUID, NoneType]
 enable_artifact_metadata: Optional[bool]
 enable_artifact_visualization: Optional[bool]
@@ -329,6 +330,12 @@ These are boolean flags for various configurations:
 * `enable_artifact_visualization`: Whether to [attach visualizations of artifacts](../data-management/visualize-artifacts.md).
 * `enable_cache`: Utilize [caching](../../starter-guide/cache-previous-executions.md) or not.
 * `enable_step_logs`: Enable tracking [step logs](managing-steps.md#enable-or-disable-logs-storing).
+
+### `active_stack` name or ID
+
+The name of the UUID of the `active stack` to use for this
+pipeline. If specified the active stack is set for the duration of the pipeline execution and restored upon 
+completion. If not specified, the current active stack is used.
 
 ### `build` ID
 
