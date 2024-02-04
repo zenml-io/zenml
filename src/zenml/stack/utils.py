@@ -155,10 +155,18 @@ class stack_context:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
+        exception_type: Optional[Type[BaseException]],
+        exception_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
-        """Restores the original active stack."""
+        """Get a stack component flavor by name and type from a ZenStore.
+
+        Args:
+            exception_type: Type of the execption that was raised. 
+            None if no execption.
+            exception_value: Type of exception that was raised.
+            e.g., divide_by_zero error. None if no exception.
+            traceback: Traceback report. None if no excpetion.
+        """        
         if self._default_stack.id != Client().active_stack:
             Client().activate_stack(self._default_stack.id)
