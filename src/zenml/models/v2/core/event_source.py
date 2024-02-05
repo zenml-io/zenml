@@ -228,10 +228,6 @@ class EventSourceFilter(WorkspaceScopedFilter):
         default=None,
         description="Flavor of the event source",
     )
-    plugin_type: Optional[str] = Field(
-        title="The plugin type of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     plugin_subtype: Optional[str] = Field(
         title="The plugin sub type of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
