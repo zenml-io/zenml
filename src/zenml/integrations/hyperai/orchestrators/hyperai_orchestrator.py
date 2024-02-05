@@ -358,9 +358,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f_.write(compose_definition_yaml)
 
             # Scp Docker Compose file to HyperAI instance
-            scp_client = paramiko_client.open_sftp()
-            scp_client.put(f.name, f"{directory_name}/docker-compose.yaml")
-            scp_client.close()
+            try:
+                scp_client = paramiko_client.open_sftp()
+                scp_client.put(f.name, f"{directory_name}/docker-compose.yaml")
+                scp_client.close()
+            except FileNotFoundError:
+                raise RuntimeError(
+                    "Failed to write Docker Compose file to HyperAI instance. Does the user have permissions to write?"
+                )
 
         # Run or schedule Docker Compose file depending on settings
         if not deployment.schedule:
