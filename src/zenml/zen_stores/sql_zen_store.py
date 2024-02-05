@@ -1810,6 +1810,15 @@ class SqlZenStore(BaseZenStore):
 
             # Create the artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
+
+            # Save tags of the artifact.
+            if artifact.tags:
+                self._attach_tags_to_resource(
+                    tag_names=artifact.tags,
+                    resource_id=artifact_schema.id,
+                    resource_type=TaggableResourceTypes.ARTIFACT,
+                )
+
             session.add(artifact_schema)
             session.commit()
             return artifact_schema.to_model(hydrate=True)
