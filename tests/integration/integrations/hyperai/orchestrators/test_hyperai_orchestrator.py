@@ -39,8 +39,10 @@ def test_hyperai_orchestrator_attributes():
 
     assert orchestrator.type == StackComponentType.ORCHESTRATOR
     assert orchestrator.flavor == "hyperai"
-    assert orchestrator.config.remote is True
+    assert orchestrator.config.is_remote is True
     assert orchestrator.config.container_registry_autologin is False
+    assert orchestrator.config.automatic_cleanup_pipeline_files is True
+    assert orchestrator.config.gpu_enabled_in_container is True
 
 
 def test_validate_mount_path():
