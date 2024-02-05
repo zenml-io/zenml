@@ -39,8 +39,9 @@ def test_output_artifact_preparation(create_step_run, local_stack):
         "output_name",
         str(step_run.id),
     )
-    output_artifact_uris["output_name"] = "/".join(
-        output_artifact_uris["output_name"].split("/")[:-1]
-    )
+    output_artifact_uris["output_name"] = os.path.split(
+        output_artifact_uris["output_name"]
+    )[0]
+
     assert output_artifact_uris == {"output_name": expected_path}
     assert os.path.isdir(expected_path)
