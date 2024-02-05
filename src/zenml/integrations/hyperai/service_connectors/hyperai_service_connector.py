@@ -18,7 +18,7 @@ GPU equipped instances.
 """
 import base64
 import io
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Type
 
 import paramiko
 from pydantic import Field, SecretStr
@@ -167,7 +167,7 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         return HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC
 
-    def _paramiko_key_type_given_auth_method(self) -> paramiko.PKey:
+    def _paramiko_key_type_given_auth_method(self) -> Type[paramiko.PKey]:
         """Get the Paramiko key type given the authentication method.
 
         Returns:

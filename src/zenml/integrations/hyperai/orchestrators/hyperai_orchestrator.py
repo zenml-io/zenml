@@ -95,7 +95,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f"{ENV_ZENML_HYPERAI_RUN_ID}."
             )
 
-    def _validate_mount_path(self, path) -> str:
+    def _validate_mount_path(self, path: str) -> str:
         """Validates if a given string is in a valid path format.
 
         Args:
@@ -144,8 +144,12 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If a step fails.
         """
+        from zenml.integrations.hyperai.service_connectors.hyperai_service_connector import (
+            HyperAIServiceConnector,
+        )
+
         # Basic Docker Compose definition
-        compose_definition = {"version": "3", "services": {}}
+        compose_definition: Dict[str, Any] = {"version": "3", "services": {}}
 
         # Get deployment id
         deployment_id = deployment.id
@@ -226,7 +230,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
         # Convert into yaml
         logger.info("Finalizing Docker Compose definition.")
-        compose_definition = yaml.dump(compose_definition)
+        compose_definition_yaml = yaml.dump(compose_definition)
 
         # Connect to configured HyperAI instance
         logger.info(
@@ -271,22 +275,27 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 )
 
             # Get container registry credentials from its config
-            container_registry_url = container_registry.config.uri
-            (
-                container_registry_username,
-                container_registry_password,
-            ) = container_registry.credentials
+            credentials = container_registry.credentials
+            if credentials is not None:
+                container_registry_url = container_registry.config.uri
+                (
+                    container_registry_username,
+                    container_registry_password,
+                ) = credentials
 
-            # Log in to container registry using --password-stdin
-            stdin, stdout, stderr = paramiko_client.exec_command(
-                f"docker login -u {container_registry_username} --password-stdin {container_registry_url} <<< {container_registry_password}"
-            )
+                # Log in to container registry using --password-stdin
+                _, stdout, stderr = paramiko_client.exec_command(
+                    f"docker login -u {container_registry_username} "
+                    f"--password-stdin {container_registry_url} <<< "
+                    f"{container_registry_password}"
+                )
 
-            # Log stdout
-            for line in stdout.readlines():
-                logger.info(line)
+                # Log stdout
+                for line in stdout.readlines():
+                    logger.info(line)
 
         # Get username from connector
+        assert isinstance(connector, HyperAIServiceConnector)
         username = connector.config.username
 
         # Set up pipeline-runs directory if it doesn't exist
@@ -320,7 +329,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
             # Write Docker Compose file to temporary file
             with f.file as f_:
-                f_.write(compose_definition)
+                f_.write(compose_definition_yaml)
 
             # Scp Docker Compose file to HyperAI instance
             scp_client = paramiko_client.open_sftp()
