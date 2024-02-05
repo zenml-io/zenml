@@ -31,7 +31,7 @@ class PipelineRunActionConfiguration(ActionConfig):
     """Configuration class to configure a pipeline run action."""
 
     pipeline_deployment_id: UUID
-    pipeline_config: Optional[PipelineRunConfiguration] = None
+    run_config: Optional[PipelineRunConfiguration] = None
 
 
 # -------------------- Pipeline Run Plugin -----------------------------------
@@ -63,6 +63,9 @@ class PipelineRunActionHandler(BaseActionHandler):
             config_obj.pipeline_deployment_id
         )
         print("Running deployment:", deployment)
+        # TODO: Call this
+        # from zenml.zen_server.pipeline_deployment.utils import redeploy_pipeline
+        # redeploy_pipeline(deployment=deployment, run_config=config_obj.run_config)
 
 
 # -------------------- Pipeline Run Flavor -----------------------------------
