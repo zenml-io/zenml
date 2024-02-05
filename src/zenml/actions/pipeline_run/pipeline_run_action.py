@@ -30,7 +30,7 @@ from zenml.models import TriggerExecutionResponse
 class PipelineRunActionConfiguration(ActionConfig):
     """Configuration class to configure a pipeline run action."""
 
-    pipeline_build_id: UUID
+    pipeline_deployment_id: UUID
     pipeline_config: Optional[PipelineRunConfiguration] = None
 
 
@@ -54,7 +54,15 @@ class PipelineRunActionHandler(BaseActionHandler):
         config: Dict[str, Any],
         trigger_execution: TriggerExecutionResponse,
     ) -> None:
-        print("######### RUNNING PIPELINE ###############")
+        from zenml.zen_server.utils import zen_store
+
+        config_obj: PipelineRunActionConfiguration = self.config_class(
+            **config
+        )
+        deployment = zen_store().get_deployment(
+            config_obj.pipeline_deployment_id
+        )
+        print("Running deployment:", deployment)
 
 
 # -------------------- Pipeline Run Flavor -----------------------------------
