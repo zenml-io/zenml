@@ -188,6 +188,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             compose_definition["services"][container_name] = {
                 "image": image,
                 "container_name": container_name,
+                "network_mode": "host",
                 "entrypoint": StepEntrypointConfiguration.get_entrypoint_command(),
                 "command": StepEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name, deployment_id=deployment.id
