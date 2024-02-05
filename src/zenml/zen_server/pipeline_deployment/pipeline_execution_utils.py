@@ -1,7 +1,6 @@
 """Utility functions to run a pipeline from the server."""
 import copy
 import hashlib
-import os
 import sys
 from typing import List, Optional, Set, Tuple
 from uuid import UUID
