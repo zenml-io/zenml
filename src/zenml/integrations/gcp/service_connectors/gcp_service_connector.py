@@ -1339,6 +1339,7 @@ class GCPServiceConnector(ServiceConnector):
                                 "gcloud",
                                 "auth",
                                 "login",
+                                "--quiet",
                                 "--cred-file",
                                 adc_path,
                             ],
