@@ -365,7 +365,7 @@ class PluginType(StrEnum):
     """All possible types of Plugins."""
 
     EVENT_SOURCE = "event_source"
-    ACTION_PLAN = "action_plan"
+    ACTION = "action"
 
 
 class PluginSubType(StrEnum):
@@ -374,4 +374,4 @@ class PluginSubType(StrEnum):
     # Event Source Subtypes
     WEBHOOK = "webhook"
     SCHEDULE = "schedule"
-    # Action Plan Subtypes
+    # Action Subtypes

@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the internal scheduler event source plugin."""
+"""Implementation of the internal scheduler event source handler."""
 from typing import Type
 from uuid import UUID
 
 from zenml.event_sources.base_event_source import BaseEvent
-from zenml.event_sources.schedules.base_schedule_event import (
+from zenml.event_sources.schedules.base_schedule_event_source import (
     BaseScheduleEvent,
-    BaseScheduleEventSource,
+    BaseScheduleEventSourceHandler,
     ScheduleEventFilterConfig,
     ScheduleEventSourceConfig,
 )
@@ -59,8 +59,8 @@ class SchedulerEventSourceConfiguration(ScheduleEventSourceConfig):
 # -------------------- Scheduler Event Source --------------------------
 
 
-class SchedulerEventSource(BaseScheduleEventSource):
-    """Scheduler event source."""
+class SchedulerEventSourceHandler(BaseScheduleEventSourceHandler):
+    """Scheduler event source handler."""
 
     @property
     def config_class(self) -> Type[ScheduleEventSourceConfig]:

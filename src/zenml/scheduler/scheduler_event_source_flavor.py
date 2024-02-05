@@ -14,13 +14,13 @@
 """Internal scheduler event source flavor definition."""
 from typing import ClassVar, Type
 
-from zenml.event_sources.schedules.base_schedule_event import (
+from zenml.event_sources.schedules.base_schedule_event_source import (
     BaseScheduleEventSourceFlavor,
 )
 from zenml.scheduler.scheduler_event_source import (
     SchedulerEventFilterConfiguration,
-    SchedulerEventSource,
     SchedulerEventSourceConfiguration,
+    SchedulerEventSourceHandler,
 )
 
 INTERNAL_SCHEDULER_EVENT_FLAVOR = "internal_scheduler"
@@ -30,7 +30,9 @@ class SchedulerEventSourceFlavor(BaseScheduleEventSourceFlavor):
     """Enables users to configure scheduled events."""
 
     FLAVOR: ClassVar[str] = INTERNAL_SCHEDULER_EVENT_FLAVOR
-    PLUGIN_CLASS: ClassVar[Type[SchedulerEventSource]] = SchedulerEventSource
+    PLUGIN_CLASS: ClassVar[
+        Type[SchedulerEventSourceHandler]
+    ] = SchedulerEventSourceHandler
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[

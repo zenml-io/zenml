@@ -78,7 +78,7 @@ class EventFilterConfig(BaseModel, ABC):
 # -------------------- Event Source -----------------------------
 
 
-class BaseEventSource(BasePlugin, ABC):
+class BaseEventSourceHandler(BasePlugin, ABC):
     """Implementation for an EventPlugin."""
 
     @property
@@ -104,7 +104,7 @@ class BaseEventSource(BasePlugin, ABC):
     ) -> EventSourceResponse:
         """Wraps the zen_store creation method for plugin specific functionality.
 
-        All implementation of the BaseEventSource can overwrite this method to add
+        All implementation of the BaseEventSourceHandler can overwrite this method to add
         implementation specific functionality.
 
         Args:
@@ -123,7 +123,7 @@ class BaseEventSource(BasePlugin, ABC):
     ) -> EventSourceResponse:
         """Wraps the zen_store creation method for plugin specific functionality.
 
-        All implementation of the BaseEventSource can overwrite this method to add
+        All implementation of the BaseEventSourceHandler can overwrite this method to add
         implementation specific functionality.
 
         Args:
@@ -160,7 +160,7 @@ class BaseEventSource(BasePlugin, ABC):
     ) -> EventSourceResponse:
         """Wraps the zen_store creation method for plugin specific functionality.
 
-        All implementation of the BaseEventSource can overwrite this method to add
+        All implementation of the BaseEventSourceHandler can overwrite this method to add
         implementation specific functionality.
 
         Args:

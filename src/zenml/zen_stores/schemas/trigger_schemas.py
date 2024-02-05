@@ -74,8 +74,8 @@ class TriggerSchema(NamedSchema, table=True):
 
     event_filter: bytes
 
-    action_plan: bytes
-    action_plan_flavor: str  # TODO: Use an Enum
+    action: bytes
+    action_flavor: str  # TODO: Use an Enum
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     is_active: bool = Field(nullable=False)
@@ -96,9 +96,9 @@ class TriggerSchema(NamedSchema, table=True):
                 self.event_filter = base64.b64encode(
                     json.dumps(trigger_update.event_filter).encode("utf-8")
                 )
-            elif field == "action_plan":
-                self.action_plan = base64.b64encode(
-                    json.dumps(trigger_update.action_plan).encode("utf-8")
+            elif field == "action":
+                self.action = base64.b64encode(
+                    json.dumps(trigger_update.action).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -120,10 +120,10 @@ class TriggerSchema(NamedSchema, table=True):
             name=request.name,
             workspace_id=request.workspace,
             user_id=request.user,
-            action_plan=base64.b64encode(
-                json.dumps(request.action_plan).encode("utf-8")
+            action=base64.b64encode(
+                json.dumps(request.action).encode("utf-8")
             ),
-            action_plan_flavor=request.action_plan_flavor,
+            action_flavor=request.action_flavor,
             event_source_id=request.event_source_id,
             event_filter=base64.b64encode(
                 json.dumps(request.event_filter).encode("utf-8")
@@ -146,7 +146,7 @@ class TriggerSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
-            action_plan_flavor=self.action_plan_flavor,
+            action_flavor=self.action_flavor,
             # TODO: make event_source mandatory in the schema and ensure
             # triggers are deprovisioned and deleted before the event source is
             # deleted, or make it optional in the model
@@ -160,9 +160,7 @@ class TriggerSchema(NamedSchema, table=True):
                 event_filter=json.loads(
                     base64.b64decode(self.event_filter).decode()
                 ),
-                action_plan=json.loads(
-                    base64.b64decode(self.action_plan).decode()
-                ),
+                action=json.loads(base64.b64decode(self.action).decode()),
                 description=self.description,
                 # TODO: make event_source mandatory in the schema and ensure
                 # triggers are deprovisioned and deleted before the event source is
