@@ -53,7 +53,6 @@ from zenml.zen_server.rbac.utils import (
     get_allowed_resource_ids,
     get_schema_for_resource_type,
     update_resource_membership,
-    verify_permission,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
@@ -514,27 +513,21 @@ if server_config().rbac_enabled:
         resource = Resource(type=resource_type, id=resource_id)
 
         schema_class = get_schema_for_resource_type(resource_type)
-        if not zen_store().object_exists(
-            object_id=resource_id, schema_class=schema_class
-        ):
+        model = zen_store().get_entity_by_id(
+            entity_id=resource_id, schema_class=schema_class
+        )
+
+        if not model:
             raise KeyError(
                 f"Resource of type {resource_type} with ID {resource_id} does "
                 "not exist."
             )
 
-        verify_permission(
-            resource_type=resource_type,
-            action=Action.SHARE,
-            resource_id=resource_id,
-        )
+        verify_permission_for_model(model=model, action=Action.SHARE)
         for action in actions:
             # Make sure users aren't able to share permissions they don't have
             # themselves
-            verify_permission(
-                resource_type=resource_type,
-                action=Action(action),
-                resource_id=resource_id,
-            )
+            verify_permission_for_model(model=model, action=Action(action))
 
         update_resource_membership(
             user=user,

@@ -194,6 +194,7 @@ def save_artifact(
             ArtifactRequest(
                 name=name,
                 has_custom_name=has_custom_name,
+                tags=tags,
             )
         )
 
