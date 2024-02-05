@@ -166,7 +166,7 @@ class stack_context:
             None if no exception.
             exception_value: Type of exception that was raised.
             e.g., divide_by_zero error. None if no exception.
-            traceback: Traceback report. None if no excpetion.
+            traceback: Traceback report. None if no exception.
         """
         if self._default_stack.id != Client().active_stack:
             Client().activate_stack(self._default_stack.id)
