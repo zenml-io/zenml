@@ -444,16 +444,16 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
-        service: "HuggingFaceDeploymentService",
+        service_instance: "HuggingFaceDeploymentService",
     ) -> Dict[str, Optional[str]]:
         """Return implementation specific information that might be relevant to the user.
 
         Args:
-            service: Instance of a HuggingFaceDeploymentService
+            service_instance: Instance of a HuggingFaceDeploymentService
 
         Returns:
             Model server information.
         """
         return {
-            "PREDICTION_URL": service.prediction_url,
+            "PREDICTION_URL": service_instance.prediction_url,
         }
