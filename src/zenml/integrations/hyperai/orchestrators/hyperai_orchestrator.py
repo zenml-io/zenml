@@ -314,11 +314,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
 
             # Log in to container registry using --password-stdin
-            stdin, stdout, stderr = paramiko_client.exec_command(
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
                 f"docker login -u {container_registry_username} "
                 f"--password-stdin {container_registry_url}"
             )
-            stdin.channel.send(container_registry_password + "\n")
+            # Send the password to stdin
+            stdin.channel.send(
+                f"{container_registry_password}\n".encode("utf-8")
+            )
             stdin.channel.shutdown_write()
 
             # Log stdout
@@ -340,7 +343,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f"/home/{username}/scheduled-pipeline-runs"
             )
         )
-        stdin, stdout, stderr = paramiko_client.exec_command(
+        stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
             f"mkdir -p {directory_name}"
         )
 
@@ -349,7 +352,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         directory_name = self._escape_shell_command(
             f"{directory_name}/{orchestrator_run_id}"
         )
-        stdin, stdout, stderr = paramiko_client.exec_command(
+        stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
             f"mkdir -p {directory_name}"
         )
 
@@ -358,7 +361,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             logger.info(
                 "Cleaning up old pipeline files on HyperAI instance. This may take a while."
             )
-            stdin, stdout, stderr = paramiko_client.exec_command(
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
                 f"find {nonscheduled_directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
             )
 
@@ -383,7 +386,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             logger.info(
                 "Starting ZenML pipeline on HyperAI instance. Depending on the size of your container image, this may take a while..."
             )
-            stdin, stdout, stderr = paramiko_client.exec_command(
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
                 f"cd {directory_name} && docker compose up -d"
             )
 
@@ -393,6 +396,10 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         else:
             # Get cron expression for scheduled pipeline
             cron_expression = deployment.schedule.cron_expression
+            if not cron_expression:
+                raise RuntimeError(
+                    "A cron expression is required for scheduled pipelines."
+                )
             expected_cron_pattern = r"^(?:(?:[0-9]|[1-5][0-9]|60)(?:,(?:[0-9]|[1-5][0-9]|60))*|[*](?:\/[1-9][0-9]*)?)(?:[ \t]+(?:(?:[0-9]|[0-5][0-9]|60)(?:,(?:[0-9]|[0-5][0-9]|60))*|[*](?:\/[1-9][0-9]*)?)){4}$"
             if not re.match(expected_cron_pattern, cron_expression):
                 raise RuntimeError(
@@ -404,7 +411,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             logger.info(f"Cron expression: {cron_expression}")
 
             # Create cron job for scheduled pipeline on HyperAI instance
-            stdin, stdout, stderr = paramiko_client.exec_command(
+            stdin, stdout, stderr = paramiko_client.exec_command(  # nosec
                 f"(crontab -l ; echo '{cron_expression} cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}=\"{deployment_id}_$(date +\%s)\" > .env && docker compose up -d') | crontab -"
             )
 
