@@ -304,12 +304,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 container_registry_password,
             ) = credentials
 
+            # Escape inputs
+            container_registry_username = self._escape_shell_command(container_registry_username)
+            container_registry_url = self._escape_shell_command(container_registry_url)
+
             # Log in to container registry using --password-stdin
             stdin, stdout, stderr = paramiko_client.exec_command(
-                self._escape_shell_command(
-                    f"docker login -u {container_registry_username} "
-                    f"--password-stdin {container_registry_url}"
-                )
+                f"docker login -u {container_registry_username} "
+                f"--password-stdin {container_registry_url}"
             )
             stdin.channel.send(container_registry_password + "\n")
             stdin.channel.shutdown_write()
@@ -323,21 +325,17 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         username = connector.config.username
 
         # Set up pipeline-runs directory if it doesn't exist
-        nonscheduled_directory_name = f"/home/{username}/pipeline-runs"
-        directory_name = (
-            nonscheduled_directory_name
-            if not deployment.schedule
-            else f"/home/{username}/scheduled-pipeline-runs"
-        )
+        nonscheduled_directory_name = self._escape_shell_command(f"/home/{username}/pipeline-runs")
+        directory_name = nonscheduled_directory_name if not deployment.schedule else self._escape_shell_command(f"/home/{username}/scheduled-pipeline-runs")
         stdin, stdout, stderr = paramiko_client.exec_command(
-            self._escape_shell_command(f"mkdir -p {directory_name}")
+            f"mkdir -p {directory_name}"
         )
 
         # Get pipeline run id and create directory for it
         orchestrator_run_id = self.get_orchestrator_run_id()
-        directory_name = f"{directory_name}/{orchestrator_run_id}"
+        directory_name = self._escape_shell_command(f"{directory_name}/{orchestrator_run_id}")
         stdin, stdout, stderr = paramiko_client.exec_command(
-            self._escape_shell_command(f"mkdir -p {directory_name}")
+            f"mkdir -p {directory_name}"
         )
 
         # Remove all folders from nonscheduled pipelines if they are 7 days old or older
@@ -345,11 +343,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             logger.info(
                 "Cleaning up old pipeline files on HyperAI instance. This may take a while."
             )
-            stdin, stdout, stderr = paramiko_client.exec_command(
-                self._escape_shell_command(
-                    f"find {nonscheduled_directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
-                )
-            )
+            stdin, stdout, stderr = paramiko_client.exec_command(f"find {nonscheduled_directory_name} -type d -ctime +7 -exec rm -rf {{}} +")
 
         # Create temporary file and write Docker Compose file to it
         with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
@@ -372,26 +366,20 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             logger.info(
                 "Starting ZenML pipeline on HyperAI instance. Depending on the size of your container image, this may take a while..."
             )
-            stdin, stdout, stderr = paramiko_client.exec_command(
-                self._escape_shell_command(
-                    f"cd {directory_name} && docker compose up -d"
-                )
-            )
+            stdin, stdout, stderr = paramiko_client.exec_command(f"cd {directory_name} && docker compose up -d")
 
             # Log errors in case of failure
             for line in stderr.readlines():
                 logger.info(line)
         else:
             # Get cron expression for scheduled pipeline
-            cron_expression = deployment.schedule.cron_expression
+            cron_expression = self._escape_shell_command(deployment.schedule.cron_expression).replace("'", "\'")
             logger.info("Scheduling ZenML pipeline on HyperAI instance.")
             logger.info(f"Cron expression: {cron_expression}")
 
             # Create cron job for scheduled pipeline on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(
-                self._escape_shell_command(
-                    f"(crontab -l ; echo '{cron_expression} cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}=\"{deployment_id}_$(date +\%s)\" > .env && docker compose up -d') | crontab -"
-                )
+                f"(crontab -l ; echo '{cron_expression} cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}=\"{deployment_id}_$(date +\%s)\" > .env && docker compose up -d') | crontab -"
             )
 
             logger.info("Pipeline scheduled successfully.")
