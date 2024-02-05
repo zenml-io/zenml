@@ -305,13 +305,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             ) = credentials
 
             # Log in to container registry using --password-stdin
-            _, stdout, stderr = paramiko_client.exec_command(
+            stdin, stdout, stderr = paramiko_client.exec_command(
                 self._escape_shell_command(
                     f"docker login -u {container_registry_username} "
-                    f"--password-stdin {container_registry_url} <<< "
-                    f"{container_registry_password}"
+                    f"--password-stdin {container_registry_url}"
                 )
             )
+            stdin.channel.send(container_registry_password + "\n")
+            stdin.channel.shutdown_write()
 
             # Log stdout
             for line in stdout.readlines():
