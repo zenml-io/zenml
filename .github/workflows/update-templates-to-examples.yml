@@ -50,7 +50,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.01.18  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.01.22  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
@@ -78,8 +78,9 @@ jobs:
             echo "No active Git changes found."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
-            echo "Active Git changes found."
+            echo "vvv Active Git changes found vvv"
             echo "changes=true" >> $GITHUB_OUTPUT
+            git diff "origin/${{ github.event.pull_request.head.ref }}"
           fi
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
@@ -148,8 +149,9 @@ jobs:
             echo "No active Git changes found."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
-            echo "Active Git changes found."
+            echo "vvv Active Git changes found vvv"
             echo "changes=true" >> $GITHUB_OUTPUT
+            git diff "origin/${{ github.event.pull_request.head.ref }}"
           fi
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'
@@ -191,7 +193,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           stack-name: local
           ref-zenml: ${{ github.ref }}
-          ref-template: 2024.01.12  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
+          ref-template: 2024.01.22  # Make sure it is aligned with ZENML_PROJECT_TEMPLATES from src/zenml/cli/base.py
       - name: Clean-up
         run: |
           rm -rf ./local_checkout
@@ -220,8 +222,9 @@ jobs:
             echo "No active Git changes found."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
-            echo "Active Git changes found."
+            echo "vvv Active Git changes found vvv"
             echo "changes=true" >> $GITHUB_OUTPUT
+            git diff "origin/${{ github.event.pull_request.head.ref }}"
           fi
       - name: Commit and push template
         if: steps.check_changes.outputs.changes == 'true'

@@ -142,7 +142,7 @@ class StepLauncher:
         """Launches the step.
 
         Raises:
-            Exception: If the step failed to launch, run, or publish.
+            BaseException: If the step failed to launch, run, or publish.
         """
         pipeline_run, run_was_created = self._create_or_reuse_run()
 
@@ -231,7 +231,7 @@ class StepLauncher:
                             pipeline_run=pipeline_run,
                             step_run=step_run_response,
                         )
-                    except Exception as e:  # noqa: E722
+                    except BaseException as e:  # noqa: E722
                         logger.error(
                             f"Failed to run step `{self._step_name}`."
                         )

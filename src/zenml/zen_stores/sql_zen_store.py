@@ -61,7 +61,11 @@ from sqlmodel import (
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.analytics.enums import AnalyticsEvent
-from zenml.analytics.utils import analytics_disabler, track_decorator
+from zenml.analytics.utils import (
+    analytics_disabler,
+    track_decorator,
+    track_handler,
+)
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
@@ -1806,6 +1810,15 @@ class SqlZenStore(BaseZenStore):
 
             # Create the artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
+
+            # Save tags of the artifact.
+            if artifact.tags:
+                self._attach_tags_to_resource(
+                    tag_names=artifact.tags,
+                    resource_id=artifact_schema.id,
+                    resource_type=TaggableResourceTypes.ARTIFACT,
+                )
+
             session.add(artifact_schema)
             session.commit()
             return artifact_schema.to_model(hydrate=True)
@@ -5944,7 +5957,11 @@ class SqlZenStore(BaseZenStore):
             The registered stack.
         """
         with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists(stack=stack, session=session)
+            self._fail_if_stack_with_name_exists(
+                stack=stack,
+                workspace_id=stack.workspace,
+                session=session,
+            )
 
             # Get the Schemas of all components mentioned
             component_ids = (
@@ -6066,7 +6083,9 @@ class SqlZenStore(BaseZenStore):
             if stack_update.name:
                 if existing_stack.name != stack_update.name:
                     self._fail_if_stack_with_name_exists(
-                        stack=stack_update, session=session
+                        stack=stack_update,
+                        session=session,
+                        workspace_id=existing_stack.workspace_id,
                     )
 
             components = []
@@ -6135,12 +6154,14 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_stack_with_name_exists(
         self,
         stack: StackRequest,
+        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a stack with same name exists.
 
         Args:
             stack: The Stack
+            workspace_id: The ID of the workspace
             session: The Session
 
         Returns:
@@ -6152,7 +6173,7 @@ class SqlZenStore(BaseZenStore):
         existing_domain_stack = session.exec(
             select(StackSchema)
             .where(StackSchema.name == stack.name)
-            .where(StackSchema.workspace_id == stack.workspace)
+            .where(StackSchema.workspace_id == workspace_id)
         ).first()
         if existing_domain_stack is not None:
             workspace = self._get_workspace_schema(
@@ -6688,7 +6709,32 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
             }:
                 run_update.end_time = datetime.utcnow()
-
+                if pipeline_run.start_time and isinstance(
+                    pipeline_run.start_time, datetime
+                ):
+                    duration_time = (
+                        run_update.end_time - pipeline_run.start_time
+                    )
+                    duration_seconds = duration_time.total_seconds()
+                    start_time_str = pipeline_run.start_time.strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    )
+                else:
+                    start_time_str = None
+                    duration_seconds = None
+                with track_handler(
+                    AnalyticsEvent.RUN_PIPELINE_ENDED
+                ) as analytics_handler:
+                    analytics_handler.metadata = {
+                        "pipeline_run_id": pipeline_run_id,
+                        "status": new_status,
+                        "num_steps": num_steps,
+                        "start_time": start_time_str,
+                        "end_time": run_update.end_time.strftime(
+                            "%Y-%m-%dT%H:%M:%S.%fZ"
+                        ),
+                        "duration_seconds": duration_seconds,
+                    }
             pipeline_run.update(run_update)
             session.add(pipeline_run)
 
@@ -7261,24 +7307,53 @@ class SqlZenStore(BaseZenStore):
 
         return int(entity_count)
 
-    def object_exists(
-        self, object_id: UUID, schema_class: Type[AnySchema]
+    def entity_exists(
+        self, entity_id: UUID, schema_class: Type[AnySchema]
     ) -> bool:
-        """Check whether an object exists in the database.
+        """Check whether an entity exists in the database.
 
         Args:
-            object_id: The ID of the object to check.
+            entity_id: The ID of the entity to check.
             schema_class: The schema class.
 
         Returns:
-            If the object exists.
+            If the entity exists.
         """
         with Session(self.engine) as session:
             schema = session.exec(
-                select(schema_class.id).where(schema_class.id == object_id)
+                select(schema_class.id).where(schema_class.id == entity_id)
             ).first()
 
             return False if schema is None else True
+
+    def get_entity_by_id(
+        self, entity_id: UUID, schema_class: Type[AnySchema]
+    ) -> Optional[B]:
+        """Get an entity by ID.
+
+        Args:
+            entity_id: The ID of the entity to get.
+            schema_class: The schema class.
+
+        Raises:
+            RuntimeError: If the schema to model conversion failed.
+
+        Returns:
+            The entity if it exists, None otherwise
+        """
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(schema_class).where(schema_class.id == entity_id)
+            ).first()
+
+            if not schema:
+                return None
+
+            to_model = getattr(schema, "to_model", None)
+            if callable(to_model):
+                return cast(B, to_model(hydrate=True))
+            else:
+                raise RuntimeError("Unable to convert schema to model.")
 
     @staticmethod
     def _get_schema_by_name_or_id(

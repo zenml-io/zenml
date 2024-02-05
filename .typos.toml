@@ -7,7 +7,6 @@ extend-exclude = [
     "tests/unit/materializers/test_built_in_materializer.py",
     "tests/integration/functional/cli/test_pipeline.py",
     "src/zenml/zen_server/dashboard/",
-    "docs/requirements-docs-frozen.txt",
 ]
 
 [default.extend-identifiers]
