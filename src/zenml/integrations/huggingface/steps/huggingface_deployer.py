@@ -98,7 +98,9 @@ def huggingface_model_deployer_step(
     # model
     service = cast(
         HuggingFaceDeploymentService,
-        model_deployer.deploy_model(service_config, replace=True, timeout=timeout),
+        model_deployer.deploy_model(
+            service_config, replace=True, timeout=timeout
+        ),
     )
 
     logger.info(

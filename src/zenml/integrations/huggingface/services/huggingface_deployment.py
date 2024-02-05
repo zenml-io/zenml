@@ -141,14 +141,18 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
 
             # Check if the endpoint URL is available after provisioning
             if self.hf_endpoint.url is not None:
-                logger.info("Huggingface inference endpoint successfully deployed.")
+                logger.info(
+                    "Huggingface inference endpoint successfully deployed."
+                )
             else:
                 logger.error(
                     "Failed to start huggingface inference endpoint service: No URL available."
                 )
 
         except Exception as e:
-            self.status.update(new_state=ServiceState.ERROR, error=str(e))
+            self.status.update_state(
+                new_state=ServiceState.ERROR, error=str(e)
+            )
             # Catch-all for any other unexpected errors
             raise Exception(
                 f"An unexpected error occurred while provisioning the Huggingface inference endpoint: {e}"
