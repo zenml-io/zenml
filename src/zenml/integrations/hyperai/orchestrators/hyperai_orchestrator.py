@@ -230,7 +230,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
         # Convert into yaml
         logger.info("Finalizing Docker Compose definition.")
-        compose_definition_yaml = yaml.dump(compose_definition)
+        compose_definition_yaml: str = yaml.dump(compose_definition)
 
         # Connect to configured HyperAI instance
         logger.info(
@@ -276,23 +276,32 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Get container registry credentials from its config
             credentials = container_registry.credentials
-            if credentials is not None:
-                container_registry_url = container_registry.config.uri
-                (
-                    container_registry_username,
-                    container_registry_password,
-                ) = credentials
-
-                # Log in to container registry using --password-stdin
-                _, stdout, stderr = paramiko_client.exec_command(
-                    f"docker login -u {container_registry_username} "
-                    f"--password-stdin {container_registry_url} <<< "
-                    f"{container_registry_password}"
+            if credentials is None:
+                raise RuntimeError(
+                    "The container registry in the active stack has no "
+                    "credentials or service connector configured, but the "
+                    "HyperAI orchestrator is set to autologin to the container "
+                    "registry. Please configure the container registry with "
+                    "credentials or turn off the `container_registry_autologin` "
+                    "setting in the HyperAI orchestrator configuration."
                 )
 
-                # Log stdout
-                for line in stdout.readlines():
-                    logger.info(line)
+            container_registry_url = container_registry.config.uri
+            (
+                container_registry_username,
+                container_registry_password,
+            ) = credentials
+
+            # Log in to container registry using --password-stdin
+            _, stdout, stderr = paramiko_client.exec_command(
+                f"docker login -u {container_registry_username} "
+                f"--password-stdin {container_registry_url} <<< "
+                f"{container_registry_password}"
+            )
+
+            # Log stdout
+            for line in stdout.readlines():
+                logger.info(line)
 
         # Get username from connector
         assert isinstance(connector, HyperAIServiceConnector)
