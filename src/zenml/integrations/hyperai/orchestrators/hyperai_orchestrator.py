@@ -16,6 +16,7 @@
 import os
 import re
 import tempfile
+from shlex import quote
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 import paramiko
@@ -116,6 +117,17 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 f"Path '{path}' is not in a valid format, so a mount cannot be established."
             )
+
+    def _escape_shell_command(self, command: str) -> str:
+        """Escapes a shell command.
+
+        Args:
+            command: The command to escape.
+
+        Returns:
+            The escaped command.
+        """
+        return quote(command)
 
     def prepare_or_run_pipeline(
         self,
@@ -294,9 +306,11 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Log in to container registry using --password-stdin
             _, stdout, stderr = paramiko_client.exec_command(
-                f"docker login -u {container_registry_username} "
-                f"--password-stdin {container_registry_url} <<< "
-                f"{container_registry_password}"
+                self._escape_shell_command(
+                    f"docker login -u {container_registry_username} "
+                    f"--password-stdin {container_registry_url} <<< "
+                    f"{container_registry_password}"
+                )
             )
 
             # Log stdout
@@ -315,14 +329,14 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             else f"/home/{username}/scheduled-pipeline-runs"
         )
         stdin, stdout, stderr = paramiko_client.exec_command(
-            f"mkdir -p {directory_name}"
+            self._escape_shell_command(f"mkdir -p {directory_name}")
         )
 
         # Get pipeline run id and create directory for it
         orchestrator_run_id = self.get_orchestrator_run_id()
         directory_name = f"{directory_name}/{orchestrator_run_id}"
         stdin, stdout, stderr = paramiko_client.exec_command(
-            f"mkdir -p {directory_name}"
+            self._escape_shell_command(f"mkdir -p {directory_name}")
         )
 
         # Remove all folders from nonscheduled pipelines if they are 7 days old or older
@@ -331,7 +345,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 "Cleaning up old pipeline files on HyperAI instance. This may take a while."
             )
             stdin, stdout, stderr = paramiko_client.exec_command(
-                f"find {nonscheduled_directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
+                self._escape_shell_command(
+                    f"find {nonscheduled_directory_name} -type d -ctime +7 -exec rm -rf {{}} +"
+                )
             )
 
         # Create temporary file and write Docker Compose file to it
@@ -351,7 +367,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 "Starting ZenML pipeline on HyperAI instance. Depending on the size of your container image, this may take a while..."
             )
             stdin, stdout, stderr = paramiko_client.exec_command(
-                f"cd {directory_name} && docker compose up -d"
+                self._escape_shell_command(
+                    f"cd {directory_name} && docker compose up -d"
+                )
             )
 
             # Log errors in case of failure
@@ -365,7 +383,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
             # Create cron job for scheduled pipeline on HyperAI instance
             stdin, stdout, stderr = paramiko_client.exec_command(
-                f"(crontab -l ; echo '{cron_expression} cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}=\"{deployment_id}_$(date +\%s)\" > .env && docker compose up -d') | crontab -"
+                self._escape_shell_command(
+                    f"(crontab -l ; echo '{cron_expression} cd {directory_name} && echo {ENV_ZENML_HYPERAI_RUN_ID}=\"{deployment_id}_$(date +\%s)\" > .env && docker compose up -d') | crontab -"
+                )
             )
 
             logger.info("Pipeline scheduled successfully.")
