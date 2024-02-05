@@ -14,10 +14,10 @@
 """Action flavor model definitions."""
 from typing import Any, Dict
 
-from zenml.plugins.base_plugin_flavor import BasePluginFlavorResponse
+from zenml.models.v2.plugin.plugin_flavor import BasePluginFlavorResponse
 
 
 class ActionFlavorResponse(BasePluginFlavorResponse):
-    """Response model for Action Plans."""
+    """Response model for Actions."""
 
     config_schema: Dict[str, Any]

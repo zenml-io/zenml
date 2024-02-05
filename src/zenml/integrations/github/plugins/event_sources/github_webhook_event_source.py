@@ -12,31 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the github webhook event source."""
-import hashlib
-import hmac
 import json
 from datetime import datetime
-from functools import partial
 from typing import Any, Dict, List, Optional, Type
 from uuid import UUID
 
 from pydantic import BaseModel, Extra
 
-from zenml import EventSourceRequest, SecretRequest
-from zenml.event_sources.base_event_source_plugin import BaseEvent
-from zenml.event_sources.webhooks.base_webhook_event_plugin import (
-    BaseWebhookEventSourcePlugin,
+from zenml.event_sources.base_event_source import BaseEvent
+from zenml.event_sources.webhooks.base_webhook_event_source import (
+    BaseWebhookEventSourceHandler,
     WebhookEventFilterConfig,
     WebhookEventSourceConfig,
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    EventSourceRequest,
     EventSourceResponse,
-    TriggerFilter,
-    TriggerResponse,
+    EventSourceUpdate,
+    SecretRequest,
+    SecretUpdate,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.pagination_utils import depaginate
 from zenml.utils.secret_utils import SecretField
 from zenml.utils.string_utils import random_str
 
@@ -132,7 +129,7 @@ class GithubEvent(BaseEvent):
             return GithubEventType.PUSH_EVENT
         elif self.ref.startswith("refs/tags/"):
             return GithubEventType.TAG_EVENT
-        elif len(self.pull_requests) > 0:
+        elif self.pull_requests and len(self.pull_requests) > 0:
             return GithubEventType.PR_EVENT
         else:
             return "unknown"
@@ -148,8 +145,10 @@ class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
     branch: Optional[str]
     event_type: Optional[GithubEventType]
 
-    def event_matches_filter(self, event: GithubEvent) -> bool:
+    def event_matches_filter(self, event: BaseEvent) -> bool:
         """Checks the filter against the inbound event."""
+        if not isinstance(event, GithubEvent):
+            return False
         if self.event_type and event.event_type != self.event_type:
             # Mismatch for the action
             return False
@@ -172,44 +171,26 @@ class GithubWebhookEventSourceConfiguration(WebhookEventSourceConfig):
 # -------------------- Github Webhook Plugin -----------------------------------
 
 
-class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
+class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
     """Handler for all github events."""
 
     @property
     def config_class(self) -> Type[GithubWebhookEventSourceConfiguration]:
-        """Returns the `BasePluginConfig` config.
+        """Returns the webhook event source configuration class.
 
         Returns:
             The configuration.
         """
         return GithubWebhookEventSourceConfiguration
 
-    @staticmethod
-    def is_valid_signature(
-        raw_body: bytes, secret_token: str, signature_header: str
-    ) -> bool:
-        """Verify that the payload was sent from GitHub by validating SHA256.
-
-        Raise and return 403 if not authorized.
-
-        Args:
-            raw_body: original request body to verify (request.body())
-            secret_token: GitHub app webhook token (WEBHOOK_SECRET)
-            signature_header: header received from GitHub (x-hub-signature-256)
+    @property
+    def filter_class(self) -> Type[GithubWebhookEventFilterConfiguration]:
+        """Returns the webhook event filter configuration class.
 
         Returns:
-            Boolean if the signature is valid.
+            The event filter configuration class.
         """
-        hash_object = hmac.new(
-            secret_token.encode("utf-8"),
-            msg=raw_body,
-            digestmod=hashlib.sha256,
-        )
-        expected_signature = "sha256=" + hash_object.hexdigest()
-
-        if not hmac.compare_digest(expected_signature, signature_header):
-            return False
-        return True
+        return GithubWebhookEventFilterConfiguration
 
     def _interpret_event(self, event: Dict[str, Any]) -> GithubEvent:
         """Converts the generic event body into a event-source specific pydantic model.
@@ -224,7 +205,7 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
             ValueError: If the event body can not be parsed into the pydantic model.
         """
         try:
-            event = GithubEvent(**event)
+            github_event = GithubEvent(**event)
         except ValueError as e:
             logger.exception(e)
             # TODO: Remove this - currently useful for debugging
@@ -234,48 +215,59 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
                 json.dump(event, f)
             raise ValueError("Event did not match the pydantic model.")
         else:
-            return event
+            return github_event
 
-    def _get_matching_triggers(
-        self, event_source: EventSourceResponse, event: GithubEvent
-    ) -> List[TriggerResponse]:
-        """Get all Triggers with matching event filters.
-
-        For github events this will compare the configured event filters
-        of all matching triggers with the inbound event.
+    def _update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Wraps the zen_store update method to add plugin specific functionality.
 
         Args:
-            event_source: The event source.
-            event: The inbound Event.
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
 
-        Returns: A list of all matching Event Source IDs.
+        Returns:
+            The event source response body.
         """
-        # get all event sources configured for this flavor
-        triggers: List[TriggerResponse] = depaginate(
-            partial(
-                self.zen_store.list_triggers,
-                trigger_filter_model=TriggerFilter(
-                    event_source_id=event_source.id  # TODO: Handle for multiple source_ids
-                ),
-                hydrate=True,
-            )
+        original_event_source = self.zen_store.get_event_source(
+            event_source_id=event_source_id
         )
 
-        trigger_list: List[TriggerResponse] = []
+        updated_event_source = self.zen_store.update_event_source(
+            event_source_id=event_source_id,
+            event_source_update=event_source_update,
+        )
 
-        for trigger in triggers:
-            event_filter = GithubWebhookEventFilterConfiguration(
-                **trigger.metadata.event_filter
+        if event_source_update.rotate_secret:
+            # In case the secret is being rotated
+            secret_key_value = random_str(12)
+            webhook_secret = SecretUpdate(  # type: ignore[call-arg]
+                values={"webhook_secret": secret_key_value}
             )
-            if event_filter.event_matches_filter(event=event):
-                trigger_list.append(trigger)
-
-        return trigger_list
+            self.zen_store.update_secret(
+                secret_id=original_event_source.configuration[
+                    "webhook_secret_id"
+                ],
+                secret_update=webhook_secret,
+            )
+            updated_event_source.configuration[
+                "webhook_secret"
+            ] = secret_key_value
+        return updated_event_source
 
     def _create_event_source(
         self, event_source: EventSourceRequest
     ) -> EventSourceResponse:
-        """Wraps the zen_store creation method to add plugin specific functionality."""
+        """Wraps the zen_store creation method for plugin specific functionality.
+
+        Args:
+            event_source: Request model for the event source.
+
+        Returns:
+            The created event source.
+        """
         try:
             config = GithubWebhookEventSourceConfiguration(
                 **event_source.configuration
@@ -298,9 +290,7 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         created_event_source = self.zen_store.create_event_source(
             event_source=event_source
         )
-        created_event_source.metadata.configuration[
-            "webhook_secret"
-        ] = secret_key_value
+        created_event_source.configuration["webhook_secret"] = secret_key_value
         return created_event_source
 
     def _get_event_source(self, event_source_id: UUID) -> EventSourceResponse:
@@ -308,14 +298,14 @@ class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
         created_event_source = self.zen_store.get_event_source(
             event_source_id=event_source_id
         )
-        webhook_secret_id = created_event_source.metadata.configuration[
+        webhook_secret_id = created_event_source.configuration[
             "webhook_secret_id"
         ]
 
-        secret_value = self.zen_store.get_secret(
-            secret_id=webhook_secret_id
-        ).body["webhook_secret"]
-        created_event_source.metadata.configuration[
-            "webhook_secret"
-        ] = secret_value
+        secret = self.zen_store.get_secret(secret_id=webhook_secret_id)
+        secret_value = secret.secret_values["webhook_secret"]
+
+        assert secret_value is not None, "Webhook secret value not found"
+
+        created_event_source.configuration["webhook_secret"] = secret_value
         return created_event_source

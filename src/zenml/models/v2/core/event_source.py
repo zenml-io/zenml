@@ -35,7 +35,7 @@ class EventSourceRequest(WorkspaceScopedRequest):
     """BaseModel for all event sources."""
 
     name: str = Field(
-        title="The name of the stack component.",
+        title="The name of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     flavor: str = Field(
@@ -80,6 +80,10 @@ class EventSourceUpdate(EventSourceRequest):
     configuration: Dict[str, Any] = Field(
         title="The event source configuration.",
     )
+    rotate_secret: Optional[bool] = Field(
+        title="In case the secret needs to be rotated."
+    )
+    is_active: Optional[bool]
 
 
 # ------------------ Response Model ------------------
@@ -106,6 +110,8 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
     updated: datetime = Field(
         title="The timestamp when this event filter was last updated.",
     )
+
+    is_active: bool
 
 
 class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -221,10 +227,6 @@ class EventSourceFilter(WorkspaceScopedFilter):
     flavor: Optional[str] = Field(
         default=None,
         description="Flavor of the event source",
-    )
-    plugin_type: Optional[str] = Field(
-        title="The plugin type of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     plugin_subtype: Optional[str] = Field(
         title="The plugin sub type of the event source.",

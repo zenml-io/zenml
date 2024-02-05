@@ -47,8 +47,8 @@ class TriggerBase(BaseModel):
     )
     event_source_id: UUID
     event_filter: Dict[str, Any]
-    action_plan: Dict[str, Any]
-    action_plan_flavor: str
+    action: Dict[str, Any]
+    action_flavor: str
 
 
 # ------------------ Request Model ------------------
@@ -74,7 +74,9 @@ class TriggerUpdate(TriggerRequest):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     event_filter: Dict[str, Any]
-    action_plan: Dict[str, Any]
+    action: Dict[str, Any]
+
+    is_active: Optional[bool]
 
 
 # ------------------ Response Model ------------------
@@ -84,13 +86,15 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for triggers."""
 
     event_source_flavor: str
-    action_plan_flavor: str
+    action_flavor: str
     created: datetime = Field(
         title="The timestamp when this trigger was created."
     )
     updated: datetime = Field(
         title="The timestamp when this trigger was last updated.",
     )
+
+    is_active: bool
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -99,8 +103,8 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     event_filter: Dict[str, Any] = Field(
         title="The event that activates this trigger.",
     )
-    action_plan: Dict[str, Any] = Field(
-        title="The actions that is executed by this trigger.",
+    action: Dict[str, Any] = Field(
+        title="The action that is executed by this trigger.",
     )
     description: str = Field(
         default="",
@@ -142,13 +146,13 @@ class TriggerResponse(
         return self.get_body().event_source_flavor
 
     @property
-    def action_plan_flavor(self) -> str:
-        """The `action_plan_flavor` property.
+    def action_flavor(self) -> str:
+        """The `action_flavor` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().action_plan_flavor
+        return self.get_body().action_flavor
 
     @property
     def created(self) -> datetime:
@@ -178,13 +182,13 @@ class TriggerResponse(
         return self.get_metadata().event_filter
 
     @property
-    def action_plan(self) -> Dict[str, Any]:
-        """The `action_plan` property.
+    def action(self) -> Dict[str, Any]:
+        """The `action` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().action_plan
+        return self.get_metadata().action
 
     @property
     def description(self) -> str:

@@ -57,6 +57,8 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OAuthDeviceStatus,
+    PluginSubType,
+    PluginType,
     SecretScope,
     SorterOps,
     StackComponentType,
@@ -93,6 +95,10 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    EventSourceFilter,
+    EventSourceRequest,
+    EventSourceResponse,
+    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -2194,6 +2200,194 @@ class Client(metaclass=ClientMetaClass):
         """
         build = self.get_build(id_or_prefix=id_or_prefix)
         self.zen_store.delete_build(build_id=build.id)
+
+    # --------------------------------- Event Sources -------------------------
+
+    def create_event_source(
+        self,
+        name: str,
+        configuration: Dict[str, Any],
+        description: str,
+        flavor: str,
+        event_source_subtype: PluginSubType,
+    ) -> EventSourceResponse:
+        """Registers a event_source.
+
+        Args:
+            name: The name of the event_source to create.
+            configuration: Configuration for this event source
+            description: The description of the event_source
+            flavor: The flavor of event source
+            event_source_subtype: str
+
+        Returns:
+            The model of the registered event source.
+        """
+        event_source = EventSourceRequest(
+            name=name,
+            configuration=configuration,
+            description=description,
+            flavor=flavor,
+            plugin_type=PluginType.EVENT_SOURCE,
+            plugin_subtype=event_source_subtype,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+        )
+
+        return self.zen_store.create_event_source(event_source=event_source)
+
+    def get_event_source(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
+    ) -> EventSourceResponse:
+        """Get a event source by name, ID or prefix.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the stack.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The event_source.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_event_source,
+            list_method=self.list_event_sources,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+        )
+
+    def list_event_sources(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        flavor: Optional[str] = None,
+        event_source_type: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[EventSourceResponse]:
+        """Lists all event_sources.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of event_sources to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            name: The name of the event_source to filter by.
+            flavor: The flavor of the event_source to filter by.
+            event_source_type: The subtype of the event_source to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of event_sources.
+        """
+        event_source_filter_model = EventSourceFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            name=name,
+            flavor=flavor,
+            plugin_subtype=event_source_type,
+            id=id,
+            created=created,
+            updated=updated,
+        )
+        event_source_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_event_sources(
+            event_source_filter_model, hydrate=hydrate
+        )
+
+    def update_event_source(
+        self,
+        name_id_or_prefix: Optional[Union[UUID, str]] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        rotate_secret: Optional[bool] = None,
+        is_active: Optional[bool] = None,
+    ) -> EventSourceResponse:
+        """Updates a event_source and its components.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the event_source to update.
+            name: the new name of the event_source.
+            description: the new description of the event_source.
+            configuration: The event source configuration.
+            rotate_secret: Allows rotating of secret, if true, the response will
+                contain the new secret value
+            is_active: Optional[bool] = Allows for activation/deactivating the
+                event source
+
+        Returns:
+            The model of the updated event_source.
+
+        Raises:
+            EntityExistsError: If the event_source name is already taken.
+        """
+        # First, get the eve
+        event_source = self.get_event_source(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        # Create the update model
+        update_model = EventSourceUpdate(
+            name=name,
+            description=description,
+            configuration=configuration,
+            rotate_secret=rotate_secret,
+            is_active=is_active,
+        )
+
+        if name:
+            if self.list_event_sources(name=name):
+                raise EntityExistsError(
+                    "There are already existing event_sources with the name "
+                    f"'{name}'."
+                )
+
+        updated_event_source = self.zen_store.update_event_source(
+            event_source_id=event_source.id,
+            event_source_update=update_model,
+        )
+        return updated_event_source
+
+    def delete_event_source(
+        self, name_id_or_prefix: Union[str, UUID], recursive: bool = False
+    ) -> None:
+        """Deletes an event_source.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the event_source
+                to deregister.
+            recursive: If `True`, all components of the event_source which are not
+                associated with any other event_source will also be deleted.
+        """
+        event_source = self.get_event_source(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        self.zen_store.delete_event_source(event_source_id=event_source.id)
+        logger.info("Deleted event_source with name '%s'.", event_source.name)
 
     # ------------------------------ Deployments -------------------------------
 

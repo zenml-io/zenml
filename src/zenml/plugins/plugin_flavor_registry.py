@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Registry for all plugins."""
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Type
 
 from pydantic import BaseModel
 
@@ -23,7 +23,7 @@ from zenml.plugins.base_plugin_flavor import BasePlugin, BasePluginFlavor
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+    pass
 
 
 class RegistryEntry(BaseModel):
@@ -53,7 +53,7 @@ class PluginFlavorRegistry:
         """Returns all available flavors."""
         return list(self.plugin_flavors.keys())
 
-    def get_available_types_for_flavor(self, flavor_name) -> List[str]:
+    def get_available_types_for_flavor(self, flavor_name: str) -> List[str]:
         """Returns all available types for a given flavor.
 
         Args:
@@ -94,21 +94,24 @@ class PluginFlavorRegistry:
         return []
 
     @property
-    def _builtin_flavors(self) -> List[Type["BasePluginFlavor"]]:
+    def _builtin_flavors(self) -> Sequence[Type["BasePluginFlavor"]]:
         """A list of all default in-built flavors.
 
         Returns:
             A list of builtin flavors.
         """
-        from zenml.action_plans.pipeline_run.pipeline_run_action_plan import (
-            PipelineRunActionPlanFlavor,
+        from zenml.actions.pipeline_run.pipeline_run_action import (
+            PipelineRunActionFlavor,
+        )
+        from zenml.scheduler.scheduler_event_source_flavor import (
+            SchedulerEventSourceFlavor,
         )
 
-        flavors = [PipelineRunActionPlanFlavor]
+        flavors = [SchedulerEventSourceFlavor, PipelineRunActionFlavor]
         return flavors
 
     @property
-    def _integration_flavors(self) -> List[Type["BasePluginFlavor"]]:
+    def _integration_flavors(self) -> Sequence[Type["BasePluginFlavor"]]:
         """A list of all integration event flavors.
 
         Returns:
@@ -202,10 +205,10 @@ class PluginFlavorRegistry:
                 f"No flavor class found for flavor name {flavor} and type {_type} and subtype {subtype}."
             )
 
-    def get_plugin_implementation(
+    def get_plugin(
         self, flavor: str, _type: PluginType, subtype: PluginSubType
     ) -> "BasePlugin":
-        """Get a single event_source based on the key.
+        """Get the plugin based on the flavor, type and subtype.
 
         Args:
             flavor: The name of the plugin flavor.
@@ -213,22 +216,33 @@ class PluginFlavorRegistry:
             subtype: The subtype of plugin.
 
         Returns:
-            `BaseEventConfiguration` subclass that was registered for this key.
+            Plugin instance associated with the flavor, type and subtype.
+
+        Raises:
+            KeyError: If no plugin is found for the given flavor, type and
+                subtype.
+            RuntimeError: If the plugin was not initialized.
         """
         try:
-            return self._get_registry_entry(
+            plugin_entry = self._get_registry_entry(
                 flavor=flavor, _type=_type, subtype=subtype
-            ).plugin_instance
+            )
+            if plugin_entry.plugin_instance is None:
+                raise RuntimeError(
+                    f"Plugin {plugin_entry.flavor_class} was not initialized."
+                )
+            return plugin_entry.plugin_instance
         except KeyError:
             raise KeyError(
-                f"No flavor class found for flavor name {flavor} and type {_type} and subtype {subtype}."
+                f"No flavor found for flavor name {flavor} and type "
+                f"{_type} and subtype {subtype}."
             )
 
-    def initialize_plugins(self, zen_store: "BaseZenStore"):
-        """Initializes an instance of the plugin class and stores it in the registry."""
-        for flavor, types_dict in self.plugin_flavors.items():
-            for type_, subtype_dict in types_dict.items():
-                for subtype, registry_entry in subtype_dict.items():
+    def initialize_plugins(self) -> None:
+        """Initializes all registered plugins."""
+        for _, types_dict in self.plugin_flavors.items():
+            for _, subtype_dict in types_dict.items():
+                for _, registry_entry in subtype_dict.items():
                     # TODO: Only initialize if the integration is active
                     registry_entry.plugin_instance = (
                         registry_entry.flavor_class.PLUGIN_CLASS()

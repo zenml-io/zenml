@@ -23,6 +23,8 @@ from zenml import (
     Page,
 )
 from zenml.constants import API, EVENT_SOURCES, VERSION_1
+from zenml.event_sources.base_event_source import BaseEventSourceHandler
+from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -128,11 +130,23 @@ def update_event_source(
     Returns:
         The updated event_source.
     """
+    # TODO: Find a way to not call this get method twice
+    event_source = zen_store().get_event_source(
+        event_source_id=event_source_id
+    )
+
+    event_source_plugin = plugin_flavor_registry.get_plugin(
+        event_source.flavor,
+        event_source.plugin_type,
+        event_source.plugin_subtype,
+    )
+
+    assert isinstance(event_source_plugin, BaseEventSourceHandler)
     return verify_permissions_and_update_entity(
         id=event_source_id,
         update_model=event_source_update,
         get_method=zen_store().get_event_source,
-        update_method=zen_store().update_event_source,
+        update_method=event_source_plugin.update_event_source,
     )
 
 

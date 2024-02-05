@@ -91,9 +91,6 @@ from zenml.enums import (
     StoreType,
     TaggableResourceTypes,
 )
-from zenml.event_sources.utils import (
-    fail_if_invalid_event_filter_configuration,
-)
 from zenml.exceptions import (
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
@@ -6910,19 +6907,8 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Verify that the given event_source exists
-            try:
-                event_source = self._get_event_source(
-                    event_source_id=trigger.event_source_id, session=session
-                )
-            except KeyError:
-                raise RuntimeError()  # TODO: actually raise the correct error.
-
-            # Validate the Event Filter configuration
-            fail_if_invalid_event_filter_configuration(
-                flavor=event_source.flavor,
-                plugin_type=event_source.plugin_type,
-                plugin_subtype=event_source.plugin_subtype,
-                configuration_dict=trigger.event_filter,
+            self._get_event_source(
+                event_source_id=trigger.event_source_id, session=session
             )
 
             # Verify that the trigger won't validate Unique

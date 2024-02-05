@@ -19,7 +19,6 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    List,
     Type,
 )
 from uuid import UUID
@@ -28,7 +27,11 @@ from pydantic import BaseModel
 
 from zenml.enums import PluginType
 from zenml.logger import get_logger
-from zenml.models import EventSourceRequest, EventSourceResponse
+from zenml.models import (
+    EventSourceRequest,
+    EventSourceResponse,
+    EventSourceUpdate,
+)
 from zenml.models.v2.plugin.event_flavor import EventFlavorResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
@@ -72,27 +75,36 @@ class EventFilterConfig(BaseModel, ABC):
         """
 
 
-# -------------------- Plugin -----------------------------------
+# -------------------- Event Source -----------------------------
 
 
-class BaseEventSourcePlugin(BasePlugin, ABC):
+class BaseEventSourceHandler(BasePlugin, ABC):
     """Implementation for an EventPlugin."""
 
     @property
-    def config_class(self) -> Type[BasePluginConfig]:
-        """Returns the `BasePluginConfig` config.
+    @abstractmethod
+    def config_class(self) -> Type[EventSourceConfig]:
+        """Returns the event source configuration class.
 
         Returns:
             The configuration.
         """
-        return EventSourceConfig
+
+    @property
+    @abstractmethod
+    def filter_class(self) -> Type[EventFilterConfig]:
+        """Returns the event filter configuration class.
+
+        Returns:
+            The event filter configuration class.
+        """
 
     def create_event_source(
         self, event_source: EventSourceRequest
     ) -> EventSourceResponse:
         """Wraps the zen_store creation method for plugin specific functionality.
 
-        All implementation of the BaseEventSource can overwrite this method to add
+        All implementation of the BaseEventSourceHandler can overwrite this method to add
         implementation specific functionality.
 
         Args:
@@ -101,10 +113,46 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
         Returns:
             The created event source.
         """
-        self._fail_if_event_source_configuration_invalid(
-            event_source=event_source
-        )
+        self.validate_event_source_configuration(event_source.configuration)
         return self._create_event_source(event_source=event_source)
+
+    def update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Wraps the zen_store creation method for plugin specific functionality.
+
+        All implementation of the BaseEventSourceHandler can overwrite this method to add
+        implementation specific functionality.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The created event source.
+        """
+        return self._update_event_source(
+            event_source_id=event_source_id,
+            event_source_update=event_source_update,
+        )
+
+    @abstractmethod
+    def _update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Wraps the zen_store update method to add plugin specific functionality.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The event source response body.
+        """
 
     @abstractmethod
     def _create_event_source(
@@ -112,7 +160,7 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
     ) -> EventSourceResponse:
         """Wraps the zen_store creation method for plugin specific functionality.
 
-        All implementation of the BaseEventSource can overwrite this method to add
+        All implementation of the BaseEventSourceHandler can overwrite this method to add
         implementation specific functionality.
 
         Args:
@@ -122,54 +170,48 @@ class BaseEventSourcePlugin(BasePlugin, ABC):
             The created event source.
         """
 
-    def _fail_if_event_source_configuration_invalid(
-        self, event_source: EventSourceRequest
-    ):
+    def validate_event_source_configuration(
+        self, event_source_config: Dict[str, Any]
+    ) -> None:
+        """Validates the event source configuration.
+
+        Args:
+            event_source_config: The event source configuration to validate.
+
+        Raises:
+            ValueError: if the configuration is invalid.
+        """
         try:
-            self.config_class(**event_source.configuration)
-        except ValueError:
-            raise ValueError("Invalid Configuration.")
-        else:
-            return
+            self.config_class(**event_source_config)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid configuration for event source: {e}."
+            ) from e
 
-    @abstractmethod
-    def get_matching_triggers_for_event(
-        self, incoming_event: Dict[str, Any], event_source: EventSourceResponse
-    ) -> List[UUID]:
-        """Process the incoming event and forward with trigger_ids to event hub.
-
-        Args:
-            incoming_event: THe inbound event.
-            event_source: The Event Source
-        """
-
-    @abstractmethod
-    def _interpret_event(self, event: Dict[str, Any]) -> BaseEvent:
-        """Converts the generic event body into a event-source specific pydantic model.
+    def validate_event_filter_configuration(
+        self,
+        configuration: Dict[str, Any],
+    ) -> None:
+        """Validate the configuration of an event filter.
 
         Args:
-            event: The generic event body
+            configuration: The configuration to validate.
 
-        Return:
-            An instance of the event source specific pydantic model.
+        Raises:
+            ValueError: if the configuration is invalid.
         """
-
-    @abstractmethod
-    def _get_matching_triggers(
-        self, event_source: EventSourceResponse, event: BaseEvent
-    ) -> List[UUID]:
-        """Get all Triggers with matching event filters.
-
-        Args:
-            event_source: The event sources.
-            event: The inbound Event.
-        """
+        try:
+            self.filter_class(**configuration)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid configuration for event filter: {e}."
+            ) from e
 
 
 # -------------------- Flavors ----------------------------------
 
 
-class BaseEventSourcePluginFlavor(BasePluginFlavor, ABC):
+class BaseEventSourceFlavor(BasePluginFlavor, ABC):
     """Base Event Plugin Flavor to access an event plugin along with its configurations."""
 
     TYPE: ClassVar[PluginType] = PluginType.EVENT_SOURCE

@@ -15,10 +15,10 @@
 from typing import Any, ClassVar, Dict, Optional, Type
 from uuid import UUID
 
-from zenml.action_plans.base_action_plan import (
-    ActionPlanConfig,
-    BaseActionPlan,
-    BaseActionPlanFlavor,
+from zenml.actions.base_action import (
+    ActionConfig,
+    BaseActionFlavor,
+    BaseActionHandler,
 )
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import PluginSubType
@@ -27,7 +27,7 @@ from zenml.models import TriggerExecutionResponse
 # -------------------- Configuration Models ----------------------------------
 
 
-class PipelineRunActionPlanConfiguration(ActionPlanConfig):
+class PipelineRunActionConfiguration(ActionConfig):
     """Configuration class to configure a pipeline run action."""
 
     pipeline_build_id: UUID
@@ -37,15 +37,17 @@ class PipelineRunActionPlanConfiguration(ActionPlanConfig):
 # -------------------- Pipeline Run Plugin -----------------------------------
 
 
-class PipelineRunActionPlan(BaseActionPlan):
+class PipelineRunActionHandler(BaseActionHandler):
+    """Action handler for running pipelines."""
+
     @property
-    def config_class(self) -> Type[PipelineRunActionPlanConfiguration]:
+    def config_class(self) -> Type[PipelineRunActionConfiguration]:
         """Returns the `BasePluginConfig` config.
 
         Returns:
             The configuration.
         """
-        return PipelineRunActionPlanConfiguration
+        return PipelineRunActionConfiguration
 
     def run(
         self,
@@ -58,14 +60,16 @@ class PipelineRunActionPlan(BaseActionPlan):
 # -------------------- Pipeline Run Flavor -----------------------------------
 
 
-class PipelineRunActionPlanFlavor(BaseActionPlanFlavor):
+class PipelineRunActionFlavor(BaseActionFlavor):
     """Enables users to configure pipeline run action."""
 
     FLAVOR: ClassVar[str] = "builtin"
     SUBTYPE: ClassVar[PluginSubType] = PluginSubType.PIPELINE_RUN
-    PLUGIN_CLASS: ClassVar[Type[PipelineRunActionPlan]] = PipelineRunActionPlan
+    PLUGIN_CLASS: ClassVar[
+        Type[PipelineRunActionHandler]
+    ] = PipelineRunActionHandler
 
     # EventPlugin specific
-    ACTION_PLAN_CONFIG_CLASS: ClassVar[
-        Type[PipelineRunActionPlanConfiguration]
-    ] = PipelineRunActionPlanConfiguration
+    ACTION_CONFIG_CLASS: ClassVar[
+        Type[PipelineRunActionConfiguration]
+    ] = PipelineRunActionConfiguration
