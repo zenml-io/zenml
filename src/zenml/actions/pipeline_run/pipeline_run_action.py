@@ -35,7 +35,7 @@ class PipelineRunActionConfiguration(ActionConfig):
 # -------------------- Pipeline Run Plugin -----------------------------------
 
 
-class PipelineRunActionPlugin(BaseActionHandler):
+class PipelineRunActionHandler(BaseActionHandler):
     """Handler for all github events."""
 
     @property
@@ -56,8 +56,8 @@ class PipelineRunActionFlavor(BaseActionFlavor):
 
     FLAVOR: ClassVar[str] = "builtin"
     PLUGIN_CLASS: ClassVar[
-        Type[PipelineRunActionPlugin]
-    ] = PipelineRunActionPlugin
+        Type[PipelineRunActionHandler]
+    ] = PipelineRunActionHandler
 
     # EventPlugin specific
     ACTION_CONFIG_CLASS: ClassVar[
