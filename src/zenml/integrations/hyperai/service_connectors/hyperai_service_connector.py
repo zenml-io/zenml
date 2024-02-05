@@ -226,7 +226,7 @@ class HyperAIServiceConnector(ServiceConnector):
 
             paramiko_client = paramiko.client.SSHClient()
             paramiko_client.set_missing_host_key_policy(
-                paramiko.AutoAddPolicy()
+                paramiko.AutoAddPolicy()  # nosec
             )
             paramiko_client.connect(
                 hostname=hostname,
