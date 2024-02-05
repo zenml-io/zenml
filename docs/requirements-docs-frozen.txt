@@ -564,7 +564,7 @@ sqlalchemy2-stubs==0.0.2a35
 sqlmodel==0.0.8
 sqlparse==0.4.4
 stack-data==0.6.2
-starlette==0.27.0
+starlette==0.36.2
 starlette-exporter==0.16.0
 statsmodels==0.14.0
 stevedore==5.1.0
