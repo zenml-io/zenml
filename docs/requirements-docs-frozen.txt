@@ -407,7 +407,7 @@ packaging==23.1
 pandas==1.3.5
 pandavro==1.5.2
 pandocfilters==1.5.0
-paramiko==2.12.0
+paramiko==3.4.0
 parso==0.8.3
 partd==1.4.0
 passlib==1.7.4
