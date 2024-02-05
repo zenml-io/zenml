@@ -29,7 +29,8 @@ from pydantic import BaseModel, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, GenericFilterOps
+from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -370,6 +371,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
         "build_id",
         "schedule_id",
         "stack_id",
+        "pipeline_name",
     ]
     name: Optional[str] = Field(
         default=None,
@@ -381,6 +383,10 @@ class PipelineRunFilter(WorkspaceScopedFilter):
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Pipeline associated with the Pipeline Run"
+    )
+    pipeline_name: Optional[str] = Field(
+        default=None,
+        description="Name of the pipeline associated with the run",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the Pipeline Run"
@@ -432,6 +438,7 @@ class PipelineRunFilter(WorkspaceScopedFilter):
             PipelineBuildSchema,
             PipelineDeploymentSchema,
             PipelineRunSchema,
+            PipelineSchema,
             ScheduleSchema,
             StackSchema,
         )
@@ -442,6 +449,19 @@ class PipelineRunFilter(WorkspaceScopedFilter):
             else:
                 unlisted_filter = PipelineRunSchema.pipeline_id.is_not(None)  # type: ignore[union-attr]
             custom_filters.append(unlisted_filter)
+
+        if self.pipeline_name is not None:
+            value, filter_operator = self._resolve_operator(self.pipeline_name)
+            filter_ = StrFilter(
+                operation=GenericFilterOps(filter_operator),
+                column="name",
+                value=value,
+            )
+            pipeline_name_filter = and_(  # type: ignore[type-var]
+                PipelineRunSchema.pipeline_id == PipelineSchema.id,
+                filter_.generate_query_conditions(PipelineSchema),
+            )
+            custom_filters.append(pipeline_name_filter)
 
         if self.code_repository_id:
             code_repo_filter = and_(  # type: ignore[type-var]

@@ -8,9 +8,9 @@ metadata:
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-1"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded 
+    "helm.sh/hook-delete-policy": before-hook-creation{{ if not .Values.zenml.debug }},hook-succeeded{{ end }}
 spec:
-  backoffLimit: 2
+  backoffLimit: 0
   template:
     metadata:
       annotations:
@@ -32,14 +32,19 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      {{- if and (eq .Values.zenml.secretsStore.type "gcp") .Values.zenml.secretsStore.gcp.google_application_credentials }}
+
+      {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
       volumes:
-        - name: gcp-credentials
-          secret:
-            secretName: {{ include "zenml.fullname" . }}-db-migration
-            items:
-              - key: GOOGLE_APPLICATION_CREDENTIALS_FILE
-                path: credentials.json
+        # define a volume that will hold a backup of the database
+        - name: db-backup
+        # if a storage PVC is configured, then use it
+        {{- if .Values.zenml.database.backupPVStorageSize }}
+          persistentVolumeClaim:
+            claimName: {{ include "zenml.fullname" . }}-db-backup
+        {{- else }}
+        # otherwise, use an emptyDir
+          emptyDir: {}
+        {{- end }}
       {{- end }}
       restartPolicy: Never
       containers:
@@ -50,6 +55,11 @@ spec:
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
           args: ["migrate-database"]
           command: ['zenml']
+          {{- if eq .Values.zenml.database.backupStrategy "dump-file" }}
+          volumeMounts:
+            - name: db-backup
+              mountPath: /backups
+          {{- end }}
           env:
             {{- if .Values.zenml.debug }}
             - name: ZENML_LOGGING_VERBOSITY
@@ -61,68 +71,32 @@ spec:
               value: {{ .Values.zenml.defaultProject | quote }}
             - name: ZENML_DEFAULT_USER_NAME
               value: {{ .Values.zenml.defaultUsername | quote }}
-            - name: ZENML_SERVER_AUTH_SCHEME
-              value: {{ .Values.zenml.authType | default .Values.zenml.auth.authType | quote }}
-            {{- if .Values.zenml.auth.externalLoginURL }}
-            - name: ZENML_SERVER_EXTERNAL_LOGIN_URL
-              value: {{ .Values.zenml.auth.externalLoginURL | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.externalUserInfoURL }}
-            - name: ZENML_SERVER_EXTERNAL_USER_INFO_URL
-              value: {{ .Values.zenml.auth.externalUserInfoURL | quote }}
-            {{- end }}
-            {{- if .Values.zenml.auth.externalCookieName }}
-            - name: ZENML_SERVER_EXTERNAL_COOKIE_NAME
-              value: {{ .Values.zenml.auth.externalCookieName | quote }}
-            {{- end }}
             - name: ZENML_STORE_TYPE
               value: sql
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
-            {{- if .Values.zenml.secretsStore.enabled }}
-            - name: ZENML_SECRETS_STORE_TYPE
-              value: {{ .Values.zenml.secretsStore.type | quote }}
-            {{- if eq .Values.zenml.secretsStore.type "aws" }}
-            - name: ZENML_SECRETS_STORE_AUTH_METHOD
-              value: {{ .Values.zenml.secretsStore.aws.authMethod | quote }}
-            {{- if .Values.zenml.secretsStore.aws.region_name }}
-            - name: ZENML_SECRETS_STORE_REGION_NAME
-              value: {{ .Values.zenml.secretsStore.aws.region_name | quote }}
+            {{- if .Values.zenml.database.backupStrategy }}
+            - name: ZENML_STORE_BACKUP_STRATEGY
+              value: {{ .Values.zenml.database.backupStrategy | quote }}
+            {{- if eq .Values.zenml.database.backupStrategy "database" }}
+            - name: ZENML_STORE_BACKUP_DATABASE
+              value: {{ .Values.zenml.database.backupDatabase | quote }}
+            {{- else if eq .Values.zenml.database.backupStrategy "dump-file" }}
+            - name: ZENML_STORE_BACKUP_DIRECTORY
+              value: /backups
             {{- end }}
-            {{- else if eq .Values.zenml.secretsStore.type "gcp" }}
-            - name: ZENML_SECRETS_STORE_AUTH_METHOD
-              value: {{ .Values.zenml.secretsStore.gcp.authMethod | quote }}
-            {{- if .Values.zenml.secretsStore.gcp.project_id }}
-            - name: ZENML_SECRETS_STORE_PROJECT_ID
-              value: {{ .Values.zenml.secretsStore.gcp.project_id | quote }}
             {{- end }}
-            {{- if .Values.zenml.secretsStore.gcp.google_application_credentials }}
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /gcp-credentials/credentials.json
+            {{- range $k, $v := include "zenml.serverEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
             {{- end }}
-            {{- else if eq .Values.zenml.secretsStore.type "azure" }}
-            - name: ZENML_SECRETS_STORE_AUTH_METHOD
-              value: {{ .Values.zenml.secretsStore.azure.authMethod | quote }}
-            - name: ZENML_SECRETS_STORE_KEY_VAULT_NAME
-              value: {{ .Values.zenml.secretsStore.azure.key_vault_name | quote }}
-            {{- else if eq .Values.zenml.secretsStore.type "hashicorp" }}
-            - name: ZENML_SECRETS_STORE_VAULT_ADDR
-              value: {{ .Values.zenml.secretsStore.hashicorp.vault_addr | quote }}
-            {{- if .Values.zenml.secretsStore.hashicorp.vault_namespace }}
-            - name: ZENML_SECRETS_STORE_VAULT_NAMESPACE
-              value: {{ .Values.zenml.secretsStore.hashicorp.vault_namespace | quote }}
+            {{- range $k, $v := include "zenml.secretsStoreEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
             {{- end }}
-            {{- if .Values.zenml.secretsStore.hashicorp.max_versions }}
-            - name: ZENML_SECRETS_STORE_MAX_VERSIONS
-              value: {{ .Values.zenml.secretsStore.hashicorp.max_versions | quote }}
-            {{- end }}
-            {{- else if eq .Values.zenml.secretsStore.type "custom" }}
-            - name: ZENML_SECRETS_STORE_CLASS_PATH
-              value: {{ .Values.zenml.secretsStore.custom.class_path | quote }}
-            {{- end }}
-            {{- else }}
-            - name: ZENML_SECRETS_STORE_TYPE
-              value: none
+            {{- range $k, $v := include "zenml.backupSecretsStoreEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
             {{- end }}
             {{- if .Values.zenml.environment }}
             {{- range $key, $value := .Values.zenml.environment }}
@@ -133,12 +107,6 @@ spec:
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}-db-migration
-          {{- if and (eq .Values.zenml.secretsStore.type "gcp") .Values.zenml.secretsStore.gcp.google_application_credentials }}
-          volumeMounts:
-            - name: gcp-credentials
-              mountPath: /gcp-credentials
-              readOnly: true
-          {{- end }}
       {{- with .Values.resources }}
       resources:
         {{- toYaml . | nindent 12 }}

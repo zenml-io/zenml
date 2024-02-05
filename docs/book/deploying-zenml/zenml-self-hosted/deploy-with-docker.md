@@ -27,7 +27,7 @@ The following environment variables can be passed to the container:
 * **ZENML\_DEFAULT\_PROJECT\_NAME**: The name of the default project created by the server on the first deployment, during database initialization. Defaults to `default`.
 * **ZENML\_DEFAULT\_USER\_NAME**: The name of the default admin user account created by the server on the first deployment, during database initialization. Defaults to `default`.
 * **ZENML\_DEFAULT\_USER\_PASSWORD**: The password to use for the default admin user account. Defaults to an empty password value, if not set.
-*   **ZENML\_STORE\_URL**: This URL should point to an SQLite database file _mounted in the container_, or to a MySQL-compatible database service _reachable from the container_. It takes one of these forms:
+* **ZENML\_STORE\_URL**: This URL should point to an SQLite database file _mounted in the container_, or to a MySQL-compatible database service _reachable from the container_. It takes one of these forms:
 
     ```
     sqlite:////path/to/zenml.db
@@ -43,19 +43,24 @@ The following environment variables can be passed to the container:
 * **ZENML\_STORE\_SSL\_KEY**: This can be set to a client SSL private key required to connect to the MySQL database service. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections and requires client SSL certificates. The variable can be set either to the path where the certificate file is mounted inside the container or to the certificate contents themselves. This variable also requires `ZENML_STORE_SSL_CERT` to be set.
 * **ZENML\_STORE\_SSL\_VERIFY\_SERVER\_CERT**: This boolean variable controls whether the SSL certificate in use by the MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a MySQL database that uses SSL-secured connections. Defaults to `False`.
 * **ZENML\_LOGGING\_VERBOSITY**: Use this variable to control the verbosity of logs inside the container. It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`, `INFO` (default), `DEBUG` or `CRITICAL`.
+* **ZENML\_STORE\_BACKUP\_STRATEGY**: This variable controls the database backup strategy used by the ZenML server. See the [Database backup and recovery](#database-backup-and-recovery) section for more details about this feature and other related environment variables. Defaults to `in-memory`.
 
 If none of the `ZENML_STORE_*` variables are set, the container will default to creating and using an SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db` inside the container. The `/zenml/.zenconfig/local_stores` base path where the default SQLite database is located can optionally be overridden by setting the `ZENML_LOCAL_STORES_PATH` environment variable to point to a different path (e.g. a persistent volume or directory that is mounted from the host).
 
 ### Secret store environment variables
 
-There are many possible Secret Stores that you can choose between. Each one of these Secret Stores requires the docker image to contain different configurations.
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](../../user-guide/advanced-guide/secret-management/secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it explicitly using docker environment variables. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
+
+> **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
 {% tabs %}
-{% tab title="MySQL" %}
-The SQL database is used as the default secret store. You only need to configure these options if you want to change the default behavior.
+{% tab title=SQL database" %}
+The SQL database is used as the default secret store location. You only need to configure these options if you want to change the default behavior.
+
+It is particularly recommended to enable encryption at rest for the SQL database if you plan on using it as a secrets store backend. You'll have to configure the secret key used to encrypt the secret values. If not set, encryption will not be used and passwords will be stored unencrypted in the database.
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `sql` in order to explicitly set this type of secret store.
-*   **ZENML\_SECRETS\_STORE\_ENCRYPTION\_KEY**: This is a secret key used to encrypt all secrets stored in the SQL secrets store. If not set, encryption will not be used and passwords will be stored unencrypted in the database. This should be set to a random string with a recommended length of at least 32 characters, e.g.:
+*   **ZENML\_SECRETS\_STORE\_ENCRYPTION\_KEY**: the secret key used to encrypt all secrets stored in the SQL secrets store. It is recommended to set this to a random string with a length of at least 32 characters, e.g.:
 
     ```python
     from secrets import token_hex
@@ -68,7 +73,7 @@ The SQL database is used as the default secret store. You only need to configure
     openssl rand -hex 32
     ```
 
-> **Important:** If you configure encryption for your SQL database secrets store, you should keep the `ZENML_SECRETS_STORE_ENCRYPTION_KEY` value somewhere safe and secure, as it will be required to decrypt the secrets in the database. If you lose the encryption key, you will not be able to decrypt the secrets in the database and will have to reset them.
+> **Important:** If you configure encryption for your SQL database secrets store, you should keep the `ZENML_SECRETS_STORE_ENCRYPTION_KEY` value somewhere safe and secure, as it will always be required by the ZenML server to decrypt the secrets in the database. If you lose the encryption key, you will not be able to decrypt the secrets in the database and will have to reset them.
 {% endtab %}
 
 {% tab title="AWS" %}
@@ -76,7 +81,7 @@ These configuration options are only relevant if you're using the AWS Secrets Ma
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `aws` in order to set this type of secret store.
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 
@@ -104,7 +109,7 @@ The minimum set of permissions that must be attached to the implicit or configur
 The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The AWS Service Connector authentication method to use (e.g. `secret-key` or `iam-role`).
-* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The AWS Service Connector configuration, in JSON format (e.g. `{"role_arn": "arn:aws:iam::123456789012:role/MyRole"}`).
+* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The AWS Service Connector configuration, in JSON format (e.g. `{"aws_access_key_id":"<aws-key-id>","aws_secret_access_key":"<aws-secret-key>","region":"<aws-region>"}`).
 
 > **Note:** The remaining configuration options are deprecated and may be removed in a future release. Instead, you should set the `ZENML_SECRETS_STORE_AUTH_METHOD` and `ZENML_SECRETS_STORE_AUTH_CONFIG` variables to use the AWS Service Connector authentication method.
 
@@ -117,6 +122,8 @@ The following configuration options are supported:
 These configuration options are only relevant if you're using the GCP Secrets Manager as the secrets store backend.
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `gcp` in order to set this type of secret store.
+
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API. 
 
 The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
 
@@ -152,10 +159,10 @@ gcloud projects add-iam-policy-binding <your GCP project ID> \
   --condition 'title=limit_access_zenml,description="Limit access to secrets with prefix zenml-",expression=resource.name.startsWith("projects/<your GCP project NUMBER>/secrets/zenml-")'
 ```
 
-The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API. The following configuration options are supported:
+The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The GCP Service Connector authentication method to use (e.g. `service-account`).
-* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The GCP Service Connector configuration, in JSON format (e.g. `{"project_id": "my-project", "service_account_json": { ... }}`).
+* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The GCP Service Connector configuration, in JSON format (e.g. `{"project_id":"my-project","service_account_json":{ ... }}`).
 
 > **Note:** The remaining configuration options are deprecated and may be removed in a future release. Instead, you should set the `ZENML_SECRETS_STORE_AUTH_METHOD` and `ZENML_SECRETS_STORE_AUTH_CONFIG` variables to use the GCP Service Connector authentication method.
 
@@ -169,10 +176,10 @@ These configuration options are only relevant if you're using Azure Key Vault as
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `azure` in order to set this type of secret store.
 * **ZENML\_SECRETS\_STORE\_KEY\_VAULT\_NAME**: The name of the Azure Key Vault. This must be set to point to the Azure Key Vault instance that you want to use.
 
-The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API. The following configuration options are supported:
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API. The following configuration options are supported:
 
 * **ZENML\_SECRETS\_STORE\_AUTH\_METHOD**: The Azure Service Connector authentication method to use (e.g. `service-account`).
-* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The Azure Service Connector configuration, in JSON format (e.g. `{"tenant_id": "my-tenant-id", "client_id": "my-client-id", "client_secret": "my-client-secret"}`).
+* **ZENML\_SECRETS\_STORE\_AUTH\_CONFIG**: The Azure Service Connector configuration, in JSON format (e.g. `{"tenant_id":"my-tenant-id","client_id":"my-client-id","client_secret": "my-client-secret"}`).
 
 > **Note:** The remaining configuration options are deprecated and may be removed in a future release. Instead, you should set the `ZENML_SECRETS_STORE_AUTH_METHOD` and `ZENML_SECRETS_STORE_AUTH_CONFIG` variables to use the Azure Service Connector authentication method.
 
@@ -208,6 +215,18 @@ If your custom secrets store implementation requires additional configuration op
 {% hint style="info" %}
 **ZENML\_SECRETS\_STORE\_TYPE**: Set this variable to `none`to disable the secrets store functionality altogether.
 {% endhint %}
+
+#### Backup secrets store
+
+[A backup secrets store](../../user-guide/advanced-guide/secret-management/secret-management.md#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy).
+
+To configure a backup secrets store in the docker container, use the same approach and instructions documented for the primary secrets store, but set the `**ZENML\_BACKUP\_SECRETS\_STORE\***` environment variables instead of `**ZENML\_SECRETS\_STORE\***`, e.g.:
+
+```yaml
+ZENML_BACKUP_SECRETS_STORE_TYPE: aws
+ZENML_BACKUP_SECRETS_STORE_AUTH_METHOD: secret-key
+ZENML_BACKUP_SECRETS_STORE_AUTH_CONFIG: '{"aws_access_key_id":"<aws-key-id>", "aws_secret_access_key","<aws-secret-key>","role_arn": "<aws-role-arn>"}`'
+```
 
 ### Advanced server configuration options
 
@@ -405,6 +424,47 @@ Tearing down the installation is as simple as running:
 
 ```shell
 docker-compose -p zenml down
+```
+
+
+## Database backup and recovery
+
+An automated database backup and recovery feature is enabled by default for all Docker deployments. The ZenML server will automatically back up the database in-memory before every database schema migration and restore it if the migration fails.
+
+{% hint style="info" %}
+The database backup automatically created by the ZenML server is only temporary and only used as an immediate recovery in case of database migration failures. It is not meant to be used as a long-term backup solution. If you need to back up your database for long-term storage, you should use a dedicated backup solution.
+{% endhint %}
+
+Several database backup strategies are supported, depending on where and how the backup is stored. The strategy can be configured by means of the `ZENML_STORE_BACKUP_STRATEGY` environment variable:
+
+* `disabled` - no backup is performed
+* `in-memory` - the database schema and data are stored in memory. This is the fastest backup strategy, but the backup is not persisted across container restarts, so no manual intervention is possible in case the automatic DB recovery fails after a failed DB migration. Adequate memory resources should be allocated to the ZenML server container when using this backup strategy with larger databases. This is the default backup strategy.
+* `database` - the database is copied to a backup database in the same database server. This requires the `ZENML_STORE_BACKUP_DATABASE` environment variable to be set to the name of the backup database. This backup strategy is only supported for MySQL compatible databases and the user specified in the database URL must have permissions to manage (create, drop, and modify) the backup database in addition to the main database.
+* `dump-file` - the database schema and data are dumped to a filesystem location inside the ZenML server container. This location can be customized by means of the `ZENML_STORE_BACKUP_DIRECTORY` environment variable. When this strategy is configured, users should mount a host directory in the container and point the `ZENML_STORE_BACKUP_DIRECTORY` variable to where it's mounted inside the container. If a host directory is not mounted, the dump file will be stored in the container's filesystem and will be lost when the container is removed.
+
+The following additional rules are applied concerning the creation and lifetime of the backup:
+
+* a backup is not attempted if the database doesn't need to undergo a migration (e.g. when the ZenML server is upgraded to a new version that doesn't require a database schema change or if the ZenML version doesn't change at all).
+* a backup file or database is created before every database migration attempt (i.e. when the container starts). If a backup already exists (i.e. persisted in a mounted host directory or backup database), it is overwritten.
+* the persistent backup file or database is cleaned up after the migration is completed successfully or if the database doesn't need to undergo a migration. This includes backups created by previous failed migration attempts.
+* the persistent backup file or database is NOT cleaned up after a failed migration. This allows the user to manually inspect and/or apply the backup if the automatic recovery fails.
+
+The following example shows how to deploy the ZenML server to use a mounted host directory to persist the database backup file during a database migration:
+
+```shell
+mkdir mysql-data
+
+docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password \
+    --mount type=bind,source=$PWD/mysql-data,target=/var/lib/mysql \
+    mysql:8.0
+
+docker run -it -d -p 8080:8080 --name zenml \
+    --add-host host.docker.internal:host-gateway \
+    --mount type=bind,source=$PWD/mysql-data,target=/db-dump \
+    --env ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml \
+    --env ZENML_STORE_BACKUP_STRATEGY=dump-file \
+    --env ZENML_STORE_BACKUP_DIRECTORY=/db-dump \
+    zenmldocker/zenml-server
 ```
 
 ## Troubleshooting

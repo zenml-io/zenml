@@ -28,7 +28,7 @@ from tests.integration.functional.zen_stores.utils import (
     ComponentContext,
     CrudTestConfig,
     LoginContext,
-    ModelVersionContext,
+    ModelContext,
     PipelineRunContext,
     SecretContext,
     ServiceAccountContext,
@@ -117,7 +117,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
-from zenml.models.v2.core.model import ModelUpdate
+from zenml.models.v2.core.model import ModelFilter, ModelUpdate
 from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
@@ -539,10 +539,10 @@ def test_delete_user_with_resources_fails():
         zen_store.delete_user(user.id)
 
     with UserContext(delete=False, login=login) as user:
-        model_version_context = ModelVersionContext(
+        model_context = ModelContext(
             create_version=True, user_id=user.id, delete=False
         )
-        with model_version_context:
+        with model_context:
             # We only use the context as a shortcut to create the resource
             pass
 
@@ -550,7 +550,7 @@ def test_delete_user_with_resources_fails():
     with pytest.raises(IllegalOperationError):
         zen_store.delete_user(user.id)
 
-    model_version_context.cleanup()
+    model_context.cleanup()
 
     # Can delete because owned resources have been removed
     with does_not_raise():
@@ -886,10 +886,10 @@ def test_delete_service_account_with_resources_fails():
         zen_store.delete_service_account(service_account.id)
 
     with ServiceAccountContext(delete=False, login=login) as service_account:
-        model_version_context = ModelVersionContext(
+        model_context = ModelContext(
             create_version=True, user_id=service_account.id, delete=False
         )
-        with model_version_context:
+        with model_context:
             # We only use the context as a shortcut to create the resource
             pass
 
@@ -897,7 +897,7 @@ def test_delete_service_account_with_resources_fails():
     with pytest.raises(IllegalOperationError):
         zen_store.delete_service_account(service_account.id)
 
-    model_version_context.cleanup()
+    model_context.cleanup()
 
     # Can delete because owned resources have been removed
     with does_not_raise():
@@ -3608,7 +3608,7 @@ def test_connector_validation():
 class TestModel:
     def test_latest_version_properly_fetched(self):
         """Test that latest version can be properly fetched."""
-        with ModelVersionContext() as created_model:
+        with ModelContext() as created_model:
             zs = Client().zen_store
             assert zs.get_model(created_model.id).latest_version_name is None
             assert zs.get_model(created_model.id).latest_version_id is None
@@ -3632,7 +3632,7 @@ class TestModel:
 
     def test_update_name(self, clean_client: "Client"):
         """Test that update name works, if model version exists."""
-        with ModelVersionContext() as model_:
+        with ModelContext() as model_:
             zs = clean_client.zen_store
             model = zs.get_model(model_.id)
             assert model.name == model_.name
@@ -3646,11 +3646,30 @@ class TestModel:
             model = zs.get_model(model_.id)
             assert model.name == "and yet another one"
 
+    def test_list_by_tag(self, clean_client: "Client"):
+        """Test that listing works with tag filters."""
+        with ModelContext():
+            zs = clean_client.zen_store
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tag=""))
+            assert len(ms) == 1
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tag="foo"))
+            assert len(ms) == 1
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tag="bar"))
+            assert len(ms) == 1
+
+            ms = zs.list_models(
+                model_filter_model=ModelFilter(tag="non_existent_tag")
+            )
+            assert len(ms) == 0
+
 
 class TestModelVersion:
     def test_create_pass(self):
         """Test that vanilla creation pass."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
@@ -3663,7 +3682,7 @@ class TestModelVersion:
 
     def test_create_duplicated(self):
         """Test that duplicated creation fails."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
@@ -3685,7 +3704,7 @@ class TestModelVersion:
 
     def test_create_no_model(self):
         """Test that model relation in DB works."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.create_model_version(
@@ -3699,7 +3718,7 @@ class TestModelVersion:
 
     def test_get_not_found(self):
         """Test that get fails if not found."""
-        with ModelVersionContext():
+        with ModelContext():
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.get_model_version(
@@ -3708,7 +3727,7 @@ class TestModelVersion:
 
     def test_get_found(self):
         """Test that get works, if model version exists."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
@@ -3728,7 +3747,7 @@ class TestModelVersion:
 
     def test_list_empty(self):
         """Test list without any versions."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             mvs = zs.list_model_versions(
                 model_name_or_id=model.id,
@@ -3738,7 +3757,7 @@ class TestModelVersion:
 
     def test_list_not_empty(self):
         """Test list with some versions."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
@@ -3764,9 +3783,69 @@ class TestModelVersion:
             assert mv1 in mvs
             assert mv2 in mvs
 
+    def test_list_by_tags(self):
+        """Test list using tag filter."""
+        with ModelContext() as model:
+            zs = Client().zen_store
+            mv1 = zs.create_model_version(
+                ModelVersionRequest(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="great one",
+                    tags=["tag1", "tag2"],
+                )
+            )
+            mv2 = zs.create_model_version(
+                ModelVersionRequest(
+                    user=model.user.id,
+                    workspace=model.workspace.id,
+                    model=model.id,
+                    name="and yet another one",
+                    tags=["tag3", "tag2"],
+                )
+            )
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(tag=""),
+            )
+            assert len(mvs) == 2
+            assert mv1 in mvs
+            assert mv2 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(tag="tag2"),
+            )
+            assert len(mvs) == 2
+            assert mv1 in mvs
+            assert mv2 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(tag="tag1"),
+            )
+            assert len(mvs) == 1
+            assert mv1 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(tag="tag3"),
+            )
+            assert len(mvs) == 1
+            assert mv2 in mvs
+
+            mvs = zs.list_model_versions(
+                model_name_or_id=model.id,
+                model_version_filter_model=ModelVersionFilter(
+                    tag="non_existent_tag"
+                ),
+            )
+            assert len(mvs) == 0
+
     def test_delete_not_found(self):
         """Test that delete fails if not found."""
-        with ModelVersionContext():
+        with ModelContext():
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.delete_model_version(
@@ -3775,7 +3854,7 @@ class TestModelVersion:
 
     def test_delete_found(self):
         """Test that delete works, if model version exists."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             mv = zs.create_model_version(
                 ModelVersionRequest(
@@ -3798,7 +3877,7 @@ class TestModelVersion:
 
     def test_update_not_found(self):
         """Test that update fails if not found."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.update_model_version(
@@ -3812,7 +3891,7 @@ class TestModelVersion:
 
     def test_update_not_forced(self):
         """Test that update fails if not forced on existing stage version."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
@@ -3853,7 +3932,7 @@ class TestModelVersion:
 
     def test_update_name_and_description(self, clean_client: "Client"):
         """Test that update name works, if model version exists."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = clean_client.zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
@@ -3882,7 +3961,7 @@ class TestModelVersion:
 
     def test_in_stage_not_found(self):
         """Test that get in stage fails if not found."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
@@ -3904,7 +3983,7 @@ class TestModelVersion:
 
     def test_latest_found(self):
         """Test that get latest works, if model version exists."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
@@ -3930,7 +4009,7 @@ class TestModelVersion:
 
     def test_update_forced(self):
         """Test that update works, if model version in stage exists and force=True."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
@@ -3993,7 +4072,7 @@ class TestModelVersion:
 
     def test_update_public_interface(self):
         """Test that update works via public interface."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
@@ -4021,7 +4100,7 @@ class TestModelVersion:
 
     def test_update_public_interface_bad_stage(self):
         """Test that update fails via public interface on bad stage value."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
@@ -4047,7 +4126,7 @@ class TestModelVersion:
 
     def test_increments_version_number(self):
         """Test that increment version number works on sequential insertions."""
-        with ModelVersionContext() as model:
+        with ModelContext() as model:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
@@ -4079,7 +4158,7 @@ class TestModelVersion:
 
     def test_get_found_by_number(self):
         """Test that get works by integer version number."""
-        with ModelVersionContext(create_version=True) as model_version:
+        with ModelContext(create_version=True) as model_version:
             zs = Client().zen_store
             found = zs.list_model_versions(
                 model_name_or_id=model_version.model.id,
@@ -4091,7 +4170,7 @@ class TestModelVersion:
 
     def test_get_not_found_by_number(self):
         """Test that get fails by integer version number, if not found and by string version number, cause treated as name."""
-        with ModelVersionContext(create_version=True) as model_version:
+        with ModelContext(create_version=True) as model_version:
             zs = Client().zen_store
 
             found = zs.list_model_versions(
@@ -4104,7 +4183,7 @@ class TestModelVersion:
 
 class TestModelVersionArtifactLinks:
     def test_link_create_pass(self):
-        with ModelVersionContext(True, create_artifacts=1) as (
+        with ModelContext(True, create_artifacts=1) as (
             model_version,
             artifacts,
         ):
@@ -4120,7 +4199,7 @@ class TestModelVersionArtifactLinks:
             )
 
     def test_link_create_versioned(self):
-        with ModelVersionContext(True, create_artifacts=2) as (
+        with ModelContext(True, create_artifacts=2) as (
             model_version,
             artifacts,
         ):
@@ -4148,7 +4227,7 @@ class TestModelVersionArtifactLinks:
 
     def test_link_create_duplicated_by_id(self):
         """Assert that creating a link with the same artifact returns the same link."""
-        with ModelVersionContext(True, create_artifacts=1) as (
+        with ModelContext(True, create_artifacts=1) as (
             model_version,
             artifacts,
         ):
@@ -4178,7 +4257,7 @@ class TestModelVersionArtifactLinks:
     def test_link_create_single_version_of_same_output_name_from_different_steps(
         self,
     ):
-        with ModelVersionContext(True, create_artifacts=2) as (
+        with ModelContext(True, create_artifacts=2) as (
             model_version,
             artifacts,
         ):
@@ -4210,7 +4289,7 @@ class TestModelVersionArtifactLinks:
             assert len(links) == 2
 
     def test_link_delete_found(self):
-        with ModelVersionContext(True, create_artifacts=1) as (
+        with ModelContext(True, create_artifacts=1) as (
             model_version,
             artifacts,
         ):
@@ -4236,7 +4315,7 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 0
 
     def test_link_delete_all(self):
-        with ModelVersionContext(True, create_artifacts=2) as (
+        with ModelContext(True, create_artifacts=2) as (
             model_version,
             artifacts,
         ):
@@ -4262,7 +4341,7 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 0
 
     def test_link_delete_not_found(self):
-        with ModelVersionContext(True) as model_version:
+        with ModelContext(True) as model_version:
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.delete_model_version_artifact_link(
@@ -4271,7 +4350,7 @@ class TestModelVersionArtifactLinks:
                 )
 
     def test_link_list_empty(self):
-        with ModelVersionContext(True) as model_version:
+        with ModelContext(True) as model_version:
             zs = Client().zen_store
             mvls = zs.list_model_version_artifact_links(
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
@@ -4281,7 +4360,7 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 0
 
     def test_link_list_populated(self):
-        with ModelVersionContext(True, create_artifacts=4) as (
+        with ModelContext(True, create_artifacts=4) as (
             model_version,
             artifacts,
         ):
@@ -4375,7 +4454,7 @@ class TestModelVersionArtifactLinks:
 
 class TestModelVersionPipelineRunLinks:
     def test_link_create_pass(self):
-        with ModelVersionContext(True, create_prs=1) as (
+        with ModelContext(True, create_prs=1) as (
             model_version,
             prs,
         ):
@@ -4392,7 +4471,7 @@ class TestModelVersionPipelineRunLinks:
 
     def test_link_create_duplicated(self):
         """Assert that creating a link with the same run returns the same link."""
-        with ModelVersionContext(True, create_prs=1) as (
+        with ModelContext(True, create_prs=1) as (
             model_version,
             prs,
         ):
@@ -4418,7 +4497,7 @@ class TestModelVersionPipelineRunLinks:
             assert link_1.id == link_2.id
 
     def test_link_delete_found(self):
-        with ModelVersionContext(True, create_prs=1) as (
+        with ModelContext(True, create_prs=1) as (
             model_version,
             prs,
         ):
@@ -4445,7 +4524,7 @@ class TestModelVersionPipelineRunLinks:
             assert len(mvls) == 0
 
     def test_link_delete_not_found(self):
-        with ModelVersionContext(True) as model_version:
+        with ModelContext(True) as model_version:
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.delete_model_version_pipeline_run_link(
@@ -4453,7 +4532,7 @@ class TestModelVersionPipelineRunLinks:
                 )
 
     def test_link_list_empty(self):
-        with ModelVersionContext(True) as model_version:
+        with ModelContext(True) as model_version:
             zs = Client().zen_store
             mvls = zs.list_model_version_pipeline_run_links(
                 model_version_pipeline_run_link_filter_model=ModelVersionPipelineRunFilter(
@@ -4463,7 +4542,7 @@ class TestModelVersionPipelineRunLinks:
             assert len(mvls) == 0
 
     def test_link_list_populated(self):
-        with ModelVersionContext(True, create_prs=2) as (
+        with ModelContext(True, create_prs=2) as (
             model_version,
             prs,
         ):
@@ -4691,8 +4770,10 @@ class TestTagResource:
         """Test that link is deleted on tag deletion."""
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
-        with ModelVersionContext() as model:
-            tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
+        with ModelContext() as model:
+            tag = clean_client.create_tag(
+                TagRequest(name="test_cascade_deletion", color="red")
+            )
             fake_model_id = uuid4() if not use_model else model.id
             clean_client.zen_store.create_tag_resource(
                 TagResourceRequest(
@@ -4714,7 +4795,7 @@ class TestTagResource:
             if use_tag:
                 clean_client.delete_tag(tag.id)
                 tag = clean_client.create_tag(
-                    TagRequest(name="foo", color="red")
+                    TagRequest(name="test_cascade_deletion", color="red")
                 )
             else:
                 clean_client.delete_model(model.id)
@@ -4775,12 +4856,10 @@ class TestRunMetadata:
                 )
             )
         elif type_ == MetadataResourceTypes.MODEL_VERSION:
-            from zenml import ModelVersion
+            from zenml import Model
 
             model_name = sample_name("foo")
-            resource = ModelVersion(
-                name=model_name
-            )._get_or_create_model_version()
+            resource = Model(name=model_name)._get_or_create_model_version()
 
         elif (
             type_ == MetadataResourceTypes.PIPELINE_RUN

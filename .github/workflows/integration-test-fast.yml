@@ -1,5 +1,5 @@
 ---
-name: Integration Tests
+name: Integration Tests (Fast CI)
 on:
   workflow_call:
     inputs:
@@ -76,11 +76,13 @@ on:
         required: false
         default: 30
 jobs:
-  integration-and-template-tests:
-    name: integration-and-template-tests
+  integration-tests-fast:
+    name: integration-tests-fast
     runs-on: ${{ inputs.os }}
     strategy:
       fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
@@ -111,12 +113,12 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           build-mount-path: /var/lib/docker/
-        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - name: Reload Docker
         run: sudo systemctl restart docker
-        if: inputs.os=='ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - uses: actions/checkout@v4.1.1
@@ -146,9 +148,11 @@ jobs:
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
-        run: pip install docker-compose
+        run: |
+          pip install pyyaml==5.3.1
+          pip install docker-compose
       - name: Install Linux System Dependencies
-        if: inputs.os=='ubuntu-latest'
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
         run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
@@ -175,7 +179,7 @@ jobs:
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: inputs.os=='ubuntu-latest'
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
       - name: Install kubectl on MacOS
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
@@ -209,16 +213,16 @@ jobs:
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
-        with:
-          timeout-minutes: ${{ inputs.tmate_timeout }}
-      - name: Test
+        timeout-minutes: ${{ inputs.tmate_timeout }}
+      - name: Sharded Integration Tests (Ubuntu) - Fast CI
+        # Ubuntu integration tests run as 6 shards
+        if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17
-        with:
-          timeout-minutes: ${{ inputs.tmate_timeout }}
+        timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list

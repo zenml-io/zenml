@@ -37,6 +37,11 @@ class Action(StrEnum):
     # Models
     PROMOTE = "promote"
 
+    # Secrets
+    BACKUP_RESTORE = "backup_restore"
+
+    SHARE = "share"
+
 
 class ResourceType(StrEnum):
     """Resource types of the server API."""

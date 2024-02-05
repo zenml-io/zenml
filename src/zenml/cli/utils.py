@@ -58,8 +58,8 @@ from zenml.constants import (
 from zenml.enums import GenericFilterOps, StackComponentType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
-    ModelVersion,
     RegisteredModel,
+    RegistryModelVersion,
 )
 from zenml.models import (
     BaseFilter,
@@ -1182,7 +1182,7 @@ def pretty_print_registered_model_table(
 
 
 def pretty_print_model_version_table(
-    model_versions: List["ModelVersion"],
+    model_versions: List["RegistryModelVersion"],
 ) -> None:
     """Given a list of model_versions, print all associated key-value pairs.
 
@@ -1206,7 +1206,7 @@ def pretty_print_model_version_table(
 
 
 def pretty_print_model_version_details(
-    model_version: "ModelVersion",
+    model_version: "RegistryModelVersion",
 ) -> None:
     """Given a model_version, print all associated key-value pairs.
 

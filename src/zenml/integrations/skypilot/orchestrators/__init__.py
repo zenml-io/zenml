@@ -16,19 +16,6 @@
 from zenml.integrations.skypilot.orchestrators.skypilot_base_vm_orchestrator import (  # noqa
     SkypilotBaseOrchestrator,
 )
-from zenml.integrations.skypilot.orchestrators.skypilot_aws_vm_orchestrator import (  # noqa
-    SkypilotAWSOrchestrator,
-)
-from zenml.integrations.skypilot.orchestrators.skypilot_gcp_vm_orchestrator import (  # noqa
-    SkypilotGCPOrchestrator,
-)
-from zenml.integrations.skypilot.orchestrators.skypilot_azure_vm_orchestrator import (  # noqa
-    SkypilotAzureOrchestrator,
-)
-
 __all__ = [
     "SkypilotBaseOrchestrator",
-    "SkypilotAWSOrchestrator",
-    "SkypilotGCPOrchestrator",
-    "SkypilotAzureOrchestrator",
 ]

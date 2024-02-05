@@ -139,6 +139,11 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
             base_connector = service_connector_registry.instantiate_connector(
                 model=request
             )
+            # Set the `allow_implicit_auth_methods` flag to `True` to allow
+            # implicit authentication methods to be used even when not globally
+            # enabled via the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment
+            # variable.
+            base_connector.allow_implicit_auth_methods = True
             self._connector = base_connector.get_connector_client()
 
         if self._client is None:

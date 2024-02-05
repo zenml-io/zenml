@@ -24,7 +24,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.scoped import WorkspaceScopedTaggableFilter
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
@@ -43,6 +43,11 @@ class ArtifactRequest(BaseRequest):
     has_custom_name: bool = Field(
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
+    )
+    tags: Optional[List[str]] = Field(
+        title="Artifact tags.",
+        description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
+        default=None,
     )
 
 
@@ -133,7 +138,7 @@ class ArtifactResponse(
 # ------------------ Filter Model ------------------
 
 
-class ArtifactFilter(BaseFilter):
+class ArtifactFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of artifacts."""
 
     name: Optional[str] = None

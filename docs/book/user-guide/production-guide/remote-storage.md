@@ -115,42 +115,31 @@ First, let's understand what a service connector does. In simple words, a servic
 
 <figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
 
-There are [many ways of creating a service connector](../../stacks-and-components/auth-management/auth-management.md), but the easiest way is to use the `auto-configure`:
-
 {% tabs %}
 {% tab title="AWS" %}
+There are [many ways to create an AWS service connector](../../stacks-and-components/auth-management/aws-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](../../stacks-and-components/auth-management/aws-service-connector.md#aws-iam-role).
 ```shell
-zenml service-connector register local_service_connector --type aws --auto-configure
+AWS_PROFILE=<AWS_PROFILE> zenml service-connector register cloud_connector --type aws --auto-configure
 ```
-{% hint style="info" %}
-Having trouble with this command? You can read more about the AWS service connectors [here](../../stacks-and-components/auth-management/aws-service-connector.md).
-{% endhint %}
 {% endtab %}
 {% tab title="GCP" %}
+There are [many ways to create a GCP service connector](../../stacks-and-components/auth-management/gcp-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Account method](../../stacks-and-components/auth-management/gcp-service-connector.md#gcp-service-account).
 ```shell
-zenml service-connector register local_service_connector --type gcp --auto-configure
+zenml service-connector register cloud_connector --type gcp --auth-method service-account --service_account_json=@<PATH_TO_SERVICE_ACCOUNT_JSON> --project-id=<PROJECT_ID> --generate_temporary_tokens=False
 ```
-{% hint style="info" %}
-Having trouble with this command? You can read more about the GCP service connectors [here](../../stacks-and-components/auth-management/gcp-service-connector.md).
-{% endhint %}
 {% endtab %}
 {% tab title="Azure" %}
+There are [many ways to create an Azure service connector](../../stacks-and-components/auth-management/azure-service-connector.md#authentication-methods), but for the sake of this guide, we recommend creating one by [using the Service Principal method](../../stacks-and-components/auth-management/azure-service-connector.md#azure-service-principal).
 ```shell
-zenml service-connector register local_service_connector --type azure --auto-configure
+zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>
 ```
-{% hint style="info" %}
-Having trouble with this command? You can read more about the Azure service connectors [here](../../stacks-and-components/auth-management/azure-service-connector.md).
-{% endhint %}
 {% endtab %}
 {% endtabs %}
-
-The auto-configure mechanism simply copies your local client credentials and configures a service connector. Therefore, your local credentials
-should have permission to access the artifact store defined in the previous step.
 
 Once we have our service connector, we can now attach it to stack components. In this case, we are going to connect it to our remote artifact store:
 
 ```shell
-zenml artifact-store connect cloud_artifact_store --connector aws-generic
+zenml artifact-store connect cloud_artifact_store --connector cloud_connector
 ```
 
 Now, every time you (or anyone else with access) uses the `cloud_artifact_store`, they will be granted a temporary token that will grant them access to the remote storage. Therefore, your colleagues don't need to worry about setting up credentials and installing clients locally!

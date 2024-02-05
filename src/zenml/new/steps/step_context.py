@@ -17,6 +17,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    List,
     Mapping,
     Optional,
     Sequence,
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.models import (
         ArtifactVersionResponse,
         PipelineResponse,
@@ -163,33 +164,46 @@ class StepContext(metaclass=SingletonMetaClass):
         )
 
     @property
-    def model_version(self) -> "ModelVersion":
-        """Returns configured ModelVersion.
+    def model(self) -> "Model":
+        """Returns configured Model.
 
-        Order of resolution to search for ModelVersion is:
-            1. ModelVersion from @step
-            2. ModelVersion from @pipeline
+        Order of resolution to search for Model is:
+            1. Model from @step
+            2. Model from @pipeline
 
         Returns:
-            The `ModelVersion` object associated with the current step.
+            The `Model` object associated with the current step.
 
         Raises:
-            StepContextError: If the `ModelVersion` object is not set in `@step` or `@pipeline`.
+            StepContextError: If the `Model` object is not set in `@step` or `@pipeline`.
         """
-        if self.step_run.config.model_version is not None:
-            model_version = self.step_run.config.model_version
-        elif self.pipeline_run.config.model_version is not None:
-            model_version = self.pipeline_run.config.model_version
+        if self.step_run.config.model is not None:
+            model = self.step_run.config.model
+        elif self.pipeline_run.config.model is not None:
+            model = self.pipeline_run.config.model
         else:
             raise StepContextError(
-                f"Unable to get ModelVersion in step '{self.step_name}' of pipeline "
+                f"Unable to get Model in step '{self.step_name}' of pipeline "
                 f"run '{self.pipeline_run.id}': it was not set in `@step` or `@pipeline`."
             )
 
         # warm-up the model version
-        model_version._get_or_create_model_version()
+        model._get_or_create_model_version()
 
-        return model_version
+        return model
+
+    # TODO: deprecate me
+    @property
+    def model_version(self) -> "Model":
+        """DEPRECATED, use `model` instead.
+
+        Returns:
+            The `Model` object associated with the current step.
+        """
+        logger.warning(
+            "Step context `model_version` is deprecated. Please use `model` instead."
+        )
+        return self.model
 
     @property
     def inputs(self) -> Dict[str, "ArtifactVersionResponse"]:
@@ -318,7 +332,33 @@ class StepContext(metaclass=SingletonMetaClass):
         Returns:
             Metadata for the given output.
         """
-        return self._get_output(output_name).run_metadata or {}
+        output = self._get_output(output_name)
+        custom_metadata = output.run_metadata or {}
+        if output.artifact_config:
+            custom_metadata.update(
+                **(output.artifact_config.run_metadata or {})
+            )
+        return custom_metadata
+
+    def get_output_tags(self, output_name: Optional[str] = None) -> List[str]:
+        """Returns the tags for a given step output.
+
+        Args:
+            output_name: Optional name of the output for which to get the
+                metadata. If no name is given and the step only has a single
+                output, the metadata of this output will be returned. If the
+                step has multiple outputs, an exception will be raised.
+
+        Returns:
+            Tags for the given output.
+        """
+        output = self._get_output(output_name)
+        custom_tags = set(output.tags or [])
+        if output.artifact_config:
+            return list(
+                set(output.artifact_config.tags or []).union(custom_tags)
+            )
+        return list(custom_tags)
 
     def add_output_metadata(
         self,
@@ -338,6 +378,25 @@ class StepContext(metaclass=SingletonMetaClass):
         if not output.run_metadata:
             output.run_metadata = {}
         output.run_metadata.update(**metadata)
+
+    def add_output_tags(
+        self,
+        tags: List[str],
+        output_name: Optional[str] = None,
+    ) -> None:
+        """Adds tags for a given step output.
+
+        Args:
+            tags: The tags to add.
+            output_name: Optional name of the output for which to add the
+                tags. If no name is given and the step only has a single
+                output, the tags of this output will be added. If the
+                step has multiple outputs, an exception will be raised.
+        """
+        output = self._get_output(output_name)
+        if not output.tags:
+            output.tags = []
+        output.tags += tags
 
     def _set_artifact_config(
         self,
@@ -373,6 +432,7 @@ class StepContextOutput:
     artifact_uri: str
     run_metadata: Optional[Dict[str, "MetadataType"]] = None
     artifact_config: Optional["ArtifactConfig"]
+    tags: Optional[List[str]] = None
 
     def __init__(
         self,

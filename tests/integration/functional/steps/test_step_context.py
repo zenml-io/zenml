@@ -1,11 +1,14 @@
 import json
 import os
-from typing import Optional, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
+import pytest
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from zenml import get_step_context, log_artifact_metadata, pipeline, step
+from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.client import Client
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -109,3 +112,107 @@ def test_input_artifacts_property():
         step_context_metadata_reader_step(my_input=output)
 
     _pipeline()
+
+
+@step
+def step_context_metadata_and_tags_adder(
+    name: Optional[str], metadata: Dict[str, Any], tags: List[str]
+) -> Tuple[
+    Annotated[
+        str,
+        ArtifactConfig(
+            name="custom_name",
+            run_metadata={"config_metadata": "bar"},
+            tags=["config_tags"],
+        ),
+    ],
+    str,
+]:
+    step_context = get_step_context()
+    step_context.add_output_metadata(output_name=name, metadata=metadata)
+    step_context.add_output_tags(output_name=name, tags=tags)
+    return "bar", "foo"
+
+
+@pytest.mark.parametrize(
+    "inner_name,full_name,metadata,tags",
+    [
+        ["custom_name", "custom_name", {}, []],
+        ["custom_name", "custom_name", {"some": "foo"}, []],
+        ["custom_name", "custom_name", {}, ["foo"]],
+        ["custom_name", "custom_name", {"some": "foo"}, ["foo"]],
+        ["custom_name", "custom_name", {"some": "foo"}, ["foo", "foo"]],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {},
+            [],
+        ],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {"some": "foo"},
+            [],
+        ],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {},
+            ["foo"],
+        ],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {"some": "foo"},
+            ["foo"],
+        ],
+        [
+            "output_1",
+            "_pipeline::step_context_metadata_and_tags_adder::output_1",
+            {"some": "foo"},
+            ["foo", "foo"],
+        ],
+    ],
+    ids=[
+        "Only custom name",
+        "Custom name and metadata",
+        "Custom name and tags",
+        "Custom name, metadata and tags",
+        "Custom name, metadata and duplicated tags",
+        "Only standard name",
+        "Standard name and metadata",
+        "Standard name and tags",
+        "Standard name, metadata and tags",
+        "Standard name, metadata and duplicated tags",
+    ],
+)
+def test_metadata_and_tags_set_from_context(
+    clean_client: "Client",
+    inner_name: str,
+    full_name: str,
+    metadata: Dict[str, Any],
+    tags: List[str],
+):
+    @pipeline(enable_cache=False)
+    def _pipeline():
+        step_context_metadata_and_tags_adder(
+            name=inner_name, metadata=metadata, tags=tags
+        )
+
+    _pipeline()
+
+    av = clean_client.get_artifact_version(full_name)
+    artifact = clean_client.get_artifact(full_name)
+    for k, v in metadata.items():
+        assert k in av.run_metadata
+        assert av.run_metadata[k].value == v
+
+    if full_name == "custom_name":
+        assert av.run_metadata["config_metadata"].value == "bar"
+        assert {t.name for t in av.tags} == set(tags).union({"config_tags"})
+        assert {t.name for t in artifact.tags} == set(tags).union(
+            {"config_tags"}
+        )
+    else:
+        assert set(tags) == {t.name for t in av.tags}
+        assert set(tags) == {t.name for t in artifact.tags}

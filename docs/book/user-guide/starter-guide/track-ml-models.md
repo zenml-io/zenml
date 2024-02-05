@@ -6,7 +6,7 @@ description: Creating a full picture of a ML model using the Model Control Plane
 
 ![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](../../.gitbook/assets/mcp_walkthrough.gif)
 
-As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many `ModelVersions` (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
+As discussed in the [Core Concepts](../../getting-started/core-concepts.md), ZenML also contains the notion of a `Model`, which consists of many model versions (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
 
 ## What is a ZenML Model?
 
@@ -35,16 +35,16 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 
 ## Configuring a model in a pipeline
 
-The easiest way to use a ZenML model is to pass a model version object as part of a pipeline run. This can be done easily at a pipeline or a step level, or via a 
+The easiest way to use a ZenML model is to pass a `Model` object as part of a pipeline run. This can be done easily at a pipeline or a step level, or via a 
 [YAML config](../production-guide/configure-pipeline.md).
 
-Once you configure a pipeline this way, **all** artifacts generated during pipeline runs are automatically **linked** to the specified model version. This connecting of artifacts provides lineage tracking and transparency into what data and models are used during training, evaluation, and inference.
+Once you configure a pipeline this way, **all** artifacts generated during pipeline runs are automatically **linked** to the specified model. This connecting of artifacts provides lineage tracking and transparency into what data and models are used during training, evaluation, and inference.
 
 ```python
 from zenml import pipeline
-from zenml import ModelVersion
+from zenml import Model
 
-model_version = ModelVersion(
+model = Model(
     # The name uniquely identifies this model
     # It usually represents the business use case
     name="iris_classifier",
@@ -58,12 +58,12 @@ model_version = ModelVersion(
 )
 
 # The step configuration will take precedence over the pipeline
-@step(model_version=model_version)
+@step(model=model)
 def svc_trainer(...) -> ...:
     ...
 
 # This configures it for all steps within the pipeline
-@pipeline(model_version=model_version)
+@pipeline(model=model)
 def training_pipeline(gamma: float = 0.002):
     # Now this pipeline will have the `iris_classifier` model active.
     X_train, X_test, y_train, y_test = training_data_loader()
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
 # In the YAML the same can be done; in this case, the 
 #  passing to the decorators is not needed
-# model_version: 
+# model: 
   # name: iris_classifier
   # license: "Apache 2.0"
   # description: "A classification model for the iris dataset."
@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
 The above will establish a **link between all artifacts that pass through this ZenML pipeline and this model**. This includes the **technical model** which is what comes out of the `svc_trainer` step. You will be able to see all associated artifacts and pipeline runs, all within one view.
 
-Furthermore, this pipeline run and all other pipeline runs that are configured with this model version will be linked to this model as well.
+Furthermore, this pipeline run and all other pipeline runs that are configured with this model configuration will be linked to this model as well.
 
 You can see all versions of a model, and associated artifacts and run like this:
 
@@ -107,14 +107,14 @@ The following commands can be used to list the various artifacts associated with
 
 The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
 
-<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model Versions List.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model versions List.</p></figcaption></figure>
 
 {% endtab %}
 {% endtabs %}
 
 ## Fetching the model in a pipeline
 
-When configured at the pipeline or step level, the model version will be available through the [StepContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md) or [PipelineContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md).
+When configured at the pipeline or step level, the model will be available through the [StepContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md) or [PipelineContext](../advanced-guide/pipelining-features/fetch-metadata-within-pipeline.md).
 
 ```python
 from zenml import get_step_context, get_pipeline_context, step, pipeline
@@ -125,14 +125,14 @@ def svc_trainer(
     y_train: pd.Series,
     gamma: float = 0.001,
 ) -> Annotated[ClassifierMixin, "trained_model"]:
-    # This will return the model version specified in the 
+    # This will return the model specified in the 
     # @pipeline decorator. In this case, the production version of 
     # the `iris_classifier` will be returned in this case.
-    model_version = get_step_context().model_version
+    model = get_step_context().model
     ...
 
 @pipeline(
-    model_version=ModelVersion(
+    model=Model(
         # The name uniquely identifies this model
         name="iris_classifier",
         # Pass the stage you want to get the right model
@@ -141,15 +141,15 @@ def svc_trainer(
 )
 def training_pipeline(gamma: float = 0.002):
     # Now this pipeline will have the production `iris_classifier` model active.
-    model_version = get_pipeline_context().model_version
+    model = get_pipeline_context().model
 
     X_train, X_test, y_train, y_test = training_data_loader()
     svc_trainer(gamma=gamma, X_train=X_train, y_train=y_train)
 ```
 
-## Logging metadata to the `ModelVersion` object
+## Logging metadata to the `Model` object
 
-[Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), model versions too can take a dictionary
+[Just as one can associate metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact), models too can take a dictionary
 of key-value pairs to capture their metadata. This is achieved using the 
 `log_model_metadata` method:
 
@@ -167,7 +167,7 @@ def svc_trainer(
     model.fit(dataset[0], dataset[1])
     accuracy = model.score(dataset[0], dataset[1])
 
-    model_version = get_step_context().model_version
+    model = get_step_context().model
     
     log_model_metadata(
         # Model name can be omitted if specified in the step or pipeline context
@@ -207,6 +207,15 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard offers advanced visualizatio
 
 Choosing [log metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact) or model versions depends on the scope and purpose of the information you wish to capture. Artifact metadata is best for details specific to individual outputs, while model version metadata is suitable for broader information relevant to the overall model. By utilizing ZenML's metadata logging capabilities and special types, you can enhance the traceability, reproducibility, and analysis of your ML workflows.
 
+Once metadata has been logged to a model, we can retrieve it easily with the client:
+
+```python
+from zenml.client import Client
+client = Client()
+model = client.get_model_version("my_model", "my_version")
+print(model.run_metadata["metadata_key"].value)
+```
+
 For further depth, there is an [advanced metadata logging guide](../advanced-guide/data-management/logging-metadata.md) that goes more into detail about logging metadata in ZenML.
 
 ## Using the stages of a model
@@ -221,29 +230,29 @@ A model's versions can exist in various stages. These are meant to signify their
 {% tabs %}
 {% tab title="Python SDK" %}
 ```python
-from zenml.model import ModelVersion
+from zenml.model import Model
 
-# Get the latest model version
-model_version = ModelVersion(
+# Get the latest version of a model
+model = Model(
     name="iris_classifier",
     version="latest"
 )
 
-# Get a model from a version
-model_version = ModelVersion(
+# Get `my_version` version of a model
+model = Model(
     name="iris_classifier",
     version="my_version",
 )
 
 # Pass the stage into the version field
-# to get the model by stage
-model_version = ModelVersion(
+# to get the `staging` model
+model = Model(
     name="iris_classifier",
     version="staging",
 )
 
 # This will set this version to production
-model_version.set_stage(stage="production", force=True)
+model.set_stage(stage="production", force=True)
 ```
 {% endtab %}
 
@@ -264,7 +273,7 @@ The [ZenML Cloud](https://zenml.io/cloud) dashboard has additional capabilities,
 {% endtab %}
 {% endtabs %}
 
-ZenML Model and Model Versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../advanced-guide/data-management/model-management.md).
+ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](../advanced-guide/data-management/model-management.md).
 guide.
 
 <!-- For scarf -->

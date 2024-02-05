@@ -306,13 +306,59 @@ zenml:
 
 This method requires you to configure a DNS service like AWS Route 53 or Google Cloud DNS to map a different hostname to the Ingress controller. For example, you can map the hostname `zenml.<subdomain>` to the Ingress controller's IP address or hostname. Then, simply use the new hostname to expose ZenML at the root URL path.
 
-### Secret Backends
+### Secret Store configuration
+
+Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as [a secrets store backend](../../user-guide/advanced-guide/secret-management/secret-management.md) where secret values are stored. If you want to use an external secrets management service like the AWS Secrets Manager, GCP Secrets Manager, Azure Key Vault, HashiCorp Vault or even your custom Secrets Store back-end implementation instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you will also need to provide the credentials needed to access the secrets management service API.
+
+> **Important:** If you are updating the configuration of your ZenML Server deployment to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
 {% tabs %}
 {% tab title="AWS" %}
+#### Using the SQL database as a secrets store backend (default)
+
+The SQL database is used as the default location where the ZenML secrets store keeps the secret values. You only need to configure these options if you want to change the default behavior.
+
+It is particularly recommended to enable encryption at rest for the SQL database if you plan on using it as a secrets store backend. You'll have to configure the secret key used to encrypt the secret values. If not set, encryption will not be used and passwords will be stored unencrypted in the database. This value should be set to a random string with a recommended length of at least 32 characters, e.g.:
+
+* generate a random string with Python:
+
+```python
+from secrets import token_hex
+token_hex(32)
+```
+
+* or with OpenSSL:
+
+```shell
+openssl rand -hex 32
+```
+
+* then configure it in the Helm values:
+
+```yaml
+ zenml:
+
+   # ...
+
+   # Secrets store settings. This is used to store centralized secrets.
+   secretsStore:
+
+     # The type of the secrets store
+     type: sql
+
+     # Configuration for the SQL secrets store
+     sql:
+       encryptionKey: 0f00e4282a3181be32c108819e8a860a429b613e470ad58531f0730afff64545
+```
+
+> **Important:** If you configure encryption for your SQL database secrets store, you should keep the `encryptionKey` value somewhere safe and secure, as it will always be required by the ZenML Server to decrypt the secrets in the database. If you lose the encryption key, you will not be able to decrypt the secrets anymore and will have to reset them.
+
+{% endtab %}
+
+{% tab title="AWS" %}
 #### Using the AWS Secrets Manager as a secrets store backend
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the AWS Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the AWS credentials needed to access the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](../../stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 
@@ -337,8 +383,7 @@ The minimum set of permissions that must be attached to the implicit or configur
 }
 ```
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API:
-
+Example configuration for the AWS Secrets Store:
 
 ```yaml
  zenml:
@@ -377,7 +422,7 @@ The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to aut
 {% tab title="GCP" %}
 #### Using the GCP Secrets Manager as a secrets store backend
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the GCP Secrets Manager instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the GCP credentials needed to access the GCP Secrets Manager API.
+The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](../../stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured GCP credentials are as follows:
 
@@ -413,8 +458,7 @@ gcloud projects add-iam-policy-binding <your GCP project ID> \
   --condition 'title=limit_access_zenml,description="Limit access to secrets with prefix zenml-",expression=resource.name.startsWith("projects/<your GCP project NUMBER>/secrets/zenml-")'
 ```
 
-The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to authenticate with the GCP Secrets Manager API. This means that you can use any of the [authentication methods supported by the GCP Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/gcp-service-connector#authentication-methods) to authenticate with the GCP Secrets Manager API:
-
+Example configuration for the GCP Secrets Store:
 
 ```yaml
  zenml:
@@ -474,10 +518,9 @@ The GCP Secrets Store uses the ZenML GCP Service Connector under the hood to aut
 {% tab title="Azure" %}
 #### Using the Azure Key Vault as a secrets store backend
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the Azure Key Vault service instead, you need to configure it in the Helm values. Depending on where you deploy your ZenML server and how your Kubernetes cluster is configured, you may also need to provide the Azure credentials needed to access the Azure Key Vault API.
+The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](../../stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API.
 
-The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to authenticate with the Azure Key Vault API. This means that you can use any of the [authentication methods supported by the Azure Service Connector](https://docs.zenml.io/stacks-and-components/auth-management/azure-service-connector#authentication-methods) to authenticate with the Azure Key Vault API:
-
+Example configuration for the Azure Key Vault Secrets Store:
 
 ```yaml
  zenml:
@@ -517,7 +560,7 @@ The Azure Secrets Store uses the ZenML Azure Service Connector under the hood to
 {% tab title="Hashicorp" %}
 #### Using the HashiCorp Vault as a secrets store backend
 
-Unless explicitly disabled or configured otherwise, the ZenML server will use the SQL database as a secrets store backend. If you want to use the HashiCorp Vault service instead, you need to configure it in the Helm values:
+To use the HashiCorp Vault service as a Secrets Store back-end, it must be configured in the Helm values:
 
 ```yaml
  zenml:
@@ -587,6 +630,86 @@ You have the option of using [a custom implementation of the secrets store API](
 ```
 {% endtab %}
 {% endtabs %}
+
+#### Backup secrets store
+
+[A backup secrets store](../../user-guide/advanced-guide/secret-management/secret-management.md#backup-secrets-store) back-end may be configured for high-availability and backup purposes. or as an intermediate step in the process of [migrating secrets to a different external location or secrets manager provider](../../user-guide/advanced-guide/secret-management/secret-management.md#secrets-migration-strategy).
+
+To configure a backup secrets store in the Helm chart, use the same approach and instructions documented for the primary secrets store, but using the `backupSecretsStore` configuration section instead of `secretsStore`, e.g.:
+
+```yaml
+ zenml:
+
+   # ...
+
+   # Backup secrets store settings. This is used as a backup for the primary
+   # secrets store.
+   backupSecretsStore:
+
+     # Set to true to enable the backup secrets store.
+     enabled: true
+
+     # The type of the backup secrets store
+     type: aws
+
+     # Configuration for the AWS Secrets Manager backup secrets store
+     aws:
+
+       # The AWS Service Connector authentication method to use.
+       authMethod: secret-key
+
+       # The AWS Service Connector configuration.
+       authConfig:
+        # The AWS region to use. This must be set to the region where the AWS
+        # Secrets Manager service that you want to use is located.
+        region: us-east-1
+
+        # The AWS credentials to use to authenticate with the AWS Secrets
+        aws_access_key_id: <your AWS access key ID>
+        aws_secret_access_key: <your AWS secret access key>
+```
+
+### Database backup and recovery
+
+An automated database backup and recovery feature is enabled by default for all Helm deployments. The ZenML server will automatically back up the database before every upgrade and restore it if the upgrade fails in a way that affects the database.
+
+{% hint style="info" %}
+The database backup automatically created by the ZenML server is only temporary and only used as an immediate recovery in case of database migration failures. It is not meant to be used as a long-term backup solution. If you need to back up your database for long-term storage, you should use a dedicated backup solution.
+{% endhint %}
+
+Several database backup strategies are supported, depending on where and how the backup is stored. The strategy can be configured by means of the `zenml.database.backupStrategy` Helm value:
+
+* `disabled` - no backup is performed
+* `in-memory` - the database schema and data are stored in memory. This is the fastest backup strategy, but the backup is not persisted across pod restarts, so no manual intervention is possible in case the automatic DB recovery fails after a failed DB migration. Adequate memory resources should be allocated to the ZenML server pod when using this backup strategy with larger databases. This is the default backup strategy.
+* `database` - the database is copied to a backup database in the same database server. This requires the `backupDatabase` option to be set to the name of the backup database. This backup strategy is only supported for MySQL compatible databases and the user specified in the database URL must have permissions to manage (create, drop, and modify) the backup database in addition to the main database.
+* `dump-file` - the database schema and data are dumped to a file local to the database initialization and upgrade job. Users may optionally configure a persistent volume where the dump file will be stored by setting the `backupPVStorageSize` and optionally the `backupPVStorageClass` options. If a persistent volume is not configured, the dump file will be stored in an emptyDir volume, which is not persisted. If configured, the user is responsible for deleting the resulting PVC when uninstalling the Helm release.
+
+> **NOTE:** You should also set the `podSecurityContext.fsGroup` option if you are using a persistent volume to store the dump file.
+
+The following additional rules are applied concerning the creation and lifetime of the backup:
+
+* a backup is not attempted if the database doesn't need to undergo a migration (e.g. when the ZenML server is upgraded to a new version that doesn't require a database schema change or if the ZenML version doesn't change at all).
+* a backup file or database is created before every database migration attempt (i.e. during every Helm upgrade). If a backup already exists (i.e. persisted in a persistent volume or backup database), it is overwritten.
+* the persistent backup file or database is cleaned up after the migration is completed successfully or if the database doesn't need to undergo a migration. This includes backups created by previous failed migration attempts.
+* the persistent backup file or database is NOT cleaned up after a failed migration. This allows the user to manually inspect and/or apply the backup if the automatic recovery fails.
+
+The following example shows how to configure the ZenML server to use a persistent volume to store the database dump file:
+
+```yaml
+ zenml:
+
+   # ...
+
+  database:
+    url: "mysql://admin:password@my.database.org:3306/zenml"
+
+    # Configure the database backup strategy
+    backupStrategy: dump-file
+    backupPVStorageSize: 1Gi
+
+podSecurityContext:
+  fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
+```
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

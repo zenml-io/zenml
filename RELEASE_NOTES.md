@@ -1,5 +1,191 @@
 <!-- markdown-link-check-disable -->
 
+# 0.55.1
+
+**If you are actively using the Model Control Plane features, we suggest that you directly upgrade to 0.55.1, bypassing 0.55.0.**
+
+This is a patch release bringing backwards compatibility for breaking changes introduced in **0.55.0**, so that appropriate migration actions can be performed at desired pace. Please refer to [the 0.55.0 release notes](https://github.com/zenml-io/zenml/releases/tag/0.55.0) for specific information on breaking changes and how to update your code to align with the new way of doing things. We also have updated our documentation to serve you better and introduced `PipelineNamespace` models in our API.
+
+Also this release is packed with Database recovery in case upgrade failed to migrate Database to a newer version of ZenML.
+
+## What's Changed
+* Update skypilot docs by @safoinme in https://github.com/zenml-io/zenml/pull/2344
+* Fast CI / Slow CI by @strickvl in https://github.com/zenml-io/zenml/pull/2268
+* Add repeating tests and instafail error logging to testing in CI by @strickvl in https://github.com/zenml-io/zenml/pull/2334
+* Added more info about metadata by @htahir1 in https://github.com/zenml-io/zenml/pull/2346
+* Use GitHub as trusted publisher for PyPI publication by @strickvl in https://github.com/zenml-io/zenml/pull/2343
+* Fix code in docs/questions about MCP by @wjayesh in https://github.com/zenml-io/zenml/pull/2340
+* Update release notes for 0.55.0 by @avishniakov in https://github.com/zenml-io/zenml/pull/2351
+* Fixed metadata docs by @htahir1 in https://github.com/zenml-io/zenml/pull/2350
+* Add generate test duration file cron by @safoinme in https://github.com/zenml-io/zenml/pull/2347
+* CI comments for slow CI and more conditional membership checking by @strickvl in https://github.com/zenml-io/zenml/pull/2356
+* Backward compatible `ModelVersion` by @avishniakov in https://github.com/zenml-io/zenml/pull/2357
+* Add model version created to analytics by @avishniakov in https://github.com/zenml-io/zenml/pull/2352
+* Make CI run on the appropriate branch by @strickvl in https://github.com/zenml-io/zenml/pull/2358
+* Add MVP pipeline namespace support by @schustmi in https://github.com/zenml-io/zenml/pull/2353
+* Apply docker run args to skypilot orchestrator VM by @schustmi in https://github.com/zenml-io/zenml/pull/2342
+* 📝 Minor docs improvements (basic step example) by @plattenschieber in https://github.com/zenml-io/zenml/pull/2348
+* Add DB backup and recovery during DB schema migrations by @wjayesh in https://github.com/zenml-io/zenml/pull/2158
+* Fix CI issues by @strickvl in https://github.com/zenml-io/zenml/pull/2363
+
+## New Contributors
+* @plattenschieber made their first contribution in https://github.com/zenml-io/zenml/pull/2348
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.55.0...0.55.1
+
+# 0.55.0
+
+This release comes with a range of new features, bug fixes and documentation updates. The most notable changes are the ability to do lazy loading of Artifacts and their Metadata and Model and its Metadata inside the pipeline code using pipeline context object, and the ability to link Artifacts to Model Versions implicitly via the `save_artifact` function.
+
+Additionally, we've updated the documentation to include a new starter guide on how to manage artifacts, and a new production guide that walks you through how to configure your pipelines to run in production.
+
+## Breaking Change
+The `ModelVersion` concept was renamed to `Model` going forward, which affects code bases using the Model Control Plane feature. **This change is not backward compatible with 0.55.0, but is backward compatible again in 0.55.1**.
+
+### Pipeline decorator
+`@pipeline(model_version=ModelVersion(...))` -> `@pipeline(model=Model(...))`
+
+**Old syntax:**
+```python
+from zenml import pipeline, ModelVersion
+
+@pipeline(model_version=ModelVersion(name="model_name",version="v42"))
+def p():
+  ...
+```
+
+**New syntax:**
+```python
+from zenml import pipeline, Model
+
+@pipeline(model=Model(name="model_name",version="v42"))
+def p():
+  ...
+```
+### Step decorator
+`@step(model_version=ModelVersion(...))` -> `@step(model=Model(...))`
+
+**Old syntax:**
+```python
+from zenml import step, ModelVersion
+
+@step(model_version=ModelVersion(name="model_name",version="v42"))
+def s():
+  ...
+```
+
+**New syntax:**
+```python
+from zenml import step, Model
+
+@step(model=Model(name="model_name",version="v42"))
+def s():
+  ...
+```
+
+### Acquiring model configuration from pipeline/step context
+
+**Old syntax:**
+```python
+from zenml import pipeline, step, ModelVersion, get_step_context, get_pipeline_context
+
+@pipeline(model_version=ModelVersion(name="model_name",version="v42"))
+def p():
+  model_version = get_pipeline_context().model_version
+  ...
+
+@step(model_version=ModelVersion(name="model_name",version="v42"))
+def s():
+  model_version = get_step_context().model_version
+  ...
+```
+
+**New syntax:**
+```python
+from zenml import pipeline, step, Model, get_step_context, get_pipeline_context
+
+@pipeline(model=Model(name="model_name",version="v42"))
+def p():
+  model = get_pipeline_context().model
+  ...
+
+@step(model=Model(name="model_name",version="v42"))
+def s():
+  model = get_step_context().model
+  ...
+```
+
+### Usage of model configuration inside pipeline YAML config file
+
+**Old syntax:**
+```yaml
+model_version:
+  name: model_name
+  version: v42
+  ...
+```
+
+**New syntax:**
+```yaml
+model:
+  name: model_name
+  version: v42
+  ...
+```
+
+### `ModelVersion.metadata` -> `Model.run_metadata`
+
+**Old syntax:**
+```python
+from zenml import ModelVersion
+
+def s():
+  model_version = ModelVersion(name="model_name",version="production")
+  some_metadata = model_version.metadata["some_metadata"].value
+  ... 
+```
+
+**New syntax:**
+```python
+from zenml import Model
+
+def s():
+  model = Model(name="model_name",version="production")
+  some_metadata = model.run_metadata["some_metadata"].value
+  ... 
+```
+
+## What's Changed
+* Remove --name from service account creation in docs by @christianversloot in https://github.com/zenml-io/zenml/pull/2295
+* Secrets store hot backup and restore by @stefannica in https://github.com/zenml-io/zenml/pull/2277
+* Updating the README of the e2e template by @bcdurak in https://github.com/zenml-io/zenml/pull/2299
+* Add missing docstring for Skypilot setting by @schustmi in https://github.com/zenml-io/zenml/pull/2305
+* Update Manage artifacts starter guide docs by @JonathanLoscalzo in https://github.com/zenml-io/zenml/pull/2301
+* Add some  tiny details and moved around a page by @htahir1 in https://github.com/zenml-io/zenml/pull/2297
+* Model links lazy evaluation in pipeline code by @avishniakov in https://github.com/zenml-io/zenml/pull/2205
+* Link artifact to MCP entity via function call or implicitly in `save_artifact` by @avishniakov in https://github.com/zenml-io/zenml/pull/2298
+* Extend MCP/ACP listing capabilities by @avishniakov in https://github.com/zenml-io/zenml/pull/2285
+* Add latest `zenml` version to migration testing scripts by @strickvl in https://github.com/zenml-io/zenml/pull/2294
+* Remove Python 3.7 check for Langchain Integration by @strickvl in https://github.com/zenml-io/zenml/pull/2308
+* Allow spellcheck to run for docs changes by @strickvl in https://github.com/zenml-io/zenml/pull/2307
+* Add helper message for `zenml up --blocking` login by @strickvl in https://github.com/zenml-io/zenml/pull/2290
+* Fix secret migration from external store in helm deployment by @stefannica in https://github.com/zenml-io/zenml/pull/2315
+* Small docs fixes by @htahir1 in https://github.com/zenml-io/zenml/pull/2314
+* Rename model version to a model by @avishniakov in https://github.com/zenml-io/zenml/pull/2267
+* Updating the docs after the Skypilot tests by @bcdurak in https://github.com/zenml-io/zenml/pull/2311
+* Remove unused Segment / Mixpanel generation workflow and script by @strickvl in https://github.com/zenml-io/zenml/pull/2319
+* Add `log_step_metadata` utility function by @strickvl in https://github.com/zenml-io/zenml/pull/2322
+* Add conditional checks to prevent scheduled actions running inside forked repositories by @strickvl in https://github.com/zenml-io/zenml/pull/2317
+* RBAC resource sharing by @schustmi in https://github.com/zenml-io/zenml/pull/2320
+* Fix typo in migration downgrade by @avishniakov in https://github.com/zenml-io/zenml/pull/2337
+* Separate `skypilot` flavors into different folders by @safoinme in https://github.com/zenml-io/zenml/pull/2332
+* Add warning for GCP integration when using Python >=3.11 by @strickvl in https://github.com/zenml-io/zenml/pull/2333
+
+## New Contributors
+* @JonathanLoscalzo made their first contribution in https://github.com/zenml-io/zenml/pull/2301
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.54.1...0.55.0
+
 # 0.54.1
 
 Release 0.54.1, includes a mix of updates and new additions and bug fixes. The most notable changes are the new production guide,

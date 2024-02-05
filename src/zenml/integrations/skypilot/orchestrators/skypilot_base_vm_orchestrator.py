@@ -253,6 +253,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         docker_environment_str = " ".join(
             f"-e {k}={v}" for k, v in environment.items()
         )
+        custom_run_args = " ".join(settings.docker_run_args)
+        if custom_run_args:
+            custom_run_args += " "
 
         instance_type = settings.instance_type or self.DEFAULT_INSTANCE_TYPE
 
@@ -283,7 +286,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         try:
             task = sky.Task(
-                run=f"docker run --rm {docker_environment_str} {image} {entrypoint_str} {arguments_str}",
+                run=f"docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}",
                 setup=setup,
                 envs=task_envs,
             )

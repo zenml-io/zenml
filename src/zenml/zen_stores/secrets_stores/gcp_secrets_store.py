@@ -264,8 +264,8 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
             )
         except google_exceptions.NotFound as e:
             raise KeyError(
-                f"Can't find the specified secret for secret_id '{secret_id}': "
-                f"{str(e)}"
+                f"Can't find the secret values for secret ID '{secret_id}' "
+                f"in the secrets store back-end: {str(e)}"
             ) from e
         except Exception as e:
             raise RuntimeError(

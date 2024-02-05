@@ -7,17 +7,20 @@ on:
     - cron: 30 0 * * *
 jobs:
   setup-and-test:
-    uses: ./.github/workflows/setup-python-environment.yml
+    uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
       python-version: '3.8'
       git-ref: develop
     secrets: inherit
+    if: github.repository == 'zenml-io/zenml'
   publish-python-package:
     needs: setup-and-test
     uses: ./.github/workflows/publish_to_pypi_nightly.yml
     secrets: inherit
+    if: github.repository == 'zenml-io/zenml'
   wait-for-package-release:
+    if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     needs: publish-python-package
     steps:
@@ -25,6 +28,7 @@ jobs:
         run: sleep 240
         shell: bash
   publish-docker-image:
+    if: github.repository == 'zenml-io/zenml'
     needs: wait-for-package-release
     uses: ./.github/workflows/publish_docker_image.yml
     with:
