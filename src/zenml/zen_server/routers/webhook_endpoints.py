@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, Request
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import PluginSubType, PluginType
 from zenml.event_sources.webhooks.base_webhook_event_source import (
-    BaseWebhookEventSourcePlugin,
+    BaseWebhookEventSourceHandler,
 )
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
@@ -92,7 +92,7 @@ def webhook(
             f"No listener plugin found for event source {event_source_id}."
         )
 
-    if not isinstance(plugin, BaseWebhookEventSourcePlugin):
+    if not isinstance(plugin, BaseWebhookEventSourceHandler):
         raise ValueError(
             f"Event Source {event_source_id} is not a valid Webhook event "
             "source!"

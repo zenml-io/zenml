@@ -21,7 +21,7 @@ from zenml.integrations.github import GITHUB_EVENT_FLAVOR
 from zenml.integrations.github.plugins.event_sources.github_webhook_event_source import (
     GithubWebhookEventFilterConfiguration,
     GithubWebhookEventSourceConfiguration,
-    GithubWebhookEventSourcePlugin,
+    GithubWebhookEventSourceHandler,
 )
 
 
@@ -30,8 +30,8 @@ class GithubWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
 
     FLAVOR: ClassVar[str] = GITHUB_EVENT_FLAVOR
     PLUGIN_CLASS: ClassVar[
-        Type[GithubWebhookEventSourcePlugin]
-    ] = GithubWebhookEventSourcePlugin
+        Type[GithubWebhookEventSourceHandler]
+    ] = GithubWebhookEventSourceHandler
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[

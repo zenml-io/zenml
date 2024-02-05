@@ -20,7 +20,7 @@ from zenml.event_sources.schedules.base_schedule_event_source import (
 from zenml.scheduler.scheduler_event_source import (
     SchedulerEventFilterConfiguration,
     SchedulerEventSourceConfiguration,
-    SchedulerEventSourcePlugin,
+    SchedulerEventSourceHandler,
 )
 
 INTERNAL_SCHEDULER_EVENT_FLAVOR = "internal_scheduler"
@@ -31,8 +31,8 @@ class SchedulerEventSourceFlavor(BaseScheduleEventSourceFlavor):
 
     FLAVOR: ClassVar[str] = INTERNAL_SCHEDULER_EVENT_FLAVOR
     PLUGIN_CLASS: ClassVar[
-        Type[SchedulerEventSourcePlugin]
-    ] = SchedulerEventSourcePlugin
+        Type[SchedulerEventSourceHandler]
+    ] = SchedulerEventSourceHandler
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[

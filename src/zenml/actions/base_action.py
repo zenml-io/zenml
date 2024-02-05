@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base implementation of action plans."""
+"""Base implementation of actions."""
 import json
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, Type
@@ -27,19 +27,19 @@ from zenml.plugins.base_plugin_flavor import (
 # -------------------- Configuration Models ----------------------------------
 
 
-class ActionPlanConfig(BasePluginConfig):
+class ActionConfig(BasePluginConfig):
     """Allows configuring the action configuration."""
 
 
 # -------------------- Plugin -----------------------------------
 
 
-class BaseActionPlanPlugin(BasePlugin, ABC):
-    """Implementation for an action plan."""
+class BaseActionHandler(BasePlugin, ABC):
+    """Implementation for an action handler."""
 
     @property
     @abstractmethod
-    def config_class(self) -> Type[ActionPlanConfig]:
+    def config_class(self) -> Type[ActionConfig]:
         """Returns the `BasePluginConfig` config.
 
         Returns:
@@ -50,23 +50,23 @@ class BaseActionPlanPlugin(BasePlugin, ABC):
 # -------------------- Flavors ---------------------------------------------
 
 
-class BaseActionPlanFlavor(BasePluginFlavor, ABC):
-    """Base Action Flavor to register Action Plan Configurations."""
+class BaseActionFlavor(BasePluginFlavor, ABC):
+    """Base Action Flavor to register Action Configurations."""
 
-    TYPE: ClassVar[PluginType] = PluginType.ACTION_PLAN
+    TYPE: ClassVar[PluginType] = PluginType.ACTION
 
-    # Action Plan specific
-    ACTION_PLAN_CONFIG_CLASS: ClassVar[Type[ActionPlanConfig]]
+    # Action specific
+    ACTION_CONFIG_CLASS: ClassVar[Type[ActionConfig]]
 
     @classmethod
-    def get_action_plan_config_schema(cls) -> Dict[str, Any]:
+    def get_action_config_schema(cls) -> Dict[str, Any]:
         """The config schema for a flavor.
 
         Returns:
             The config schema.
         """
         config_schema: Dict[str, Any] = json.loads(
-            cls.ACTION_PLAN_CONFIG_CLASS.schema_json()
+            cls.ACTION_CONFIG_CLASS.schema_json()
         )
         return config_schema
 
@@ -75,5 +75,5 @@ class BaseActionPlanFlavor(BasePluginFlavor, ABC):
         """Convert the Flavor into a Flavor Response Model."""
         return ActionFlavorResponse(
             name=self.FLAVOR,
-            config_schema=self.get_action_plan_config_schema(),
+            config_schema=self.get_action_config_schema(),
         )

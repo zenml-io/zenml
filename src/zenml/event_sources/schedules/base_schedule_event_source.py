@@ -19,7 +19,7 @@ from zenml.enums import PluginSubType
 from zenml.event_sources.base_event_source import (
     BaseEvent,
     BaseEventSourceFlavor,
-    BaseEventSourcePlugin,
+    BaseEventSourceHandler,
     EventFilterConfig,
     EventSourceConfig,
 )
@@ -53,7 +53,7 @@ class ScheduleEventFilterConfig(EventFilterConfig):
 # -------------------- Schedule Event Source ---------------------
 
 
-class BaseScheduleEventSourcePlugin(BaseEventSourcePlugin, ABC):
+class BaseScheduleEventSourceHandler(BaseEventSourceHandler, ABC):
     """Base implementation for all Webhook event sources."""
 
     @property

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQL Model Implementations for Action Plans."""
+"""SQL Model Implementations for event sources."""
 import base64
 import json
 from datetime import datetime

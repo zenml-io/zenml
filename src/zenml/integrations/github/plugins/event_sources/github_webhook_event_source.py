@@ -21,7 +21,7 @@ from pydantic import BaseModel, Extra
 
 from zenml.event_sources.base_event_source import BaseEvent
 from zenml.event_sources.webhooks.base_webhook_event_source import (
-    BaseWebhookEventSourcePlugin,
+    BaseWebhookEventSourceHandler,
     WebhookEventFilterConfig,
     WebhookEventSourceConfig,
 )
@@ -171,7 +171,7 @@ class GithubWebhookEventSourceConfiguration(WebhookEventSourceConfig):
 # -------------------- Github Webhook Plugin -----------------------------------
 
 
-class GithubWebhookEventSourcePlugin(BaseWebhookEventSourcePlugin):
+class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
     """Handler for all github events."""
 
     @property
