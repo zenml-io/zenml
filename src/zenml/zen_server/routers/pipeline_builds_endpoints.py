@@ -27,7 +27,8 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -158,6 +159,10 @@ if server_config().workload_manager_enabled:
 
         build = verify_permissions_and_get_entity(
             id=build_id, get_method=zen_store().get_build, hydrate=True
+        )
+
+        verify_permission(
+            resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
         )
 
         if not build.template_deployment_id:

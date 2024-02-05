@@ -61,13 +61,21 @@ def redeploy_pipeline(
         auth_context: Authentication context.
         run_config: The run configuration.
 
+    Raises:
+        ValueError: If the deployment does not have an associated stack or
+            build.
+
     Returns:
         ID of the new pipeline run.
     """
     build = deployment.build
     stack = deployment.stack
-    assert build
-    assert stack
+
+    if not build:
+        raise ValueError("Unable to run deployment without associated build.")
+
+    if not stack:
+        raise ValueError("Unable to run deployment without associated stack.")
 
     validate_stack(stack)
 
@@ -242,8 +250,9 @@ def generate_image_hash(dockerfile: str) -> str:
         The hash of the Dockerfile.
     """
     hash_ = hashlib.md5()
-    # TODO: remove this before we merge to develop
-    hash_.update(f"{os.getpid()}".encode())
+    # Uncomment this line when developing to guarantee a new docker image gets
+    # built after restarting the server
+    # hash_.update(f"{os.getpid()}".encode())
     hash_.update(dockerfile.encode())
     return hash_.hexdigest()
 
@@ -265,8 +274,7 @@ def generate_dockerfile(
     Returns:
         The Dockerfile.
     """
-    # parent_image = f"zenmldocker/zenml:{zenml_version}-py{python_version}"
-    parent_image = "michaelzenml/zenml:runner-base"
+    parent_image = f"zenmldocker/zenml:{zenml_version}-py{python_version}"
 
     lines = [f"FROM {parent_image}"]
     if apt_packages:
