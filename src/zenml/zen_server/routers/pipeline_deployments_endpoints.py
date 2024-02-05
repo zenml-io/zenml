@@ -159,7 +159,7 @@ if server_config().workload_manager_enabled:
         Returns:
             The ID of the new run.
         """
-        from zenml.zen_server.pipeline_deployment.pipeline_execution_utils import (
+        from zenml.zen_server.pipeline_deployment.utils import (
             redeploy_pipeline,
         )
 

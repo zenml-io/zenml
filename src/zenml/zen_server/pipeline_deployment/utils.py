@@ -48,16 +48,16 @@ RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 def redeploy_pipeline(
     deployment: PipelineDeploymentResponse,
-    background_tasks: BackgroundTasks,
     auth_context: AuthContext,
+    background_tasks: Optional[BackgroundTasks] = None,
     run_config: Optional[PipelineRunConfiguration] = None,
 ) -> UUID:
     """Deploy a pipeline.
 
     Args:
         deployment: The pipeline deployment.
-        background_tasks: Background tasks.
         auth_context: Authentication context.
+        background_tasks: Background tasks.
         run_config: The run configuration.
 
     Raises:
@@ -112,7 +112,7 @@ def redeploy_pipeline(
         deployment_id=new_deployment.id
     )
 
-    def _background_task() -> None:
+    def _task() -> None:
         workload_manager = get_workload_manager(workload_id=new_deployment.id)
 
         pypi_requirements, apt_packages = get_requirements_for_stack(
@@ -146,7 +146,13 @@ def redeploy_pipeline(
         )
         workload_manager.log("Pipeline deployed successfully.")
 
-    background_tasks.add_task(_background_task)
+    if background_tasks:
+        background_tasks.add_task(_task)
+    else:
+        # Run synchronously if no background tasks were passed. This is probably
+        # when coming from a trigger which itself is already running in the
+        # background
+        _task()
 
     return placeholder_run.id
 
@@ -390,9 +396,5 @@ def apply_run_config(
         code_reference=code_reference_request,
     )
 
-    # Can this lead to any issues if it happens here (potentially a few minutes
-    # before the actual pipeline starts running? Should we do it in the
-    # entrypoint instead to have it happening to have it closer to what happens
-    # when running a pipeline locally (Pipeline._run(...))
     prepare_model_versions(deployment=deployment_request)
     return deployment_request
