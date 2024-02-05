@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the Huggingface Model Deployer."""
 
-from typing import ClassVar, Dict, List, Optional, Type, cast
+from typing import Any, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
-from huggingface_hub import InferenceEndpoint, list_inference_endpoints
+from huggingface_hub import list_inference_endpoints
 
 from zenml.artifacts.utils import log_artifact_metadata, save_artifact
 from zenml.client import Client
@@ -24,7 +24,6 @@ from zenml.integrations.huggingface import HUGGINGFACE_SERVICE_ARTIFACT
 from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor import (
     HuggingFaceModelDeployerConfig,
     HuggingFaceModelDeployerFlavor,
-    HuggingFaceModelDeployerSettings,
 )
 from zenml.integrations.huggingface.services.huggingface_deployment import (
     HuggingFaceDeploymentService,
@@ -62,16 +61,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         return cast(HuggingFaceModelDeployerConfig, self._config)
 
     @property
-    def settings_class(self) -> Type[HuggingFaceModelDeployerSettings]:
-        """Settings class for the Huggingface Model deployer settings class.
-
-        Returns:
-            The settings class.
-        """
-        return HuggingFaceModelDeployerSettings
-
-    @property
-    def deployed_endpoints(self) -> List[InferenceEndpoint]:
+    def deployed_endpoints(self) -> Any:
         """Get list of deployed endpoint from Huggingface.
 
         Returns:
@@ -97,7 +87,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         Returns:
             Modified endpoint name with added prefix and suffix
         """
-        # Add zenml prefix if it does not start with ZENM_ENDPOINT_PREFIX
+        # Add prefix if it does not start with ZENM_ENDPOINT_PREFIX
         if not endpoint_name.startswith(ZENM_ENDPOINT_PREFIX):
             endpoint_name = ZENM_ENDPOINT_PREFIX + endpoint_name
 
@@ -321,7 +311,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
 
                     existing_service = (
                         ServiceRegistry().load_service_from_dict(
-                            hf_deployment_service_dict
+                            hf_deployment_service_dict  # type: ignore
                         )
                     )
 
@@ -452,18 +442,18 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
                 existing_service=service, timeout=timeout, force=force
             )
 
-    def get_model_server_info(
-        self,
-        service_instance: "HuggingFaceDeploymentService",
+    @staticmethod
+    def get_model_server_info(  # type: ignore[override]
+        service: "HuggingFaceDeploymentService",
     ) -> Dict[str, Optional[str]]:
         """Return implementation specific information that might be relevant to the user.
 
         Args:
-            service_instance: Instance of a HuggingFaceDeploymentService
+            service: Instance of a HuggingFaceDeploymentService
 
         Returns:
             Model server information.
         """
         return {
-            "PREDICTION_URL": service_instance.prediction_url,
+            "PREDICTION_URL": service.prediction_url,
         }

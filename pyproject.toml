@@ -446,5 +446,6 @@ module = [
     "mlstacks.*",
     "matplotlib.*",
     "IPython.*",
+    "huggingface_hub.*"
 ]
 ignore_missing_imports = true

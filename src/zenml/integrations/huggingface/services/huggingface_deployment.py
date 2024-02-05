@@ -95,7 +95,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         )
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> Any:
         """The prediction URI exposed by the prediction service.
 
         Returns:
@@ -116,7 +116,11 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         return self.hf_endpoint.client
 
     def provision(self) -> None:
-        """Provision or update remote Huggingface deployment instance."""
+        """Provision or update remote Huggingface deployment instance.
+
+        Raises:
+            Exception: If any unexpected error while creating inference endpoint.
+        """
         try:
             # Attempt to create and wait for the inference endpoint
             _ = create_inference_endpoint(
@@ -195,6 +199,10 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
                 ServiceState.PENDING_STARTUP,
                 "HuggingFace Inference Endpoint deployment is being created: ",
             )
+        return (
+            ServiceState.PENDING_STARTUP,
+            "HuggingFace Inference Endpoint deployment is being created: ",
+        )
 
     def deprovision(self, force: bool = False) -> None:
         """Deprovision the remote HuggingFace deployment instance.
@@ -243,7 +251,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         return result
 
     def get_logs(
-        self, follow: bool = False, tail: int = None
+        self, follow: bool = False, tail: Optional[int] = None
     ) -> Generator[str, bool, None]:
         """Retrieve the service logs.
 
@@ -254,4 +262,8 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         Returns:
             A generator that can be accessed to get the service logs.
         """
-        return super().get_logs(follow, tail)
+        logger.info(
+            "Hugging Face Endpoints provides access to the logs of "
+            "your Endpoints through the UI in the “Logs” tab of your Endpoint"
+        )
+        yield ""

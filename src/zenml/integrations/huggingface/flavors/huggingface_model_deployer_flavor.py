@@ -12,11 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Huggingface model deployer flavor."""
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import BaseModel
 
-from zenml.config.base_settings import BaseSettings
 from zenml.integrations.huggingface import HUGGINGFACE_MODEL_DEPLOYER_FLAVOR
 from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
@@ -33,7 +32,7 @@ if TYPE_CHECKING:
 class HuggingFaceBaseConfig(BaseModel):
     """Huggingface Inference Endpoint configuration."""
 
-    endpoint_name: Optional[str] = "zenml-"
+    endpoint_name: str = "zenml-"
     repository: Optional[str] = None
     framework: Optional[str] = None
     accelerator: Optional[str] = None
@@ -43,21 +42,17 @@ class HuggingFaceBaseConfig(BaseModel):
     vendor: Optional[str] = None
     token: Optional[str] = None
     account_id: Optional[str] = None
-    min_replica: Optional[int] = 0
-    max_replica: Optional[int] = 1
+    min_replica: int = 0
+    max_replica: int = 1
     revision: Optional[str] = None
     task: Optional[str] = None
-    custom_image: Optional[Dict] = None
+    custom_image: Optional[Dict[str, Any]] = None
     namespace: Optional[str] = None
     endpoint_type: str = "public"
 
 
-class HuggingFaceModelDeployerSettings(HuggingFaceBaseConfig, BaseSettings):
-    """Settings for the Huggingface model deployer."""
-
-
 class HuggingFaceModelDeployerConfig(
-    BaseModelDeployerConfig, HuggingFaceModelDeployerSettings
+    BaseModelDeployerConfig, HuggingFaceBaseConfig
 ):
     """Configuration for the Huggingface model deployer.
 
