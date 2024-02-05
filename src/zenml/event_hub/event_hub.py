@@ -71,6 +71,11 @@ class EventHub:
         )
 
         for trigger in triggers:
+            # TODO: We need to make this async, as this might take quite some
+            # time per trigger. We can either use threads starting here, or
+            # use fastapi background tasks that get passed here instead of
+            # running the event hub as a background tasks in the webhook
+            # endpoints
             request = TriggerExecutionRequest(
                 trigger=trigger.id, event_metadata=dict(event)
             )
