@@ -52,13 +52,6 @@ class ExternalArtifact(ExternalArtifactConfiguration):
         value: The artifact value.
         id: The ID of an artifact that should be referenced by this external
             artifact.
-        name: Name of an artifact to search. If none of
-            `version`, `pipeline_run_name`, or `pipeline_name` are set, the
-            latest version of the artifact will be used.
-        version: Version of the artifact to search. Only used when `name` is
-            provided. Cannot be used together with `model`.
-        model: The model to search in. Only used when `name`
-            is provided. Cannot be used together with `version`.
         materializer: The materializer to use for saving the artifact value
             to the artifact store. Only used when `value` is provided.
         store_artifact_metadata: Whether metadata for the artifact should
@@ -91,6 +84,32 @@ class ExternalArtifact(ExternalArtifactConfiguration):
 
     @root_validator
     def _validate_all(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        deprecation_msg = (
+            "Parameter `{param}` or `ExternalArtifact` will be deprecated "
+            "in upcoming releases. Please use `{substitute}` instead."
+        )
+        for param, substitute in [
+            ["id", "Client().get_artifact_version(name_id_or_prefix=<id>)"],
+            [
+                "name",
+                "Client().get_artifact_version(name_id_or_prefix=<name>)",
+            ],
+            [
+                "version",
+                "Client().get_artifact_version(name_id_or_prefix=<name>,version=<version>)",
+            ],
+            [
+                "model",
+                "Client().get_model_version(<model_name>,<model_version>).get_artifact(name)",
+            ],
+        ]:
+            if _ := values.get(param, None):
+                logger.warning(
+                    deprecation_msg.format(
+                        param=param,
+                        substitute=substitute,
+                    )
+                )
         options = [
             values.get(field, None) is not None
             for field in ["value", "id", "name"]

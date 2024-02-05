@@ -26,14 +26,10 @@ jobs:
           node-version: '14'
       - run: npm install
       - run: npm install html-minifier -g
-      - name: Setup environment
-        uses: ./.github/actions/setup_environment
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5.0.0
         with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}-api-docs
-          python-version: '3.8'
-          os: ubuntu-latest
-          # We need to install integrations in a different way to avoid conflicts
-          install_integrations: 'no'
+          python-version: '3.11'
       - name: Setup git user
         run: |
           git config --global user.name 'Code Monkey'

@@ -52,6 +52,18 @@ jobs:
         with:
           files: .
           config: ./.typos.toml
+  api-docs-test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.11'
+      - name: Test API docs buildable
+        run: bash scripts/generate-docs.sh -v DUMMY -c
   update-templates-to-examples:
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
