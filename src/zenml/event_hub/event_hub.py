@@ -81,19 +81,15 @@ class EventHub:
             )
             trigger_execution = zen_store().create_trigger_execution(request)
 
-            action_plan_config = (
-                trigger_execution.trigger.get_metadata().action_plan
+            action_config = trigger_execution.trigger.get_metadata().action
+            action_handler = plugin_flavor_registry.get_plugin(
+                flavor="builtin",
+                _type=PluginType.ACTION,
+                subtype=PluginSubType.PIPELINE_RUN,
             )
-            action_plan_plugin = (
-                plugin_flavor_registry.get_plugin_implementation(
-                    flavor="builtin",
-                    _type=PluginType.ACTION_PLAN,
-                    subtype=PluginSubType.PIPELINE_RUN,
-                )
-            )
-            assert isinstance(action_plan_plugin, BaseActionHandler)
-            action_plan_plugin.run(
-                config=action_plan_config, trigger_execution=trigger_execution
+            assert isinstance(action_handler, BaseActionHandler)
+            action_handler.run(
+                config=action_config, trigger_execution=trigger_execution
             )
 
     def get_matching_triggers_for_event(
