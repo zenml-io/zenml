@@ -334,7 +334,7 @@ These are boolean flags for various configurations:
 ### `active_stack` name or ID
 
 The name or the UUID of the `active stack` to use for this
-pipeline. If specified the active stack is set for the duration of the pipeline execution and restored upon 
+pipeline. If specified, the active stack is set for the duration of the pipeline execution and restored upon 
 completion. If not specified, the current active stack is used.
 
 ### `build` ID
