@@ -65,7 +65,7 @@ sqlmodel = "0.0.8"
 importlib_metadata = { version = "<=7.0.0", python = "<3.10" }
 
 # Optional dependencies for the ZenServer
-fastapi = { version = ">=0.75,<0.100", optional = true }
+fastapi = { version = ">=0.75,<0.110", optional = true }
 uvicorn = { extras = ["standard"], version = ">=0.17.5", optional = true }
 python-multipart = { version = "~0.0.5", optional = true }
 pyjwt = { extras = ["crypto"], version = "2.7.*", optional = true }
