@@ -146,6 +146,7 @@
     "neptune",
     "neuralprophet",
     "openai",
+    "paramiko",
     "polars",
     "pyarrow",
     "pyarrow.parquet",
