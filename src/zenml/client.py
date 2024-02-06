@@ -157,6 +157,10 @@ from zenml.models import (
     TagUpdate,
     TriggerExecutionFilter,
     TriggerExecutionResponse,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerResponse,
+    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -2326,7 +2330,7 @@ class Client(metaclass=ClientMetaClass):
         rotate_secret: Optional[bool] = None,
         is_active: Optional[bool] = None,
     ) -> EventSourceResponse:
-        """Updates a event_source and its components.
+        """Updates a event_source.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the event_source to update.
@@ -2371,16 +2375,12 @@ class Client(metaclass=ClientMetaClass):
         )
         return updated_event_source
 
-    def delete_event_source(
-        self, name_id_or_prefix: Union[str, UUID], recursive: bool = False
-    ) -> None:
+    def delete_event_source(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Deletes an event_source.
 
         Args:
             name_id_or_prefix: The name, id or prefix id of the event_source
                 to deregister.
-            recursive: If `True`, all components of the event_source which are not
-                associated with any other event_source will also be deleted.
         """
         event_source = self.get_event_source(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
@@ -2388,6 +2388,188 @@ class Client(metaclass=ClientMetaClass):
 
         self.zen_store.delete_event_source(event_source_id=event_source.id)
         logger.info("Deleted event_source with name '%s'.", event_source.name)
+
+    # --------------------------------- Triggers -------------------------
+
+    def create_trigger(
+        self,
+        name: str,
+        description: str,
+        event_source_id: UUID,
+        event_filter: Dict[str, Any],
+        action_plan: Dict[str, Any],
+        action_plan_flavor: str,
+    ) -> TriggerResponse:
+        """Registers a trigger.
+
+        Args:
+            name: The name of the trigger to create.
+            description: The description of the trigger
+            event_source_id: The id of the event source id
+            event_filter: The event filter
+            action_plan: The action plan
+            action_plan_flavor: The action plan flavor
+
+        Returns:
+            The model of the registered event source.
+        """
+        trigger = TriggerRequest(
+            name=name,
+            description=description,
+            event_source_id=event_source_id,
+            event_filter=event_filter,
+            action_plan=action_plan,
+            action_plan_flavor=action_plan_flavor,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+        )
+
+        return self.zen_store.create_trigger(trigger=trigger)
+
+    def get_trigger(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
+    ) -> TriggerResponse:
+        """Get a event source by name, ID or prefix.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the stack.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_trigger,
+            list_method=self.list_triggers,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+        )
+
+    def list_triggers(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        event_source_id: Optional[UUID] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[TriggerResponse]:
+        """Lists all triggers.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of triggers to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            name: The name of the trigger to filter by.
+            event_source_id: The event source associated with the Trigger
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of triggers.
+        """
+        trigger_filter_model = TriggerFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            name=name,
+            event_source_id=event_source_id,
+            id=id,
+            created=created,
+            updated=updated,
+        )
+        trigger_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_triggers(
+            trigger_filter_model, hydrate=hydrate
+        )
+
+    def update_trigger(
+        self,
+        name_id_or_prefix: Optional[Union[UUID, str]] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        event_filter: Optional[Dict[str, Any]] = None,
+        action: Optional[Dict[str, Any]] = None,
+        is_active: Optional[bool] = None,
+    ) -> TriggerResponse:
+        """Updates a trigger.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the trigger to update.
+            name: the new name of the trigger.
+            description: the new description of the trigger.
+            event_filter: The event filter configuration.
+            action: The action configuration.
+            is_active: Optional[bool] = Allows for activation/deactivating the
+                event source
+
+        Returns:
+            The model of the updated trigger.
+
+        Raises:
+            EntityExistsError: If the trigger name is already taken.
+        """
+        # First, get the eve
+        trigger = self.get_trigger(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        # Create the update model
+        update_model = TriggerUpdate(
+            name=name,
+            description=description,
+            event_filter=event_filter,
+            action=action,
+            is_active=is_active,
+        )
+
+        if name:
+            if self.list_triggers(name=name):
+                raise EntityExistsError(
+                    "There are already is an existing trigger with the name "
+                    f"'{name}'."
+                )
+
+        updated_trigger = self.zen_store.update_trigger(
+            trigger_id=trigger.id,
+            trigger_update=update_model,
+        )
+        return updated_trigger
+
+    def delete_trigger(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Deletes an trigger.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the trigger
+                to deregister.
+        """
+        trigger = self.get_trigger(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        self.zen_store.delete_trigger(trigger_id=trigger.id)
+        logger.info("Deleted trigger with name '%s'.", trigger.name)
 
     # ------------------------------ Deployments -------------------------------
 

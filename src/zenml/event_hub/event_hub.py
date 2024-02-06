@@ -29,7 +29,7 @@ from zenml.models import (
     TriggerFilter,
     TriggerResponse,
 )
-from zenml.plugins.plugin_flavor_registry import logger, plugin_flavor_registry
+from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.utils.pagination_utils import depaginate
 from zenml.zen_server.utils import zen_store
 
@@ -77,7 +77,7 @@ class EventHub:
             # running the event hub as a background tasks in the webhook
             # endpoints
             request = TriggerExecutionRequest(
-                trigger=trigger.id, event_metadata=dict(event)
+                trigger=trigger.id, event_metadata=event.dict()
             )
             trigger_execution = zen_store().create_trigger_execution(request)
 

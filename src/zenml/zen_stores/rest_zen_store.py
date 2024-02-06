@@ -53,6 +53,7 @@ from zenml.constants import (
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    EVENT_SOURCES,
     FLAVORS,
     GET_OR_CREATE,
     INFO,
@@ -83,6 +84,7 @@ from zenml.constants import (
     STEPS,
     TAGS,
     TRIGGER_EXECUTIONS,
+    TRIGGERS,
     USERS,
     VERSION_1,
     WORKSPACES,
@@ -1410,8 +1412,11 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created event_source.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        return self._create_workspace_scoped_resource(
+            resource=event_source,
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+        )
 
     def get_event_source(
         self,
@@ -1431,8 +1436,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack event_source doesn't exist.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        return self._get_resource(
+            resource_id=event_source_id,
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+            params={"hydrate": hydrate},
+        )
 
     def list_event_sources(
         self,
@@ -1450,8 +1459,12 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all event_sources matching the filter criteria.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        return self._list_paginated_resources(
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+            filter_model=event_source_filter_model,
+            params={"hydrate": hydrate},
+        )
 
     def update_event_source(
         self,
@@ -1470,8 +1483,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the event_source doesn't exist.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        return self._update_resource(
+            resource_id=event_source_id,
+            resource_update=event_source_update,
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+        )
 
     def delete_event_source(self, event_source_id: UUID) -> None:
         """Delete an event_source.
@@ -1482,8 +1499,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the event_source doesn't exist.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        self._delete_resource(
+            resource_id=event_source_id,
+            route=EVENT_SOURCES,
+        )
 
     # ----------------------------- Pipeline runs -----------------------------
 
@@ -2642,8 +2661,11 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created trigger.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        return self._create_workspace_scoped_resource(
+            resource=trigger,
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+        )
 
     def get_trigger(
         self,
@@ -2663,8 +2685,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack trigger doesn't exist.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        return self._get_resource(
+            resource_id=trigger_id,
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+            params={"hydrate": hydrate},
+        )
 
     def list_triggers(
         self,
@@ -2682,8 +2708,12 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all triggers matching the filter criteria.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        return self._list_paginated_resources(
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+            filter_model=trigger_filter_model,
+            params={"hydrate": hydrate},
+        )
 
     def update_trigger(
         self,
@@ -2702,8 +2732,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the trigger doesn't exist.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        return self._update_resource(
+            resource_id=trigger_id,
+            resource_update=trigger_update,
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+        )
 
     def delete_trigger(self, trigger_id: UUID) -> None:
         """Delete an trigger.
@@ -2714,8 +2748,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the trigger doesn't exist.
         """
-        # TODO: implement
-        raise NotImplementedError()
+        self._delete_resource(
+            resource_id=trigger_id,
+            route=TRIGGERS,
+        )
 
     # -------------------- Trigger Executions --------------------
 

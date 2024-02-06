@@ -53,6 +53,12 @@ class BaseActionHandler(BasePlugin, ABC):
         config: Dict[str, Any],
         trigger_execution: TriggerExecutionResponse,
     ) -> None:
+        """Method that executes the configured action.
+
+        Args:
+            config: The action configuration
+            trigger_execution: The trigger_execution object from the database
+        """
         pass
 
 

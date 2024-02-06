@@ -54,6 +54,12 @@ class PipelineRunActionHandler(BaseActionHandler):
         config: Dict[str, Any],
         trigger_execution: TriggerExecutionResponse,
     ) -> None:
+        """Method that executes the configured action.
+
+        Args:
+            config: The action configuration
+            trigger_execution: The trigger_execution object from the database
+        """
         from zenml.zen_server.utils import zen_store
 
         config_obj: PipelineRunActionConfiguration = self.config_class(

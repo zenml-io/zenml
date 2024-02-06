@@ -19,7 +19,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginSubType
-from zenml.event_hub.event_hub import event_hub
 from zenml.event_sources.base_event_source import (
     BaseEvent,
     BaseEventSourceFlavor,
@@ -119,7 +118,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         event_source: EventSourceResponse,
         raw_body: bytes,
         headers: Dict[str, str],
-    ) -> None:
+    ) -> BaseEvent:
         """Process the incoming webhook event.
 
         Args:
@@ -164,12 +163,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         ):
             raise AuthorizationException("Request signatures didn't match!")
 
-        event = self._interpret_event(json_body)
-
-        event_hub.process_event(
-            event=event,
-            event_source=event_source,
-        )
+        return self._interpret_event(json_body)
 
 
 # -------------------- Flavors ----------------------------------
