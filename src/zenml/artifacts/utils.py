@@ -189,11 +189,16 @@ def save_artifact(
     # Get or create the artifact
     try:
         artifact = client.list_artifacts(name=name)[0]
+        if artifact.has_custom_name != has_custom_name:
+            client.update_artifact(
+                name_id_or_prefix=artifact.id, has_custom_name=has_custom_name
+            )
     except IndexError:
         artifact = client.zen_store.create_artifact(
             ArtifactRequest(
                 name=name,
                 has_custom_name=has_custom_name,
+                tags=tags,
             )
         )
 
