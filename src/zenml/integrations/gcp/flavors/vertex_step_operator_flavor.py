@@ -73,7 +73,7 @@ class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydan
         encryption_spec_key_name: Encryption spec key name.
         network: The full name of the Compute Engine network to which the Job should be peered.
             For example, projects/12345/global/networks/myVPC
-        reservedIpRanges: A list of names for the reserved ip ranges under the VPC network that can be used
+        reserved_ip_ranges: A list of names for the reserved ip ranges under the VPC network that can be used
             for this job. If set, we will deploy the job within the provided ip ranges. Otherwise, the job
             will be deployed to any ip ranges under the provided VPC network.
         service_account: Specifies the service account for workload run-as account. Users submitting jobs
@@ -88,7 +88,7 @@ class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydan
 
     network: Optional[str] = None
 
-    reservedIpRanges: Optional[str] = None
+    reserved_ip_ranges: Optional[str] = None
 
     service_account: Optional[str] = None
 
