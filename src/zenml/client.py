@@ -155,6 +155,8 @@ from zenml.models import (
     TagRequest,
     TagResponse,
     TagUpdate,
+    TriggerExecutionFilter,
+    TriggerExecutionResponse,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -5588,6 +5590,72 @@ class Client(metaclass=ClientMetaClass):
             allow_id_prefix_match=False,
         )
         self.zen_store.delete_authorized_device(device.id)
+
+    # --------------------------- Trigger Executions ---------------------------
+
+    def get_trigger_execution(
+        self,
+        trigger_execution_id: UUID,
+        hydrate: bool = True,
+    ) -> TriggerExecutionResponse:
+        """Get an trigger execution by ID.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger execution.
+        """
+        return self.zen_store.get_trigger_execution(
+            trigger_execution_id=trigger_execution_id, hydrate=hydrate
+        )
+
+    def list_trigger_executions(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        trigger_id: Optional[UUID] = None,
+        hydrate: bool = False,
+    ) -> Page[TriggerExecutionResponse]:
+        """List all trigger executions matching the given filter criteria.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            trigger_id: ID of the trigger to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all trigger executions matching the filter criteria.
+        """
+        filter_model = TriggerExecutionFilter(
+            trigger_id=trigger_id,
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+        )
+        filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_trigger_executions(
+            trigger_execution_filter_model=filter_model, hydrate=hydrate
+        )
+
+    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
+        """Delete a trigger execution.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to delete.
+        """
+        self.zen_store.delete_trigger_execution(
+            trigger_execution_id=trigger_execution_id
+        )
 
     # ---- utility prefix matching get functions -----
 

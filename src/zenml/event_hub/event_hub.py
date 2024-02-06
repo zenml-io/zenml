@@ -16,15 +16,22 @@ from functools import partial
 from typing import TYPE_CHECKING, List
 
 from zenml import EventSourceResponse
+from zenml.actions.base_action import BaseActionHandler
 from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import PluginType
+from zenml.enums import PluginSubType, PluginType
 from zenml.event_sources.base_event_source import (
     BaseEvent,
     BaseEventSourceFlavor,
 )
 from zenml.logger import get_logger
-from zenml.models import TriggerFilter, TriggerResponse
+from zenml.models import (
+    TriggerExecutionRequest,
+    TriggerFilter,
+    TriggerResponse,
+)
+from zenml.plugins.plugin_flavor_registry import logger, plugin_flavor_registry
 from zenml.utils.pagination_utils import depaginate
+from zenml.zen_server.utils import zen_store
 
 logger = get_logger(__name__)
 
@@ -63,9 +70,27 @@ class EventHub:
             event=event, event_source=event_source
         )
 
-        # TODO: Store event for future reference
-        # TODO: Create a trigger execution linked to the event and the trigger
-        logger.debug(triggers)
+        for trigger in triggers:
+            # TODO: We need to make this async, as this might take quite some
+            # time per trigger. We can either use threads starting here, or
+            # use fastapi background tasks that get passed here instead of
+            # running the event hub as a background tasks in the webhook
+            # endpoints
+            request = TriggerExecutionRequest(
+                trigger=trigger.id, event_metadata=dict(event)
+            )
+            trigger_execution = zen_store().create_trigger_execution(request)
+
+            action_config = trigger_execution.trigger.get_metadata().action
+            action_handler = plugin_flavor_registry.get_plugin(
+                flavor="builtin",
+                _type=PluginType.ACTION,
+                subtype=PluginSubType.PIPELINE_RUN,
+            )
+            assert isinstance(action_handler, BaseActionHandler)
+            action_handler.run(
+                config=action_config, trigger_execution=trigger_execution
+            )
 
     def get_matching_triggers_for_event(
         self, event: BaseEvent, event_source: EventSourceResponse

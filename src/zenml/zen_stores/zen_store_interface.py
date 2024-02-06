@@ -115,6 +115,8 @@ from zenml.models import (
     TagRequest,
     TagResponse,
     TagUpdate,
+    TriggerExecutionFilter,
+    TriggerExecutionResponse,
     TriggerFilter,
     TriggerRequest,
     TriggerResponse,
@@ -2142,6 +2144,57 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the trigger doesn't exist.
+        """
+
+    # -------------------- Trigger Executions --------------------
+
+    @abstractmethod
+    def get_trigger_execution(
+        self,
+        trigger_execution_id: UUID,
+        hydrate: bool = True,
+    ) -> TriggerExecutionResponse:
+        """Get an trigger execution by ID.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger execution.
+
+        Raises:
+            KeyError: If the trigger execution doesn't exist.
+        """
+
+    @abstractmethod
+    def list_trigger_executions(
+        self,
+        trigger_execution_filter_model: TriggerExecutionFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerExecutionResponse]:
+        """List all trigger executions matching the given filter criteria.
+
+        Args:
+            trigger_execution_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all trigger executions matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
+        """Delete a trigger execution.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to delete.
+
+        Raises:
+            KeyError: If the trigger execution doesn't exist.
         """
 
     # -------------------- Users --------------------

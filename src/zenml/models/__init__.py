@@ -296,6 +296,13 @@ from zenml.models.v2.core.trigger import (
     TriggerResponseBody,
     TriggerResponseMetadata
 )
+from zenml.models.v2.core.trigger_execution import (
+    TriggerExecutionRequest,
+    TriggerExecutionFilter,
+    TriggerExecutionResponse,
+    TriggerExecutionResponseBody,
+    TriggerExecutionResponseMetadata
+)
 from zenml.models.v2.core.event_source import (
     EventSourceRequest,
     EventSourceFilter,
@@ -509,6 +516,13 @@ TriggerResponseMetadata.update_forward_refs(
     UserResponse=UserResponse,
     EventSourceResponse=EventSourceResponse,
 )
+TriggerExecutionResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+    TriggerResponse=TriggerResponse
+)
+TriggerResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
 __all__ = [
     # V2 Base
     "BaseRequest",
@@ -698,6 +712,11 @@ __all__ = [
     "TriggerUpdate",
     "TriggerResponseBody",
     "TriggerResponseMetadata",
+    "TriggerExecutionRequest",
+    "TriggerExecutionFilter",
+    "TriggerExecutionResponse",
+    "TriggerExecutionResponseBody",
+    "TriggerExecutionResponseMetadata",
     "EventSourceResponse",
     "EventSourceRequest",
     "EventSourceFilter",

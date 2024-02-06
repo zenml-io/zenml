@@ -82,6 +82,7 @@ from zenml.constants import (
     STACKS,
     STEPS,
     TAGS,
+    TRIGGER_EXECUTIONS,
     USERS,
     VERSION_1,
     WORKSPACES,
@@ -197,6 +198,8 @@ from zenml.models import (
     TagRequest,
     TagResponse,
     TagUpdate,
+    TriggerExecutionFilter,
+    TriggerExecutionResponse,
     TriggerFilter,
     TriggerRequest,
     TriggerResponse,
@@ -2713,6 +2716,70 @@ class RestZenStore(BaseZenStore):
         """
         # TODO: implement
         raise NotImplementedError()
+
+    # -------------------- Trigger Executions --------------------
+
+    def get_trigger_execution(
+        self,
+        trigger_execution_id: UUID,
+        hydrate: bool = True,
+    ) -> TriggerExecutionResponse:
+        """Get an trigger execution by ID.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger execution.
+
+        Raises:
+            KeyError: If the trigger execution doesn't exist.
+        """
+        return self._get_resource(
+            resource_id=trigger_execution_id,
+            route=TRIGGER_EXECUTIONS,
+            response_model=TriggerExecutionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_trigger_executions(
+        self,
+        trigger_execution_filter_model: TriggerExecutionFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerExecutionResponse]:
+        """List all trigger executions matching the given filter criteria.
+
+        Args:
+            trigger_execution_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all trigger executions matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=TRIGGER_EXECUTIONS,
+            response_model=TriggerExecutionResponse,
+            filter_model=trigger_execution_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
+        """Delete a trigger execution.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to delete.
+
+        Raises:
+            KeyError: If the trigger execution doesn't exist.
+        """
+        self._delete_resource(
+            resource_id=trigger_execution_id,
+            route=TRIGGER_EXECUTIONS,
+        )
 
     # ----------------------------- Users -----------------------------
 

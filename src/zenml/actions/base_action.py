@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginType
+from zenml.models import TriggerExecutionResponse
 from zenml.models.v2.plugin.action_flavor import ActionFlavorResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
@@ -45,6 +46,14 @@ class BaseActionHandler(BasePlugin, ABC):
         Returns:
             The configuration.
         """
+
+    @abstractmethod
+    def run(
+        self,
+        config: Dict[str, Any],
+        trigger_execution: TriggerExecutionResponse,
+    ) -> None:
+        pass
 
 
 # -------------------- Flavors ---------------------------------------------

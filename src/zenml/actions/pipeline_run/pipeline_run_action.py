@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an action Plugin could look like."""
-from typing import ClassVar, Type
+from typing import Any, ClassVar, Dict, Optional, Type
 from uuid import UUID
 
 from zenml.actions.base_action import (
@@ -21,6 +21,8 @@ from zenml.actions.base_action import (
     BaseActionHandler,
 )
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.enums import PluginSubType
+from zenml.models import TriggerExecutionResponse
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -28,15 +30,15 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 class PipelineRunActionConfiguration(ActionConfig):
     """Configuration class to configure a pipeline run action."""
 
-    pipeline_build_id: UUID
-    pipeline_config: PipelineRunConfiguration
+    pipeline_deployment_id: UUID
+    run_config: Optional[PipelineRunConfiguration] = None
 
 
 # -------------------- Pipeline Run Plugin -----------------------------------
 
 
 class PipelineRunActionHandler(BaseActionHandler):
-    """Handler for all github events."""
+    """Action handler for running pipelines."""
 
     @property
     def config_class(self) -> Type[PipelineRunActionConfiguration]:
@@ -47,6 +49,24 @@ class PipelineRunActionHandler(BaseActionHandler):
         """
         return PipelineRunActionConfiguration
 
+    def run(
+        self,
+        config: Dict[str, Any],
+        trigger_execution: TriggerExecutionResponse,
+    ) -> None:
+        from zenml.zen_server.utils import zen_store
+
+        config_obj: PipelineRunActionConfiguration = self.config_class(
+            **config
+        )
+        deployment = zen_store().get_deployment(
+            config_obj.pipeline_deployment_id
+        )
+        print("Running deployment:", deployment)
+        # TODO: Call this
+        # from zenml.zen_server.pipeline_deployment.utils import redeploy_pipeline
+        # redeploy_pipeline(deployment=deployment, run_config=config_obj.run_config)
+
 
 # -------------------- Pipeline Run Flavor -----------------------------------
 
@@ -55,6 +75,7 @@ class PipelineRunActionFlavor(BaseActionFlavor):
     """Enables users to configure pipeline run action."""
 
     FLAVOR: ClassVar[str] = "builtin"
+    SUBTYPE: ClassVar[PluginSubType] = PluginSubType.PIPELINE_RUN
     PLUGIN_CLASS: ClassVar[
         Type[PipelineRunActionHandler]
     ] = PipelineRunActionHandler

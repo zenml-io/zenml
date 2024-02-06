@@ -100,11 +100,14 @@ class PluginFlavorRegistry:
         Returns:
             A list of builtin flavors.
         """
+        from zenml.actions.pipeline_run.pipeline_run_action import (
+            PipelineRunActionFlavor,
+        )
         from zenml.scheduler.scheduler_event_source_flavor import (
             SchedulerEventSourceFlavor,
         )
 
-        flavors = [SchedulerEventSourceFlavor]
+        flavors = [SchedulerEventSourceFlavor, PipelineRunActionFlavor]
         return flavors
 
     @property
