@@ -16,9 +16,11 @@
 from zenml.integrations.slack.flavors.slack_alerter_flavor import (
     SlackAlerterConfig,
     SlackAlerterFlavor,
+    SlackAlerterSettings,
 )
 
 __all__ = [
     "SlackAlerterFlavor",
     "SlackAlerterConfig",
+    "SlackAlerterSettings",
 ]

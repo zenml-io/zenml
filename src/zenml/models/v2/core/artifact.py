@@ -44,6 +44,11 @@ class ArtifactRequest(BaseRequest):
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
     )
+    tags: Optional[List[str]] = Field(
+        title="Artifact tags.",
+        description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
+        default=None,
+    )
 
 
 # ------------------ Update Model ------------------
@@ -55,6 +60,7 @@ class ArtifactUpdate(BaseModel):
     name: Optional[str] = None
     add_tags: Optional[List[str]] = None
     remove_tags: Optional[List[str]] = None
+    has_custom_name: Optional[bool] = None
 
 
 # ------------------ Response Model ------------------
