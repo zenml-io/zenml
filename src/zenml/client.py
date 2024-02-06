@@ -2761,6 +2761,7 @@ class Client(metaclass=ClientMetaClass):
         new_name: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
+        has_custom_name: Optional[bool] = None,
     ) -> ArtifactResponse:
         """Update an artifact.
 
@@ -2769,6 +2770,7 @@ class Client(metaclass=ClientMetaClass):
             new_name: The new name of the artifact.
             add_tags: Tags to add to the artifact.
             remove_tags: Tags to remove from the artifact.
+            has_custom_name: Whether the artifact has a custom name.
 
         Returns:
             The updated artifact.
@@ -2778,6 +2780,7 @@ class Client(metaclass=ClientMetaClass):
             name=new_name,
             add_tags=add_tags,
             remove_tags=remove_tags,
+            has_custom_name=has_custom_name,
         )
         return self.zen_store.update_artifact(
             artifact_id=artifact.id, artifact_update=artifact_update
