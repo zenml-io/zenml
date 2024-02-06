@@ -143,6 +143,8 @@ class ArtifactSchema(NamedSchema, table=True):
         if artifact_update.name:
             self.name = artifact_update.name
             self.has_custom_name = True
+        if artifact_update.has_custom_name is not None:
+            self.has_custom_name = artifact_update.has_custom_name
         return self
 
 
