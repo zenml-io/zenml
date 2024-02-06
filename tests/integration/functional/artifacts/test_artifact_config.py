@@ -442,3 +442,39 @@ def test_artifacts_linked_from_cache_steps_same_id(clean_client: "Client"):
         assert (
             len(mvrm.data_artifact_ids["cacheable"]) == 1
         ), f"Failed on {i} run"
+
+
+@step
+def standard_name_producer() -> str:
+    return "standard"
+
+
+@step
+def custom_name_producer() -> (
+    Annotated[str, "pipeline_::standard_name_producer::output"]
+):
+    return "custom"
+
+
+def test_update_of_has_custom_name(clean_client: "Client"):
+    """Test that update of has_custom_name works."""
+
+    @pipeline(enable_cache=False)
+    def pipeline_():
+        standard_name_producer()
+
+    @pipeline(enable_cache=False)
+    def pipeline_2():
+        custom_name_producer()
+
+    # run 2 times to see both ways switching
+    for i in range(2):
+        pipeline_()
+        assert not clean_client.get_artifact(
+            "pipeline_::standard_name_producer::output"
+        ).has_custom_name, f"Standard name validation failed in {i+1} run"
+
+        pipeline_2()
+        assert clean_client.get_artifact(
+            "pipeline_::standard_name_producer::output"
+        ).has_custom_name, f"Custom name validation failed in {i+1} run"
