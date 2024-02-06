@@ -47,8 +47,10 @@ class TriggerBase(BaseModel):
     )
     event_source_id: UUID
     event_filter: Dict[str, Any]
+
     action: Dict[str, Any]
     action_flavor: str
+    action_subtype: str
 
 
 # ------------------ Request Model ------------------
@@ -87,6 +89,8 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
 
     event_source_flavor: str
     action_flavor: str
+    action_subtype: str
+
     created: datetime = Field(
         title="The timestamp when this trigger was created."
     )
@@ -222,4 +226,8 @@ class TriggerFilter(WorkspaceScopedFilter):
     event_source_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="By the event source this trigger is attached to.",
+    )
+    is_active: Optional[bool] = Field(
+        default=None,
+        description="Whether the trigger is active.",
     )

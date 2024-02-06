@@ -201,6 +201,10 @@ class TriggerExistsError(EntityExistsError):
     """Raised when registering a trigger with name that already exists."""
 
 
+class WebhookInactiveError(ZenMLBaseException):
+    """Raised when source is inactive."""
+
+
 class StackExistsError(EntityExistsError):
     """Raised when trying to register a stack with name that already exists."""
 

@@ -22,7 +22,7 @@ from zenml.event_hub.event_hub import event_hub
 from zenml.event_sources.webhooks.base_webhook_event_source import (
     BaseWebhookEventSourceHandler,
 )
-from zenml.exceptions import AuthorizationException
+from zenml.exceptions import AuthorizationException, WebhookInactiveError
 from zenml.logger import get_logger
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.utils import handle_exceptions, zen_store
@@ -75,6 +75,8 @@ def webhook(
             f"No webhook is registered at "
             f"'{router.prefix}/{event_source_id}'"
         )
+    if not event_source.is_active:
+        raise WebhookInactiveError(f"Webhook {event_source_id} is inactive.")
 
     flavor = event_source.flavor
     try:

@@ -160,6 +160,15 @@ class EventSourceResponse(
         return self.get_body().flavor
 
     @property
+    def is_active(self) -> bool:
+        """The `is_active` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().is_active
+
+    @property
     def plugin_type(self) -> PluginType:
         """The `plugin_type` property.
 

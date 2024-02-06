@@ -66,7 +66,7 @@ class EventHub:
             event: Generic event
             event_source: The Event Source
         """
-        triggers = self.get_matching_triggers_for_event(
+        triggers = self.get_matching_active_triggers_for_event(
             event=event, event_source=event_source
         )
 
@@ -92,8 +92,10 @@ class EventHub:
                 config=action_config, trigger_execution=trigger_execution
             )
 
-    def get_matching_triggers_for_event(
-        self, event: BaseEvent, event_source: EventSourceResponse
+    def get_matching_active_triggers_for_event(
+        self,
+        event: BaseEvent,
+        event_source: EventSourceResponse,
     ) -> List[TriggerResponse]:
         """Get all triggers that match an incoming event.
 
@@ -111,7 +113,7 @@ class EventHub:
             partial(
                 self.zen_store.list_triggers,
                 trigger_filter_model=TriggerFilter(
-                    event_source_id=event_source.id  # TODO: Handle for multiple source_ids
+                    event_source_id=event_source.id, is_active=True
                 ),
                 hydrate=True,
             )
