@@ -45,7 +45,7 @@
 
 [contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?color=7A3EF4
 
-[contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
+[contributors-url]: https://github.com/zenml-io/zenml/graphs/contributors
 
 [license-shield]: https://img.shields.io/github/license/zenml-io/zenml?color=9565F6
 
