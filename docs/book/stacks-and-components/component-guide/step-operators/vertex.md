@@ -122,7 +122,7 @@ more about how ZenML builds these images and how you can customize them.
 
 #### Additional configuration
 
-You can specify the service account, network and reserved IP ranges to use for the VertexAI CustomJob by passing the `service_account`, `network` and `reserved_ip_ranges` parameters to the `step-operator register` command:
+You can specify the service account, network and reserved IP ranges to use for the VertexAI `CustomJob` by passing the `service_account`, `network` and `reserved_ip_ranges` parameters to the `step-operator register` command:
 
 ```shell
     zenml step-operator register <STEP_OPERATOR_NAME> \
