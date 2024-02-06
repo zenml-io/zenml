@@ -1,5 +1,5 @@
 ---
-name: Slow CI
+name: ci-slow
 on:
   push:
     branches: [main]
