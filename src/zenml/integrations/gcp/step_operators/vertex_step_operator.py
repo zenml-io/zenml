@@ -254,7 +254,9 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                 "service_account": self.config.service_account,
                 "network": self.config.network,
                 "reserved_ip_ranges": (
-                    self.config.reserved_ip_ranges if self.config.reserved_ip_ranges else []
+                    self.config.reserved_ip_ranges
+                    if self.config.reserved_ip_ranges
+                    else []
                 ),
             },
             "labels": job_labels,
