@@ -106,6 +106,8 @@
     "great_expectations.types",
     "hvac",
     "hvac.exceptions",
+    "huggingface_hub",
+    "huggingface_hub.utils",
     "kfp",
     "kfp.compiler",
     "kfp.v2",

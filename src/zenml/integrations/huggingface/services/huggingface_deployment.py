@@ -266,4 +266,4 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             "Hugging Face Endpoints provides access to the logs of "
             "your Endpoints through the UI in the “Logs” tab of your Endpoint"
         )
-        yield ""
+        return  # type: ignore
