@@ -153,13 +153,6 @@ class EventSourceSchema(NamedSchema, table=True):
                 self.configuration = base64.b64encode(
                     json.dumps(update.configuration).encode("utf-8")
                 )
-            elif field in [
-                "flavor",
-                "plugin_type",
-                "plugin_subtype",
-                "rotate_secret",
-            ]:
-                pass
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()

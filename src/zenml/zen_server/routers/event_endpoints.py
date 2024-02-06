@@ -28,12 +28,13 @@ from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
-    verify_permissions_and_delete_entity,
-    verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
-    verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    dehydrate_response_model,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -74,11 +75,55 @@ def list_event_sources(
     Returns:
         All event_sources.
     """
+
+    def list_event_sources_fn(
+        filter_model: EventSourceFilter,
+    ) -> Page[EventSourceResponse]:
+        """List event sources through their associated plugins.
+
+        Args:
+            filter_model: Filter model used for pagination, sorting,
+                filtering.
+
+        Returns:
+            All event sources.
+
+        Raises:
+            ValueError: If the plugin for an event source is not a valid event
+                source plugin.
+        """
+        event_sources = zen_store().list_event_sources(
+            event_source_filter_model=filter_model, hydrate=hydrate
+        )
+
+        # Process the event sources through their associated plugins
+        for idx, event_source in enumerate(event_sources.items):
+            event_source_plugin = plugin_flavor_registry.get_plugin(
+                event_source.flavor,
+                event_source.plugin_type,
+                event_source.plugin_subtype,
+            )
+
+            # Validate that the flavor and plugin_type correspond to an event
+            # source implementation
+            if not isinstance(event_source_plugin, BaseEventSourceHandler):
+                raise ValueError(
+                    f"Plugin {event_source.plugin_type} "
+                    f"{event_source.plugin_subtype} "
+                    f"for flavor {event_source.flavor} is not a valid event "
+                    "source plugin."
+                )
+
+            event_sources.items[idx] = event_source_plugin.get_event_source(
+                event_source, hydrate=hydrate
+            )
+
+        return event_sources
+
     return verify_permissions_and_list_entities(
         filter_model=event_source_filter_model,
-        resource_type=ResourceType.TRIGGER,
-        list_method=zen_store().list_event_sources,
-        hydrate=hydrate,
+        resource_type=ResourceType.EVENT_SOURCE,
+        list_method=list_event_sources_fn,
     )
 
 
@@ -102,12 +147,37 @@ def get_event_source(
 
     Returns:
         The requested event_source.
+
+    Raises:
+        ValueError: If the plugin for an event source is not a valid event
+            source plugin.
     """
-    return verify_permissions_and_get_entity(
-        id=event_source_id,
-        get_method=zen_store().get_event_source,
-        hydrate=hydrate,
+    event_source = zen_store().get_event_source(
+        event_source_id=event_source_id, hydrate=hydrate
     )
+
+    verify_permission_for_model(event_source, action=Action.READ)
+
+    event_source_plugin = plugin_flavor_registry.get_plugin(
+        event_source.flavor,
+        event_source.plugin_type,
+        event_source.plugin_subtype,
+    )
+
+    # Validate that the flavor and plugin_type correspond to an event source
+    # implementation
+    if not isinstance(event_source_plugin, BaseEventSourceHandler):
+        raise ValueError(
+            f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
+            f"for flavor {event_source.flavor} is not a valid event source "
+            "plugin."
+        )
+
+    event_source = event_source_plugin.get_event_source(
+        event_source, hydrate=hydrate
+    )
+
+    return dehydrate_response_model(event_source)
 
 
 @event_source_router.put(
@@ -129,11 +199,16 @@ def update_event_source(
 
     Returns:
         The updated event_source.
+
+    Raises:
+        ValueError: If the plugin for an event source is not a valid event
+            source plugin.
     """
-    # TODO: Find a way to not call this get method twice
     event_source = zen_store().get_event_source(
         event_source_id=event_source_id
     )
+
+    verify_permission_for_model(event_source, action=Action.UPDATE)
 
     event_source_plugin = plugin_flavor_registry.get_plugin(
         event_source.flavor,
@@ -141,31 +216,71 @@ def update_event_source(
         event_source.plugin_subtype,
     )
 
-    assert isinstance(event_source_plugin, BaseEventSourceHandler)
-    return verify_permissions_and_update_entity(
-        id=event_source_id,
-        update_model=event_source_update,
-        get_method=zen_store().get_event_source,
-        update_method=event_source_plugin.update_event_source,
+    # Validate that the flavor and plugin_type correspond to an event source
+    # implementation
+    if not isinstance(event_source_plugin, BaseEventSourceHandler):
+        raise ValueError(
+            f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
+            f"for flavor {event_source.flavor} is not a valid event source "
+            "plugin."
+        )
+
+    updated_event_source = event_source_plugin.update_event_source(
+        event_source=event_source,
+        event_source_update=event_source_update,
     )
+
+    return dehydrate_response_model(updated_event_source)
 
 
 @event_source_router.delete(
     "/{event_source_id}",
+    response_model=EventSourceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def delete_event_source(
     event_source_id: UUID,
+    force: bool = False,
     _: AuthContext = Security(authorize),
-) -> None:
+) -> EventSourceResponse:
     """Deletes a event_source.
 
     Args:
         event_source_id: Name of the event_source.
+        force: Flag deciding whether to force delete the event source.
+
+    Returns:
+        The deleted event_source.
+
+    Raises:
+        ValueError: If the plugin for an event source is not a valid event
+            source plugin.
     """
-    verify_permissions_and_delete_entity(
-        id=event_source_id,
-        get_method=zen_store().get_event_source,
-        delete_method=zen_store().delete_event_source,
+    event_source = zen_store().get_event_source(
+        event_source_id=event_source_id
     )
+
+    verify_permission_for_model(event_source, action=Action.DELETE)
+
+    event_source_plugin = plugin_flavor_registry.get_plugin(
+        event_source.flavor,
+        event_source.plugin_type,
+        event_source.plugin_subtype,
+    )
+
+    # Validate that the flavor and plugin_type correspond to an event source
+    # implementation
+    if not isinstance(event_source_plugin, BaseEventSourceHandler):
+        raise ValueError(
+            f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
+            f"for flavor {event_source.flavor} is not a valid event source "
+            "plugin."
+        )
+
+    deleted_event_source = event_source_plugin.delete_event_source(
+        event_source=event_source,
+        force=force,
+    )
+
+    return dehydrate_response_model(deleted_event_source)

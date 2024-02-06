@@ -17,6 +17,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import Field
 
+from zenml import BaseZenModel
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType, PluginType
 from zenml.models.v2.base.scoped import (
@@ -26,7 +27,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.update import update_model
 
 # ------------------ Request Model ------------------
 
@@ -64,26 +64,46 @@ class EventSourceRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class EventSourceUpdate(EventSourceRequest):
+class EventSourceUpdate(BaseZenModel):
     """Update model for event sources."""
 
-    name: str = Field(
-        title="The name of the stack component.",
+    name: Optional[str] = Field(
+        default=None,
+        title="The updated name of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    description: str = Field(
-        default="",
-        title="The description of the event source.",
+    description: Optional[str] = Field(
+        default=None,
+        title="The updated description of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    configuration: Dict[str, Any] = Field(
-        title="The event source configuration.",
+    configuration: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The updated event source configuration.",
     )
-    rotate_secret: Optional[bool] = Field(
-        title="In case the secret needs to be rotated."
+    is_active: Optional[bool] = Field(
+        default=None,
+        title="The status of the event source.",
     )
-    is_active: Optional[bool]
+
+    @classmethod
+    def from_response(
+        cls, response: "EventSourceResponse"
+    ) -> "EventSourceUpdate":
+        """Create an update model from a response model.
+
+        Args:
+            response: The response model to create the update model from.
+
+        Returns:
+            The update model.
+        """
+        return EventSourceUpdate(
+            name=response.name,
+            description=response.description,
+            configuration=response.configuration,
+            is_active=response.is_active,
+        )
 
 
 # ------------------ Response Model ------------------
@@ -221,6 +241,14 @@ class EventSourceResponse(
             the value of the property.
         """
         return self.get_metadata().configuration
+
+    def set_configuration(self, configuration: Dict[str, Any]) -> None:
+        """Set the `configuration` property.
+
+        Args:
+            configuration: The value to set.
+        """
+        self.get_metadata().configuration = configuration
 
 
 # ------------------ Filter Model ------------------

@@ -17,14 +17,16 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Type
 from uuid import UUID
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, Field
 
-from zenml.event_sources.base_event_source import BaseEvent
+from zenml.enums import SecretScope
+from zenml.event_sources.base_event_source import BaseEvent, EventSourceConfig
 from zenml.event_sources.webhooks.base_webhook_event_source import (
     BaseWebhookEventSourceHandler,
     WebhookEventFilterConfig,
     WebhookEventSourceConfig,
 )
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import (
     EventSourceRequest,
@@ -34,7 +36,6 @@ from zenml.models import (
     SecretUpdate,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.secret_utils import SecretField
 from zenml.utils.string_utils import random_str
 
 logger = get_logger(__name__)
@@ -164,8 +165,17 @@ class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
 class GithubWebhookEventSourceConfiguration(WebhookEventSourceConfig):
     """Configuration for github source filters."""
 
-    webhook_secret: Optional[str] = SecretField()
-    webhook_secret_id: Optional[UUID]
+    webhook_secret: Optional[str] = Field(
+        default=None,
+        title="The webhook secret for the event source.",
+    )
+    webhook_secret_id: Optional[UUID] = Field(
+        default=None,
+        description="The ID of the secret containing the webhook secret.",
+    )
+    rotate_secret: Optional[bool] = Field(
+        default=None, description="Set to rotate the webhook secret."
+    )
 
 
 # -------------------- Github Webhook Plugin -----------------------------------
@@ -217,95 +227,229 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         else:
             return github_event
 
-    def _update_event_source(
-        self,
-        event_source_id: UUID,
-        event_source_update: EventSourceUpdate,
-    ) -> EventSourceResponse:
-        """Wraps the zen_store update method to add plugin specific functionality.
+    def _get_webhook_secret(
+        self, event_source: EventSourceResponse
+    ) -> Optional[str]:
+        """Get the webhook secret for the event source.
 
         Args:
-            event_source_id: The ID of the event_source to update.
-            event_source_update: The update to be applied to the event_source.
+            event_source: The event source to retrieve the secret for.
 
-        Returns:
-            The event source response body.
+        Return:
+            The webhook secret associated with the event source, or None if a
+            secret is not applicable.
+
+        Raises:
+            AuthorizationException: If the secret value could not be retrieved.
         """
-        original_event_source = self.zen_store.get_event_source(
-            event_source_id=event_source_id
+        # Temporary solution to get the secret value for the Event Source
+        config = self.validate_event_filter_configuration(
+            event_source.configuration
         )
+        assert isinstance(config, GithubWebhookEventSourceConfiguration)
+        webhook_secret_id = config.webhook_secret_id
+        if webhook_secret_id is None:
+            raise AuthorizationException(
+                f"Webhook secret ID is missing from the event source "
+                f"configuration for event source '{event_source.id}'."
+            )
+        try:
+            return self.zen_store.get_secret(
+                secret_id=webhook_secret_id
+            ).secret_values["webhook_secret"]
+        except KeyError:
+            logger.exception(
+                f"Could not retrieve secret value for webhook secret id "
+                f"'{webhook_secret_id}'"
+            )
+            raise AuthorizationException(
+                "Could not retrieve webhook signature."
+            )
 
-        updated_event_source = self.zen_store.update_event_source(
-            event_source_id=event_source_id,
+    def _validate_event_source_request(
+        self, event_source: EventSourceRequest, config: EventSourceConfig
+    ) -> None:
+        """Validate an event source request before it is created in the database.
+
+        The `webhook_secret`, `webhook_secret_id`, and `rotate_secret`
+        fields are not allowed in the request.
+
+        Args:
+            event_source: Event source request.
+            config: Event source configuration instantiated from the request.
+
+        Raises:
+            ValueError: If any of the disallowed fields are present in the
+                request.
+        """
+        assert isinstance(config, GithubWebhookEventSourceConfiguration)
+        for field in ["webhook_secret", "webhook_secret_id", "rotate_secret"]:
+            if getattr(config, field) is not None:
+                raise ValueError(
+                    f"The `{field}` field is not allowed in the event source "
+                    "request."
+                )
+
+    def _process_event_source_request(
+        self, event_source: EventSourceResponse, config: EventSourceConfig
+    ) -> None:
+        """Process an event source request after it is created in the database.
+
+        Generates a webhook secret and stores it in a secret in the database,
+        then attaches the secret ID to the event source configuration.
+
+        Args:
+            event_source: Newly created event source
+            config: Event source configuration instantiated from the response.
+        """
+        assert isinstance(config, GithubWebhookEventSourceConfiguration)
+        assert (
+            event_source.user is not None
+        ), "User is not set for event source"
+
+        secret_key_value = random_str(12)
+        webhook_secret = SecretRequest(
+            name=f"event_source-{str(event_source.id)}-{random_str(4)}".lower(),
+            values={"webhook_secret": secret_key_value},
+            workspace=event_source.workspace.id,
+            user=event_source.user.id,
+            scope=SecretScope.WORKSPACE,
+        )
+        secret = self.zen_store.create_secret(webhook_secret)
+
+        # Store the secret ID in the event source configuration in the database
+        event_source_update = EventSourceUpdate.from_response(event_source)
+        assert event_source_update.configuration is not None
+        event_source_update.configuration["webhook_secret_id"] = str(secret.id)
+
+        self.zen_store.update_event_source(
+            event_source_id=event_source.id,
             event_source_update=event_source_update,
         )
 
-        if event_source_update.rotate_secret:
+        # Set the webhook secret in the configuration returned to the user
+        config.webhook_secret = secret_key_value
+        # Remove hidden field from the response
+        config.rotate_secret = None
+        config.webhook_secret_id = None
+
+    def _validate_event_source_update(
+        self,
+        event_source: EventSourceResponse,
+        config: EventSourceConfig,
+        event_source_update: EventSourceUpdate,
+        config_update: EventSourceConfig,
+    ) -> None:
+        """Validate an event source update before it is reflected in the database.
+
+        Ensure the webhook secret ID is preserved in the updated event source
+        configuration.
+
+        Args:
+            event_source: Original event source before the update.
+            config: Event source configuration instantiated from the original
+                event source.
+            event_source_update: Event source update request.
+            config_update: Event source configuration instantiated from the
+                updated event source.
+        """
+        assert isinstance(config, GithubWebhookEventSourceConfiguration)
+        assert isinstance(config_update, GithubWebhookEventSourceConfiguration)
+
+        config_update.webhook_secret_id = config.webhook_secret_id
+
+    def _process_event_source_update(
+        self,
+        event_source: EventSourceResponse,
+        config: EventSourceConfig,
+        previous_event_source: EventSourceResponse,
+        previous_config: EventSourceConfig,
+    ) -> None:
+        """Process an event source after it is updated in the database.
+
+        If the `rotate_secret` field is set to `True`, the webhook secret is
+        rotated and the new secret ID is attached to the event source
+        configuration.
+
+        Args:
+            event_source: Event source after the update.
+            config: Event source configuration instantiated from the updated
+                event source.
+            previous_event_source: Original event source before the update.
+            previous_config: Event source configuration instantiated from the
+                original event source.
+        """
+        assert isinstance(config, GithubWebhookEventSourceConfiguration)
+        assert isinstance(
+            previous_config, GithubWebhookEventSourceConfiguration
+        )
+        assert config.webhook_secret_id is not None
+
+        if config.rotate_secret:
             # In case the secret is being rotated
             secret_key_value = random_str(12)
             webhook_secret = SecretUpdate(  # type: ignore[call-arg]
                 values={"webhook_secret": secret_key_value}
             )
             self.zen_store.update_secret(
-                secret_id=original_event_source.configuration[
-                    "webhook_secret_id"
-                ],
+                secret_id=config.webhook_secret_id,
                 secret_update=webhook_secret,
             )
-            updated_event_source.configuration[
-                "webhook_secret"
-            ] = secret_key_value
-        return updated_event_source
 
-    def _create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Wraps the zen_store creation method for plugin specific functionality.
+            # Remove the `rotate_secret` field from the configuration stored
+            # in the database
+            event_source_update = EventSourceUpdate.from_response(event_source)
+            assert event_source_update.configuration is not None
+            event_source_update.configuration.pop("rotate_secret")
+            self.zen_store.update_event_source(
+                event_source_id=event_source.id,
+                event_source_update=event_source_update,
+            )
+
+            # Set the new secret in the configuration returned to the user
+            config.webhook_secret = secret_key_value
+            # Remove hidden field from the response
+            config.rotate_secret = None
+            config.webhook_secret_id = None
+
+    def _process_event_source_delete(
+        self,
+        event_source: EventSourceResponse,
+        config: EventSourceConfig,
+        force: Optional[bool] = False,
+    ) -> None:
+        """Process an event source before it is deleted from the database.
+
+        Deletes the associated secret from the database.
 
         Args:
-            event_source: Request model for the event source.
-
-        Returns:
-            The created event source.
+            event_source: Event source before the deletion.
+            config: Validated instantiated event source configuration before
+                the deletion.
+            force: Whether to force deprovision the event source.
         """
-        try:
-            config = GithubWebhookEventSourceConfiguration(
-                **event_source.configuration
-            )
-        except ValueError:
-            raise ValueError("Event Source configuration invalid.")
+        assert isinstance(config, GithubWebhookEventSourceConfiguration)
+        if config.webhook_secret_id is not None:
+            try:
+                self.zen_store.delete_secret(
+                    secret_id=config.webhook_secret_id
+                )
+            except KeyError:
+                pass
 
-        secret_key_value = random_str(12)
-        webhook_secret = SecretRequest(
-            name=f"event_source-{event_source.name}-{random_str(4)}".lower(),
-            values={"webhook_secret": secret_key_value},
-            workspace=event_source.workspace,
-            user=event_source.user,
-        )
-        secret = self.zen_store.create_secret(webhook_secret)
+    def _process_event_source_response(
+        self, event_source: EventSourceResponse, config: EventSourceConfig
+    ) -> None:
+        """Process an event source response before it is returned to the user.
 
-        config.webhook_secret_id = secret.id
-        event_source.configuration = config.dict()
+        Removes hidden fields from the configuration.
 
-        created_event_source = self.zen_store.create_event_source(
-            event_source=event_source
-        )
-        created_event_source.configuration["webhook_secret"] = secret_key_value
-        return created_event_source
-
-    def _get_event_source(self, event_source_id: UUID) -> EventSourceResponse:
-        """Wraps the zen_store getter method to add plugin specific functionality."""
-        created_event_source = self.zen_store.get_event_source(
-            event_source_id=event_source_id
-        )
-        webhook_secret_id = created_event_source.configuration[
-            "webhook_secret_id"
-        ]
-
-        secret = self.zen_store.get_secret(secret_id=webhook_secret_id)
-        secret_value = secret.secret_values["webhook_secret"]
-
-        assert secret_value is not None, "Webhook secret value not found"
-
-        created_event_source.configuration["webhook_secret"] = secret_value
-        return created_event_source
+        Args:
+            event_source: Event source response.
+            config: Event source configuration instantiated from the response.
+        """
+        assert isinstance(config, GithubWebhookEventSourceConfiguration)
+        # Remove hidden fields from the response
+        config.rotate_secret = None
+        config.webhook_secret_id = None
+        config.webhook_secret = None

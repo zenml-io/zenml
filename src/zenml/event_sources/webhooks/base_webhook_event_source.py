@@ -16,7 +16,7 @@ import hashlib
 import hmac
 import json
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type
 
 from zenml.enums import PluginSubType
 from zenml.event_sources.base_event_source import (
@@ -113,27 +113,65 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
             An instance of the event source specific pydantic model.
         """
 
-    def process_webhook_event(
-        self,
-        event_source: EventSourceResponse,
-        raw_body: bytes,
-        headers: Dict[str, str],
-    ) -> BaseEvent:
-        """Process the incoming webhook event.
+    @abstractmethod
+    def _get_webhook_secret(
+        self, event_source: EventSourceResponse
+    ) -> Optional[str]:
+        """Get the webhook secret for the event source.
+
+        Inheriting classes should implement this method to retrieve the webhook
+        secret associated with an event source. If a webhook secret is not
+        applicable for the event source, this method should return None.
 
         Args:
-            event_source: The event source that the event belongs to.
+            event_source: The event source to retrieve the secret for.
+
+        Return:
+            The webhook secret associated with the event source, or None if a
+            secret is not applicable.
+        """
+
+    def _validate_webhook_event_signature(
+        self, raw_body: bytes, headers: Dict[str, str], webhook_secret: str
+    ) -> None:
+        """Validate the signature of an incoming webhook event.
+
+        Args:
             raw_body: The raw inbound webhook event.
             headers: The headers of the inbound webhook event.
+            webhook_secret: The webhook secret to use for signature validation.
+
+        Raises:
+            AuthorizationException: If the signature validation fails.
         """
-        # For now assume the x-hub-signature-256 authentication method
-        # is used for all webhook events.
         signature_header = headers.get("x-hub-signature-256")
         if not signature_header:
             raise AuthorizationException(
                 "x-hub-signature-256 header is missing!"
             )
 
+        if not self.is_valid_signature(
+            raw_body=raw_body,
+            secret_token=webhook_secret,
+            signature_header=signature_header,
+        ):
+            raise AuthorizationException(
+                "Webhook signature verification failed!"
+            )
+
+    def process_webhook_event(
+        self,
+        event_source: EventSourceResponse,
+        raw_body: bytes,
+        headers: Dict[str, str],
+    ) -> BaseEvent:
+        """Process an incoming webhook event.
+
+        Args:
+            event_source: The event source that the event belongs to.
+            raw_body: The raw inbound webhook event.
+            headers: The headers of the inbound webhook event.
+        """
         # For now assume all webhook events are json encoded and parse
         # the body as such.
         try:
@@ -141,27 +179,13 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON body received: {e}")
 
-        # Temporary solution to get the secret value for the Event Source
-        webhook_secret_id = event_source.configuration["webhook_secret_id"]
-        try:
-            secret_value = self.zen_store.get_secret(
-                secret_id=webhook_secret_id
-            ).secret_values["webhook_secret"]
-        except KeyError:
-            logger.exception(
-                f"Could not retrieve secret value for secret id "
-                f"'{webhook_secret_id}'"
+        webhook_secret = self._get_webhook_secret(event_source)
+        if webhook_secret:
+            self._validate_webhook_event_signature(
+                raw_body=raw_body,
+                headers=headers,
+                webhook_secret=webhook_secret,
             )
-            raise AuthorizationException(
-                "Could not retrieve webhook signature."
-            )
-
-        if not self.is_valid_signature(
-            raw_body=raw_body,
-            secret_token=secret_value,
-            signature_header=signature_header,
-        ):
-            raise AuthorizationException("Request signatures didn't match!")
 
         return self._interpret_event(json_body)
 
