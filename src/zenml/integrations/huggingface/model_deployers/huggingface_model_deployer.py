@@ -112,11 +112,8 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         service = HuggingFaceDeploymentService(config)
 
         # Use first 8 characters of UUID as artifact version
+        artifact_version = str(service.dict()["uuid"])[:UUID_SLICE_LENGTH]
         # Add same 8 characters as suffix to endpoint name
-        service_metadata = service.dict()
-        service_metadata["uuid"] = str(service_metadata["uuid"])
-        artifact_version = service_metadata["uuid"][:UUID_SLICE_LENGTH]
-
         service.config.endpoint_name = self.modify_endpoint_name(
             service.config.endpoint_name, artifact_version
         )
@@ -133,6 +130,9 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             is_deployment_artifact=True,
         )
 
+        # Convert UUID object to be json serializable
+        service_metadata = service.dict()
+        service_metadata["uuid"] = str(service_metadata["uuid"])
         log_artifact_metadata(
             artifact_name=HUGGINGFACE_SERVICE_ARTIFACT,
             artifact_version=artifact_version,
@@ -269,7 +269,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
                 the model
 
         Raises:
-            TypeError: _description_
+            TypeError: If service type does not match HuggingFaceDeploymentService
 
         Returns:
             One or more Huggingface service objects representing Huggingface

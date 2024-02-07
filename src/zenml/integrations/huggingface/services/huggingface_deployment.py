@@ -182,19 +182,19 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
                 "HuggingFace Inference Endpoint deployment is available",
             )
 
-        if self.hf_endpoint.status == InferenceEndpointStatus.SCALED_TO_ZERO:
+        elif self.hf_endpoint.status == InferenceEndpointStatus.SCALED_TO_ZERO:
             return (
                 ServiceState.ACTIVE,
                 "HuggingFace Inference Endpoint deployment is scaled to zero",
             )
 
-        if self.hf_endpoint.status == InferenceEndpointStatus.FAILED:
+        elif self.hf_endpoint.status == InferenceEndpointStatus.FAILED:
             return (
                 ServiceState.ERROR,
                 "HuggingFace Inference Endpoint deployment failed: ",
             )
 
-        if self.hf_endpoint.status == InferenceEndpointStatus.PENDING:
+        elif self.hf_endpoint.status == InferenceEndpointStatus.PENDING:
             return (
                 ServiceState.PENDING_STARTUP,
                 "HuggingFace Inference Endpoint deployment is being created: ",
