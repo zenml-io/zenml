@@ -137,7 +137,8 @@ class TriggerSchema(NamedSchema, table=True):
             The updated TriggerSchema.
         """
         for field, value in trigger_update.dict(
-            exclude_unset=True, exclude={"workspace", "user"}
+            exclude_unset=True,
+            exclude_none=True,
         ).items():
             if field == "event_filter":
                 self.event_filter = base64.b64encode(

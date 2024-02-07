@@ -24,7 +24,6 @@ from zenml.event_sources.base_event_source import (
     EventSourceConfig,
 )
 from zenml.logger import get_logger
-from zenml.models import EventSourceRequest, EventSourceResponse
 
 logger = get_logger(__name__)
 
@@ -64,17 +63,6 @@ class BaseScheduleEventSourceHandler(BaseEventSourceHandler, ABC):
         Returns:
             The configuration.
         """
-
-    def _create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Wraps the zen_store creation method to add plugin specific functionality."""
-        # Implementations will be able to actually configure an external CronJobs
-        #  before storing them in the database
-        created_event_source = self.zen_store.create_event_source(
-            event_source=event_source
-        )
-        return created_event_source
 
 
 # -------------------- Flavors ----------------------------------
