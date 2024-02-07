@@ -58,12 +58,4 @@ def prediction_service_loader(
             f"'{model_name}' is currently running."
         )
 
-    if not services[0].is_running:
-        raise RuntimeError(
-            f"The Huggingface prediction server last deployed by the "
-            f"'{pipeline_step_name}' step in the '{pipeline_name}' "
-            f"pipeline for the '{model_name}' model is not currently "
-            f"running."
-        )
-
     return cast(HuggingFaceDeploymentService, services[0])
