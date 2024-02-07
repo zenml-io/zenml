@@ -74,8 +74,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         if self._k8s_client and not self.connector_has_expired():
             return self._k8s_client
 
-        connector = self.get_connector()
-        if connector:
+        if connector := self.get_connector():
             client = connector.connect()
             if not isinstance(client, k8s_client.ApiClient):
                 raise RuntimeError(
@@ -148,9 +147,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         f"{msg}you must either link this stack component to a "
                         "Kubernetes service connector (see the 'zenml "
                         "orchestrator connect' CLI command) or explicitly set "
-                        "the `kubernetes_context` attribute to the name of the "
-                        "Kubernetes config context pointing to the cluster "
-                        "where you would like to run pipelines."
+                        "the `kubernetes_context` attribute to the name of "
+                        "the Kubernetes config context pointing to the "
+                        "cluster where you would like to run pipelines."
                     )
 
                 contexts, active_context = self.get_kubernetes_contexts()
@@ -160,9 +159,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         f"{msg}could not find a Kubernetes context named "
                         f"'{kubernetes_context}' in the local "
                         "Kubernetes configuration. Please make sure that the "
-                        "Kubernetes cluster is running and that the kubeconfig "
-                        "file is configured correctly. To list all configured "
-                        "contexts, run:\n\n"
+                        "Kubernetes cluster is running and that the "
+                        "kubeconfig file is configured correctly. To list all "
+                        "configured contexts, run:\n\n"
                         "  `kubectl config get-contexts`\n"
                     )
                 if kubernetes_context != active_context:
@@ -199,9 +198,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
-                # This may result in problems when running the pipeline, because
-                # the local components will not be available inside the
-                # Tekton containers.
+                # This may result in problems when running the pipeline, "
+                # because the local components will not be available inside
+                # theTekton containers.
 
                 # go through all stack components and identify those that
                 # advertise a local path where they persist information that
@@ -282,8 +281,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 host_path=host_path,
             )
             logger.debug(
-                "Adding host path volume for the local ZenML stores (path: %s) "
-                "in Tekton pipelines container.",
+                "Adding host path volume for the local ZenML stores "
+                "(path: %s) in Tekton pipelines container. ",
                 local_stores_path,
             )
 
@@ -543,15 +542,15 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         """
         try:
             return os.environ[ENV_ZENML_TEKTON_RUN_ID]
-        except KeyError:
+        except KeyError as e:
             raise RuntimeError(
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_TEKTON_RUN_ID}."
-            )
+            ) from e
 
     @property
     def root_directory(self) -> str:
-        """Returns path to the root directory for all files concerning this orchestrator.
+        """Returns path to the root directory.
 
         Returns:
             Path to the root directory.
