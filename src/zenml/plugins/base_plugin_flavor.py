@@ -36,8 +36,8 @@ class BasePluginConfig(BaseModel, ABC):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
-        # prevent extra attributes during model initialization
-        extra = Extra.forbid
+        # ignore extra attributes during model initialization
+        extra = Extra.ignore
 
 
 class BasePlugin(ABC):

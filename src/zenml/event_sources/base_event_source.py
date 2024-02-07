@@ -120,9 +120,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             event_source=event_source, config=config
         )
         # Serialize the configuration back into the request
-        event_source.configuration = config.dict(
-            exclude_none=True, exclude_unset=True
-        )
+        event_source.configuration = config.dict(exclude_none=True)
         # Create the event source in the database
         event_source_response = self.zen_store.create_event_source(
             event_source=event_source
@@ -150,9 +148,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             raise
 
         # Serialize the configuration back into the response
-        event_source_response.set_configuration(
-            config.dict(exclude_none=True, exclude_unset=True)
-        )
+        event_source_response.set_configuration(config.dict(exclude_none=True))
 
         # Return the response to the user
         return event_source_response
@@ -194,17 +190,18 @@ class BaseEventSourceHandler(BasePlugin, ABC):
         )
         # Serialize the configuration update back into the update request
         event_source_update.configuration = config_update.dict(
-            exclude_none=True, exclude_unset=True
+            exclude_none=True
+        )
+
+        # Update the event source in the database
+        event_source_response = self.zen_store.update_event_source(
+            event_source_id=event_source.id,
+            event_source_update=event_source_update,
         )
         try:
-            # Update the event source in the database
-            event_source_response = self.zen_store.update_event_source(
-                event_source_id=event_source.id,
-                event_source_update=event_source_update,
-            )
             # Instantiate the configuration from the response
             response_config = self.validate_event_source_configuration(
-                event_source.configuration
+                event_source_response.configuration
             )
             # Call the implementation specific method to process the update
             # request before it is sent to the database
@@ -231,7 +228,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
         # Serialize the configuration back into the response
         event_source_response.set_configuration(
-            config.dict(exclude_none=True, exclude_unset=True)
+            response_config.dict(exclude_none=True)
         )
         # Return the response to the user
         return event_source_response
@@ -273,9 +270,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             logger.warning(f"Force deleting event source {event_source}.")
 
         # Serialize the configuration update back into the update request
-        event_source.set_configuration(
-            config.dict(exclude_none=True, exclude_unset=True)
-        )
+        event_source.set_configuration(config.dict(exclude_none=True))
 
         # Delete the event source from the database
         self.zen_store.delete_event_source(
@@ -306,9 +301,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
                 event_source=event_source, config=config
             )
             # Serialize the configuration back into the response
-            event_source.set_configuration(
-                config.dict(exclude_none=True, exclude_unset=True)
-            )
+            event_source.set_configuration(config.dict(exclude_none=True))
 
         # Return the response to the user
         return event_source

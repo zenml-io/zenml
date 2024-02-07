@@ -408,9 +408,10 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
 
             # Set the new secret in the configuration returned to the user
             config.webhook_secret = secret_key_value
-            # Remove hidden field from the response
-            config.rotate_secret = None
-            config.webhook_secret_id = None
+
+        # Remove hidden fields from the response
+        config.rotate_secret = None
+        config.webhook_secret_id = None
 
     def _process_event_source_delete(
         self,
@@ -436,6 +437,10 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
                 )
             except KeyError:
                 pass
+
+        # Remove hidden fields from the response
+        config.rotate_secret = None
+        config.webhook_secret_id = None
 
     def _process_event_source_response(
         self, event_source: EventSourceResponse, config: EventSourceConfig

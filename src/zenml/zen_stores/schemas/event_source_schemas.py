@@ -148,10 +148,14 @@ class EventSourceSchema(NamedSchema, table=True):
         Returns:
             The updated `EventSourceSchema`.
         """
-        for field, value in update.dict(exclude_unset=True).items():
+        for field, value in update.dict(
+            exclude_unset=True, exclude_none=True
+        ).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(
-                    json.dumps(update.configuration).encode("utf-8")
+                    json.dumps(
+                        update.configuration, default=pydantic_encoder
+                    ).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)

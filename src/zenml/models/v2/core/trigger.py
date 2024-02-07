@@ -19,6 +19,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -26,7 +27,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.event_source import EventSourceResponse
@@ -45,12 +45,25 @@ class TriggerBase(BaseModel):
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event_source_id: UUID
-    event_filter: Dict[str, Any]
+    event_source_id: UUID = Field(
+        title="The event source that activates this trigger.",
+    )
+    event_filter: Dict[str, Any] = Field(
+        title="Filter applied to events that activate this trigger.",
+    )
 
-    action: Dict[str, Any]
-    action_flavor: str
-    action_subtype: str
+    action: Dict[str, Any] = Field(
+        title="The configuration for the action that is executed by this "
+        "trigger.",
+    )
+    action_flavor: str = Field(
+        title="The flavor of the action that is executed by this trigger.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    action_subtype: str = Field(
+        title="The subtype of the action that is executed by this trigger.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 # ------------------ Request Model ------------------
@@ -63,22 +76,32 @@ class TriggerRequest(TriggerBase, WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-@update_model
-class TriggerUpdate(TriggerRequest):
-    """Update model for stacks."""
+class TriggerUpdate(BaseZenModel):
+    """Update model for triggers."""
 
-    name: str = Field(
-        title="The name of the Trigger.", max_length=STR_FIELD_MAX_LENGTH
-    )
-    description: str = Field(
-        default="",
-        title="The description of the trigger",
+    name: Optional[str] = Field(
+        default=None,
+        title="The new name for the Trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event_filter: Dict[str, Any]
-    action: Dict[str, Any]
-
-    is_active: Optional[bool]
+    description: Optional[str] = Field(
+        default=None,
+        title="The new description for the trigger",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    event_filter: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="New filter applied to events that activate this trigger.",
+    )
+    action: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The new configuration for the action that is executed by this "
+        "trigger.",
+    )
+    is_active: Optional[bool] = Field(
+        default=None,
+        title="The new status of the trigger.",
+    )
 
 
 # ------------------ Response Model ------------------

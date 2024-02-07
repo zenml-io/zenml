@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
+import copy
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -101,7 +102,7 @@ class EventSourceUpdate(BaseZenModel):
         return EventSourceUpdate(
             name=response.name,
             description=response.description,
-            configuration=response.configuration,
+            configuration=copy.deepcopy(response.configuration),
             is_active=response.is_active,
         )
 

@@ -6913,7 +6913,9 @@ class SqlZenStore(BaseZenStore):
 
             # Verify that the trigger won't validate Unique
             self._fail_if_trigger_with_name_exists(
-                trigger=trigger, session=session
+                trigger_name=trigger.name,
+                workspace_id=trigger.workspace,
+                session=session,
             )
 
             new_trigger = TriggerSchema.from_request(trigger)
@@ -7007,7 +7009,9 @@ class SqlZenStore(BaseZenStore):
             if trigger_update.name:
                 if existing_trigger.name != trigger_update.name:
                     self._fail_if_trigger_with_name_exists(
-                        trigger=trigger_update, session=session
+                        trigger_name=trigger_update.name,
+                        workspace_id=existing_trigger.workspace.id,
+                        session=session,
                     )
 
             existing_trigger.update(
@@ -7045,13 +7049,15 @@ class SqlZenStore(BaseZenStore):
 
     def _fail_if_trigger_with_name_exists(
         self,
-        trigger: TriggerRequest,
+        trigger_name: str,
+        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a trigger with same name exists.
 
         Args:
-            trigger: The Trigger
+            trigger_name: The Trigger name
+            workspace_id: The workspace ID
             session: The Session
 
         Returns:
@@ -7062,16 +7068,16 @@ class SqlZenStore(BaseZenStore):
         """
         existing_domain_trigger = session.exec(
             select(TriggerSchema)
-            .where(TriggerSchema.name == trigger.name)
-            .where(TriggerSchema.workspace_id == trigger.workspace)
+            .where(TriggerSchema.name == trigger_name)
+            .where(TriggerSchema.workspace_id == workspace_id)
         ).first()
         if existing_domain_trigger is not None:
             workspace = self._get_workspace_schema(
-                workspace_name_or_id=trigger.workspace, session=session
+                workspace_name_or_id=workspace_id, session=session
             )
             raise TriggerExistsError(
                 f"Unable to register trigger with name "
-                f"'{trigger.name}': Found an existing trigger with the same "
+                f"'{trigger_name}': Found an existing trigger with the same "
                 f"name in the active workspace, '{workspace.name}'."
             )
         return None
