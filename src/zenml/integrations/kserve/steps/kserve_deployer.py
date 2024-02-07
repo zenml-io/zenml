@@ -353,7 +353,7 @@ def kserve_custom_model_deployer_step(
     # verify that a custom deployer is defined
     if not params.custom_deploy_parameters:
         raise ValueError(
-            "Custom deploy parameter which contains the path of the",
+            "Custom deploy parameter which contains the path of the ",
             "custom predict function is required for custom model deployment.",
         )
 

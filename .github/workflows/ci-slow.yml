@@ -1,5 +1,5 @@
 ---
-name: Slow CI
+name: ci-slow
 on:
   push:
     branches: [main]
@@ -14,6 +14,7 @@ concurrency:
 jobs:
   run-slow-ci-label-is-set:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     steps:
       # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
       # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
@@ -37,6 +38,7 @@ jobs:
           echo "Please add the 'run-slow-ci' label to this PR before merging."
           exit 1
   docstring-check:
+    if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
     steps:
@@ -50,6 +52,7 @@ jobs:
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
+    if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     runs-on: ubuntu-dind-runners
     steps:
@@ -61,6 +64,7 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations-mysql.sh sqlite
   small-checks:
+    if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
     steps:
@@ -98,6 +102,7 @@ jobs:
           pip install alembic
           bash scripts/check-alembic-branches.sh
   custom-ubuntu-unit-test:
+    if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
@@ -110,6 +115,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-unit-test:
+    if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
@@ -122,6 +128,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   macos-unit-test:
+    if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
@@ -134,6 +141,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   windows-integration-test:
+    if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
@@ -148,6 +156,7 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
   macos-integration-test:
+    if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
@@ -162,6 +171,7 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
   custom-ubuntu-integration-test:
+    if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
