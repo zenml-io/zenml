@@ -14,7 +14,7 @@
 """Base implementation of actions."""
 import json
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, Type
+from typing import Any, ClassVar, Dict, Type, List, TYPE_CHECKING
 
 from zenml.enums import PluginType
 from zenml.models import (
@@ -28,6 +28,10 @@ from zenml.plugins.base_plugin_flavor import (
     BasePluginConfig,
     BasePluginFlavor,
 )
+
+if TYPE_CHECKING:
+    from zenml.zen_server.rbac.models import Resource
+
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -64,6 +68,31 @@ class BaseActionHandler(BasePlugin, ABC):
             trigger_execution: The trigger_execution object from the database
         """
         pass
+
+    @abstractmethod
+    def extract_resources(
+        self,
+        action_config: ActionConfig,
+    ) -> List["Resource"]:
+        """Extract related resources for this action."""
+
+    def validate_and_action_configuration(
+            self, event_source_config: Dict[str, Any]
+    ) -> ActionConfig:
+        """Validates the action configuration.
+
+        Args:
+            event_source_config: The action configuration to validate.
+
+        Raises:
+            ValueError: if the configuration is invalid.
+        """
+        try:
+            return self.config_class(**event_source_config)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid configuration for event source: {e}."
+            ) from e
 
 
 # -------------------- Flavors ---------------------------------------------
@@ -108,3 +137,4 @@ class BaseActionFlavor(BasePluginFlavor, ABC):
             type=cls.TYPE,
             subtype=cls.SUBTYPE,
         )
+

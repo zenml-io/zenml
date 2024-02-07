@@ -17,6 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
+from zenml.actions.base_action import BaseActionHandler
 from zenml.constants import (
     API,
     ARTIFACTS,
@@ -39,7 +40,8 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
-from zenml.enums import MetadataResourceTypes
+from zenml.enums import MetadataResourceTypes, PluginType
+from zenml.event_sources.base_event_source import BaseEventSourceHandler
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     CodeRepositoryFilter,
