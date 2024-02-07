@@ -243,7 +243,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
             AuthorizationException: If the secret value could not be retrieved.
         """
         # Temporary solution to get the secret value for the Event Source
-        config = self.validate_event_filter_configuration(
+        config = self.validate_event_source_configuration(
             event_source.configuration
         )
         assert isinstance(config, GithubWebhookEventSourceConfiguration)
