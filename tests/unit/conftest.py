@@ -484,6 +484,8 @@ def sample_artifact_model() -> ArtifactResponse:
             created=datetime.now(),
             updated=datetime.now(),
             tags=[],
+            latest_version_name=f"random_version_name:{datetime.now()}",
+            latest_version_id=uuid4(),
         ),
         metadata=ArtifactResponseMetadata(
             has_custom_name=True,
