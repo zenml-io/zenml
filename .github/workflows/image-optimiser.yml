@@ -9,7 +9,7 @@ jobs:
   build:
     # Only run on non-draft PRs within the same repository.
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft
-      == false == false
+      == false
     name: calibreapp/image-actions
     runs-on: ubuntu-latest
     steps:
