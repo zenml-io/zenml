@@ -1,5 +1,42 @@
 <!-- markdown-link-check-disable -->
 
+# 0.55.2
+
+This patch comes with a variety of new features, bug-fixes, and documentation updates.
+
+Some of the most important changes include: 
+
+- The ability to add tags to outputs through the step context
+- Allowing the secret stores to utilize the implicit authentication method of AWS/GCP/Azure Service Connectors
+- [Lazy loading client methods](https://docs.zenml.io/v/docs/user-guide/advanced-guide/data-management/late-materialization) in a pipeline context
+- Updates on the Vertex orchestrator to switch to the native VertexAI scheduler
+- The new [HyperAI](https://hyperai.ai) integration featuring a new orchestrator and service connector
+- Bumping the mlflow version to 2.10.0
+
+We'd like to give a special thanks to @christianversloot and @francoisserra for their contributions. 
+
+## What's Changed
+* `0.55.1` in migration testing by @avishniakov in https://github.com/zenml-io/zenml/pull/2368
+* Credential-less AWS/GCP/Azure Secrets Store support by @stefannica in https://github.com/zenml-io/zenml/pull/2365
+* Small docs updates by @strickvl in https://github.com/zenml-io/zenml/pull/2359
+* generic `Client()` getters lazy loading by @avishniakov in https://github.com/zenml-io/zenml/pull/2323
+* Added slack settings OSSK-382 by @htahir1 in https://github.com/zenml-io/zenml/pull/2378
+* Label triggered slow ci by @avishniakov in https://github.com/zenml-io/zenml/pull/2379
+* Remove unused `is-slow-ci` input from fast and slow integration testing by @strickvl in https://github.com/zenml-io/zenml/pull/2382
+* Add deprecation warning for `ExternalArtifact` non-value features by @avishniakov in https://github.com/zenml-io/zenml/pull/2375
+* Add telemetry pipeline run ends by @htahir1 in https://github.com/zenml-io/zenml/pull/2377
+* Updating the `update_model` decorator  by @bcdurak in https://github.com/zenml-io/zenml/pull/2136
+* Mocked API docs building by @avishniakov in https://github.com/zenml-io/zenml/pull/2360
+* Add outputs tags function by @avishniakov in https://github.com/zenml-io/zenml/pull/2383
+* Bump mlflow to v2.10.0 by @christianversloot in https://github.com/zenml-io/zenml/pull/2374
+* Fix sharing of model versions by @schustmi in https://github.com/zenml-io/zenml/pull/2380
+* Fix GCP service connector login to overwrite existing valid credentials by @stefannica in https://github.com/zenml-io/zenml/pull/2392
+* Update `has_custom_name` for legacy artifacts by @avishniakov in https://github.com/zenml-io/zenml/pull/2384
+* Use native VertexAI scheduler capability instead of old GCP official workaround by @francoisserra in https://github.com/zenml-io/zenml/pull/2310
+* HyperAI integration: orchestrator and service connector by @christianversloot in https://github.com/zenml-io/zenml/pull/2372
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.55.1...0.55.2
+
 # 0.55.1
 
 **If you are actively using the Model Control Plane features, we suggest that you directly upgrade to 0.55.1, bypassing 0.55.0.**
