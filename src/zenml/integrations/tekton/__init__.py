@@ -19,7 +19,6 @@ the CLI tool.
 """
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import TEKTON
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -31,7 +30,7 @@ class TektonIntegration(Integration):
     """Definition of Tekton Integration for ZenML."""
 
     NAME = TEKTON
-    REQUIREMENTS = ["kfp-tekton==1.7.1"]
+    REQUIREMENTS = ["kfp>=2.6.0", "kfp-kubernetes>=1.1.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
