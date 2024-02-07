@@ -15,6 +15,7 @@
 
 import os
 from typing import TYPE_CHECKING, Dict, Sequence
+from uuid import uuid4
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -44,11 +45,14 @@ def generate_artifact_uri(
     Returns:
         The URI of the output artifact.
     """
+    for banned_character in ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]:
+        output_name = output_name.replace(banned_character, "_")
     return os.path.join(
         artifact_store.path,
         step_run.name,
         output_name,
         str(step_run.id),
+        str(uuid4())[:8],  # add random subfolder to avoid collisions
     )
 
 

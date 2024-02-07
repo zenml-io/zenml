@@ -45,7 +45,7 @@
 
 [contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?color=7A3EF4
 
-[contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
+[contributors-url]: https://github.com/zenml-io/zenml/graphs/contributors
 
 [license-shield]: https://img.shields.io/github/license/zenml-io/zenml?color=9565F6
 
@@ -91,7 +91,7 @@
     <a href="https://www.zenml.io/company#team">Meet the Team</a>
     <br />
     <br />
-    🎉 Version 0.55.1 is out. Check out the release notes
+    🎉 Version 0.55.2 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />

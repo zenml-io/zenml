@@ -1160,8 +1160,6 @@ class Client(metaclass=ClientMetaClass):
 
         # Create the update model
         update_model = StackUpdate(  # type: ignore[call-arg]
-            workspace=self.active_workspace.id,
-            user=self.active_user.id,
             stack_spec_path=stack_spec_file,
         )
 
@@ -1665,8 +1663,6 @@ class Client(metaclass=ClientMetaClass):
         )
 
         update_model = ComponentUpdate(  # type: ignore[call-arg]
-            workspace=self.active_workspace.id,
-            user=self.active_user.id,
             component_spec_path=component_spec_path,
         )
 
@@ -2765,6 +2761,7 @@ class Client(metaclass=ClientMetaClass):
         new_name: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
+        has_custom_name: Optional[bool] = None,
     ) -> ArtifactResponse:
         """Update an artifact.
 
@@ -2773,6 +2770,7 @@ class Client(metaclass=ClientMetaClass):
             new_name: The new name of the artifact.
             add_tags: Tags to add to the artifact.
             remove_tags: Tags to remove from the artifact.
+            has_custom_name: Whether the artifact has a custom name.
 
         Returns:
             The updated artifact.
@@ -2782,6 +2780,7 @@ class Client(metaclass=ClientMetaClass):
             name=new_name,
             add_tags=add_tags,
             remove_tags=remove_tags,
+            has_custom_name=has_custom_name,
         )
         return self.zen_store.update_artifact(
             artifact_id=artifact.id, artifact_update=artifact_update
@@ -4296,15 +4295,13 @@ class Client(metaclass=ClientMetaClass):
         elif expiration_seconds is None:
             expiration_seconds = connector_model.expiration_seconds
 
-        connector_update = ServiceConnectorUpdate(
+        connector_update = ServiceConnectorUpdate(  # type: ignore[call-arg]
             name=name or connector_model.name,
             connector_type=connector.connector_type,
             description=description or connector_model.description,
             auth_method=auth_method or connector_model.auth_method,
             expires_skew_tolerance=expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
-            user=self.active_user.id,
-            workspace=self.active_workspace.id,
         )
         # Validate and configure the resources
         if configuration is not None:

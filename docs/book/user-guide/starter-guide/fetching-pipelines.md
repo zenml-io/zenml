@@ -98,8 +98,18 @@ If your most recent runs have failed, and you want to find the last run that has
 Calling a pipeline executes it and then returns the response of the freshly executed run.
 
 ```python
-last_run = training_pipeline()
+run = training_pipeline()
 ```
+
+{% hint style="warning" %}
+The run that you get back is the model stored in the ZenML database at the point of the method call. This means the pipeline run is still initializing and no steps have been run. To get the latest state can get a refreshed version from the client:
+
+```python
+from zenml.client import Client
+
+Client().get_pipeline_run(run.id) to get a refreshed version
+```
+{% endhint %}
 
 ### Get a run via the client
 
