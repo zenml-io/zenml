@@ -2,6 +2,11 @@
 description: Structuring an MLOps project
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Structuring an MLOps project
 
 Now that we've learned about managing [artifacts](manage-artifacts.md) and [models](track-ml-models.md), we can shift our attention again to the thing that brings them together: [Pipelines](create-an-ml-pipeline.md). This trifecta together will then inform how we structure our project.
