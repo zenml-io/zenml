@@ -465,7 +465,7 @@ def create_event_source(
             f"not supported."
         )
 
-    event_source_plugin = plugin_flavor_registry.get_plugin(
+    event_source_handler = plugin_flavor_registry.get_plugin(
         event_source.flavor,
         event_source.plugin_type,
         event_source.plugin_subtype,
@@ -473,7 +473,7 @@ def create_event_source(
 
     # Validate that the flavor and plugin_type correspond to an event source
     # implementation
-    if not isinstance(event_source_plugin, BaseEventSourceHandler):
+    if not isinstance(event_source_handler, BaseEventSourceHandler):
         raise ValueError(
             f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
             f"for flavor {event_source.flavor} is not a valid event source "
@@ -483,7 +483,7 @@ def create_event_source(
     return verify_permissions_and_create_entity(
         request_model=event_source,
         resource_type=ResourceType.EVENT_SOURCE,
-        create_method=event_source_plugin.create_event_source,
+        create_method=event_source_handler.create_event_source,
     )
 
 

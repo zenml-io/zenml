@@ -237,7 +237,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
         self,
         event_source: EventSourceResponse,
         force: bool = False,
-    ) -> EventSourceResponse:
+    ) -> None:
         """Process an event source delete request and delete the event source in the database.
 
         Args:
@@ -245,9 +245,6 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             force: Whether to force delete the event source from the database
                 even if the event source handler fails to delete the event
                 source.
-
-        Returns:
-            The deleted event source.
         """
         # Validate and instantiate the configuration from the original event
         # source
@@ -269,15 +266,10 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
             logger.warning(f"Force deleting event source {event_source}.")
 
-        # Serialize the configuration update back into the update request
-        event_source.set_configuration(config.dict(exclude_none=True))
-
         # Delete the event source from the database
         self.zen_store.delete_event_source(
             event_source_id=event_source.id,
         )
-        # Return the response to the user
-        return event_source
 
     def get_event_source(
         self, event_source: EventSourceResponse, hydrate: bool = False
@@ -481,13 +473,6 @@ class BaseEventSourceHandler(BasePlugin, ABC):
         Concrete event source handlers should override this method to add
         implementation specific functionality pertaining to the deletion of an
         event source.
-
-        The implementation may also modify the event source
-        and/or configuration in place to apply implementation specific
-        changes before the response is returned to the user.
-
-        The resulted configuration is serialized back into the event source
-        response before it is returned to the user.
 
         The implementation should use this method to deprovision any external
         resources required for the event source. If any of the deprovisioning
