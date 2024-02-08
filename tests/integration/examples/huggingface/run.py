@@ -15,22 +15,30 @@ import click
 from pipelines import (
     seq_classifier_train_eval_pipeline,
     token_classifier_train_eval_pipeline,
+    huggingface_deployment_pipeline,
+    inference_pipeline,
 )
 
 
 @click.command()
 @click.option(
-    "--nlp_task",
-    type=click.Choice(["token-classification", "sequence-classification"]),
+    "--task",
+    type=click.Choice(
+        ["token-classification", "sequence-classification", "deployment"]
+    ),
     default="sequence-classification",
-    help="Name NLP task i.e. token-classification, sequence-classification",
+    help="Name of the task i.e. token-classification, sequence-classification",
 )
-def main(nlp_task: str):
-    if nlp_task == "token-classification":
+def main(task: str):
+    if task == "token-classification":
         token_classifier_train_eval_pipeline()
 
-    elif nlp_task == "sequence-classification":
+    elif task == "sequence-classification":
         seq_classifier_train_eval_pipeline()
+
+    elif task == "deployment":
+        huggingface_deployment_pipeline()
+        inference_pipeline()
 
 
 if __name__ == "__main__":
