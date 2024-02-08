@@ -296,6 +296,8 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             if step_run.status == ExecutionStatus.COMPLETED:
                 producer_step_run_id = step_run.id
                 producer_pipeline_run_id = step_run.pipeline_run_id
+            else:
+                producer_step_run_id = step_run.original_step_run_id
 
         # Create the body of the model
         body = ArtifactVersionResponseBody(
