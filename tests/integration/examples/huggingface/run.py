@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 import click
 from pipelines import (
-    seq_classifier_train_eval_pipeline,
-    token_classifier_train_eval_pipeline,
     huggingface_deployment_pipeline,
     inference_pipeline,
+    seq_classifier_train_eval_pipeline,
+    token_classifier_train_eval_pipeline,
 )
 
 

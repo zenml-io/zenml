@@ -18,7 +18,7 @@ from tests.integration.examples.utils import run_example
 from zenml.client import Client
 
 
-def test_huggingfacce_deployment(request: pytest.FixtureRequest) -> None:
+def test_huggingface_deployment(request: pytest.FixtureRequest) -> None:
     """Runs the huggingface deployment and inference example."""
 
     with run_example(
