@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the Huggingface Deployment service."""
+"""Implementation of the Hugging Face Deployment service."""
 
 from typing import Any, Generator, Optional, Tuple
 
@@ -39,7 +39,7 @@ POLLING_TIMEOUT = 1200
 
 
 class HuggingFaceServiceConfig(HuggingFaceBaseConfig, ServiceConfig):
-    """Huggingface service configurations.
+    """Hugging Face service configurations.
 
     Attributes:
         model_name: the name of the model.
@@ -49,15 +49,15 @@ class HuggingFaceServiceConfig(HuggingFaceBaseConfig, ServiceConfig):
 
 
 class HuggingFaceServiceStatus(ServiceStatus):
-    """Huggingface service status."""
+    """Hugging Face service status."""
 
 
 class HuggingFaceDeploymentService(BaseDeploymentService):
-    """HuggingFace model deployment service.
+    """Hugging Face model deployment service.
 
     Attributes:
         SERVICE_TYPE: a service type descriptor with information describing
-            the Huggingface deployment service class
+            the Hugging Face deployment service class
         config: service configuration
     """
 
@@ -65,7 +65,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         name="huggingface-deployment",
         type="model-serving",
         flavor="huggingface",
-        description="Huggingface inference endpoint prediction service",
+        description="Hugging Face inference endpoint prediction service",
     )
     config: HuggingFaceServiceConfig
     status: HuggingFaceServiceStatus = Field(
@@ -73,7 +73,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
     )
 
     def __init__(self, config: HuggingFaceServiceConfig, **attrs: Any):
-        """Initialize the Huggingface deployment service.
+        """Initialize the Hugging Face deployment service.
 
         Args:
             config: service configuration
@@ -83,7 +83,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
 
     @property
     def hf_endpoint(self) -> InferenceEndpoint:
-        """Get the deployed Huggingface inference endpoint.
+        """Get the deployed Hugging Face inference endpoint.
 
         Returns:
             Huggingface inference endpoint.
@@ -108,15 +108,15 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
 
     @property
     def inference_client(self) -> InferenceClient:
-        """Get the Huggingface InferenceClient from Inference Endpoint.
+        """Get the Hugging Face InferenceClient from Inference Endpoint.
 
         Returns:
-            Huggingface inference client.
+            Hugging Face inference client.
         """
         return self.hf_endpoint.client
 
     def provision(self) -> None:
-        """Provision or update remote Huggingface deployment instance.
+        """Provision or update remote Hugging Face deployment instance.
 
         Raises:
             Exception: If any unexpected error while creating inference endpoint.
@@ -146,11 +146,11 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             # Check if the endpoint URL is available after provisioning
             if self.hf_endpoint.url is not None:
                 logger.info(
-                    "Huggingface inference endpoint successfully deployed."
+                    "Hugging Face inference endpoint successfully deployed."
                 )
             else:
                 logger.error(
-                    "Failed to start huggingface inference endpoint service: No URL available."
+                    "Failed to start Hugging Face inference endpoint service: No URL available."
                 )
 
         except Exception as e:
@@ -159,14 +159,14 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             )
             # Catch-all for any other unexpected errors
             raise Exception(
-                f"An unexpected error occurred while provisioning the Huggingface inference endpoint: {e}"
+                f"An unexpected error occurred while provisioning the Hugging Face inference endpoint: {e}"
             )
 
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the HuggingFace deployment.
+        """Check the the current operational state of the Hugging Face deployment.
 
         Returns:
-            The operational state of the HuggingFace deployment and a message
+            The operational state of the Hugging Face deployment and a message
             providing additional information about that state (e.g. a
             description of the error, if one is encountered).
         """
@@ -179,33 +179,33 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         if self.hf_endpoint.status == InferenceEndpointStatus.RUNNING:
             return (
                 ServiceState.ACTIVE,
-                "HuggingFace Inference Endpoint deployment is available",
+                "Hugging Face Inference Endpoint deployment is available",
             )
 
         elif self.hf_endpoint.status == InferenceEndpointStatus.SCALED_TO_ZERO:
             return (
                 ServiceState.ACTIVE,
-                "HuggingFace Inference Endpoint deployment is scaled to zero",
+                "Hugging Face Inference Endpoint deployment is scaled to zero",
             )
 
         elif self.hf_endpoint.status == InferenceEndpointStatus.FAILED:
             return (
                 ServiceState.ERROR,
-                "HuggingFace Inference Endpoint deployment failed: ",
+                "Hugging Face Inference Endpoint deployment failed: ",
             )
 
         elif self.hf_endpoint.status == InferenceEndpointStatus.PENDING:
             return (
                 ServiceState.PENDING_STARTUP,
-                "HuggingFace Inference Endpoint deployment is being created: ",
+                "Hugging Face Inference Endpoint deployment is being created: ",
             )
         return (
             ServiceState.PENDING_STARTUP,
-            "HuggingFace Inference Endpoint deployment is being created: ",
+            "Hugging Face Inference Endpoint deployment is being created: ",
         )
 
     def deprovision(self, force: bool = False) -> None:
-        """Deprovision the remote HuggingFace deployment instance.
+        """Deprovision the remote Hugging Face deployment instance.
 
         Args:
             force: if True, the remote deployment instance will be
@@ -215,7 +215,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
             self.hf_endpoint.delete()
         except HfHubHTTPError:
             logger.error(
-                "Huggingface Inference Endpoint is deleted or cannot be found."
+                "Hugging Face Inference Endpoint is deleted or cannot be found."
             )
             pass
 
@@ -235,7 +235,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         """
         if not self.is_running:
             raise Exception(
-                "Huggingface endpoint inference service is not running. "
+                "Hugging Face endpoint inference service is not running. "
                 "Please start the service before making predictions."
             )
         if self.hf_endpoint.prediction_url is not None:

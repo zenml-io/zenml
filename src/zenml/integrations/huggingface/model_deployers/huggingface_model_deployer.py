@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the Huggingface Model Deployer."""
+"""Implementation of the Hugging Face Model Deployer."""
 
 from typing import Any, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
@@ -44,7 +44,7 @@ UUID_SLICE_LENGTH: int = 8
 
 
 class HuggingFaceModelDeployer(BaseModelDeployer):
-    """Huggingface endpoint model deployer."""
+    """Hugging Face endpoint model deployer."""
 
     NAME: ClassVar[str] = "HuggingFace"
     FLAVOR: ClassVar[
@@ -53,7 +53,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
 
     @property
     def config(self) -> HuggingFaceModelDeployerConfig:
-        """Config class for the Huggingface Model deployer settings class.
+        """Config class for the Hugging Face Model deployer settings class.
 
         Returns:
             The configuration.
@@ -62,7 +62,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
 
     @property
     def deployed_endpoints(self) -> Any:
-        """Get list of deployed endpoint from Huggingface.
+        """Get list of deployed endpoint from Hugging Face.
 
         Returns:
             List of deployed endpoints.
@@ -97,16 +97,16 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
     def _create_new_service(
         self, timeout: int, config: HuggingFaceServiceConfig
     ) -> HuggingFaceDeploymentService:
-        """Creates a new HuggingFaceDeploymentService.
+        """Creates a new Hugging FaceDeploymentService.
 
         Args:
-            timeout: the timeout in seconds to wait for the Huggingface inference endpoint
+            timeout: the timeout in seconds to wait for the Hugging Face inference endpoint
                 to be provisioned and successfully started or updated.
-            config: the configuration of the model to be deployed with Huggingface model deployer.
+            config: the configuration of the model to be deployed with Hugging Face model deployer.
 
         Returns:
             The HuggingFaceServiceConfig object that can be used to interact
-            with the Huggingface inference endpoint.
+            with the Hugging Face inference endpoint.
         """
         # create a new service for the new model
         service = HuggingFaceDeploymentService(config)
@@ -151,10 +151,10 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         """Stop existing services.
 
         Args:
-            timeout: the timeout in seconds to wait for the Huggingface
+            timeout: the timeout in seconds to wait for the Hugging Face
                 deployment to be stopped.
             force: if True, force the service to stop
-            existing_service: Existing Huggingface deployment service
+            existing_service: Existing Hugging Face deployment service
         """
         # stop the older service
         existing_service.stop(timeout=timeout, force=force)
@@ -165,24 +165,24 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         replace: bool = True,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
-        """Create a new Huggingface deployment service or update an existing one.
+        """Create a new Hugging Face deployment service or update an existing one.
 
         This should serve the supplied model and deployment configuration.
 
         Args:
-            config: the configuration of the model to be deployed with Huggingface.
+            config: the configuration of the model to be deployed with Hugging Face.
                 Core
             replace: set this flag to True to find and update an equivalent
-                Huggingface deployment server with the new model instead of
+                Hugging Face deployment server with the new model instead of
                 starting a new deployment server.
-            timeout: the timeout in seconds to wait for the Huggingface endpoint
+            timeout: the timeout in seconds to wait for the Hugging Face endpoint
                 to be provisioned and successfully started or updated. If set
-                to 0, the method will return immediately after the Huggingface
+                to 0, the method will return immediately after the Hugging Face
                 server is provisioned, without waiting for it to fully start.
 
         Returns:
-            The ZenML Huggingface deployment service object that can be used to
-            interact with the remote Huggingface inference endpoint server.
+            The ZenML Hugging Face deployment service object that can be used to
+            interact with the remote Hugging Face inference endpoint server.
         """
         config = cast(HuggingFaceServiceConfig, config)
         service = None
@@ -217,7 +217,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         if service:
             # update an equivalent service in place
             logger.info(
-                f"Updating an existing Huggingface deployment service: {service}"
+                f"Updating an existing Hugging Face deployment service: {service}"
             )
 
             service_metadata = service.dict()
@@ -235,7 +235,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
             # create a new HuggingFaceDeploymentService instance
             service = self._create_new_service(timeout, config)
             logger.info(
-                f"Creating a new huggingface inference endpoint service: {service}"
+                f"Creating a new Hugging Face inference endpoint service: {service}"
             )
 
         return cast(BaseService, service)
@@ -251,12 +251,12 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
-        """Find one or more Huggingface model services that match the given criteria.
+        """Find one or more Hugging Face model services that match the given criteria.
 
         Args:
             running: if true, only running services will be returned.
-            service_uuid: the UUID of the Huggingface service that was
-                originally used to create the Huggingface deployment resource.
+            service_uuid: the UUID of the Hugging Face service that was
+                originally used to create the Hugging Face deployment resource.
             pipeline_name: name of the pipeline that the deployed model was part
                 of.
             run_name: Name of the pipeline run which the deployed model was
@@ -265,17 +265,17 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
                 that deployed the model.
             model_name: the name of the deployed model.
             model_uri: URI of the deployed model.
-            model_type: the Huggingface server implementation used to serve
+            model_type: the Hugging Face server implementation used to serve
                 the model
 
         Raises:
             TypeError: If service type does not match HuggingFaceDeploymentService
 
         Returns:
-            One or more Huggingface service objects representing Huggingface
+            One or more Hugging Face service objects representing Hugging Face
             model servers that match the input search criteria.
         """
-        # Use a Huggingface deployment service configuration to compute the labels
+        # Use a Hugging Face deployment service configuration to compute the labels
         config = HuggingFaceServiceConfig(
             pipeline_name=pipeline_name or "",
             run_name=run_name or "",

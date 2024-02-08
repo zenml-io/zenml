@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the Huggingface Deployer step."""
+"""Implementation of the Hugging Face Deployer step."""
 
 from typing import cast
 
@@ -37,13 +37,13 @@ def huggingface_model_deployer_step(
     deploy_decision: bool = True,
     timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
 ) -> HuggingFaceDeploymentService:
-    """Huggingface model deployer pipeline step.
+    """Hugging Face model deployer pipeline step.
 
     This step can be used in a pipeline to implement continuous
-    deployment with Huggingface Inference Endpoint.
+    deployment with Hugging Face Inference Endpoint.
 
     Args:
-        service_config: Huggingface deployment service configuration.
+        service_config: Hugging Face deployment service configuration.
         deploy_decision: whether to deploy the model or not
         timeout: the timeout in seconds to wait for the deployment to start
 
@@ -93,7 +93,7 @@ def huggingface_model_deployer_step(
             service.start(timeout=timeout)
         return service
 
-    # invoke the Huggingface model deployer to create a new service
+    # invoke the Hugging Face model deployer to create a new service
     # or update an existing one that was previously deployed for the same
     # model
     service = cast(
@@ -104,7 +104,7 @@ def huggingface_model_deployer_step(
     )
 
     logger.info(
-        f"Huggingface deployment service started and reachable at:\n"
+        f"Hugging Face deployment service started and reachable at:\n"
         f"    {service.prediction_url}\n"
     )
 

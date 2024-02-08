@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Huggingface model deployer flavor."""
+"""Hugging Face model deployer flavor."""
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import BaseModel
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 
 class HuggingFaceBaseConfig(BaseModel):
-    """Huggingface Inference Endpoint configuration."""
+    """Hugging Face Inference Endpoint configuration."""
 
     endpoint_name: str = "zenml-"
     repository: Optional[str] = None
@@ -54,11 +54,11 @@ class HuggingFaceBaseConfig(BaseModel):
 class HuggingFaceModelDeployerConfig(
     BaseModelDeployerConfig, HuggingFaceBaseConfig
 ):
-    """Configuration for the Huggingface model deployer.
+    """Configuration for the Hugging Face model deployer.
 
     Attributes:
-        token: Huggingface token used for authentication
-        namespace: Huggingface namespace used to list endpoints
+        token: Hugging Face token used for authentication
+        namespace: Hugging Face namespace used to list endpoints
     """
 
     token: str = SecretField()
@@ -69,7 +69,7 @@ class HuggingFaceModelDeployerConfig(
 
 
 class HuggingFaceModelDeployerFlavor(BaseModelDeployerFlavor):
-    """Huggingface Endpoint model deployer flavor."""
+    """Hugging Face Endpoint model deployer flavor."""
 
     @property
     def name(self) -> str:

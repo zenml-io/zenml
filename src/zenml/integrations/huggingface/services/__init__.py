@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Huggingface Service."""
+"""Initialization of the Hugging Face Service."""
 
 from zenml.integrations.huggingface.services.huggingface_deployment import (  # noqa
     HuggingFaceDeploymentService,

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Huggingface model deployers."""
+"""Initialization of the Hugging Face model deployers."""
 
 from zenml.integrations.huggingface.model_deployers.huggingface_model_deployer import (  # noqa
     HuggingFaceModelDeployer,
