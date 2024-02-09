@@ -15,7 +15,19 @@
 
 import time
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, Generator, Optional, Tuple, Type, cast
+from functools import wraps
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Generator,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -29,6 +41,58 @@ from zenml.services.service_type import ServiceType
 from zenml.utils.typed_model import BaseTypedModel, BaseTypedModelMeta
 
 logger = get_logger(__name__)
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def handle_service_exceptions(func: F) -> F:
+    """A decorator that wraps service methods to catch exceptions.
+
+    This decorator assumes that the first argument to the wrapped method
+    is always an instance of a service class derived from BaseService.
+    It catches any exception raised by the method, logs the exception,
+    updates the service instance's status to ERROR, and then re-raises
+    the exception.
+
+    Args:
+        func (Callable[..., Any]): The service method to be wrapped.
+
+    Returns:
+        Callable[..., Any]: The wrapped method with exception handling.
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        """Wrapper function for the decorated method.
+
+        Args:
+            *args: positional arguments.
+            **kwargs: keyword arguments.
+
+        Returns:
+            The result of the wrapped method.
+
+        Raises:
+            raises the same exception as the wrapped method.
+        """
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            # Extract the service instance from the args
+            service_instance = args[0]
+            if not isinstance(service_instance, BaseService):
+                raise ValueError(
+                    "The first argument must be an instance of BaseService."
+                )
+
+            # Log the error and update the service status
+            service_instance.status.update_state(ServiceState.ERROR, str(e))
+            logger.error(f"Error in service {service_instance}: {e}")
+
+            # Re-raise the exception
+            raise
+
+    return wrapper  # type: ignore
 
 
 class ServiceConfig(BaseTypedModel):
@@ -373,6 +437,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
         self.config = config
 
+    @handle_service_exceptions
     def start(self, timeout: int = 0) -> None:
         """Start the service and optionally wait for it to become active.
 
@@ -394,6 +459,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
                         + self.get_service_status_message()
                     )
 
+    @handle_service_exceptions
     def stop(self, timeout: int = 0, force: bool = False) -> None:
         """Stop the service and optionally wait for it to shutdown.
 
