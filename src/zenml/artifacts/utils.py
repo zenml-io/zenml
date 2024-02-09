@@ -1,3 +1,5 @@
+from pathlib import Path
+
 #  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -456,6 +458,9 @@ def save_artifact_binary_from_response(
         artifact: The artifact to save.
         path: The path to save the artifact to.
         overwrite: Whether to overwrite the file if it already exists.
+
+    Raises:
+        FileExistsError: If the file already exists and `overwrite` is `False`.
     """
     if not overwrite and fileio.exists(path):
         raise FileExistsError(
@@ -480,14 +485,21 @@ def save_artifact_binary_from_response(
         )
 
     if filepaths := artifact_store.listdir(artifact.uri):
-        # save a zipfile to 'path' containing all the files in 'filepaths'
-        with zipfile.ZipFile(path, "w") as zipf:
+        # save a zipfile to 'path' containing all the files
+        # in 'filepaths' with compression
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zipf:
             for file in filepaths:
                 with artifact_store.open(
-                    os.path.join(artifact.uri, file), "rb"
+                    Path(artifact.uri) / file, "rb"
                 ) as store_file:
-                    file_content = store_file.read()
-                    zipf.writestr(file, file_content)
+                    # Use a loop to read and write chunks of the file
+                    # instead of reading the entire file into memory
+                    CHUNK_SIZE = 8192
+                    while True:
+                        if file_content := store_file.read(CHUNK_SIZE):
+                            zipf.writestr(file, file_content)
+                        else:
+                            break
 
 
 def get_producer_step_of_artifact(

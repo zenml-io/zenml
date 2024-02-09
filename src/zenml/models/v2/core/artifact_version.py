@@ -340,17 +340,11 @@ class ArtifactVersionResponse(
             return
         from zenml.artifacts.utils import save_artifact_binary_from_response
 
-        try:
-            save_artifact_binary_from_response(
-                self,
-                path=path,
-                overwrite=overwrite,
-            )
-        except FileExistsError:
-            logger.error(
-                f"File already exists at path '{path}'. To overwrite, set "
-                "`overwrite` to `True`."
-            )
+        save_artifact_binary_from_response(
+            self,
+            path=path,
+            overwrite=overwrite,
+        )
 
     def read(self) -> Any:
         """(Deprecated) Materializes (loads) the data stored in this artifact.
