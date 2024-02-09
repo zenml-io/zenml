@@ -21,7 +21,6 @@ from zenml.constants import (
     API,
     ARTIFACTS,
     CODE_REPOSITORIES,
-    EVENT_SOURCES,
     GET_OR_CREATE,
     MODEL_VERSIONS,
     MODELS,
@@ -37,12 +36,10 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    TRIGGERS,
     VERSION_1,
     WORKSPACES,
 )
 from zenml.enums import MetadataResourceTypes
-from zenml.event_sources.base_event_source import BaseEventSourceHandler
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     CodeRepositoryFilter,
@@ -50,8 +47,6 @@ from zenml.models import (
     CodeRepositoryResponse,
     ComponentFilter,
     ComponentResponse,
-    EventSourceRequest,
-    EventSourceResponse,
     ModelRequest,
     ModelResponse,
     ModelVersionArtifactRequest,
@@ -86,14 +81,11 @@ from zenml.models import (
     StackFilter,
     StackRequest,
     StackResponse,
-    TriggerRequest,
-    TriggerResponse,
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (

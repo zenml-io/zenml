@@ -18,9 +18,10 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml import (
     EventSourceFilter,
+    EventSourceRequest,
     EventSourceResponse,
     EventSourceUpdate,
-    Page, EventSourceRequest,
+    Page,
 )
 from zenml.constants import API, EVENT_SOURCES, VERSION_1
 from zenml.event_sources.base_event_source import BaseEventSourceHandler
@@ -28,7 +29,8 @@ from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
-    verify_permissions_and_list_entities, verify_permissions_and_create_entity,
+    verify_permissions_and_create_entity,
+    verify_permissions_and_list_entities,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (

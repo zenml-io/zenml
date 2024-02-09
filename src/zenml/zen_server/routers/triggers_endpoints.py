@@ -30,10 +30,11 @@ from zenml.models import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
-    verify_permissions_and_update_entity, verify_permissions_and_create_entity,
+    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
