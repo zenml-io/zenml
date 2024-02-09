@@ -49,4 +49,5 @@ class BasePluginFlavorResponse(
     plugin_subtype: PluginSubType = Field(title="Subtype of the flavor.")
 
     class Config:
+        """Configuration for base plugin flavor response."""
         extra = Extra.allow
