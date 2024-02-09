@@ -17,6 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
+from zenml import TriggerRequest
 from zenml.constants import API, TRIGGER_EXECUTIONS, TRIGGERS, VERSION_1
 from zenml.models import (
     Page,
@@ -32,7 +33,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
-    verify_permissions_and_update_entity,
+    verify_permissions_and_update_entity, verify_permissions_and_create_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
@@ -103,6 +104,39 @@ def get_trigger(
     """
     return verify_permissions_and_get_entity(
         id=trigger_id, get_method=zen_store().get_trigger, hydrate=hydrate
+    )
+
+
+@router.post(
+    "",
+    response_model=TriggerResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_trigger(
+    trigger: TriggerRequest,
+    _: AuthContext = Security(authorize),
+) -> TriggerResponse:
+    """Creates a trigger.
+
+    Args:
+        trigger: Trigger to register.
+
+    Returns:
+        The created trigger.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the stack
+            component does not match the current workspace.
+    """
+    # TODO: Validate event_source exists
+    # TODO: Validate event_filter is valid
+    # TODO: Validate action is valid
+
+    return verify_permissions_and_create_entity(
+        request_model=trigger,
+        resource_type=ResourceType.TRIGGER,
+        create_method=zen_store().create_trigger,
     )
 
 
