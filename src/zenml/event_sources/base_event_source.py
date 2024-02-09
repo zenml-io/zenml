@@ -73,7 +73,8 @@ class EventFilterConfig(BaseModel, ABC):
         Args:
             event: The inbound event instance.
 
-        Returns: Whether the filter matches the event.
+        Returns:
+            Whether the filter matches the event.
         """
 
 
@@ -81,7 +82,40 @@ class EventFilterConfig(BaseModel, ABC):
 
 
 class BaseEventSourceHandler(BasePlugin, ABC):
-    """Implementation for an EventPlugin."""
+    """Base event source handler implementation.
+
+    This class provides a base implementation for event source handlers.
+
+    The base event source handler acts as an intermediary between the REST API
+    endpoints and the ZenML store for all operations related to event sources.
+    It implements all operations related creating, updating, deleting, and
+    fetching event sources from the database. It also provides a set of methods
+    that can be overridden by concrete event source handlers that need to
+    react to or participate in the lifecycle of an event source:
+
+    * `_validate_event_source_request`: validate and/or modify an event source
+    before it is created (before it is persisted in the database)
+    * `_process_event_source_request`: react to a new event source being created
+    (after it is persisted in the database)
+    * `_validate_event_source_update`: validate and/or modify an event source
+    update before it is applied (before the update is saved in the database)
+    * `_process_event_source_update`: react to an event source being updated
+    (after the update is saved in the database)
+    * `_process_event_source_delete`: react to an event source being deleted
+    (before it is deleted from the database)
+    * `_process_event_source_response`: modify an event source before it is
+    returned to the user
+
+    In addition to optionally overriding these methods, every event source
+    handler must define and provide configuration classes for the event source
+    and the event filter. These are used to validate and instantiate the
+    configuration from the user requests.
+
+    Finally, since event source handlers are also sources of events, the base
+    class provides methods that implementations can use to dispatch events to
+    the central event hub where they can be processed and eventually trigger
+    actions.
+    """ 
 
     @property
     @abstractmethod
@@ -339,6 +373,18 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             raise ValueError(
                 f"Invalid configuration for event filter: {e}."
             ) from e
+
+    def dispatch_event(self, event: BaseEvent) -> None:
+        """Dispatch an event to all active triggers that match the event.
+
+        Args:
+            event: The event to dispatch.
+        """
+        event_hub.process_event(
+            event=event,
+            event_source=event_source,
+        )
+
 
     def _validate_event_source_request(
         self, event_source: EventSourceRequest, config: EventSourceConfig
