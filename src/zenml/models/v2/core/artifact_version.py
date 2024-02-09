@@ -227,7 +227,7 @@ class ArtifactVersionResponse(
         return self.get_body().tags
 
     @property
-    def producer_pipeline_run_id(self) -> Optional[str]:
+    def producer_pipeline_run_id(self) -> Optional[UUID]:
         """The `producer_pipeline_run_id` property.
 
         Returns:
