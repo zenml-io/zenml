@@ -13,9 +13,12 @@
 #  permissions and limitations under the License.
 """Utility functions for handling artifacts."""
 
+
 import base64
+import contextlib
 import os
 import tempfile
+import zipfile
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
@@ -440,6 +443,47 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
         data_type=artifact.data_type,
         uri=artifact.uri,
     )
+
+
+def save_artifact_binary_from_response(
+    artifact: "ArtifactVersionResponse",
+    path: str,
+    overwrite: bool = False,
+) -> None:
+    """Save the given artifact into a binary file.
+
+    Args:
+        artifact: The artifact to save.
+        path: The path to save the artifact to.
+        overwrite: Whether to overwrite the file if it already exists.
+    """
+    artifact_store_loaded = False
+    if artifact.artifact_store_id:
+        with contextlib.suppress(KeyError, ImportError):
+            artifact_store_model = Client().get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            artifact_store = StackComponent.from_model(artifact_store_model)
+            artifact_store_loaded = True
+
+    if not artifact_store_loaded:
+        logger.warning(
+            "Unable to restore artifact store while trying to load artifact "
+            "`%s`. If this artifact is stored in a remote artifact store, "
+            "this might lead to issues when trying to load the artifact.",
+            artifact.id,
+        )
+
+    if filepaths := artifact_store.listdir(artifact.uri):
+        # save a zipfile to 'path' containing all the files in 'filepaths'
+        with zipfile.ZipFile(path, "w") as zipf:
+            for file in filepaths:
+                with artifact_store.open(
+                    os.path.join(artifact.uri, file), "rb"
+                ) as store_file:
+                    file_content = store_file.read()
+                    zipf.writestr(file, file_content)
 
 
 def get_producer_step_of_artifact(

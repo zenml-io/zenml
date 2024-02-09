@@ -79,9 +79,7 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         title="ID of the artifact store in which this artifact is stored.",
         default=None,
     )
-    uri: str = Field(
-        title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
-    )
+    uri: str = Field(title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH)
     materializer: Source = Field(
         title="Materializer class to use for this artifact.",
     )
@@ -117,16 +115,12 @@ class ArtifactVersionUpdate(BaseModel):
 class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     """Response body for artifact versions."""
 
-    artifact: ArtifactResponse = Field(
-        title="Artifact to which this version belongs."
-    )
+    artifact: ArtifactResponse = Field(title="Artifact to which this version belongs.")
     version: Union[str, int] = Field(
         title="Version of the artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    uri: str = Field(
-        title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH
-    )
+    uri: str = Field(title="URI of the artifact.", max_length=TEXT_FIELD_MAX_LENGTH)
     type: ArtifactType = Field(title="Type of the artifact.")
     materializer: Source = Field(
         title="Materializer class to use for this artifact.",
@@ -321,6 +315,32 @@ class ArtifactVersionResponse(
 
         return load_artifact_from_response(self)
 
+    def save_binary(self, path: str, overwrite: bool = False) -> None:
+        """Loads binary data for an artifact with no materializing.
+
+        Any artifacts will be saved as a zip file to the given path.
+
+        Args:
+            path: The path to save the binary data to.
+            overwrite: Whether to overwrite the file if it already exists.
+
+        Returns:
+            The unmaterialized binary data.
+        """
+        from zenml.artifacts.utils import save_artifact_binary_from_response
+
+        try:
+            save_artifact_binary_from_response(
+                self,
+                path=path,
+                overwrite=overwrite,
+            )
+        except FileExistsError:
+            logger.error(
+                f"File already exists at path '{path}'. To overwrite, set "
+                f"`overwrite` to `True`."
+            )
+
     def read(self) -> Any:
         """(Deprecated) Materializes (loads) the data stored in this artifact.
 
@@ -493,9 +513,7 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         Raises:
             RuntimeError: always
         """
-        raise RuntimeError(
-            "Cannot access artifact metadata before pipeline runs."
-        )
+        raise RuntimeError("Cannot access artifact metadata before pipeline runs.")
 
     @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
