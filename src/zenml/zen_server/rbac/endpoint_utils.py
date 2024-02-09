@@ -6,9 +6,9 @@ from pydantic import BaseModel
 
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    BaseDBResponse,
     BaseFilter,
     BaseRequest,
-    BaseDBResponse,
     Page,
     UserScopedRequest,
 )

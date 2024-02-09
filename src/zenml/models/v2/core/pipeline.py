@@ -22,8 +22,8 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models import (
-    BaseFilter,
     BaseDBResponse,
+    BaseFilter,
     BaseResponseBody,
     BaseResponseMetadata,
     WorkspaceScopedFilter,

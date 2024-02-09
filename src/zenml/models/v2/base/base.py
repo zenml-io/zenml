@@ -100,6 +100,7 @@ AnyMetadata = TypeVar("AnyMetadata", bound=BaseResponseMetadata)
 
 class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
     """Base domain model for all responses."""
+
     # Body and metadata pair
     body: Optional["AnyBody"] = Field(title="The body of the resource.")
     metadata: Optional["AnyMetadata"] = Field(

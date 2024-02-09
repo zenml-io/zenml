@@ -21,8 +21,8 @@ from pydantic import BaseModel, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants
 from zenml.models.v2.base.base import (
-    BaseRequest,
     BaseDBResponse,
+    BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
 )
