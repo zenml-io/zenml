@@ -50,4 +50,5 @@ class BasePluginFlavorResponse(
 
     class Config:
         """Configuration for base plugin flavor response."""
+
         extra = Extra.allow
