@@ -1,5 +1,3 @@
-from pathlib import Path
-
 #  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,12 +13,12 @@ from pathlib import Path
 #  permissions and limitations under the License.
 """Utility functions for handling artifacts."""
 
-
 import base64
 import contextlib
 import os
 import tempfile
 import zipfile
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
