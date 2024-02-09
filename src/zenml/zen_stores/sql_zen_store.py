@@ -3678,16 +3678,12 @@ class SqlZenStore(BaseZenStore):
         existing_domain_event_source = session.exec(
             select(EventSourceSchema)
             .where(EventSourceSchema.name == event_source.name)
-            .where(EventSourceSchema.workspace_id == event_source.workspace)
         ).first()
         if existing_domain_event_source is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=event_source.workspace, session=session
-            )
             raise StackExistsError(
                 f"Unable to register event source with name "
-                f"'{event_source.name}': Found an existing event source with the same "
-                f"name in the active workspace, '{workspace.name}'."
+                f"'{event_source.name}': Found an existing event source with "
+                f"the same name."
             )
         return None
 
@@ -6914,7 +6910,6 @@ class SqlZenStore(BaseZenStore):
             # Verify that the trigger won't validate Unique
             self._fail_if_trigger_with_name_exists(
                 trigger_name=trigger.name,
-                workspace_id=trigger.workspace,
                 session=session,
             )
 
@@ -7010,7 +7005,6 @@ class SqlZenStore(BaseZenStore):
                 if existing_trigger.name != trigger_update.name:
                     self._fail_if_trigger_with_name_exists(
                         trigger_name=trigger_update.name,
-                        workspace_id=existing_trigger.workspace.id,
                         session=session,
                     )
 
@@ -7050,14 +7044,12 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_trigger_with_name_exists(
         self,
         trigger_name: str,
-        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a trigger with same name exists.
 
         Args:
             trigger_name: The Trigger name
-            workspace_id: The workspace ID
             session: The Session
 
         Returns:
@@ -7069,16 +7061,12 @@ class SqlZenStore(BaseZenStore):
         existing_domain_trigger = session.exec(
             select(TriggerSchema)
             .where(TriggerSchema.name == trigger_name)
-            .where(TriggerSchema.workspace_id == workspace_id)
         ).first()
         if existing_domain_trigger is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=workspace_id, session=session
-            )
             raise TriggerExistsError(
                 f"Unable to register trigger with name "
-                f"'{trigger_name}': Found an existing trigger with the same "
-                f"name in the active workspace, '{workspace.name}'."
+                f"'{trigger_name}': Found an existing trigger "
+                f"with the same name."
             )
         return None
 

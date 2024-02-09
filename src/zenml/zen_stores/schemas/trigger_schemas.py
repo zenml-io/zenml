@@ -77,16 +77,6 @@ class TriggerSchema(NamedSchema, table=True):
 
     __tablename__ = "trigger"
 
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="triggers")
-
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
@@ -166,7 +156,6 @@ class TriggerSchema(NamedSchema, table=True):
         """
         return cls(
             name=request.name,
-            workspace_id=request.workspace,
             user_id=request.user,
             action=base64.b64encode(
                 json.dumps(request.action).encode("utf-8")
@@ -206,7 +195,6 @@ class TriggerSchema(NamedSchema, table=True):
         metadata = None
         if hydrate:
             metadata = TriggerResponseMetadata(
-                workspace=self.workspace.to_model(),
                 event_filter=json.loads(
                     base64.b64decode(self.event_filter).decode()
                 ),

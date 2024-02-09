@@ -21,18 +21,18 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType, PluginType
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
+    UserScopedResponseBody,
+    UserScopedRequest,
+    UserScopedResponseMetadata,
+    UserScopedResponse
 )
 
 # ------------------ Request Model ------------------
 
 
-class EventSourceRequest(WorkspaceScopedRequest):
+class EventSourceRequest(UserScopedRequest):
     """BaseModel for all event sources."""
 
     name: str = Field(
@@ -110,7 +110,7 @@ class EventSourceUpdate(BaseZenModel):
 # ------------------ Response Model ------------------
 
 
-class EventSourceResponseBody(WorkspaceScopedResponseBody):
+class EventSourceResponseBody(UserScopedResponseBody):
     """ResponseBody for event sources."""
 
     flavor: str = Field(
@@ -135,7 +135,7 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
     is_active: bool
 
 
-class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
+class EventSourceResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for event sources."""
 
     description: str = Field(
@@ -149,7 +149,7 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
 
 
 class EventSourceResponse(
-    WorkspaceScopedResponse[
+    UserScopedResponse[
         EventSourceResponseBody, EventSourceResponseMetadata
     ]
 ):
@@ -255,7 +255,7 @@ class EventSourceResponse(
 # ------------------ Filter Model ------------------
 
 
-class EventSourceFilter(WorkspaceScopedFilter):
+class EventSourceFilter(BaseFilter):
     """Model to enable advanced filtering of all EventSourceModels."""
 
     name: Optional[str] = Field(

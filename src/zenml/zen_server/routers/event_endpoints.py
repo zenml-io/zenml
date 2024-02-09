@@ -20,7 +20,7 @@ from zenml import (
     EventSourceFilter,
     EventSourceResponse,
     EventSourceUpdate,
-    Page,
+    Page, EventSourceRequest,
 )
 from zenml.constants import API, EVENT_SOURCES, VERSION_1
 from zenml.event_sources.base_event_source import BaseEventSourceHandler
@@ -28,7 +28,7 @@ from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
-    verify_permissions_and_list_entities,
+    verify_permissions_and_list_entities, verify_permissions_and_create_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -124,6 +124,52 @@ def list_event_sources(
         filter_model=event_source_filter_model,
         resource_type=ResourceType.EVENT_SOURCE,
         list_method=list_event_sources_fn,
+    )
+
+
+@event_source_router.post(
+    "",
+    response_model=EventSourceResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_event_source(
+    event_source: EventSourceRequest,
+    _: AuthContext = Security(authorize),
+) -> EventSourceResponse:
+    """Creates an event source.
+
+    Args:
+        event_source: EventSource to register.
+
+    Returns:
+        The created event source.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the stack
+            component does not match the current workspace.
+        ValueError: If the plugin for an event source is not a valid event
+            source plugin.
+    """
+    event_source_handler = plugin_flavor_registry.get_plugin(
+        event_source.flavor,
+        event_source.plugin_type,
+        event_source.plugin_subtype,
+    )
+
+    # Validate that the flavor and plugin_type correspond to an event source
+    # implementation
+    if not isinstance(event_source_handler, BaseEventSourceHandler):
+        raise ValueError(
+            f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
+            f"for flavor {event_source.flavor} is not a valid event source "
+            "plugin."
+        )
+
+    return verify_permissions_and_create_entity(
+        request_model=event_source,
+        resource_type=ResourceType.EVENT_SOURCE,
+        create_method=event_source_handler.create_event_source,
     )
 
 

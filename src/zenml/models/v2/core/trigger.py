@@ -20,12 +20,13 @@ from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
+    UserScopedRequest,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
+    UserScopedResponse
 )
 
 if TYPE_CHECKING:
@@ -67,7 +68,7 @@ class TriggerBase(BaseModel):
 
 
 # ------------------ Request Model ------------------
-class TriggerRequest(TriggerBase, WorkspaceScopedRequest):
+class TriggerRequest(TriggerBase, UserScopedRequest):
     """Model for creating a new Trigger."""
 
     # executions: somehow we need to link to executed Actions here
@@ -107,7 +108,7 @@ class TriggerUpdate(BaseZenModel):
 # ------------------ Response Model ------------------
 
 
-class TriggerResponseBody(WorkspaceScopedResponseBody):
+class TriggerResponseBody(UserScopedResponseBody):
     """ResponseBody for triggers."""
 
     event_source_flavor: str
@@ -124,7 +125,7 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
     is_active: bool
 
 
-class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
+class TriggerResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for triggers."""
 
     event_filter: Dict[str, Any] = Field(
@@ -138,13 +139,17 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+
+
+class TriggerResponseResources(UserScopedResponseResources):
+    """Response resources for triggers."""
     event_source: "EventSourceResponse" = Field(
         title="The event source that activates this trigger.",
     )
 
 
 class TriggerResponse(
-    WorkspaceScopedResponse[TriggerResponseBody, TriggerResponseMetadata]
+    UserScopedResponse[TriggerResponseBody, TriggerResponseMetadata, TriggerResponseResources]
 ):
     """Response model for models."""
 
@@ -233,13 +238,13 @@ class TriggerResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().event_source
+        return self.get_resources().event_source
 
 
 # ------------------ Filter Model ------------------
 
 
-class TriggerFilter(WorkspaceScopedFilter):
+class TriggerFilter(BaseFilter):
     """Model to enable advanced filtering of all TriggerModels."""
 
     name: Optional[str] = Field(

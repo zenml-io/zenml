@@ -94,8 +94,16 @@ class BaseResponseMetadata(BaseZenModel):
     """
 
 
+class BaseResponseResources(BaseZenModel):
+    """Base resources model.
+
+    Used as a base class for all resources models associated with responses.
+    """
+
+
 AnyBody = TypeVar("AnyBody", bound=BaseResponseBody)
 AnyMetadata = TypeVar("AnyMetadata", bound=BaseResponseMetadata)
+AnyResources = TypeVar("AnyResources", bound=BaseResponseResources)
 
 
 class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
@@ -108,6 +116,9 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
     body: Optional["AnyBody"] = Field(title="The body of the resource.")
     metadata: Optional["AnyMetadata"] = Field(
         title="The metadata related to this resource."
+    )
+    resources: Optional["AnyResources"] = Field(
+        title="The resources related to this specific resource."
     )
 
     _response_update_strategy: (
@@ -162,6 +173,8 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
                 for either the name of the body fields and the
                 _method_body_mutation is set to ResponseBodyUpdate.DENY.
         """
+        # TODO: Validate the resources as well
+
         # Check whether the metadata exists in the hydrated version
         if hydrated_model.metadata is None:
             raise HydrationError(
@@ -310,6 +323,41 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
         assert self.metadata is not None
 
         return self.metadata
+
+    def get_resources(self) -> "AnyResources":
+        """Fetch the metadata of the entity.
+
+        Returns:
+            The metadata field of the response.
+
+        Raises:
+            IllegalOperationError: If the user lacks permission to access this
+                entity represented by this response.
+        """
+        if self.permission_denied:
+            raise IllegalOperationError(
+                f"Missing permissions to access {type(self).__name__} with "
+                f"ID {self.id}."
+            )
+
+        if self.resources is None:
+            # If the metadata is not there, check the class first.
+            resources_type = self.__fields__["resources"].type_
+
+            if len(resources_type.__fields__):
+                # If the resources class defines any fields, fetch the metadata
+                # through the hydrated version.
+                hydrated_version = self.get_hydrated_version()
+                self._validate_hydrated_version(hydrated_version)
+                self.resources = hydrated_version.resources
+            else:
+                # Otherwise, use the metadata class to create an empty metadata
+                # object.
+                self.resources = resources_type()
+
+        assert self.resources is not None
+
+        return self.resources
 
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:

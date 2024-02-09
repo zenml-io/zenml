@@ -311,7 +311,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         webhook_secret = SecretRequest(
             name=f"event_source-{str(event_source.id)}-{random_str(4)}".lower(),
             values={"webhook_secret": secret_key_value},
-            workspace=event_source.workspace.id,
+            workspace=self.zen_store.get_workspace("default").id,
             user=event_source.user.id,
             scope=SecretScope.WORKSPACE,
         )
@@ -384,7 +384,6 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
             previous_config, GithubWebhookEventSourceConfiguration
         )
         assert config.webhook_secret_id is not None
-
         if config.rotate_secret:
             # In case the secret is being rotated
             secret_key_value = random_str(12)

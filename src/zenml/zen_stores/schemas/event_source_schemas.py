@@ -44,16 +44,6 @@ class EventSourceSchema(NamedSchema, table=True):
 
     __tablename__ = "event_source"
 
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="event_sources")
-
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
@@ -87,7 +77,6 @@ class EventSourceSchema(NamedSchema, table=True):
             The converted schema.
         """
         return cls(
-            workspace_id=request.workspace,
             user_id=request.user,
             flavor=request.flavor,
             plugin_type=request.plugin_type,
@@ -126,7 +115,6 @@ class EventSourceSchema(NamedSchema, table=True):
         metadata = None
         if hydrate:
             metadata = EventSourceResponseMetadata(
-                workspace=self.workspace.to_model(),
                 description=self.description,
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
@@ -157,6 +145,8 @@ class EventSourceSchema(NamedSchema, table=True):
                         update.configuration, default=pydantic_encoder
                     ).encode("utf-8")
                 )
+            elif field == "rotate_secret":
+                pass
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()

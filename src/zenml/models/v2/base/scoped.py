@@ -34,7 +34,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponse,
     BaseResponseBody,
-    BaseResponseMetadata,
+    BaseResponseMetadata, BaseResponseResources,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
@@ -106,12 +106,18 @@ class UserScopedResponseMetadata(BaseResponseMetadata):
     """Base user-owned metadata."""
 
 
+class UserScopedResponseResources(BaseResponseResources):
+    """Base user-owned resources."""
+
+
 UserBody = TypeVar("UserBody", bound=UserScopedResponseBody)
 UserMetadata = TypeVar("UserMetadata", bound=UserScopedResponseMetadata)
+UserResources = TypeVar("UserResources", bound=UserScopedResponseResources)
 
 
 class UserScopedResponse(
-    BaseResponse[UserBody, UserMetadata], Generic[UserBody, UserMetadata]
+    BaseResponse[UserBody, UserMetadata, UserResources],
+    Generic[UserBody, UserMetadata, UserResources]
 ):
     """Base user-owned model.
 
