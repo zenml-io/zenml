@@ -8,7 +8,7 @@ from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseFilter,
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     Page,
     UserScopedRequest,
 )
@@ -23,7 +23,7 @@ from zenml.zen_server.rbac.utils import (
 )
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseDBResponse)  # type: ignore[type-arg]
 AnyFilter = TypeVar("AnyFilter", bound=BaseFilter)
 AnyUpdate = TypeVar("AnyUpdate", bound=BaseModel)
 UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])

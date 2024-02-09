@@ -27,7 +27,7 @@ from zenml.constants import (
 )
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -166,7 +166,7 @@ class APIKeyResponseMetadata(BaseResponseMetadata):
     )
 
 
-class APIKeyResponse(BaseResponse[APIKeyResponseBody, APIKeyResponseMetadata]):
+class APIKeyResponse(BaseDBResponse[APIKeyResponseBody, APIKeyResponseMetadata]):
     """Response model for API keys."""
 
     name: str = Field(

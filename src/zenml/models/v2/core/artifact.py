@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -78,7 +78,7 @@ class ArtifactResponseMetadata(BaseResponseMetadata):
 
 
 class ArtifactResponse(
-    BaseResponse[ArtifactResponseBody, ArtifactResponseMetadata]
+    BaseDBResponse[ArtifactResponseBody, ArtifactResponseMetadata]
 ):
     """Artifact response model."""
 

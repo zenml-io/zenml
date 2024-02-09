@@ -18,7 +18,7 @@
 # V2 Base
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
     BaseZenModel,
@@ -526,7 +526,7 @@ TriggerResponseMetadata.update_forward_refs(
 __all__ = [
     # V2 Base
     "BaseRequest",
-    "BaseResponse",
+    "BaseDBResponse",
     "BaseResponseBody",
     "BaseResponseMetadata",
     "BaseZenModel",

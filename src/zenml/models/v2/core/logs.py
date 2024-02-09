@@ -21,7 +21,7 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -77,7 +77,7 @@ class LogsResponseMetadata(BaseResponseMetadata):
     )
 
 
-class LogsResponse(BaseResponse[LogsResponseBody, LogsResponseMetadata]):
+class LogsResponse(BaseDBResponse[LogsResponseBody, LogsResponseMetadata]):
     """Response model for logs."""
 
     def get_hydrated_version(self) -> "LogsResponse":

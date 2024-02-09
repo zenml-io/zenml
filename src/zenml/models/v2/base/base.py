@@ -99,16 +99,19 @@ AnyMetadata = TypeVar("AnyMetadata", bound=BaseResponseMetadata)
 
 
 class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
-    """Base domain model."""
-
-    id: UUID = Field(title="The unique resource id.")
-    permission_denied: bool = False
-
+    """Base domain model for all responses."""
     # Body and metadata pair
     body: Optional["AnyBody"] = Field(title="The body of the resource.")
     metadata: Optional["AnyMetadata"] = Field(
         title="The metadata related to this resource."
     )
+
+
+class BaseDBResponse(BaseResponse, Generic[AnyBody, AnyMetadata]):
+    """Base domain model for resources with DB represenation."""
+
+    id: UUID = Field(title="The unique resource id.")
+    permission_denied: bool = False
 
     _response_update_strategy: (
         ResponseUpdateStrategy

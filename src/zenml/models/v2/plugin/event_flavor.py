@@ -14,11 +14,25 @@
 """Models representing event source flavors.."""
 from typing import Any, Dict
 
-from zenml.models.v2.plugin.plugin_flavor import BasePluginFlavorResponse
+from zenml.models.v2.plugin.plugin_flavor import (
+    BasePluginFlavorResponse,
+    BasePluginResponseBody,
+    BasePluginResponseMetadata
+)
 
 
-class EventFlavorResponse(BasePluginFlavorResponse):
-    """Response model for Event Flavors."""
+class EventFlavorResponseBody(BasePluginResponseBody):
+    """Response body for event flavors."""
+
+
+class EventFlavorResponseMetadata(BasePluginResponseMetadata):
+    """Response metadata for event flavors."""
 
     source_config_schema: Dict[str, Any]
     filter_config_schema: Dict[str, Any]
+
+
+class EventFlavorResponse(
+    BasePluginFlavorResponse[EventFlavorResponseBody, EventFlavorResponseMetadata]
+):
+    """Response model for Event Flavors."""

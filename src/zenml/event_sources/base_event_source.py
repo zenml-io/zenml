@@ -33,6 +33,8 @@ from zenml.models import (
     EventSourceResponse,
     EventSourceUpdate,
 )
+from zenml.models.v2.plugin.event_flavor import EventFlavorResponseBody, \
+    EventFlavorResponseMetadata
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
     BasePluginConfig,
@@ -557,9 +559,12 @@ class BaseEventSourceFlavor(BasePluginFlavor, ABC):
     def get_plugin_flavor_response_model(cls) -> EventFlavorResponse:
         """Convert the Flavor into a Response Model."""
         return EventFlavorResponse(
+            body=EventFlavorResponseBody(),
+            metadata=EventFlavorResponseMetadata(
+                source_config_schema=cls.get_event_source_config_schema(),
+                filter_config_schema=cls.get_event_filter_config_schema()
+            ),
             flavor_name=cls.FLAVOR,
             plugin_type=cls.TYPE,
-            plugin_subtype=cls.SUBTYPE,
-            source_config_schema=cls.get_event_source_config_schema(),
-            filter_config_schema=cls.get_event_filter_config_schema(),
+            plugin_subtype=cls.SUBTYPE
         )

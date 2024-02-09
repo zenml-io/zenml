@@ -20,7 +20,7 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -70,7 +70,7 @@ class WorkspaceResponseMetadata(BaseResponseMetadata):
 
 
 class WorkspaceResponse(
-    BaseResponse[WorkspaceResponseBody, WorkspaceResponseMetadata]
+    BaseDBResponse[WorkspaceResponseBody, WorkspaceResponseMetadata]
 ):
     """Response model for workspaces."""
 

@@ -12,11 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for plugin flavors."""
-from typing import List
+from typing import List, TYPE_CHECKING
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Security, Query
 
-from zenml.constants import API, PLUGINS, VERSION_1
+from zenml.models.v2.base.page import Page
+
+from zenml.models import BasePluginFlavorResponse
+from zenml.constants import (
+    API,
+    PAGE_SIZE_DEFAULT,
+    PAGINATION_STARTING_PAGE,
+    PLUGIN_FLAVORS,
+    VERSION_1,
+)
 from zenml.enums import PluginSubType, PluginType
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
@@ -25,8 +34,9 @@ from zenml.zen_server.utils import (
     handle_exceptions,
 )
 
+
 plugin_router = APIRouter(
-    prefix=API + VERSION_1 + PLUGINS,
+    prefix=API + VERSION_1 + PLUGIN_FLAVORS,
     tags=["plugins"],
     responses={401: error_response, 403: error_response},
 )
@@ -37,82 +47,61 @@ plugin_router = APIRouter(
 
 @plugin_router.get(
     "",
-    response_model=List[str],
+    response_model=Page[BasePluginFlavorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_plugin_flavors(
-    _: AuthContext = Security(authorize),
-) -> List[str]:
-    """Returns all event flavors.
-
-    Returns:
-        All flavors.
-    """
-    return plugin_flavor_registry.available_flavors
-
-
-# -------------------- Plugin Types --------------------
-
-
-@plugin_router.get(
-    "/{flavor_name}",
-    response_model=List[str],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_plugin_types(
-    flavor_name: str,
-    _: AuthContext = Security(authorize),
-) -> List[str]:
-    """Returns all event flavors.
-
-    Returns:
-        All flavors.
-    """
-    return plugin_flavor_registry.get_available_types_for_flavor(
-        flavor_name=flavor_name
-    )
-
-
-# -------------------- Plugin SubTypes --------------------
-
-
-@plugin_router.get(
-    "/{flavor_name}/{plugin_type}",
-    response_model=List[str],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_plugin_subtypes(
-    flavor_name: str,
+def list_flavors(
     plugin_type: PluginType,
+    plugin_subtype: PluginSubType,
+    page: int = PAGINATION_STARTING_PAGE,
+    size: int = PAGE_SIZE_DEFAULT,
     _: AuthContext = Security(authorize),
-) -> List[str]:
-    """Returns all subtypes.
+) -> Page[BasePluginFlavorResponse]:
+    """Returns all event flavors.
 
     Returns:
-        All subtypes for the given flavor and type.
+        All flavors.
     """
-    return plugin_flavor_registry.get_available_subtypes_for_flavor_and_type(
-        flavor=flavor_name, _type=plugin_type
+    flavors = (
+        plugin_flavor_registry.list_available_flavors_for_type_and_subtype(
+            _type=plugin_type,
+            sub_type=plugin_subtype,
+        )
     )
+    total = len(flavors)
+    total_pages = total/size
+    start = (page-1) * size
+    end = start + size
+
+    page_items = [flavor.get_plugin_flavor_response_model() for flavor in flavors][
+            start:end
+        ]
+
+    return_page = Page(
+        index=page,
+        max_size=size,
+        total_pages=total_pages,
+        total=total,
+        items=page_items
+    )
+    return return_page
 
 
 # -------------------- Flavors --------------------
 
 
 @plugin_router.get(
-    "/{flavor_name}/{plugin_type}/{plugin_subtype}",
+    "/{flavor_name}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_flavor(
     flavor_name: str,
-    plugin_type: PluginType,
-    plugin_subtype: PluginSubType,
+    plugin_type: PluginType = Query(..., alias="type"),
+    plugin_subtype: PluginSubType = Query(..., alias="subtype"),
     _: AuthContext = Security(authorize),
-):
+) -> BasePluginFlavorResponse:
     """Returns the requested flavor.
 
     Args:
@@ -123,7 +112,7 @@ def get_flavor(
     Returns:
         The requested flavor response.
     """
-    # TODO: Figure out if typing of the response can be reintroduced
-    return plugin_flavor_registry.get_flavor_class(
-        flavor=flavor_name, _type=plugin_type, subtype=plugin_subtype
-    ).get_plugin_flavor_response_model()
+    plugin_flavor = plugin_flavor_registry.get_flavor_class(
+        flavor_name=flavor_name, _type=plugin_type, subtype=plugin_subtype
+    )
+    return plugin_flavor.get_plugin_flavor_response_model()

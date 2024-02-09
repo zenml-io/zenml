@@ -18,7 +18,7 @@ from uuid import UUID
 from zenml.enums import VisualizationType
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -54,7 +54,7 @@ class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
 
 
 class ArtifactVisualizationResponse(
-    BaseResponse[
+    BaseDBResponse[
         ArtifactVisualizationResponseBody,
         ArtifactVisualizationResponseMetadata,
     ]

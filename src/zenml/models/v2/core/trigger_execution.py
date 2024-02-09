@@ -20,7 +20,7 @@ from pydantic import Field
 from zenml.models import (
     BaseFilter,
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -58,7 +58,7 @@ class TriggerExecutionResponseMetadata(BaseResponseMetadata):
 
 
 class TriggerExecutionResponse(
-    BaseResponse[
+    BaseDBResponse[
         TriggerExecutionResponseBody, TriggerExecutionResponseMetadata
     ]
 ):

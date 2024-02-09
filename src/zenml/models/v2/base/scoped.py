@@ -32,7 +32,7 @@ from sqlmodel import col
 
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -111,7 +111,7 @@ UserMetadata = TypeVar("UserMetadata", bound=UserScopedResponseMetadata)
 
 
 class UserScopedResponse(
-    BaseResponse[UserBody, UserMetadata], Generic[UserBody, UserMetadata]
+    BaseDBResponse[UserBody, UserMetadata], Generic[UserBody, UserMetadata]
 ):
     """Base user-owned model.
 

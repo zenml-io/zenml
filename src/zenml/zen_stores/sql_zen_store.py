@@ -95,6 +95,7 @@ from zenml.exceptions import (
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
     EntityExistsError,
+    EventSourceExistsError,
     IllegalOperationError,
     SecretsStoreNotConfiguredError,
     StackComponentExistsError,
@@ -121,7 +122,7 @@ from zenml.models import (
     ArtifactVersionUpdate,
     ArtifactVisualizationResponse,
     BaseFilter,
-    BaseResponse,
+    BaseDBResponse,
     CodeReferenceRequest,
     CodeReferenceResponse,
     CodeRepositoryFilter,
@@ -301,7 +302,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
-B = TypeVar("B", bound=BaseResponse)  # type: ignore[type-arg]
+B = TypeVar("B", bound=BaseDBResponse)  # type: ignore[type-arg]
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -3684,10 +3685,10 @@ class SqlZenStore(BaseZenStore):
             workspace = self._get_workspace_schema(
                 workspace_name_or_id=event_source.workspace, session=session
             )
-            raise StackExistsError(
+            raise EventSourceExistsError(
                 f"Unable to register event source with name "
-                f"'{event_source.name}': Found an existing event source with the same "
-                f"name in the active workspace, '{workspace.name}'."
+                f"'{event_source.name}': Found an existing event source with "
+                f"the same name in the active workspace, '{workspace.name}'."
             )
         return None
 

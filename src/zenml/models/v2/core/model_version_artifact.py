@@ -21,7 +21,7 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -78,7 +78,7 @@ class ModelVersionArtifactResponseBody(BaseResponseBody):
 
 
 class ModelVersionArtifactResponse(
-    BaseResponse[ModelVersionArtifactResponseBody, BaseResponseMetadata]
+    BaseDBResponse[ModelVersionArtifactResponseBody, BaseResponseMetadata]
 ):
     """Response model for links between model versions and artifacts."""
 

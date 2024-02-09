@@ -20,7 +20,7 @@ from pydantic import Field
 
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -69,7 +69,7 @@ class CodeReferenceResponseMetadata(BaseResponseMetadata):
 
 
 class CodeReferenceResponse(
-    BaseResponse[CodeReferenceResponseBody, CodeReferenceResponseMetadata]
+    BaseDBResponse[CodeReferenceResponseBody, CodeReferenceResponseMetadata]
 ):
     """Response model for code references."""
 

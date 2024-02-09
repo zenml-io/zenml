@@ -213,6 +213,10 @@ class StackComponentExistsError(EntityExistsError):
     """Raised when trying to register a stack component with existing name."""
 
 
+class EventSourceExistsError(EntityExistsError):
+    """Raised when trying to register an event source with existing name."""
+
+
 class SecretExistsError(EntityExistsError):
     """Raised when trying to register a secret with existing name."""
 

@@ -22,7 +22,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseResponse,
+    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
 )
@@ -69,7 +69,7 @@ class TagResponseBody(BaseResponseBody):
     )
 
 
-class TagResponse(BaseResponse[TagResponseBody, BaseResponseMetadata]):
+class TagResponse(BaseDBResponse[TagResponseBody, BaseResponseMetadata]):
     """Response model for tags."""
 
     name: str = Field(
