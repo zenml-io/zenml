@@ -457,6 +457,10 @@ def save_artifact_binary_from_response(
         path: The path to save the artifact to.
         overwrite: Whether to overwrite the file if it already exists.
     """
+    if not overwrite and fileio.exists(path):
+        raise FileExistsError(
+            f"File '{path}' already exists and `overwrite` is set to `False`."
+        )
     artifact_store_loaded = False
     if artifact.artifact_store_id:
         with contextlib.suppress(KeyError, ImportError):
