@@ -1,6 +1,8 @@
 ---
 name: ci-slow
 on:
+  workflow_dispatch:
+  workflow_call:
   push:
     branches: [main]
     paths-ignore: [docs/**, docker/**, '*', '!pyproject.toml', '**.md']
@@ -132,8 +134,8 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        os: [macos-14]
+        python-version: ['3.8.18', '3.9.18', '3.10.13', '3.11.7']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -160,8 +162,8 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        os: [macos-14]
+        python-version: ['3.8.18', '3.9.18', '3.10.13', '3.11.7']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml

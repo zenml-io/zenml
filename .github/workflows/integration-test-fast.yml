@@ -32,7 +32,7 @@ on:
         type: choice
         options:
           - ubuntu-latest
-          - macos-latest
+          - macos-14
           - windows-latest
           - ubuntu-dind-runners
         required: false
@@ -40,9 +40,9 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.8', '3.9', '3.10', '3.11']
+        options: ['3.8.18', '3.9.18', '3.10.13', '3.11.7']
         required: false
-        default: '3.8'
+        default: '3.8.18'
       test_environment:
         description: The test environment
         type: choice
