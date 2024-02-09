@@ -17,7 +17,7 @@ from typing import Any, Dict
 from zenml.models.v2.plugin.plugin_flavor import (
     BasePluginFlavorResponse,
     BasePluginResponseBody,
-    BasePluginResponseMetadata
+    BasePluginResponseMetadata,
 )
 
 
@@ -33,6 +33,8 @@ class EventFlavorResponseMetadata(BasePluginResponseMetadata):
 
 
 class EventFlavorResponse(
-    BasePluginFlavorResponse[EventFlavorResponseBody, EventFlavorResponseMetadata]
+    BasePluginFlavorResponse[
+        EventFlavorResponseBody, EventFlavorResponseMetadata
+    ]
 ):
     """Response model for Event Flavors."""

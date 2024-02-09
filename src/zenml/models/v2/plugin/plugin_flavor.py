@@ -14,13 +14,13 @@
 """Plugin flavor model definitions."""
 from typing import Generic, TypeVar
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import Extra, Field
 
 from zenml.enums import PluginSubType, PluginType
 from zenml.models.v2.base.base import (
     BaseResponse,
     BaseResponseMetadata,
-    BaseZenModel
+    BaseZenModel,
 )
 
 
@@ -33,12 +33,14 @@ class BasePluginResponseMetadata(BaseResponseMetadata):
 
 
 AnyPluginBody = TypeVar("AnyPluginBody", bound=BasePluginResponseBody)
-AnyPluginMetadata = TypeVar("AnyPluginMetadata", bound=BasePluginResponseMetadata)
+AnyPluginMetadata = TypeVar(
+    "AnyPluginMetadata", bound=BasePluginResponseMetadata
+)
 
 
 class BasePluginFlavorResponse(
     BaseResponse[AnyPluginBody, AnyPluginMetadata],
-    Generic[AnyPluginBody, AnyPluginMetadata]
+    Generic[AnyPluginBody, AnyPluginMetadata],
 ):
     """Base response for all Plugin Flavors."""
 

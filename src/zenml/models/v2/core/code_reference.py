@@ -19,8 +19,8 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.models.v2.base.base import (
-    BaseRequest,
     BaseDBResponse,
+    BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
 )

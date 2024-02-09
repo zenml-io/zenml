@@ -62,8 +62,8 @@ from zenml.model_registries.base_model_registry import (
     RegistryModelVersion,
 )
 from zenml.models import (
-    BaseFilter,
     BaseDBResponse,
+    BaseFilter,
     BoolFilter,
     NumericFilter,
     Page,

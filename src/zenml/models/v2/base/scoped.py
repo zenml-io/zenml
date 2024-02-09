@@ -31,8 +31,8 @@ from pydantic import Field
 from sqlmodel import col
 
 from zenml.models.v2.base.base import (
-    BaseRequest,
     BaseDBResponse,
+    BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
 )

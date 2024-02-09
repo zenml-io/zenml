@@ -12,13 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for plugin flavors."""
-from typing import List, TYPE_CHECKING
 
-from fastapi import APIRouter, Security, Query
+from fastapi import APIRouter, Query, Security
 
-from zenml.models.v2.base.page import Page
-
-from zenml.models import BasePluginFlavorResponse
 from zenml.constants import (
     API,
     PAGE_SIZE_DEFAULT,
@@ -27,13 +23,14 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PluginSubType, PluginType
+from zenml.models import BasePluginFlavorResponse
+from zenml.models.v2.base.page import Page
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
 )
-
 
 plugin_router = APIRouter(
     prefix=API + VERSION_1 + PLUGIN_FLAVORS,
@@ -70,20 +67,20 @@ def list_flavors(
         )
     )
     total = len(flavors)
-    total_pages = total/size
-    start = (page-1) * size
+    total_pages = total / size
+    start = (page - 1) * size
     end = start + size
 
-    page_items = [flavor.get_plugin_flavor_response_model() for flavor in flavors][
-            start:end
-        ]
+    page_items = [
+        flavor.get_plugin_flavor_response_model() for flavor in flavors
+    ][start:end]
 
     return_page = Page(
         index=page,
         max_size=size,
         total_pages=total_pages,
         total=total,
-        items=page_items
+        items=page_items,
     )
     return return_page
 
