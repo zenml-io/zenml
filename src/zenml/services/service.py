@@ -285,21 +285,25 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             "Running status check for service '%s' ...",
             self,
         )
-        state, err = self.check_status()
-        logger.debug(
-            "Status check results for service '%s': %s [%s]",
-            self,
-            state.name,
-            err,
-        )
-        self.status.update_state(state, err)
+        try:
+            state, err = self.check_status()
+            logger.debug(
+                "Status check results for service '%s': %s [%s]",
+                self,
+                state.name,
+                err,
+            )
+            self.status.update_state(state, err)
 
-        # don't bother checking the endpoint state if the service is not active
-        if self.status.state == ServiceState.INACTIVE:
-            return
+            # don't bother checking the endpoint state if the service is not active
+            if self.status.state == ServiceState.INACTIVE:
+                return
 
-        if self.endpoint:
-            self.endpoint.update_status()
+            if self.endpoint:
+                self.endpoint.update_status()
+        except Exception as e:
+            logger.error(f"Failed to update status for service '{self}': {e}", exc_info=True)
+            self.status.update_state(ServiceState.ERROR, str(e))
 
     def get_service_status_message(self) -> str:
         """Get a service status message.
