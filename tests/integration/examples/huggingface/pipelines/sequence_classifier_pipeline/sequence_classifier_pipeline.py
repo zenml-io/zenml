@@ -21,10 +21,10 @@ from steps import (
 
 from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.integrations.constants import HUGGINGFACE, TENSORFLOW
+from zenml.integrations.constants import HUGGINGFACE, PYTORCH, TENSORFLOW
 
 docker_settings = DockerSettings(
-    required_integrations=[HUGGINGFACE, TENSORFLOW],
+    required_integrations=[HUGGINGFACE, TENSORFLOW, PYTORCH],
     environment={"HF_HOME": "/app/huggingface"},
 )
 
