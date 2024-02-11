@@ -42,57 +42,46 @@ from zenml.utils.typed_model import BaseTypedModel, BaseTypedModelMeta
 
 logger = get_logger(__name__)
 
-F = TypeVar("F", bound=Callable[..., Any])
+T = TypeVar("T", bound=Callable[..., Any])
 
 
-def handle_service_exceptions(func: F) -> F:
-    """A decorator that wraps service methods to catch exceptions.
+def update_service_status(
+    pre_status: Optional[ServiceState] = None,
+    post_status: Optional[ServiceState] = None,
+    error_status: ServiceState = ServiceState.ERROR,
+) -> Callable[[T], T]:
+    """A decorator to update the service status before and after a method call.
 
-    This decorator assumes that the first argument to the wrapped method
-    is always an instance of a service class derived from BaseService.
-    It catches any exception raised by the method, logs the exception,
-    updates the service instance's status to ERROR, and then re-raises
-    the exception.
+    This decorator is used to wrap service methods and update the service status
+    before and after the method call. If the method raises an exception, the
+    service status is updated to reflect the error state.
 
     Args:
-        func (Callable[..., Any]): The service method to be wrapped.
+        pre_status: the status to update before the method call.
+        post_status: the status to update after the method call.
+        error_status: the status to update if the method raises an exception.
 
     Returns:
         Callable[..., Any]: The wrapped method with exception handling.
     """
 
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        """Wrapper function for the decorated method.
+    def decorator(func: T) -> T:
+        @wraps(func)
+        def wrapper(self: "BaseService", *args: Any, **kwargs: Any) -> Any:
+            if pre_status:
+                self.status.update_state(pre_status, "")
+            try:
+                result = func(self, *args, **kwargs)
+                if post_status:
+                    self.status.update_state(post_status, "")
+                return result
+            except Exception as e:
+                self.status.update_state(error_status, str(e))
+                raise
 
-        Args:
-            *args: positional arguments.
-            **kwargs: keyword arguments.
+        return wrapper  # type: ignore
 
-        Returns:
-            The result of the wrapped method.
-
-        Raises:
-            raises the same exception as the wrapped method.
-        """
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            # Extract the service instance from the args
-            service_instance = args[0]
-            if not isinstance(service_instance, BaseService):
-                raise ValueError(
-                    "The first argument must be an instance of BaseService."
-                )
-
-            # Log the error and update the service status
-            service_instance.status.update_state(ServiceState.ERROR, str(e))
-            logger.error(f"Error in service {service_instance}: {e}")
-
-            # Re-raise the exception
-            raise
-
-    return wrapper  # type: ignore
+    return decorator
 
 
 class ServiceConfig(BaseTypedModel):
@@ -437,7 +426,10 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
         self.config = config
 
-    @handle_service_exceptions
+    @update_service_status(
+        pre_status=ServiceState.PENDING_STARTUP,
+        post_status=ServiceState.ACTIVE,
+    )
     def start(self, timeout: int = 0) -> None:
         """Start the service and optionally wait for it to become active.
 
@@ -459,7 +451,10 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
                         + self.get_service_status_message()
                     )
 
-    @handle_service_exceptions
+    @update_service_status(
+        pre_status=ServiceState.PENDING_SHUTDOWN,
+        post_status=ServiceState.INACTIVE,
+    )
     def stop(self, timeout: int = 0, force: bool = False) -> None:
         """Stop the service and optionally wait for it to shutdown.
 
