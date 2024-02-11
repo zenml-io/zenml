@@ -83,7 +83,7 @@ runs:
         endpoint: minio-service.minio.svc.cluster.local  # optional
         insecure: true  # optional, use http instead of https. default false
         bucket: caching  # required
-        use-fallback: true  # optional, use github actions cache fallback, default false
+        use-fallback: false  # optional, use github actions cache fallback, default false
         key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version
           }}-${{inputs.install_integrations}}
         path: |
@@ -93,10 +93,11 @@ runs:
     - name: Custom runners cache miss
       uses: rjstone/discord-webhook-notify@v1
       if: steps.custom-cache-pip.outputs.cache-hit != 'true'
+      continue-on-error: true
       with:
         severity: warn
         details: The custom github runnners cache was missed and failed to restore
-          the cache for minio bucket caching
+          the cache from minio bucket
         webhookUrl: ${{ inputs.discord_webhook }}
     # Disabled for now because it doesn't work well with multiple parallel jobs
     # - uses: syphar/restore-pip-download-cache@v1
