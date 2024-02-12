@@ -19,11 +19,14 @@ from pydantic import BaseModel
 from zenml.enums import PluginSubType, PluginType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
+from zenml.models import Page
 from zenml.plugins.base_plugin_flavor import BasePlugin, BasePluginFlavor
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
-    pass
+    from zenml.models.v2.base.base_plugin_flavor import (
+        BasePluginFlavorResponse,
+    )
 
 
 class RegistryEntry(BaseModel):
@@ -135,6 +138,49 @@ class PluginFlavorRegistry:
             ]
         )
         return flavors
+
+    def list_available_flavor_responses_for_type_and_subtype(
+        self,
+        _type: PluginType,
+        sub_type: PluginSubType,
+        page: int,
+        size: int,
+        hydrate: bool = False,
+    ) -> Page["BasePluginFlavorResponse"]:
+        """Get a list of all subtypes for a specific flavor and type.
+
+        Args:
+            _type: The type of Plugin
+            sub_type: The subtype of the plugin
+            page: Page for pagination (offset +1)
+            size: Page size for pagination
+            hydrate: Whether to hydrate the response bodies
+
+        Returns:
+            A page of flavors.
+        """
+        flavors = self.list_available_flavors_for_type_and_subtype(
+            _type=_type,
+            sub_type=sub_type,
+        )
+        total = len(flavors)
+        total_pages = total / size
+        start = (page - 1) * size
+        end = start + size
+
+        page_items = [
+            flavor.get_flavor_response_model(hydrate=hydrate)
+            for flavor in flavors
+        ][start:end]
+
+        return_page = Page(
+            index=page,
+            max_size=size,
+            total_pages=total_pages,
+            total=total,
+            items=page_items,
+        )
+        return return_page
 
     @property
     def _builtin_flavors(self) -> Sequence[Type["BasePluginFlavor"]]:

@@ -49,8 +49,8 @@ plugin_router = APIRouter(
 )
 @handle_exceptions
 def list_flavors(
-    plugin_type: PluginType,
-    plugin_subtype: PluginSubType,
+    _type: PluginType,
+    sub_type: PluginSubType,
     page: int = PAGINATION_STARTING_PAGE,
     size: int = PAGE_SIZE_DEFAULT,
     hydrate: bool = False,
@@ -58,32 +58,20 @@ def list_flavors(
 ) -> Page[BasePluginFlavorResponse]:
     """Returns all event flavors.
 
+    Args:
+        _type: The type of Plugin
+        sub_type: The subtype of the plugin
+        page: Page for pagination (offset +1)
+        size: Page size for pagination
+        hydrate: Whether to hydrate the response bodies
+
     Returns:
-        All flavors.
+        A page of flavors.
     """
-    flavors = (
-        plugin_flavor_registry.list_available_flavors_for_type_and_subtype(
-            _type=plugin_type,
-            sub_type=plugin_subtype,
-        )
+    flavors = plugin_flavor_registry.list_available_flavor_responses_for_type_and_subtype(
+        _type=_type, sub_type=sub_type, page=page, size=size, hydrate=hydrate
     )
-    total = len(flavors)
-    total_pages = total / size
-    start = (page - 1) * size
-    end = start + size
-
-    page_items = [
-        flavor.get_flavor_response_model(hydrate=hydrate) for flavor in flavors
-    ][start:end]
-
-    return_page = Page(
-        index=page,
-        max_size=size,
-        total_pages=total_pages,
-        total=total,
-        items=page_items,
-    )
-    return return_page
+    return flavors
 
 
 # -------------------- Flavors --------------------
