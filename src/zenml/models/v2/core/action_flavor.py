@@ -17,7 +17,8 @@ from typing import Any, Dict
 from zenml.models.v2.base.base_plugin_flavor import (
     BasePluginFlavorResponse,
     BasePluginResponseBody,
-    BasePluginResponseMetadata, BasePluginResponseResources,
+    BasePluginResponseMetadata,
+    BasePluginResponseResources,
 )
 
 
@@ -37,7 +38,9 @@ class ActionFlavorResponseResources(BasePluginResponseResources):
 
 class ActionFlavorResponse(
     BasePluginFlavorResponse[
-        ActionFlavorResponseBody, ActionFlavorResponseMetadata, ActionFlavorResponseResources
+        ActionFlavorResponseBody,
+        ActionFlavorResponseMetadata,
+        ActionFlavorResponseResources,
     ]
 ):
     """Response model for Action Flavors."""

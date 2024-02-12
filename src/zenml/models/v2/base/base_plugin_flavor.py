@@ -20,7 +20,8 @@ from zenml.enums import PluginSubType, PluginType
 from zenml.models.v2.base.base import (
     BaseResponse,
     BaseResponseMetadata,
-    BaseZenModel, BaseResponseResources,
+    BaseResponseResources,
+    BaseZenModel,
 )
 
 
@@ -31,6 +32,7 @@ class BasePluginResponseBody(BaseZenModel):
 class BasePluginResponseMetadata(BaseResponseMetadata):
     """Response metadata for plugins."""
 
+
 class BasePluginResponseResources(BaseResponseResources):
     """Response resources for plugins."""
 
@@ -39,7 +41,9 @@ AnyPluginBody = TypeVar("AnyPluginBody", bound=BasePluginResponseBody)
 AnyPluginMetadata = TypeVar(
     "AnyPluginMetadata", bound=BasePluginResponseMetadata
 )
-AnyPluginResources = TypeVar("AnyPluginResources", bound=BasePluginResponseResources)
+AnyPluginResources = TypeVar(
+    "AnyPluginResources", bound=BasePluginResponseResources
+)
 
 
 class BasePluginFlavorResponse(

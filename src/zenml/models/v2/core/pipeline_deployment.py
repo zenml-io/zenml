@@ -170,7 +170,9 @@ class PipelineDeploymentResponseResources(BaseResponseResources):
 
 class PipelineDeploymentResponse(
     WorkspaceScopedResponse[
-        PipelineDeploymentResponseBody, PipelineDeploymentResponseMetadata, PipelineDeploymentResponseResources
+        PipelineDeploymentResponseBody,
+        PipelineDeploymentResponseMetadata,
+        PipelineDeploymentResponseResources,
     ]
 ):
     """Response model for pipeline deployments."""
