@@ -21,6 +21,7 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -103,9 +104,15 @@ class RunMetadataResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class RunMetadataResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the run metadata entity."""
+
+
 class RunMetadataResponse(
     WorkspaceScopedResponse[
-        RunMetadataResponseBody, RunMetadataResponseMetadata
+        RunMetadataResponseBody,
+        RunMetadataResponseMetadata,
+        RunMetadataResponseResources,
     ]
 ):
     """Response model for run metadata."""

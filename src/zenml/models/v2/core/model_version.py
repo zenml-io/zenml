@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field, PrivateAttr, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ModelStages
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
@@ -179,9 +180,15 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ModelVersionResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the model version entity."""
+
+
 class ModelVersionResponse(
     WorkspaceScopedResponse[
-        ModelVersionResponseBody, ModelVersionResponseMetadata
+        ModelVersionResponseBody,
+        ModelVersionResponseMetadata,
+        ModelVersionResponseResources,
     ]
 ):
     """Response model for model versions."""

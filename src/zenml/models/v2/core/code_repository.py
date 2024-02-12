@@ -20,6 +20,7 @@ from pydantic import Field
 
 from zenml.config.source import Source
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -90,9 +91,15 @@ class CodeRepositoryResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class CodeRepositoryResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the code repository entity."""
+
+
 class CodeRepositoryResponse(
     WorkspaceScopedResponse[
-        CodeRepositoryResponseBody, CodeRepositoryResponseMetadata
+        CodeRepositoryResponseBody,
+        CodeRepositoryResponseMetadata,
+        CodeRepositoryResponseResources,
     ]
 ):
     """Response model for code repositories."""

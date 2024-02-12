@@ -29,6 +29,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
@@ -166,8 +167,14 @@ class APIKeyResponseMetadata(BaseResponseMetadata):
     )
 
 
+class APIKeyResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the APIKey entity."""
+
+
 class APIKeyResponse(
-    IdentifiedEntityResponse[APIKeyResponseBody, APIKeyResponseMetadata]
+    IdentifiedEntityResponse[
+        APIKeyResponseBody, APIKeyResponseMetadata, APIKeyResponseResources
+    ]
 ):
     """Response model for API keys."""
 

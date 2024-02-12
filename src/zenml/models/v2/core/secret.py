@@ -26,6 +26,7 @@ from zenml.enums import (
     SecretScope,
     SorterOps,
 )
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -114,8 +115,14 @@ class SecretResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for secrets."""
 
 
+class SecretResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the secret entity."""
+
+
 class SecretResponse(
-    WorkspaceScopedResponse[SecretResponseBody, SecretResponseMetadata]
+    WorkspaceScopedResponse[
+        SecretResponseBody, SecretResponseMetadata, SecretResponseResources
+    ]
 ):
     """Response model for secrets."""
 

@@ -93,17 +93,30 @@ class BaseResponseMetadata(BaseZenModel):
     """
 
 
+class BaseResponseResources(BaseZenModel):
+    """Base resources model.
+
+    Used as a base class for all resource models associated with responses.
+    """
+
+
 AnyBody = TypeVar("AnyBody", bound=BaseResponseBody)
 AnyMetadata = TypeVar("AnyMetadata", bound=BaseResponseMetadata)
+AnyResources = TypeVar("AnyResources", bound=BaseResponseResources)
 
 
-class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
+class BaseResponse(
+    GenericModel, Generic[AnyBody, AnyMetadata, AnyResources], BaseZenModel
+):
     """Base domain model for all responses."""
 
     # Body and metadata pair
     body: Optional["AnyBody"] = Field(title="The body of the resource.")
     metadata: Optional["AnyMetadata"] = Field(
         title="The metadata related to this resource."
+    )
+    resources: Optional["AnyResources"] = Field(
+        title="The resources related to this resource."
     )
 
     def get_hydrated_version(self) -> "BaseResponse[AnyBody, AnyMetadata]":
@@ -157,8 +170,26 @@ class BaseResponse(GenericModel, Generic[AnyBody, AnyMetadata], BaseZenModel):
 
         return self.metadata
 
+    def get_resources(self) -> AnyResources:
+        """Fetch the resources related to this entity.
 
-class IdentifiedEntityResponse(BaseResponse, Generic[AnyBody, AnyMetadata]):
+        Returns:
+            The resources field of the response.
+
+        Raises:
+            RuntimeError: If the resources field was not included in the response.
+        """
+        if not self.resources:
+            raise RuntimeError(
+                f"Missing response resources for {type(self).__name__}."
+            )
+
+        return self.resources
+
+
+class IdentifiedEntityResponse(
+    BaseResponse, Generic[AnyBody, AnyMetadata, AnyResources]
+):
     """Base domain model for resources with DB represenation."""
 
     id: UUID = Field(title="The unique resource id.")

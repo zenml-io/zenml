@@ -21,6 +21,7 @@ from pydantic import Field, root_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -119,8 +120,16 @@ class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
     pipeline_id: Optional[UUID]
 
 
+class ScheduleResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the schedule entity."""
+
+
 class ScheduleResponse(
-    WorkspaceScopedResponse[ScheduleResponseBody, ScheduleResponseMetadata],
+    WorkspaceScopedResponse[
+        ScheduleResponseBody,
+        ScheduleResponseMetadata,
+        ScheduleResponseResources,
+    ],
 ):
     """Response model for schedules."""
 

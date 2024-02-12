@@ -30,6 +30,7 @@ from pydantic import BaseModel, Field
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, GenericFilterOps
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -181,9 +182,15 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class PipelineRunResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the pipeline run entity."""
+
+
 class PipelineRunResponse(
     WorkspaceScopedResponse[
-        PipelineRunResponseBody, PipelineRunResponseMetadata
+        PipelineRunResponseBody,
+        PipelineRunResponseMetadata,
+        PipelineRunResponseResources,
     ]
 ):
     """Response model for pipeline runs."""

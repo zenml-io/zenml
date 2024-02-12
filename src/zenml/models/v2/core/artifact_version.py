@@ -30,6 +30,7 @@ from zenml.config.source import Source, convert_source_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
@@ -160,9 +161,15 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ArtifactVersionResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the artifact version entity."""
+
+
 class ArtifactVersionResponse(
     WorkspaceScopedResponse[
-        ArtifactVersionResponseBody, ArtifactVersionResponseMetadata
+        ArtifactVersionResponseBody,
+        ArtifactVersionResponseMetadata,
+        ArtifactVersionResponseResources,
     ]
 ):
     """Response model for artifact versions."""

@@ -22,6 +22,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
@@ -87,9 +88,15 @@ class ServiceAccountResponseMetadata(BaseResponseMetadata):
     )
 
 
+class ServiceAccountResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the service account entity."""
+
+
 class ServiceAccountResponse(
     IdentifiedEntityResponse[
-        ServiceAccountResponseBody, ServiceAccountResponseMetadata
+        ServiceAccountResponseBody,
+        ServiceAccountResponseMetadata,
+        ServiceAccountResponseResources,
     ]
 ):
     """Response model for service accounts."""

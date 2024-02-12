@@ -17,7 +17,7 @@ from typing import Any, Dict
 from zenml.models.v2.base.base_plugin_flavor import (
     BasePluginFlavorResponse,
     BasePluginResponseBody,
-    BasePluginResponseMetadata,
+    BasePluginResponseMetadata, BasePluginResponseResources,
 )
 
 
@@ -32,9 +32,13 @@ class EventSourceFlavorResponseMetadata(BasePluginResponseMetadata):
     filter_config_schema: Dict[str, Any]
 
 
+class EventSourceFlavorResponseResources(BasePluginResponseResources):
+    """Response resources for event source flavors."""
+
+
 class EventSourceFlavorResponse(
     BasePluginFlavorResponse[
-        EventSourceFlavorResponseBody, EventSourceFlavorResponseMetadata
+        EventSourceFlavorResponseBody, EventSourceFlavorResponseMetadata, EventSourceFlavorResponseResources
     ]
 ):
     """Response model for Event Source Flavors."""

@@ -34,6 +34,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
@@ -106,13 +107,18 @@ class UserScopedResponseMetadata(BaseResponseMetadata):
     """Base user-owned metadata."""
 
 
+class UserScopedResponseResources(BaseResponseResources):
+    """Base class for all resource models associated with the user."""
+
+
 UserBody = TypeVar("UserBody", bound=UserScopedResponseBody)
 UserMetadata = TypeVar("UserMetadata", bound=UserScopedResponseMetadata)
+UserResources = TypeVar("UserResources", bound=UserScopedResponseResources)
 
 
 class UserScopedResponse(
-    IdentifiedEntityResponse[UserBody, UserMetadata],
-    Generic[UserBody, UserMetadata],
+    IdentifiedEntityResponse[UserBody, UserMetadata, UserResources],
+    Generic[UserBody, UserMetadata, UserResources],
 ):
     """Base user-owned model.
 
@@ -203,15 +209,22 @@ class WorkspaceScopedResponseMetadata(UserScopedResponseMetadata):
     )
 
 
+class WorkspaceScopedResponseResources(UserScopedResponseMetadata):
+    """Base workspace-scoped resources."""
+
+
 WorkspaceBody = TypeVar("WorkspaceBody", bound=WorkspaceScopedResponseBody)
 WorkspaceMetadata = TypeVar(
     "WorkspaceMetadata", bound=WorkspaceScopedResponseMetadata
 )
+WorkspaceResources = TypeVar(
+    "WorkspaceResources", bound=WorkspaceScopedResponseResources
+)
 
 
 class WorkspaceScopedResponse(
-    UserScopedResponse[WorkspaceBody, WorkspaceMetadata],
-    Generic[WorkspaceBody, WorkspaceMetadata],
+    UserScopedResponse[WorkspaceBody, WorkspaceMetadata, WorkspaceResources],
+    Generic[WorkspaceBody, WorkspaceMetadata, WorkspaceResources],
 ):
     """Base workspace-scoped domain model.
 

@@ -23,6 +23,7 @@ from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import StrFilter
@@ -60,9 +61,15 @@ class ModelVersionPipelineRunResponseBody(BaseResponseBody):
     pipeline_run: "PipelineRunResponse"
 
 
+class ModelVersionPipelineRunResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the model version pipeline run entity."""
+
+
 class ModelVersionPipelineRunResponse(
     IdentifiedEntityResponse[
-        ModelVersionPipelineRunResponseBody, BaseResponseMetadata
+        ModelVersionPipelineRunResponseBody,
+        BaseResponseMetadata,
+        ModelVersionPipelineRunResponseResources,
     ]
 ):
     """Response model for links between model versions and pipeline runs."""

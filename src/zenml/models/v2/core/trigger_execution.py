@@ -24,6 +24,7 @@ from zenml.models import (
     BaseResponseMetadata,
     IdentifiedEntityResponse,
 )
+from zenml.models.v2.base.base import BaseResponseResources
 
 if TYPE_CHECKING:
     from zenml.models import TriggerResponse
@@ -57,9 +58,15 @@ class TriggerExecutionResponseMetadata(BaseResponseMetadata):
     event_metadata: Dict[str, Any] = {}
 
 
+class TriggerResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the trigger entity."""
+
+
 class TriggerExecutionResponse(
     IdentifiedEntityResponse[
-        TriggerExecutionResponseBody, TriggerExecutionResponseMetadata
+        TriggerExecutionResponseBody,
+        TriggerExecutionResponseMetadata,
+        TriggerResponseResources,
     ]
 ):
     """Response model for trigger executions."""

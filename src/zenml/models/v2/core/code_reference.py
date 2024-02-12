@@ -22,6 +22,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 
@@ -68,9 +69,15 @@ class CodeReferenceResponseMetadata(BaseResponseMetadata):
     """Response metadata for code references."""
 
 
+class CodeReferenceResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the code reference entity."""
+
+
 class CodeReferenceResponse(
     IdentifiedEntityResponse[
-        CodeReferenceResponseBody, CodeReferenceResponseMetadata
+        CodeReferenceResponseBody,
+        CodeReferenceResponseMetadata,
+        CodeReferenceResponseResources,
     ]
 ):
     """Response model for code references."""

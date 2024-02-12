@@ -181,8 +181,14 @@ class FlavorResponseMetadata(UserScopedResponseMetadata):
     )
 
 
+class FlavorResponseResources(UserScopedResponseMetadata):
+    """Class for all resource models associated with the flavor entity."""
+
+
 class FlavorResponse(
-    UserScopedResponse[FlavorResponseBody, FlavorResponseMetadata]
+    UserScopedResponse[
+        FlavorResponseBody, FlavorResponseMetadata, FlavorResponseResources
+    ]
 ):
     """Response model for flavors."""
 

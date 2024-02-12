@@ -32,6 +32,7 @@ from zenml.models import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
@@ -102,8 +103,16 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class PipelineyResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the pipeline entity."""
+
+
 class PipelineResponse(
-    WorkspaceScopedResponse[PipelineResponseBody, PipelineResponseMetadata]
+    WorkspaceScopedResponse[
+        PipelineResponseBody,
+        PipelineResponseMetadata,
+        PipelineyResponseResources,
+    ]
 ):
     """Response model for pipelines."""
 
@@ -292,9 +301,15 @@ class PipelineNamespaceResponseMetadata(BaseResponseMetadata):
     """Response metadata for pipeline namespaces."""
 
 
+class PipelineNamespaceResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the pipeline namespace entity."""
+
+
 class PipelineNamespaceResponse(
     IdentifiedEntityResponse[
-        PipelineNamespaceResponseBody, PipelineNamespaceResponseMetadata
+        PipelineNamespaceResponseBody,
+        PipelineNamespaceResponseMetadata,
+        PipelineNamespaceResponseResources,
     ]
 ):
     """Response model for pipeline namespaces."""

@@ -19,7 +19,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.base import BaseResponseResources, BaseZenModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -143,8 +143,14 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class TriggerResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the trigger entity."""
+
+
 class TriggerResponse(
-    WorkspaceScopedResponse[TriggerResponseBody, TriggerResponseMetadata]
+    WorkspaceScopedResponse[
+        TriggerResponseBody, TriggerResponseMetadata, TriggerResponseResources
+    ]
 ):
     """Response model for models."""
 

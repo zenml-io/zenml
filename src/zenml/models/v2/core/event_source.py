@@ -20,7 +20,7 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType, PluginType
-from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.base import BaseResponseResources, BaseZenModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -148,9 +148,15 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class EventSourceResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the code repository entity."""
+
+
 class EventSourceResponse(
     WorkspaceScopedResponse[
-        EventSourceResponseBody, EventSourceResponseMetadata
+        EventSourceResponseBody,
+        EventSourceResponseMetadata,
+        EventSourceResponseResources,
     ]
 ):
     """Response model for event sources."""

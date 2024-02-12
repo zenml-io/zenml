@@ -22,6 +22,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import BaseFilter
@@ -69,8 +70,16 @@ class WorkspaceResponseMetadata(BaseResponseMetadata):
     )
 
 
+class WorkspaceResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the workspace entity."""
+
+
 class WorkspaceResponse(
-    IdentifiedEntityResponse[WorkspaceResponseBody, WorkspaceResponseMetadata]
+    IdentifiedEntityResponse[
+        WorkspaceResponseBody,
+        WorkspaceResponseMetadata,
+        WorkspaceResponseResources,
+    ]
 ):
     """Response model for workspaces."""
 

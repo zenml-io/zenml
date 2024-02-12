@@ -30,6 +30,7 @@ from pydantic import BaseModel, Field, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import LogicalOperators, StackComponentType
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.internal import server_owned_request_model
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -183,8 +184,16 @@ class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ComponentResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the component entity."""
+
+
 class ComponentResponse(
-    WorkspaceScopedResponse[ComponentResponseBody, ComponentResponseMetadata]
+    WorkspaceScopedResponse[
+        ComponentResponseBody,
+        ComponentResponseMetadata,
+        ComponentResponseResources,
+    ]
 ):
     """Response model for components."""
 

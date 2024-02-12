@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -215,8 +216,14 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class StepRunResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the step run entity."""
+
+
 class StepRunResponse(
-    WorkspaceScopedResponse[StepRunResponseBody, StepRunResponseMetadata]
+    WorkspaceScopedResponse[
+        StepRunResponseBody, StepRunResponseMetadata, StepRunResponseResources
+    ]
 ):
     """Response model for step runs."""
 

@@ -23,6 +23,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 
@@ -77,8 +78,14 @@ class LogsResponseMetadata(BaseResponseMetadata):
     )
 
 
+class LogsResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the Logs entity."""
+
+
 class LogsResponse(
-    IdentifiedEntityResponse[LogsResponseBody, LogsResponseMetadata]
+    IdentifiedEntityResponse[
+        LogsResponseBody, LogsResponseMetadata, LogsResponseResources
+    ]
 ):
     """Response model for logs."""
 

@@ -20,6 +20,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 
@@ -49,8 +50,16 @@ class TagResourceResponseBody(BaseResponseBody):
     resource_type: TaggableResourceTypes
 
 
+class TagResourceResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the tag resource entity."""
+
+
 class TagResourceResponse(
-    IdentifiedEntityResponse[TagResourceResponseBody, BaseResponseMetadata]
+    IdentifiedEntityResponse[
+        TagResourceResponseBody,
+        BaseResponseMetadata,
+        TagResourceResponseResources,
+    ]
 ):
     """Response model for the links between tags and resources."""
 

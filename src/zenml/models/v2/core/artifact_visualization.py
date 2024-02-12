@@ -20,6 +20,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 
@@ -53,10 +54,15 @@ class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
     artifact_version_id: UUID
 
 
+class ArtifactVisualizationResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the artifact visualization."""
+
+
 class ArtifactVisualizationResponse(
     IdentifiedEntityResponse[
         ArtifactVisualizationResponseBody,
         ArtifactVisualizationResponseMetadata,
+        ArtifactVisualizationResponseResources,
     ]
 ):
     """Response model for artifact visualizations."""

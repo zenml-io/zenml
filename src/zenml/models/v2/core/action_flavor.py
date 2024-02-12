@@ -17,23 +17,27 @@ from typing import Any, Dict
 from zenml.models.v2.base.base_plugin_flavor import (
     BasePluginFlavorResponse,
     BasePluginResponseBody,
-    BasePluginResponseMetadata,
+    BasePluginResponseMetadata, BasePluginResponseResources,
 )
 
 
 class ActionFlavorResponseBody(BasePluginResponseBody):
-    """Response body for event flavors."""
+    """Response body for action flavors."""
 
 
 class ActionFlavorResponseMetadata(BasePluginResponseMetadata):
-    """Response metadata for event flavors."""
+    """Response metadata for action flavors."""
 
     config_schema: Dict[str, Any]
 
 
+class ActionFlavorResponseResources(BasePluginResponseResources):
+    """Response resources for action flavors."""
+
+
 class ActionFlavorResponse(
     BasePluginFlavorResponse[
-        ActionFlavorResponseBody, ActionFlavorResponseMetadata
+        ActionFlavorResponseBody, ActionFlavorResponseMetadata, ActionFlavorResponseResources
     ]
 ):
     """Response model for Action Flavors."""

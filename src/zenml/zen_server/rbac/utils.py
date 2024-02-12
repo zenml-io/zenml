@@ -342,7 +342,7 @@ def get_resource_for_model(model: AnyResponse) -> Optional[Resource]:
 
 def get_surrogate_permission_model_for_model(
     model: AnyResponse, action: str
-) -> IdentifiedEntityResponse[Any, Any]:
+) -> IdentifiedEntityResponse[Any, Any, Any]:
     """Get a surrogate permission model for a model.
 
     In some cases a different model instead of the original model is used to

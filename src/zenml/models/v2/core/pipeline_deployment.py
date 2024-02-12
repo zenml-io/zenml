@@ -21,7 +21,7 @@ from pydantic import Field
 from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
-from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.base import BaseResponseResources, BaseZenModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -164,9 +164,13 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class PipelineDeploymentResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the pipeline deployment entity."""
+
+
 class PipelineDeploymentResponse(
     WorkspaceScopedResponse[
-        PipelineDeploymentResponseBody, PipelineDeploymentResponseMetadata
+        PipelineDeploymentResponseBody, PipelineDeploymentResponseMetadata, PipelineDeploymentResponseResources
     ]
 ):
     """Response model for pipeline deployments."""

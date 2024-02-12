@@ -24,6 +24,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import BaseFilter
@@ -69,8 +70,14 @@ class TagResponseBody(BaseResponseBody):
     )
 
 
+class TagResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the tag entity."""
+
+
 class TagResponse(
-    IdentifiedEntityResponse[TagResponseBody, BaseResponseMetadata]
+    IdentifiedEntityResponse[
+        TagResponseBody, BaseResponseMetadata, TagResponseResources
+    ]
 ):
     """Response model for tags."""
 

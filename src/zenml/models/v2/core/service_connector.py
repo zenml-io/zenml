@@ -22,6 +22,7 @@ from pydantic import Field, SecretStr, root_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
+from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -328,9 +329,15 @@ class ServiceConnectorResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ServiceConnectorResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the service connector entity."""
+
+
 class ServiceConnectorResponse(
     WorkspaceScopedResponse[
-        ServiceConnectorResponseBody, ServiceConnectorResponseMetadata
+        ServiceConnectorResponseBody,
+        ServiceConnectorResponseMetadata,
+        ServiceConnectorResponseResources,
     ]
 ):
     """Response model for service connectors."""

@@ -22,6 +22,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
     IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.scoped import WorkspaceScopedTaggableFilter
@@ -77,8 +78,16 @@ class ArtifactResponseMetadata(BaseResponseMetadata):
     )
 
 
+class ArtifactResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the Artifact Entity."""
+
+
 class ArtifactResponse(
-    IdentifiedEntityResponse[ArtifactResponseBody, ArtifactResponseMetadata]
+    IdentifiedEntityResponse[
+        ArtifactResponseBody,
+        ArtifactResponseMetadata,
+        ArtifactResponseResources,
+    ]
 ):
     """Artifact response model."""
 

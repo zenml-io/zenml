@@ -19,7 +19,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.base import BaseResponseResources, BaseZenModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -203,9 +203,15 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class PipelineBuildResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the pipeline build entity."""
+
+
 class PipelineBuildResponse(
     WorkspaceScopedResponse[
-        PipelineBuildResponseBody, PipelineBuildResponseMetadata
+        PipelineBuildResponseBody,
+        PipelineBuildResponseMetadata,
+        PipelineBuildResponseResources,
     ]
 ):
     """Response model for pipeline builds."""

@@ -220,8 +220,16 @@ class OAuthDeviceResponseMetadata(UserScopedResponseMetadata):
     )
 
 
+class OAuthDeviceResponseResources(UserScopedResponseMetadata):
+    """Class for all resource models associated with the OAuthDevice entity."""
+
+
 class OAuthDeviceResponse(
-    UserScopedResponse[OAuthDeviceResponseBody, OAuthDeviceResponseMetadata]
+    UserScopedResponse[
+        OAuthDeviceResponseBody,
+        OAuthDeviceResponseMetadata,
+        OAuthDeviceResponseResources,
+    ]
 ):
     """Response model for OAuth2 devices."""
 
