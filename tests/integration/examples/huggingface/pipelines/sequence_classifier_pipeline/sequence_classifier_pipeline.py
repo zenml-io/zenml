@@ -21,10 +21,10 @@ from steps import (
 
 from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.integrations.constants import HUGGINGFACE, TENSORFLOW
+from zenml.integrations.constants import HUGGINGFACE, PYTORCH, TENSORFLOW
 
 docker_settings = DockerSettings(
-    required_integrations=[HUGGINGFACE, TENSORFLOW],
+    required_integrations=[HUGGINGFACE, TENSORFLOW, PYTORCH],
     environment={"HF_HOME": "/app/huggingface"},
 )
 
@@ -32,7 +32,7 @@ docker_settings = DockerSettings(
 @pipeline(settings={"docker": docker_settings})
 def seq_classifier_train_eval_pipeline():
     """Train and Evaluation pipeline."""
-    datasets = data_importer("imdb")
+    datasets = data_importer("shubnandi/imdb_small")
     tokenizer = load_tokenizer()
     tokenized_datasets = sequence_classifier_tokenization(
         tokenizer=tokenizer, datasets=datasets
