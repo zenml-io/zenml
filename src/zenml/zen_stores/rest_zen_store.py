@@ -1412,7 +1412,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created event_source.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=event_source,
             route=EVENT_SOURCES,
             response_model=EventSourceResponse,
@@ -2661,7 +2661,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created trigger.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=trigger,
             route=TRIGGERS,
             response_model=TriggerResponse,
