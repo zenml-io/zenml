@@ -29,7 +29,7 @@ def data_loader() -> (
     ]
 ):
     """Return the renewable energy dataset as pandas dataframes."""
-    sf_pv_df = pd.read_csv(DATA_LOCATION + "energy/SF_PV.csv")
+    sf_pv_df = pd.read_csv(DATA_LOCATION + "energy/SF_PV.csv", nrows=100)
     df_train, df_test = NeuralProphet().split_df(
         sf_pv_df, freq="H", valid_p=1.0 / 12
     )
