@@ -21,7 +21,6 @@ from zenml.constants import (
     API,
     ARTIFACTS,
     CODE_REPOSITORIES,
-    EVENT_SOURCES,
     GET_OR_CREATE,
     MODEL_VERSIONS,
     MODELS,
@@ -37,12 +36,10 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    TRIGGERS,
     VERSION_1,
     WORKSPACES,
 )
 from zenml.enums import MetadataResourceTypes
-from zenml.event_sources.base_event_source import BaseEventSourceHandler
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     CodeRepositoryFilter,
@@ -50,8 +47,6 @@ from zenml.models import (
     CodeRepositoryResponse,
     ComponentFilter,
     ComponentResponse,
-    EventSourceRequest,
-    EventSourceResponse,
     ModelRequest,
     ModelResponse,
     ModelVersionArtifactRequest,
@@ -86,14 +81,11 @@ from zenml.models import (
     StackFilter,
     StackRequest,
     StackResponse,
-    TriggerRequest,
-    TriggerResponse,
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -383,107 +375,6 @@ def list_workspace_stack_components(
         resource_type=ResourceType.STACK_COMPONENT,
         list_method=zen_store().list_stack_components,
         hydrate=hydrate,
-    )
-
-
-@router.post(
-    WORKSPACES + "/{workspace_name_or_id}" + TRIGGERS,
-    response_model=TriggerResponse,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def create_trigger(
-    workspace_name_or_id: Union[str, UUID],
-    trigger: TriggerRequest,
-    _: AuthContext = Security(authorize),
-) -> TriggerResponse:
-    """Creates a trigger.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        trigger: Trigger to register.
-
-    Returns:
-        The created trigger.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the stack
-            component does not match the current workspace.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-
-    if trigger.workspace != workspace.id:
-        raise IllegalOperationError(
-            "Creating trigger outside of the workspace scope "
-            f"of this endpoint `{workspace_name_or_id}` is "
-            f"not supported."
-        )
-
-    # TODO: Validate event_source exists
-    # TODO: Validate event_filter is valid
-    # TODO: Validate action is valid
-
-    return verify_permissions_and_create_entity(
-        request_model=trigger,
-        resource_type=ResourceType.TRIGGER,
-        create_method=zen_store().create_trigger,
-    )
-
-
-@router.post(
-    WORKSPACES + "/{workspace_name_or_id}" + EVENT_SOURCES,
-    response_model=EventSourceResponse,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def create_event_source(
-    workspace_name_or_id: Union[str, UUID],
-    event_source: EventSourceRequest,
-    _: AuthContext = Security(authorize),
-) -> EventSourceResponse:
-    """Creates an event source.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        event_source: EventSource to register.
-
-    Returns:
-        The created event source.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the stack
-            component does not match the current workspace.
-        ValueError: If the plugin for an event source is not a valid event
-            source plugin.
-    """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-
-    if event_source.workspace != workspace.id:
-        raise IllegalOperationError(
-            "Creating event_source outside of the workspace scope "
-            f"of this endpoint `{workspace_name_or_id}` is "
-            f"not supported."
-        )
-
-    event_source_handler = plugin_flavor_registry.get_plugin(
-        event_source.flavor,
-        event_source.plugin_type,
-        event_source.plugin_subtype,
-    )
-
-    # Validate that the flavor and plugin_type correspond to an event source
-    # implementation
-    if not isinstance(event_source_handler, BaseEventSourceHandler):
-        raise ValueError(
-            f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
-            f"for flavor {event_source.flavor} is not a valid event source "
-            "plugin."
-        )
-
-    return verify_permissions_and_create_entity(
-        request_model=event_source,
-        resource_type=ResourceType.EVENT_SOURCE,
-        create_method=event_source_handler.create_event_source,
     )
 
 
