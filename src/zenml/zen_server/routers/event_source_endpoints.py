@@ -101,9 +101,9 @@ def list_event_sources(
         # Process the event sources through their associated plugins
         for idx, event_source in enumerate(event_sources.items):
             event_source_handler = plugin_flavor_registry.get_plugin(
-                event_source.flavor,
-                event_source.plugin_type,
-                event_source.plugin_subtype,
+                name=event_source.flavor,
+                _type=event_source.plugin_type,
+                subtype=event_source.plugin_subtype,
             )
 
             # Validate that the flavor and plugin_type correspond to an event
@@ -161,9 +161,9 @@ def get_event_source(
     verify_permission_for_model(event_source, action=Action.READ)
 
     event_source_handler = plugin_flavor_registry.get_plugin(
-        event_source.flavor,
-        event_source.plugin_type,
-        event_source.plugin_subtype,
+        name=event_source.flavor,
+        _type=event_source.plugin_type,
+        subtype=event_source.plugin_subtype,
     )
 
     # Validate that the flavor and plugin_type correspond to an event source
@@ -207,9 +207,9 @@ def create_event_source(
             source plugin.
     """
     event_source_handler = plugin_flavor_registry.get_plugin(
-        event_source.flavor,
-        event_source.plugin_type,
-        event_source.plugin_subtype,
+        name=event_source.flavor,
+        _type=event_source.plugin_type,
+        subtype=event_source.plugin_subtype,
     )
 
     # Validate that the flavor and plugin_type correspond to an event source
@@ -259,9 +259,9 @@ def update_event_source(
     verify_permission_for_model(event_source, action=Action.UPDATE)
 
     event_source_handler = plugin_flavor_registry.get_plugin(
-        event_source.flavor,
-        event_source.plugin_type,
-        event_source.plugin_subtype,
+        name=event_source.flavor,
+        _type=event_source.plugin_type,
+        subtype=event_source.plugin_subtype,
     )
 
     # Validate that the flavor and plugin_type correspond to an event source
@@ -311,9 +311,9 @@ def delete_event_source(
     verify_permission_for_model(event_source, action=Action.DELETE)
 
     event_source_handler = plugin_flavor_registry.get_plugin(
-        event_source.flavor,
-        event_source.plugin_type,
-        event_source.plugin_subtype,
+        name=event_source.flavor,
+        _type=event_source.plugin_type,
+        subtype=event_source.plugin_subtype,
     )
 
     # Validate that the flavor and plugin_type correspond to an event source

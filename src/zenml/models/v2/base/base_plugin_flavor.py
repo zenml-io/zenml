@@ -49,7 +49,7 @@ class BasePluginFlavorResponse(
     """Base response for all Plugin Flavors."""
 
     name: str = Field(title="Name of the flavor.")
-    _type: PluginType = Field(title="Type of the plugin.")
+    type: PluginType = Field(title="Type of the plugin.")
     subtype: PluginSubType = Field(title="Subtype of the plugin.")
 
     class Config:
@@ -68,6 +68,6 @@ class BasePluginFlavorResponse(
         from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 
         plugin_flavor = plugin_flavor_registry.get_flavor_class(
-            flavor_name=self.name, _type=self._type, subtype=self.subtype
+            name=self.name, _type=self.type, subtype=self.subtype
         )
         return plugin_flavor.get_flavor_response_model(hydrate=True)

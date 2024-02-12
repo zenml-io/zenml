@@ -81,7 +81,7 @@ def webhook(
     flavor = event_source.flavor
     try:
         plugin = plugin_flavor_registry.get_plugin(
-            flavor=flavor,
+            name=flavor,
             _type=PluginType.EVENT_SOURCE,
             subtype=PluginSubType.WEBHOOK,
         )

@@ -73,26 +73,26 @@ class PluginFlavorRegistry:
         return list(self.plugin_flavors[_type].keys())
 
     def _flavor_entries(
-        self, _type: PluginType, sub_type: PluginSubType
+        self, _type: PluginType, subtype: PluginSubType
     ) -> Dict[str, RegistryEntry]:
         """Get a list of all subtypes for a specific flavor and type.
 
         Args:
             _type: The type of Plugin
-            sub_type: The subtype of the plugin
+            subtype: The subtype of the plugin
         """
         if (
             _type in self.plugin_flavors
-            and sub_type in self.plugin_flavors[_type]
+            and subtype in self.plugin_flavors[_type]
         ):
-            return self.plugin_flavors[_type][sub_type]
+            return self.plugin_flavors[_type][subtype]
         else:
             return {}
 
     def list_available_flavor_names_for_type_and_subtype(
         self,
         _type: PluginType,
-        sub_type: PluginSubType,
+        subtype: PluginSubType,
         page: Optional[int],
         size: Optional[int],
     ) -> List[str]:
@@ -100,12 +100,12 @@ class PluginFlavorRegistry:
 
         Args:
             _type: The type of Plugin
-            sub_type: The subtype of the plugin
+            subtype: The subtype of the plugin
             page: For optional pagination
             size: For optional pagination
         """
         flavor_names = list(
-            self._flavor_entries(_type=_type, sub_type=sub_type).keys()
+            self._flavor_entries(_type=_type, subtype=subtype).keys()
         )
         if page > 0 and size > 0:
             start = page * size
@@ -121,19 +121,19 @@ class PluginFlavorRegistry:
     def list_available_flavors_for_type_and_subtype(
         self,
         _type: PluginType,
-        sub_type: PluginSubType,
+        subtype: PluginSubType,
     ) -> List[Type["BasePluginFlavor"]]:
         """Get a list of all subtypes for a specific flavor and type.
 
         Args:
             _type: The type of Plugin
-            sub_type: The subtype of the plugin
+            subtype: The subtype of the plugin
         """
         flavors = list(
             [
                 entry.flavor_class
                 for _, entry in self._flavor_entries(
-                    _type=_type, sub_type=sub_type
+                    _type=_type, subtype=subtype
                 ).items()
             ]
         )
@@ -142,7 +142,7 @@ class PluginFlavorRegistry:
     def list_available_flavor_responses_for_type_and_subtype(
         self,
         _type: PluginType,
-        sub_type: PluginSubType,
+        subtype: PluginSubType,
         page: int,
         size: int,
         hydrate: bool = False,
@@ -151,7 +151,7 @@ class PluginFlavorRegistry:
 
         Args:
             _type: The type of Plugin
-            sub_type: The subtype of the plugin
+            subtype: The subtype of the plugin
             page: Page for pagination (offset +1)
             size: Page size for pagination
             hydrate: Whether to hydrate the response bodies
@@ -161,7 +161,7 @@ class PluginFlavorRegistry:
         """
         flavors = self.list_available_flavors_for_type_and_subtype(
             _type=_type,
-            sub_type=sub_type,
+            subtype=subtype,
         )
         total = len(flavors)
         total_pages = total / size
@@ -282,14 +282,14 @@ class PluginFlavorRegistry:
         self,
         _type: PluginType,
         subtype: PluginSubType,
-        flavor_name: str,
+        name: str,
     ) -> Type["BasePluginFlavor"]:
         """Get a single event_source based on the key.
 
         Args:
             _type: The type of plugin.
             subtype: The subtype of plugin.
-            flavor_name: Indicates the name of the plugin flavor.
+            name: Indicates the name of the plugin flavor.
 
         Returns:
             `BaseEventConfiguration` subclass that was registered for this key.
@@ -298,11 +298,11 @@ class PluginFlavorRegistry:
             return self._get_registry_entry(
                 _type=_type,
                 subtype=subtype,
-                flavor_name=flavor_name,
+                flavor_name=name,
             ).flavor_class
         except KeyError:
             raise KeyError(
-                f"No flavor class found for flavor name {flavor_name} at type "
+                f"No flavor class found for flavor name {name} at type "
                 f"{_type} and subtype {subtype}."
             )
 
@@ -310,12 +310,12 @@ class PluginFlavorRegistry:
         self,
         _type: PluginType,
         subtype: PluginSubType,
-        flavor_name: str,
+        name: str,
     ) -> "BasePlugin":
         """Get the plugin based on the flavor, type and subtype.
 
         Args:
-            flavor_name: The name of the plugin flavor.
+            name: The name of the plugin flavor.
             _type: The type of plugin.
             subtype: The subtype of plugin.
 
@@ -331,7 +331,7 @@ class PluginFlavorRegistry:
             plugin_entry = self._get_registry_entry(
                 _type=_type,
                 subtype=subtype,
-                flavor_name=flavor_name,
+                flavor_name=name,
             )
             if plugin_entry.plugin_instance is None:
                 raise RuntimeError(
@@ -340,7 +340,7 @@ class PluginFlavorRegistry:
             return plugin_entry.plugin_instance
         except KeyError:
             raise KeyError(
-                f"No flavor found for flavor name {flavor_name} and type "
+                f"No flavor found for flavor name {name} and type "
                 f"{_type} and subtype {subtype}."
             )
 

@@ -575,7 +575,7 @@ class BaseEventSourceFlavor(BasePluginFlavor, ABC):
         return EventSourceFlavorResponse(
             body=EventSourceFlavorResponseBody(),
             metadata=metadata,
-            flavor_name=cls.FLAVOR,
-            plugin_type=cls.TYPE,
-            plugin_subtype=cls.SUBTYPE,
+            name=cls.FLAVOR,
+            type=cls.TYPE,
+            subtype=cls.SUBTYPE,
         )

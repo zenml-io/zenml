@@ -49,8 +49,8 @@ plugin_router = APIRouter(
 )
 @handle_exceptions
 def list_flavors(
-    _type: PluginType,
-    sub_type: PluginSubType,
+    type: PluginType,
+    subtype: PluginSubType,
     page: int = PAGINATION_STARTING_PAGE,
     size: int = PAGE_SIZE_DEFAULT,
     hydrate: bool = False,
@@ -59,8 +59,8 @@ def list_flavors(
     """Returns all event flavors.
 
     Args:
-        _type: The type of Plugin
-        sub_type: The subtype of the plugin
+        type: The type of Plugin
+        subtype: The subtype of the plugin
         page: Page for pagination (offset +1)
         size: Page size for pagination
         hydrate: Whether to hydrate the response bodies
@@ -69,7 +69,7 @@ def list_flavors(
         A page of flavors.
     """
     flavors = plugin_flavor_registry.list_available_flavor_responses_for_type_and_subtype(
-        _type=_type, sub_type=sub_type, page=page, size=size, hydrate=hydrate
+        _type=type, subtype=subtype, page=page, size=size, hydrate=hydrate
     )
     return flavors
 
@@ -78,27 +78,27 @@ def list_flavors(
 
 
 @plugin_router.get(
-    "/{flavor_name}",
+    "/{name}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_flavor(
-    flavor_name: str,
-    plugin_type: PluginType = Query(..., alias="type"),
-    plugin_subtype: PluginSubType = Query(..., alias="subtype"),
+    name: str,
+    type: PluginType = Query(..., alias="type"),
+    subtype: PluginSubType = Query(..., alias="subtype"),
     _: AuthContext = Security(authorize),
 ) -> BasePluginFlavorResponse:
     """Returns the requested flavor.
 
     Args:
-        flavor_name: Name of the flavor.
-        plugin_type: Type of Plugin
-        plugin_subtype: Subtype of Plugin
+        name: Name of the flavor.
+        type: Type of Plugin
+        subtype: Subtype of Plugin
 
     Returns:
         The requested flavor response.
     """
     plugin_flavor = plugin_flavor_registry.get_flavor_class(
-        flavor_name=flavor_name, _type=plugin_type, subtype=plugin_subtype
+        name=name, _type=type, subtype=subtype
     )
     return plugin_flavor.get_flavor_response_model(hydrate=True)

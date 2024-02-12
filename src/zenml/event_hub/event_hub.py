@@ -83,7 +83,7 @@ class EventHub:
 
             action_config = trigger_execution.trigger.get_metadata().action
             action_handler = plugin_flavor_registry.get_plugin(
-                flavor="builtin",
+                name="builtin",
                 _type=PluginType.ACTION,
                 subtype=PluginSubType.PIPELINE_RUN,
             )
@@ -128,7 +128,7 @@ class EventHub:
             # implementation to be imported here.
             try:
                 plugin_flavor = plugin_flavor_registry.get_flavor_class(
-                    flavor=event_source.flavor,
+                    name=event_source.flavor,
                     _type=PluginType.EVENT_SOURCE,
                     subtype=event_source.plugin_subtype,
                 )
