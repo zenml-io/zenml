@@ -14,7 +14,9 @@
 """Implementation of the internal scheduler event source handler."""
 from typing import Type
 
-from zenml.event_sources.base_event_source import BaseEvent
+from zenml.event_sources.base_event import (
+    BaseEvent,
+)
 from zenml.event_sources.schedules.base_schedule_event_source import (
     BaseScheduleEvent,
     BaseScheduleEventSourceHandler,

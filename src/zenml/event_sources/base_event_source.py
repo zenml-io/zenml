@@ -26,6 +26,8 @@ from typing import (
 from pydantic import BaseModel
 
 from zenml.enums import PluginType
+from zenml.event_hub.base_event_hub import BaseEventHub
+from zenml.event_sources.base_event import BaseEvent
 from zenml.logger import get_logger
 from zenml.models import (
     EventSourceFlavorResponse,
@@ -45,13 +47,6 @@ if TYPE_CHECKING:
     pass
 
 logger = get_logger(__name__)
-
-# -------------------- Event Models -----------------------------------
-
-
-class BaseEvent(BaseModel):
-    """Base class for all inbound events."""
-
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -115,7 +110,9 @@ class BaseEventSourceHandler(BasePlugin, ABC):
     class provides methods that implementations can use to dispatch events to
     the central event hub where they can be processed and eventually trigger
     actions.
-    """ 
+    """
+
+    _event_hub: Optional[BaseEventHub] = None
 
     @property
     @abstractmethod
@@ -134,6 +131,46 @@ class BaseEventSourceHandler(BasePlugin, ABC):
         Returns:
             The event filter configuration class.
         """
+
+    def __init__(self, event_hub: Optional[BaseEventHub] = None) -> None:
+        """Event source handler initialization.
+
+        Args:
+            event_hub: Optional event hub to use to initialize the event source
+                handler. If not set during initialization, it may be set
+                at a later time by calling `set_event_hub`. An event hub must
+                be configured before the event handler needs to dispatch events.
+        """
+        super().__init__()
+        self._event_hub = event_hub
+
+    @property
+    def event_hub(self) -> BaseEventHub:
+        """Get the event hub used to dispatch events.
+
+        Returns:
+            The event hub.
+
+        Raises:
+            RuntimeError: if an event hub isn't configured.
+        """
+        if self._event_hub is None:
+            from zenml.event_hub.event_hub import event_hub
+
+            # TODO: for now, we use the default internal event hub. In
+            # the future, this should be configurable.
+            self._event_hub = event_hub
+
+        return self._event_hub
+
+    def set_event_hub(self, event_hub: BaseEventHub) -> None:
+        """Configure an event hub for this event source plugin.
+
+        Args:
+            event_hub: Event hub to be used by this event handler to dispatch
+                events.
+        """
+        self._event_hub = event_hub
 
     def create_event_source(
         self, event_source: EventSourceRequest
@@ -374,17 +411,21 @@ class BaseEventSourceHandler(BasePlugin, ABC):
                 f"Invalid configuration for event filter: {e}."
             ) from e
 
-    def dispatch_event(self, event: BaseEvent) -> None:
+    def dispatch_event(
+        self,
+        event: BaseEvent,
+        event_source: EventSourceResponse,
+    ) -> None:
         """Dispatch an event to all active triggers that match the event.
 
         Args:
             event: The event to dispatch.
+            event_source: The event source that produced the event.
         """
-        event_hub.process_event(
+        self.event_hub.process_event(
             event=event,
             event_source=event_source,
         )
-
 
     def _validate_event_source_request(
         self, event_source: EventSourceRequest, config: EventSourceConfig

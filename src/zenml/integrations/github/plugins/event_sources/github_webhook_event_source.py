@@ -20,7 +20,10 @@ from uuid import UUID
 from pydantic import BaseModel, Extra, Field
 
 from zenml.enums import SecretScope
-from zenml.event_sources.base_event_source import BaseEvent, EventSourceConfig
+from zenml.event_sources.base_event import (
+    BaseEvent,
+)
+from zenml.event_sources.base_event_source import EventSourceConfig
 from zenml.event_sources.webhooks.base_webhook_event_source import (
     BaseWebhookEventSourceHandler,
     WebhookEventFilterConfig,

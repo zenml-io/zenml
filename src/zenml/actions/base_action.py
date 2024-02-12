@@ -14,7 +14,7 @@
 """Base implementation of actions."""
 import json
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, Type, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type
 
 from zenml.enums import PluginType
 from zenml.models import (
@@ -77,7 +77,7 @@ class BaseActionHandler(BasePlugin, ABC):
         """Extract related resources for this action."""
 
     def validate_and_action_configuration(
-            self, event_source_config: Dict[str, Any]
+        self, event_source_config: Dict[str, Any]
     ) -> ActionConfig:
         """Validates the action configuration.
 
@@ -137,4 +137,3 @@ class BaseActionFlavor(BasePluginFlavor, ABC):
             type=cls.TYPE,
             subtype=cls.SUBTYPE,
         )
-

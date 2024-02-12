@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an action Plugin could look like."""
-from typing import Any, ClassVar, Dict, Optional, Type, List
+from typing import Any, ClassVar, Dict, List, Optional, Type
 from uuid import UUID
 
 from zenml.actions.base_action import (
@@ -24,8 +24,10 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import PluginSubType
 from zenml.models import TriggerExecutionResponse
-from zenml.zen_server.rbac.models import ResourceType, Resource  # TODO: Maybe we move these into a common place?
-
+from zenml.zen_server.rbac.models import (  # TODO: Maybe we move these into a common place?
+    Resource,
+    ResourceType,
+)
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -80,15 +82,20 @@ class PipelineRunActionHandler(BaseActionHandler):
         self,
         action_config: PipelineRunActionConfiguration,
     ) -> List[Resource]:
-        """Extract related resources for this action."""
+        """Extract related resources for this action.
 
+        Args:
+            action_config: pipeline run action configuraiton from which to
+                extract related resources.
+
+        Returns:
+            List of resources related to the action.
+        """
         deployment_id = action_config.pipeline_deployment_id
         zen_store = GlobalConfiguration().zen_store
 
         try:
-           deployment = zen_store.get_deployment(
-                deployment_id=deployment_id
-            )
+            deployment = zen_store.get_deployment(deployment_id=deployment_id)
         except KeyError:
             raise ValueError(f"No deployment found with id {deployment_id}.")
 
@@ -96,7 +103,7 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         return [
             Resource(id=deployment_id, type=ResourceType.PIPELINE_DEPLOYMENT),
-            Resource(id=pipeline_id, type=ResourceType.PIPELINE)
+            Resource(id=pipeline_id, type=ResourceType.PIPELINE),
         ]
 
 

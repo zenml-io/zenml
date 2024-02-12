@@ -19,8 +19,11 @@ from zenml import EventSourceResponse
 from zenml.actions.base_action import BaseActionHandler
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PluginSubType, PluginType
-from zenml.event_sources.base_event_source import (
+from zenml.event_hub.base_event_hub import BaseEventHub
+from zenml.event_sources.base_event import (
     BaseEvent,
+)
+from zenml.event_sources.base_event_source import (
     BaseEventSourceFlavor,
 )
 from zenml.logger import get_logger
@@ -39,8 +42,13 @@ if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
-class EventHub:
-    """Handler for all events."""
+class InternalEventHub(BaseEventHub):
+    """Internal in-server event hub implementation.
+
+    The internal in-server event hub uses the database as a source of truth for
+    configured triggers and triggers actions by calling the action handlers
+    directly.
+    """
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -51,20 +59,42 @@ class EventHub:
         """
         return GlobalConfiguration().zen_store
 
+    def activate_trigger(self, trigger: TriggerResponse) -> None:
+        """Configure the event hub to trigger an action.
+
+        Args:
+            trigger: the trigger to activate.
+        """
+        # We don't need to do anything here to change the event hub
+        # configuration. The in-server event hub already uses the database
+        # as the source of truth regarding configured active triggers.
+        pass
+
+    def deactivate_trigger(self, trigger: TriggerResponse) -> None:
+        """Remove a trigger from the event hub.
+
+        Args:
+            trigger: the trigger to deactivate.
+        """
+        # We don't need to do anything here to change the event hub
+        # configuration. The in-server event hub already uses the database
+        # as the source of truth regarding configured active triggers.
+        pass
+
     def process_event(
         self,
         event: BaseEvent,
         event_source: EventSourceResponse,
     ) -> None:
-        """Process an incoming event and execute all configured actions.
+        """Process an incoming event and trigger all configured actions.
 
         This will first check for any subscribers/triggers for this event,
         then log the event for later reference and finally perform the
         configured action(s).
 
         Args:
-            event: Generic event
-            event_source: The Event Source
+            event: The event.
+            event_source: The event source that produced the event.
         """
         triggers = self.get_matching_active_triggers_for_event(
             event=event, event_source=event_source
@@ -158,4 +188,4 @@ class EventHub:
         return trigger_list
 
 
-event_hub = EventHub()
+event_hub = InternalEventHub()

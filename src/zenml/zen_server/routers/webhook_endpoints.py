@@ -18,7 +18,6 @@ from fastapi import APIRouter, Depends, Request
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import PluginSubType, PluginType
-from zenml.event_hub.event_hub import event_hub
 from zenml.event_sources.webhooks.base_webhook_event_source import (
     BaseWebhookEventSourceHandler,
 )
@@ -102,12 +101,8 @@ def webhook(
         )
 
     # Pass the raw event and headers to the plugin
-    event = plugin.process_webhook_event(
+    plugin.process_webhook_event(
         event_source=event_source,
         raw_body=raw_body,
         headers=dict(request.headers.items()),
-    )
-    event_hub.process_event(
-        event=event,
-        event_source=event_source,
     )
