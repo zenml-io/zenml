@@ -21,9 +21,9 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
-    BaseDBResponse,
     BaseResponseBody,
     BaseResponseMetadata,
+    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
@@ -61,7 +61,9 @@ class ModelVersionPipelineRunResponseBody(BaseResponseBody):
 
 
 class ModelVersionPipelineRunResponse(
-    BaseDBResponse[ModelVersionPipelineRunResponseBody, BaseResponseMetadata]
+    IdentifiedEntityResponse[
+        ModelVersionPipelineRunResponseBody, BaseResponseMetadata
+    ]
 ):
     """Response model for links between model versions and pipeline runs."""
 

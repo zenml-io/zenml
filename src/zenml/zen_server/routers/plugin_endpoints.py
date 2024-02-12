@@ -53,6 +53,7 @@ def list_flavors(
     plugin_subtype: PluginSubType,
     page: int = PAGINATION_STARTING_PAGE,
     size: int = PAGE_SIZE_DEFAULT,
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[BasePluginFlavorResponse]:
     """Returns all event flavors.
@@ -72,7 +73,7 @@ def list_flavors(
     end = start + size
 
     page_items = [
-        flavor.get_plugin_flavor_response_model() for flavor in flavors
+        flavor.get_flavor_response_model(hydrate=hydrate) for flavor in flavors
     ][start:end]
 
     return_page = Page(
@@ -112,4 +113,4 @@ def get_flavor(
     plugin_flavor = plugin_flavor_registry.get_flavor_class(
         flavor_name=flavor_name, _type=plugin_type, subtype=plugin_subtype
     )
-    return plugin_flavor.get_plugin_flavor_response_model()
+    return plugin_flavor.get_flavor_response_model(hydrate=True)

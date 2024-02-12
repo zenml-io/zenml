@@ -18,11 +18,11 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.models import (
-    BaseDBResponse,
     BaseFilter,
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    IdentifiedEntityResponse,
 )
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ class TriggerExecutionResponseMetadata(BaseResponseMetadata):
 
 
 class TriggerExecutionResponse(
-    BaseDBResponse[
+    IdentifiedEntityResponse[
         TriggerExecutionResponseBody, TriggerExecutionResponseMetadata
     ]
 ):

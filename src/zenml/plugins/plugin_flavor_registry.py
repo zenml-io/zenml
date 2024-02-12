@@ -83,6 +83,8 @@ class PluginFlavorRegistry:
             and sub_type in self.plugin_flavors[_type]
         ):
             return self.plugin_flavors[_type][sub_type]
+        else:
+            return {}
 
     def list_available_flavor_names_for_type_and_subtype(
         self,
@@ -106,6 +108,12 @@ class PluginFlavorRegistry:
             start = page * size
             end = start + size
             return flavor_names[start:end]
+        else:
+            raise RuntimeError(
+                f"Invalid pagination values. Both values for "
+                f"page: {page} and size: {size} need to be "
+                f"positive, non-zero integers."
+            )
 
     def list_available_flavors_for_type_and_subtype(
         self,

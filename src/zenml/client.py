@@ -86,7 +86,6 @@ from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
-    BaseDBResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryResponse,
@@ -102,6 +101,7 @@ from zenml.models import (
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
+    IdentifiedEntityResponse,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -183,7 +183,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-AnyResponse = TypeVar("AnyResponse", bound=BaseDBResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=IdentifiedEntityResponse)  # type: ignore[type-arg]
 
 
 class ClientConfiguration(FileSyncModel):

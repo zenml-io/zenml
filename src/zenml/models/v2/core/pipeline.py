@@ -22,10 +22,10 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models import (
-    BaseDBResponse,
     BaseFilter,
     BaseResponseBody,
     BaseResponseMetadata,
+    IdentifiedEntityResponse,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -293,7 +293,7 @@ class PipelineNamespaceResponseMetadata(BaseResponseMetadata):
 
 
 class PipelineNamespaceResponse(
-    BaseDBResponse[
+    IdentifiedEntityResponse[
         PipelineNamespaceResponseBody, PipelineNamespaceResponseMetadata
     ]
 ):

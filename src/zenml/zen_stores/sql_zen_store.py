@@ -121,7 +121,6 @@ from zenml.models import (
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
     ArtifactVisualizationResponse,
-    BaseDBResponse,
     BaseFilter,
     CodeReferenceRequest,
     CodeReferenceResponse,
@@ -141,6 +140,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    IdentifiedEntityResponse,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -302,7 +302,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
-B = TypeVar("B", bound=BaseDBResponse)  # type: ignore[type-arg]
+B = TypeVar("B", bound=IdentifiedEntityResponse)  # type: ignore[type-arg]
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning

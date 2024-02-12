@@ -113,7 +113,6 @@ from zenml.models import (
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
     ArtifactVisualizationResponse,
-    BaseDBResponse,
     BaseFilter,
     BaseRequest,
     CodeReferenceResponse,
@@ -133,6 +132,7 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    IdentifiedEntityResponse,
     LogsResponse,
     ModelFilter,
     ModelRequest,
@@ -232,7 +232,7 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
-AnyResponse = TypeVar("AnyResponse", bound=BaseDBResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=IdentifiedEntityResponse)  # type: ignore[type-arg]
 AnyWorkspaceScopedRequest = TypeVar(
     "AnyWorkspaceScopedRequest",
     bound=WorkspaceScopedRequest,

@@ -28,14 +28,14 @@ from pydantic import BaseModel
 from zenml.enums import PluginType
 from zenml.logger import get_logger
 from zenml.models import (
-    EventFlavorResponse,
+    EventSourceFlavorResponse,
     EventSourceRequest,
     EventSourceResponse,
     EventSourceUpdate,
 )
-from zenml.models.v2.plugin.event_flavor import (
-    EventFlavorResponseBody,
-    EventFlavorResponseMetadata,
+from zenml.models.v2.core.event_source_flavor import (
+    EventSourceFlavorResponseBody,
+    EventSourceFlavorResponseMetadata,
 )
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
@@ -558,14 +558,23 @@ class BaseEventSourceFlavor(BasePluginFlavor, ABC):
         return config_schema
 
     @classmethod
-    def get_plugin_flavor_response_model(cls) -> EventFlavorResponse:
-        """Convert the Flavor into a Response Model."""
-        return EventFlavorResponse(
-            body=EventFlavorResponseBody(),
-            metadata=EventFlavorResponseMetadata(
+    def get_flavor_response_model(
+        cls, hydrate: bool
+    ) -> EventSourceFlavorResponse:
+        """Convert the Flavor into a Response Model.
+
+        Args:
+            hydrate: Whether the model should be hydrated.
+        """
+        metadata = None
+        if hydrate:
+            metadata = EventSourceFlavorResponseMetadata(
                 source_config_schema=cls.get_event_source_config_schema(),
                 filter_config_schema=cls.get_event_filter_config_schema(),
-            ),
+            )
+        return EventSourceFlavorResponse(
+            body=EventSourceFlavorResponseBody(),
+            metadata=metadata,
             flavor_name=cls.FLAVOR,
             plugin_type=cls.TYPE,
             plugin_subtype=cls.SUBTYPE,

@@ -30,10 +30,10 @@ from pydantic import Field, root_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
-    BaseDBResponse,
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
@@ -254,7 +254,9 @@ class UserResponseMetadata(BaseResponseMetadata):
     )
 
 
-class UserResponse(BaseDBResponse[UserResponseBody, UserResponseMetadata]):
+class UserResponse(
+    IdentifiedEntityResponse[UserResponseBody, UserResponseMetadata]
+):
     """Response model for user and service accounts.
 
     This returns the activation_token that is required for the

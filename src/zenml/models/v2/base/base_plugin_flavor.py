@@ -44,10 +44,26 @@ class BasePluginFlavorResponse(
 ):
     """Base response for all Plugin Flavors."""
 
-    flavor_name: str = Field(title="Name of the flavor.")
-    plugin_type: PluginType = Field(title="Type of the flavor.")
-    plugin_subtype: PluginSubType = Field(title="Subtype of the flavor.")
+    name: str = Field(title="Name of the flavor.")
+    _type: PluginType = Field(title="Type of the plugin.")
+    subtype: PluginSubType = Field(title="Subtype of the plugin.")
 
     class Config:
         """Configuration for base plugin flavor response."""
-        extra = Extra.allow
+
+        extra = Extra.ignore
+
+    def get_hydrated_version(
+        self,
+    ) -> "BasePluginFlavorResponse[AnyPluginBody, AnyPluginMetadata]":
+        """Abstract method to fetch the hydrated version of the model.
+
+        Raises:
+            NotImplementedError: in case the method is not implemented.
+        """
+        from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
+
+        plugin_flavor = plugin_flavor_registry.get_flavor_class(
+            flavor_name=self.name, _type=self._type, subtype=self.subtype
+        )
+        return plugin_flavor.get_flavor_response_model(hydrate=True)

@@ -19,7 +19,7 @@ from pydantic import BaseModel, Extra
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PluginSubType, PluginType
-from zenml.models import BasePluginFlavorResponse
+from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -72,5 +72,11 @@ class BasePluginFlavor(ABC):
 
     @classmethod
     @abstractmethod
-    def get_plugin_flavor_response_model(cls) -> BasePluginFlavorResponse:
-        """Convert the Flavor into a Response Model."""
+    def get_flavor_response_model(
+        cls, hydrate: bool
+    ) -> BasePluginFlavorResponse:
+        """Convert the Flavor into a Response Model.
+
+        Args:
+            hydrate: Whether the model should be hydrated.
+        """

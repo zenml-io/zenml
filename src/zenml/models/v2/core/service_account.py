@@ -19,10 +19,10 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
-    BaseDBResponse,
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
@@ -88,7 +88,9 @@ class ServiceAccountResponseMetadata(BaseResponseMetadata):
 
 
 class ServiceAccountResponse(
-    BaseDBResponse[ServiceAccountResponseBody, ServiceAccountResponseMetadata]
+    IdentifiedEntityResponse[
+        ServiceAccountResponseBody, ServiceAccountResponseMetadata
+    ]
 ):
     """Response model for service accounts."""
 

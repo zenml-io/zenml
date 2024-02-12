@@ -31,10 +31,10 @@ from pydantic import Field
 from sqlmodel import col
 
 from zenml.models.v2.base.base import (
-    BaseDBResponse,
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
@@ -111,7 +111,8 @@ UserMetadata = TypeVar("UserMetadata", bound=UserScopedResponseMetadata)
 
 
 class UserScopedResponse(
-    BaseDBResponse[UserBody, UserMetadata], Generic[UserBody, UserMetadata]
+    IdentifiedEntityResponse[UserBody, UserMetadata],
+    Generic[UserBody, UserMetadata],
 ):
     """Base user-owned model.
 

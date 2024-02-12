@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,30 +11,39 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing event source flavors.."""
+"""Action flavor model definitions."""
 from typing import Any, Dict
 
-from zenml.models.v2.plugin.plugin_flavor import (
+from zenml.models.v2.base.base_plugin_flavor import (
     BasePluginFlavorResponse,
     BasePluginResponseBody,
     BasePluginResponseMetadata,
 )
 
 
-class EventFlavorResponseBody(BasePluginResponseBody):
+class ActionFlavorResponseBody(BasePluginResponseBody):
     """Response body for event flavors."""
 
 
-class EventFlavorResponseMetadata(BasePluginResponseMetadata):
+class ActionFlavorResponseMetadata(BasePluginResponseMetadata):
     """Response metadata for event flavors."""
 
-    source_config_schema: Dict[str, Any]
-    filter_config_schema: Dict[str, Any]
+    config_schema: Dict[str, Any]
 
 
-class EventFlavorResponse(
+class ActionFlavorResponse(
     BasePluginFlavorResponse[
-        EventFlavorResponseBody, EventFlavorResponseMetadata
+        ActionFlavorResponseBody, ActionFlavorResponseMetadata
     ]
 ):
-    """Response model for Event Flavors."""
+    """Response model for Action Flavors."""
+
+    # Body and metadata properties
+    @property
+    def config_schema(self) -> Dict[str, Any]:
+        """The `source_config_schema` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().config_schema

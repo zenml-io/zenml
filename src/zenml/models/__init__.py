@@ -18,7 +18,7 @@
 # V2 Base
 from zenml.models.v2.base.base import (
     BaseRequest,
-    BaseDBResponse,
+    IdentifiedEntityResponse,
     BaseResponseBody,
     BaseResponseMetadata,
     BaseZenModel,
@@ -46,6 +46,9 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
+from zenml.models.v2.core.action_flavor import (
+    ActionFlavorResponse,
+)
 from zenml.models.v2.core.api_key import (
     APIKey,
     APIKeyRequest,
@@ -102,6 +105,9 @@ from zenml.models.v2.core.component import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
+)
+from zenml.models.v2.core.event_source_flavor import (
+    EventSourceFlavorResponse,
 )
 from zenml.models.v2.core.device import (
     OAuthDeviceUpdate,
@@ -191,9 +197,7 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
 )
-from zenml.models.v2.plugin.action_flavor import ActionFlavorResponse
-from zenml.models.v2.plugin.event_flavor import EventFlavorResponse
-from zenml.models.v2.plugin.plugin_flavor import BasePluginFlavorResponse
+from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
     RunMetadataFilter,
@@ -526,10 +530,11 @@ TriggerResponseMetadata.update_forward_refs(
 __all__ = [
     # V2 Base
     "BaseRequest",
-    "BaseDBResponse",
+    "IdentifiedEntityResponse",
     "BaseResponseBody",
     "BaseResponseMetadata",
     "BaseZenModel",
+    "BasePluginFlavorResponse",
     "UserScopedRequest",
     "UserScopedFilter",
     "UserScopedResponse",
@@ -548,6 +553,7 @@ __all__ = [
     "UUIDFilter",
     "Page",
     # V2 Core
+    "ActionFlavorResponse",
     "APIKey",
     "APIKeyRequest",
     "APIKeyUpdate",
@@ -591,6 +597,7 @@ __all__ = [
     "ComponentResponse",
     "ComponentResponseBody",
     "ComponentResponseMetadata",
+    "EventSourceFlavorResponse",
     "FlavorRequest",
     "FlavorUpdate",
     "FlavorFilter",
@@ -761,8 +768,4 @@ __all__ = [
     "OAuthDeviceVerificationRequest",
     "OAuthRedirectResponse",
     "OAuthTokenResponse",
-    # V2 Plugin
-    "ActionFlavorResponse",
-    "BasePluginFlavorResponse",
-    "EventFlavorResponse",
 ]

@@ -19,10 +19,10 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.models.v2.base.base import (
-    BaseDBResponse,
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    IdentifiedEntityResponse,
 )
 
 if TYPE_CHECKING:
@@ -69,7 +69,9 @@ class CodeReferenceResponseMetadata(BaseResponseMetadata):
 
 
 class CodeReferenceResponse(
-    BaseDBResponse[CodeReferenceResponseBody, CodeReferenceResponseMetadata]
+    IdentifiedEntityResponse[
+        CodeReferenceResponseBody, CodeReferenceResponseMetadata
+    ]
 ):
     """Response model for code references."""
 

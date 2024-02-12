@@ -19,10 +19,10 @@ from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
-    BaseDBResponse,
     BaseRequest,
     BaseResponseBody,
     BaseResponseMetadata,
+    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.scoped import WorkspaceScopedTaggableFilter
 from zenml.models.v2.core.tag import TagResponse
@@ -78,7 +78,7 @@ class ArtifactResponseMetadata(BaseResponseMetadata):
 
 
 class ArtifactResponse(
-    BaseDBResponse[ArtifactResponseBody, ArtifactResponseMetadata]
+    IdentifiedEntityResponse[ArtifactResponseBody, ArtifactResponseMetadata]
 ):
     """Artifact response model."""
 
