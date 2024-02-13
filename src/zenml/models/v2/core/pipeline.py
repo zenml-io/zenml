@@ -32,7 +32,8 @@ from zenml.models import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.base import BaseResponseResources
+from zenml.models.v2.base.base import BaseResponseResources, \
+    BaseDatedResponseBody
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
@@ -103,7 +104,7 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class PipelineyResponseResources(BaseResponseResources):
+class PipelineResponseResources(BaseResponseResources):
     """Class for all resource models associated with the pipeline entity."""
 
 
@@ -111,7 +112,7 @@ class PipelineResponse(
     WorkspaceScopedResponse[
         PipelineResponseBody,
         PipelineResponseMetadata,
-        PipelineyResponseResources,
+        PipelineResponseResources,
     ]
 ):
     """Response model for pipelines."""
@@ -284,7 +285,7 @@ class PipelineFilter(WorkspaceScopedFilter):
 # ------------------ Pipeline Namespaces ------------------
 
 
-class PipelineNamespaceResponseBody(BaseResponseBody):
+class PipelineNamespaceResponseBody(BaseDatedResponseBody):
     """Response body for pipeline namespaces."""
 
     latest_run_id: Optional[UUID] = Field(

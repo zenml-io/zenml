@@ -24,7 +24,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
+    IdentifiedEntityResponse, BaseDatedResponseBody,
 )
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
@@ -68,7 +68,7 @@ class ModelVersionArtifactRequest(WorkspaceScopedRequest):
 # ------------------ Response Model ------------------
 
 
-class ModelVersionArtifactResponseBody(BaseResponseBody):
+class ModelVersionArtifactResponseBody(BaseDatedResponseBody):
     """Response body for links between model versions and artifacts."""
 
     model: UUID

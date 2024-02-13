@@ -25,7 +25,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
+    IdentifiedEntityResponse, BaseDatedResponseBody,
 )
 from zenml.models.v2.base.filter import BaseFilter
 
@@ -58,7 +58,7 @@ class TagUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class TagResponseBody(BaseResponseBody):
+class TagResponseBody(BaseDatedResponseBody):
     """Response body for tags."""
 
     color: ColorVariants = Field(

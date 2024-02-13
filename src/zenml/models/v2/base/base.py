@@ -70,20 +70,7 @@ class BaseRequest(BaseZenModel):
 
 
 class BaseResponseBody(BaseZenModel):
-    """Base body model.
-
-    Used as a base class for all body models associated with responses.
-    Features a creation and update timestamp.
-    """
-
-    created: Optional[datetime] = Field(
-        title="The timestamp when this resource was created.",
-        default=None,
-    )
-    updated: Optional[datetime] = Field(
-        title="The timestamp when this resource was last updated.",
-        default=None,
-    )
+    """Base body model."""
 
 
 class BaseResponseMetadata(BaseZenModel):
@@ -187,8 +174,28 @@ class BaseResponse(
         return self.resources
 
 
+class BaseDatedResponseBody(BaseResponseBody):
+    """Base body model for entities that track a creation and update timestamp.
+
+    Used as a base class for all body models associated with responses.
+    Features a creation and update timestamp.
+    """
+
+    created: Optional[datetime] = Field(
+        title="The timestamp when this resource was created.",
+        default=None,
+    )
+    updated: Optional[datetime] = Field(
+        title="The timestamp when this resource was last updated.",
+        default=None,
+    )
+
+
+AnyDatedBody = TypeVar("AnyDatedBody", bound=BaseDatedResponseBody)
+
+
 class IdentifiedEntityResponse(
-    BaseResponse, Generic[AnyBody, AnyMetadata, AnyResources]
+    BaseResponse, Generic[AnyBody, AnyMetadata, AnyDatedBody]
 ):
     """Base domain model for resources with DB represenation."""
 

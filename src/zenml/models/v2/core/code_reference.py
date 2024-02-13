@@ -53,7 +53,7 @@ class CodeReferenceRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
-class CodeReferenceResponseBody(BaseResponseBody):
+class CodeReferenceResponseBody(BaseDatedResponseBody):
     """Response body for code references."""
 
     commit: str = Field(description="The commit of the code reference.")

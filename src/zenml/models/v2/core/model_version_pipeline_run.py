@@ -24,7 +24,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
+    IdentifiedEntityResponse, BaseDatedResponseBody,
 )
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
@@ -53,7 +53,7 @@ class ModelVersionPipelineRunRequest(WorkspaceScopedRequest):
 # ------------------ Response Model ------------------
 
 
-class ModelVersionPipelineRunResponseBody(BaseResponseBody):
+class ModelVersionPipelineRunResponseBody(BaseDatedResponseBody):
     """Response body for links between model versions and pipeline runs."""
 
     model: UUID

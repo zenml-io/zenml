@@ -17,11 +17,13 @@
 
 # V2 Base
 from zenml.models.v2.base.base import (
+    BaseZenModel,
     BaseRequest,
     IdentifiedEntityResponse,
     BaseResponseBody,
     BaseResponseMetadata,
-    BaseZenModel,
+    BaseResponseResources,
+    BaseDatedResponseBody
 )
 from zenml.models.v2.base.scoped import (
     UserScopedRequest,
@@ -533,6 +535,8 @@ __all__ = [
     "IdentifiedEntityResponse",
     "BaseResponseBody",
     "BaseResponseMetadata",
+    "BaseResponseResources",
+    "BaseDatedResponseBody",
     "BaseZenModel",
     "BasePluginFlavorResponse",
     "UserScopedRequest",

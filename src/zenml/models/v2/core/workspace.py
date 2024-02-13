@@ -23,7 +23,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
+    IdentifiedEntityResponse, BaseDatedResponseBody,
 )
 from zenml.models.v2.base.filter import BaseFilter
 from zenml.models.v2.base.update import update_model
@@ -56,7 +56,7 @@ class WorkspaceUpdate(WorkspaceRequest):
 # ------------------ Response Model ------------------
 
 
-class WorkspaceResponseBody(BaseResponseBody):
+class WorkspaceResponseBody(BaseDatedResponseBody):
     """Response body for workspaces."""
 
 

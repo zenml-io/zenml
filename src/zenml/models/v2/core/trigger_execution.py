@@ -24,7 +24,8 @@ from zenml.models import (
     BaseResponseMetadata,
     IdentifiedEntityResponse,
 )
-from zenml.models.v2.base.base import BaseResponseResources
+from zenml.models.v2.base.base import BaseResponseResources, \
+    BaseDatedResponseBody
 
 if TYPE_CHECKING:
     from zenml.models import TriggerResponse
@@ -46,7 +47,7 @@ class TriggerExecutionRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
-class TriggerExecutionResponseBody(BaseResponseBody):
+class TriggerExecutionResponseBody(BaseDatedResponseBody):
     """Response body for trigger executions."""
 
     trigger: "TriggerResponse"

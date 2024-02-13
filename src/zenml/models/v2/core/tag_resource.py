@@ -21,7 +21,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
+    IdentifiedEntityResponse, BaseDatedResponseBody,
 )
 
 # ------------------ Request Model ------------------
@@ -42,7 +42,7 @@ class TagResourceRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
-class TagResourceResponseBody(BaseResponseBody):
+class TagResourceResponseBody(BaseDatedResponseBody):
     """Response body for the links between tags and resources."""
 
     tag_id: UUID

@@ -23,7 +23,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
+    IdentifiedEntityResponse, BaseDatedResponseBody,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
@@ -72,7 +72,7 @@ class ServiceAccountUpdate(ServiceAccountRequest):
 # ------------------ Response Model ------------------
 
 
-class ServiceAccountResponseBody(BaseResponseBody):
+class ServiceAccountResponseBody(BaseDatedResponseBody):
     """Response body for service accounts."""
 
     active: bool = Field(default=False, title="Whether the account is active.")

@@ -61,7 +61,7 @@ class ArtifactUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class ArtifactResponseBody(BaseResponseBody):
+class ArtifactResponseBody(BaseDatedResponseBody):
     """Response body for artifacts."""
 
     tags: List[TagResponse] = Field(

@@ -95,7 +95,7 @@ class WorkspaceScopedRequest(UserScopedRequest):
 
 
 # User-scoped models
-class UserScopedResponseBody(BaseResponseBody):
+class UserScopedResponseBody(BaseDatedResponseBody):
     """Base user-owned body."""
 
     user: Optional["UserResponse"] = Field(

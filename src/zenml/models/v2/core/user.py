@@ -34,7 +34,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
+    IdentifiedEntityResponse, BaseDatedResponseBody,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
@@ -205,7 +205,7 @@ class UserUpdate(UserRequest):
 # ------------------ Response Model ------------------
 
 
-class UserResponseBody(BaseResponseBody):
+class UserResponseBody(BaseDatedResponseBody):
     """Response body for users."""
 
     active: bool = Field(default=False, title="Whether the account is active.")

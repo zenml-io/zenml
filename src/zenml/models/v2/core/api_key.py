@@ -131,7 +131,7 @@ class APIKeyInternalUpdate(APIKeyUpdate):
 # ------------------ Response Model ------------------
 
 
-class APIKeyResponseBody(BaseResponseBody):
+class APIKeyResponseBody(BaseDatedResponseBody):
     """Response body for API keys."""
 
     key: Optional[str] = Field(

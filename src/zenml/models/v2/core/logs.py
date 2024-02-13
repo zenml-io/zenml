@@ -24,7 +24,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
+    IdentifiedEntityResponse, BaseDatedResponseBody,
 )
 
 # ------------------ Request Model ------------------
@@ -50,7 +50,7 @@ class LogsRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
-class LogsResponseBody(BaseResponseBody):
+class LogsResponseBody(BaseDatedResponseBody):
     """Response body for logs."""
 
     uri: str = Field(

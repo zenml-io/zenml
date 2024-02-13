@@ -41,7 +41,7 @@ class ArtifactVisualizationRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
-class ArtifactVisualizationResponseBody(BaseResponseBody):
+class ArtifactVisualizationResponseBody(BaseDatedResponseBody):
     """Response body for artifact visualizations."""
 
     type: VisualizationType

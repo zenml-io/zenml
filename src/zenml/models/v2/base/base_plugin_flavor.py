@@ -21,11 +21,11 @@ from zenml.models.v2.base.base import (
     BaseResponse,
     BaseResponseMetadata,
     BaseResponseResources,
-    BaseZenModel,
+    BaseResponseBody,
 )
 
 
-class BasePluginResponseBody(BaseZenModel):
+class BasePluginResponseBody(BaseResponseBody):
     """Response body for plugins."""
 
 
