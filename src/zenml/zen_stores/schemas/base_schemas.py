@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 """Base classes for SQLModel schemas."""
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
+
+if TYPE_CHECKING:
+    from zenml.models.v2.base.base import BaseResponse
 
 
 class BaseSchema(SQLModel):
@@ -28,7 +31,7 @@ class BaseSchema(SQLModel):
 
     def to_model(
         self, include_metadata: bool = False, include_resources: bool = False
-    ) -> Any:
+    ) -> "BaseResponse":
         """In case the Schema has a corresponding Model, this allows conversion to that model.
 
         Args:
