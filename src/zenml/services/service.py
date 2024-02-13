@@ -302,7 +302,10 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             if self.endpoint:
                 self.endpoint.update_status()
         except Exception as e:
-            logger.error(f"Failed to update status for service '{self}': {e}", exc_info=True)
+            logger.error(
+                f"Failed to update status for service '{self}': {e}",
+                exc_info=True,
+            )
             self.status.update_state(ServiceState.ERROR, str(e))
 
     def get_service_status_message(self) -> str:
