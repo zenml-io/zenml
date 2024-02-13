@@ -19,8 +19,7 @@ from zenml import step
 
 @step
 def load_tokenizer(
-    pretrained_model: str = "distilbert-base-uncased",
+    pretrained_model: str = "dhpollack/distilbert-dummy-sentiment",
 ) -> PreTrainedTokenizerBase:
     """Load pretrained tokenizer."""
-    tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
-    return tokenizer
+    return AutoTokenizer.from_pretrained(pretrained_model)

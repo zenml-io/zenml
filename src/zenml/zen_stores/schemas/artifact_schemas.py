@@ -109,11 +109,18 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactResponse`.
         """
+        latest_id, latest_name = None, None
+        if self.versions:
+            latest_version = max(self.versions, key=lambda x: x.created)
+            latest_id, latest_name = latest_version.id, latest_version.version
+
         # Create the body of the model
         body = ArtifactResponseBody(
             created=self.created,
             updated=self.updated,
             tags=[t.tag.to_model() for t in self.tags],
+            latest_version_name=latest_name,
+            latest_version_id=latest_id,
         )
 
         # Create the metadata of the model
