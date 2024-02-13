@@ -419,6 +419,26 @@ ModelVersionPipelineRunResponseBody.update_forward_refs(
 OAuthDeviceResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
+TriggerResponse.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+)
+TriggerResponseBody.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+)
+TriggerResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+    UserResponse=UserResponse,
+    EventSourceResponse=EventSourceResponse,
+)
+TriggerExecutionResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+    TriggerResponse=TriggerResponse
+)
+TriggerResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
 PipelineResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
@@ -458,6 +478,7 @@ PipelineRunResponseBody.update_forward_refs(
     PipelineBuildResponse=PipelineBuildResponse,
     ScheduleResponse=ScheduleResponse,
     CodeReferenceResponse=CodeReferenceResponse,
+    TriggerExecutionResponse=TriggerExecutionResponse,
 )
 PipelineRunResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
@@ -508,26 +529,6 @@ StepRunResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
     LogsResponse=LogsResponse,
     RunMetadataResponse=RunMetadataResponse,
-)
-TriggerResponse.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    UserResponse=UserResponse,
-)
-TriggerResponseBody.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    UserResponse=UserResponse,
-)
-TriggerResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    UserResponse=UserResponse,
-    EventSourceResponse=EventSourceResponse,
-)
-TriggerExecutionResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-    TriggerResponse=TriggerResponse
-)
-TriggerResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
 )
 __all__ = [
     # V2 Base

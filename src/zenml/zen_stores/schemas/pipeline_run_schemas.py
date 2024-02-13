@@ -39,6 +39,7 @@ from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
@@ -166,11 +167,20 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    trigger_execution_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=TriggerExecutionSchema.__tablename__,
+        source_column="trigger_execution_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
 
     stack: Optional["StackSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
+    trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
 
     @classmethod
     def from_request(
@@ -196,6 +206,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             status=request.status,
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
+            trigger_execution_id=request.trigger_execution_id,
         )
 
     def to_model(self, hydrate: bool = False) -> "PipelineRunResponse":
@@ -265,6 +276,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             build=build,
             schedule=schedule,
             code_reference=code_reference,
+            trigger_execution=self.trigger_execution.to_model(),
             created=self.created,
             updated=self.updated,
         )
