@@ -467,7 +467,7 @@ def save_artifact_binary_from_response(
     artifact_store_loaded = False
     if artifact.artifact_store_id:
         with contextlib.suppress(KeyError, ImportError):
-            artifact_store_model = Client().get_stack_component(
+            _ = Client().get_stack_component(
                 component_type=StackComponentType.ARTIFACT_STORE,
                 name_id_or_prefix=artifact.artifact_store_id,
             )
