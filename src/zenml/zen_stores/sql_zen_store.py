@@ -883,7 +883,7 @@ class SqlZenStore(BaseZenStore):
             total = len(custom_fetch_result)
         else:
             total = session.scalar(
-                select([func.count("*")]).select_from(
+                select(func.count()).select_from(
                     query.options(noload("*")).subquery()
                 )
             )
@@ -1384,9 +1384,7 @@ class SqlZenStore(BaseZenStore):
             # identity table with needed info.
             logger.info("Creating database tables")
             with self.engine.begin() as conn:
-                conn.run_callable(
-                    SQLModel.metadata.create_all  # type: ignore[arg-type]
-                )
+                SQLModel.metadata.create_all(conn)
             with Session(self.engine) as session:
                 session.add(
                     IdentitySchema(
