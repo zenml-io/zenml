@@ -137,6 +137,9 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
     tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
+    producer_pipeline_run_id: Optional[UUID] = Field(
+        title="The ID of the pipeline run that generated this artifact version."
+    )
 
     _convert_source = convert_source_validator("materializer", "data_type")
 
@@ -222,6 +225,15 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_body().tags
+
+    @property
+    def producer_pipeline_run_id(self) -> Optional[UUID]:
+        """The `producer_pipeline_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().producer_pipeline_run_id
 
     @property
     def artifact_store_id(self) -> Optional[UUID]:

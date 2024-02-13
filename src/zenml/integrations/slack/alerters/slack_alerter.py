@@ -110,8 +110,6 @@ class SlackAlerter(BaseAlerter):
             and params.slack_channel_id is not None
         ):
             return params.slack_channel_id
-        if self.config.default_slack_channel_id is not None:
-            return self.config.default_slack_channel_id
 
         settings = cast(
             SlackAlerterSettings,
@@ -119,6 +117,9 @@ class SlackAlerter(BaseAlerter):
         )
         if settings.slack_channel_id is not None:
             return settings.slack_channel_id
+
+        if self.config.default_slack_channel_id is not None:
+            return self.config.default_slack_channel_id
 
         raise ValueError(
             "Neither the `slack_channel_id` in the runtime "
