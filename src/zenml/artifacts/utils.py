@@ -471,7 +471,6 @@ def save_artifact_binary_from_response(
                 component_type=StackComponentType.ARTIFACT_STORE,
                 name_id_or_prefix=artifact.artifact_store_id,
             )
-            artifact_store = StackComponent.from_model(artifact_store_model)
             artifact_store_loaded = True
 
     if not artifact_store_loaded:
@@ -482,20 +481,25 @@ def save_artifact_binary_from_response(
             artifact.id,
         )
 
+    artifact_store = Client().active_stack.artifact_store
     if filepaths := artifact_store.listdir(artifact.uri):
         # save a zipfile to 'path' containing all the files
         # in 'filepaths' with compression
         with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zipf:
             for file in filepaths:
+                # Ensure 'file' is a string for path operations
+                # and ZIP entry naming
+                file_str = file.decode() if isinstance(file, bytes) else file
+                file_path = str(Path(artifact.uri) / file_str)
                 with artifact_store.open(
-                    Path(artifact.uri) / file, "rb"
+                    name=file_path, mode="rb"
                 ) as store_file:
                     # Use a loop to read and write chunks of the file
                     # instead of reading the entire file into memory
                     CHUNK_SIZE = 8192
                     while True:
                         if file_content := store_file.read(CHUNK_SIZE):
-                            zipf.writestr(file, file_content)
+                            zipf.writestr(file_str, file_content)
                         else:
                             break
 
