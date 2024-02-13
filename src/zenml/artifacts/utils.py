@@ -459,6 +459,7 @@ def save_artifact_binary_from_response(
 
     Raises:
         FileExistsError: If the file already exists and `overwrite` is `False`.
+        Exception: If the artifact could not be saved to the zip file.
     """
     if not overwrite and fileio.exists(path):
         raise FileExistsError(
