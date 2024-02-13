@@ -71,11 +71,16 @@ def update_service_status(
             if pre_status:
                 self.status.update_state(pre_status, "")
             try:
+                logger.info(f"Calling {func.__name__} method...")
                 result = func(self, *args, **kwargs)
+                logger.info(f"{func.__name__} method executed successfully.")
                 if post_status:
                     self.status.update_state(post_status, "")
                 return result
             except Exception as e:
+                logger.error(
+                    f"Error occurred in {func.__name__} method: {str(e)}"
+                )
                 self.status.update_state(error_status, str(e))
                 raise
 
