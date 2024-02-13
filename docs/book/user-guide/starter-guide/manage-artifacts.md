@@ -269,7 +269,9 @@ artifact = client.get_artifact_version(name_id_or_prefix="iris_dataset")
 artifact.save_binary("path/to/save.zip")
 ```
 
-Take note that the path must have the `.zip` extension, as the artifact data will be saved as a zip file.
+Take note that the path must have the `.zip` extension, as the artifact data
+will be saved as a zip file. Make sure to handle any exceptions that may arise
+from this operation.
 
 ## Managing artifacts **not** produced by ZenML pipelines
 

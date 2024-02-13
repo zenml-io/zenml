@@ -1,6 +1,7 @@
 """Integration tests for artifact util functions."""
 
 import os
+import shutil
 import zipfile
 from typing import Optional, Tuple
 
@@ -276,6 +277,9 @@ def test_save_artifact_binary_from_response(tmp_path, clean_client_with_run):
     with open(os.path.join(tmp_path, "data.json"), "r") as f:
         assert f.read() == "7"
 
+    # clean up
+    shutil.rmtree(tmp_path)
+
 
 def test_save_artifact_binary_from_response_fails_if_exists(
     tmp_path, clean_client_with_run
@@ -308,3 +312,5 @@ def test_save_artifact_binary_from_response_fails_if_exists(
         zip_ref.extractall(tmp_path)
     with open(os.path.join(tmp_path, "data.json"), "r") as f:
         assert f.read() == "7"
+    # clean up
+    shutil.rmtree(tmp_path)

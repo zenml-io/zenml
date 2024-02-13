@@ -344,12 +344,14 @@ class ArtifactVersionResponse(
 
         Returns:
             The unmaterialized binary data.
+
+        Raises:
+            ValueError: If the path does not end with '.zip'.
         """
         if not path.endswith(".zip"):
-            logger.error(
+            raise ValueError(
                 "The path should end with '.zip' to save the binary data."
             )
-            return
         from zenml.artifacts.utils import save_artifact_binary_from_response
 
         save_artifact_binary_from_response(

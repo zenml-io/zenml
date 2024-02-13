@@ -485,23 +485,32 @@ def save_artifact_binary_from_response(
     if filepaths := artifact_store.listdir(artifact.uri):
         # save a zipfile to 'path' containing all the files
         # in 'filepaths' with compression
-        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zipf:
-            for file in filepaths:
-                # Ensure 'file' is a string for path operations
-                # and ZIP entry naming
-                file_str = file.decode() if isinstance(file, bytes) else file
-                file_path = str(Path(artifact.uri) / file_str)
-                with artifact_store.open(
-                    name=file_path, mode="rb"
-                ) as store_file:
-                    # Use a loop to read and write chunks of the file
-                    # instead of reading the entire file into memory
-                    CHUNK_SIZE = 8192
-                    while True:
-                        if file_content := store_file.read(CHUNK_SIZE):
-                            zipf.writestr(file_str, file_content)
-                        else:
-                            break
+        try:
+            with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for file in filepaths:
+                    # Ensure 'file' is a string for path operations
+                    # and ZIP entry naming
+                    file_str = (
+                        file.decode() if isinstance(file, bytes) else file
+                    )
+                    file_path = str(Path(artifact.uri) / file_str)
+                    with artifact_store.open(
+                        name=file_path, mode="rb"
+                    ) as store_file:
+                        # Use a loop to read and write chunks of the file
+                        # instead of reading the entire file into memory
+                        CHUNK_SIZE = 8192
+                        while True:
+                            if file_content := store_file.read(CHUNK_SIZE):
+                                zipf.writestr(file_str, file_content)
+                            else:
+                                break
+        except Exception as e:
+            logger.error(
+                f"Failed to save artifact '{artifact.id}' to zip file "
+                f" '{path}': {e}"
+            )
+            raise
 
 
 def get_producer_step_of_artifact(
