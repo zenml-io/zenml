@@ -99,12 +99,14 @@ class ArtifactSchema(NamedSchema, table=True):
             has_custom_name=artifact_request.has_custom_name,
         )
 
-    def to_model(self, hydrate: bool = False) -> ArtifactResponse:
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> ArtifactResponse:
         """Convert an `ArtifactSchema` to an `ArtifactResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The created `ArtifactResponse`.
@@ -118,7 +120,7 @@ class ArtifactSchema(NamedSchema, table=True):
 
         # Create the metadata of the model
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ArtifactResponseMetadata(
                 has_custom_name=self.has_custom_name,
             )
@@ -266,12 +268,14 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             data_type=artifact_version_request.data_type.json(),
         )
 
-    def to_model(self, hydrate: bool = False) -> ArtifactVersionResponse:
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> ArtifactVersionResponse:
         """Convert an `ArtifactVersionSchema` to an `ArtifactVersionResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The created `ArtifactVersionResponse`.
@@ -304,7 +308,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
 
         # Create the metadata of the model
         metadata = None
-        if hydrate:
+        if include_metadata:
             producer_step_run_id = None
             if self.output_of_step_runs:
                 step_run = self.output_of_step_runs[0].step_run

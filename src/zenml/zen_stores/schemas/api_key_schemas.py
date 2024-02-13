@@ -113,18 +113,20 @@ class APIKeySchema(NamedSchema, table=True):
             key,
         )
 
-    def to_model(self, hydrate: bool = False) -> APIKeyResponse:
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> APIKeyResponse:
         """Convert a `APIKeySchema` to an `APIKeyResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The created APIKeyResponse.
         """
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = APIKeyResponseMetadata(
                 description=self.description,
                 retain_period_minutes=self.retain_period,
@@ -160,7 +162,7 @@ class APIKeySchema(NamedSchema, table=True):
         Returns:
             The created APIKeyInternalResponse.
         """
-        model = self.to_model(hydrate=hydrate)
+        model = self.to_model(include_metadata=hydrate)
         model.get_body().key = self.key
 
         return APIKeyInternalResponse(

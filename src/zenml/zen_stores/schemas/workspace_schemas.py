@@ -172,18 +172,20 @@ class WorkspaceSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, hydrate: bool = False) -> WorkspaceResponse:
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> WorkspaceResponse:
         """Convert a `WorkspaceSchema` to a `WorkspaceResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The converted `WorkspaceResponseModel`.
         """
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = WorkspaceResponseMetadata(
                 description=self.description,
             )

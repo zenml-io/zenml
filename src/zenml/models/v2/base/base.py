@@ -106,7 +106,9 @@ class BaseResponse(
         title="The resources related to this resource."
     )
 
-    def get_hydrated_version(self) -> "BaseResponse[AnyBody, AnyMetadata]":
+    def get_hydrated_version(
+        self,
+    ) -> "BaseResponse[AnyBody, AnyMetadata, AnyResources]":
         """Abstract method to fetch the hydrated version of the model.
 
         Raises:
@@ -117,7 +119,7 @@ class BaseResponse(
             "using/hydrating the model."
         )
 
-    def get_body(self) -> AnyBody:
+    def get_body(self) -> "AnyBody":
         """Fetch the body of the entity.
 
         Returns:
@@ -157,7 +159,7 @@ class BaseResponse(
 
         return self.metadata
 
-    def get_resources(self) -> AnyResources:
+    def get_resources(self) -> "AnyResources":
         """Fetch the resources related to this entity.
 
         Returns:
@@ -195,11 +197,17 @@ AnyDatedBody = TypeVar("AnyDatedBody", bound=BaseDatedResponseBody)
 
 
 class IdentifiedEntityResponse(
-    BaseResponse, Generic[AnyBody, AnyMetadata, AnyDatedBody]
+    BaseResponse[AnyDatedBody, AnyMetadata, AnyResources],
+    Generic[AnyDatedBody, AnyMetadata, AnyResources],
 ):
     """Base domain model for resources with DB represenation."""
 
     id: UUID = Field(title="The unique resource id.")
+    body: Optional["AnyDatedBody"] = Field(
+        title="The body of the resource, "
+        "containing at the minimum "
+        "creation and updated fields."
+    )
     permission_denied: bool = False
 
     _response_update_strategy: (
@@ -231,7 +239,8 @@ class IdentifiedEntityResponse(
             return False
 
     def _validate_hydrated_version(
-        self, hydrated_model: "BaseResponse[AnyBody, AnyMetadata]"
+        self,
+        hydrated_model: "IdentifiedEntityResponse[AnyDatedBody, AnyMetadata, AnyResources]",
     ) -> None:
         """Helper method to validate the values within the hydrated version.
 
@@ -332,7 +341,7 @@ class IdentifiedEntityResponse(
                         f"`{hydrated_value}`"
                     )
 
-    def get_body(self) -> AnyBody:
+    def get_body(self) -> "AnyDatedBody":
         """Fetch the body of the entity.
 
         Returns:

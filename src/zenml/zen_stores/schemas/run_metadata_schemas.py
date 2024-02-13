@@ -112,12 +112,14 @@ class RunMetadataSchema(BaseSchema, table=True):
     value: str = Field(sa_column=Column(TEXT, nullable=False))
     type: MetadataTypeEnum
 
-    def to_model(self, hydrate: bool = False) -> "RunMetadataResponse":
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> "RunMetadataResponse":
         """Convert a `RunMetadataSchema` to a `RunMetadataResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The created `RunMetadataResponse`.
@@ -131,7 +133,7 @@ class RunMetadataSchema(BaseSchema, table=True):
             type=self.type,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = RunMetadataResponseMetadata(
                 workspace=self.workspace.to_model(),
                 resource_id=self.resource_id,

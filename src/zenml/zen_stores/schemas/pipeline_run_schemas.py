@@ -209,12 +209,14 @@ class PipelineRunSchema(NamedSchema, table=True):
             trigger_execution_id=request.trigger_execution_id,
         )
 
-    def to_model(self, hydrate: bool = False) -> "PipelineRunResponse":
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The created `PipelineRunResponse`.
@@ -281,7 +283,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             steps = {step.name: step.to_model() for step in self.step_runs}
 
             metadata = PipelineRunResponseMetadata(

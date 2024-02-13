@@ -32,6 +32,7 @@ from zenml.models import (
     TriggerResponseMetadata,
     TriggerUpdate,
 )
+from zenml.models.v2.core.trigger import TriggerResponseResources
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -105,9 +106,7 @@ class TriggerSchema(NamedSchema, table=True):
         ondelete="CASCADE",  # TODO: this should be set null and the trigger should be deactivated
         nullable=False,
     )
-    event_source: Optional["EventSourceSchema"] = Relationship(
-        back_populates="triggers"
-    )
+    event_source: "EventSourceSchema" = Relationship(back_populates="triggers")
 
     executions: List["TriggerExecutionSchema"] = Relationship(
         back_populates="trigger"
@@ -181,12 +180,16 @@ class TriggerSchema(NamedSchema, table=True):
             is_active=True,  # Makes no sense for it to be created inactive
         )
 
-    def to_model(self, hydrate: bool = False) -> "TriggerResponse":
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> "TriggerResponse":
         """Converts the schema to a model.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Flag deciding whether to include the output model(s)
+                metadata fields in the response.
+            include_resources: Flag deciding whether to include the output model(s)
+                metadata fields in the response.
 
         Returns:
             The converted model.
@@ -197,14 +200,11 @@ class TriggerSchema(NamedSchema, table=True):
             updated=self.updated,
             action_flavor=self.action_flavor,
             action_subtype=self.action_subtype,
-            # TODO: make event_source mandatory in the schema and ensure
-            # triggers are deprovisioned and deleted before the event source is
-            # deleted, or make it optional in the model
             event_source_flavor=self.event_source.flavor,
             is_active=self.is_active,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = TriggerResponseMetadata(
                 workspace=self.workspace.to_model(),
                 event_filter=json.loads(
@@ -212,17 +212,21 @@ class TriggerSchema(NamedSchema, table=True):
                 ),
                 action=json.loads(base64.b64decode(self.action).decode()),
                 description=self.description,
-                # TODO: make event_source mandatory in the schema and ensure
-                # triggers are deprovisioned and deleted before the event source is
-                # deleted, or make it optional in the model
-                event_source=self.event_source.to_model(),
+                event_source=self.event_source.to_model(
+                    include_resources=False, include_metadata=False
+                ),
             )
-
+        resources = None
+        if include_resources:
+            resources = TriggerResponseResources(
+                event_source=self.event_source
+            )
         return TriggerResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
 
@@ -262,12 +266,14 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             ),
         )
 
-    def to_model(self, hydrate: bool = False) -> "TriggerExecutionResponse":
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> "TriggerExecutionResponse":
         """Converts the schema to a model.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The converted model.
@@ -278,7 +284,7 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = TriggerExecutionResponseMetadata(
                 event_metadata=json.loads(
                     base64.b64decode(self.event_metadata).decode()

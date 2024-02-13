@@ -130,12 +130,14 @@ class StackSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, hydrate: bool = False) -> "StackResponse":
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> "StackResponse":
         """Converts the schema to a model.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The converted model.
@@ -146,7 +148,7 @@ class StackSchema(NamedSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = StackResponseMetadata(
                 workspace=self.workspace.to_model(),
                 components={c.type: [c.to_model()] for c in self.components},

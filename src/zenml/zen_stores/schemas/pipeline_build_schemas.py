@@ -135,12 +135,14 @@ class PipelineBuildSchema(BaseSchema, table=True):
             checksum=request.checksum,
         )
 
-    def to_model(self, hydrate: bool = False) -> PipelineBuildResponse:
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> PipelineBuildResponse:
         """Convert a `PipelineBuildSchema` to a `PipelineBuildResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The created `PipelineBuildResponse`.
@@ -151,7 +153,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = PipelineBuildResponseMetadata(
                 workspace=self.workspace.to_model(),
                 pipeline=self.pipeline.to_model() if self.pipeline else None,

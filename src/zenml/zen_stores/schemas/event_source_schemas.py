@@ -30,6 +30,7 @@ from zenml.models import (
     EventSourceResponseBody,
     EventSourceUpdate,
 )
+from zenml.models.v2.core.event_source import EventSourceResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -104,12 +105,16 @@ class EventSourceSchema(NamedSchema, table=True):
             is_active=True,  # Makes no sense to create an inactive event source
         )
 
-    def to_model(self, hydrate: bool = False) -> EventSourceResponse:
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> EventSourceResponse:
         """Convert an `EventSourceSchema` to an `EventSourceResponse`.
 
         Args:
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
+            include_metadata: Flag deciding whether to include the output model(s)
+                metadata fields in the response.
+            include_resources: Flag deciding whether to include the output model(s)
+                metadata fields in the response.
 
         Returns:
             The created `EventSourceResponse`.
@@ -123,8 +128,16 @@ class EventSourceSchema(NamedSchema, table=True):
             plugin_subtype=self.plugin_subtype,
             is_active=self.is_active,
         )
+        resources = None
+        if include_resources:
+            resources = EventSourceResponseResources(
+                triggers=[
+                    t.to_model(include_resources=False, include_metadata=False)
+                    for t in self.triggers
+                ]
+            )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = EventSourceResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
@@ -137,6 +150,7 @@ class EventSourceSchema(NamedSchema, table=True):
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, update: EventSourceUpdate) -> "EventSourceSchema":

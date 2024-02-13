@@ -75,12 +75,14 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
             artifact_version_id=artifact_version_id,
         )
 
-    def to_model(self, hydrate: bool = False) -> ArtifactVisualizationResponse:
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> ArtifactVisualizationResponse:
         """Convert an `ArtifactVisualizationSchema` to a `Visualization`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The `Visualization`.
@@ -93,7 +95,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         )
 
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ArtifactVisualizationResponseMetadata(
                 artifact_version_id=self.artifact_version_id,
             )

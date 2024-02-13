@@ -134,14 +134,13 @@ class StackComponentSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self,
-        hydrate: bool = False,
+        self, include_metadata: bool = False, include_resources: bool = False
     ) -> "ComponentResponse":
         """Creates a `ComponentModel` from an instance of a `StackComponentSchema`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             A `ComponentModel`
@@ -154,7 +153,7 @@ class StackComponentSchema(NamedSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ComponentResponseMetadata(
                 workspace=self.workspace.to_model(),
                 configuration=json.loads(

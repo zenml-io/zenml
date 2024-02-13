@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base classes for SQLModel schemas."""
-
 from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
@@ -25,6 +25,20 @@ class BaseSchema(SQLModel):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     created: datetime = Field(default_factory=datetime.utcnow)
     updated: datetime = Field(default_factory=datetime.utcnow)
+
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> Any:
+        """In case the Schema has a corresponding Model, this allows conversion to that model.
+
+        Args:
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
+        """
+        raise NotImplementedError(
+            "No 'to_model()' method implemented for this"
+            f"schema: '{self.__class__.__name__}'."
+        )
 
 
 class NamedSchema(BaseSchema):

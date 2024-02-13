@@ -26,8 +26,8 @@ from zenml.constants import (
     ZENML_API_KEY_PREFIX,
 )
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
     BaseRequest,
-    BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
     IdentifiedEntityResponse,

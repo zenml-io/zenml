@@ -95,12 +95,14 @@ class CodeRepositorySchema(NamedSchema, table=True):
             logo_url=request.logo_url,
         )
 
-    def to_model(self, hydrate: bool = False) -> "CodeRepositoryResponse":
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> "CodeRepositoryResponse":
         """Convert a `CodeRepositorySchema` to a `CodeRepositoryResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The created CodeRepositoryResponse.
@@ -113,7 +115,7 @@ class CodeRepositorySchema(NamedSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = CodeRepositoryResponseMetadata(
                 workspace=self.workspace.to_model(),
                 config=json.loads(self.config),
@@ -196,12 +198,14 @@ class CodeReferenceSchema(BaseSchema, table=True):
             code_repository_id=request.code_repository,
         )
 
-    def to_model(self, hydrate: bool = False) -> "CodeReferenceResponse":
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> "CodeReferenceResponse":
         """Convert a `CodeReferenceSchema` to a `CodeReferenceResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The converted model.
@@ -214,7 +218,7 @@ class CodeReferenceSchema(BaseSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = CodeReferenceResponseMetadata()
 
         return CodeReferenceResponse(

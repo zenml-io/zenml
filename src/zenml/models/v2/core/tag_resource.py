@@ -17,11 +17,11 @@ from uuid import UUID
 
 from zenml.enums import TaggableResourceTypes
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
     BaseRequest,
-    BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse, BaseDatedResponseBody,
+    IdentifiedEntityResponse,
 )
 
 # ------------------ Request Model ------------------

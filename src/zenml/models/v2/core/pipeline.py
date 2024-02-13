@@ -23,7 +23,6 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models import (
     BaseFilter,
-    BaseResponseBody,
     BaseResponseMetadata,
     IdentifiedEntityResponse,
     WorkspaceScopedFilter,
@@ -32,8 +31,10 @@ from zenml.models import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
-from zenml.models.v2.base.base import BaseResponseResources, \
-    BaseDatedResponseBody
+from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseResponseResources,
+)
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:

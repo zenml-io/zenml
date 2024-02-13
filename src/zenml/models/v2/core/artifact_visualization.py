@@ -17,8 +17,8 @@ from uuid import UUID
 
 from zenml.enums import VisualizationType
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
     BaseRequest,
-    BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
     IdentifiedEntityResponse,

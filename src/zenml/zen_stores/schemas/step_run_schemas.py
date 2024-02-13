@@ -174,12 +174,14 @@ class StepRunSchema(NamedSchema, table=True):
             source_code=request.source_code,
         )
 
-    def to_model(self, hydrate: bool = False) -> StepRunResponse:
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> StepRunResponse:
         """Convert a `StepRunSchema` to a `StepRunResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             The created StepRunResponse.
@@ -224,7 +226,7 @@ class StepRunSchema(NamedSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = StepRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 config=full_step_config.config,

@@ -230,12 +230,14 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, hydrate: bool = False) -> "ServiceConnectorResponse":
+    def to_model(
+        self, include_metadata: bool = False, include_resources: bool = False
+    ) -> "ServiceConnectorResponse":
         """Creates a `ServiceConnector` from a `ServiceConnectorSchema`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the metadata will be filled.
 
         Returns:
             A `ServiceConnectorModel`
@@ -254,7 +256,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             expires_skew_tolerance=self.expires_skew_tolerance,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ServiceConnectorResponseMetadata(
                 workspace=self.workspace.to_model(),
                 configuration=json.loads(

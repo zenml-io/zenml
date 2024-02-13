@@ -19,9 +19,9 @@ from pydantic import Extra, Field
 from zenml.enums import PluginSubType, PluginType
 from zenml.models.v2.base.base import (
     BaseResponse,
+    BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    BaseResponseBody,
 )
 
 
