@@ -43,9 +43,6 @@ from zenml.plugins.base_plugin_flavor import (
     BasePluginFlavor,
 )
 
-if TYPE_CHECKING:
-    pass
-
 logger = get_logger(__name__)
 
 # -------------------- Configuration Models ----------------------------------
