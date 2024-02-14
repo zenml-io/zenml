@@ -21,10 +21,10 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
 )
 
 # ------------------ Request Model ------------------
@@ -83,7 +83,7 @@ class LogsResponseResources(BaseResponseResources):
 
 
 class LogsResponse(
-    IdentifiedEntityResponse[
+    BaseIdentifiedResponse[
         LogsResponseBody, LogsResponseMetadata, LogsResponseResources
     ]
 ):

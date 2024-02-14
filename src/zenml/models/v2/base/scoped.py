@@ -32,10 +32,10 @@ from sqlmodel import col
 
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
@@ -117,7 +117,7 @@ UserResources = TypeVar("UserResources", bound=UserScopedResponseResources)
 
 
 class UserScopedResponse(
-    IdentifiedEntityResponse[UserBody, UserMetadata, UserResources],
+    BaseIdentifiedResponse[UserBody, UserMetadata, UserResources],
     Generic[UserBody, UserMetadata, UserResources],
 ):
     """Base user-owned model.

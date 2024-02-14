@@ -27,10 +27,10 @@ from zenml.constants import (
 )
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
@@ -172,7 +172,7 @@ class APIKeyResponseResources(BaseResponseResources):
 
 
 class APIKeyResponse(
-    IdentifiedEntityResponse[
+    BaseIdentifiedResponse[
         APIKeyResponseBody, APIKeyResponseMetadata, APIKeyResponseResources
     ]
 ):

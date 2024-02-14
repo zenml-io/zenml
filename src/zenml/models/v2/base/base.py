@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Any, Dict, Generic, Optional, TypeVar
 from uuid import UUID
 
-from pydantic import Field, SecretStr
+from pydantic import Extra, Field, SecretStr
 from pydantic.generics import GenericModel
 
 from zenml.analytics.models import AnalyticsTrackedModelMixin
@@ -85,6 +85,11 @@ class BaseResponseResources(BaseZenModel):
 
     Used as a base class for all resource models associated with responses.
     """
+
+    class Config:
+        """Allows additional resources to be added."""
+
+        extra = Extra.allow
 
 
 AnyBody = TypeVar("AnyBody", bound=BaseResponseBody)
@@ -196,7 +201,7 @@ class BaseDatedResponseBody(BaseResponseBody):
 AnyDatedBody = TypeVar("AnyDatedBody", bound=BaseDatedResponseBody)
 
 
-class IdentifiedEntityResponse(
+class BaseIdentifiedResponse(
     BaseResponse[AnyDatedBody, AnyMetadata, AnyResources],
     Generic[AnyDatedBody, AnyMetadata, AnyResources],
 ):
@@ -240,7 +245,7 @@ class IdentifiedEntityResponse(
 
     def _validate_hydrated_version(
         self,
-        hydrated_model: "IdentifiedEntityResponse[AnyDatedBody, AnyMetadata, AnyResources]",
+        hydrated_model: "BaseIdentifiedResponse[AnyDatedBody, AnyMetadata, AnyResources]",
     ) -> None:
         """Helper method to validate the values within the hydrated version.
 

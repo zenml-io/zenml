@@ -23,8 +23,8 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models import (
     BaseFilter,
+    BaseIdentifiedResponse,
     BaseResponseMetadata,
-    IdentifiedEntityResponse,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -308,7 +308,7 @@ class PipelineNamespaceResponseResources(BaseResponseResources):
 
 
 class PipelineNamespaceResponse(
-    IdentifiedEntityResponse[
+    BaseIdentifiedResponse[
         PipelineNamespaceResponseBody,
         PipelineNamespaceResponseMetadata,
         PipelineNamespaceResponseResources,

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -30,6 +30,9 @@ from zenml.models.v2.base.scoped import (
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.event_source import EventSourceResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 # ------------------ Base Model ------------------
 
@@ -260,4 +263,21 @@ class TriggerFilter(WorkspaceScopedFilter):
     is_active: Optional[bool] = Field(
         default=None,
         description="Whether the trigger is active.",
+    )
+    action_flavor: Optional[str] = Field(
+        default=None,
+        title="The flavor of the action that is executed by this trigger.",
+    )
+    action_subtype: Optional[str] = Field(
+        default=None,
+        title="The subtype of the action that is executed by this trigger.",
+    )
+    # TODO: Ignore these in normal filter and handle in sqlzenstore
+    resource_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="By the resource this trigger references.",
+    )
+    resource_type: Optional[str] = Field(
+        default=None,
+        description="By the resource type this trigger references.",
     )

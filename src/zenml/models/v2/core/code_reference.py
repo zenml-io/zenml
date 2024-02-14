@@ -20,10 +20,10 @@ from pydantic import Field
 
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
 )
 
 if TYPE_CHECKING:
@@ -74,7 +74,7 @@ class CodeReferenceResponseResources(BaseResponseResources):
 
 
 class CodeReferenceResponse(
-    IdentifiedEntityResponse[
+    BaseIdentifiedResponse[
         CodeReferenceResponseBody,
         CodeReferenceResponseMetadata,
         CodeReferenceResponseResources,

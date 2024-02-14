@@ -31,10 +31,10 @@ from pydantic import Field, root_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
@@ -260,7 +260,7 @@ class UserResponseResources(BaseResponseResources):
 
 
 class UserResponse(
-    IdentifiedEntityResponse[
+    BaseIdentifiedResponse[
         UserResponseBody, UserResponseMetadata, UserResponseResources
     ]
 ):

@@ -22,10 +22,10 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.filter import BaseFilter
 
@@ -75,7 +75,7 @@ class TagResponseResources(BaseResponseResources):
 
 
 class TagResponse(
-    IdentifiedEntityResponse[
+    BaseIdentifiedResponse[
         TagResponseBody, BaseResponseMetadata, TagResponseResources
     ]
 ):

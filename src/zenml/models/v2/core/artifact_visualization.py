@@ -18,10 +18,10 @@ from uuid import UUID
 from zenml.enums import VisualizationType
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
 )
 
 # ------------------ Request Model ------------------
@@ -59,7 +59,7 @@ class ArtifactVisualizationResponseResources(BaseResponseResources):
 
 
 class ArtifactVisualizationResponse(
-    IdentifiedEntityResponse[
+    BaseIdentifiedResponse[
         ArtifactVisualizationResponseBody,
         ArtifactVisualizationResponseMetadata,
         ArtifactVisualizationResponseResources,

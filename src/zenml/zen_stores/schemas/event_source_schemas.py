@@ -34,6 +34,7 @@ from zenml.models.v2.core.event_source import EventSourceResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import get_page_from_list
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
@@ -131,10 +132,11 @@ class EventSourceSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             resources = EventSourceResponseResources(
-                triggers=[
-                    t.to_model(include_resources=False, include_metadata=False)
-                    for t in self.triggers
-                ]
+                triggers=get_page_from_list(
+                    items_list=self.triggers,
+                    include_resources=include_resources,
+                    include_metadata=include_metadata,
+                )
             )
         metadata = None
         if include_metadata:

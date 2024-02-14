@@ -18,10 +18,10 @@ from uuid import UUID
 from zenml.enums import TaggableResourceTypes
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    IdentifiedEntityResponse,
 )
 
 # ------------------ Request Model ------------------
@@ -55,7 +55,7 @@ class TagResourceResponseResources(BaseResponseResources):
 
 
 class TagResourceResponse(
-    IdentifiedEntityResponse[
+    BaseIdentifiedResponse[
         TagResourceResponseBody,
         BaseResponseMetadata,
         TagResourceResponseResources,

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -22,6 +22,7 @@ from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.models.v2.base.base import BaseResponseResources, BaseZenModel
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -39,6 +40,9 @@ from zenml.models.v2.core.pipeline_build import (
 )
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
+
+if TYPE_CHECKING:
+    from zenml.models.v2.core.trigger import TriggerResponse
 
 # ------------------ Request Model ------------------
 
@@ -166,6 +170,10 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class PipelineDeploymentResponseResources(BaseResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
+
+    trigger: Page["TriggerResponse"] = Field(
+        default=None, title="The stack associated with the deployment."
+    )
 
 
 class PipelineDeploymentResponse(

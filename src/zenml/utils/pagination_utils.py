@@ -15,9 +15,9 @@
 
 from typing import Callable, List, TypeVar
 
-from zenml.models import IdentifiedEntityResponse, Page
+from zenml.models import BaseIdentifiedResponse, Page
 
-AnyResponse = TypeVar("AnyResponse", bound=IdentifiedEntityResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 
 
 def depaginate(

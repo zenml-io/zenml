@@ -19,9 +19,9 @@ from pydantic import Field
 
 from zenml.models import (
     BaseFilter,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,
-    IdentifiedEntityResponse,
 )
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
@@ -65,7 +65,7 @@ class TriggerResponseResources(BaseResponseResources):
 
 
 class TriggerExecutionResponse(
-    IdentifiedEntityResponse[
+    BaseIdentifiedResponse[
         TriggerExecutionResponseBody,
         TriggerExecutionResponseMetadata,
         TriggerResponseResources,

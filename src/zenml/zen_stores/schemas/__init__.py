@@ -13,9 +13,6 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
 
-from zenml.zen_stores.schemas.action_resource_schemas import (
-    ActionResourceSchema
-)
 from zenml.zen_stores.schemas.api_key_schemas import APIKeySchema
 from zenml.zen_stores.schemas.artifact_schemas import (
     ArtifactSchema,
@@ -76,7 +73,6 @@ __all__ = [
     "ArtifactSchema",
     "ArtifactVersionSchema",
     "ArtifactVisualizationSchema",
-    "ActionResourceSchema",
     "BaseSchema",
     "CodeReferenceSchema",
     "CodeRepositorySchema",

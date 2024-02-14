@@ -15,11 +15,11 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
 from zenml.models import (
     TriggerExecutionRequest,
@@ -38,39 +38,6 @@ from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.action_resource_schemas import (
-        ActionResourceSchema,
-    )
-
-
-class ActionResourceCompositionSchema(SQLModel, table=True):
-    """SQL Model for stack definitions.
-
-    Join table between Stacks and StackComponents.
-    """
-
-    __tablename__ = "action_resource_composition"
-
-    trigger_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target="trigger",
-        source_column="trigger_id",
-        target_column="id",
-        ondelete="CASCADE",  # Figure this out
-        nullable=False,
-        primary_key=True,
-    )
-    action_resource_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target="action_resource",
-        source_column="action_resource_id",
-        target_column="id",
-        ondelete="CASCADE",  # Figure this out
-        nullable=False,
-        primary_key=True,
-    )
 
 
 class TriggerSchema(NamedSchema, table=True):
@@ -117,11 +84,6 @@ class TriggerSchema(NamedSchema, table=True):
     action: bytes
     action_flavor: str  # <- "builtin"
     action_subtype: str  # <- "PipelineRun"
-    # resource_id: Optional[UUID]  # <- deployment_id
-    resources: List["ActionResourceSchema"] = Relationship(
-        back_populates="triggers",
-        link_model=ActionResourceCompositionSchema,
-    )
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     is_active: bool = Field(nullable=False)
@@ -219,7 +181,7 @@ class TriggerSchema(NamedSchema, table=True):
         resources = None
         if include_resources:
             resources = TriggerResponseResources(
-                event_source=self.event_source
+                event_source=self.event_source.to_model(),
             )
         return TriggerResponse(
             id=self.id,

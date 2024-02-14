@@ -19,7 +19,7 @@
 from zenml.models.v2.base.base import (
     BaseZenModel,
     BaseRequest,
-    IdentifiedEntityResponse,
+    BaseIdentifiedResponse,
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
@@ -533,7 +533,7 @@ StepRunResponseMetadata.update_forward_refs(
 __all__ = [
     # V2 Base
     "BaseRequest",
-    "IdentifiedEntityResponse",
+    "BaseIdentifiedResponse",
     "BaseResponseBody",
     "BaseResponseMetadata",
     "BaseResponseResources",
