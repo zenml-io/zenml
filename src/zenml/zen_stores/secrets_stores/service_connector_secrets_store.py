@@ -64,9 +64,19 @@ class ServiceConnectorSecretsStoreConfiguration(SecretsStoreConfiguration):
 
         Returns:
             The validated configuration values.
+
+        Raises:
+            ValueError: If the authentication configuration is not a valid
+                JSON object.
         """
         if isinstance(values.get("auth_config"), str):
-            values["auth_config"] = json.loads(values["auth_config"])
+            try:
+                values["auth_config"] = json.loads(values["auth_config"])
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"The authentication configuration is not a valid JSON "
+                    f"object: {e}"
+                )
         return values
 
 
@@ -129,6 +139,11 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
             base_connector = service_connector_registry.instantiate_connector(
                 model=request
             )
+            # Set the `allow_implicit_auth_methods` flag to `True` to allow
+            # implicit authentication methods to be used even when not globally
+            # enabled via the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment
+            # variable.
+            base_connector.allow_implicit_auth_methods = True
             self._connector = base_connector.get_connector_client()
 
         if self._client is None:

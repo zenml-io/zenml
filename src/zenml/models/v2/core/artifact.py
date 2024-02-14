@@ -24,7 +24,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
 )
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.scoped import WorkspaceScopedTaggableFilter
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
@@ -133,7 +133,7 @@ class ArtifactResponse(
 # ------------------ Filter Model ------------------
 
 
-class ArtifactFilter(BaseFilter):
+class ArtifactFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of artifacts."""
 
     name: Optional[str] = None

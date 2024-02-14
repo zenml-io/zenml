@@ -7,7 +7,7 @@ on:
     tags: ['*']
 jobs:
   setup-and-test:
-    uses: ./.github/workflows/setup-python-environment.yml
+    uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
       python-version: '3.8'
@@ -38,7 +38,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh mysql
+        run: bash scripts/test-migrations-mysql.sh mysql
   sqlite-db-migration-testing:
     runs-on: ubuntu-dind-runners
     steps:
@@ -49,13 +49,26 @@ jobs:
         with:
           python-version: '3.9'
       - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh sqlite
+        run: bash scripts/test-migrations-mysql.sh sqlite
+  mariadb-db-migration-testing:
+    runs-on: ubuntu-dind-runners
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4.8.0
+        with:
+          python-version: '3.9'
+      - name: Test migrations across versions
+        run: bash scripts/test-migrations-mariadb.sh
   publish-python-package:
+    if: github.repository == 'zenml-io/zenml'
     needs:
       - setup-and-test
       - mlstacks-compatibility-check
       - sqlite-db-migration-testing
       - mysql-db-migration-testing
+      - mariadb-db-migration-testing
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
   wait-for-package-release:
@@ -66,10 +79,12 @@ jobs:
         run: sleep 240
         shell: bash
   publish-docker-image:
+    if: github.repository == 'zenml-io/zenml'
     needs: wait-for-package-release
     uses: ./.github/workflows/publish_docker_image.yml
     secrets: inherit
   publish-helm-chart:
+    if: github.repository == 'zenml-io/zenml'
     needs: publish-docker-image
     uses: ./.github/workflows/publish_helm_chart.yml
     secrets: inherit

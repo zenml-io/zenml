@@ -127,14 +127,20 @@ zenml integration install sklearn -y
 In this case, ZenML has an integration with `sklearn` so you can use the ZenML CLI to install the right version directly.
 
 {% hint style="info" %}
-The `zenml integration install sklearn` command is simply doing a `pip install sklearn<1.3` behind the scenes. If something goes wrong, one can always use `zenml integration requirements sklearn` to see which requirements are compatible and install using pip (or any other tool) directly.
+The `zenml integration install sklearn` command is simply doing a `pip install`
+of `sklearn` behind the scenes. If something goes wrong, one can always use
+`zenml integration requirements sklearn` to see which requirements are
+compatible and install using pip (or any other tool) directly. (If no specific
+requirements are mentioned for an integration then this means we support using
+all possible versions of that integration/package.)
+
 {% endhint %}
 
 ### Define a data loader with multiple outputs
 
 A typical start of an ML pipeline is usually loading data from some source. This step will sometimes have multiple outputs. To define such a step, use a `Tuple` type annotation.
 Additionally, you can use the `Annotated` annotation to assign
-[custom output names](../advanced-guide/pipelining-features/configure-steps-pipelines.md#step-output-names).
+[custom output names](../advanced-guide/pipelining-features/managing-steps.md#step-output-names).
 Here we load an open-source dataset and split it into a train and a test dataset.
 
 ```python
@@ -245,6 +251,11 @@ training_pipeline = training_pipeline.with_options(
 # Run the pipeline
 training_pipeline()
 ```
+
+The reference to a local file will change depending on where you are executing
+the pipeline and code from, so please bear this in mind. It is best practice to
+put all config files in a configs directory at the root of your repository and
+check them into git history.
 
 A simple version of such a YAML file could be:
 

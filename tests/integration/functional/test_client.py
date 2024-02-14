@@ -21,12 +21,20 @@ from uuid import uuid4
 
 import pytest
 from pydantic import BaseModel
+from typing_extensions import Annotated
 
 from tests.integration.functional.conftest import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
 from tests.integration.functional.utils import sample_name
+from zenml import (
+    ExternalArtifact,
+    log_artifact_metadata,
+    pipeline,
+    save_artifact,
+    step,
+)
 from zenml.client import Client
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source
@@ -46,9 +54,11 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
-from zenml.model.model_version import ModelVersion
+from zenml.model.model import Model
 from zenml.models import (
     ComponentResponse,
+    ModelResponse,
+    ModelVersionResponse,
     PipelineBuildRequest,
     PipelineDeploymentRequest,
     PipelineRequest,
@@ -1128,6 +1138,171 @@ def test_basic_crud_for_entity(
             pass
 
 
+@step
+def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
+    """Produce artifact with metadata."""
+    from zenml.client import Client
+
+    log_artifact_metadata(metadata={"some_meta": "meta_new_one"})
+
+    client = Client()
+    model = client.create_model(name="model_name", description="model_desc")
+    client.create_model_version(
+        model_name_or_id=model.id,
+        name="model_version",
+        description="mv_desc_1",
+    )
+    mv = client.create_model_version(
+        model_name_or_id=model.id,
+        name="model_version2",
+        description="mv_desc_2",
+    )
+    client.update_model_version(
+        model_name_or_id=model.id, version_name_or_id=mv.id, stage="staging"
+    )
+    return "body_new_one"
+
+
+@step
+def lazy_asserter_test_artifact(
+    artifact_existing: str,
+    artifact_metadata_existing: str,
+    artifact_new: str,
+    artifact_metadata_new: str,
+    model: ModelResponse,
+    model_version_by_version: ModelVersionResponse,
+    model_version_by_stage: ModelVersionResponse,
+):
+    """Assert that passed in values are loaded in lazy mode.
+    They do not exists before actual run of the pipeline.
+    """
+    assert artifact_existing == "body_preexisting"
+    assert artifact_metadata_existing == "meta_preexisting"
+    assert artifact_new == "body_new_one"
+    assert artifact_metadata_new == "meta_new_one"
+
+    assert model.name == "model_name"
+    assert model.description == "model_desc"
+    assert model_version_by_version.name == "model_version"
+    assert model_version_by_version.description == "mv_desc_1"
+    assert model_version_by_stage.name == "model_version2"
+    assert model_version_by_stage.description == "mv_desc_2"
+
+
+class TestArtifact:
+    def test_prune_full(self, clean_client: "Client"):
+        """Test that artifact pruning works."""
+        artifact_id = ExternalArtifact(value="foo").upload_by_value()
+        artifact = clean_client.get_artifact_version(artifact_id)
+        assert artifact is not None
+        clean_client.prune_artifacts(
+            only_versions=False, delete_from_artifact_store=True
+        )
+        # artifact version, artifact and data are deleted
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version(artifact_id)
+        with pytest.raises(KeyError):
+            assert (
+                clean_client.get_artifact(artifact.artifact.id).id
+                == artifact.artifact.id
+            )
+        assert not os.path.exists(artifact.uri)
+
+    def test_prune_data_and_version(self, clean_client: "Client"):
+        """Test that artifact pruning works with delete_from_artifact_store flag."""
+        artifact_id = ExternalArtifact(value="foo").upload_by_value()
+        artifact = clean_client.get_artifact_version(artifact_id)
+        assert artifact is not None
+        clean_client.prune_artifacts(
+            only_versions=False, delete_from_artifact_store=False
+        )
+        # artifact version and artifact are deleted, data is kept
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version(artifact_id)
+        with pytest.raises(KeyError):
+            assert (
+                clean_client.get_artifact(artifact.artifact.id).id
+                == artifact.artifact.id
+            )
+        assert os.path.exists(artifact.uri)
+
+    def test_prune_only_artifact_version(self, clean_client: "Client"):
+        """Test that artifact pruning works with only versions flag."""
+        artifact_id = ExternalArtifact(value="foo").upload_by_value()
+        artifact = clean_client.get_artifact_version(artifact_id)
+        assert artifact is not None
+        clean_client.prune_artifacts(only_versions=True)
+        # artifact version is deleted, rest kept
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version(artifact_id)
+        assert (
+            clean_client.get_artifact(artifact.artifact.id).id
+            == artifact.artifact.id
+        )
+        assert os.path.exists(artifact.uri)
+
+    def test_pipeline_can_load_in_lazy_mode(
+        self,
+        clean_client: "Client",
+    ):
+        """Tests that user can load model artifact versions, metadata and models (versions) in lazy mode in pipeline codes."""
+
+        @pipeline(enable_cache=False)
+        def dummy():
+            artifact_existing = clean_client.get_artifact_version(
+                name_id_or_prefix="preexisting"
+            )
+            artifact_metadata_existing = artifact_existing.run_metadata[
+                "some_meta"
+            ]
+
+            artifact_new = clean_client.get_artifact_version(
+                name_id_or_prefix="new_one"
+            )
+            artifact_metadata_new = artifact_new.run_metadata["some_meta"]
+
+            model = clean_client.get_model(model_name_or_id="model_name")
+
+            lazy_producer_test_artifact()
+            lazy_asserter_test_artifact(
+                # load artifact directly
+                artifact_existing.load(),
+                # pass as run metadata response
+                artifact_metadata_existing,
+                # pass as artifact response
+                artifact_new,
+                # read value of metadata directly
+                artifact_metadata_new.value,
+                # load model
+                model,
+                # load model version by version
+                clean_client.get_model_version(
+                    # this can be lazy loaders too
+                    model_name_or_id=model.id,
+                    model_version_name_or_number_or_id="model_version",
+                ),
+                # load model version by stage
+                clean_client.get_model_version(
+                    # this can be lazy loaders too
+                    model.id,
+                    model_version_name_or_number_or_id="staging",
+                ),
+                after=["lazy_producer_test_artifact"],
+            )
+
+        save_artifact(
+            data="body_preexisting", name="preexisting", version="1.2.3"
+        )
+        log_artifact_metadata(
+            metadata={"some_meta": "meta_preexisting"},
+            artifact_name="preexisting",
+            artifact_version="1.2.3",
+        )
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version("new_one")
+        dummy()
+
+
 class TestModel:
     MODEL_NAME = "foo"
 
@@ -1255,6 +1430,49 @@ class TestModel:
         clean_client.update_model(model.id, name="bar")
         model = clean_client.get_model(model.id)
         assert model.name == "bar"
+
+    def test_latest_version_retrieval(self, clean_client: "Client"):
+        """Test that model response has proper latest version in it."""
+        model = clean_client.create_model(name=self.MODEL_NAME)
+        mv1 = clean_client.create_model_version(model.id, name="foo")
+        model_ = clean_client.get_model(model.id)
+        assert model_.latest_version_name == mv1.name
+        assert model_.latest_version_id == mv1.id
+
+        mv2 = clean_client.create_model_version(model.id, name="bar")
+        model_ = clean_client.get_model(model.id)
+        assert model_.latest_version_name == mv2.name
+        assert model_.latest_version_id == mv2.id
+
+    def test_list_by_tags(self, clean_client: "Client"):
+        """Test that models can be listed using tag filters."""
+        model1 = clean_client.create_model(
+            name=self.MODEL_NAME, tags=["foo", "bar"]
+        )
+        model2 = clean_client.create_model(
+            name=self.MODEL_NAME + "2", tags=["foo"]
+        )
+        ms = clean_client.list_models(tag="foo")
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
+        ms = clean_client.list_models(tag="bar")
+        assert len(ms) == 1
+        assert model1 in ms
+
+        ms = clean_client.list_models(tag="non_existent_tag")
+        assert len(ms) == 0
+
+        ms = clean_client.list_models()
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
+
+        ms = clean_client.list_models(tag="")
+        assert len(ms) == 2
+        assert model1 in ms
+        assert model2 in ms
 
 
 class TestModelVersion:
@@ -1451,7 +1669,9 @@ class TestModelVersion:
     def test_list_model_version(self, client_with_model: "Client"):
         for i in range(PAGE_SIZE_DEFAULT):
             client_with_model.create_model_version(
-                self.MODEL_NAME, f"{self.VERSION_NAME}_{i}"
+                self.MODEL_NAME,
+                f"{self.VERSION_NAME}_{i}",
+                tags=["foo", "bar"],
             )
 
         model_versions = client_with_model.list_model_versions(
@@ -1474,6 +1694,27 @@ class TestModelVersion:
         )
         assert len(model_versions) == PAGE_SIZE_DEFAULT
 
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tag="foo",
+        )
+        assert len(model_versions) == PAGE_SIZE_DEFAULT
+
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tag="non_existent_tag",
+        )
+        assert len(model_versions) == 0
+
+        model_versions = client_with_model.list_model_versions(
+            self.MODEL_NAME,
+            name=f"contains:{self.VERSION_NAME}_",
+            tag="",
+        )
+        assert len(model_versions) == PAGE_SIZE_DEFAULT
+
     def test_delete_model_version_found(self, client_with_model: "Client"):
         client_with_model.delete_model_version(
             client_with_model.get_model_version(
@@ -1490,45 +1731,45 @@ class TestModelVersion:
         with pytest.raises(KeyError):
             client_with_model.delete_model_version(uuid4())
 
-    def _create_some_model_version(
+    def _create_some_model(
         self,
         client: Client,
         model_name: str = "aria_cat_supermodel",
         model_version_name: str = "1.0.0",
-    ) -> ModelVersion:
+    ) -> Model:
         model = client.create_model(
             name=model_name,
         )
         return client.create_model_version(
             model_name_or_id=model.id,
             name=model_version_name,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
 
     def test_get_by_latest(self, clean_client: "Client"):
-        """Test that model version can be retrieved with latest."""
-        mv1 = self._create_some_model_version(client=clean_client)
+        """Test that model can be retrieved with latest."""
+        mv1 = self._create_some_model(client=clean_client)
 
         # latest returns the only model
         mv2 = clean_client.get_model_version(
             model_name_or_id=mv1.model_id,
             model_version_name_or_number_or_id=ModelStages.LATEST,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
         assert mv2 == mv1
 
         # after second model version, latest should point to it
         mv3 = clean_client.create_model_version(
             model_name_or_id=mv1.model_id, name="2.0.0"
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
         mv4 = clean_client.get_model_version(
             model_name_or_id=mv1.model_id,
             model_version_name_or_number_or_id=ModelStages.LATEST,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
         assert mv4 != mv1
         assert mv4 == mv3
 
     def test_get_by_stage(self, clean_client: "Client"):
-        """Test that model version can be retrieved by stage."""
-        mv1 = self._create_some_model_version(client=clean_client)
+        """Test that model can be retrieved by stage."""
+        mv1 = self._create_some_model(client=clean_client)
 
         clean_client.update_model_version(
             version_name_or_id=mv1.id,
@@ -1540,13 +1781,13 @@ class TestModelVersion:
         mv2 = clean_client.get_model_version(
             model_name_or_id=mv1.model_id,
             model_version_name_or_number_or_id=ModelStages.STAGING,
-        ).to_model_version(suppress_class_validation_warnings=True)
+        ).to_model_class(suppress_class_validation_warnings=True)
 
         assert mv1 == mv2
 
     def test_stage_not_found(self, clean_client: "Client"):
-        """Test that attempting to get model version fails if none at the given stage."""
-        mv1 = self._create_some_model_version(client=clean_client)
+        """Test that attempting to get model fails if none at the given stage."""
+        mv1 = self._create_some_model(client=clean_client)
 
         with pytest.raises(KeyError):
             clean_client.get_model_version(

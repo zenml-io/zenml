@@ -24,9 +24,9 @@ from zenml.model_registries.base_model_registry import (
     BaseModelRegistry,
     BaseModelRegistryFlavor,
     ModelRegistryModelMetadata,
-    ModelVersion,
     ModelVersionStage,
     RegisteredModel,
+    RegistryModelVersion,
 )
 
 
@@ -89,7 +89,7 @@ class ConcreteModelRegistry(BaseModelRegistry):
         description: Optional[str] = None,
         metadata: Optional[ModelRegistryModelMetadata] = None,
         **kwargs: Any,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         pass
 
     def delete_model_version(
@@ -107,7 +107,7 @@ class ConcreteModelRegistry(BaseModelRegistry):
         metadata: Optional[ModelRegistryModelMetadata] = None,
         remove_metadata: Optional[List[str]] = None,
         stage: Optional[ModelVersionStage] = None,
-    ) -> ModelVersion:
+    ) -> RegistryModelVersion:
         pass
 
     def list_model_versions(
@@ -121,10 +121,12 @@ class ConcreteModelRegistry(BaseModelRegistry):
         created_before: Optional[datetime] = None,
         order_by_date: Optional[str] = None,
         **kwargs: Any,
-    ) -> Optional[List[ModelVersion]]:
+    ) -> Optional[List[RegistryModelVersion]]:
         pass
 
-    def get_model_version(self, name: str, version: str) -> ModelVersion:
+    def get_model_version(
+        self, name: str, version: str
+    ) -> RegistryModelVersion:
         pass
 
     def load_model_version(
@@ -137,7 +139,7 @@ class ConcreteModelRegistry(BaseModelRegistry):
 
     def get_model_uri_artifact_store(
         self,
-        model_version: ModelVersion,
+        model_version: RegistryModelVersion,
     ) -> str:
         pass
 
@@ -153,7 +155,7 @@ def concrete_registered_models(mocker):
 
 @pytest.fixture
 def concrete_registered_model_version(mocker, concrete_registered_models):
-    registered_model_version = mocker.MagicMock(spec=ModelVersion)
+    registered_model_version = mocker.MagicMock(spec=RegistryModelVersion)
     registered_model_version.registered_model = concrete_registered_models[0]
     registered_model_version.version = "test_version"
     registered_model_version.description = "test_version_description"

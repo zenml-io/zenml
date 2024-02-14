@@ -34,6 +34,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedTaggableFilter
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -161,6 +162,10 @@ from zenml.models.v2.core.pipeline import (
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
+    PipelineNamespaceFilter,
+    PipelineNamespaceResponse,
+    PipelineNamespaceResponseBody,
+    PipelineNamespaceResponseMetadata,
 )
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildBase,
@@ -478,6 +483,7 @@ __all__ = [
     "WorkspaceScopedResponse",
     "WorkspaceScopedResponseBody",
     "WorkspaceScopedResponseMetadata",
+    "WorkspaceScopedTaggableFilter",
     "BaseFilter",
     "StrFilter",
     "BoolFilter",
@@ -572,6 +578,10 @@ __all__ = [
     "PipelineResponse",
     "PipelineResponseBody",
     "PipelineResponseMetadata",
+    "PipelineNamespaceFilter",
+    "PipelineNamespaceResponse",
+    "PipelineNamespaceResponseBody",
+    "PipelineNamespaceResponseMetadata",
     "PipelineBuildBase",
     "PipelineBuildRequest",
     "PipelineBuildFilter",

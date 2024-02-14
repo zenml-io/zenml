@@ -133,15 +133,10 @@ class StoreType(StrEnum):
 
 
 class SecretsStoreType(StrEnum):
-    """Secrets Store Backend Types.
+    """Secrets Store Backend Types."""
 
-    NOTE: this is a superset of the StoreType values because the set of secrets
-    store backends includes all the backends supported for zen stores.
-    """
-
-    NONE = "none"  # indicates that the secrets store is disabled
-    SQL = StoreType.SQL.value
-    REST = StoreType.REST.value
+    NONE = "none"  # indicates that no secrets store is used
+    SQL = "sql"
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
@@ -351,3 +346,16 @@ class MetadataResourceTypes(StrEnum):
     STEP_RUN = "step_run"
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
+
+
+class DatabaseBackupStrategy(StrEnum):
+    """All available database backup strategies."""
+
+    # Backup disabled
+    DISABLED = "disabled"
+    # In-memory backup
+    IN_MEMORY = "in-memory"
+    # Dump the database to a file
+    DUMP_FILE = "dump-file"
+    # Create a backup of the database in the remote database service
+    DATABASE = "database"

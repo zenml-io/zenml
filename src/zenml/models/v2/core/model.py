@@ -22,16 +22,16 @@ from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedTaggableFilter,
 )
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.model.model_version import ModelVersion
+    from zenml.model.model import Model
     from zenml.models.v2.core.tag import TagResponse
 
 
@@ -116,7 +116,8 @@ class ModelResponseBody(WorkspaceScopedResponseBody):
     tags: List["TagResponse"] = Field(
         title="Tags associated with the model",
     )
-    latest_version: Optional[str]
+    latest_version_name: Optional[str]
+    latest_version_id: Optional[UUID]
     created: datetime = Field(
         title="The timestamp when this component was created."
     )
@@ -200,13 +201,22 @@ class ModelResponse(
         return self.get_body().tags
 
     @property
-    def latest_version(self) -> Optional[str]:
-        """The `latest_version` property.
+    def latest_version_name(self) -> Optional[str]:
+        """The `latest_version_name` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().latest_version
+        return self.get_body().latest_version_name
+
+    @property
+    def latest_version_id(self) -> Optional[UUID]:
+        """The `latest_version_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().latest_version_id
 
     @property
     def created(self) -> datetime:
@@ -300,7 +310,7 @@ class ModelResponse(
 
     # Helper functions
     @property
-    def versions(self) -> List["ModelVersion"]:
+    def versions(self) -> List["Model"]:
         """List all versions of the model.
 
         Returns:
@@ -313,7 +323,7 @@ class ModelResponse(
             partial(client.list_model_versions, model_name_or_id=self.id)
         )
         return [
-            mv.to_model_version(suppress_class_validation_warnings=True)
+            mv.to_model_class(suppress_class_validation_warnings=True)
             for mv in model_versions
         ]
 
@@ -321,7 +331,7 @@ class ModelResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelFilter(WorkspaceScopedFilter):
+class ModelFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     name: Optional[str] = Field(
@@ -336,7 +346,7 @@ class ModelFilter(WorkspaceScopedFilter):
     )
 
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
         "workspace_id",
         "user_id",
     ]
