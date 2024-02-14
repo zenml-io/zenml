@@ -22,19 +22,30 @@ at[https://sdkdocs.zenml.io](https://sdkdocs.zenml.io/).
 To build them locally follow these steps:
 
 * Clone the repository
-* Install ZenML and all dependencies
-```python
-pip install ".[dev,server]"
-zenml integration install -y
-pip install click~=8.0.3 typing-extensions~=3.10.0.2
+* Install ZenML and Jinja2 dependencies
+```bash
+pip3 install -e ".[server,dev]"
+pip3 install "Jinja2==3.0.3"
 ```
-* Run `bash scripts/serve_api_docs.sh` from the repository root - 
+* Modify `docs/mkdocs.yml` as follows:
+```yaml
+watch:
+  - ../src/zenml
+```
+```yaml
+watch:
+  - src/zenml
+```
+* Run `python3 docs/mkdocstrings_helper.py`
+* Run:
+```bash
+rm -rf src/zenml/zen_stores/migrations/env.py
+rm -rf src/zenml/zen_stores/migrations/versions
+rm -rf src/zenml/zen_stores/migrations/script.py.mako
+```
+* Run `mkdocs serve -f docs/mkdocs.yml -a localhost:<PORT>` from the repository root - 
 running it from elsewhere can lead to unexpected errors. This script will compose the docs hierarchy
-and serve it (default location is http://127.0.0.1:8000/).
-* In case port 8000 is taken you can also manually go into the docs folder within your terminal and
-run `mkdocs serve` from there
-
-The generated `.md` files will be inside the directory `docs/mkdocs/`
+and serve it (http://127.0.0.1:<PORT>/).
 
 ## Contributors
 

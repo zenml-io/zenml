@@ -95,6 +95,7 @@
     * [Tekton Orchestrator](stacks-and-components/component-guide/orchestrators/tekton.md)
     * [Airflow Orchestrator](stacks-and-components/component-guide/orchestrators/airflow.md)
     * [Skypilot VM Orchestrator](stacks-and-components/component-guide/orchestrators/skypilot-vm.md)
+    * [HyperAI Orchestrator](stacks-and-components/component-guide/orchestrators/hyperai.md)
     * [Develop a custom orchestrator](stacks-and-components/component-guide/orchestrators/custom.md)
   * [Artifact Stores](stacks-and-components/component-guide/artifact-stores/artifact-stores.md)
     * [Local Artifact Store](stacks-and-components/component-guide/artifact-stores/local.md)

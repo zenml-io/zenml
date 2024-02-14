@@ -1,5 +1,5 @@
 ---
-name: Fast CI
+name: ci-fast
 on:
   workflow_dispatch:
   workflow_call:
@@ -52,10 +52,23 @@ jobs:
         with:
           files: .
           config: ./.typos.toml
+  api-docs-test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.11'
+      - name: Test API docs buildable
+        run: bash scripts/generate-docs.sh -v DUMMY -c
   update-templates-to-examples:
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
-    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml'
+    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
+      == false
     uses: ./.github/workflows/update-templates-to-examples.yml
     with:
       python-version: '3.8'
@@ -74,6 +87,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   custom-ubuntu-runners-integration-test:
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-dind-runners]
