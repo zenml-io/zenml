@@ -342,9 +342,6 @@ class ArtifactVersionResponse(
             path: The path to save the binary data to.
             overwrite: Whether to overwrite the file if it already exists.
 
-        Returns:
-            The unmaterialized binary data.
-
         Raises:
             ValueError: If the path does not end with '.zip'.
         """
