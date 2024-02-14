@@ -45,6 +45,6 @@ def update_model(_cls: Type["T"]) -> Type["T"]:
         value.required = False
         value.allow_none = True
 
-    _cls.__config__.extra = Extra.forbid
+    _cls.__config__.extra = Extra.ignore
 
     return _cls
