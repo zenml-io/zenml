@@ -28,7 +28,7 @@ jobs:
         run: |
           pip install uv
           uv venv
-          uv pip install -U darglint
+          uv pip install darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
