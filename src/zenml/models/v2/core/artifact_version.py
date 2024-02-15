@@ -349,9 +349,11 @@ class ArtifactVersionResponse(
             raise ValueError(
                 "The path should end with '.zip' to save the binary data."
             )
-        from zenml.artifacts.utils import save_artifact_binary_from_response
+        from zenml.artifacts.utils import (
+            download_artifact_binary_from_response,
+        )
 
-        save_artifact_binary_from_response(
+        download_artifact_binary_from_response(
             self,
             path=path,
             overwrite=overwrite,

@@ -445,21 +445,21 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     )
 
 
-def save_artifact_binary_from_response(
+def download_artifact_binary_from_response(
     artifact: "ArtifactVersionResponse",
     path: str,
     overwrite: bool = False,
 ) -> None:
-    """Save the given artifact into a binary file.
+    """Download the given artifact into a binary file.
 
     Args:
-        artifact: The artifact to save.
-        path: The path to save the artifact to.
+        artifact: The artifact to download.
+        path: The path to which to download the artifact.
         overwrite: Whether to overwrite the file if it already exists.
 
     Raises:
         FileExistsError: If the file already exists and `overwrite` is `False`.
-        Exception: If the artifact could not be saved to the zip file.
+        Exception: If the artifact could not be downloaded to the zip file.
     """
     if not overwrite and fileio.exists(path):
         raise FileExistsError(
