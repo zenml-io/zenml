@@ -23,9 +23,11 @@ jobs:
         with:
           python-version: '3.8'
       - name: Install current package as editable
-        run: pip install -e .
+        run: |
+          pip install uv
+          uv pip install -e .
       - name: Install mlstacks package
-        run: pip install mlstacks
+        run: uv pip install mlstacks
       - name: Check for broken dependencies
         run: pip check
   mysql-db-migration-testing:

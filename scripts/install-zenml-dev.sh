@@ -23,7 +23,7 @@ parse_args () {
 
 install_zenml() {
     # install ZenML in editable mode
-    pip install -e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]
+    uv pip install -e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]
 }
 
 install_integrations() {
@@ -53,7 +53,7 @@ install_integrations() {
     echo "" >> integration-requirements.txt
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
 
-    pip install -r integration-requirements.txt
+    uv pip install -r integration-requirements.txt
     rm integration-requirements.txt
 
     # install langchain separately
@@ -66,7 +66,7 @@ set -e
 
 parse_args "$@"
 
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip uv
 
 install_zenml
 

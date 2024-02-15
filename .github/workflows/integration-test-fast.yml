@@ -150,8 +150,9 @@ jobs:
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
-          pip install pyyaml==5.3.1
-          pip install docker-compose
+          pip install uv
+          uv pip install pyyaml==5.3.1
+          uv pip install docker-compose
       - name: Install Linux System Dependencies
         if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
         run: sudo apt install graphviz
