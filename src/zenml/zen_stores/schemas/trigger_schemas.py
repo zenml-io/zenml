@@ -32,7 +32,7 @@ from zenml.models import (
     TriggerResponseMetadata,
     TriggerUpdate,
 )
-from zenml.models.v2.core.trigger import TriggerResponseResources
+from zenml.models import TriggerResponseResources
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
