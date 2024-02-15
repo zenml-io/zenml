@@ -19,7 +19,7 @@ from pydantic import BaseModel, Extra
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PluginSubType, PluginType
-from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
+from zenml.models import BasePluginFlavorResponse
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
