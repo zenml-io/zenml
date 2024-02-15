@@ -29,15 +29,6 @@ from zenml.models.v2.base.base_plugin_flavor import (
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
-AnyPluginResponse = TypeVar(
-    "AnyPluginResponse",
-    bound=BasePluginFlavorResponse[
-        BasePluginResponseBody,
-        BasePluginResponseMetadata,
-        BasePluginResponseResources,
-    ],
-)
-
 
 class BasePluginConfig(BaseModel, ABC):
     """Allows configuring of Event Source and Filter configuration."""
