@@ -32,6 +32,8 @@ jobs:
           uv pip install darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
+        env:
+          VIRTUAL_ENV: ./.venv
   sqlite-db-migration-testing:
     runs-on: ubuntu-dind-runners
     # if team member commented, not a draft, on a PR, using /fulltest
