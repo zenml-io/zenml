@@ -33,10 +33,10 @@ class WorkloadManagerInterface(ABC):
 
         Args:
             image: The Docker image to run.
-            command: The command to run in the image.
+            command: The command to run in the container.
             arguments: The arguments for the command.
             environment: The environment to set in the container.
-            sync: If True, will wait until the image finished running before
+            sync: If True, will wait until the container finished running before
                 returning.
             timeout_in_seconds: Timeout in seconds to wait before cancelling
                 the container. If set to 0 the container will run until it

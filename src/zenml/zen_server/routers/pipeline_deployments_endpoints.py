@@ -23,6 +23,7 @@ from zenml.models import (
     Page,
     PipelineDeploymentFilter,
     PipelineDeploymentResponse,
+    PipelineRunResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -147,7 +148,7 @@ if server_config().workload_manager_enabled:
         background_tasks: BackgroundTasks,
         config: Optional[PipelineRunConfiguration] = None,
         auth_context: AuthContext = Security(authorize),
-    ) -> UUID:
+    ) -> PipelineRunResponse:
         """Run a pipeline from a pipeline deployment.
 
         Args:
@@ -157,10 +158,10 @@ if server_config().workload_manager_enabled:
             auth_context: Authentication context.
 
         Returns:
-            The ID of the new run.
+            The created run.
         """
         from zenml.zen_server.pipeline_deployment.utils import (
-            redeploy_pipeline,
+            run_pipeline,
         )
 
         deployment = verify_permissions_and_get_entity(
@@ -173,7 +174,7 @@ if server_config().workload_manager_enabled:
             resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
         )
 
-        return redeploy_pipeline(
+        return run_pipeline(
             deployment=deployment,
             run_config=config,
             background_tasks=background_tasks,

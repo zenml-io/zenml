@@ -52,11 +52,21 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def _upload_deployment(
+def _create_deployment(
     deployment: "PipelineDeploymentBase",
     pipeline_id: Optional[UUID] = None,
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> UUID:
+    """Creates a deployment in the ZenStore.
+
+    Args:
+        deployment: Base of the deployment to create.
+        pipeline_id: Pipeline ID to use for the deloyment.
+        code_repository: Code repository to use for the deployment.
+
+    Returns:
+        The ID of the deployment.
+    """
     source_root = source_utils.get_source_root()
 
     code_reference = None
@@ -323,7 +333,7 @@ def create_pipeline_build(
     build_checksum = compute_build_checksum(
         required_builds, stack=stack, code_repository=code_repository
     )
-    template_deployment_id = _upload_deployment(
+    template_deployment_id = _create_deployment(
         deployment=deployment,
         pipeline_id=pipeline_id,
         code_repository=code_repository,

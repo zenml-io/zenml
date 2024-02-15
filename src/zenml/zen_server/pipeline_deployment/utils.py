@@ -22,6 +22,7 @@ from zenml.models import (
     FlavorFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineRunResponse,
     StackResponse,
 )
 from zenml.new.pipelines.run_utils import (
@@ -46,13 +47,13 @@ from zenml.zen_server.utils import (
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
 
-def redeploy_pipeline(
+def run_pipeline(
     deployment: PipelineDeploymentResponse,
     auth_context: AuthContext,
     background_tasks: Optional[BackgroundTasks] = None,
     run_config: Optional[PipelineRunConfiguration] = None,
-) -> UUID:
-    """Deploy a pipeline.
+) -> PipelineRunResponse:
+    """Run a pipeline from an existing deployment.
 
     Args:
         deployment: The pipeline deployment.
@@ -154,7 +155,7 @@ def redeploy_pipeline(
         # background
         _task()
 
-    return placeholder_run.id
+    return placeholder_run
 
 
 def validate_stack(stack: StackResponse) -> None:
