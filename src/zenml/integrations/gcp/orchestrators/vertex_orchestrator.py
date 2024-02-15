@@ -54,24 +54,8 @@ from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
     VertexOrchestratorSettings,
 )
-from zenml.integrations.gcp.google_cloud_function import create_cloud_function
-from zenml.integrations.gcp.google_cloud_scheduler import create_scheduler_job
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
-)
-from zenml.integrations.gcp.orchestrators import vertex_scheduler
-from zenml.integrations.gcp.orchestrators.vertex_scheduler.main import (
-    ENABLE_CACHING,
-    ENCRYPTION_SPEC_KEY_NAME,
-    JOB_ID,
-    LABELS,
-    LOCATION,
-    NETWORK,
-    PARAMETER_VALUES,
-    PIPELINE_ROOT,
-    PROJECT,
-    TEMPLATE_PATH,
-    WORKLOAD_SERVICE_ACCOUNT,
 )
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
@@ -249,14 +233,12 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         if deployment.schedule:
             if (
                 deployment.schedule.catchup
-                or deployment.schedule.start_time
-                or deployment.schedule.end_time
                 or deployment.schedule.interval_second
             ):
                 logger.warning(
                     "Vertex orchestrator only uses schedules with the "
-                    "`cron_expression` property. All other properties "
-                    "are ignored."
+                    "`cron_expression` property, with optional `start_time` and/or `end_time`. "
+                    "All other properties are ignored."
                 )
             if deployment.schedule.cron_expression is None:
                 raise ValueError(
@@ -478,143 +460,15 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             VertexOrchestratorSettings, self.get_settings(deployment)
         )
 
-        if deployment.schedule:
-            logger.info(
-                "Scheduling job using Google Cloud Scheduler and Google "
-                "Cloud Functions..."
-            )
-            self._upload_and_schedule_pipeline(
-                pipeline_name=deployment.pipeline_configuration.name,
-                run_name=orchestrator_run_name,
-                stack=stack,
-                schedule=deployment.schedule,
-                pipeline_file_path=pipeline_file_path,
-                settings=settings,
-            )
-
-        else:
-            logger.info("No schedule detected. Creating one-off vertex job...")
-            # Using the Google Cloud AIPlatform client, upload and execute the
-            # pipeline
-            # on the Vertex AI Pipelines service.
-            self._upload_and_run_pipeline(
-                pipeline_name=deployment.pipeline_configuration.name,
-                pipeline_file_path=pipeline_file_path,
-                run_name=orchestrator_run_name,
-                settings=settings,
-            )
-
-    def _upload_and_schedule_pipeline(
-        self,
-        pipeline_name: str,
-        run_name: str,
-        stack: "Stack",
-        schedule: "ScheduleResponse",
-        pipeline_file_path: str,
-        settings: VertexOrchestratorSettings,
-    ) -> None:
-        """Uploads and schedules pipeline on GCP.
-
-        Args:
-            pipeline_name: Name of the pipeline.
-            run_name: Orchestrator run name.
-            stack: The stack the pipeline will run on.
-            schedule: The schedule the pipeline will run on.
-            pipeline_file_path: Path of the JSON file containing the compiled
-                Kubeflow pipeline (compiled with Kubeflow SDK v2).
-            settings: Pipeline level settings for this orchestrator.
-
-        Raises:
-            ValueError: If the attribute `pipeline_root` is not set, and it
-                can be not generated using the path of the artifact store in the
-                stack because it is not a
-                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also
-                gets raised if attempting to schedule pipeline run without using
-                the `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
-        """
-        # First, do some validation
-        artifact_store = stack.artifact_store
-        if artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR:
-            raise ValueError(
-                "Currently, the Vertex AI orchestrator only supports "
-                "scheduled runs in combination with an artifact store of "
-                f"flavor: {GCP_ARTIFACT_STORE_FLAVOR}. The current stacks "
-                f"artifact store is of flavor: {artifact_store.flavor}. "
-                "Please update your stack accordingly."
-            )
-
-        # Get the credentials that would be used to create resources.
-        credentials, project_id = self._get_authentication()
-
-        scheduler_service_account_email: Optional[str] = None
-        if self.config.scheduler_service_account:
-            scheduler_service_account_email = (
-                self.config.scheduler_service_account
-            )
-        elif hasattr(credentials, "signer_email"):
-            scheduler_service_account_email = credentials.signer_email
-        else:
-            scheduler_service_account_email = (
-                self.config.function_service_account
-                or self.config.workload_service_account
-            )
-
-        if not scheduler_service_account_email:
-            raise ValueError(
-                "A GCP service account is required to schedule a pipeline run. "
-                "The credentials used to authenticate with GCP do not have a "
-                "service account associated with them and a service account "
-                "was not configured in the `scheduler_service_account` field "
-                "of the orchestrator config. Please update your orchestrator "
-                "configuration or credentials accordingly."
-            )
-
-        # Copy over the scheduled pipeline to the artifact store
-        artifact_store_base_uri = f"{artifact_store.path.rstrip('/')}/vertex_scheduled_pipelines/{pipeline_name}/{run_name}"
-        artifact_store_pipeline_uri = (
-            f"{artifact_store_base_uri}/vertex_pipeline.json"
-        )
-        fileio.copy(pipeline_file_path, artifact_store_pipeline_uri)
-        logger.info(
-            "The scheduled pipeline representation has been "
-            "automatically copied to this path of the `GCPArtifactStore`: "
-            f"{artifact_store_pipeline_uri}",
-        )
-
-        # Create cloud function
-        function_uri = create_cloud_function(
-            directory_path=vertex_scheduler.__path__[0],  # fixed path
-            upload_path=f"{artifact_store_base_uri}/code.zip",
-            project=project_id,
-            location=self.config.location,
-            function_name=run_name,
-            credentials=credentials,
-            function_service_account_email=self.config.function_service_account,
-        )
-
-        # Create the scheduler job
-        body = {
-            TEMPLATE_PATH: artifact_store_pipeline_uri,
-            JOB_ID: _clean_pipeline_name(pipeline_name),
-            PIPELINE_ROOT: self._pipeline_root,
-            PARAMETER_VALUES: None,
-            ENABLE_CACHING: False,
-            ENCRYPTION_SPEC_KEY_NAME: self.config.encryption_spec_key_name,
-            LABELS: settings.labels,
-            PROJECT: project_id,
-            LOCATION: self.config.location,
-            WORKLOAD_SERVICE_ACCOUNT: self.config.workload_service_account,
-            NETWORK: self.config.network,
-        }
-
-        create_scheduler_job(
-            project=project_id,
-            region=self.config.location,
-            http_uri=function_uri,
-            body=body,
-            schedule=str(schedule.cron_expression),
-            credentials=credentials,
-            service_account_email=scheduler_service_account_email,
+        # Using the Google Cloud AIPlatform client, upload and execute the
+        # pipeline
+        # on the Vertex AI Pipelines service.
+        self._upload_and_run_pipeline(
+            pipeline_name=deployment.pipeline_configuration.name,
+            pipeline_file_path=pipeline_file_path,
+            run_name=orchestrator_run_name,
+            settings=settings,
+            schedule=deployment.schedule,
         )
 
     def _upload_and_run_pipeline(
@@ -623,6 +477,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         pipeline_file_path: str,
         run_name: str,
         settings: VertexOrchestratorSettings,
+        schedule: Optional["ScheduleResponse"] = None,
     ) -> None:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
 
@@ -632,6 +487,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 Kubeflow pipeline (compiled with Kubeflow SDK v2).
             run_name: Orchestrator run name.
             settings: Pipeline level settings for this orchestrator.
+            schedule: The schedule the pipeline will run on.
         """
         # We have to replace the hyphens in the run name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
@@ -658,48 +514,65 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             location=self.config.location,
         )
 
-        logger.info(
-            "Submitting pipeline job with job_id `%s` to Vertex AI Pipelines "
-            "service.",
-            job_id,
-        )
-
-        # Submit the job to Vertex AI Pipelines service.
-        try:
-            if self.config.workload_service_account:
-                logger.info(
-                    "The Vertex AI Pipelines job workload will be executed "
-                    "using the `%s` "
-                    "service account.",
-                    self.config.workload_service_account,
-                )
-
-            if self.config.network:
-                logger.info(
-                    "The Vertex AI Pipelines job will be peered with the `%s` "
-                    "network.",
-                    self.config.network,
-                )
-
-            run.submit(
-                service_account=self.config.workload_service_account,
-                network=self.config.network,
-            )
+        if self.config.workload_service_account:
             logger.info(
-                "View the Vertex AI Pipelines job at %s", run._dashboard_uri()
+                "The Vertex AI Pipelines job workload will be executed "
+                "using the `%s` "
+                "service account.",
+                self.config.workload_service_account,
+            )
+        if self.config.network:
+            logger.info(
+                "The Vertex AI Pipelines job will be peered with the `%s` "
+                "network.",
+                self.config.network,
             )
 
-            if settings.synchronous:
+        try:
+            if schedule:
                 logger.info(
-                    "Waiting for the Vertex AI Pipelines job to finish..."
+                    "Scheduling job using native Vertex AI Pipelines scheduling..."
                 )
-                run.wait()
+                run.create_schedule(
+                    display_name=schedule.name,
+                    cron=schedule.cron_expression,
+                    start_time=schedule.utc_start_time,
+                    end_time=schedule.utc_end_time,
+                    service_account=self.config.workload_service_account,
+                    network=self.config.network,
+                )
+
+            else:
+                logger.info(
+                    "No schedule detected. Creating one-off Vertex job..."
+                )
+                logger.info(
+                    "Submitting pipeline job with job_id `%s` to Vertex AI Pipelines "
+                    "service.",
+                    job_id,
+                )
+
+                # Submit the job to Vertex AI Pipelines service.
+
+                run.submit(
+                    service_account=self.config.workload_service_account,
+                    network=self.config.network,
+                )
+                logger.info(
+                    "View the Vertex AI Pipelines job at %s",
+                    run._dashboard_uri(),
+                )
+
+                if settings.synchronous:
+                    logger.info(
+                        "Waiting for the Vertex AI Pipelines job to finish..."
+                    )
+                    run.wait()
 
         except google_exceptions.ClientError as e:
             logger.warning(
                 "Failed to create the Vertex AI Pipelines job: %s", e
             )
-
         except RuntimeError as e:
             logger.error(
                 "The Vertex AI Pipelines job execution has failed: %s", e

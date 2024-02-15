@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.55.1"
+version = "0.55.2"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -152,6 +152,7 @@ types-certifi = { version = "^2021.10.8.0", optional = true }
 types-croniter = { version = "^1.0.2", optional = true }
 types-futures = { version = "^3.3.1", optional = true }
 types-Markdown = { version = "^3.3.6", optional = true }
+types-paramiko = { version = ">=3.4.0", optional = true }
 types-Pillow = { version = "^9.2.1", optional = true }
 types-protobuf = { version = "^3.18.0", optional = true }
 types-PyMySQL = { version = "^1.0.4", optional = true }
@@ -232,6 +233,7 @@ dev = [
     "types-croniter",
     "types-futures",
     "types-Markdown",
+    "types-paramiko",
     "types-Pillow",
     "types-protobuf",
     "types-PyMySQL",

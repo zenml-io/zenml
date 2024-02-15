@@ -21,16 +21,17 @@ The lines between these pipelines can often get blurry: Some use cases call for 
 
 No matter how you design these pipelines, one thing stays consistent: you will often need to transfer or share information (in particular artifacts, models, and metadata) between pipelines. Here are some common patterns that you can use to help facilitate such an exchange:
 
-## Pattern 1: Artifact exchange between pipelines through `ExternalArtifact`
+## Pattern 1: Artifact exchange between pipelines through `Client`
 
 Let's say we have a feature engineering pipeline and a training pipeline. The feature engineering pipeline is like a factory, pumping out many different datasets. Only a few of these datasets should be selected to be sent to the training pipeline to train an actual model.
 
 <figure><img src="../../.gitbook/assets/artifact_exchange.png" alt=""><figcaption><p>A simple artifact exchange between two pipelines</p></figcaption></figure>
 
-In this scenario, the [ExternalArtifact](manage-artifacts.md#consuming-artifacts-produced-by-other-pipelines) can be used to facilitate such an exchange:
+In this scenario, the [ZenML Client](../../reference/python-client.md#client-methods) can be used to facilitate such an exchange:
 
 ```python
-from zenml import pipeline, ExternalArtifact
+from zenml import pipeline
+from zenml.client import Client
 
 @pipeline
 def feature_engineering_pipeline():
@@ -40,10 +41,11 @@ def feature_engineering_pipeline():
 
 @pipeline
 def training_pipeline():
+    client = Client()
     # Fetch by name alone - uses the latest version of this artifact
-    train_data = ExternalArtifact(name="iris_training_dataset")
+    train_data = client.get_artifact_version(name="iris_training_dataset")
     # For test, we want a particular version
-    test_data = ExternalArtifact(name="iris_testing_dataset", version="raw_2023")
+    test_data = client.get_artifact_version(name="iris_testing_dataset", version="raw_2023")
 
     # We can now send these directly into ZenML steps
     sklearn_classifier = model_trainer(train_data)
@@ -91,9 +93,8 @@ However, this approach has the downside that if the step is cached, then it coul
 
 ```python
 from typing_extensions import Annotated
-from zenml import get_pipeline_context, pipeline, ExternalArtifact
+from zenml import get_pipeline_context, pipeline, Model
 from zenml.enums import ModelStages
-from zenml.model import Model
 import pandas as pd
 from sklearn.base import ClassifierMixin
 
@@ -107,7 +108,7 @@ def predict(
     return predictions
 
 @pipeline(
-    model_config=Model(
+    model=Model(
         name="iris_classifier",
         # Using the production stage
         version=ModelStages.PRODUCTION,

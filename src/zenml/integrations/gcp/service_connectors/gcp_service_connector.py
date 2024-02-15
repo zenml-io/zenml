@@ -32,8 +32,14 @@ import google.api_core.exceptions
 import google.auth
 import google.auth.exceptions
 import requests
+from google.auth import aws as gcp_aws
+from google.auth import external_account as gcp_external_account
 from google.auth import (
     impersonated_credentials as gcp_impersonated_credentials,
+)
+from google.auth._default import (
+    _AWS_SUBJECT_TOKEN_TYPE,
+    _get_external_account_credentials,
 )
 from google.auth.transport.requests import Request
 from google.cloud import container_v1, storage
@@ -238,6 +244,85 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
         return v
 
 
+class GCPExternalAccountCredentials(AuthenticationConfig):
+    """GCP external account credentials."""
+
+    external_account_json: SecretStr = Field(
+        title="GCP External Account JSON",
+    )
+
+    generate_temporary_tokens: bool = Field(
+        default=True,
+        title="Generate temporary OAuth 2.0 tokens",
+        description="Whether to generate temporary OAuth 2.0 tokens from the "
+        "external account key JSON. If set to False, the connector will "
+        "distribute the external account JSON to clients instead.",
+    )
+
+    @root_validator(pre=True)
+    def validate_service_account_dict(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Convert the external account credentials to JSON if given in dict format.
+
+        Args:
+            values: The configuration values.
+
+        Returns:
+            The validated configuration values.
+        """
+        if isinstance(values.get("external_account_json"), dict):
+            values["external_account_json"] = json.dumps(
+                values["external_account_json"]
+            )
+        return values
+
+    @validator("external_account_json")
+    def validate_external_account_json(cls, v: SecretStr) -> SecretStr:
+        """Validate the external account credentials JSON.
+
+        Args:
+            v: The external account credentials JSON.
+
+        Returns:
+            The validated external account credentials JSON.
+
+        Raises:
+            ValueError: If the external account credentials JSON is invalid.
+        """
+        try:
+            external_account_info = json.loads(v.get_secret_value())
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"GCP external account credentials is not a valid JSON: {e}"
+            )
+
+        # Check that all fields are present
+        required_fields = [
+            "type",
+            "subject_token_type",
+            "token_url",
+        ]
+        # Compute missing fields
+        missing_fields = set(required_fields) - set(
+            external_account_info.keys()
+        )
+        if missing_fields:
+            raise ValueError(
+                f"GCP external account credentials JSON is missing required "
+                f'fields: {", ".join(list(missing_fields))}'
+            )
+
+        if external_account_info["type"] != "external_account":
+            raise ValueError(
+                "The JSON does not contain GCP external account credentials. "
+                f'The "type" field is set to {external_account_info["type"]} '
+                "instead of 'external_account'."
+            )
+
+        return v
+
+
 class GCPOAuth2Token(AuthenticationConfig):
     """GCP OAuth 2.0 token credentials."""
 
@@ -260,6 +345,10 @@ class GCPUserAccountConfig(GCPBaseConfig, GCPUserAccountCredentials):
 
 class GCPServiceAccountConfig(GCPBaseConfig, GCPServiceAccountCredentials):
     """GCP service account configuration."""
+
+
+class GCPExternalAccountConfig(GCPBaseConfig, GCPExternalAccountCredentials):
+    """GCP external account configuration."""
 
 
 class GCPOAuth2TokenConfig(GCPBaseConfig, GCPOAuth2Token):
@@ -288,8 +377,64 @@ class GCPAuthenticationMethods(StrEnum):
     IMPLICIT = "implicit"
     USER_ACCOUNT = "user-account"
     SERVICE_ACCOUNT = "service-account"
+    EXTERNAL_ACCOUNT = "external-account"
     OAUTH2_TOKEN = "oauth2-token"
     IMPERSONATION = "impersonation"
+
+
+class ZenMLGCPAWSExternalAccountCredentials(gcp_aws.Credentials):  # type: ignore[misc]
+    """An improved version of the GCP external account credential for AWS.
+
+    The original GCP external account credential only provides rudimentary
+    support for extracting AWS credentials from environment variables or the
+    AWS metadata service. This version improves on that by using the boto3
+    library itself (if available), which uses the entire range of implicit
+    authentication features packed into it.
+
+    Without this improvement, `sts.AssumeRoleWithWebIdentity` authentication is
+    not supported for EKS pods and the EC2 attached role credentials are
+    used instead (see: https://medium.com/@derek10cloud/gcp-workload-identity-federation-doesnt-yet-support-eks-irsa-in-aws-a3c71877671a).
+    """
+
+    def _get_security_credentials(
+        self, request: Any, imdsv2_session_token: Any
+    ) -> Dict[str, Any]:
+        """Get the security credentials from the local environment.
+
+        This method is a copy of the original method from the
+        `google.auth._default` module. It has been modified to use the boto3
+        library to extract the AWS credentials from the local environment.
+
+        Args:
+            request: The request to use to get the security credentials.
+            imdsv2_session_token: The IMDSv2 session token to use to get the
+                security credentials.
+
+        Returns:
+            The AWS temporary security credentials.
+        """
+        try:
+            import boto3
+
+            session = boto3.Session()
+            credentials = session.get_credentials()
+            if credentials is not None:
+                creds = credentials.get_frozen_credentials()
+                return {
+                    "access_key_id": creds.access_key,
+                    "secret_access_key": creds.secret_key,
+                    "security_token": creds.token,
+                }
+        except Exception:
+            logger.debug(
+                "Failed to extract AWS credentials from the local environment "
+                "using the boto3 library. Falling back to the original "
+                "implementation."
+            )
+
+        return super()._get_security_credentials(  # type: ignore[no-any-return]
+            request, imdsv2_session_token
+        )
 
 
 GCP_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
@@ -434,6 +579,46 @@ configured to point to a service account key JSON file, it will be automatically
 picked up when auto-configuration is used.
 """,
             config_class=GCPServiceAccountConfig,
+        ),
+        AuthenticationMethodModel(
+            name="GCP External Account",
+            auth_method=GCPAuthenticationMethods.EXTERNAL_ACCOUNT,
+            description="""
+Use [GCP workload identity federation](https://cloud.google.com/iam/docs/workload-identity-federation)
+to authenticate to GCP services using AWS IAM credentials, Azure Active
+Directory credentials or generic OIDC tokens.
+
+This authentication method only requires a GCP workload identity external
+account JSON file that only contains the configuration for the external account
+without any sensitive credentials. It allows implementing a two layer
+authentication scheme that keeps the set of permissions associated with implicit
+credentials down to the bare minimum and grants permissions to the
+privilege-bearing GCP service account instead.
+
+This authentication method can be used to authenticate to GCP services using
+credentials from other cloud providers or identity providers. When used with
+workloads running on AWS or Azure, it involves automatically picking up
+credentials from the AWS IAM or Azure AD identity associated with the workload
+and using them to authenticate to GCP services. This means that the result
+depends on the environment where the ZenML server is deployed and is thus not
+fully reproducible.
+
+By default, the GCP connector generates temporary OAuth 2.0 tokens from the
+external account credentials and distributes them to clients. The tokens have a
+limited lifetime of 1 hour. This behavior can be disabled by setting the
+`generate_temporary_tokens` configuration option to `False`, in which case, the
+connector will distribute the external account credentials JSON to clients
+instead (not recommended).
+
+A GCP project is required and the connector may only be used to access GCP
+resources in the specified project. This project must be the same as the one
+for which the external account was configured.
+
+If you already have the GOOGLE_APPLICATION_CREDENTIALS environment variable
+configured to point to an external account key JSON file, it will be
+automatically picked up when auto-configuration is used.
+""",
+            config_class=GCPExternalAccountConfig,
         ),
         AuthenticationMethodModel(
             name="GCP Oauth 2.0 Token",
@@ -650,7 +835,7 @@ class GCPServiceConnector(ServiceConnector):
         auth_method: str,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> Tuple[gcp_service_account.Credentials, Optional[datetime.datetime]]:
+    ) -> Tuple[gcp_credentials.Credentials, Optional[datetime.datetime]]:
         """Get a GCP session object with credentials for the specified resource.
 
         Args:
@@ -711,7 +896,10 @@ class GCPServiceConnector(ServiceConnector):
         auth_method: str,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-    ) -> Tuple[gcp_service_account.Credentials, Optional[datetime.datetime]]:
+    ) -> Tuple[
+        gcp_credentials.Credentials,
+        Optional[datetime.datetime],
+    ]:
         """Authenticate to GCP and return a session with credentials.
 
         Args:
@@ -762,7 +950,41 @@ class GCPServiceConnector(ServiceConnector):
                         scopes=scopes,
                     )
                 )
+            elif auth_method == GCPAuthenticationMethods.EXTERNAL_ACCOUNT:
+                self._check_implicit_auth_method_allowed()
+
+                assert isinstance(cfg, GCPExternalAccountConfig)
+
+                # As a special case, for the AWS external account credential,
+                # we use a custom credential class that supports extracting
+                # the AWS credentials from the local environment, metadata
+                # service or IRSA (if running on AWS EKS).
+                account_info = json.loads(
+                    cfg.external_account_json.get_secret_value()
+                )
+                if (
+                    account_info.get("subject_token_type")
+                    == _AWS_SUBJECT_TOKEN_TYPE
+                ):
+                    credentials = (
+                        ZenMLGCPAWSExternalAccountCredentials.from_info(
+                            account_info,
+                            scopes=scopes,
+                        )
+                    )
+                else:
+                    credentials, _ = _get_external_account_credentials(
+                        json.loads(
+                            cfg.external_account_json.get_secret_value()
+                        ),
+                        filename="",  # Not used
+                        scopes=scopes,
+                    )
+
             else:
+                # Service account or impersonation (which is a special case of
+                # service account authentication)
+
                 assert isinstance(cfg, GCPServiceAccountConfig)
                 credentials = (
                     gcp_service_account.Credentials.from_service_account_info(
@@ -773,21 +995,23 @@ class GCPServiceConnector(ServiceConnector):
                     )
                 )
 
-            if auth_method == GCPAuthenticationMethods.IMPERSONATION:
-                assert isinstance(cfg, GCPServiceAccountImpersonationConfig)
+                if auth_method == GCPAuthenticationMethods.IMPERSONATION:
+                    assert isinstance(
+                        cfg, GCPServiceAccountImpersonationConfig
+                    )
 
-                try:
-                    credentials = gcp_impersonated_credentials.Credentials(
-                        source_credentials=credentials,
-                        target_principal=cfg.target_principal,
-                        target_scopes=scopes,
-                        lifetime=self.expiration_seconds,
-                    )
-                except google.auth.exceptions.GoogleAuthError as e:
-                    raise AuthorizationException(
-                        f"Failed to impersonate service account "
-                        f"'{cfg.target_principal}': {e}"
-                    )
+                    try:
+                        credentials = gcp_impersonated_credentials.Credentials(
+                            source_credentials=credentials,
+                            target_principal=cfg.target_principal,
+                            target_scopes=scopes,
+                            lifetime=self.expiration_seconds,
+                        )
+                    except google.auth.exceptions.GoogleAuthError as e:
+                        raise AuthorizationException(
+                            f"Failed to impersonate service account "
+                            f"'{cfg.target_principal}': {e}"
+                        )
 
         if not credentials.valid:
             try:
@@ -1074,13 +1298,20 @@ class GCPServiceConnector(ServiceConnector):
 
             # There is no way to configure the local gcloud CLI to use
             # temporary OAuth 2.0 tokens. However, we can configure it to use
-            # the service account credentials
+            # the service account or external account credentials
             if self.auth_method == GCPAuthenticationMethods.SERVICE_ACCOUNT:
                 assert isinstance(self.config, GCPServiceAccountConfig)
                 # Use the service account credentials JSON to configure the
                 # local gcloud CLI
                 gcloud_config_json = (
                     self.config.service_account_json.get_secret_value()
+                )
+            elif self.auth_method == GCPAuthenticationMethods.EXTERNAL_ACCOUNT:
+                assert isinstance(self.config, GCPExternalAccountConfig)
+                # Use the external account credentials JSON to configure the
+                # local gcloud CLI
+                gcloud_config_json = (
+                    self.config.external_account_json.get_secret_value()
                 )
 
             if gcloud_config_json:
@@ -1108,6 +1339,7 @@ class GCPServiceConnector(ServiceConnector):
                                 "gcloud",
                                 "auth",
                                 "login",
+                                "--quiet",
                                 "--cred-file",
                                 adc_path,
                             ],
@@ -1163,9 +1395,10 @@ class GCPServiceConnector(ServiceConnector):
             raise NotImplementedError(
                 f"Local gcloud client configuration for resource type "
                 f"{resource_type} is only supported if the "
-                f"'{GCPAuthenticationMethods.SERVICE_ACCOUNT}' authentication "
-                f"method is used and only if the generation of temporary OAuth "
-                f"2.0 tokens is disabled by setting the "
+                f"'{GCPAuthenticationMethods.SERVICE_ACCOUNT}' or "
+                f"'{GCPAuthenticationMethods.EXTERNAL_ACCOUNT}' "
+                f"authentication method is used and only if the generation of "
+                f"temporary OAuth 2.0 tokens is disabled by setting the "
                 f"'generate_temporary_tokens' option to 'False' in the "
                 f"service connector configuration."
             )
@@ -1235,8 +1468,6 @@ class GCPServiceConnector(ServiceConnector):
             )
 
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
-            cls._check_implicit_auth_method_allowed()
-
             auth_config = GCPBaseConfig(
                 project_id=project_id,
             )
@@ -1338,6 +1569,51 @@ class GCPServiceConnector(ServiceConnector):
                 auth_config = GCPServiceAccountConfig(
                     project_id=project_id,
                     service_account_json=service_account_json,
+                )
+            # Check if external account credentials are available
+            elif isinstance(credentials, gcp_external_account.Credentials):
+                if auth_method not in [
+                    GCPAuthenticationMethods.EXTERNAL_ACCOUNT,
+                    None,
+                ]:
+                    raise NotImplementedError(
+                        f"Could not perform auto-configuration for "
+                        f"authentication method {auth_method}. Only "
+                        f"GCP external account credentials have been detected."
+                    )
+
+                auth_method = GCPAuthenticationMethods.EXTERNAL_ACCOUNT
+                external_account_json_file = os.environ.get(
+                    "GOOGLE_APPLICATION_CREDENTIALS"
+                )
+                if external_account_json_file is None:
+                    # No explicit service account JSON file was specified in the
+                    # environment, meaning that the credentials were loaded from
+                    # the GCP application default credentials (ADC) file.
+                    from google.auth import _cloud_sdk
+
+                    # Use the location of the gcloud application default
+                    # credentials file
+                    external_account_json_file = (
+                        _cloud_sdk.get_application_default_credentials_path()
+                    )
+
+                if not external_account_json_file or not os.path.isfile(
+                    external_account_json_file
+                ):
+                    raise AuthorizationException(
+                        "No GCP service account credentials were found in the "
+                        "environment or the application default credentials "
+                        "path. Please set the GOOGLE_APPLICATION_CREDENTIALS "
+                        "environment variable to the path of the external "
+                        "account JSON file or run 'gcloud auth application-"
+                        "default login' to generate a new ADC file."
+                    )
+                with open(external_account_json_file, "r") as f:
+                    external_account_json = f.read()
+                auth_config = GCPExternalAccountConfig(
+                    project_id=project_id,
+                    external_account_json=external_account_json,
                 )
             else:
                 raise AuthorizationException(
@@ -1531,6 +1807,12 @@ class GCPServiceConnector(ServiceConnector):
                     expires_at = None
             elif self.auth_method == GCPAuthenticationMethods.SERVICE_ACCOUNT:
                 assert isinstance(self.config, GCPServiceAccountConfig)
+                if not self.config.generate_temporary_tokens:
+                    config = self.config
+                    auth_method = self.auth_method
+                    expires_at = None
+            elif self.auth_method == GCPAuthenticationMethods.EXTERNAL_ACCOUNT:
+                assert isinstance(self.config, GCPExternalAccountConfig)
                 if not self.config.generate_temporary_tokens:
                     config = self.config
                     auth_method = self.auth_method

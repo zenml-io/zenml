@@ -122,9 +122,11 @@ class FlavorRegistry:
                 if len(existing_flavor) == 0:
                     store.create_flavor(flavor_request_model)
                 else:
-                    flavor_update_model = FlavorUpdate.parse_obj(
-                        flavor_request_model
-                    )
+                    flavor_dict = flavor_request_model.dict()
+                    flavor_dict.pop("workspace")
+                    flavor_dict.pop("user")
+
+                    flavor_update_model = FlavorUpdate.parse_obj(flavor_dict)
                     store.update_flavor(
                         existing_flavor[0].id, flavor_update_model
                     )

@@ -196,7 +196,7 @@ def generate_docs(
         md_prefix="core",
     )
 
-    index_file_str = "\n".join(index_file_contents)
+    index_file_str = "\n".join(sorted(index_file_contents))
     to_md_file(
         index_file_str,
         "index.md",

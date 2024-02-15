@@ -112,7 +112,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         """
         if deployment.schedule:
             logger.warning(
-                "Local Docker Orchestrator currently does not support the"
+                "Local Docker Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
