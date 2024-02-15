@@ -71,10 +71,10 @@ do
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    pip3 install -U pip setuptools wheel
-    pip3 install "zenml[templates,server]==$VERSION"
+    pip install -U pip setuptools wheel uv
+    uv pip install "zenml[templates,server]==$VERSION"
     # handles unpinned sqlmodel dependency in older versions
-    pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
+    uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1"
 
     # Get the major and minor version of Python
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
@@ -83,7 +83,7 @@ do
     if [[ "$PYTHON_VERSION" == "3.9" ]]; then
         case "$VERSION" in
             "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
-                pip3 install importlib_metadata
+                uv pip install importlib_metadata
                 ;;
         esac
     fi
@@ -111,9 +111,9 @@ set -e
 python3 -m venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
 
-pip3 install -U pip setuptools wheel
-pip3 install -e ".[templates,server]"
-pip3 install importlib_metadata
+pip3 install -U pip setuptools wheel uv
+uv pip install -e ".[templates,server]"
+uv pip install importlib_metadata
 
 if [ "$1" == "mysql" ]; then
     zenml connect --url mysql://127.0.0.1/zenml --username root --password password
