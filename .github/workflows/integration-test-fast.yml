@@ -151,6 +151,7 @@ jobs:
         if: inputs.test_environment != 'default'
         run: |
           pip install uv
+          uv venv
           uv pip install pyyaml==5.3.1
           uv pip install docker-compose
       - name: Install Linux System Dependencies

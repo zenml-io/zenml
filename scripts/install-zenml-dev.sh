@@ -67,6 +67,7 @@ set -e
 parse_args "$@"
 
 python -m pip install --upgrade pip uv
+uv venv
 
 install_zenml
 

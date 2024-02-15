@@ -70,6 +70,7 @@ jobs:
           mkdir -p examples/e2e
           printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
           pip install uv
+          uv venv
           uv pip install yamlfix
           bash scripts/format.sh
       - name: Check for changes
@@ -142,6 +143,7 @@ jobs:
           mkdir -p examples/e2e_nlp
           printf 'info@zenml.io' | zenml init --path examples/e2e_nlp --template nlp --template-with-defaults
           pip install uv
+          uv venv
           uv pip install yamlfix
           bash scripts/format.sh
       - name: Check for changes
@@ -216,6 +218,7 @@ jobs:
           mkdir -p examples/quickstart
           printf 'info@zenml.io' | zenml init --path examples/quickstart --template starter --template-with-defaults
           pip install uv
+          uv venv
           uv pip install yamlfix
           bash scripts/format.sh
       - name: Check for changes

@@ -72,6 +72,7 @@ do
 
     # Install the specific version
     pip install -U pip setuptools wheel uv
+    uv venv
     uv pip install "zenml[templates,server]==$VERSION"
     # handles unpinned sqlmodel dependency in older versions
     uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1"
@@ -112,6 +113,7 @@ python3 -m venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
 
 pip3 install -U pip setuptools wheel uv
+uv venv
 uv pip install -e ".[templates,server]"
 uv pip install importlib_metadata
 

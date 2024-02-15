@@ -25,6 +25,7 @@ jobs:
       - name: Install current package as editable
         run: |
           pip install uv
+          uv venv
           uv pip install -e .
       - name: Install mlstacks package
         run: uv pip install mlstacks

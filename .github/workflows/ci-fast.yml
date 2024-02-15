@@ -25,7 +25,10 @@ jobs:
         with:
           python-version: '3.10'
       - name: Install current package as editable
-        run: pip install uv uv pip install -U darglint
+        run: |
+          pip install uv
+          uv venv
+          uv pip install -U darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:

@@ -53,6 +53,7 @@ do
 
     # Install the specific version
     pip3 install -U pip setuptools wheel uv
+    uv venv
     uv pip install "zenml[templates,server]==$VERSION"
 
     zenml connect --url mysql://127.0.0.1/zenml --username root --password password
@@ -73,6 +74,7 @@ python3 -m venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
 
 pip3 install -U pip setuptools wheel uv
+uv venv
 uv pip install -e ".[templates,server]"
 uv pip install importlib_metadata
 
