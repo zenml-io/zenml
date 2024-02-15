@@ -28,6 +28,7 @@ jobs:
         run: |
           pip install uv
           uv venv
+          VIRTUAL_ENV=./.venv
           uv pip install darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
