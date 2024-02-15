@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 class RegistryEntry(BaseModel):
     """Registry Entry Class for the Plugin Registry."""
 
-    flavor_class: Type[BasePluginFlavor[Any]]
+    flavor_class: Type[BasePluginFlavor]
     plugin_instance: Optional[BasePlugin]
 
     class Config:
@@ -122,7 +122,7 @@ class PluginFlavorRegistry:
         self,
         _type: PluginType,
         subtype: PluginSubType,
-    ) -> List[Type[BasePluginFlavor[Any]]]:
+    ) -> List[Type[BasePluginFlavor]]:
         """Get a list of all subtypes for a specific flavor and type.
 
         Args:
@@ -173,17 +173,16 @@ class PluginFlavorRegistry:
             for flavor in flavors
         ][start:end]
 
-        return_page = Page(
+        return  Page(
             index=page,
             max_size=size,
             total_pages=total_pages,
             total=total,
             items=page_items,
         )
-        return return_page
 
     @property
-    def _builtin_flavors(self) -> Sequence[Type["BasePluginFlavor[Any]"]]:
+    def _builtin_flavors(self) -> Sequence[Type["BasePluginFlavor"]]:
         """A list of all default in-built flavors.
 
         Returns:
@@ -200,7 +199,7 @@ class PluginFlavorRegistry:
         return flavors
 
     @property
-    def _integration_flavors(self) -> Sequence[Type["BasePluginFlavor[Any]"]]:
+    def _integration_flavors(self) -> Sequence[Type["BasePluginFlavor"]]:
         """A list of all integration event flavors.
 
         Returns:
@@ -243,7 +242,7 @@ class PluginFlavorRegistry:
             self.register_plugin_flavor(flavor_class=flavor)
 
     def register_plugin_flavor(
-        self, flavor_class: Type[BasePluginFlavor[Any]]
+        self, flavor_class: Type[BasePluginFlavor]
     ) -> None:
         """Registers a new event_source.
 
@@ -283,7 +282,7 @@ class PluginFlavorRegistry:
         _type: PluginType,
         subtype: PluginSubType,
         name: str,
-    ) -> Type[BasePluginFlavor[Any]]:
+    ) -> Type[BasePluginFlavor]:
         """Get a single event_source based on the key.
 
         Args:

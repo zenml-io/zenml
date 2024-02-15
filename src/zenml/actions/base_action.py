@@ -69,7 +69,7 @@ class BaseActionHandler(BasePlugin, ABC):
 # -------------------- Flavors ---------------------------------------------
 
 
-class BaseActionFlavor(BasePluginFlavor[ActionFlavorResponse], ABC):
+class BaseActionFlavor(BasePluginFlavor, ABC):
     """Base Action Flavor to register Action Configurations."""
 
     TYPE: ClassVar[PluginType] = PluginType.ACTION

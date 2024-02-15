@@ -76,7 +76,7 @@ class BasePlugin(ABC):
         """
 
 
-class BasePluginFlavor(ABC, Generic[AnyPluginResponse]):
+class BasePluginFlavor(ABC):
     """Base Class for all PluginFlavors."""
 
     TYPE: ClassVar[PluginType]
