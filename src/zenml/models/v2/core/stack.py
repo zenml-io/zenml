@@ -14,7 +14,6 @@
 """Models representing stacks."""
 
 import json
-from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
@@ -24,14 +23,14 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.internal import server_owned_request_model
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.component import ComponentResponse
@@ -95,13 +94,6 @@ class StackUpdate(StackRequest):
 
 class StackResponseBody(WorkspaceScopedResponseBody):
     """Response body for stacks."""
-
-    created: datetime = Field(
-        title="The timestamp when this component was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this component was last updated.",
-    )
 
 
 class StackResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -199,25 +191,6 @@ class StackResponse(
         metadata = super().get_analytics_metadata()
         metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
         return metadata
-
-    # Body and metadata properties
-    @property
-    def created(self) -> datetime:
-        """The`created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def description(self) -> Optional[str]:

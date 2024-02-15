@@ -26,13 +26,13 @@ from zenml.enums import (
     SecretScope,
     SorterOps,
 )
-from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 

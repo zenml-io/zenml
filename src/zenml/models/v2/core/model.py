@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing models."""
 
-from datetime import datetime
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
 from uuid import UUID
@@ -21,13 +20,13 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
-    WorkspaceScopedTaggableFilter, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseResources,
+    WorkspaceScopedTaggableFilter,
 )
 from zenml.utils.pagination_utils import depaginate
 
@@ -119,12 +118,6 @@ class ModelResponseBody(WorkspaceScopedResponseBody):
     )
     latest_version_name: Optional[str]
     latest_version_id: Optional[UUID]
-    created: datetime = Field(
-        title="The timestamp when this component was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this component was last updated.",
-    )
 
 
 class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -224,24 +217,6 @@ class ModelResponse(
             the value of the property.
         """
         return self.get_body().latest_version_id
-
-    @property
-    def created(self) -> datetime:
-        """The `created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def license(self) -> Optional[str]:

@@ -26,7 +26,8 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponse,
     UserScopedResponseBody,
     UserScopedResponseMetadata,
-    WorkspaceScopedFilter, UserScopedResponseResources,
+    UserScopedResponseResources,
+    WorkspaceScopedFilter,
 )
 from zenml.models.v2.base.update import update_model
 

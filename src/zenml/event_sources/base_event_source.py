@@ -29,13 +29,11 @@ from zenml.enums import PluginType
 from zenml.logger import get_logger
 from zenml.models import (
     EventSourceFlavorResponse,
+    EventSourceFlavorResponseBody,
+    EventSourceFlavorResponseMetadata,
     EventSourceRequest,
     EventSourceResponse,
     EventSourceUpdate,
-)
-from zenml.models.v2.core.event_source_flavor import (
-    EventSourceFlavorResponseBody,
-    EventSourceFlavorResponseMetadata,
 )
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,

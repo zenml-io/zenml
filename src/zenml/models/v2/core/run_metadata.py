@@ -21,13 +21,13 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
-from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:

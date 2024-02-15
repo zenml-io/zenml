@@ -12,20 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import BaseResponseResources, BaseZenModel
+from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:
@@ -117,13 +117,6 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
     action_flavor: str
     action_subtype: str
 
-    created: datetime = Field(
-        title="The timestamp when this trigger was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this trigger was last updated.",
-    )
-
     is_active: bool
 
 
@@ -190,24 +183,6 @@ class TriggerResponse(
             the value of the property.
         """
         return self.get_body().action_flavor
-
-    @property
-    def created(self) -> datetime:
-        """The `created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def event_filter(self) -> Dict[str, Any]:

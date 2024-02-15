@@ -19,7 +19,6 @@ from pydantic import Field
 
 from zenml import WorkspaceScopedFilter
 from zenml.models import (
-    BaseFilter,
     BaseIdentifiedResponse,
     BaseRequest,
     BaseResponseMetadata,

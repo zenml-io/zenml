@@ -21,14 +21,15 @@ from pydantic import Field
 from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
-from zenml.models.v2.base.base import BaseResponseResources, BaseZenModel
+from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,

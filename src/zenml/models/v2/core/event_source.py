@@ -13,21 +13,21 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
 import copy
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType, PluginType
-from zenml.models.v2.base.base import BaseResponseResources, BaseZenModel
+from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:
@@ -129,13 +129,6 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
         title="The plugin subtype of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    created: datetime = Field(
-        title="The timestamp when this component was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this component was last updated.",
-    )
     is_active: bool
 
 
@@ -220,24 +213,6 @@ class EventSourceResponse(
             the value of the property.
         """
         return self.get_body().plugin_subtype
-
-    @property
-    def created(self) -> datetime:
-        """The`created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def description(self) -> str:

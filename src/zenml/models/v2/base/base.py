@@ -111,139 +111,14 @@ class BaseResponse(
         title="The resources related to this resource."
     )
 
-    def get_hydrated_version(
-        self,
-    ) -> "BaseResponse[AnyBody, AnyMetadata, AnyResources]":
-        """Abstract method to fetch the hydrated version of the model.
-
-        Raises:
-            NotImplementedError: in case the method is not implemented.
-        """
-        raise NotImplementedError(
-            "Please implement a `get_hydrated_version` method before "
-            "using/hydrating the model."
-        )
-
-    def get_body(self) -> "AnyBody":
-        """Fetch the body of the entity.
-
-        Returns:
-            The body field of the response.
-
-        Raises:
-            RuntimeError: If the body was not included in the response.
-        """
-        if not self.body:
-            raise RuntimeError(
-                f"Missing response body for {type(self).__name__}."
-            )
-
-        return self.body
-
-    def get_metadata(self) -> "AnyMetadata":
-        """Fetch the metadata of the entity.
-
-        Returns:
-            The metadata field of the response.
-        """
-        if self.metadata is None:
-            # If the metadata is not there, check the class first.
-            metadata_type = self.__fields__["metadata"].type_
-
-            if len(metadata_type.__fields__):
-                # If the metadata class defines any fields, fetch the metadata
-                # through the hydrated version.
-                hydrated_version = self.get_hydrated_version()
-                self.metadata = hydrated_version.metadata
-            else:
-                # Otherwise, use the metadata class to create an empty metadata
-                # object.
-                self.metadata = metadata_type()
-
-        assert self.metadata is not None
-
-        return self.metadata
-
-    def get_resources(self) -> "AnyResources":
-        """Fetch the resources related to this entity.
-
-        Returns:
-            The resources field of the response.
-
-        Raises:
-            RuntimeError: If the resources field was not included in the response.
-        """
-        if not self.resources:
-            raise RuntimeError(
-                f"Missing response resources for {type(self).__name__}."
-            )
-
-        return self.resources
-
-
-class BaseDatedResponseBody(BaseResponseBody):
-    """Base body model for entities that track a creation and update timestamp.
-
-    Used as a base class for all body models associated with responses.
-    Features a creation and update timestamp.
-    """
-
-    created: Optional[datetime] = Field(
-        title="The timestamp when this resource was created."
-    )
-    updated: Optional[datetime] = Field(
-        title="The timestamp when this resource was last updated."
-    )
-
-
-AnyDatedBody = TypeVar("AnyDatedBody", bound=BaseDatedResponseBody)
-
-
-class BaseIdentifiedResponse(
-    BaseResponse[AnyDatedBody, AnyMetadata, AnyResources],
-    Generic[AnyDatedBody, AnyMetadata, AnyResources],
-):
-    """Base domain model for resources with DB represenation."""
-
-    id: UUID = Field(title="The unique resource id.")
-    body: Optional["AnyDatedBody"] = Field(
-        title="The body of the resource, "
-        "containing at the minimum "
-        "creation and updated fields."
-    )
-    permission_denied: bool = False
-
     _response_update_strategy: (
         ResponseUpdateStrategy
     ) = ResponseUpdateStrategy.ALLOW
     _warn_on_response_updates: bool = True
 
-    # Helper functions
-    def __hash__(self) -> int:
-        """Implementation of hash magic method.
-
-        Returns:
-            Hash of the UUID.
-        """
-        return hash((type(self),) + tuple([self.id]))
-
-    def __eq__(self, other: Any) -> bool:
-        """Implementation of equality magic method.
-
-        Args:
-            other: The other object to compare to.
-
-        Returns:
-            True if the other object is of the same type and has the same UUID.
-        """
-        if isinstance(other, type(self)):
-            return self.id == other.id
-        else:
-            return False
-
     def _validate_hydrated_version(
         self,
-        hydrated_model: "BaseIdentifiedResponse[AnyDatedBody, AnyMetadata, AnyResources]",
+        hydrated_model: "BaseResponse[AnyBody, AnyMetadata, AnyResources]",
     ) -> None:
         """Helper method to validate the values within the hydrated version.
 
@@ -259,12 +134,6 @@ class BaseIdentifiedResponse(
         if hydrated_model.metadata is None:
             raise HydrationError(
                 "The hydrated model does not have a metadata field."
-            )
-
-        # Check if the ID is the same
-        if self.id != hydrated_model.id:
-            raise HydrationError(
-                "The hydrated version of the model does not have the same id."
             )
 
         # Check if the name has changed
@@ -344,27 +213,31 @@ class BaseIdentifiedResponse(
                         f"`{hydrated_value}`"
                     )
 
-    def get_body(self) -> "AnyDatedBody":
+    def get_hydrated_version(
+        self,
+    ) -> "BaseResponse[AnyBody, AnyMetadata, AnyResources]":
+        """Abstract method to fetch the hydrated version of the model.
+
+        Raises:
+            NotImplementedError: in case the method is not implemented.
+        """
+        raise NotImplementedError(
+            "Please implement a `get_hydrated_version` method before "
+            "using/hydrating the model."
+        )
+
+    def get_body(self) -> "AnyBody":
         """Fetch the body of the entity.
 
         Returns:
             The body field of the response.
 
         Raises:
-            IllegalOperationError: If the user lacks permission to access the
-                entity represented by this response.
             RuntimeError: If the body was not included in the response.
         """
-        if self.permission_denied:
-            raise IllegalOperationError(
-                f"Missing permissions to access {type(self).__name__} with "
-                f"ID {self.id}."
-            )
-
         if not self.body:
             raise RuntimeError(
-                f"Missing response body for {type(self).__name__} with ID "
-                f"{self.id}."
+                f"Missing response body for {type(self).__name__}."
             )
 
         return self.body
@@ -374,17 +247,7 @@ class BaseIdentifiedResponse(
 
         Returns:
             The metadata field of the response.
-
-        Raises:
-            IllegalOperationError: If the user lacks permission to access this
-                entity represented by this response.
         """
-        if self.permission_denied:
-            raise IllegalOperationError(
-                f"Missing permissions to access {type(self).__name__} with "
-                f"ID {self.id}."
-            )
-
         if self.metadata is None:
             # If the metadata is not there, check the class first.
             metadata_type = self.__fields__["metadata"].type_
@@ -404,6 +267,158 @@ class BaseIdentifiedResponse(
 
         return self.metadata
 
+    def get_resources(self) -> "AnyResources":
+        """Fetch the resources related to this entity.
+
+        Returns:
+            The resources field of the response.
+
+        Raises:
+            RuntimeError: If the resources field was not included in the response.
+        """
+        if not self.resources:
+            raise RuntimeError(
+                f"Missing response resources for {type(self).__name__}."
+            )
+
+        return self.resources
+
+
+class BaseDatedResponseBody(BaseResponseBody):
+    """Base body model for entities that track a creation and update timestamp.
+
+    Used as a base class for all body models associated with responses.
+    Features a creation and update timestamp.
+    """
+
+    created: datetime = Field(
+        title="The timestamp when this resource was created."
+    )
+    updated: datetime = Field(
+        title="The timestamp when this resource was last updated."
+    )
+
+
+AnyDatedBody = TypeVar("AnyDatedBody", bound=BaseDatedResponseBody)
+
+
+class BaseIdentifiedResponse(
+    BaseResponse[AnyDatedBody, AnyMetadata, AnyResources],
+    Generic[AnyDatedBody, AnyMetadata, AnyResources],
+):
+    """Base domain model for resources with DB representation."""
+
+    id: UUID = Field(title="The unique resource id.")
+    body: Optional["AnyDatedBody"] = Field(
+        title="The body of the resource, "
+        "containing at the minimum "
+        "creation and updated fields."
+    )
+    metadata: Optional["AnyMetadata"] = Field(
+        title="The metadata related to this resource."
+    )
+    resources: Optional["AnyResources"] = Field(
+        title="The resources related to this resource."
+    )
+    permission_denied: bool = False
+
+    # Helper functions
+    def __hash__(self) -> int:
+        """Implementation of hash magic method.
+
+        Returns:
+            Hash of the UUID.
+        """
+        return hash((type(self),) + tuple([self.id]))
+
+    def __eq__(self, other: Any) -> bool:
+        """Implementation of equality magic method.
+
+        Args:
+            other: The other object to compare to.
+
+        Returns:
+            True if the other object is of the same type and has the same UUID.
+        """
+        if isinstance(other, type(self)):
+            return self.id == other.id
+        else:
+            return False
+
+    def _validate_hydrated_version(
+        self,
+        hydrated_model: "BaseResponse[AnyDatedBody, AnyMetadata, AnyResources]",
+    ) -> None:
+        """Helper method to validate the values within the hydrated version.
+
+        Args:
+            hydrated_model: the hydrated version of the model.
+
+        Raises:
+            HydrationError: if the hydrated version has different values set
+                for either the name of the body fields and the
+                _method_body_mutation is set to ResponseBodyUpdate.DENY.
+        """
+        super()._validate_hydrated_version(hydrated_model)
+
+        assert isinstance(hydrated_model, type(self))
+
+        # Check if the ID is the same
+        if self.id != hydrated_model.id:
+            raise HydrationError(
+                "The hydrated version of the model does not have the same id."
+            )
+
+    def get_hydrated_version(
+        self,
+    ) -> "BaseIdentifiedResponse[AnyDatedBody, AnyMetadata, AnyResources]":
+        """Abstract method to fetch the hydrated version of the model.
+
+        Raises:
+            NotImplementedError: in case the method is not implemented.
+        """
+        raise NotImplementedError(
+            "Please implement a `get_hydrated_version` method before "
+            "using/hydrating the model."
+        )
+
+    def get_body(self) -> "AnyDatedBody":
+        """Fetch the body of the entity.
+
+        Returns:
+            The body field of the response.
+
+        Raises:
+            IllegalOperationError: If the user lacks permission to access the
+                entity represented by this response.
+            RuntimeError: If the body was not included in the response.
+        """
+        if self.permission_denied:
+            raise IllegalOperationError(
+                f"Missing permissions to access {type(self).__name__} with "
+                f"ID {self.id}."
+            )
+
+        return super().get_body()
+
+    def get_metadata(self) -> "AnyMetadata":
+        """Fetch the metadata of the entity.
+
+        Returns:
+            The metadata field of the response.
+
+        Raises:
+            IllegalOperationError: If the user lacks permission to access this
+                entity represented by this response.
+        """
+        if self.permission_denied:
+            raise IllegalOperationError(
+                f"Missing permissions to access {type(self).__name__} with "
+                f"ID {self.id}."
+            )
+
+        return super().get_metadata()
+
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for base response models.
@@ -417,7 +432,7 @@ class BaseIdentifiedResponse(
 
     # Body and metadata properties
     @property
-    def created(self) -> Optional[datetime]:
+    def created(self) -> datetime:
         """The `created` property.
 
         Returns:
@@ -426,7 +441,7 @@ class BaseIdentifiedResponse(
         return self.get_body().created
 
     @property
-    def updated(self) -> Optional[datetime]:
+    def updated(self) -> datetime:
         """The `updated` property.
 
         Returns:

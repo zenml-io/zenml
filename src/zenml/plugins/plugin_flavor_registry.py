@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Registry for all plugins."""
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Type, Any
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Type
 
 from pydantic import BaseModel
 
@@ -20,8 +20,7 @@ from zenml.enums import PluginSubType, PluginType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import Page
-from zenml.plugins.base_plugin_flavor import BasePlugin, BasePluginFlavor, \
-    AnyPluginResponse
+from zenml.plugins.base_plugin_flavor import BasePlugin, BasePluginFlavor
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:

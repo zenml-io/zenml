@@ -30,14 +30,14 @@ from pydantic import BaseModel, Field
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, GenericFilterOps
-from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:

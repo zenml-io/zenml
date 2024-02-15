@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Plugin flavor model definitions."""
-from typing import Generic, TypeVar, Any
+from typing import Generic, TypeVar
 
 from pydantic import Extra, Field
 
@@ -63,7 +63,7 @@ class BasePluginFlavorResponse(
 
     def get_hydrated_version(
         self,
-    ) -> "BasePluginFlavorResponse[Any, Any, Any]":
+    ) -> "BasePluginFlavorResponse[AnyPluginBody, AnyPluginMetadata, AnyPluginResources]":
         """Abstract method to fetch the hydrated version of the model.
 
         Raises:

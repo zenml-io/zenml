@@ -212,6 +212,7 @@ class CodeReferenceSchema(BaseSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            kwargs: Additional keyword arguments.
 
         Returns:
             The converted model.

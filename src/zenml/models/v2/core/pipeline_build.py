@@ -19,13 +19,14 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.models.v2.base.base import BaseResponseResources, BaseZenModel
+from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.misc.build_item import BuildItem
 

@@ -50,6 +50,9 @@ from zenml.models.v2.base.page import Page
 # V2 Core
 from zenml.models.v2.core.action_flavor import (
     ActionFlavorResponse,
+    ActionFlavorResponseBody,
+    ActionFlavorResponseMetadata,
+    ActionFlavorResponseResources,
 )
 from zenml.models.v2.core.api_key import (
     APIKey,
@@ -110,6 +113,9 @@ from zenml.models.v2.core.component import (
 )
 from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponse,
+    EventSourceFlavorResponseBody,
+    EventSourceFlavorResponseMetadata,
+    EventSourceFlavorResponseResources,
 )
 from zenml.models.v2.core.device import (
     OAuthDeviceUpdate,
@@ -562,6 +568,9 @@ __all__ = [
     "Page",
     # V2 Core
     "ActionFlavorResponse",
+    "ActionFlavorResponseBody",
+    "ActionFlavorResponseMetadata",
+    "ActionFlavorResponseResources",
     "APIKey",
     "APIKeyRequest",
     "APIKeyUpdate",
@@ -606,6 +615,9 @@ __all__ = [
     "ComponentResponseBody",
     "ComponentResponseMetadata",
     "EventSourceFlavorResponse",
+    "EventSourceFlavorResponseBody",
+    "EventSourceFlavorResponseMetadata",
+    "EventSourceFlavorResponseResources",
     "FlavorRequest",
     "FlavorUpdate",
     "FlavorFilter",

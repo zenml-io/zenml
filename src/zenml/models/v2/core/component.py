@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing components."""
 
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -30,14 +29,14 @@ from pydantic import BaseModel, Field, validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import LogicalOperators, StackComponentType
-from zenml.models.v2.base.base import BaseResponseResources
 from zenml.models.v2.base.internal import server_owned_request_model
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.utils import secret_utils
@@ -151,12 +150,6 @@ class ComponentResponseBody(WorkspaceScopedResponseBody):
         title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    created: datetime = Field(
-        title="The timestamp when this component was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this component was last updated.",
-    )
 
 
 class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -232,24 +225,6 @@ class ComponentResponse(
             the value of the property.
         """
         return self.get_body().flavor
-
-    @property
-    def created(self) -> datetime:
-        """The`created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def configuration(self) -> Dict[str, Any]:

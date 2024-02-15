@@ -145,6 +145,8 @@ class ServiceAccountResponse(
                 active=self.active,
                 is_service_account=True,
                 email_opted_in=False,
+                created=self.created,
+                updated=self.updated,
             ),
             metadata=UserResponseMetadata(
                 description=self.description,

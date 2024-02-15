@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Workspaces."""
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Any
+from typing import TYPE_CHECKING, Any, List
 
 from sqlmodel import Relationship
 

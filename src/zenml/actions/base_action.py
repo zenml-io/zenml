@@ -17,10 +17,12 @@ from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginType
-from zenml.models import TriggerExecutionResponse
-from zenml.models.v2.core.action_flavor import ActionFlavorResponse, \
-    ActionFlavorResponseBody, ActionFlavorResponseMetadata, \
-    ActionFlavorResponseResources
+from zenml.models import (
+    ActionFlavorResponse,
+    ActionFlavorResponseBody,
+    ActionFlavorResponseMetadata,
+    TriggerExecutionResponse,
+)
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
     BasePluginConfig,
@@ -88,11 +90,21 @@ class BaseActionFlavor(BasePluginFlavor[ActionFlavorResponse], ABC):
         return config_schema
 
     @classmethod
-    def to_model(self) -> ActionFlavorResponse:
-        """Convert the Flavor into a Flavor Response Model."""
+    def get_flavor_response_model(cls, hydrate: bool) -> ActionFlavorResponse:
+        """Convert the Flavor into a Response Model.
+
+        Args:
+            hydrate: Whether the model should be hydrated.
+        """
+        metadata = None
+        if hydrate:
+            metadata = ActionFlavorResponseMetadata(
+                config_schema=cls.get_action_config_schema(),
+            )
         return ActionFlavorResponse(
-            name=self.FLAVOR,
-            type=self.TYPE,
-            subtype=self.SUBTYPE,
-            config_schema=self.get_action_config_schema(),
+            body=ActionFlavorResponseBody(),
+            metadata=metadata,
+            name=cls.FLAVOR,
+            type=cls.TYPE,
+            subtype=cls.SUBTYPE,
         )

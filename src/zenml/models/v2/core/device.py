@@ -27,7 +27,8 @@ from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedResponse,
     UserScopedResponseBody,
-    UserScopedResponseMetadata, UserScopedResponseResources,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 
 # ------------------ Request Model ------------------
