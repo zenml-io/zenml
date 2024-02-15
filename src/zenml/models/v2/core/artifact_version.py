@@ -333,7 +333,7 @@ class ArtifactVersionResponse(
 
         return load_artifact_from_response(self)
 
-    def save_binary(self, path: str, overwrite: bool = False) -> None:
+    def download_binary(self, path: str, overwrite: bool = False) -> None:
         """Loads binary data for an artifact with no materializing.
 
         Any artifacts will be saved as a zip file to the given path.

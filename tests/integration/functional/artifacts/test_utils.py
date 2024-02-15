@@ -268,7 +268,7 @@ def test_save_artifact_binary_from_response(tmp_path, clean_client_with_run):
     # create temporary path ending in .zip
 
     zipfile_path = os.path.join(tmp_path, "some_file.zip")
-    av.save_binary(path=zipfile_path)
+    av.download_binary(path=zipfile_path)
     assert os.path.exists(zipfile_path)
 
     # unzip the file at zipfile_path
@@ -301,10 +301,10 @@ def test_save_artifact_binary_from_response_fails_if_exists(
 
     # fails if the file already exists
     with pytest.raises(FileExistsError):
-        av.save_binary(path=zipfile_path)
+        av.download_binary(path=zipfile_path)
 
     # it works with overwrite parameter
-    av.save_binary(path=zipfile_path, overwrite=True)
+    av.download_binary(path=zipfile_path, overwrite=True)
     assert os.path.exists(zipfile_path)
 
     # unzip the file at zipfile_path
