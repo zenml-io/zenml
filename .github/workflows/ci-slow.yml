@@ -51,6 +51,7 @@ jobs:
         run: |
           pip install uv
           uv venv
+          VIRTUAL_ENV=./.venv
           uv pip install darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
@@ -80,6 +81,7 @@ jobs:
         run: |
           pip install -U pip uv
           uv venv
+          VIRTUAL_ENV=./.venv
           uv pip install -e .
       - name: Install mlstacks package
         run: uv pip install mlstacks

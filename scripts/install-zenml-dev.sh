@@ -68,6 +68,7 @@ parse_args "$@"
 
 python -m pip install --upgrade pip uv
 uv venv
+VIRTUAL_ENV=./.venv
 
 install_zenml
 

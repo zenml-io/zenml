@@ -26,6 +26,7 @@ jobs:
         run: |
           pip install uv
           uv venv
+          VIRTUAL_ENV=./.venv
           uv pip install -e .
       - name: Install mlstacks package
         run: uv pip install mlstacks

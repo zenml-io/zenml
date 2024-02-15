@@ -152,6 +152,7 @@ jobs:
         run: |
           pip install uv
           uv venv
+          VIRTUAL_ENV=./.venv
           uv pip install pyyaml==5.3.1
           uv pip install docker-compose
       - name: Install Linux System Dependencies
