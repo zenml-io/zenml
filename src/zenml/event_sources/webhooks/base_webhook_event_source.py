@@ -19,9 +19,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type
 
 from zenml.enums import PluginSubType
-from zenml.event_sources.base_event import (
-    BaseEvent,
-)
+from zenml.event_sources.base_event import BaseEvent
 from zenml.event_sources.base_event_source import (
     BaseEventSourceFlavor,
     BaseEventSourceHandler,

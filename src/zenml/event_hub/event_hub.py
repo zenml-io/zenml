@@ -81,7 +81,7 @@ class InternalEventHub(BaseEventHub):
         # as the source of truth regarding configured active triggers.
         pass
 
-    def process_event(
+    def publish_event(
         self,
         event: BaseEvent,
         event_source: EventSourceResponse,

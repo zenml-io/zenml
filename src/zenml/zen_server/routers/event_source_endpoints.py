@@ -218,7 +218,7 @@ def create_event_source(
         raise ValueError(
             f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
             f"for flavor {event_source.flavor} is not a valid event source "
-            "plugin."
+            "handler."
         )
 
     return verify_permissions_and_create_entity(

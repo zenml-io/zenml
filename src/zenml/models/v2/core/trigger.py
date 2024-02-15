@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
+import copy
 from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar, Union
 from uuid import UUID
 
@@ -106,6 +107,24 @@ class TriggerUpdate(BaseZenModel):
         title="The new status of the trigger.",
     )
 
+    @classmethod
+    def from_response(cls, response: "TriggerResponse") -> "TriggerUpdate":
+        """Create an update model from a response model.
+
+        Args:
+            response: The response model to create the update model from.
+
+        Returns:
+            The update model.
+        """
+        return TriggerUpdate(
+            name=response.name,
+            description=response.description,
+            action=copy.deepcopy(response.action),
+            event_filter=copy.deepcopy(response.event_filter),
+            is_active=response.is_active,
+        )
+
 
 # ------------------ Response Model ------------------
 
@@ -113,11 +132,21 @@ class TriggerUpdate(BaseZenModel):
 class TriggerResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for triggers."""
 
-    event_source_flavor: str
-    action_flavor: str
-    action_subtype: str
-
-    is_active: bool
+    event_source_flavor: str = Field(
+        title="The flavor of the event source that activates this trigger.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    action_flavor: str = Field(
+        title="The flavor of the action that is executed by this trigger.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    action_subtype: str = Field(
+        title="The subtype of the action that is executed by this trigger.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    is_active: bool = Field(
+        title="Whether the trigger is active.",
+    )
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -133,6 +162,9 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
         default="",
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    event_source: "EventSourceResponse" = Field(
+        title="The event source that activates this trigger.",
     )
 
 
@@ -185,6 +217,24 @@ class TriggerResponse(
         return self.get_body().action_flavor
 
     @property
+    def action_subtype(self) -> str:
+        """The `action_subtype` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().action_subtype
+
+    @property
+    def is_active(self) -> bool:
+        """The `is_active` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().is_active
+
+    @property
     def event_filter(self) -> Dict[str, Any]:
         """The `event_filter` property.
 
@@ -202,14 +252,13 @@ class TriggerResponse(
         """
         return self.get_metadata().action
 
-    @property
-    def description(self) -> str:
-        """The `description` property.
+    def set_action(self, action: Dict[str, Any]) -> None:
+        """Set the `action` property.
 
-        Returns:
-            the value of the property.
+        Args:
+            action: The value to set.
         """
-        return self.get_metadata().description
+        self.get_metadata().action = action
 
     @property
     def event_source(self) -> "EventSourceResponse":
@@ -219,6 +268,15 @@ class TriggerResponse(
             the value of the property.
         """
         return self.get_resources().event_source
+
+    @property
+    def description(self) -> str:
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().description
 
 
 # ------------------ Filter Model ------------------

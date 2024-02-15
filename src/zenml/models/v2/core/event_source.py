@@ -129,7 +129,9 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
         title="The plugin subtype of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    is_active: bool
+    is_active: bool = Field(
+        title="Whether the event source is active.",
+    )
 
 
 class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):

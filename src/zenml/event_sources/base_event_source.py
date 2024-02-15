@@ -15,7 +15,6 @@
 import json
 from abc import ABC, abstractmethod
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -419,7 +418,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             event: The event to dispatch.
             event_source: The event source that produced the event.
         """
-        self.event_hub.process_event(
+        self.event_hub.publish_event(
             event=event,
             event_source=event_source,
         )

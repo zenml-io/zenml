@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
 
 from zenml.enums import PluginType
 from zenml.event_hub.base_event_hub import BaseEventHub
+from zenml.event_sources.base_event import BaseEvent
 from zenml.logger import get_logger
 from zenml.models import (
     ActionFlavorResponse,
@@ -135,17 +136,17 @@ class BaseActionHandler(BasePlugin, ABC):
             The created trigger.
         """
         # Validate and instantiate the configuration from the request
-        config = self.validate_action_configuration(trigger.configuration)
+        config = self.validate_action_configuration(trigger.action)
         # Call the implementation specific method to validate the request
         # before it is sent to the database
         self._validate_trigger_request(trigger=trigger, config=config)
         # Serialize the configuration back into the request
-        trigger.configuration = config.dict(exclude_none=True)
+        trigger.action = config.dict(exclude_none=True)
         # Create the trigger in the database
         trigger_response = self.zen_store.create_trigger(trigger=trigger)
         try:
             # Instantiate the configuration from the response
-            config = self.validate_action_configuration(trigger.configuration)
+            config = self.validate_action_configuration(trigger.action)
             # Call the implementation specific method to process the created
             # trigger
             self._process_trigger_request(
@@ -162,7 +163,7 @@ class BaseActionHandler(BasePlugin, ABC):
             raise
 
         # Serialize the configuration back into the response
-        trigger_response.set_configuration(config.dict(exclude_none=True))
+        trigger_response.set_action(config.dict(exclude_none=True))
 
         # Return the response to the user
         return trigger_response
@@ -183,14 +184,14 @@ class BaseActionHandler(BasePlugin, ABC):
         """
         # Validate and instantiate the configuration from the original event
         # source
-        config = self.validate_action_configuration(trigger.configuration)
+        config = self.validate_action_configuration(trigger.action)
         # Validate and instantiate the configuration from the update request
         # NOTE: if supplied, the configuration update is a full replacement
         # of the original configuration
         config_update = config
-        if trigger_update.configuration is not None:
+        if trigger_update.action is not None:
             config_update = self.validate_action_configuration(
-                trigger_update.configuration
+                trigger_update.action
             )
         # Call the implementation specific method to validate the update request
         # before it is sent to the database
@@ -201,7 +202,7 @@ class BaseActionHandler(BasePlugin, ABC):
             config_update=config_update,
         )
         # Serialize the configuration update back into the update request
-        trigger_update.configuration = config_update.dict(exclude_none=True)
+        trigger_update.action = config_update.dict(exclude_none=True)
 
         # Update the trigger in the database
         trigger_response = self.zen_store.update_trigger(
@@ -211,7 +212,7 @@ class BaseActionHandler(BasePlugin, ABC):
         try:
             # Instantiate the configuration from the response
             response_config = self.validate_action_configuration(
-                trigger_response.configuration
+                trigger_response.action
             )
             # Call the implementation specific method to process the update
             # request before it is sent to the database
@@ -235,7 +236,7 @@ class BaseActionHandler(BasePlugin, ABC):
             raise
 
         # Serialize the configuration back into the response
-        trigger_response.set_configuration(
+        trigger_response.set_action(
             response_config.dict(exclude_none=True)
         )
         # Return the response to the user
@@ -256,7 +257,7 @@ class BaseActionHandler(BasePlugin, ABC):
         """
         # Validate and instantiate the configuration from the original event
         # source
-        config = self.validate_action_configuration(trigger.configuration)
+        config = self.validate_action_configuration(trigger.action)
         try:
             # Call the implementation specific method to process the deleted
             # trigger before it is deleted from the database
@@ -291,11 +292,11 @@ class BaseActionHandler(BasePlugin, ABC):
         """
         if hydrate:
             # Instantiate the configuration from the response
-            config = self.validate_action_configuration(trigger.configuration)
+            config = self.validate_action_configuration(trigger.action)
             # Call the implementation specific method to process the response
             self._process_trigger_response(trigger=trigger, config=config)
             # Serialize the configuration back into the response
-            trigger.set_configuration(config.dict(exclude_none=True))
+            trigger.set_action(config.dict(exclude_none=True))
 
         # Return the response to the user
         return trigger
@@ -303,13 +304,13 @@ class BaseActionHandler(BasePlugin, ABC):
     def validate_action_configuration(
         self, action_config: Dict[str, Any]
     ) -> ActionConfig:
-        """Validate and return the trigger configuration.
+        """Validate and return the action configuration.
 
         Args:
-            action_config: The trigger configuration to validate.
+            action_config: The actino configuration to validate.
 
         Returns:
-            The validated trigger configuration.
+            The validated action configuration.
 
         Raises:
             ValueError: if the configuration is invalid.
@@ -317,67 +318,36 @@ class BaseActionHandler(BasePlugin, ABC):
         try:
             return self.config_class(**action_config)
         except ValueError as e:
-            raise ValueError(f"Invalid configuration for trigger: {e}.") from e
+            raise ValueError(f"Invalid configuration for action: {e}.") from e
 
-    def validate_event_filter_configuration(
+    def subscribe_trigger(
         self,
-        configuration: Dict[str, Any],
-    ) -> EventFilterConfig:
-        """Validate and return the configuration of an event filter.
-
-        Args:
-            configuration: The configuration to validate.
-
-        Raises:
-            ValueError: if the configuration is invalid.
-        """
-        try:
-            return self.filter_class(**configuration)
-        except ValueError as e:
-            raise ValueError(
-                f"Invalid configuration for event filter: {e}."
-            ) from e
-
-    def validate_action_configuration(
-        self, event_source_config: Dict[str, Any]
-    ) -> ActionConfig:
-        """Validates the action configuration.
-
-        Args:
-            event_source_config: The action configuration to validate.
-
-        Raises:
-            ValueError: if the configuration is invalid.
-        """
-        try:
-            return self.config_class(**event_source_config)
-        except ValueError as e:
-            raise ValueError(
-                f"Invalid configuration for event source: {e}."
-            ) from e
-
-    def dispatch_event(
-        self,
-        event: BaseEvent,
         trigger: TriggerResponse,
     ) -> None:
-        """Dispatch an event to all active triggers that match the event.
+        """Subscribe to receive events matching the trigger.
 
         Args:
-            event: The event to dispatch.
-            trigger: The trigger that produced the event.
+            trigger: The trigger that defines the events to subscribe to.
         """
-        self.event_hub.process_event(
-            event=event,
-            trigger=trigger,
-        )
+        self.event_hub.subscribe_trigger(trigger=trigger, callback=self.run)
+
+    def unsubscribe_trigger(
+        self,
+        trigger: TriggerResponse,
+    ) -> None:
+        """Unsubscribe to receive events matching the trigger.
+
+        Args:
+            trigger: The trigger that defines the events to unsubscribe from.
+        """
+        self.event_hub.unsubscribe_trigger(trigger=trigger)
 
     def _validate_trigger_request(
         self, trigger: TriggerRequest, config: ActionConfig
     ) -> None:
         """Validate an trigger request before it is created in the database.
 
-        Concrete trigger handlers should override this method to add
+        Concrete action handlers should override this method to add
         implementation specific functionality pertaining to the validation of
         a new trigger. The implementation may also modify the trigger
         request and/or configuration in place to apply implementation specific
@@ -388,7 +358,7 @@ class BaseActionHandler(BasePlugin, ABC):
         during the validation, the trigger will not be created in the
         database.
 
-        The resulted configuration is serialized back into the trigger
+        The resulted action configuration is serialized back into the trigger
         request before it is stored in the database.
 
         The implementation should not use this method to provision any external
@@ -397,7 +367,7 @@ class BaseActionHandler(BasePlugin, ABC):
 
         Args:
             trigger: Trigger request.
-            config: Trigger configuration instantiated from the request.
+            config: Action configuration instantiated from the request.
         """
         pass
 
@@ -406,7 +376,7 @@ class BaseActionHandler(BasePlugin, ABC):
     ) -> None:
         """Process an trigger request after it is created in the database.
 
-        Concrete trigger handlers should override this method to add
+        Concrete action handlers should override this method to add
         implementation specific functionality pertaining to the creation of
         a new trigger. The implementation may also modify the trigger
         response and/or configuration in place to apply implementation specific
@@ -422,7 +392,7 @@ class BaseActionHandler(BasePlugin, ABC):
 
         Args:
             trigger: Newly created trigger
-            config: Trigger configuration instantiated from the response.
+            config: Action configuration instantiated from the response.
         """
         pass
 
@@ -435,7 +405,7 @@ class BaseActionHandler(BasePlugin, ABC):
     ) -> None:
         """Validate an trigger update before it is reflected in the database.
 
-        Concrete trigger handlers should override this method to add
+        Concrete action handlers should override this method to add
         implementation specific functionality pertaining to validation of an
         trigger update request. The implementation may also modify the
         trigger update and/or configuration update in place to apply
@@ -455,10 +425,10 @@ class BaseActionHandler(BasePlugin, ABC):
 
         Args:
             trigger: Original trigger before the update.
-            config: Trigger configuration instantiated from the original
+            config: Action configuration instantiated from the original
                 trigger.
             trigger_update: Trigger update request.
-            config_update: Trigger configuration instantiated from the
+            config_update: Action configuration instantiated from the
                 updated trigger.
         """
         pass
@@ -472,7 +442,7 @@ class BaseActionHandler(BasePlugin, ABC):
     ) -> None:
         """Process an trigger after it is updated in the database.
 
-        Concrete trigger handlers should override this method to add
+        Concrete action handlers should override this method to add
         implementation specific functionality pertaining to updating an existing
         trigger. The implementation may also modify the trigger
         and/or configuration in place to apply implementation specific
@@ -488,10 +458,10 @@ class BaseActionHandler(BasePlugin, ABC):
 
         Args:
             trigger: Trigger after the update.
-            config: Trigger configuration instantiated from the updated
+            config: Action configuration instantiated from the updated
                 trigger.
             previous_trigger: Original trigger before the update.
-            previous_config: Trigger configuration instantiated from the
+            previous_config: Action configuration instantiated from the
                 original trigger.
         """
         pass
@@ -504,7 +474,7 @@ class BaseActionHandler(BasePlugin, ABC):
     ) -> None:
         """Process an trigger before it is deleted from the database.
 
-        Concrete trigger handlers should override this method to add
+        Concrete action handlers should override this method to add
         implementation specific functionality pertaining to the deletion of an
         trigger.
 
@@ -517,8 +487,7 @@ class BaseActionHandler(BasePlugin, ABC):
 
         Args:
             trigger: Trigger before the deletion.
-            config: Validated instantiated trigger configuration before
-                the deletion.
+            config: Action configuration before the deletion.
             force: Whether to force deprovision the trigger.
         """
         pass
@@ -528,7 +497,7 @@ class BaseActionHandler(BasePlugin, ABC):
     ) -> None:
         """Process an trigger response before it is returned to the user.
 
-        Concrete trigger handlers should override this method to add
+        Concrete action handlers should override this method to add
         implementation specific functionality pertaining to how the trigger
         response is returned to the user. The implementation may modify the
         the trigger response and/or configuration in place.
@@ -544,7 +513,7 @@ class BaseActionHandler(BasePlugin, ABC):
 
         Args:
             trigger: Trigger response.
-            config: Trigger configuration instantiated from the response.
+            config: Action configuration instantiated from the response.
         """
         pass
 

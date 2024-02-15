@@ -18,7 +18,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml import TriggerRequest
+from zenml.actions.base_action import BaseActionHandler
 from zenml.constants import API, TRIGGER_EXECUTIONS, TRIGGERS, VERSION_1
+from zenml.enums import PluginType
 from zenml.models import (
     Page,
     TriggerExecutionFilter,
@@ -27,6 +29,7 @@ from zenml.models import (
     TriggerResponse,
     TriggerUpdate,
 )
+from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -130,9 +133,25 @@ def create_trigger(
         IllegalOperationError: If the workspace specified in the stack
             component does not match the current workspace.
     """
-    # TODO: Validate event_source exists
-    # TODO: Validate event_filter is valid
-    # TODO: Validate action is valid
+    action_handler = plugin_flavor_registry.get_plugin(
+        name=trigger.action_flavor,
+        subtype=trigger.action_subtype,
+        _type=PluginType.ACTION,
+    )
+    # Validate that the flavor and plugin_type correspond to an action
+    # implementation
+    if not isinstance(action_handler, BaseActionHandler):
+        raise ValueError(
+            f"Action {trigger.action_subtype} "
+            f"for flavor {trigger.action_flavor} is not a valid action."
+        )
+
+    # TODO: Add resources to trigger now.
+    # action_config = action_handler.validate_and_action_configuration(
+    #     trigger.action
+    # )
+
+    # resources = action_handler.extract_resources(action_config)
 
     return verify_permissions_and_create_entity(
         request_model=trigger,

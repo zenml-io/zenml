@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base class for event hub implementations."""
 from abc import ABC, abstractmethod
+from typing import Callable
 
 from zenml import EventSourceResponse
 from zenml.event_sources.base_event import (
@@ -27,11 +28,50 @@ logger = get_logger(__name__)
 
 
 class BaseEventHub(ABC):
-    """Base class for event hub implementations."""
+    """Base class for event hub implementations.
+
+    The event hub is responsible for relaying events from event sources to
+    triggers and actions. It functions similarly to a pub/sub system where
+    event source handlers publish events and action handlers subscribe to them.
+
+    The event hub also serves to decouple event sources from triggers, allowing
+    them to be configured independently and their implementations to be unaware
+    of each other.
+    """
+
+    @abstractmethod
+    def subscribe_action_handler(
+        self,
+        action_flavor: str,
+        action_subtype: str,
+        callback: Callable[[BaseEvent], None],
+    ) -> None:
+        """Subscribe an action handler to the event hub.
+
+        Args:
+            action_flavor: the flavor of the action to trigger.
+            action_subtype: the subtype of the action to trigger.
+            callback: the action to trigger when the trigger is activated.
+        """
+
+    @abstractmethod
+    def unsubscribe_action_handler(
+        self,
+        action_flavor: str,
+        action_subtype: str,
+    ) -> None:
+        """Unsubscribe an action handler from the event hub.
+
+        Args:
+            action_flavor: the flavor of the action to trigger.
+            action_subtype: the subtype of the action to trigger.
+        """
 
     @abstractmethod
     def activate_trigger(self, trigger: TriggerResponse) -> None:
-        """Configure the event hub to trigger an action.
+        """Add a trigger to the event hub.
+
+        Configure the event hub to trigger an action when an event is received.
 
         Args:
             trigger: the trigger to activate.
@@ -41,17 +81,20 @@ class BaseEventHub(ABC):
     def deactivate_trigger(self, trigger: TriggerResponse) -> None:
         """Remove a trigger from the event hub.
 
+        Configure the event hub to stop triggering an action when an event is
+        received.
+
         Args:
             trigger: the trigger to deactivate.
         """
 
     @abstractmethod
-    def process_event(
+    def publish_event(
         self,
         event: BaseEvent,
         event_source: EventSourceResponse,
     ) -> None:
-        """Process an incoming event and trigger all configured actions.
+        """Publish an event to the event hub.
 
         Args:
             event: The event.
