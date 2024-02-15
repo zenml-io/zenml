@@ -1160,6 +1160,8 @@ class Client(metaclass=ClientMetaClass):
 
         # Create the update model
         update_model = StackUpdate(  # type: ignore[call-arg]
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
             stack_spec_path=stack_spec_file,
         )
 
@@ -1663,6 +1665,8 @@ class Client(metaclass=ClientMetaClass):
         )
 
         update_model = ComponentUpdate(  # type: ignore[call-arg]
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
             component_spec_path=component_spec_path,
         )
 
@@ -4302,6 +4306,8 @@ class Client(metaclass=ClientMetaClass):
             auth_method=auth_method or connector_model.auth_method,
             expires_skew_tolerance=expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
         )
         # Validate and configure the resources
         if configuration is not None:
