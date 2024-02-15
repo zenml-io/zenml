@@ -445,12 +445,12 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     )
 
 
-def download_artifact_binary_from_response(
+def download_artifact_files_from_response(
     artifact: "ArtifactVersionResponse",
     path: str,
     overwrite: bool = False,
 ) -> None:
-    """Download the given artifact into a binary file.
+    """Download the given artifact into a file.
 
     Args:
         artifact: The artifact to download.

@@ -258,15 +258,15 @@ Calls of `Client` methods like `get_artifact_version` directly inside the pipeli
 {% endhint %}
 
 If you would like to bypass materialization entirely and just download the
-binary data associated with a particular artifact version, you can use the
-`.download_binary` method:
+data or files associated with a particular artifact version, you can use the
+`.download_files` method:
 
 ```python
 from zenml.client import Client
 
 client = Client()
 artifact = client.get_artifact_version(name_id_or_prefix="iris_dataset")
-artifact.download_binary("path/to/save.zip")
+artifact.download_files("path/to/save.zip")
 ```
 
 Take note that the path must have the `.zip` extension, as the artifact data

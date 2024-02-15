@@ -333,8 +333,8 @@ class ArtifactVersionResponse(
 
         return load_artifact_from_response(self)
 
-    def download_binary(self, path: str, overwrite: bool = False) -> None:
-        """Loads binary data for an artifact with no materializing.
+    def download_files(self, path: str, overwrite: bool = False) -> None:
+        """Downloads data for an artifact with no materializing.
 
         Any artifacts will be saved as a zip file to the given path.
 
@@ -350,10 +350,10 @@ class ArtifactVersionResponse(
                 "The path should end with '.zip' to save the binary data."
             )
         from zenml.artifacts.utils import (
-            download_artifact_binary_from_response,
+            download_artifact_files_from_response,
         )
 
-        download_artifact_binary_from_response(
+        download_artifact_files_from_response(
             self,
             path=path,
             overwrite=overwrite,

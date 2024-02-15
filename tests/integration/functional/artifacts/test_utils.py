@@ -258,10 +258,10 @@ def test_log_artifact_metadata_raises_error_if_output_name_unclear(
         artifact_metadata_logging_pipeline()
 
 
-def test_download_artifact_binary_from_response(
+def test_download_artifact_files_from_response(
     tmp_path, clean_client_with_run
 ):
-    """Test that we can download a binary artifact from an artifact version."""
+    """Test that we can download artifact files from an artifact version."""
     artifact: ArtifactResponse = clean_client_with_run.get_artifact(
         name_id_or_prefix="connected_two_step_pipeline::step_1::output"
     )
@@ -270,7 +270,7 @@ def test_download_artifact_binary_from_response(
     # create temporary path ending in .zip
 
     zipfile_path = os.path.join(tmp_path, "some_file.zip")
-    av.download_binary(path=zipfile_path)
+    av.download_files(path=zipfile_path)
     assert os.path.exists(zipfile_path)
 
     # unzip the file at zipfile_path
@@ -283,10 +283,10 @@ def test_download_artifact_binary_from_response(
     shutil.rmtree(tmp_path)
 
 
-def test_download_artifact_binary_from_response_fails_if_exists(
+def test_download_artifact_files_from_response_fails_if_exists(
     tmp_path, clean_client_with_run
 ):
-    """Test that saving a binary artifact from an artifact version fails.
+    """Test that downloading artifact files from an artifact version fails.
 
     Failure when the file already exists and `overwrite` is False."""
     artifact: ArtifactResponse = clean_client_with_run.get_artifact(
@@ -303,10 +303,10 @@ def test_download_artifact_binary_from_response_fails_if_exists(
 
     # fails if the file already exists
     with pytest.raises(FileExistsError):
-        av.download_binary(path=zipfile_path)
+        av.download_files(path=zipfile_path)
 
     # it works with overwrite parameter
-    av.download_binary(path=zipfile_path, overwrite=True)
+    av.download_files(path=zipfile_path, overwrite=True)
     assert os.path.exists(zipfile_path)
 
     # unzip the file at zipfile_path
