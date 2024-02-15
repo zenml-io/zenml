@@ -53,6 +53,7 @@ rm docs/mkdocs/index.md || true
 if [ -z "$SKIP_INSTALL" ]; then
   pip3 install uv
   uv venv
+  VIRTUAL_ENV=./.venv
   uv pip install -e ".[server,dev]"
   uv pip install "Jinja2==3.0.3"
 fi
