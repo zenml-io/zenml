@@ -14,7 +14,7 @@
 """SQL Model Implementations for Stacks."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlmodel import Relationship, SQLModel
@@ -131,13 +131,16 @@ class StackSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> "StackResponse":
         """Converts the schema to a model.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The converted model.

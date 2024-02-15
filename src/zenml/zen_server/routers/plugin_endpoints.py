@@ -23,7 +23,9 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PluginSubType, PluginType
-from zenml.models import BasePluginFlavorResponse
+from zenml.models.v2.base.base_plugin_flavor import (
+    BasePluginFlavorResponse,
+)
 from zenml.models.v2.base.page import Page
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
@@ -44,7 +46,7 @@ plugin_router = APIRouter(
 
 @plugin_router.get(
     "",
-    response_model=Page[BasePluginFlavorResponse],
+    response_model=Page[BasePluginFlavorResponse],  # type: ignore[type-arg]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -55,7 +57,7 @@ def list_flavors(
     size: int = PAGE_SIZE_DEFAULT,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[BasePluginFlavorResponse]:
+) -> Page[BasePluginFlavorResponse]:  # type: ignore[type-arg]
     """Returns all event flavors.
 
     Args:
@@ -79,6 +81,7 @@ def list_flavors(
 
 @plugin_router.get(
     "/{name}",
+    response_model=Page[BasePluginFlavorResponse],  # type: ignore[type-arg]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -87,7 +90,7 @@ def get_flavor(
     type: PluginType = Query(..., alias="type"),
     subtype: PluginSubType = Query(..., alias="subtype"),
     _: AuthContext = Security(authorize),
-) -> BasePluginFlavorResponse:
+) -> BasePluginFlavorResponse:  # type: ignore[type-arg]
     """Returns the requested flavor.
 
     Args:

@@ -14,7 +14,7 @@
 """SQL Model Implementations for Flavors."""
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -104,13 +104,16 @@ class FlavorSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> "FlavorResponse":
         """Converts a flavor schema to a flavor model.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The flavor model.

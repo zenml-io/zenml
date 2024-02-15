@@ -27,7 +27,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
-    WorkspaceScopedTaggableFilter,
+    WorkspaceScopedTaggableFilter, WorkspaceScopedResponseResources,
 )
 from zenml.utils.pagination_utils import depaginate
 
@@ -171,7 +171,7 @@ class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ModelResponseResources(BaseResponseResources):
+class ModelResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the model entity."""
 
 

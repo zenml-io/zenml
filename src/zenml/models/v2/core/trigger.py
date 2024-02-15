@@ -25,7 +25,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:
@@ -143,7 +143,7 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class TriggerResponseResources(BaseResponseResources):
+class TriggerResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
     event_source: "EventSourceResponse" = Field(
@@ -243,7 +243,7 @@ class TriggerResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().event_source
+        return self.get_resources().event_source
 
 
 # ------------------ Filter Model ------------------

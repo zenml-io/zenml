@@ -13,16 +13,26 @@
 #  permissions and limitations under the License.
 """Base implementation for all Plugin Flavors."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, Type
+from typing import TYPE_CHECKING, ClassVar, Generic, Type, TypeVar
 
 from pydantic import BaseModel, Extra
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PluginSubType, PluginType
+from zenml.models.v2.base.base_plugin_flavor import (
+    BasePluginResponseBody,
+    BasePluginResponseMetadata,
+    BasePluginResponseResources,
+)
 from zenml.models import BasePluginFlavorResponse
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
+
+AnyPluginResponse = TypeVar(
+    "AnyPluginResponse",
+    bound=BasePluginFlavorResponse[BasePluginResponseBody, BasePluginResponseMetadata, BasePluginResponseResources],
+)
 
 
 class BasePluginConfig(BaseModel, ABC):
@@ -62,7 +72,7 @@ class BasePlugin(ABC):
         """
 
 
-class BasePluginFlavor(ABC):
+class BasePluginFlavor(ABC, Generic[AnyPluginResponse]):
     """Base Class for all PluginFlavors."""
 
     TYPE: ClassVar[PluginType]
@@ -72,9 +82,7 @@ class BasePluginFlavor(ABC):
 
     @classmethod
     @abstractmethod
-    def get_flavor_response_model(
-        cls, hydrate: bool
-    ) -> BasePluginFlavorResponse:
+    def get_flavor_response_model(cls, hydrate: bool) -> BasePluginFlavorResponse[BasePluginResponseBody, BasePluginResponseMetadata, BasePluginResponseResources]:
         """Convert the Flavor into a Response Model.
 
         Args:

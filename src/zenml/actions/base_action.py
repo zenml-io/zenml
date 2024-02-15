@@ -65,7 +65,7 @@ class BaseActionHandler(BasePlugin, ABC):
 # -------------------- Flavors ---------------------------------------------
 
 
-class BaseActionFlavor(BasePluginFlavor, ABC):
+class BaseActionFlavor(BasePluginFlavor[ActionFlavorResponse], ABC):
     """Base Action Flavor to register Action Configurations."""
 
     TYPE: ClassVar[PluginType] = PluginType.ACTION
@@ -90,5 +90,7 @@ class BaseActionFlavor(BasePluginFlavor, ABC):
         """Convert the Flavor into a Flavor Response Model."""
         return ActionFlavorResponse(
             name=self.FLAVOR,
+            type=self.TYPE,
+            subtype=self.SUBTYPE,
             config_schema=self.get_action_config_schema(),
         )

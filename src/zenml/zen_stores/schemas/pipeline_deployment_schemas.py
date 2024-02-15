@@ -14,7 +14,7 @@
 """SQLModel implementation of pipeline deployment tables."""
 
 import json
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -186,13 +186,16 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         )
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> PipelineDeploymentResponse:
         """Convert a `PipelineDeploymentSchema` to a `PipelineDeploymentResponse`.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The created `PipelineDeploymentResponse`.

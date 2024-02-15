@@ -188,13 +188,11 @@ class BaseDatedResponseBody(BaseResponseBody):
     Features a creation and update timestamp.
     """
 
-    created: Optional[datetime] = Field(
-        title="The timestamp when this resource was created.",
-        default=None,
+    created: datetime = Field(
+        title="The timestamp when this resource was created."
     )
-    updated: Optional[datetime] = Field(
-        title="The timestamp when this resource was last updated.",
-        default=None,
+    updated: datetime = Field(
+        title="The timestamp when this resource was last updated."
     )
 
 

@@ -28,7 +28,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
@@ -168,7 +168,7 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class PipelineDeploymentResponseResources(BaseResponseResources):
+class PipelineDeploymentResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
 
     trigger: Page["TriggerResponse"] = Field(

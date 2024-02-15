@@ -26,8 +26,8 @@ def get_page_from_list(
     items_list: List[S],
     size: int = 5,
     page: int = 1,
-    include_resources=False,
-    include_metadata=False,
+    include_resources: bool = False,
+    include_metadata: bool = False,
 ) -> Page[B]:
     """Converts list of schemas into page of response models.
 

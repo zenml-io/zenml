@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -231,13 +231,16 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> "ServiceConnectorResponse":
         """Creates a `ServiceConnector` from a `ServiceConnectorSchema`.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             A `ServiceConnectorModel`

@@ -14,7 +14,7 @@
 """SQLModel implementation of artifact table."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic import ValidationError
@@ -100,13 +100,16 @@ class ArtifactSchema(NamedSchema, table=True):
         )
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> ArtifactResponse:
         """Convert an `ArtifactSchema` to an `ArtifactResponse`.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The created `ArtifactResponse`.
@@ -269,13 +272,16 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         )
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> ArtifactVersionResponse:
         """Convert an `ArtifactVersionSchema` to an `ArtifactVersionResponse`.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The created `ArtifactVersionResponse`.

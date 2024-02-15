@@ -522,7 +522,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 # -------------------- Flavors ----------------------------------
 
 
-class BaseEventSourceFlavor(BasePluginFlavor, ABC):
+class BaseEventSourceFlavor(BasePluginFlavor[EventSourceFlavorResponse], ABC):
     """Base Event Plugin Flavor to access an event plugin along with its configurations."""
 
     TYPE: ClassVar[PluginType] = PluginType.EVENT_SOURCE

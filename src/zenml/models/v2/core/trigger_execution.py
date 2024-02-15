@@ -17,6 +17,7 @@ from uuid import UUID
 
 from pydantic import Field
 
+from zenml import WorkspaceScopedFilter
 from zenml.models import (
     BaseFilter,
     BaseIdentifiedResponse,
@@ -107,7 +108,7 @@ class TriggerExecutionResponse(
 # ------------------ Filter Model ------------------
 
 
-class TriggerExecutionFilter(BaseFilter):
+class TriggerExecutionFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all trigger executions."""
 
     trigger_id: Optional[Union[UUID, str]] = Field(

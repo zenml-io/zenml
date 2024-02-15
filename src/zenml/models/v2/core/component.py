@@ -37,7 +37,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.utils import secret_utils
@@ -184,7 +184,7 @@ class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ComponentResponseResources(BaseResponseResources):
+class ComponentResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the component entity."""
 
 

@@ -15,7 +15,7 @@
 
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, List
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column
@@ -72,13 +72,16 @@ class TagSchema(NamedSchema, table=True):
         )
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> TagResponse:
         """Convert an `TagSchema` to an `TagResponse`.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The created `TagResponse`.
@@ -171,13 +174,16 @@ class TagResourceSchema(BaseSchema, table=True):
         )
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> TagResourceResponse:
         """Convert an `TagResourceSchema` to an `TagResourceResponse`.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The created `TagResourceResponse`.

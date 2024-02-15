@@ -209,7 +209,7 @@ class WorkspaceScopedResponseMetadata(UserScopedResponseMetadata):
     )
 
 
-class WorkspaceScopedResponseResources(UserScopedResponseMetadata):
+class WorkspaceScopedResponseResources(UserScopedResponseResources):
     """Base workspace-scoped resources."""
 
 

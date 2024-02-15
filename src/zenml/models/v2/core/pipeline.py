@@ -35,6 +35,7 @@ from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseResponseResources,
 )
+from zenml.models.v2.base.scoped import WorkspaceScopedResponseResources
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
@@ -105,7 +106,7 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class PipelineResponseResources(BaseResponseResources):
+class PipelineResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline entity."""
 
 

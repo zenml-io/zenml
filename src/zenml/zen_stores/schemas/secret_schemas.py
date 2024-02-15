@@ -15,7 +15,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import Dict, Optional, cast
+from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -209,13 +209,16 @@ class SecretSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> SecretResponse:
         """Converts a secret schema to a secret model.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The secret model.

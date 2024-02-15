@@ -63,7 +63,7 @@ class BasePluginFlavorResponse(
 
     def get_hydrated_version(
         self,
-    ) -> "BasePluginFlavorResponse[AnyPluginBody, AnyPluginMetadata]":
+    ) -> "BasePluginFlavorResponse[AnyPluginBody, AnyPluginMetadata, AnyPluginResources]":
         """Abstract method to fetch the hydrated version of the model.
 
         Raises:

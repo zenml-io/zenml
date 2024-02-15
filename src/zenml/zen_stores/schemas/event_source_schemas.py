@@ -15,7 +15,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic import Field
@@ -107,7 +107,10 @@ class EventSourceSchema(NamedSchema, table=True):
         )
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> EventSourceResponse:
         """Convert an `EventSourceSchema` to an `EventSourceResponse`.
 

@@ -26,7 +26,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import (
     update_model,
@@ -91,7 +91,7 @@ class CodeRepositoryResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class CodeRepositoryResponseResources(BaseResponseResources):
+class CodeRepositoryResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the code repository entity."""
 
 

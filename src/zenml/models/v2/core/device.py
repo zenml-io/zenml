@@ -27,7 +27,7 @@ from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedResponse,
     UserScopedResponseBody,
-    UserScopedResponseMetadata,
+    UserScopedResponseMetadata, UserScopedResponseResources,
 )
 
 # ------------------ Request Model ------------------
@@ -220,7 +220,7 @@ class OAuthDeviceResponseMetadata(UserScopedResponseMetadata):
     )
 
 
-class OAuthDeviceResponseResources(UserScopedResponseMetadata):
+class OAuthDeviceResponseResources(UserScopedResponseResources):
     """Class for all resource models associated with the OAuthDevice entity."""
 
 

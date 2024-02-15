@@ -31,7 +31,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.component import ComponentResponse
@@ -122,7 +122,7 @@ class StackResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class StackResponseResources(BaseResponseResources):
+class StackResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the stack entity."""
 
 

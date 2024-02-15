@@ -15,7 +15,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -143,7 +143,10 @@ class TriggerSchema(NamedSchema, table=True):
         )
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> "TriggerResponse":
         """Converts the schema to a model.
 
@@ -229,13 +232,16 @@ class TriggerExecutionSchema(BaseSchema, table=True):
         )
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> "TriggerExecutionResponse":
         """Converts the schema to a model.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The converted model.

@@ -27,7 +27,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseMetadata, WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:
@@ -146,7 +146,7 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class EventSourceResponseResources(BaseResponseResources):
+class EventSourceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the code repository entity."""
 
     triggers: Page["TriggerResponse"] = Field(

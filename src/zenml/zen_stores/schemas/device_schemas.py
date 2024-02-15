@@ -15,7 +15,7 @@
 
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 from uuid import UUID
 
 from passlib.context import CryptContext
@@ -198,13 +198,16 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         return self, user_code, device_code
 
     def to_model(
-        self, include_metadata: bool = False, include_resources: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> OAuthDeviceResponse:
         """Convert a device schema to a device response model.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
 
         Returns:
             The converted device response model.

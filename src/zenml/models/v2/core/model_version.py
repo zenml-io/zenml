@@ -28,7 +28,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
-    WorkspaceScopedTaggableFilter,
+    WorkspaceScopedTaggableFilter, WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.tag import TagResponse
 
@@ -180,7 +180,7 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ModelVersionResponseResources(BaseResponseResources):
+class ModelVersionResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the model version entity."""
 
 

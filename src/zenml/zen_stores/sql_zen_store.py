@@ -1561,7 +1561,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_api_key)
             session.commit()
 
-            api_key_model = new_api_key.to_model(include_resources=True)
+            api_key_model = new_api_key.to_model(include_metadata=True)
             api_key_model.set_key(key_value)
             return api_key_model
 
@@ -1589,7 +1589,7 @@ class SqlZenStore(BaseZenStore):
                 api_key_name_or_id=api_key_name_or_id,
                 session=session,
             )
-            return api_key.to_model(include_resources=hydrate)
+            return api_key.to_model(include_metadata=hydrate)
 
     def get_internal_api_key(
         self, api_key_id: UUID, hydrate: bool = True
@@ -1703,7 +1703,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(api_key)
-            return api_key.to_model(include_resources=True)
+            return api_key.to_model(include_metadata=True)
 
     def update_internal_api_key(
         self, api_key_id: UUID, api_key_update: APIKeyInternalUpdate
@@ -1734,7 +1734,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(api_key)
-            return api_key.to_model(include_resources=True)
+            return api_key.to_model(include_metadata=True)
 
     def rotate_api_key(
         self,
@@ -1824,7 +1824,7 @@ class SqlZenStore(BaseZenStore):
             artifact_schema = ArtifactSchema.from_request(artifact)
             session.add(artifact_schema)
             session.commit()
-            return artifact_schema.to_model(include_resources=True)
+            return artifact_schema.to_model(include_metadata=True)
 
     def get_artifact(
         self, artifact_id: UUID, hydrate: bool = True
@@ -1851,7 +1851,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get artifact with ID {artifact_id}: No "
                     "artifact with this ID found."
                 )
-            return artifact.to_model(include_resources=hydrate)
+            return artifact.to_model(include_metadata=hydrate)
 
     def list_artifacts(
         self, filter_model: ArtifactFilter, hydrate: bool = False
@@ -1918,7 +1918,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_artifact)
             session.commit()
             session.refresh(existing_artifact)
-            return existing_artifact.to_model(include_resources=True)
+            return existing_artifact.to_model(include_metadata=True)
 
     def delete_artifact(self, artifact_id: UUID) -> None:
         """Deletes an artifact.

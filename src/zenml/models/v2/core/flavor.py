@@ -26,7 +26,7 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponse,
     UserScopedResponseBody,
     UserScopedResponseMetadata,
-    WorkspaceScopedFilter,
+    WorkspaceScopedFilter, UserScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 
@@ -181,7 +181,7 @@ class FlavorResponseMetadata(UserScopedResponseMetadata):
     )
 
 
-class FlavorResponseResources(UserScopedResponseMetadata):
+class FlavorResponseResources(UserScopedResponseResources):
     """Class for all resource models associated with the flavor entity."""
 
 

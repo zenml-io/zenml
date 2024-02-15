@@ -14,7 +14,7 @@
 """SQLModel implementation of user tables."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -227,12 +227,13 @@ class UserSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         include_private: bool = False,
+        **kwargs: Any,
     ) -> UserResponse:
         """Convert a `UserSchema` to a `UserResponse`.
 
         Args:
             include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
             include_private: Whether to include the user private information
                              this is to limit the amount of data one can get
                              about other users
@@ -269,7 +270,7 @@ class UserSchema(NamedSchema, table=True):
 
         Args:
              include_metadata: Whether the metadata will be filled.
-             include_resources: Whether the metadata will be filled.
+             include_resources: Whether the resources will be filled.
 
         Returns:
              The converted `ServiceAccountResponse`.
