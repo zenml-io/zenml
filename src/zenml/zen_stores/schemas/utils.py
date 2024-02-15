@@ -18,7 +18,7 @@ from zenml.models.v2.base.base import BaseResponse
 from zenml.models.v2.base.page import Page
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
-S = TypeVar("S", bound=BaseSchema)  # type: ignore[type-arg]
+S = TypeVar("S", bound=BaseSchema)
 B = TypeVar("B", bound=BaseResponse)  # type: ignore[type-arg]
 
 

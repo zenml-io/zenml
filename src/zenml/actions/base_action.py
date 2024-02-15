@@ -18,7 +18,9 @@ from typing import Any, ClassVar, Dict, Type
 
 from zenml.enums import PluginType
 from zenml.models import TriggerExecutionResponse
-from zenml.models.v2.core.action_flavor import ActionFlavorResponse
+from zenml.models.v2.core.action_flavor import ActionFlavorResponse, \
+    ActionFlavorResponseBody, ActionFlavorResponseMetadata, \
+    ActionFlavorResponseResources
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
     BasePluginConfig,

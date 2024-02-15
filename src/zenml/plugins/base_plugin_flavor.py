@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base implementation for all Plugin Flavors."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, Generic, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Generic, Type, TypeVar, Any
 
 from pydantic import BaseModel, Extra
 
@@ -82,7 +82,7 @@ class BasePluginFlavor(ABC, Generic[AnyPluginResponse]):
 
     @classmethod
     @abstractmethod
-    def get_flavor_response_model(cls, hydrate: bool) -> BasePluginFlavorResponse[BasePluginResponseBody, BasePluginResponseMetadata, BasePluginResponseResources]:
+    def get_flavor_response_model(cls, hydrate: bool) -> BasePluginFlavorResponse[Any, Any, Any]:
         """Convert the Flavor into a Response Model.
 
         Args:

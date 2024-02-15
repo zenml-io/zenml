@@ -300,14 +300,16 @@ from zenml.models.v2.core.trigger import (
     TriggerUpdate,
     TriggerResponse,
     TriggerResponseBody,
-    TriggerResponseMetadata
+    TriggerResponseMetadata,
+    TriggerResponseResources
 )
 from zenml.models.v2.core.trigger_execution import (
     TriggerExecutionRequest,
     TriggerExecutionFilter,
     TriggerExecutionResponse,
     TriggerExecutionResponseBody,
-    TriggerExecutionResponseMetadata
+    TriggerExecutionResponseMetadata,
+    TriggerExecutionResponseResources
 )
 from zenml.models.v2.core.event_source import (
     EventSourceRequest,
@@ -315,7 +317,8 @@ from zenml.models.v2.core.event_source import (
     EventSourceUpdate,
     EventSourceResponse,
     EventSourceResponseBody,
-    EventSourceResponseMetadata
+    EventSourceResponseMetadata,
+    EventSourceResponseResources
 )
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
@@ -724,17 +727,20 @@ __all__ = [
     "TriggerUpdate",
     "TriggerResponseBody",
     "TriggerResponseMetadata",
+    "TriggerResponseResources",
     "TriggerExecutionRequest",
     "TriggerExecutionFilter",
     "TriggerExecutionResponse",
     "TriggerExecutionResponseBody",
     "TriggerExecutionResponseMetadata",
+    "TriggerExecutionResponseResources",
     "EventSourceResponse",
     "EventSourceRequest",
     "EventSourceFilter",
     "EventSourceUpdate",
     "EventSourceResponseBody",
     "EventSourceResponseMetadata",
+    "EventSourceResponseResources",
     "UserRequest",
     "UserUpdate",
     "UserFilter",

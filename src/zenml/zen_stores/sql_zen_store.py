@@ -3292,6 +3292,8 @@ class SqlZenStore(BaseZenStore):
             body = PipelineNamespaceResponseBody(
                 latest_run_id=latest_run_id,
                 latest_run_status=latest_run_status,
+                created=None,
+                updated=None,
             )
 
             return PipelineNamespaceResponse(id=uuid4(), name=name, body=body)

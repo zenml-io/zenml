@@ -20,7 +20,8 @@ from zenml.enums import PluginSubType, PluginType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import Page
-from zenml.plugins.base_plugin_flavor import BasePlugin, BasePluginFlavor
+from zenml.plugins.base_plugin_flavor import BasePlugin, BasePluginFlavor, \
+    AnyPluginResponse
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
 class RegistryEntry(BaseModel):
     """Registry Entry Class for the Plugin Registry."""
 
-    flavor_class: Type["BasePluginFlavor"]
+    flavor_class: Type[BasePluginFlavor[Any]]
     plugin_instance: Optional[BasePlugin]
 
     class Config:
@@ -122,7 +123,7 @@ class PluginFlavorRegistry:
         self,
         _type: PluginType,
         subtype: PluginSubType,
-    ) -> List[BasePluginFlavor[Any]]:
+    ) -> List[Type[BasePluginFlavor[Any]]]:
         """Get a list of all subtypes for a specific flavor and type.
 
         Args:

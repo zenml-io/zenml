@@ -61,7 +61,7 @@ class TriggerExecutionResponseMetadata(BaseResponseMetadata):
     event_metadata: Dict[str, Any] = {}
 
 
-class TriggerResponseResources(BaseResponseResources):
+class TriggerExecutionResponseResources(BaseResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
 
@@ -69,7 +69,7 @@ class TriggerExecutionResponse(
     BaseIdentifiedResponse[
         TriggerExecutionResponseBody,
         TriggerExecutionResponseMetadata,
-        TriggerResponseResources,
+        TriggerExecutionResponseResources,
     ]
 ):
     """Response model for trigger executions."""

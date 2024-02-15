@@ -2323,7 +2323,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_event_source(
         self,
-        name_id_or_prefix: Optional[Union[UUID, str]] = None,
+        name_id_or_prefix: Union[UUID, str],
         name: Optional[str] = None,
         description: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,

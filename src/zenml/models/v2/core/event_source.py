@@ -130,6 +130,12 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
+    created: datetime = Field(
+        title="The timestamp when this component was created."
+    )
+    updated: datetime = Field(
+        title="The timestamp when this component was last updated.",
+    )
     is_active: bool
 
 

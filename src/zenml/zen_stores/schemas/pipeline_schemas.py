@@ -122,9 +122,9 @@ class PipelineSchema(NamedSchema, table=True):
 
     def to_model(
         self,
-        last_x_runs: int = 3,
         include_metadata: bool = False,
         include_resources: bool = False,
+        last_x_runs: int = 3,
         **kwargs: Any,
     ) -> "PipelineResponse":
         """Convert a `PipelineSchema` to a `PipelineResponse`.

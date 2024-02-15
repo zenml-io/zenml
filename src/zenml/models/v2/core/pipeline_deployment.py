@@ -172,7 +172,7 @@ class PipelineDeploymentResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
 
     trigger: Page["TriggerResponse"] = Field(
-        default=None, title="The stack associated with the deployment."
+        title="The stack associated with the deployment."
     )
 
 
