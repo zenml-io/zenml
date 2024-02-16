@@ -4299,7 +4299,7 @@ class Client(metaclass=ClientMetaClass):
         elif expiration_seconds is None:
             expiration_seconds = connector_model.expiration_seconds
 
-        connector_update = ServiceConnectorUpdate(  # type: ignore[call-arg]
+        connector_update = ServiceConnectorUpdate(
             name=name or connector_model.name,
             connector_type=connector.connector_type,
             description=description or connector_model.description,
