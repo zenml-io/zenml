@@ -17,7 +17,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml import WorkspaceScopedFilter
+from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 from zenml.models import (
     BaseIdentifiedResponse,
     BaseRequest,

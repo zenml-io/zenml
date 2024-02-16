@@ -146,7 +146,7 @@ class PluginFlavorRegistry:
         page: int,
         size: int,
         hydrate: bool = False,
-    ) -> Page[BasePluginFlavorResponse[Any, Any, Any]]:
+    ) -> Page["BasePluginFlavorResponse[Any, Any, Any]"]:
         """Get a list of all subtypes for a specific flavor and type.
 
         Args:
