@@ -176,7 +176,9 @@ def _update_new_requesters(
         other_models.add(model)
 
 
-def prepare_model_versions(deployment: "PipelineDeploymentBase") -> None:
+def prepare_model_versions(
+    deployment: Union["PipelineDeploymentBase", "PipelineDeploymentResponse"],
+) -> None:
     """Create model versions which are missing and validate existing ones that are used in the pipeline run.
 
     Args:

@@ -18,7 +18,11 @@ from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.logger import get_logger
-from zenml.new.pipelines.run_utils import deploy_pipeline, get_placeholder_run
+from zenml.new.pipelines.run_utils import (
+    deploy_pipeline,
+    get_placeholder_run,
+    prepare_model_versions,
+)
 
 logger = get_logger(__name__)
 
@@ -38,6 +42,7 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         stack = Client().active_stack
         assert deployment.stack and stack.id == deployment.stack.id
 
+        prepare_model_versions(deployment=deployment)
         deploy_pipeline(
             deployment=deployment, stack=stack, placeholder_run=placeholder_run
         )

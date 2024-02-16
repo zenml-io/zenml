@@ -27,7 +27,6 @@ from zenml.models import (
 )
 from zenml.new.pipelines.run_utils import (
     create_placeholder_run,
-    prepare_model_versions,
 )
 from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.stack.flavor import Flavor
@@ -397,5 +396,4 @@ def apply_run_config(
         code_reference=code_reference_request,
     )
 
-    prepare_model_versions(deployment=deployment_request)
     return deployment_request
