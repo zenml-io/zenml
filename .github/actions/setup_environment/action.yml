@@ -36,9 +36,6 @@ runs:
       uses: actions/setup-python@v5.0.0
       with:
         python-version: ${{ inputs.python-version }}
-    - name: Set up ENV Var for uvicorn
-      shell: bash
-      run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
     - name: Delete error-causing bash
       shell: bash
       if: ${{ inputs.os == 'windows-latest' }}
@@ -73,10 +70,14 @@ runs:
     - name: Install ZenML and dependencies
       shell: bash
       run: |
+        pip install uv
+        uv venv
+        source .venv/bin/activate
         scripts/install-zenml-dev.sh --integrations ${{ inputs.install_integrations }}
     - name: Check Python environment
       shell: bash
       run: |-
+        source .venv/bin/activate
         zenml integration list
         pip list
         pip check || true
