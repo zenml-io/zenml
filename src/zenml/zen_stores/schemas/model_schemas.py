@@ -139,6 +139,8 @@ class ModelSchema(NamedSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `ModelResponse`.
@@ -306,6 +308,8 @@ class ModelVersionSchema(NamedSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `ModelVersionResponse`.
@@ -500,6 +504,8 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `ModelVersionArtifactResponseModel`.
@@ -612,6 +618,8 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `ModelVersionPipelineRunResponse`.

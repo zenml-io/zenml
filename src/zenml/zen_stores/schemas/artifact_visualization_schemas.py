@@ -86,6 +86,9 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+
 
         Returns:
             The `Visualization`.
