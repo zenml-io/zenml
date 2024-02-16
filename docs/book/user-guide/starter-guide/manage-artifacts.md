@@ -257,6 +257,22 @@ if __name__ == "__main__":
 Calls of `Client` methods like `get_artifact_version` directly inside the pipeline code makes use of ZenML's [late materialization](../advanced-guide/data-management/late-materialization.md) behind the scenes.
 {% endhint %}
 
+If you would like to bypass materialization entirely and just download the
+data or files associated with a particular artifact version, you can use the
+`.download_files` method:
+
+```python
+from zenml.client import Client
+
+client = Client()
+artifact = client.get_artifact_version(name_id_or_prefix="iris_dataset")
+artifact.download_files("path/to/save.zip")
+```
+
+Take note that the path must have the `.zip` extension, as the artifact data
+will be saved as a zip file. Make sure to handle any exceptions that may arise
+from this operation.
+
 ## Managing artifacts **not** produced by ZenML pipelines
 
 Sometimes, artifacts can be produced completely outside of ZenML. A good example of this is the predictions produced by a deployed model.
