@@ -17,7 +17,6 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 from zenml.models import (
     BaseIdentifiedResponse,
     BaseRequest,
@@ -27,6 +26,7 @@ from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseResponseResources,
 )
+from zenml.models.v2.base.scoped import WorkspaceScopedFilter
 
 if TYPE_CHECKING:
     from zenml.models import TriggerResponse
