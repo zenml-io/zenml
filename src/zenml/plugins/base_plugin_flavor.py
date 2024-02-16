@@ -13,18 +13,13 @@
 #  permissions and limitations under the License.
 """Base implementation for all Plugin Flavors."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Type, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Type
 
 from pydantic import BaseModel, Extra
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PluginSubType, PluginType
 from zenml.models import BasePluginFlavorResponse
-from zenml.models.v2.base.base_plugin_flavor import (
-    BasePluginResponseBody,
-    BasePluginResponseMetadata,
-    BasePluginResponseResources,
-)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore

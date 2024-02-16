@@ -173,7 +173,7 @@ class PluginFlavorRegistry:
             for flavor in flavors
         ][start:end]
 
-        return  Page(
+        return Page(
             index=page,
             max_size=size,
             total_pages=total_pages,
