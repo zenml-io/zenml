@@ -29,15 +29,11 @@ jobs:
           pip install uv
           uv venv
           source .venv/bin/activate
-          export VIRTUAL_ENV=./.venv
           uv pip install darglint
-      # Persist the virtual environment for subsequent steps
-      - name: Configure environment variables
-        run: |
-          echo "VIRTUAL_ENV=${VIRTUAL_ENV}" >> $GITHUB_ENV
-          echo "PATH=${VIRTUAL_ENV}/bin:$PATH" >> $GITHUB_ENV
       - name: Check docstrings
-        run: bash scripts/docstring.sh
+        run: |
+          source .venv/bin/activate
+          bash scripts/docstring.sh
         env:
           VIRTUAL_ENV: ./.venv
   sqlite-db-migration-testing:
