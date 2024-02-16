@@ -64,12 +64,12 @@ jobs:
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
+      - run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
       - name: Check-out fresh E2E template
         run: |
           rm -rf examples/e2e
           mkdir -p examples/e2e
           printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
-          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
           pip install uv
           uv pip install yamlfix
           bash scripts/format.sh
@@ -138,11 +138,11 @@ jobs:
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
+      - run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
       - name: Check-out fresh NLP template
         run: |
           mkdir -p examples/e2e_nlp
           printf 'info@zenml.io' | zenml init --path examples/e2e_nlp --template nlp --template-with-defaults
-          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
           pip install uv
           uv pip install yamlfix
           bash scripts/format.sh
@@ -212,12 +212,12 @@ jobs:
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
+      - run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
       - name: Check-out fresh Starter template
         run: |
           rm -rf examples/quickstart
           mkdir -p examples/quickstart
           printf 'info@zenml.io' | zenml init --path examples/quickstart --template starter --template-with-defaults
-          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
           pip install uv
           uv pip install yamlfix
           bash scripts/format.sh
