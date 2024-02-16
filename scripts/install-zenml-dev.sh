@@ -66,9 +66,8 @@ set -e
 
 parse_args "$@"
 
+echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
 python -m pip install --upgrade pip uv
-uv venv
-VIRTUAL_ENV=./.venv
 
 install_zenml
 

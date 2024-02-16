@@ -26,13 +26,11 @@ jobs:
           python-version: '3.10'
       - name: Install current package as editable
         run: |
+          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
           pip install uv
-          uv venv
-          source .venv/bin/activate
           uv pip install darglint
       - name: Check docstrings
         run: |
-          source .venv/bin/activate
           bash scripts/docstring.sh
         env:
           VIRTUAL_ENV: ./.venv
@@ -71,7 +69,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Test API docs buildable
-        run: bash scripts/generate-docs.sh -v DUMMY -c
+        run: |
+          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
+          bash scripts/generate-docs.sh -v DUMMY -c
   update-templates-to-examples:
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches

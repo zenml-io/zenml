@@ -69,9 +69,8 @@ jobs:
           rm -rf examples/e2e
           mkdir -p examples/e2e
           printf 'info@zenml.io' | zenml init --path examples/e2e --template e2e_batch --template-with-defaults
+          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
           pip install uv
-          uv venv
-          VIRTUAL_ENV=./.venv
           uv pip install yamlfix
           bash scripts/format.sh
       - name: Check for changes
@@ -143,9 +142,8 @@ jobs:
         run: |
           mkdir -p examples/e2e_nlp
           printf 'info@zenml.io' | zenml init --path examples/e2e_nlp --template nlp --template-with-defaults
+          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
           pip install uv
-          uv venv
-          VIRTUAL_ENV=./.venv
           uv pip install yamlfix
           bash scripts/format.sh
       - name: Check for changes
@@ -219,9 +217,8 @@ jobs:
           rm -rf examples/quickstart
           mkdir -p examples/quickstart
           printf 'info@zenml.io' | zenml init --path examples/quickstart --template starter --template-with-defaults
+          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
           pip install uv
-          uv venv
-          VIRTUAL_ENV=./.venv
           uv pip install yamlfix
           bash scripts/format.sh
       - name: Check for changes
