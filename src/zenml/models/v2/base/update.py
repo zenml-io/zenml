@@ -35,7 +35,6 @@ def update_model(_cls: Type["T"]) -> Type["T"]:
     Returns:
         The decorated class.
     """
-
     for _, value in _cls.__fields__.items():
         value.required = False
         value.allow_none = True
