@@ -24,6 +24,7 @@ from zenml import (
     Page,
 )
 from zenml.constants import API, EVENT_SOURCES, VERSION_1
+from zenml.enums import PluginType
 from zenml.event_sources.base_event_source import BaseEventSourceHandler
 from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
@@ -102,7 +103,7 @@ def list_event_sources(
         for idx, event_source in enumerate(event_sources.items):
             event_source_handler = plugin_flavor_registry.get_plugin(
                 name=event_source.flavor,
-                _type=event_source.plugin_type,
+                _type=PluginType.EVENT_SOURCE,
                 subtype=event_source.plugin_subtype,
             )
 
@@ -110,10 +111,9 @@ def list_event_sources(
             # source implementation
             if not isinstance(event_source_handler, BaseEventSourceHandler):
                 raise ValueError(
-                    f"Plugin {event_source.plugin_type} "
-                    f"{event_source.plugin_subtype} "
+                    f"Event source plugin {event_source.plugin_subtype} "
                     f"for flavor {event_source.flavor} is not a valid event "
-                    "source plugin."
+                    "source handler implementation."
                 )
 
             event_sources.items[idx] = event_source_handler.get_event_source(
@@ -162,7 +162,7 @@ def get_event_source(
 
     event_source_handler = plugin_flavor_registry.get_plugin(
         name=event_source.flavor,
-        _type=event_source.plugin_type,
+        _type=PluginType.EVENT_SOURCE,
         subtype=event_source.plugin_subtype,
     )
 
@@ -170,9 +170,9 @@ def get_event_source(
     # implementation
     if not isinstance(event_source_handler, BaseEventSourceHandler):
         raise ValueError(
-            f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
+            f"Event source plugin {event_source.plugin_subtype} "
             f"for flavor {event_source.flavor} is not a valid event source "
-            "plugin."
+            "handler implementation."
         )
 
     event_source = event_source_handler.get_event_source(
@@ -208,7 +208,7 @@ def create_event_source(
     """
     event_source_handler = plugin_flavor_registry.get_plugin(
         name=event_source.flavor,
-        _type=event_source.plugin_type,
+        _type=PluginType.EVENT_SOURCE,
         subtype=event_source.plugin_subtype,
     )
 
@@ -216,9 +216,9 @@ def create_event_source(
     # implementation
     if not isinstance(event_source_handler, BaseEventSourceHandler):
         raise ValueError(
-            f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
+            f"Event source plugin {event_source.plugin_subtype} "
             f"for flavor {event_source.flavor} is not a valid event source "
-            "handler."
+            "handler implementation."
         )
 
     return verify_permissions_and_create_entity(
@@ -260,7 +260,7 @@ def update_event_source(
 
     event_source_handler = plugin_flavor_registry.get_plugin(
         name=event_source.flavor,
-        _type=event_source.plugin_type,
+        _type=PluginType.EVENT_SOURCE,
         subtype=event_source.plugin_subtype,
     )
 
@@ -268,9 +268,9 @@ def update_event_source(
     # implementation
     if not isinstance(event_source_handler, BaseEventSourceHandler):
         raise ValueError(
-            f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
+            f"Event source plugin {event_source.plugin_subtype} "
             f"for flavor {event_source.flavor} is not a valid event source "
-            "plugin."
+            "handler implementation."
         )
 
     updated_event_source = event_source_handler.update_event_source(
@@ -312,7 +312,7 @@ def delete_event_source(
 
     event_source_handler = plugin_flavor_registry.get_plugin(
         name=event_source.flavor,
-        _type=event_source.plugin_type,
+        _type=PluginType.EVENT_SOURCE,
         subtype=event_source.plugin_subtype,
     )
 
@@ -320,9 +320,9 @@ def delete_event_source(
     # implementation
     if not isinstance(event_source_handler, BaseEventSourceHandler):
         raise ValueError(
-            f"Plugin {event_source.plugin_type} {event_source.plugin_subtype} "
+            f"Event source plugin {event_source.plugin_subtype} "
             f"for flavor {event_source.flavor} is not a valid event source "
-            "plugin."
+            "handler implementation."
         )
 
     event_source_handler.delete_event_source(

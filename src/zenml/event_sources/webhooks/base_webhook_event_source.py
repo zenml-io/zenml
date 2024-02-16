@@ -78,6 +78,15 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
             The event filter configuration class.
         """
 
+    @property
+    @abstractmethod
+    def flavor_class(self) -> "Type[BaseWebhookEventSourceFlavor]":
+        """Returns the flavor class of the plugin.
+
+        Returns:
+            The flavor class of the plugin.
+        """
+
     def is_valid_signature(
         self, raw_body: bytes, secret_token: str, signature_header: str
     ) -> bool:

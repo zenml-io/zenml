@@ -21,6 +21,7 @@ from zenml import TriggerRequest
 from zenml.actions.base_action import BaseActionHandler
 from zenml.constants import API, TRIGGER_EXECUTIONS, TRIGGERS, VERSION_1
 from zenml.enums import PluginType
+from zenml.event_sources.base_event_source import BaseEventSourceHandler
 from zenml.models import (
     Page,
     TriggerExecutionFilter,
@@ -37,9 +38,12 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
-    verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.utils import (
+    dehydrate_response_model,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -77,11 +81,54 @@ def list_triggers(
     Returns:
         All triggers.
     """
+
+    def list_triggers_fn(
+        filter_model: TriggerFilter,
+    ) -> Page[TriggerResponse]:
+        """List triggers through their associated plugins.
+
+        Args:
+            filter_model: Filter model used for pagination, sorting,
+                filtering.
+
+        Returns:
+            All triggers.
+
+        Raises:
+            ValueError: If the plugin for a trigger action is not a valid action
+                plugin.
+        """
+        triggers = zen_store().list_triggers(
+            trigger_filter_model=filter_model, hydrate=hydrate
+        )
+
+        # Process the triggers through their associated plugins
+        for idx, trigger in enumerate(triggers.items):
+            action_handler = plugin_flavor_registry.get_plugin(
+                name=trigger.action_flavor,
+                _type=PluginType.ACTION,
+                subtype=trigger.action_subtype,
+            )
+
+            # Validate that the flavor and plugin_type correspond to an action
+            # handler implementation
+            if not isinstance(action_handler, BaseActionHandler):
+                raise ValueError(
+                    f"Action handler plugin {trigger.action_subtype} "
+                    f"for flavor {trigger.action_flavor} is not a valid action "
+                    "handler plugin."
+                )
+
+            triggers.items[idx] = action_handler.get_trigger(
+                trigger, hydrate=hydrate
+            )
+
+        return triggers
+
     return verify_permissions_and_list_entities(
         filter_model=trigger_filter_model,
         resource_type=ResourceType.TRIGGER,
-        list_method=zen_store().list_triggers,
-        hydrate=hydrate,
+        list_method=list_triggers_fn,
     )
 
 
@@ -106,9 +153,28 @@ def get_trigger(
     Returns:
         The requested trigger.
     """
-    return verify_permissions_and_get_entity(
-        id=trigger_id, get_method=zen_store().get_trigger, hydrate=hydrate
+    trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=hydrate)
+
+    verify_permission_for_model(trigger, action=Action.READ)
+
+    action_handler = plugin_flavor_registry.get_plugin(
+        name=trigger.action_flavor,
+        _type=PluginType.ACTION,
+        subtype=trigger.action_subtype,
     )
+
+    # Validate that the flavor and plugin_type correspond to an action
+    # handler implementation
+    if not isinstance(action_handler, BaseActionHandler):
+        raise ValueError(
+            f"Action handler plugin {trigger.action_subtype} "
+            f"for flavor {trigger.action_flavor} is not a valid action "
+            "handler plugin."
+        )
+
+    trigger = action_handler.get_trigger(trigger, hydrate=hydrate)
+
+    return dehydrate_response_model(trigger)
 
 
 @router.post(
@@ -133,30 +199,49 @@ def create_trigger(
         IllegalOperationError: If the workspace specified in the stack
             component does not match the current workspace.
     """
-    action_handler = plugin_flavor_registry.get_plugin(
-        name=trigger.action_flavor,
-        subtype=trigger.action_subtype,
-        _type=PluginType.ACTION,
+    event_source = zen_store().get_event_source(
+        event_source_id=trigger.event_source_id
     )
-    # Validate that the flavor and plugin_type correspond to an action
+
+    event_source_handler = plugin_flavor_registry.get_plugin(
+        name=event_source.flavor,
+        _type=PluginType.EVENT_SOURCE,
+        subtype=event_source.plugin_subtype,
+    )
+
+    # Validate that the flavor and plugin_type correspond to an event source
     # implementation
-    if not isinstance(action_handler, BaseActionHandler):
+    if not isinstance(event_source_handler, BaseEventSourceHandler):
         raise ValueError(
-            f"Action {trigger.action_subtype} "
-            f"for flavor {trigger.action_flavor} is not a valid action."
+            f"Event source plugin {event_source.plugin_subtype} "
+            f"for flavor {event_source.flavor} is not a valid event source "
+            "handler implementation."
         )
 
-    # TODO: Add resources to trigger now.
-    # action_config = action_handler.validate_and_action_configuration(
-    #     trigger.action
-    # )
+    # Validate the trigger event filter
+    event_source_handler.validate_event_filter_configuration(
+        trigger.event_filter
+    )
 
-    # resources = action_handler.extract_resources(action_config)
+    action_handler = plugin_flavor_registry.get_plugin(
+        name=trigger.action_flavor,
+        _type=PluginType.ACTION,
+        subtype=trigger.action_subtype,
+    )
+
+    # Validate that the flavor and plugin_type correspond to an action
+    # handler implementation
+    if not isinstance(action_handler, BaseActionHandler):
+        raise ValueError(
+            f"Action handler plugin {trigger.action_subtype} "
+            f"for flavor {trigger.action_flavor} is not a valid action "
+            "handler plugin."
+        )
 
     return verify_permissions_and_create_entity(
         request_model=trigger,
         resource_type=ResourceType.TRIGGER,
-        create_method=zen_store().create_trigger,
+        create_method=action_handler.create_trigger,
     )
 
 
@@ -180,13 +265,56 @@ def update_trigger(
     Returns:
         The updated trigger.
     """
-    # TODO: Look into updating event/action
-    return verify_permissions_and_update_entity(
-        id=trigger_id,
-        update_model=trigger_update,
-        get_method=zen_store().get_trigger,
-        update_method=zen_store().update_trigger,
+    trigger = zen_store().get_trigger(trigger_id=trigger_id)
+
+    if trigger_update.event_filter:
+        event_source = zen_store().get_event_source(
+            event_source_id=trigger.event_source.id
+        )
+
+        event_source_handler = plugin_flavor_registry.get_plugin(
+            name=event_source.flavor,
+            _type=PluginType.EVENT_SOURCE,
+            subtype=event_source.plugin_subtype,
+        )
+
+        # Validate that the flavor and plugin_type correspond to an event source
+        # implementation
+        if not isinstance(event_source_handler, BaseEventSourceHandler):
+            raise ValueError(
+                f"Event source plugin {event_source.plugin_subtype} "
+                f"for flavor {event_source.flavor} is not a valid event source "
+                "handler implementation."
+            )
+
+        # Validate the trigger event filter
+        event_source_handler.validate_event_filter_configuration(
+            trigger.event_filter
+        )
+
+    verify_permission_for_model(trigger, action=Action.UPDATE)
+
+    action_handler = plugin_flavor_registry.get_plugin(
+        name=trigger.action_flavor,
+        _type=PluginType.ACTION,
+        subtype=trigger.action_subtype,
     )
+
+    # Validate that the flavor and plugin_type correspond to an action
+    # handler implementation
+    if not isinstance(action_handler, BaseActionHandler):
+        raise ValueError(
+            f"Action handler plugin {trigger.action_subtype} "
+            f"for flavor {trigger.action_flavor} is not a valid action "
+            "handler plugin."
+        )
+
+    updated_trigger = action_handler.update_trigger(
+        trigger=trigger,
+        trigger_update=trigger_update,
+    )
+
+    return dehydrate_response_model(updated_trigger)
 
 
 @router.delete(
@@ -196,17 +324,37 @@ def update_trigger(
 @handle_exceptions
 def delete_trigger(
     trigger_id: UUID,
+    force: bool = False,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a trigger.
 
     Args:
         trigger_id: Name of the trigger.
+        force: Flag deciding whether to force delete the trigger.
     """
-    verify_permissions_and_delete_entity(
-        id=trigger_id,
-        get_method=zen_store().get_trigger,
-        delete_method=zen_store().delete_trigger,
+    trigger = zen_store().get_trigger(trigger_id=trigger_id)
+
+    verify_permission_for_model(trigger, action=Action.DELETE)
+
+    action_handler = plugin_flavor_registry.get_plugin(
+        name=trigger.action_flavor,
+        _type=PluginType.ACTION,
+        subtype=trigger.action_subtype,
+    )
+
+    # Validate that the flavor and plugin_type correspond to an action
+    # handler implementation
+    if not isinstance(action_handler, BaseActionHandler):
+        raise ValueError(
+            f"Action handler plugin {trigger.action_subtype} "
+            f"for flavor {trigger.action_flavor} is not a valid action "
+            "handler plugin."
+        )
+
+    action_handler.delete_trigger(
+        trigger=trigger,
+        force=force,
     )
 
 

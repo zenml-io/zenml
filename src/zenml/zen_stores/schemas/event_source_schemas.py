@@ -71,7 +71,6 @@ class EventSourceSchema(NamedSchema, table=True):
     )
 
     flavor: str = Field(nullable=False)
-    plugin_type: str = Field(nullable=False)
     plugin_subtype: str = Field(nullable=False)
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
@@ -92,7 +91,6 @@ class EventSourceSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             flavor=request.flavor,
-            plugin_type=request.plugin_type,
             plugin_subtype=request.plugin_subtype,
             name=request.name,
             description=request.description,
@@ -129,7 +127,6 @@ class EventSourceSchema(NamedSchema, table=True):
             updated=self.updated,
             user=self.user.to_model() if self.user else None,
             flavor=self.flavor,
-            plugin_type=self.plugin_type,
             plugin_subtype=self.plugin_subtype,
             is_active=self.is_active,
         )

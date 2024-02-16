@@ -16,9 +16,8 @@ from functools import partial
 from typing import TYPE_CHECKING, List
 
 from zenml import EventSourceResponse
-from zenml.actions.base_action import BaseActionHandler
 from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import PluginSubType, PluginType
+from zenml.enums import PluginType
 from zenml.event_hub.base_event_hub import BaseEventHub
 from zenml.event_sources.base_event import (
     BaseEvent,
@@ -32,7 +31,6 @@ from zenml.models import (
     TriggerFilter,
     TriggerResponse,
 )
-from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.utils.pagination_utils import depaginate
 from zenml.zen_server.utils import zen_store
 
@@ -60,7 +58,9 @@ class InternalEventHub(BaseEventHub):
         return GlobalConfiguration().zen_store
 
     def activate_trigger(self, trigger: TriggerResponse) -> None:
-        """Configure the event hub to trigger an action.
+        """Add a trigger to the event hub.
+
+        Configure the event hub to trigger an action when an event is received.
 
         Args:
             trigger: the trigger to activate.
@@ -68,10 +68,12 @@ class InternalEventHub(BaseEventHub):
         # We don't need to do anything here to change the event hub
         # configuration. The in-server event hub already uses the database
         # as the source of truth regarding configured active triggers.
-        pass
 
     def deactivate_trigger(self, trigger: TriggerResponse) -> None:
         """Remove a trigger from the event hub.
+
+        Configure the event hub to stop triggering an action when an event is
+        received.
 
         Args:
             trigger: the trigger to deactivate.
@@ -79,7 +81,6 @@ class InternalEventHub(BaseEventHub):
         # We don't need to do anything here to change the event hub
         # configuration. The in-server event hub already uses the database
         # as the source of truth regarding configured active triggers.
-        pass
 
     def publish_event(
         self,
@@ -112,14 +113,20 @@ class InternalEventHub(BaseEventHub):
             trigger_execution = zen_store().create_trigger_execution(request)
 
             action_config = trigger_execution.trigger.get_metadata().action
-            action_handler = plugin_flavor_registry.get_plugin(
-                name="builtin",
-                _type=PluginType.ACTION,
-                subtype=PluginSubType.PIPELINE_RUN,
+            action_callback = self.action_handlers.get(
+                (trigger.action_flavor, trigger.action_subtype)
             )
-            assert isinstance(action_handler, BaseActionHandler)
-            action_handler.run(
-                config=action_config, trigger_execution=trigger_execution
+            if not action_callback:
+                logger.error(
+                    f"The event hub could not deliver event to action handler "
+                    f"for flavor {trigger.action_flavor} and subtype "
+                    f"{trigger.action_subtype} because no handler was found."
+                )
+                continue
+
+            action_callback(
+                action_config,
+                trigger_execution,
             )
 
     def get_matching_active_triggers_for_event(

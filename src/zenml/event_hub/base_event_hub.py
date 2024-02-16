@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base class for event hub implementations."""
 from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Any, Callable, Dict, Tuple
 
 from zenml import EventSourceResponse
 from zenml.event_sources.base_event import (
@@ -21,30 +21,36 @@ from zenml.event_sources.base_event import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    TriggerExecutionResponse,
     TriggerResponse,
 )
 
 logger = get_logger(__name__)
+
+ActionHandlerCallback = Callable[
+    [Dict[str, Any], TriggerExecutionResponse], None
+]
 
 
 class BaseEventHub(ABC):
     """Base class for event hub implementations.
 
     The event hub is responsible for relaying events from event sources to
-    triggers and actions. It functions similarly to a pub/sub system where
+    action handlers. It functions similarly to a pub/sub system where
     event source handlers publish events and action handlers subscribe to them.
 
-    The event hub also serves to decouple event sources from triggers, allowing
-    them to be configured independently and their implementations to be unaware
-    of each other.
+    The event hub also serves to decouple event sources from action handlers,
+    allowing them to be configured independently and their implementations to be
+    unaware of each other.
     """
 
-    @abstractmethod
+    action_handlers: Dict[Tuple[str, str], ActionHandlerCallback] = {}
+
     def subscribe_action_handler(
         self,
         action_flavor: str,
         action_subtype: str,
-        callback: Callable[[BaseEvent], None],
+        callback: ActionHandlerCallback,
     ) -> None:
         """Subscribe an action handler to the event hub.
 
@@ -53,8 +59,8 @@ class BaseEventHub(ABC):
             action_subtype: the subtype of the action to trigger.
             callback: the action to trigger when the trigger is activated.
         """
+        self.action_handlers[(action_flavor, action_subtype)] = callback
 
-    @abstractmethod
     def unsubscribe_action_handler(
         self,
         action_flavor: str,
@@ -66,6 +72,7 @@ class BaseEventHub(ABC):
             action_flavor: the flavor of the action to trigger.
             action_subtype: the subtype of the action to trigger.
         """
+        self.action_handlers.pop((action_flavor, action_subtype), None)
 
     @abstractmethod
     def activate_trigger(self, trigger: TriggerResponse) -> None:

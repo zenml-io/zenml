@@ -110,6 +110,19 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
     _event_hub: Optional[BaseEventHub] = None
 
+    def __init__(self, event_hub: Optional[BaseEventHub] = None) -> None:
+        """Event source handler initialization.
+
+        Args:
+            event_hub: Optional event hub to use to initialize the event source
+                handler. If not set during initialization, it may be set
+                at a later time by calling `set_event_hub`. An event hub must
+                be configured before the event handler needs to dispatch events.
+        """
+        super().__init__()
+        if event_hub is not None:
+            self.set_event_hub(event_hub)
+
     @property
     @abstractmethod
     def config_class(self) -> Type[EventSourceConfig]:
@@ -128,17 +141,14 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             The event filter configuration class.
         """
 
-    def __init__(self, event_hub: Optional[BaseEventHub] = None) -> None:
-        """Event source handler initialization.
+    @property
+    @abstractmethod
+    def flavor_class(self) -> "Type[BaseEventSourceFlavor]":
+        """Returns the flavor class of the plugin.
 
-        Args:
-            event_hub: Optional event hub to use to initialize the event source
-                handler. If not set during initialization, it may be set
-                at a later time by calling `set_event_hub`. An event hub must
-                be configured before the event handler needs to dispatch events.
+        Returns:
+            The flavor class of the plugin.
         """
-        super().__init__()
-        self._event_hub = event_hub
 
     @property
     def event_hub(self) -> BaseEventHub:

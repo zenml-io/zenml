@@ -25,6 +25,7 @@ from zenml.event_sources.base_event import (
 )
 from zenml.event_sources.base_event_source import EventSourceConfig
 from zenml.event_sources.webhooks.base_webhook_event_source import (
+    BaseWebhookEventSourceFlavor,
     BaseWebhookEventSourceHandler,
     WebhookEventFilterConfig,
     WebhookEventSourceConfig,
@@ -204,6 +205,19 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
             The event filter configuration class.
         """
         return GithubWebhookEventFilterConfiguration
+
+    @property
+    def flavor_class(self) -> Type[BaseWebhookEventSourceFlavor]:
+        """Returns the flavor class of the plugin.
+
+        Returns:
+            The flavor class of the plugin.
+        """
+        from zenml.integrations.github.plugins.github_webhook_event_source_flavor import (
+            GithubWebhookEventSourceFlavor,
+        )
+
+        return GithubWebhookEventSourceFlavor
 
     def _interpret_event(self, event: Dict[str, Any]) -> GithubEvent:
         """Converts the generic event body into a event-source specific pydantic model.

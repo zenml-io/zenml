@@ -19,6 +19,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -64,7 +65,7 @@ class TriggerBase(BaseModel):
         title="The flavor of the action that is executed by this trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    action_subtype: str = Field(
+    action_subtype: PluginSubType = Field(
         title="The subtype of the action that is executed by this trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -140,7 +141,7 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
         title="The flavor of the action that is executed by this trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    action_subtype: str = Field(
+    action_subtype: PluginSubType = Field(
         title="The subtype of the action that is executed by this trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -217,7 +218,7 @@ class TriggerResponse(
         return self.get_body().action_flavor
 
     @property
-    def action_subtype(self) -> str:
+    def action_subtype(self) -> PluginSubType:
         """The `action_subtype` property.
 
         Returns:

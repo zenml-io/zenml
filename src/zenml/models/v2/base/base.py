@@ -276,7 +276,22 @@ class BaseResponse(
         Raises:
             RuntimeError: If the resources field was not included in the response.
         """
-        if not self.resources:
+        if self.resources is None:
+            # If the resources are not there, check the class first.
+            resources_type = self.__fields__["resources"].type_
+
+            if len(resources_type.__fields__):
+                # If the resources class defines any fields, fetch the resources
+                # through the hydrated version.
+                hydrated_version = self.get_hydrated_version()
+                self._validate_hydrated_version(hydrated_version)
+                self.resources = hydrated_version.resources
+            else:
+                # Otherwise, use the resources class to create an empty
+                # resources object.
+                self.metadata = resources_type()
+
+        if self.resources is None:
             raise RuntimeError(
                 f"Missing response resources for {type(self).__name__}."
             )

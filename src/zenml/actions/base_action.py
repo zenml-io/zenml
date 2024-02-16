@@ -14,11 +14,10 @@
 """Base implementation of actions."""
 import json
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
+from typing import Any, ClassVar, Dict, Optional, Type
 
 from zenml.enums import PluginType
 from zenml.event_hub.base_event_hub import BaseEventHub
-from zenml.event_sources.base_event import BaseEvent
 from zenml.logger import get_logger
 from zenml.models import (
     ActionFlavorResponse,
@@ -29,14 +28,13 @@ from zenml.models import (
     TriggerResponse,
     TriggerUpdate,
 )
+from zenml.models.v2.base.base import BaseResponse
 from zenml.plugins.base_plugin_flavor import (
     BasePlugin,
     BasePluginConfig,
     BasePluginFlavor,
 )
-
-if TYPE_CHECKING:
-    from zenml.zen_server.rbac.models import Resource
+from zenml.zen_server.rbac.models import ResourceType
 
 logger = get_logger(__name__)
 
@@ -46,6 +44,50 @@ logger = get_logger(__name__)
 
 class ActionConfig(BasePluginConfig):
     """Allows configuring the action configuration."""
+
+
+# -------------------- Flavors ---------------------------------------------
+
+
+class BaseActionFlavor(BasePluginFlavor, ABC):
+    """Base Action Flavor to register Action Configurations."""
+
+    TYPE: ClassVar[PluginType] = PluginType.ACTION
+
+    # Action specific
+    ACTION_CONFIG_CLASS: ClassVar[Type[ActionConfig]]
+
+    @classmethod
+    def get_action_config_schema(cls) -> Dict[str, Any]:
+        """The config schema for a flavor.
+
+        Returns:
+            The config schema.
+        """
+        config_schema: Dict[str, Any] = json.loads(
+            cls.ACTION_CONFIG_CLASS.schema_json()
+        )
+        return config_schema
+
+    @classmethod
+    def get_flavor_response_model(cls, hydrate: bool) -> ActionFlavorResponse:
+        """Convert the Flavor into a Response Model.
+
+        Args:
+            hydrate: Whether the model should be hydrated.
+        """
+        metadata = None
+        if hydrate:
+            metadata = ActionFlavorResponseMetadata(
+                config_schema=cls.get_action_config_schema(),
+            )
+        return ActionFlavorResponse(
+            body=ActionFlavorResponseBody(),
+            metadata=metadata,
+            name=cls.FLAVOR,
+            type=cls.TYPE,
+            subtype=cls.SUBTYPE,
+        )
 
 
 # -------------------- Plugin -----------------------------------
@@ -66,7 +108,8 @@ class BaseActionHandler(BasePlugin, ABC):
                 be configured before the event handler needs to dispatch events.
         """
         super().__init__()
-        self._event_hub = event_hub
+        if event_hub is not None:
+            self.set_event_hub(event_hub)
 
     @property
     @abstractmethod
@@ -75,6 +118,15 @@ class BaseActionHandler(BasePlugin, ABC):
 
         Returns:
             The configuration.
+        """
+
+    @property
+    @abstractmethod
+    def flavor_class(self) -> Type[BaseActionFlavor]:
+        """Returns the flavor class of the plugin.
+
+        Returns:
+            The flavor class of the plugin.
         """
 
     @property
@@ -104,27 +156,61 @@ class BaseActionHandler(BasePlugin, ABC):
                 events.
         """
         self._event_hub = event_hub
+        self._event_hub.subscribe_action_handler(
+            action_flavor=self.flavor_class.FLAVOR,
+            action_subtype=self.flavor_class.SUBTYPE,
+            callback=self.event_hub_callback,
+        )
 
-    @abstractmethod
-    def run(
+    def event_hub_callback(
         self,
         config: Dict[str, Any],
         trigger_execution: TriggerExecutionResponse,
     ) -> None:
-        """Method that executes the configured action.
+        """Callback to be used by the event hub to dispatch events to the action handler.
 
         Args:
             config: The action configuration
-            trigger_execution: The trigger_execution object from the database
+            trigger_execution: The trigger execution
         """
-        pass
+        try:
+            config_obj = self.config_class(**config)
+        except ValueError as e:
+            logger.exception(
+                f"Action handler {self.flavor_class.FLAVOR} of type "
+                f"{self.flavor_class.SUBTYPE} received an invalid configuration "
+                f"from the event hub: {e}."
+            )
+            return
+
+        try:
+            # TODO: this would be a great place to convert the event back into its
+            # original form and pass it to the action handler.
+            self.run(config=config_obj, trigger_execution=trigger_execution)
+        except Exception:
+            # Don't let the event hub crash if the action handler fails
+            # TODO: we might want to return a value here indicating to the event
+            # hub that the action handler failed to execute the action. This can
+            # be used by the event hub to retry the action handler or to log the
+            # failure.
+            logger.exception(
+                f"Action handler {self.flavor_class.FLAVOR} of type "
+                f"{self.flavor_class.SUBTYPE} failed to execute the action "
+                f"with configuration {config}."
+            )
 
     @abstractmethod
-    def extract_resources(
+    def run(
         self,
-        action_config: ActionConfig,
-    ) -> List["Resource"]:
-        """Extract related resources for this action."""
+        config: ActionConfig,
+        trigger_execution: TriggerExecutionResponse,
+    ) -> None:
+        """Execute an action.
+
+        Args:
+            config: The action configuration
+            trigger_execution: The trigger execution
+        """
 
     def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
         """Process an trigger request and create the trigger in the database.
@@ -152,6 +238,14 @@ class BaseActionHandler(BasePlugin, ABC):
             self._process_trigger_request(
                 trigger=trigger_response, config=config
             )
+            # Add any implementation specific related resources to the trigger
+            # response
+            self._populate_trigger_response_resources(
+                trigger=trigger_response, config=config
+            )
+            # Activate the trigger in the event hub to effectively start
+            # dispatching events to the action handler
+            self.event_hub.activate_trigger(trigger=trigger_response)
         except Exception:
             # If the trigger creation fails, delete the trigger from
             # the database
@@ -164,7 +258,6 @@ class BaseActionHandler(BasePlugin, ABC):
 
         # Serialize the configuration back into the response
         trigger_response.set_action(config.dict(exclude_none=True))
-
         # Return the response to the user
         return trigger_response
 
@@ -222,6 +315,15 @@ class BaseActionHandler(BasePlugin, ABC):
                 previous_trigger=trigger,
                 previous_config=config,
             )
+            # Add any implementation specific related resources to the trigger
+            # response
+            self._populate_trigger_response_resources(
+                trigger=trigger_response, config=response_config
+            )
+            # Deactivate the previous trigger and activate the updated trigger
+            # in the event hub
+            self.event_hub.deactivate_trigger(trigger=trigger)
+            self.event_hub.activate_trigger(trigger=trigger_response)
         except Exception:
             # If the trigger update fails, roll back the trigger in
             # the database to the original state
@@ -236,9 +338,7 @@ class BaseActionHandler(BasePlugin, ABC):
             raise
 
         # Serialize the configuration back into the response
-        trigger_response.set_action(
-            response_config.dict(exclude_none=True)
-        )
+        trigger_response.set_action(response_config.dict(exclude_none=True))
         # Return the response to the user
         return trigger_response
 
@@ -273,6 +373,9 @@ class BaseActionHandler(BasePlugin, ABC):
 
             logger.warning(f"Force deleting trigger {trigger}.")
 
+        # Deactivate the trigger in the event hub
+        self.event_hub.deactivate_trigger(trigger=trigger)
+
         # Delete the trigger from the database
         self.zen_store.delete_trigger(
             trigger_id=trigger.id,
@@ -297,6 +400,11 @@ class BaseActionHandler(BasePlugin, ABC):
             self._process_trigger_response(trigger=trigger, config=config)
             # Serialize the configuration back into the response
             trigger.set_action(config.dict(exclude_none=True))
+            # Add any implementation specific related resources to the trigger
+            # response
+            self._populate_trigger_response_resources(
+                trigger=trigger, config=config
+            )
 
         # Return the response to the user
         return trigger
@@ -320,27 +428,20 @@ class BaseActionHandler(BasePlugin, ABC):
         except ValueError as e:
             raise ValueError(f"Invalid configuration for action: {e}.") from e
 
-    def subscribe_trigger(
+    def extract_resources(
         self,
-        trigger: TriggerResponse,
-    ) -> None:
-        """Subscribe to receive events matching the trigger.
+        action_config: ActionConfig,
+    ) -> Dict[ResourceType, BaseResponse[Any, Any, Any]]:
+        """Extract related resources for this action.
 
         Args:
-            trigger: The trigger that defines the events to subscribe to.
-        """
-        self.event_hub.subscribe_trigger(trigger=trigger, callback=self.run)
+            action_config: Action configuration from which to extract related
+                resources.
 
-    def unsubscribe_trigger(
-        self,
-        trigger: TriggerResponse,
-    ) -> None:
-        """Unsubscribe to receive events matching the trigger.
-
-        Args:
-            trigger: The trigger that defines the events to unsubscribe from.
+        Returns:
+            List of resources related to the action.
         """
-        self.event_hub.unsubscribe_trigger(trigger=trigger)
+        return {}
 
     def _validate_trigger_request(
         self, trigger: TriggerRequest, config: ActionConfig
@@ -517,46 +618,27 @@ class BaseActionHandler(BasePlugin, ABC):
         """
         pass
 
+    def _populate_trigger_response_resources(
+        self, trigger: TriggerResponse, config: ActionConfig
+    ) -> None:
+        """Populate related resources for the trigger response.
 
-# -------------------- Flavors ---------------------------------------------
+        Concrete action handlers should override this method to add
+        implementation specific related resources to the trigger response.
 
-
-class BaseActionFlavor(BasePluginFlavor, ABC):
-    """Base Action Flavor to register Action Configurations."""
-
-    TYPE: ClassVar[PluginType] = PluginType.ACTION
-
-    # Action specific
-    ACTION_CONFIG_CLASS: ClassVar[Type[ActionConfig]]
-
-    @classmethod
-    def get_action_config_schema(cls) -> Dict[str, Any]:
-        """The config schema for a flavor.
-
-        Returns:
-            The config schema.
-        """
-        config_schema: Dict[str, Any] = json.loads(
-            cls.ACTION_CONFIG_CLASS.schema_json()
-        )
-        return config_schema
-
-    @classmethod
-    def get_flavor_response_model(cls, hydrate: bool) -> ActionFlavorResponse:
-        """Convert the Flavor into a Response Model.
+        This method is applied to all trigger responses fetched from the
+        database before they are returned to the user, including
+        those returned from the `create_trigger`, `update_trigger`,
+        and `delete_trigger` methods.
 
         Args:
-            hydrate: Whether the model should be hydrated.
+            trigger: Trigger response.
+            config: Action configuration instantiated from the response.
         """
-        metadata = None
-        if hydrate:
-            metadata = ActionFlavorResponseMetadata(
-                config_schema=cls.get_action_config_schema(),
-            )
-        return ActionFlavorResponse(
-            body=ActionFlavorResponseBody(),
-            metadata=metadata,
-            name=cls.FLAVOR,
-            type=cls.TYPE,
-            subtype=cls.SUBTYPE,
-        )
+        if trigger.resources is None:
+            # We only populate the resources if the resources field is already
+            # set by the database by means of hydration.
+            return
+        extract_resources = self.extract_resources(config)
+        for resource_type, resource in extract_resources.items():
+            setattr(trigger.resources, str(resource_type), resource)
