@@ -14,11 +14,20 @@ First, let's look at the main concepts which play a role during the development 
 
 #### Step
 
-Steps are functions annotated with the `@step` decorator. These functions have inputs and outputs. For ZenML to work properly, these should preferably be typed.
+Steps are functions annotated with the `@step` decorator. The easiest one could look like this.
+
+```python
+@step
+def step_1() -> str:
+    """Returns a string."""
+    return "world"
+```
+
+These functions can also have inputs and outputs. For ZenML to work properly, these should preferably be typed.
 
 ```python
 @step(enable_cache=False)
-def step_2(input_one: str, input_two: str) -> None:
+def step_2(input_one: str, input_two: str) -> str:
     """Combines the two strings passed in."""
     combined_str = f"{input_one} {input_two}"
     return combined_str

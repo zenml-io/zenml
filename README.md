@@ -45,7 +45,7 @@
 
 [contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?color=7A3EF4
 
-[contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
+[contributors-url]: https://github.com/zenml-io/zenml/graphs/contributors
 
 [license-shield]: https://img.shields.io/github/license/zenml-io/zenml?color=9565F6
 
@@ -91,7 +91,7 @@
     <a href="https://www.zenml.io/company#team">Meet the Team</a>
     <br />
     <br />
-    🎉 Version 0.54.1 is out. Check out the release notes
+    🎉 Version 0.55.2 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
@@ -295,6 +295,14 @@ the [core team](https://zenml.io/company#CompanyTeam) will respond.
 Or, if you
 prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on
 our GitHub repo.
+
+# Vulnerability affecting `zenml<0.67` (CVE-2024-25723)
+
+We have identified a critical security vulnerability in ZenML versions prior to
+0.46.7. This vulnerability potentially allows unauthorized users to take
+ownership of ZenML accounts through the user activation feature. Please [read our
+blog post](https://www.zenml.io/blog/critical-security-update-for-zenml-users)
+for more information on how we've addressed this.
 
 # 📜 License
 

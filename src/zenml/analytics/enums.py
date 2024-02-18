@@ -20,6 +20,7 @@ class AnalyticsEvent(str, Enum):
 
     # Pipelines
     RUN_PIPELINE = "Pipeline run"
+    RUN_PIPELINE_ENDED = "Pipeline run ended"
     CREATE_PIPELINE = "Pipeline created"
     BUILD_PIPELINE = "Pipeline built"
 
@@ -39,6 +40,7 @@ class AnalyticsEvent(str, Enum):
     # Model Control Plane
     MODEL_DEPLOYED = "Model deployed"
     CREATED_MODEL = "Model created"
+    CREATED_MODEL_VERSION = "Model Version created"
 
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"

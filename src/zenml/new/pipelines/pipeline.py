@@ -90,6 +90,7 @@ from zenml.utils import (
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
+    from zenml.client_lazy_loader import ClientLazyLoader
     from zenml.config.base_settings import SettingsOrDict
     from zenml.config.source import Source
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
@@ -734,14 +735,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 deployment=deployment_request
             )
 
-            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=deployment_model, stack=stack
-            )
             stack.prepare_pipeline_deployment(deployment=deployment_model)
 
             self.log_pipeline_deployment_metadata(deployment_model)
 
             run = None
+            run_id = None
             if not schedule:
                 run_request = PipelineRunRequest(
                     name=get_run_name(
@@ -764,7 +763,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     status=ExecutionStatus.INITIALIZING,
                 )
                 run = Client().zen_store.create_run(run_request)
+                run_id = run.id
 
+            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
+                deployment=deployment_model, stack=stack, run_id=run_id
+            )
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
@@ -1081,12 +1084,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
+        run_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
         """Returns the pipeline deployment metadata.
 
         Args:
             deployment: The pipeline deployment to track.
             stack: The stack on which the pipeline will be deployed.
+            run_id: The ID of the pipeline run.
 
         Returns:
             the metadata about the pipeline deployment
@@ -1113,6 +1118,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             "schedule": bool(deployment.schedule),
             "custom_materializer": custom_materializer,
             "own_stack": own_stack,
+            "pipeline_run_id": str(run_id) if run_id else None,
         }
 
     def _compile(
@@ -1256,6 +1262,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         input_artifacts: Dict[str, StepArtifact],
         external_artifacts: Dict[str, "ExternalArtifact"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
+        client_lazy_loaders: Dict[str, "ClientLazyLoader"],
         parameters: Dict[str, Any],
         default_parameters: Dict[str, Any],
         upstream_steps: Set[str],
@@ -1270,6 +1277,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             external_artifacts: The external artifacts for the invocation.
             model_artifacts_or_metadata: The model artifacts or metadata for
                 the invocation.
+            client_lazy_loaders: The client lazy loaders for the invocation.
             parameters: The parameters for the invocation.
             default_parameters: The default parameters for the invocation.
             upstream_steps: The upstream steps for the invocation.
@@ -1307,6 +1315,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
             model_artifacts_or_metadata=model_artifacts_or_metadata,
+            client_lazy_loaders=client_lazy_loaders,
             parameters=parameters,
             default_parameters=default_parameters,
             upstream_steps=upstream_steps,
@@ -1395,6 +1404,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 {k: v for k, v in _from_config_file.items() if k in matcher}
             )
 
+            # TODO: deprecate me
+            if "model_version" in _from_config_file:
+                logger.warning(
+                    "YAML config option `model_version` is deprecated. Please use `model`."
+                )
+                _from_config_file["model"] = _from_config_file["model_version"]
+                del _from_config_file["model_version"]
+
             if "model" in _from_config_file:
                 if "model" in self._from_config_file:
                     _from_config_file["model"] = self._from_config_file[
@@ -1447,7 +1464,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         pipeline_copy._parse_config_file(
             config_path=config_path,
-            matcher=inspect.getfullargspec(self.configure)[0],
+            matcher=inspect.getfullargspec(self.configure)[0]
+            + ["model_version"],  # TODO: deprecate `model_version` later on
         )
         pipeline_copy._from_config_file = dict_utils.recursive_update(
             pipeline_copy._from_config_file, kwargs

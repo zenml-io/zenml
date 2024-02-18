@@ -597,9 +597,8 @@ class StepRunner:
             if artifact_config is not None:
                 has_custom_name = bool(artifact_config.name)
                 version = artifact_config.version
-                tags = artifact_config.tags
             else:
-                has_custom_name, version, tags = False, None, None
+                has_custom_name, version = False, None
 
             # Override the artifact name if it is not a custom name.
             if has_custom_name:
@@ -614,6 +613,9 @@ class StepRunner:
 
             # Get metadata that the user logged manually
             user_metadata = step_context.get_output_metadata(output_name)
+
+            # Get full set of tags
+            tags = step_context.get_output_tags(output_name)
 
             artifact = save_artifact(
                 name=artifact_name,
