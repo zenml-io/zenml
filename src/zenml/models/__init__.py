@@ -471,7 +471,6 @@ PipelineDeploymentResponseMetadata.update_forward_refs(
     CodeReferenceResponse=CodeReferenceResponse,
 )
 PipelineDeploymentResponseResources.update_forward_refs(
-    Page=Page,
     TriggerResponse=TriggerResponse,
 )
 PipelineRunResponseBody.update_forward_refs(
