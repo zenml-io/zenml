@@ -7840,44 +7840,57 @@ class SqlZenStore(BaseZenStore):
                 "`number` field  must be None during model version creation."
             )
         with Session(self.engine) as session:
-            model = self.get_model(model_version.model)
-            existing_model_version = session.exec(
-                select(ModelVersionSchema)
-                .where(ModelVersionSchema.model_id == model.id)
-                .where(ModelVersionSchema.name == model_version.name)
-            ).first()
-            if existing_model_version is not None:
-                raise EntityExistsError(
-                    f"Unable to create model version {model_version.name}: "
-                    f"A model version with this name already exists in {model.name} model."
-                )
+            model_version_ = model_version.copy()
+            model = self.get_model(model_version_.model)
 
+            def _check(tolerance: int = 0) -> None:
+                query = session.exec(
+                    select(ModelVersionSchema)
+                    .where(ModelVersionSchema.model_id == model.id)
+                    .where(ModelVersionSchema.name == model_version_.name)
+                )
+                existing_model_version = query.fetchmany(tolerance + 1)
+                if (
+                    existing_model_version is not None
+                    and len(existing_model_version) > tolerance
+                ):
+                    raise EntityExistsError(
+                        f"Unable to create model version {model_version_.name}: "
+                        f"A model version with this name already exists in {model.name} model."
+                    )
+
+            _check()
             all_versions = session.exec(
                 select(ModelVersionSchema)
                 .where(ModelVersionSchema.model_id == model.id)
                 .order_by(ModelVersionSchema.number.desc())  # type: ignore[attr-defined]
             ).first()
 
-            model_version.number = (
+            model_version_.number = (
                 all_versions.number + 1 if all_versions else 1
             )
 
-            if model_version.name is None:
-                model_version.name = str(model_version.number)
+            if model_version_.name is None:
+                model_version_.name = str(model_version_.number)
 
             model_version_schema = ModelVersionSchema.from_request(
-                model_version
+                model_version_
             )
             session.add(model_version_schema)
 
-            if model_version.tags:
+            if model_version_.tags:
                 self._attach_tags_to_resource(
-                    tag_names=model_version.tags,
+                    tag_names=model_version_.tags,
                     resource_id=model_version_schema.id,
                     resource_type=TaggableResourceTypes.MODEL_VERSION,
                 )
+            try:
+                _check(1)
+                session.commit()
+            except EntityExistsError as e:
+                session.rollback()
+                raise e
 
-            session.commit()
             return model_version_schema.to_model(hydrate=True)
 
     def get_model_version(

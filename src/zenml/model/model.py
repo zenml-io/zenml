@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model user facing interface to pass into pipeline or step."""
 
+import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -25,6 +26,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, root_validator
 
+from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -613,6 +615,7 @@ class Model(BaseModel):
 
         Raises:
             RuntimeError: if the model version needs to be created, but provided name is reserved
+            RuntimeError: if the model version cannot be created
         """
         from zenml.client import Client
         from zenml.models import ModelVersionRequest
@@ -690,9 +693,22 @@ class Model(BaseModel):
                     " as an example. You can explore model versions using "
                     f"`zenml model version list {self.name}` CLI command."
                 )
-            model_version = zenml_client.zen_store.create_model_version(
-                model_version=mv_request
-            )
+            for i in range(MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION):
+                try:
+                    model_version = (
+                        zenml_client.zen_store.create_model_version(
+                            model_version=mv_request
+                        )
+                    )
+                    break
+                except EntityExistsError as e:
+                    if i == MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION - 1:
+                        raise RuntimeError(
+                            f"Failed to create model version "
+                            f"`{self.version if self.version else 'new'}` "
+                            f"in model `{self.name}`."
+                        ) from e
+                    time.sleep(0.1 * i)
             self.version = model_version.name
             self.was_created_in_this_run = True
             logger.info(f"New model version `{self.version}` was created.")
