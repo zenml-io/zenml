@@ -139,7 +139,9 @@ data_validator = deepchecks_data_integrity_check_step.with_options(
 The step can then be inserted into your pipeline where it can take in a dataset, e.g.:
 
 ```python
-@pipeline(required_integrations=[DEEPCHECKS, SKLEARN])
+docker_settings = DockerSettings(required_integrations=[DEEPCHECKS, SKLEARN])
+
+@pipeline(settings={"docker": docker_settings})
 def data_validation_pipeline():
     df_train, df_test = data_loader()
     data_validator(dataset=df_train)
