@@ -6955,7 +6955,9 @@ class SqlZenStore(BaseZenStore):
 
             if trigger is None:
                 raise KeyError(f"Trigger with ID {trigger_id} not found.")
-            return trigger.to_model(include_metadata=hydrate)
+            return trigger.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
 
     def list_triggers(
         self,

@@ -539,6 +539,10 @@ StepRunResponseMetadata.update_forward_refs(
     LogsResponse=LogsResponse,
     RunMetadataResponse=RunMetadataResponse,
 )
+TriggerResponseResources.update_forward_refs(
+    EventSourceResponse=EventSourceResponse,
+)
+
 __all__ = [
     # V2 Base
     "BaseRequest",
