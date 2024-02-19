@@ -108,8 +108,14 @@ class BaseActionHandler(BasePlugin, ABC):
                 be configured before the event handler needs to dispatch events.
         """
         super().__init__()
-        if event_hub is not None:
-            self.set_event_hub(event_hub)
+        if event_hub is None:
+            from zenml.event_hub.event_hub import event_hub
+
+            # TODO: for now, we use the default internal event hub. In
+            # the future, this should be configurable.
+            event_hub = event_hub
+
+        self.set_event_hub(event_hub)
 
     @property
     @abstractmethod
@@ -140,11 +146,11 @@ class BaseActionHandler(BasePlugin, ABC):
             RuntimeError: if an event hub isn't configured.
         """
         if self._event_hub is None:
-            from zenml.event_hub.event_hub import event_hub
-
-            # TODO: for now, we use the default internal event hub. In
-            # the future, this should be configurable.
-            self._event_hub = event_hub
+            raise RuntimeError(
+                f"An event hub is not configured for the "
+                f"{self.flavor_class.FLAVOR} {self.flavor_class.SUBTYPE} "
+                f"action handler."
+            )
 
         return self._event_hub
 
@@ -213,7 +219,7 @@ class BaseActionHandler(BasePlugin, ABC):
         """
 
     def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
-        """Process an trigger request and create the trigger in the database.
+        """Process a trigger request and create the trigger in the database.
 
         Args:
             trigger: Trigger request.
@@ -266,7 +272,7 @@ class BaseActionHandler(BasePlugin, ABC):
         trigger: TriggerResponse,
         trigger_update: TriggerUpdate,
     ) -> TriggerResponse:
-        """Process an trigger update request and update the trigger in the database.
+        """Process a trigger update request and update the trigger in the database.
 
         Args:
             trigger: The trigger to update.
@@ -347,7 +353,7 @@ class BaseActionHandler(BasePlugin, ABC):
         trigger: TriggerResponse,
         force: bool = False,
     ) -> None:
-        """Process an trigger delete request and delete the trigger in the database.
+        """Process a trigger delete request and delete the trigger in the database.
 
         Args:
             trigger: The trigger to delete.
@@ -384,7 +390,7 @@ class BaseActionHandler(BasePlugin, ABC):
     def get_trigger(
         self, trigger: TriggerResponse, hydrate: bool = False
     ) -> TriggerResponse:
-        """Process an trigger response before it is returned to the user.
+        """Process a trigger response before it is returned to the user.
 
         Args:
             trigger: The trigger fetched from the database.
@@ -446,7 +452,7 @@ class BaseActionHandler(BasePlugin, ABC):
     def _validate_trigger_request(
         self, trigger: TriggerRequest, config: ActionConfig
     ) -> None:
-        """Validate an trigger request before it is created in the database.
+        """Validate a trigger request before it is created in the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to the validation of
@@ -475,7 +481,7 @@ class BaseActionHandler(BasePlugin, ABC):
     def _process_trigger_request(
         self, trigger: TriggerResponse, config: ActionConfig
     ) -> None:
-        """Process an trigger request after it is created in the database.
+        """Process a trigger request after it is created in the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to the creation of
@@ -504,7 +510,7 @@ class BaseActionHandler(BasePlugin, ABC):
         trigger_update: TriggerUpdate,
         config_update: ActionConfig,
     ) -> None:
-        """Validate an trigger update before it is reflected in the database.
+        """Validate a trigger update before it is reflected in the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to validation of an
@@ -541,7 +547,7 @@ class BaseActionHandler(BasePlugin, ABC):
         previous_trigger: TriggerResponse,
         previous_config: ActionConfig,
     ) -> None:
-        """Process an trigger after it is updated in the database.
+        """Process a trigger after it is updated in the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to updating an existing
@@ -573,7 +579,7 @@ class BaseActionHandler(BasePlugin, ABC):
         config: ActionConfig,
         force: Optional[bool] = False,
     ) -> None:
-        """Process an trigger before it is deleted from the database.
+        """Process a trigger before it is deleted from the database.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to the deletion of an
@@ -596,7 +602,7 @@ class BaseActionHandler(BasePlugin, ABC):
     def _process_trigger_response(
         self, trigger: TriggerResponse, config: ActionConfig
     ) -> None:
-        """Process an trigger response before it is returned to the user.
+        """Process a trigger response before it is returned to the user.
 
         Concrete action handlers should override this method to add
         implementation specific functionality pertaining to how the trigger

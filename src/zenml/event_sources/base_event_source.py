@@ -120,8 +120,14 @@ class BaseEventSourceHandler(BasePlugin, ABC):
                 be configured before the event handler needs to dispatch events.
         """
         super().__init__()
-        if event_hub is not None:
-            self.set_event_hub(event_hub)
+        if event_hub is None:
+            from zenml.event_hub.event_hub import event_hub
+
+            # TODO: for now, we use the default internal event hub. In
+            # the future, this should be configurable.
+            event_hub = event_hub
+
+        self.set_event_hub(event_hub)
 
     @property
     @abstractmethod
@@ -161,11 +167,11 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             RuntimeError: if an event hub isn't configured.
         """
         if self._event_hub is None:
-            from zenml.event_hub.event_hub import event_hub
-
-            # TODO: for now, we use the default internal event hub. In
-            # the future, this should be configurable.
-            self._event_hub = event_hub
+            raise RuntimeError(
+                f"An event hub is not configured for the "
+                f"{self.flavor_class.FLAVOR} {self.flavor_class.SUBTYPE} "
+                f"event source handler."
+            )
 
         return self._event_hub
 

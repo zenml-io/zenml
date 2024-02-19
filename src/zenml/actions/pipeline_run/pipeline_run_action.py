@@ -23,7 +23,12 @@ from zenml.actions.base_action import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import PluginSubType
-from zenml.models import TriggerExecutionResponse
+from zenml.models import (
+    TriggerExecutionResponse,
+    TriggerRequest,
+    TriggerResponse,
+    TriggerUpdate,
+)
 from zenml.models.v2.base.base import BaseResponse
 from zenml.zen_server.rbac.models import (  # TODO: Maybe we move these into a common place?
     ResourceType,
@@ -83,6 +88,56 @@ class PipelineRunActionHandler(BaseActionHandler):
         # TODO: Call this
         # from zenml.zen_server.pipeline_deployment.utils import redeploy_pipeline
         # redeploy_pipeline(deployment=deployment, run_config=config_obj.run_config)
+
+    def _validate_configuration(
+        self, config: PipelineRunActionConfiguration
+    ) -> None:
+        """Validate a pipeline run action configuration.
+
+        Args:
+            config: Pipeline run action configuration.
+        """
+        deployment_id = config.pipeline_deployment_id
+        zen_store = GlobalConfiguration().zen_store
+
+        try:
+            zen_store.get_deployment(deployment_id=deployment_id)
+        except KeyError:
+            raise ValueError(f"No deployment found with id {deployment_id}.")
+
+    def _validate_trigger_request(
+        self, trigger: TriggerRequest, config: ActionConfig
+    ) -> None:
+        """Validate a trigger request before it is created in the database.
+
+        Args:
+            trigger: Trigger request.
+            config: Action configuration instantiated from the request.
+        """
+        assert isinstance(config, PipelineRunActionConfiguration)
+
+        self._validate_configuration(config)
+
+    def _validate_trigger_update(
+        self,
+        trigger: TriggerResponse,
+        config: ActionConfig,
+        trigger_update: TriggerUpdate,
+        config_update: ActionConfig,
+    ) -> None:
+        """Validate a trigger update before it is reflected in the database.
+
+        Args:
+            trigger: Original trigger before the update.
+            config: Action configuration instantiated from the original
+                trigger.
+            trigger_update: Trigger update request.
+            config_update: Action configuration instantiated from the
+                updated trigger.
+        """
+        assert isinstance(config, PipelineRunActionConfiguration)
+
+        self._validate_configuration(config)
 
     def extract_resources(
         self,
