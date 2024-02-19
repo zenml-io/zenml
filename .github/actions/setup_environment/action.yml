@@ -36,6 +36,26 @@ runs:
       uses: actions/setup-python@v5.0.0
       with:
         python-version: ${{ inputs.python-version }}
+    - name: Create and activate a virtual environment (Windows)
+      shell: bash
+      if: ${{ runner.os == 'Windows' }}
+      # uv doesn't (yet) allow us to install packages globally;
+      # we have to create and activate a virtual environment
+      run: |
+        irm https://astral.sh/uv/install.ps1 | iex
+        uv venv .venv
+        "VIRTUAL_ENV=.venv" | Out-File -FilePath $env:GITHUB_ENV -Append
+        "$PWD/.venv/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Append
+    - name: Create and activate a virtual environment (Unix)
+      shell: bash
+      if: ${{ runner.os != 'Windows' }}
+      # uv doesn't (yet) allow us to install packages globally;
+      # we have to create and activate a virtual environment
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        uv venv .venv
+        echo "VIRTUAL_ENV=.venv" >> $GITHUB_ENV
+        echo "$PWD/.venv/bin" >> $GITHUB_PATH
     - name: Delete error-causing bash
       shell: bash
       if: ${{ inputs.os == 'windows-latest' }}
@@ -70,14 +90,10 @@ runs:
     - name: Install ZenML and dependencies
       shell: bash
       run: |
-        pip install uv
-        uv venv
-        source .venv/bin/activate
         scripts/install-zenml-dev.sh --integrations ${{ inputs.install_integrations }}
     - name: Check Python environment
       shell: bash
       run: |-
-        source .venv/bin/activate
         zenml integration list
         pip list
         pip check || true
