@@ -309,29 +309,6 @@ class TestModel:
         assert len(model_version.tags) == 2
         assert {t.name for t in model_version.tags} == {"foo", "bar"}
 
-    def test_model_config_differs_from_db_warns(self, clean_client: "Client"):
-        """Test that model context warns if model config differs from db."""
-        mv = Model(
-            name=MODEL_NAME,
-            tags=["foo", "bar"],
-        )
-        mv._get_or_create_model()
-
-        mv = Model(
-            name=MODEL_NAME,
-            tags=["bar", "new"],
-            license="NEW",
-            save_models_to_registry=False,
-        )
-        with mock.patch("zenml.model.model.logger.warning") as logger:
-            mv._get_or_create_model()
-            logger.assert_called_once()
-
-            warning = logger.call_args[0][0]
-            assert "license" in warning
-            assert "tags added" in warning
-            assert "tags removed" in warning
-
     def test_model_version_config_differs_from_db_warns(
         self, clean_client: "Client"
     ):
@@ -353,10 +330,9 @@ class TestModel:
         )
         with mock.patch("zenml.model.model.logger.warning") as logger:
             mv._get_or_create_model_version()
-            logger.assert_called()
-            assert logger.call_count == 2  # for model and model version
+            logger.assert_called_once()
 
-            warning = logger.call_args_list[1][0][0]
+            warning = logger.call_args[0][0]
             assert "tags added" in warning
             assert "tags removed" in warning
             assert "description" in warning

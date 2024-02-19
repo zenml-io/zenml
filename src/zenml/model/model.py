@@ -521,39 +521,6 @@ class Model(BaseModel):
             model = zenml_client.zen_store.get_model(
                 model_name_or_id=self.name
             )
-
-            difference: Dict[str, Any] = {}
-            for key in (
-                "license",
-                "audience",
-                "use_cases",
-                "limitations",
-                "trade_offs",
-                "ethics",
-                "save_models_to_registry",
-            ):
-                if self_attr := getattr(self, key, None):
-                    if self_attr != getattr(model, key):
-                        difference[key] = {
-                            "config": getattr(self, key),
-                            "db": getattr(model, key),
-                        }
-            if self.tags:
-                configured_tags = set(self.tags)
-                db_tags = {t.name for t in model.tags}
-                if db_tags != configured_tags:
-                    difference["tags added"] = list(configured_tags - db_tags)
-                    difference["tags removed"] = list(
-                        db_tags - configured_tags
-                    )
-            if difference:
-                logger.warning(
-                    "Provided model configuration does not match "
-                    f"existing model `{self.name}` with the "
-                    f"following changes: {difference}. If you want to "
-                    "update the model configuration, please use the "
-                    "`zenml model update` command."
-                )
         except KeyError:
             model_request = ModelRequest(
                 name=self.name,
