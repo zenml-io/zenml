@@ -52,6 +52,7 @@ class AnalyticsContext:
 
         self.user_id: Optional[UUID] = None
         self.external_user_id: Optional[UUID] = None
+        self.executed_by_service_account: Optional[bool] = None
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
 
@@ -82,11 +83,17 @@ class AnalyticsContext:
                 auth_context = get_auth_context()
                 if auth_context is not None:
                     self.user_id = auth_context.user.id
+                    self.executed_by_service_account = (
+                        auth_context.user.is_service_account
+                    )
                     self.external_user_id = auth_context.user.external_user_id
             else:
                 # If the code is running on the client, use the default user.
                 active_user = gc.zen_store.get_user()
                 self.user_id = active_user.id
+                self.executed_by_service_account = (
+                    active_user.is_service_account
+                )
                 self.external_user_id = active_user.external_user_id
 
             # Fetch the `client_id`
@@ -247,6 +254,7 @@ class AnalyticsContext:
                 "server_id": str(self.server_id),
                 "deployment_type": str(self.deployment_type),
                 "database_type": str(self.database_type),
+                "executed_by_service_account": self.executed_by_service_account,
             }
         )
 
