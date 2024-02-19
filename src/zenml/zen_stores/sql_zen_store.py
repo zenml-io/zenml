@@ -1954,24 +1954,31 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if an artifact with the given name and version exists
-            existing_artifact = session.exec(
-                select(ArtifactVersionSchema)
-                .where(
-                    ArtifactVersionSchema.artifact_id
-                    == artifact_version.artifact_id
+            def _check(tolerance: int = 0) -> None:
+                query = session.exec(
+                    select(ArtifactVersionSchema)
+                    .where(
+                        ArtifactVersionSchema.artifact_id
+                        == artifact_version.artifact_id
+                    )
+                    .where(
+                        ArtifactVersionSchema.version
+                        == artifact_version.version
+                    )
                 )
-                .where(
-                    ArtifactVersionSchema.version == artifact_version.version
-                )
-            ).first()
-            if existing_artifact is not None:
-                raise EntityExistsError(
-                    f"Unable to create artifact with name "
-                    f"'{existing_artifact.artifact.name}' and version "
-                    f"'{artifact_version.version}': An artifact with the same "
-                    "name and version already exists."
-                )
+                existing_artifact = query.fetchmany(tolerance + 1)
+                if (
+                    existing_artifact is not None
+                    and len(existing_artifact) > tolerance
+                ):
+                    raise EntityExistsError(
+                        f"Unable to create artifact with name "
+                        f"'{existing_artifact[0].artifact.name}' and version "
+                        f"'{artifact_version.version}': An artifact with the same "
+                        "name and version already exists."
+                    )
 
+            _check()
             # Create the artifact version.
             artifact_version_schema = ArtifactVersionSchema.from_request(
                 artifact_version
@@ -1995,7 +2002,13 @@ class SqlZenStore(BaseZenStore):
                     resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
                 )
 
-            session.commit()
+            try:
+                _check(1)
+                session.commit()
+            except EntityExistsError as e:
+                session.rollback()
+                raise e
+
             return artifact_version_schema.to_model(hydrate=True)
 
     def get_artifact_version(
@@ -3217,7 +3230,7 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.version == pipeline.version)
+                .where(PipelineSchema.version_hash == pipeline.version_hash)
                 .where(PipelineSchema.workspace_id == pipeline.workspace)
             ).first()
             if existing_pipeline is not None:
