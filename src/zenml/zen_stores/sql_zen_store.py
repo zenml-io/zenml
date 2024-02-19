@@ -6957,6 +6957,13 @@ class SqlZenStore(BaseZenStore):
                 event_source_id=trigger.event_source_id, session=session
             )
 
+            # Verify that the given service account exists
+            self._get_account_schema(
+                account_name_or_id=trigger.service_account_id,
+                session=session,
+                service_account=True,
+            )
+
             # Verify that the trigger won't validate Unique
             self._fail_if_trigger_with_name_exists(
                 trigger_name=trigger.name,
@@ -7052,6 +7059,15 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update trigger with id '{trigger_id}': Found no"
                     f"existing trigger with this id."
                 )
+
+            if trigger_update.service_account_id:
+                # Verify that the given service account exists
+                self._get_account_schema(
+                    account_name_or_id=trigger_update.service_account_id,
+                    session=session,
+                    service_account=True,
+                )
+
             # In case of a renaming update, make sure no trigger already exists
             # with that name
             if trigger_update.name:

@@ -16,7 +16,6 @@ from functools import partial
 from typing import TYPE_CHECKING, List
 
 from zenml import EventSourceResponse
-from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PluginType
 from zenml.event_hub.base_event_hub import BaseEventHub
 from zenml.event_sources.base_event import (
@@ -27,17 +26,15 @@ from zenml.event_sources.base_event_source import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
-    TriggerExecutionRequest,
     TriggerFilter,
     TriggerResponse,
 )
 from zenml.utils.pagination_utils import depaginate
-from zenml.zen_server.utils import zen_store
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+    pass
 
 
 class InternalEventHub(BaseEventHub):
@@ -47,15 +44,6 @@ class InternalEventHub(BaseEventHub):
     configured triggers and triggers actions by calling the action handlers
     directly.
     """
-
-    @property
-    def zen_store(self) -> "BaseZenStore":
-        """Returns the active zen store.
-
-        Returns:
-            The active zen store.
-        """
-        return GlobalConfiguration().zen_store
 
     def activate_trigger(self, trigger: TriggerResponse) -> None:
         """Add a trigger to the event hub.
@@ -102,17 +90,6 @@ class InternalEventHub(BaseEventHub):
         )
 
         for trigger in triggers:
-            # TODO: We need to make this async, as this might take quite some
-            # time per trigger. We can either use threads starting here, or
-            # use fastapi background tasks that get passed here instead of
-            # running the event hub as a background tasks in the webhook
-            # endpoints
-            request = TriggerExecutionRequest(
-                trigger=trigger.id, event_metadata=event.dict()
-            )
-            trigger_execution = zen_store().create_trigger_execution(request)
-
-            action_config = trigger_execution.trigger.get_metadata().action
             action_callback = self.action_handlers.get(
                 (trigger.action_flavor, trigger.action_subtype)
             )
@@ -124,9 +101,11 @@ class InternalEventHub(BaseEventHub):
                 )
                 continue
 
-            action_callback(
-                action_config,
-                trigger_execution,
+            self.trigger_action(
+                event=event,
+                event_source=event_source,
+                trigger=trigger,
+                action_callback=action_callback,
             )
 
     def get_matching_active_triggers_for_event(

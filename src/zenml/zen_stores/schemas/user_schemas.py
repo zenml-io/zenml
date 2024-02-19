@@ -106,6 +106,10 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    auth_triggers: List["TriggerSchema"] = Relationship(
+        back_populates="service_account",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="user",
     )

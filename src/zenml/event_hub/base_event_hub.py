@@ -13,22 +13,29 @@
 #  permissions and limitations under the License.
 """Base class for event hub implementations."""
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Tuple
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml import EventSourceResponse
+from zenml.config.global_config import GlobalConfiguration
 from zenml.event_sources.base_event import (
     BaseEvent,
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    TriggerExecutionRequest,
     TriggerExecutionResponse,
     TriggerResponse,
 )
+from zenml.zen_server.jwt import JWTToken
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
 
 ActionHandlerCallback = Callable[
-    [Dict[str, Any], TriggerExecutionResponse], None
+    [Dict[str, Any], TriggerExecutionResponse, str], None
 ]
 
 
@@ -45,6 +52,20 @@ class BaseEventHub(ABC):
     """
 
     action_handlers: Dict[Tuple[str, str], ActionHandlerCallback] = {}
+
+    @property
+    def zen_store(self) -> "SqlZenStore":
+        """Returns the active zen store.
+
+        Returns:
+            The active zen store.
+        """
+        zen_store = GlobalConfiguration().zen_store
+
+        if not isinstance(zen_store, SqlZenStore):
+            raise ValueError("The event hub requires a SQL zen store.")
+
+        return zen_store
 
     def subscribe_action_handler(
         self,
@@ -73,6 +94,60 @@ class BaseEventHub(ABC):
             action_subtype: the subtype of the action to trigger.
         """
         self.action_handlers.pop((action_flavor, action_subtype), None)
+
+    def trigger_action(
+        self,
+        event: BaseEvent,
+        event_source: EventSourceResponse,
+        trigger: TriggerResponse,
+        action_callback: ActionHandlerCallback,
+    ) -> None:
+        """Trigger an action.
+
+        Args:
+            event: The event.
+            event_source: The event source that produced the event.
+            trigger: The trigger that was activated.
+            action_callback: The action to trigger.
+        """
+        request = TriggerExecutionRequest(
+            trigger=trigger.id, event_metadata=event.dict()
+        )
+
+        action_config = trigger.get_metadata().action
+
+        trigger_execution = self.zen_store.create_trigger_execution(request)
+
+        # Generate an API token that can be used by external workloads
+        # implementing the action to authenticate with the server. This token
+        # is associated with the service account configured for the trigger
+        # and has a validity defined by the trigger's authentication window.
+        token = JWTToken(
+            user_id=trigger.service_account.id,
+        )
+        expires: Optional[datetime] = None
+        if trigger.auth_window:
+            expires = datetime.utcnow() + timedelta(
+                minutes=trigger.auth_window
+            )
+        encoded_token = token.encode(expires=expires)
+
+        try:
+            # TODO: We need to make this async, as this might take quite some
+            # time per trigger. We can either use threads starting here, or
+            # use fastapi background tasks that get passed here instead of
+            # running the event hub as a background tasks in the webhook
+            # endpoints
+            action_callback(
+                action_config,
+                trigger_execution,
+                encoded_token,
+            )
+        except Exception:
+            # Don't let action errors stop the event hub from working
+            logger.exception(
+                f"An error occurred while executing trigger {trigger}."
+            )
 
     @abstractmethod
     def activate_trigger(self, trigger: TriggerResponse) -> None:

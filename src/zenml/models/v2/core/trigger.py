@@ -29,6 +29,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.event_source import EventSourceResponse
@@ -69,6 +70,16 @@ class TriggerBase(BaseModel):
         title="The subtype of the action that is executed by this trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    service_account_id: UUID = Field(
+        title="The service account that is used to execute the action.",
+    )
+    auth_window: Optional[int] = Field(
+        default=None,
+        title="The time window in minutes for which the service account is "
+        "authorized to execute the action. Set this to 0 to authorize the "
+        "service account indefinitely (not recommended). If not set, a "
+        "default value defined for each individual action type is used.",
+    )
 
 
 # ------------------ Request Model ------------------
@@ -107,6 +118,17 @@ class TriggerUpdate(BaseZenModel):
         default=None,
         title="The new status of the trigger.",
     )
+    service_account_id: Optional[UUID] = Field(
+        default=None,
+        title="The service account that is used to execute the action.",
+    )
+    auth_window: Optional[int] = Field(
+        default=None,
+        title="The time window in minutes for which the service account is "
+        "authorized to execute the action. Set this to 0 to authorize the "
+        "service account indefinitely (not recommended). If not set, a "
+        "default value defined for each individual action type is used.",
+    )
 
     @classmethod
     def from_response(cls, response: "TriggerResponse") -> "TriggerUpdate":
@@ -124,6 +146,7 @@ class TriggerUpdate(BaseZenModel):
             action=copy.deepcopy(response.action),
             event_filter=copy.deepcopy(response.event_filter),
             is_active=response.is_active,
+            service_account_id=response.get_resources().service_account.id,
         )
 
 
@@ -164,6 +187,12 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    auth_window: int = Field(
+        title="The time window in minutes for which the service account is "
+        "authorized to execute the action. Set this to 0 to authorize the "
+        "service account indefinitely (not recommended). If not set, a "
+        "default value defined for each individual action type is used.",
+    )
 
 
 class TriggerResponseResources(WorkspaceScopedResponseResources):
@@ -171,6 +200,9 @@ class TriggerResponseResources(WorkspaceScopedResponseResources):
 
     event_source: "EventSourceResponse" = Field(
         title="The event source that activates this trigger.",
+    )
+    service_account: UserResponse = Field(
+        title="The service account that is used to execute the action.",
     )
 
 
@@ -275,6 +307,24 @@ class TriggerResponse(
             the value of the property.
         """
         return self.get_metadata().description
+
+    @property
+    def service_account(self) -> UserResponse:
+        """The `service_account` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().service_account
+
+    @property
+    def auth_window(self) -> int:
+        """The `auth_window` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().auth_window
 
 
 # ------------------ Filter Model ------------------

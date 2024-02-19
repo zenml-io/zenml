@@ -72,12 +72,18 @@ class PipelineRunActionHandler(BaseActionHandler):
         self,
         config: ActionConfig,
         trigger_execution: TriggerExecutionResponse,
+        api_token: str,
     ) -> None:
         """Execute an action.
 
         Args:
             config: The action configuration
             trigger_execution: The trigger execution
+            api_token: An API token that can be used by external workloads to
+                authenticate with the server during the execution of the action.
+                This API token is associated with the service account that
+                was configured for the trigger that activated the action and has
+                a validity defined by the trigger's authentication window.
         """
         from zenml.zen_server.utils import zen_store
 

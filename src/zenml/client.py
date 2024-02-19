@@ -2405,6 +2405,8 @@ class Client(metaclass=ClientMetaClass):
         action: Dict[str, Any],
         action_flavor: str,
         action_subtype: PluginSubType,
+        service_account: Union[str, UUID],
+        auth_window: Optional[int] = None,
     ) -> TriggerResponse:
         """Registers a trigger.
 
@@ -2416,10 +2418,17 @@ class Client(metaclass=ClientMetaClass):
             action: The action
             action_flavor: The action flavor
             action_subtype: The action subtype
+            service_account: The service account
+            auth_window: The auth window
 
         Returns:
             The model of the registered event source.
         """
+        # Fetch the service account
+        service_account_model = self.get_service_account(
+            name_id_or_prefix=service_account, allow_name_prefix_match=False
+        )
+
         trigger = TriggerRequest(
             name=name,
             description=description,
@@ -2428,6 +2437,8 @@ class Client(metaclass=ClientMetaClass):
             action=action,
             action_flavor=action_flavor,
             action_subtype=action_subtype,
+            service_account_id=service_account_model.id,
+            auth_window=auth_window,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
@@ -2520,6 +2531,8 @@ class Client(metaclass=ClientMetaClass):
         event_filter: Optional[Dict[str, Any]] = None,
         action: Optional[Dict[str, Any]] = None,
         is_active: Optional[bool] = None,
+        service_account: Optional[Union[str, UUID]] = None,
+        auth_window: Optional[int] = None,
     ) -> TriggerResponse:
         """Updates a trigger.
 
@@ -2531,6 +2544,8 @@ class Client(metaclass=ClientMetaClass):
             action: The action configuration.
             is_active: Optional[bool] = Allows for activation/deactivating the
                 event source
+            service_account: The service account
+            auth_window: The auth window
 
         Returns:
             The model of the updated trigger.
@@ -2550,7 +2565,15 @@ class Client(metaclass=ClientMetaClass):
             event_filter=event_filter,
             action=action,
             is_active=is_active,
+            auth_window=auth_window,
         )
+        if service_account:
+            # Fetch the service account
+            service_account_model = self.get_service_account(
+                name_id_or_prefix=service_account,
+                allow_name_prefix_match=False,
+            )
+            update_model.service_account_id = service_account_model.id
 
         if name:
             if self.list_triggers(name=name):
