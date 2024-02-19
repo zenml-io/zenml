@@ -20,7 +20,6 @@ from pydantic import Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseZenModel
-from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -31,7 +30,7 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.trigger import TriggerResponse
+    pass
 
 # ------------------ Request Model ------------------
 
@@ -142,9 +141,10 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
 class EventSourceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the code repository entity."""
 
-    triggers: Page["TriggerResponse"] = Field(
-        title="The triggers configured with this event source.",
-    )
+    # TODO: add these back in when they don't break the OpenAPI docs page
+    # triggers: Page["TriggerResponse"] = Field(
+    #     title="The triggers configured with this event source.",
+    # )
 
 
 class EventSourceResponse(

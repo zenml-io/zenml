@@ -196,6 +196,7 @@ from zenml.models.v2.core.pipeline_deployment import (
     PipelineDeploymentResponse,
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
+    PipelineDeploymentResponseResources,
 )
 from zenml.models.v2.core.pipeline_run import (
     PipelineRunRequest,
@@ -385,17 +386,14 @@ ComponentResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
     ServiceConnectorResponse=ServiceConnectorResponse,
 )
-EventSourceResponse.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    UserResponse=UserResponse,
-)
 EventSourceResponseBody.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
     UserResponse=UserResponse,
 )
 EventSourceResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
-    UserResponse=UserResponse,
+)
+EventSourceResponseResources.update_forward_refs(
+    TriggerResponse=TriggerResponse,
 )
 FlavorResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -428,25 +426,17 @@ ModelVersionPipelineRunResponseBody.update_forward_refs(
 OAuthDeviceResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
-TriggerResponse.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-    UserResponse=UserResponse,
-)
 TriggerResponseBody.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
     UserResponse=UserResponse,
 )
 TriggerResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
-    UserResponse=UserResponse,
+)
+TriggerResponseResources.update_forward_refs(
     EventSourceResponse=EventSourceResponse,
 )
 TriggerExecutionResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
     TriggerResponse=TriggerResponse
-)
-TriggerResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
 )
 PipelineResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -479,6 +469,10 @@ PipelineDeploymentResponseMetadata.update_forward_refs(
     PipelineBuildResponse=PipelineBuildResponse,
     ScheduleResponse=ScheduleResponse,
     CodeReferenceResponse=CodeReferenceResponse,
+)
+PipelineDeploymentResponseResources.update_forward_refs(
+    Page=Page,
+    TriggerResponse=TriggerResponse,
 )
 PipelineRunResponseBody.update_forward_refs(
     UserResponse=UserResponse,

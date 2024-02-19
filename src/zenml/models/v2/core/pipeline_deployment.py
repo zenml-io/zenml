@@ -22,7 +22,6 @@ from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.models.v2.base.base import BaseZenModel
-from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -43,7 +42,7 @@ from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.trigger import TriggerResponse
+    pass
 
 # ------------------ Request Model ------------------
 
@@ -172,9 +171,10 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
 class PipelineDeploymentResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
 
-    trigger: Page["TriggerResponse"] = Field(
-        title="The stack associated with the deployment."
-    )
+    # TODO: add these back in when they don't break the OpenAPI docs page
+    # triggers: Page["TriggerResponse"] = Field(
+    #     title="The stack associated with the deployment."
+    # )
 
 
 class PipelineDeploymentResponse(
