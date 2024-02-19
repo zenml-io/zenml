@@ -278,7 +278,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
 
     def update_status(self) -> None:
-        """Update the service of the service.
+        """Update the status of the service.
 
         Check the current operational state of the external service
         and update the local operational status information to reflect it.
