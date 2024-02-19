@@ -17,17 +17,12 @@ from typing import List
 from uuid import uuid1
 
 from zenml.client import Client
-from zenml.models import ArtifactRequest
 
 
 class TestArtifactsManagement:
     def test_parallel_runs_can_register_same_artifact(
         self, clean_client: Client
     ):
-        clean_client.zen_store.create_artifact(
-            ArtifactRequest(name="artifact")
-        )
-
         threads: List[subprocess.Popen] = []
         run_prefix = str(uuid1())
         steps_count = 20

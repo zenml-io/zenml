@@ -241,7 +241,7 @@ def save_artifact(
             version = _get_new_artifact_version(name)
             if response := _create_version():
                 break
-            time.sleep(0.1 * i)
+            time.sleep(0.2 * i)
     else:
         response = _create_version()
     if not response:
