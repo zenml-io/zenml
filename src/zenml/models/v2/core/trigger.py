@@ -164,9 +164,6 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event_source: "EventSourceResponse" = Field(
-        title="The event source that activates this trigger.",
-    )
 
 
 class TriggerResponseResources(WorkspaceScopedResponseResources):
