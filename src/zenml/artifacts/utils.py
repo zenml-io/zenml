@@ -14,8 +14,11 @@
 """Utility functions for handling artifacts."""
 
 import base64
+import contextlib
 import os
 import tempfile
+import zipfile
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
@@ -440,6 +443,75 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
         data_type=artifact.data_type,
         uri=artifact.uri,
     )
+
+
+def download_artifact_files_from_response(
+    artifact: "ArtifactVersionResponse",
+    path: str,
+    overwrite: bool = False,
+) -> None:
+    """Download the given artifact into a file.
+
+    Args:
+        artifact: The artifact to download.
+        path: The path to which to download the artifact.
+        overwrite: Whether to overwrite the file if it already exists.
+
+    Raises:
+        FileExistsError: If the file already exists and `overwrite` is `False`.
+        Exception: If the artifact could not be downloaded to the zip file.
+    """
+    if not overwrite and fileio.exists(path):
+        raise FileExistsError(
+            f"File '{path}' already exists and `overwrite` is set to `False`."
+        )
+    artifact_store_loaded = False
+    if artifact.artifact_store_id:
+        with contextlib.suppress(KeyError, ImportError):
+            _ = Client().get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            artifact_store_loaded = True
+
+    if not artifact_store_loaded:
+        logger.warning(
+            "Unable to restore artifact store while trying to load artifact "
+            "`%s`. If this artifact is stored in a remote artifact store, "
+            "this might lead to issues when trying to load the artifact.",
+            artifact.id,
+        )
+
+    artifact_store = Client().active_stack.artifact_store
+    if filepaths := artifact_store.listdir(artifact.uri):
+        # save a zipfile to 'path' containing all the files
+        # in 'filepaths' with compression
+        try:
+            with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for file in filepaths:
+                    # Ensure 'file' is a string for path operations
+                    # and ZIP entry naming
+                    file_str = (
+                        file.decode() if isinstance(file, bytes) else file
+                    )
+                    file_path = str(Path(artifact.uri) / file_str)
+                    with artifact_store.open(
+                        name=file_path, mode="rb"
+                    ) as store_file:
+                        # Use a loop to read and write chunks of the file
+                        # instead of reading the entire file into memory
+                        CHUNK_SIZE = 8192
+                        while True:
+                            if file_content := store_file.read(CHUNK_SIZE):
+                                zipf.writestr(file_str, file_content)
+                            else:
+                                break
+        except Exception as e:
+            logger.error(
+                f"Failed to save artifact '{artifact.id}' to zip file "
+                f" '{path}': {e}"
+            )
+            raise
 
 
 def get_producer_step_of_artifact(

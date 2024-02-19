@@ -109,11 +109,18 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactResponse`.
         """
+        latest_id, latest_name = None, None
+        if self.versions:
+            latest_version = max(self.versions, key=lambda x: x.created)
+            latest_id, latest_name = latest_version.id, latest_version.version
+
         # Create the body of the model
         body = ArtifactResponseBody(
             created=self.created,
             updated=self.updated,
             tags=[t.tag.to_model() for t in self.tags],
+            latest_version_name=latest_name,
+            latest_version_id=latest_id,
         )
 
         # Create the metadata of the model
@@ -290,6 +297,15 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             # This is an old source which was an importable source path
             data_type = Source.from_import_path(self.data_type)
 
+        producer_step_run_id, producer_pipeline_run_id = None, None
+        if self.output_of_step_runs:
+            step_run = self.output_of_step_runs[0].step_run
+            if step_run.status == ExecutionStatus.COMPLETED:
+                producer_step_run_id = step_run.id
+                producer_pipeline_run_id = step_run.pipeline_run_id
+            else:
+                producer_step_run_id = step_run.original_step_run_id
+
         # Create the body of the model
         body = ArtifactVersionResponseBody(
             artifact=self.artifact.to_model(),
@@ -302,19 +318,12 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
             tags=[t.tag.to_model() for t in self.tags],
+            producer_pipeline_run_id=producer_pipeline_run_id,
         )
 
         # Create the metadata of the model
         metadata = None
         if hydrate:
-            producer_step_run_id = None
-            if self.output_of_step_runs:
-                step_run = self.output_of_step_runs[0].step_run
-                if step_run.status == ExecutionStatus.COMPLETED:
-                    producer_step_run_id = step_run.id
-                else:
-                    producer_step_run_id = step_run.original_step_run_id
-
             metadata = ArtifactVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
                 artifact_store_id=self.artifact_store_id,

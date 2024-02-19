@@ -941,7 +941,7 @@ def generate_stack_component_flavor_register_command(
                 source_root = source_utils.get_source_root()
 
                 cli_utils.error(
-                    f"Flavor registration failed! ZenML tried loading the"
+                    f"Flavor registration failed! ZenML tried loading the "
                     f"module `{source}` from path `{source_root}`. If this is "
                     "not what you expect, then please ensure you have run "
                     "`zenml init` at the root of your repository.\n\n"
