@@ -191,11 +191,8 @@ class PluginFlavorRegistry:
         from zenml.actions.pipeline_run.pipeline_run_action import (
             PipelineRunActionFlavor,
         )
-        from zenml.scheduler.scheduler_event_source import (
-            SchedulerEventSourceFlavor,
-        )
 
-        flavors = [SchedulerEventSourceFlavor, PipelineRunActionFlavor]
+        flavors = [PipelineRunActionFlavor]
         return flavors
 
     @property

@@ -174,12 +174,18 @@ class BaseActionHandler(BasePlugin, ABC):
         self,
         config: Dict[str, Any],
         trigger_execution: TriggerExecutionResponse,
+        api_token: str,
     ) -> None:
         """Callback to be used by the event hub to dispatch events to the action handler.
 
         Args:
             config: The action configuration
             trigger_execution: The trigger execution
+            api_token: An API token that can be used by external workloads to
+                authenticate with the server during the execution of the action.
+                This API token is associated with the service account that
+                was configured for the trigger that activated the action and has
+                a validity defined by the trigger's authentication window.
         """
         try:
             config_obj = self.config_class(**config)
@@ -194,7 +200,11 @@ class BaseActionHandler(BasePlugin, ABC):
         try:
             # TODO: this would be a great place to convert the event back into its
             # original form and pass it to the action handler.
-            self.run(config=config_obj, trigger_execution=trigger_execution)
+            self.run(
+                config=config_obj,
+                trigger_execution=trigger_execution,
+                api_token=api_token,
+            )
         except Exception:
             # Don't let the event hub crash if the action handler fails
             # TODO: we might want to return a value here indicating to the event
@@ -212,12 +222,18 @@ class BaseActionHandler(BasePlugin, ABC):
         self,
         config: ActionConfig,
         trigger_execution: TriggerExecutionResponse,
+        api_token: str,
     ) -> None:
         """Execute an action.
 
         Args:
             config: The action configuration
             trigger_execution: The trigger execution
+            api_token: An API token that can be used by external workloads to
+                authenticate with the server during the execution of the action.
+                This API token is associated with the service account that
+                was configured for the trigger that activated the action and has
+                a validity defined by the trigger's authentication window.
         """
 
     def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:

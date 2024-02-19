@@ -199,6 +199,12 @@ def create_trigger(
         IllegalOperationError: If the workspace specified in the stack
             component does not match the current workspace.
     """
+    if trigger.service_account_id:
+        service_account = zen_store().get_service_account(
+            service_account_name_or_id=trigger.service_account_id
+        )
+        verify_permission_for_model(service_account, action=Action.READ)
+
     event_source = zen_store().get_event_source(
         event_source_id=trigger.event_source_id
     )
@@ -266,6 +272,12 @@ def update_trigger(
         The updated trigger.
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id)
+
+    if trigger_update.service_account_id:
+        service_account = zen_store().get_service_account(
+            service_account_name_or_id=trigger_update.service_account_id
+        )
+        verify_permission_for_model(service_account, action=Action.READ)
 
     if trigger_update.event_filter:
         event_source = zen_store().get_event_source(
