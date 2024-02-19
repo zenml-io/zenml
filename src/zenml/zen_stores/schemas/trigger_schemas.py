@@ -188,9 +188,6 @@ class TriggerSchema(NamedSchema, table=True):
                 ),
                 action=json.loads(base64.b64decode(self.action).decode()),
                 description=self.description,
-                event_source=self.event_source.to_model(
-                    include_resources=False, include_metadata=False
-                ),
             )
         resources = None
         if include_resources:

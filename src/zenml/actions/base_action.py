@@ -109,11 +109,13 @@ class BaseActionHandler(BasePlugin, ABC):
         """
         super().__init__()
         if event_hub is None:
-            from zenml.event_hub.event_hub import event_hub
+            from zenml.event_hub.event_hub import (
+                event_hub as default_event_hub,
+            )
 
             # TODO: for now, we use the default internal event hub. In
             # the future, this should be configurable.
-            event_hub = event_hub
+            event_hub = default_event_hub
 
         self.set_event_hub(event_hub)
 
