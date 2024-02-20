@@ -35,16 +35,10 @@ def update_model(_cls: Type["T"]) -> Type["T"]:
     Returns:
         The decorated class.
     """
-    if "workspace" in _cls.__fields__:
-        _cls.__fields__.pop("workspace")
-
-    if "user" in _cls.__fields__:
-        _cls.__fields__.pop("user")
-
-    for key, value in _cls.__fields__.items():
+    for _, value in _cls.__fields__.items():
         value.required = False
         value.allow_none = True
 
-    _cls.__config__.extra = Extra.forbid
+    _cls.__config__.extra = Extra.ignore
 
     return _cls
