@@ -165,7 +165,7 @@ def validate_stack(stack: StackResponse) -> None:
 
     Raises:
         ValueError: If the stack has components of a custom flavor, local
-            components or a syncronous orchestrator.
+            components or a synchronous orchestrator.
     """
     for component_list in stack.components.values():
         assert len(component_list) == 1
@@ -189,7 +189,7 @@ def validate_stack(stack: StackResponse) -> None:
             assert isinstance(component_config, BaseOrchestratorConfig)
 
             if component_config.is_synchronous:
-                raise ValueError("No syncronous orchestrator allowed.")
+                raise ValueError("No synchronous orchestrator allowed.")
 
 
 def get_requirements_for_stack(

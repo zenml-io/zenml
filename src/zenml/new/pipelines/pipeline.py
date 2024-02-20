@@ -599,9 +599,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 to any pipeline).
             prevent_build_reuse: Whether to prevent the reuse of a build.
 
-        Raises:
-            Exception: bypass any exception from pipeline up.
-
         Returns:
             Model of the pipeline run if running without a schedule, `None` if
             running with a schedule.
