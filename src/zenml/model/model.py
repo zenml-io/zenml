@@ -693,6 +693,7 @@ class Model(BaseModel):
                     " as an example. You can explore model versions using "
                     f"`zenml model version list {self.name}` CLI command."
                 )
+            retries_made = 0
             for i in range(MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION):
                 try:
                     model_version = (
@@ -706,14 +707,19 @@ class Model(BaseModel):
                         raise RuntimeError(
                             f"Failed to create model version "
                             f"`{self.version if self.version else 'new'}` "
-                            f"in model `{self.name}`."
+                            f"in model `{self.name}`. Retried {retries_made} times. "
+                            "This could be driven by exceptionally high concurrency of "
+                            "pipeline runs. Please, reach out to us on ZenML Slack for support."
                         ) from e
+                    # smoothed exponential back-off, it will go as 0.2, 0.3,
+                    # 0.45, 0.68, 1.01, 1.52, 2.28, 3.42, 5.13, 7.69, ...
                     sleep = 0.2 * 1.5**i
                     logger.debug(
                         f"Failed to create new model version for "
-                        f"model `{self.name}`, retrying in {sleep}..."
+                        f"model `{self.name}`. Retrying in {sleep}..."
                     )
                     time.sleep(sleep)
+                    retries_made += 1
             self.version = model_version.name
             self.was_created_in_this_run = True
             logger.info(f"New model version `{self.version}` was created.")

@@ -236,24 +236,35 @@ def save_artifact(
 
     response = None
     if not version:
+        retries_made = 0
         for i in range(MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION):
             # Get new artifact version
             version = _get_new_artifact_version(name)
             if response := _create_version():
                 break
+            # smoothed exponential back-off, it will go as 0.2, 0.3,
+            # 0.45, 0.68, 1.01, 1.52, 2.28, 3.42, 5.13, 7.69, ...
             sleep = 0.2 * 1.5**i
             logger.debug(
                 f"Failed to create artifact version `{version}` for "
-                f"artifact `{name}`, retrying in {sleep}..."
+                f"artifact `{name}`. Retrying in {sleep}..."
             )
             time.sleep(sleep)
+            retries_made += 1
+        if not response:
+            raise EntityExistsError(
+                f"Failed to create new artifact version for artifact "
+                f"`{name}`. Retried {retries_made} times. "
+                "This could be driven by exceptionally high concurrency of "
+                "pipeline runs. Please, reach out to us on ZenML Slack for support."
+            )
     else:
         response = _create_version()
-    if not response:
-        raise EntityExistsError(
-            f"Failed to create artifact version `{version}` for artifact "
-            f"`{name}`, given version already exists."
-        )
+        if not response:
+            raise EntityExistsError(
+                f"Failed to create artifact version `{version}` for artifact "
+                f"`{name}`. Given version already exists."
+            )
     if artifact_metadata:
         client.create_run_metadata(
             metadata=artifact_metadata,
