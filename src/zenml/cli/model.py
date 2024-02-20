@@ -177,6 +177,7 @@ def list_models(**kwargs: Any) -> None:
     help="Whether to automatically save model artifacts to the model registry.",
     type=click.BOOL,
     required=False,
+    default=True,
 )
 def register_model(
     name: str,
@@ -306,6 +307,7 @@ def register_model(
     help="Whether to automatically save model artifacts to the model registry.",
     type=click.BOOL,
     required=False,
+    default=True,
 )
 def update_model(
     model_name_or_id: str,
