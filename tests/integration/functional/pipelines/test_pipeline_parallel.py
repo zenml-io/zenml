@@ -12,14 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import pathlib
+import platform
 import subprocess
 from typing import List
 from uuid import uuid1
+
+import pytest
 
 from zenml.client import Client
 
 
 class TestArtifactsManagement:
+    @pytest.mark.skipif(
+        platform.system().lower() == "windows",
+        reason="Windows not fully support OS processes.",
+    )
     def test_parallel_runs_can_register_same_artifact(
         self, clean_client: Client
     ):

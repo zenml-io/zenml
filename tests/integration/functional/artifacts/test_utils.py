@@ -1,5 +1,6 @@
 """Integration tests for artifact util functions."""
 
+import multiprocessing
 import os
 import shutil
 import zipfile
@@ -15,6 +16,7 @@ from zenml import (
     save_artifact,
     step,
 )
+from zenml.client import Client
 from zenml.models.v2.core.artifact import ArtifactResponse
 
 
@@ -316,3 +318,27 @@ def test_download_artifact_files_from_response_fails_if_exists(
         assert f.read() == "7"
     # clean up
     shutil.rmtree(tmp_path)
+
+
+def parallel_artifact_version_creation(value: int):
+    save_artifact(value, "meaning_of_life")
+
+
+def test_parallel_artifact_creation(clean_client: Client):
+    process_count = 50
+    args = [
+        42,
+    ] * process_count
+    with multiprocessing.Pool(5) as pool:
+        pool.map(
+            parallel_artifact_version_creation,
+            iterable=args,
+        )
+
+    avs = clean_client.list_artifact_versions(
+        name="meaning_of_life", size=min(1000, process_count * 10)
+    )
+    assert len(avs) == process_count
+    assert {av.version for av in avs} == {
+        str(i) for i in range(1, process_count + 1)
+    }
