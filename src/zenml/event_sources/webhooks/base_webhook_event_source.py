@@ -19,8 +19,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type
 
 from zenml.enums import PluginSubType
+from zenml.event_sources.base_event import BaseEvent
 from zenml.event_sources.base_event_source import (
-    BaseEvent,
     BaseEventSourceFlavor,
     BaseEventSourceHandler,
     EventFilterConfig,
@@ -76,6 +76,15 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
 
         Returns:
             The event filter configuration class.
+        """
+
+    @property
+    @abstractmethod
+    def flavor_class(self) -> "Type[BaseWebhookEventSourceFlavor]":
+        """Returns the flavor class of the plugin.
+
+        Returns:
+            The flavor class of the plugin.
         """
 
     def is_valid_signature(
@@ -164,7 +173,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         event_source: EventSourceResponse,
         raw_body: bytes,
         headers: Dict[str, str],
-    ) -> BaseEvent:
+    ) -> None:
         """Process an incoming webhook event.
 
         Args:
@@ -187,7 +196,12 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
                 webhook_secret=webhook_secret,
             )
 
-        return self._interpret_event(json_body)
+        event = self._interpret_event(json_body)
+
+        self.dispatch_event(
+            event=event,
+            event_source=event_source,
+        )
 
 
 # -------------------- Flavors ----------------------------------

@@ -18,9 +18,11 @@ from datetime import datetime
 from typing import Any, List, Optional
 from uuid import UUID
 
+from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml import TriggerExecutionResponseResources
 from zenml.models import (
     TriggerExecutionRequest,
     TriggerExecutionResponse,
@@ -103,11 +105,15 @@ class TriggerSchema(NamedSchema, table=True):
         ).items():
             if field == "event_filter":
                 self.event_filter = base64.b64encode(
-                    json.dumps(trigger_update.event_filter).encode("utf-8")
+                    json.dumps(
+                        trigger_update.event_filter, default=pydantic_encoder
+                    ).encode("utf-8")
                 )
             elif field == "action":
                 self.action = base64.b64encode(
-                    json.dumps(trigger_update.action).encode("utf-8")
+                    json.dumps(
+                        trigger_update.action, default=pydantic_encoder
+                    ).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -130,13 +136,17 @@ class TriggerSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             action=base64.b64encode(
-                json.dumps(request.action).encode("utf-8")
+                json.dumps(request.action, default=pydantic_encoder).encode(
+                    "utf-8"
+                ),
             ),
             action_flavor=request.action_flavor,
             action_subtype=request.action_subtype,
             event_source_id=request.event_source_id,
             event_filter=base64.b64encode(
-                json.dumps(request.event_filter).encode("utf-8")
+                json.dumps(
+                    request.event_filter, default=pydantic_encoder
+                ).encode("utf-8")
             ),
             description=request.description,
             is_active=True,  # Makes no sense for it to be created inactive
@@ -179,9 +189,6 @@ class TriggerSchema(NamedSchema, table=True):
                 ),
                 action=json.loads(base64.b64decode(self.action).decode()),
                 description=self.description,
-                event_source=self.event_source.to_model(
-                    include_resources=False, include_metadata=False
-                ),
             )
         resources = None
         if include_resources:
@@ -251,7 +258,6 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             The converted model.
         """
         body = TriggerExecutionResponseBody(
-            trigger=self.trigger.to_model(),
             created=self.created,
             updated=self.updated,
         )
@@ -264,9 +270,12 @@ class TriggerExecutionSchema(BaseSchema, table=True):
                 if self.event_metadata
                 else {},
             )
+        resources = None
+        if include_resources:
+            resources = TriggerExecutionResponseResources(
+                trigger=self.trigger.to_model(),
+            )
 
         return TriggerExecutionResponse(
-            id=self.id,
-            body=body,
-            metadata=metadata,
+            id=self.id, body=body, metadata=metadata, resources=resources
         )

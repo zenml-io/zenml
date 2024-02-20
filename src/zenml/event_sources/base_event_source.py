@@ -15,7 +15,6 @@
 import json
 from abc import ABC, abstractmethod
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -26,6 +25,8 @@ from typing import (
 from pydantic import BaseModel
 
 from zenml.enums import PluginType
+from zenml.event_hub.base_event_hub import BaseEventHub
+from zenml.event_sources.base_event import BaseEvent
 from zenml.logger import get_logger
 from zenml.models import (
     EventSourceFlavorResponse,
@@ -41,17 +42,7 @@ from zenml.plugins.base_plugin_flavor import (
     BasePluginFlavor,
 )
 
-if TYPE_CHECKING:
-    pass
-
 logger = get_logger(__name__)
-
-# -------------------- Event Models -----------------------------------
-
-
-class BaseEvent(BaseModel):
-    """Base class for all inbound events."""
-
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -73,7 +64,8 @@ class EventFilterConfig(BaseModel, ABC):
         Args:
             event: The inbound event instance.
 
-        Returns: Whether the filter matches the event.
+        Returns:
+            Whether the filter matches the event.
         """
 
 
@@ -81,7 +73,63 @@ class EventFilterConfig(BaseModel, ABC):
 
 
 class BaseEventSourceHandler(BasePlugin, ABC):
-    """Implementation for an EventPlugin."""
+    """Base event source handler implementation.
+
+    This class provides a base implementation for event source handlers.
+
+    The base event source handler acts as an intermediary between the REST API
+    endpoints and the ZenML store for all operations related to event sources.
+    It implements all operations related creating, updating, deleting, and
+    fetching event sources from the database. It also provides a set of methods
+    that can be overridden by concrete event source handlers that need to
+    react to or participate in the lifecycle of an event source:
+
+    * `_validate_event_source_request`: validate and/or modify an event source
+    before it is created (before it is persisted in the database)
+    * `_process_event_source_request`: react to a new event source being created
+    (after it is persisted in the database)
+    * `_validate_event_source_update`: validate and/or modify an event source
+    update before it is applied (before the update is saved in the database)
+    * `_process_event_source_update`: react to an event source being updated
+    (after the update is saved in the database)
+    * `_process_event_source_delete`: react to an event source being deleted
+    (before it is deleted from the database)
+    * `_process_event_source_response`: modify an event source before it is
+    returned to the user
+
+    In addition to optionally overriding these methods, every event source
+    handler must define and provide configuration classes for the event source
+    and the event filter. These are used to validate and instantiate the
+    configuration from the user requests.
+
+    Finally, since event source handlers are also sources of events, the base
+    class provides methods that implementations can use to dispatch events to
+    the central event hub where they can be processed and eventually trigger
+    actions.
+    """
+
+    _event_hub: Optional[BaseEventHub] = None
+
+    def __init__(self, event_hub: Optional[BaseEventHub] = None) -> None:
+        """Event source handler initialization.
+
+        Args:
+            event_hub: Optional event hub to use to initialize the event source
+                handler. If not set during initialization, it may be set
+                at a later time by calling `set_event_hub`. An event hub must
+                be configured before the event handler needs to dispatch events.
+        """
+        super().__init__()
+        if event_hub is None:
+            from zenml.event_hub.event_hub import (
+                event_hub as default_event_hub,
+            )
+
+            # TODO: for now, we use the default internal event hub. In
+            # the future, this should be configurable.
+            event_hub = default_event_hub
+
+        self.set_event_hub(event_hub)
 
     @property
     @abstractmethod
@@ -100,6 +148,43 @@ class BaseEventSourceHandler(BasePlugin, ABC):
         Returns:
             The event filter configuration class.
         """
+
+    @property
+    @abstractmethod
+    def flavor_class(self) -> "Type[BaseEventSourceFlavor]":
+        """Returns the flavor class of the plugin.
+
+        Returns:
+            The flavor class of the plugin.
+        """
+
+    @property
+    def event_hub(self) -> BaseEventHub:
+        """Get the event hub used to dispatch events.
+
+        Returns:
+            The event hub.
+
+        Raises:
+            RuntimeError: if an event hub isn't configured.
+        """
+        if self._event_hub is None:
+            raise RuntimeError(
+                f"An event hub is not configured for the "
+                f"{self.flavor_class.FLAVOR} {self.flavor_class.SUBTYPE} "
+                f"event source handler."
+            )
+
+        return self._event_hub
+
+    def set_event_hub(self, event_hub: BaseEventHub) -> None:
+        """Configure an event hub for this event source plugin.
+
+        Args:
+            event_hub: Event hub to be used by this event handler to dispatch
+                events.
+        """
+        self._event_hub = event_hub
 
     def create_event_source(
         self, event_source: EventSourceRequest
@@ -339,6 +424,22 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             raise ValueError(
                 f"Invalid configuration for event filter: {e}."
             ) from e
+
+    def dispatch_event(
+        self,
+        event: BaseEvent,
+        event_source: EventSourceResponse,
+    ) -> None:
+        """Dispatch an event to all active triggers that match the event.
+
+        Args:
+            event: The event to dispatch.
+            event_source: The event source that produced the event.
+        """
+        self.event_hub.publish_event(
+            event=event,
+            event_source=event_source,
+        )
 
     def _validate_event_source_request(
         self, event_source: EventSourceRequest, config: EventSourceConfig

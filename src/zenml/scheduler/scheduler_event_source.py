@@ -12,11 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the internal scheduler event source handler."""
-from typing import Type
+from typing import ClassVar, Type
 
-from zenml.event_sources.base_event_source import BaseEvent
+from zenml.event_sources.base_event import BaseEvent
 from zenml.event_sources.schedules.base_schedule_event_source import (
     BaseScheduleEvent,
+    BaseScheduleEventSourceFlavor,
     BaseScheduleEventSourceHandler,
     ScheduleEventFilterConfig,
     ScheduleEventSourceConfig,
@@ -25,6 +26,8 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+
+INTERNAL_SCHEDULER_EVENT_FLAVOR = "internal_scheduler"
 
 # -------------------- Scheduler Event Models ---------------------------
 
@@ -73,3 +76,32 @@ class SchedulerEventSourceHandler(BaseScheduleEventSourceHandler):
             The event filter configuration class.
         """
         return SchedulerEventFilterConfiguration
+
+    @property
+    def flavor_class(self) -> Type["SchedulerEventSourceFlavor"]:
+        """Returns the flavor class of the plugin.
+
+        Returns:
+            The flavor class of the plugin.
+        """
+        return SchedulerEventSourceFlavor
+
+
+# -------------------- Scheduler Event Source Flavor -----------------------------------
+
+
+class SchedulerEventSourceFlavor(BaseScheduleEventSourceFlavor):
+    """Enables users to configure scheduled events."""
+
+    FLAVOR: ClassVar[str] = INTERNAL_SCHEDULER_EVENT_FLAVOR
+    PLUGIN_CLASS: ClassVar[
+        Type[SchedulerEventSourceHandler]
+    ] = SchedulerEventSourceHandler
+
+    # EventPlugin specific
+    EVENT_SOURCE_CONFIG_CLASS: ClassVar[
+        Type[SchedulerEventSourceConfiguration]
+    ] = SchedulerEventSourceConfiguration
+    EVENT_FILTER_CONFIG_CLASS: ClassVar[
+        Type[SchedulerEventFilterConfiguration]
+    ] = SchedulerEventFilterConfiguration

@@ -61,6 +61,15 @@ class BasePlugin(ABC):
             The configuration.
         """
 
+    @property
+    @abstractmethod
+    def flavor_class(self) -> "Type[BasePluginFlavor]":
+        """Returns the flavor class of the plugin.
+
+        Returns:
+            The flavor class of the plugin.
+        """
+
 
 class BasePluginFlavor(ABC):
     """Base Class for all PluginFlavors."""

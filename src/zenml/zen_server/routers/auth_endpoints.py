@@ -255,7 +255,7 @@ def generate_access_token(
     LOGIN,
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
 )
-# @handle_exceptions
+@handle_exceptions
 def token(
     request: Request,
     response: Response,

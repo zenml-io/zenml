@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
 import copy
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional, TypeVar
 
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import PluginSubType, PluginType
+from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
@@ -29,9 +29,10 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.trigger import TriggerResponse
 
-if TYPE_CHECKING:
-    from zenml.models.v2.core.trigger import TriggerResponse
+TriggerPage = TypeVar("TriggerPage", bound=Page[TriggerResponse])
+
 
 # ------------------ Request Model ------------------
 
@@ -45,10 +46,6 @@ class EventSourceRequest(WorkspaceScopedRequest):
     )
     flavor: str = Field(
         title="The flavor of event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    plugin_type: PluginType = Field(
-        title="The plugin type of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     plugin_subtype: PluginSubType = Field(
@@ -121,15 +118,13 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
         title="The flavor of event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    plugin_type: PluginType = Field(
-        title="The plugin type of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     plugin_subtype: PluginSubType = Field(
         title="The plugin subtype of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    is_active: bool
+    is_active: bool = Field(
+        title="Whether the event source is active.",
+    )
 
 
 class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -148,7 +143,7 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
 class EventSourceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the code repository entity."""
 
-    triggers: Page["TriggerResponse"] = Field(
+    triggers: TriggerPage = Field(  # type: ignore[valid-type]
         title="The triggers configured with this event source.",
     )
 
@@ -195,15 +190,6 @@ class EventSourceResponse(
             the value of the property.
         """
         return self.get_body().is_active
-
-    @property
-    def plugin_type(self) -> PluginType:
-        """The `plugin_type` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().plugin_type
 
     @property
     def plugin_subtype(self) -> PluginSubType:
