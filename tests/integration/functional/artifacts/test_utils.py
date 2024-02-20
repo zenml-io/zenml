@@ -1,10 +1,11 @@
 """Integration tests for artifact util functions."""
 
-import multiprocessing
 import os
 import shutil
 import zipfile
+from multiprocessing import get_context
 from typing import Optional, Tuple
+from unittest.mock import patch
 
 import pytest
 from typing_extensions import Annotated
@@ -329,11 +330,12 @@ def test_parallel_artifact_creation(clean_client: Client):
     args = [
         42,
     ] * process_count
-    with multiprocessing.Pool(5) as pool:
-        pool.map(
-            parallel_artifact_version_creation,
-            iterable=args,
-        )
+    with patch("zenml.artifacts.utils.Client", return_value=clean_client):
+        with get_context("spawn").Pool(5) as pool:
+            pool.map(
+                parallel_artifact_version_creation,
+                iterable=args,
+            )
 
     avs = clean_client.list_artifact_versions(
         name="meaning_of_life", size=min(1000, process_count * 10)
