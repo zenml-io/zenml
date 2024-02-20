@@ -33,6 +33,7 @@ from zenml.models.v2.base.base import BaseResponse
 from zenml.zen_server.rbac.models import (  # TODO: Maybe we move these into a common place?
     ResourceType,
 )
+from zenml.zen_server.utils import server_config
 
 # -------------------- Configuration Models ----------------------------------
 
@@ -123,6 +124,10 @@ class PipelineRunActionHandler(BaseActionHandler):
         assert isinstance(config, PipelineRunActionConfiguration)
 
         self._validate_configuration(config)
+
+        # If an expiration window is not set, we set it to the default value
+        if trigger.auth_window is None:
+            trigger.auth_window = server_config().pipeline_run_auth_window
 
     def _validate_trigger_update(
         self,
