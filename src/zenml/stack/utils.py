@@ -168,5 +168,5 @@ class stack_context:
                 e.g., divide_by_zero error. None if no exception.
             traceback: Traceback report. None if no exception.
         """
-        if self._default_stack.id != Client().active_stack:
+        if self._default_stack.id != Client().active_stack.id:
             Client().activate_stack(self._default_stack.id)
