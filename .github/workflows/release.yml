@@ -9,12 +9,12 @@ jobs:
   setup-and-test:
     uses: ./.github/workflows/unit-test.yml
     with:
-      os: ubuntu-latest
+      os: ubuntu-dind-runners
       python-version: '3.8'
     secrets: inherit
   mlstacks-compatibility-check:
     needs: setup-and-test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-dind-runners
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
