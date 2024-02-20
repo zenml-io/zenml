@@ -13,13 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation of the Tekton orchestrator."""
 import os
-import sys
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import yaml
 from kfp import dsl
-from kfp_tekton.compiler import TektonCompiler
-from kfp_tekton.compiler.pipeline_utils import TektonPipelineConf
+from kfp.compiler import Compiler
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
@@ -31,7 +29,6 @@ from zenml.constants import (
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
-from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
     TektonOrchestratorConfig,
     TektonOrchestratorSettings,
@@ -251,17 +248,17 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             custom_validation_function=_validate,
         )
 
-    def _configure_container_op(
+    def _configure_pipeline_task(
         self,
-        container_op: dsl.ContainerOp,
+        pipeline_task: dsl.PipelineTask,
     ) -> None:
-        """Makes changes in place to the configuration of the container op.
+        """Makes changes in place to the configuration of the pipeline task.
 
         Configures persistent mounted volumes for each stack component that
         writes to a local path.
 
         Args:
-            container_op: The Tekton container operation to configure.
+            pipeline_task: The Tekton pipeline task to configure.
         """
         volumes: Dict[str, k8s_client.V1Volume] = {}
 
@@ -272,6 +269,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
             local_stores_path = GlobalConfiguration().local_stores_path
 
+            # TODO: use this instead
+            # https://kfp-kubernetes.readthedocs.io/en/kfp-kubernetes-1.0.0/source/kubernetes.html
             host_path = k8s_client.V1HostPathVolumeSource(
                 path=local_stores_path, type="Directory"
             )
@@ -286,60 +285,87 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 local_stores_path,
             )
 
-            if sys.platform == "win32":
-                # File permissions are not checked on Windows. This if clause
-                # prevents mypy from complaining about unused 'type: ignore'
-                # statements
-                pass
-            else:
-                # Run KFP containers in the context of the local UID/GID
-                # to ensure that the local stores can be shared
-                # with the local pipeline runs.
-                container_op.container.security_context = (
-                    k8s_client.V1SecurityContext(
-                        run_as_user=os.getuid(),
-                        run_as_group=os.getgid(),
-                    )
-                )
-                logger.debug(
-                    "Setting security context UID and GID to local user/group "
-                    "in Tekton pipelines container."
-                )
+            # TODO: Rewrite this security context logic once v2 supports
+            #  security context
 
-            container_op.container.add_env_variable(
-                k8s_client.V1EnvVar(
-                    name=ENV_ZENML_LOCAL_STORES_PATH,
-                    value=local_stores_path,
-                )
+            # if sys.platform == "win32":
+            #     # File permissions are not checked on Windows. This if clause
+            #     # prevents mypy from complaining about unused 'type: ignore'
+            #     # statements
+            #     pass
+            # else:
+            #     # Run KFP containers in the context of the local UID/GID
+            #     # to ensure that the local stores can be shared
+            #     # with the local pipeline runs.
+            #     container_op.container.security_context = k8s_client.V1SecurityContext(
+            #         run_as_user=os.getuid(),
+            #         run_as_group=os.getgid(),
+            #     )
+            #     logger.debug(
+            #         "Setting security context UID and GID to local user/group "
+            #         "in Tekton pipelines container."
+            #     )
+
+            pipeline_task.set_env_variable(
+                name=ENV_ZENML_LOCAL_STORES_PATH,
+                value=local_stores_path,
             )
 
-        container_op.add_pvolumes(volumes)
+        # TODO: use these instead
+        # https://kfp-kubernetes.readthedocs.io/en/kfp-kubernetes-1.0.0/source/kubernetes.html
+        pipeline_task.add_pvolumes(volumes)
 
     @staticmethod
     def _configure_container_resources(
-        container_op: dsl.ContainerOp,
+        pipeline_task: dsl.PipelineTask,
         resource_settings: "ResourceSettings",
     ) -> None:
         """Adds resource requirements to the container.
 
         Args:
-            container_op: The container operation to configure.
+            pipeline_task: The pipeline task to configure.
             resource_settings: The resource settings to use for this
                 container.
         """
         if resource_settings.cpu_count is not None:
-            container_op = container_op.set_cpu_limit(
+            pipeline_task = pipeline_task.set_cpu_limit(
                 str(resource_settings.cpu_count)
             )
 
         if resource_settings.gpu_count is not None:
-            container_op = container_op.set_gpu_limit(
+            pipeline_task = pipeline_task.set_accelerator_limit(
                 resource_settings.gpu_count
             )
 
         if resource_settings.memory is not None:
             memory_limit = resource_settings.memory[:-1]
-            container_op = container_op.set_memory_limit(memory_limit)
+            pipeline_task = pipeline_task.set_memory_limit(memory_limit)
+
+    def _create_dynamic_component(
+        image: str,
+        command: List[str],
+        arguments: List[str],
+        component_name: str,
+    ) -> dsl.PipelineTask:
+        """Creates a dynamic component for a Tekton pipeline.
+
+        Args:
+            image: The image to use for the component.
+            command: The command to use for the component.
+            arguments: The arguments to use for the component.
+            component_name: The name of the component.
+        """
+
+        @dsl.container_component
+        def dynamic_container_component():
+            dsl.ContainerSpec(
+                image=image,
+                command=command,
+                args=arguments,
+            )
+
+        dynamic_container_component.__name__ = component_name
+        return dynamic_container_component
 
     def prepare_or_run_pipeline(
         self,
@@ -379,81 +405,147 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             pipeline_name=deployment.pipeline_configuration.name
         )
 
-        def _construct_kfp_pipeline() -> None:
-            """Create a container_op for each step.
-
-            This should contain the name of the docker image and configures the
-            entrypoint of the docker image to run the step.
-
-            Additionally, this gives each container_op information about its
-            direct downstream steps.
-            """
-            # Dictionary of container_ops index by the associated step name
-            step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
+        def _create_dynamic_pipeline():
+            """Create a dynamic pipeline including each step."""
+            step_name_to_dynamic_component: Dict[str, Any] = {}
 
             for step_name, step in deployment.step_configurations.items():
                 image = self.get_image(
-                    deployment=deployment, step_name=step_name
+                    deployment=deployment,
+                    step_name=step_name,
                 )
-
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, deployment_id=deployment.id
+                        step_name=step_name,
+                        deployment_id=deployment.id,
                     )
                 )
 
-                container_op = dsl.ContainerOp(
-                    name=step_name,
-                    image=image,
-                    command=command,
-                    arguments=arguments,
+                dynamic_component = self._create_dynamic_component(
+                    image, command, arguments, step_name
                 )
 
-                settings = cast(
+                step_settings = cast(
                     TektonOrchestratorSettings, self.get_settings(step)
                 )
-                self._configure_container_op(
-                    container_op=container_op,
-                )
-
-                if settings.pod_settings:
-                    apply_pod_settings(
-                        pipeline_task=container_op,
-                        settings=settings.pod_settings,
+                pod_settings = step_settings.pod_settings
+                if pod_settings.host_ipc:
+                    logger.warning(
+                        "Host IPC is set to `True` but not supported in "
+                        "this orchestrator. Ignoring..."
+                    )
+                if pod_settings.affinity:
+                    logger.warning(
+                        "Affinity is set but not supported in Tekton with "
+                        "Kubeflow Pipelines 2.x. Ignoring..."
+                    )
+                if pod_settings.tolerations:
+                    logger.warning(
+                        "Tolerations are set but not supported in Tekton with "
+                        "Kubeflow Pipelines 2.x. Ignoring..."
+                    )
+                if pod_settings.volumes:
+                    logger.warning(
+                        "Volumes are set but not supported in Tekton with "
+                        "Kubeflow Pipelines 2.x. Ignoring..."
+                    )
+                if pod_settings.volume_mounts:
+                    logger.warning(
+                        "Volume mounts are set but not supported in Tekton "
+                        "with Kubeflow Pipelines 2.x. Ignoring..."
                     )
 
-                container_op.container.add_env_variable(
-                    k8s_client.V1EnvVar(
-                        name=ENV_ZENML_TEKTON_RUN_ID,
-                        value="$(context.pipelineRun.name)",
+                # apply pod settings
+                for key, value in pod_settings.node_selectors.items():
+                    dynamic_component.add_node_selector_constraint(
+                        label_name=key, value=value
                     )
-                )
 
-                for key, value in environment.items():
-                    container_op.container.add_env_variable(
-                        k8s_client.V1EnvVar(
-                            name=key,
-                            value=value,
+                # add resource requirements
+                if step_settings.resource_settings.cpu_count is not None:
+                    dynamic_component = dynamic_component.set_cpu_limit(
+                        str(step_settings.resource_settings.cpu_count)
+                    )
+
+                if step_settings.resource_settings.gpu_count is not None:
+                    dynamic_component = (
+                        dynamic_component.set_accelerator_limit(
+                            step_settings.resource_settings.gpu_count
                         )
                     )
 
-                if self.requires_resources_in_orchestration_environment(step):
-                    self._configure_container_resources(
-                        container_op=container_op,
-                        resource_settings=step.config.resource_settings,
+                if step_settings.resource_settings.memory is not None:
+                    memory_limit = step_settings.resource_settings.memory[:-1]
+                    dynamic_component = dynamic_component.set_memory_limit(
+                        memory_limit
                     )
 
-                # Find the upstream container ops of the current step and
-                # configure the current container op to run after them
-                for upstream_step_name in step.spec.upstream_steps:
-                    upstream_container_op = step_name_to_container_op[
-                        upstream_step_name
-                    ]
-                    container_op.after(upstream_container_op)
+                # set environment variables
+                for key, value in environment.items():
+                    dynamic_component.set_env_variable(
+                        name=key,
+                        value=value,
+                    )
 
-                # Update dictionary of container ops with the current one
-                step_name_to_container_op[step_name] = container_op
+                step_name_to_dynamic_component[step_name] = dynamic_component
+
+            @dsl.pipeline(
+                display_name=orchestrator_run_name,
+            )
+            def dynamic_pipeline():
+                # iterate through the components one by one
+                # (from step_name_to_dynamic_component)
+                for component in step_name_to_dynamic_component.values():
+                    # for each component, check to see what other steps are
+                    # upstream of it
+                    component_name = component.__name__
+                    step = deployment.step_configurations[component_name]
+                    upstream_step_names = [
+                        step.name for step in step.spec.upstream_steps
+                    ]
+                    upstream_step_components = [
+                        step_name_to_dynamic_component[upstream_step_name]
+                        for upstream_step_name in upstream_step_names
+                    ]
+                    component().set_caching_options(
+                        enable_caching=False
+                    ).set_env_variable(
+                        name=ENV_ZENML_TEKTON_RUN_ID,
+                        value="$(context.pipelineRun.name)",
+                    ).after(*upstream_step_components)
+
+            return dynamic_pipeline
+
+        # dynamic_pipeline = _create_dynamic_pipeline()
+
+        # @dsl.pipeline(display_name=orchestrator_run_name)
+        # def _kfp_pipeline() -> None:
+        #     """Create a container_op for each step.
+
+        #     This should contain the name of the docker image and configures the
+        #     entrypoint of the docker image to run the step.
+
+        #     Additionally, this gives each container_op information about its
+        #     direct downstream steps.
+        #     """
+        #     # Dictionary of container_ops index by the associated step name
+        #     step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
+
+        #     self._configure_pipeline_task(
+        #         pipeline_task=_pipeline_task,
+        #     )
+
+        #     # Find the upstream container ops of the current step and
+        #     # configure the current container op to run after them
+        #     for upstream_step_name in step.spec.upstream_steps:
+        #         upstream_pipeline_task = step_name_to_container_op[
+        #             upstream_step_name
+        #         ]
+        #         _pipeline_task().after(upstream_pipeline_task)
+
+        #     # Update dictionary of container ops with the current one
+        #     step_name_to_container_op[step_name] = _pipeline_task
 
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
@@ -461,21 +553,13 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             self.pipeline_directory, f"{orchestrator_run_name}.yaml"
         )
 
-        # Set the run name, which Tekton reads from this attribute of the
-        # pipeline function
-        setattr(
-            _construct_kfp_pipeline,
-            "_component_human_name",
-            orchestrator_run_name,
-        )
-        pipeline_config = TektonPipelineConf()
-        pipeline_config.add_pipeline_label(
-            "pipelines.kubeflow.org/cache_enabled", "false"
-        )
-        TektonCompiler().compile(
-            _construct_kfp_pipeline,
-            pipeline_file_path,
-            tekton_pipeline_conf=pipeline_config,
+        Compiler().compile(
+            pipeline_func=_create_dynamic_pipeline,
+            package_path=pipeline_file_path,
+            pipeline_name=orchestrator_run_name,
+            pipeline_parameters={
+                "pipelines.kubeflow.org/cache_enabled": "false"
+            },
         )
         logger.info(
             "Writing Tekton workflow definition to `%s`.", pipeline_file_path
