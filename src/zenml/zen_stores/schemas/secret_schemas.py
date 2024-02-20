@@ -204,7 +204,7 @@ class SecretSchema(NamedSchema, table=True):
             exclude_unset=True, exclude={"workspace", "user", "values"}
         ).items():
             if field == "scope":
-                setattr(self,field,value.value)
+                setattr(self, field, value.value)
             else:
                 setattr(self, field, value)
 

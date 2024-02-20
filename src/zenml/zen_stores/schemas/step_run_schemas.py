@@ -26,8 +26,6 @@ from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
-    StepRunInputArtifactType,
-    StepRunOutputArtifactType,
 )
 from zenml.models import (
     StepRunRequest,
