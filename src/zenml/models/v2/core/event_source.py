@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
 import copy
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional, TypeVar
 
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -28,9 +29,10 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.trigger import TriggerResponse
 
-if TYPE_CHECKING:
-    pass
+TriggerPage = TypeVar("TriggerPage", bound=Page[TriggerResponse])
+
 
 # ------------------ Request Model ------------------
 
@@ -141,10 +143,9 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
 class EventSourceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the code repository entity."""
 
-    # TODO: add these back in when they don't break the OpenAPI docs page
-    # triggers: Page["TriggerResponse"] = Field(
-    #     title="The triggers configured with this event source.",
-    # )
+    triggers: TriggerPage = Field(  # type: ignore[valid-type]
+        title="The triggers configured with this event source.",
+    )
 
 
 class EventSourceResponse(

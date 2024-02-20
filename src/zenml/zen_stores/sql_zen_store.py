@@ -7113,7 +7113,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_execution)
 
-            return new_execution.to_model(include_metadata=True)
+            return new_execution.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_trigger_execution(
         self,
@@ -7144,7 +7146,9 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError(
                     f"Trigger execution with ID {trigger_execution_id} not found."
                 )
-            return execution.to_model(include_metadata=hydrate)
+            return execution.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_trigger_executions(
         self,

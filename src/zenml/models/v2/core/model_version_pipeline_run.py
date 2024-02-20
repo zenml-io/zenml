@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import Any, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -31,9 +31,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
 )
-
-if TYPE_CHECKING:
-    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 # ------------------ Request Model ------------------
 
@@ -58,7 +56,7 @@ class ModelVersionPipelineRunResponseBody(BaseDatedResponseBody):
 
     model: UUID
     model_version: UUID
-    pipeline_run: "PipelineRunResponse"
+    pipeline_run: PipelineRunResponse
 
 
 class ModelVersionPipelineRunResponseResources(BaseResponseResources):

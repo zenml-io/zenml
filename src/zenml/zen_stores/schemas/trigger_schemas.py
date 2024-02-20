@@ -22,6 +22,7 @@ from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml import TriggerExecutionResponseResources
 from zenml.models import (
     TriggerExecutionRequest,
     TriggerExecutionResponse,
@@ -257,7 +258,6 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             The converted model.
         """
         body = TriggerExecutionResponseBody(
-            trigger=self.trigger.to_model(),
             created=self.created,
             updated=self.updated,
         )
@@ -270,9 +270,12 @@ class TriggerExecutionSchema(BaseSchema, table=True):
                 if self.event_metadata
                 else {},
             )
+        resources = None
+        if include_resources:
+            resources = TriggerExecutionResponseResources(
+                trigger=self.trigger.to_model(),
+            )
 
         return TriggerExecutionResponse(
-            id=self.id,
-            body=body,
-            metadata=metadata,
+            id=self.id, body=body, metadata=metadata, resources=resources
         )
