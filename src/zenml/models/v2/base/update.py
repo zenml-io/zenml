@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Type, TypeVar
 
+from pydantic.config import Extra
+
 if TYPE_CHECKING:
     from zenml.models.v2.base.base import BaseRequest
 
@@ -36,5 +38,7 @@ def update_model(_cls: Type["T"]) -> Type["T"]:
     for _, value in _cls.__fields__.items():
         value.required = False
         value.allow_none = True
+
+    _cls.__config__.extra = Extra.ignore
 
     return _cls

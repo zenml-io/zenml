@@ -37,6 +37,10 @@ from uuid import UUID, uuid4
 
 from pydantic import SecretStr
 
+from zenml.client_lazy_loader import (
+    client_lazy_loader,
+    evaluate_all_lazy_load_args_in_client_methods,
+)
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source
 from zenml.constants import (
@@ -293,6 +297,7 @@ class ClientMetaClass(ABCMeta):
         return cls._global_client
 
 
+@evaluate_all_lazy_load_args_in_client_methods
 class Client(metaclass=ClientMetaClass):
     """ZenML client class.
 
@@ -3141,6 +3146,7 @@ class Client(metaclass=ClientMetaClass):
         new_name: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
+        has_custom_name: Optional[bool] = None,
     ) -> ArtifactResponse:
         """Update an artifact.
 
@@ -3149,6 +3155,7 @@ class Client(metaclass=ClientMetaClass):
             new_name: The new name of the artifact.
             add_tags: Tags to add to the artifact.
             remove_tags: Tags to remove from the artifact.
+            has_custom_name: Whether the artifact has a custom name.
 
         Returns:
             The updated artifact.
@@ -3158,6 +3165,7 @@ class Client(metaclass=ClientMetaClass):
             name=new_name,
             add_tags=add_tags,
             remove_tags=remove_tags,
+            has_custom_name=has_custom_name,
         )
         return self.zen_store.update_artifact(
             artifact_id=artifact.id, artifact_update=artifact_update
@@ -3221,6 +3229,13 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The artifact version.
         """
+        if cll := client_lazy_loader(
+            method_name="get_artifact_version",
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+            hydrate=hydrate,
+        ):
+            return cll  # type: ignore[return-value]
         return self._get_entity_version_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_artifact_version,
             list_method=self.list_artifact_versions,
@@ -5163,6 +5178,10 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of interest.
         """
+        if cll := client_lazy_loader(
+            "get_model", model_name_or_id=model_name_or_id, hydrate=hydrate
+        ):
+            return cll  # type: ignore[return-value]
         return self.zen_store.get_model(
             model_name_or_id=model_name_or_id,
             hydrate=hydrate,
@@ -5287,6 +5306,14 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: In case method inputs don't adhere to restrictions.
             KeyError: In case no model version with the identifiers exists.
         """
+        if cll := client_lazy_loader(
+            "get_model_version",
+            model_name_or_id=model_name_or_id,
+            model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+            hydrate=hydrate,
+        ):
+            return cll  # type: ignore[return-value]
+
         if model_version_name_or_number_or_id is None:
             model_version_name_or_number_or_id = ModelStages.LATEST
 
@@ -5844,8 +5871,8 @@ class Client(metaclass=ClientMetaClass):
 
     # ---- utility prefix matching get functions -----
 
-    @staticmethod
     def _get_entity_by_id_or_name_or_prefix(
+        self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
@@ -5891,7 +5918,7 @@ class Client(metaclass=ClientMetaClass):
 
         # If still no match, try with prefix now
         if entity.total == 0:
-            return Client._get_entity_by_prefix(
+            return self._get_entity_by_prefix(
                 get_method=get_method,
                 list_method=list_method,
                 partial_id_or_name=name_id_or_prefix,
@@ -5915,8 +5942,8 @@ class Client(metaclass=ClientMetaClass):
             f"only one of the {entity_label}s."
         )
 
-    @staticmethod
     def _get_entity_version_by_id_or_name_or_prefix(
+        self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
@@ -5980,8 +6007,8 @@ class Client(metaclass=ClientMetaClass):
                 f"only one of the {entity_label}s."
             )
 
-    @staticmethod
     def _get_entity_by_prefix(
+        self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
         partial_id_or_name: str,

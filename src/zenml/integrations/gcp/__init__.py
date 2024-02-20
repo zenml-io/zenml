@@ -48,9 +48,7 @@ class GcpIntegration(Integration):
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
         "google-cloud-storage>=2.9.0",
-        "google-cloud-aiplatform>=1.21.0",  # includes shapely pin fix
-        "google-cloud-scheduler>=2.7.3",
-        "google-cloud-functions>=1.8.3",
+        "google-cloud-aiplatform>=1.34.0",  # includes shapely pin fix
         "google-cloud-build>=3.11.0",
         "kubernetes",
     ]

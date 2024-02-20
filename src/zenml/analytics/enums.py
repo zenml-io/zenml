@@ -20,6 +20,7 @@ class AnalyticsEvent(str, Enum):
 
     # Pipelines
     RUN_PIPELINE = "Pipeline run"
+    RUN_PIPELINE_ENDED = "Pipeline run ended"
     CREATE_PIPELINE = "Pipeline created"
     BUILD_PIPELINE = "Pipeline built"
 

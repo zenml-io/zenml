@@ -28,14 +28,21 @@ def trainer(
     daily_seasonality: int = 10,
     trend_reg: int = 1,
     learning_rate: float = 0.01,
+    subset_size: int = 10000,  # Adjust the subset size
 ) -> NeuralProphet:
     """Trains a NeuralProphet model on the data."""
+
+    # Use a subset of the training data to reduce training time
+    df_train_subset = df_train.head(subset_size)
+
     m = NeuralProphet(
         weekly_seasonality=weekly_seasonality,
         daily_seasonality=daily_seasonality,
         trend_reg=trend_reg,
         learning_rate=learning_rate,
     )
-    metrics = m.fit(df_train, freq="H", validation_df=df_test)
+
+    metrics = m.fit(df_train_subset, freq="H", validation_df=df_test)
     logger.info(f"Metrics: {metrics}")
+
     return m

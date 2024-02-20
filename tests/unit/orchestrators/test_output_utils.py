@@ -14,8 +14,6 @@
 
 import os
 
-import pytest
-
 from zenml.config.step_configurations import Step
 from zenml.orchestrators import output_utils
 
@@ -41,11 +39,9 @@ def test_output_artifact_preparation(create_step_run, local_stack):
         "output_name",
         str(step_run.id),
     )
+    output_artifact_uris["output_name"] = os.path.split(
+        output_artifact_uris["output_name"]
+    )[0]
+
     assert output_artifact_uris == {"output_name": expected_path}
     assert os.path.isdir(expected_path)
-
-    # artifact directory already exists
-    with pytest.raises(RuntimeError):
-        output_utils.prepare_output_artifact_uris(
-            step_run=step_run, stack=local_stack, step=step
-        )

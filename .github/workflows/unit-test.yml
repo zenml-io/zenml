@@ -63,6 +63,7 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
+
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
@@ -87,6 +88,7 @@ jobs:
           install_integrations: ${{ inputs.install_integrations }}
           runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
+          discord_webhook: ${{ secrets.DISCORD_WEBHOOK }}
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17

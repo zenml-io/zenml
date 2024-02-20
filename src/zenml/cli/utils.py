@@ -915,12 +915,14 @@ def prompt_configuration(
     config_dict = {}
     for attr_name, attr_schema in config_schema.get("properties", {}).items():
         title = attr_schema.get("title", attr_name)
-        attr_type = attr_schema.get("type", "string")
+        attr_type_name = attr_type = attr_schema.get("type", "string")
+        if attr_type == "array":
+            attr_type_name = "list (CSV or JSON)"
         title = f"[{attr_name}] {title}"
         required = attr_name in config_schema.get("required", [])
         hidden = attr_schema.get("format", "") == "password"
         subtitles: List[str] = []
-        subtitles.append(attr_type)
+        subtitles.append(attr_type_name)
         if hidden:
             subtitles.append("secret")
         if required:
@@ -938,6 +940,8 @@ def prompt_configuration(
                 if hidden and not show_secrets:
                     title += " is currently set to: [HIDDEN]"
                 else:
+                    if attr_type == "array":
+                        existing_value = json.dumps(existing_value)
                     title += f" is currently set to: '{existing_value}'"
             else:
                 title += " is not currently set"

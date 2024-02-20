@@ -4,6 +4,7 @@ set -x
 SRC="src/zenml/"
 PUSH=""
 LATEST=""
+ONLY_CHECK=""
 
 msg() {
   echo >&2 -e "${1-}"
@@ -18,17 +19,18 @@ die() {
 
 while :; do
   case "${1-}" in
-  -p | --push) PUSH="true";;
-  -si | --skip_install) SKIP_INSTALL="true";;
-  -l | --latest) LATEST="latest";;
-  -s | --source)
+  -p | --push) PUSH="true";; # push to gh-pages branch
+  -si | --skip_install) SKIP_INSTALL="true";; # skip pip install
+  -l | --latest) LATEST="latest";; # set this docs version as latest
+  -s | --source) # specify source directory
     SRC="${2-}"
     shift
     ;;
-  -v | --version)
+  -v | --version) # specify version
     VERSION="${2-}"
     shift
     ;;
+  -c | --only-check) ONLY_CHECK="true";; # only check if docs are buildable with mockers
   -?*) die "Unknown option: $1" ;;
   *) break ;;
   esac
@@ -48,64 +50,39 @@ rm -rf docs/mkdocs/integration_code_docs || true
 rm docs/mkdocs/index.md || true
 
 ################################################ Install Requirements ##################################################
-# IMPORTANT: there's a strategy to installing integrations here in a way
-# that avoids conflicts while at the same time making it possible for all
-# ZenML Python modules to be imported, especially the integration modules:
-# 1. install zenml with all extras
-# 2. install more restrictive integrations first: feast and
-# label_studio are currently the ones known to be very restrictive in
-# terms of what versions of dependencies they require
-# 3. Install bentoml because of its attrs version
-# 4. Install airflow because of its attrs version>=22.1.0
-# 5. install the rest of the integrations (where aws depends on attrs==20.3.0)
-# 6. as the last step, install zenml again (step 1. repeated)
-# 7. Reinstall jinja in the correct version as the contexthandler is
-# deprecated in 3.1.0 but mkdocstring depends on this method
-
 if [ -z "$SKIP_INSTALL" ]; then
-  # TODO: reimplement this installation sequence so
-  # we have an updated list of pip requirements
-
-  # zenml integration install -y feast
-  # zenml integration install -y label_studio
-  # zenml integration install -y bentoml
-  # zenml integration install -y airflow
-  # zenml integration install -y kserve
-  # zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
-  # pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
-  # pip install typing-extensions --upgrade
-  # pip install feast --upgrade  # The integration feast version has unsupported googleapis-common-protos >=1.52.* requirement
-  
-  # TEMPORARY FIX
-  pip install -e ".[server,dev,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs]"
-  pip install -r docs/requirements-docs-frozen.txt
+  pip3 install -e ".[server,dev]"
+  pip3 install "Jinja2==3.0.3"
 fi
 
 ################################# Initialize DB and delete unnecessary alembic files ###################################
 
 # env.py leads to errors in the build as run_migrations() gets executed
 # the migration versions are not necessary parts of the api docs
-zenml status # to initialize the db
 rm -rf src/zenml/zen_stores/migrations/env.py
 rm -rf src/zenml/zen_stores/migrations/versions
 rm -rf src/zenml/zen_stores/migrations/script.py.mako
 
 
 ########################################## Generate Structure of API docs ##############################################
-python docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
+python3 docs/mkdocstrings_helper.py --path $SRC --output_path docs/mkdocs/
 
 
 ############################################## Build the API docs ####################################################
-if [ -n "$PUSH" ]; then
-  if [ -n "$LATEST" ]; then
-    mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION latest
-  else
-    mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION
-  fi
+if [ -n "$ONLY_CHECK" ]; then
+  python3 docs/sys_modules_mock.py
 else
-  if [ -n "$LATEST" ]; then
-    mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION latest
+  if [ -n "$PUSH" ]; then
+    if [ -n "$LATEST" ]; then
+      mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION latest
+    else
+      mike deploy --push --update-aliases --config-file docs/mkdocs.yml $VERSION
+    fi
   else
-    mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION
+    if [ -n "$LATEST" ]; then
+      mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION latest
+    else
+      mike deploy --update-aliases --config-file docs/mkdocs.yml $VERSION
+    fi
   fi
 fi

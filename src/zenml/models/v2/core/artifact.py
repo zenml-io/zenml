@@ -14,6 +14,7 @@
 """Models representing artifacts."""
 
 from typing import TYPE_CHECKING, Dict, List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -45,6 +46,11 @@ class ArtifactRequest(BaseRequest):
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
     )
+    tags: Optional[List[str]] = Field(
+        title="Artifact tags.",
+        description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
+        default=None,
+    )
 
 
 # ------------------ Update Model ------------------
@@ -56,6 +62,7 @@ class ArtifactUpdate(BaseModel):
     name: Optional[str] = None
     add_tags: Optional[List[str]] = None
     remove_tags: Optional[List[str]] = None
+    has_custom_name: Optional[bool] = None
 
 
 # ------------------ Response Model ------------------
@@ -67,6 +74,8 @@ class ArtifactResponseBody(BaseDatedResponseBody):
     tags: List[TagResponse] = Field(
         title="Tags associated with the model",
     )
+    latest_version_name: Optional[str]
+    latest_version_id: Optional[UUID]
 
 
 class ArtifactResponseMetadata(BaseResponseMetadata):
@@ -115,6 +124,24 @@ class ArtifactResponse(
             the value of the property.
         """
         return self.get_body().tags
+
+    @property
+    def latest_version_name(self) -> Optional[str]:
+        """The `latest_version_name` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().latest_version_name
+
+    @property
+    def latest_version_id(self) -> Optional[UUID]:
+        """The `latest_version_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().latest_version_id
 
     @property
     def has_custom_name(self) -> bool:
