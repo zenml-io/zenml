@@ -241,7 +241,12 @@ def save_artifact(
             version = _get_new_artifact_version(name)
             if response := _create_version():
                 break
-            time.sleep(0.2 * i)
+            sleep = 0.2 * 1.5**i
+            logger.debug(
+                f"Failed to create artifact version `{version}` for "
+                f"artifact `{name}`, retrying in {sleep}..."
+            )
+            time.sleep(sleep)
     else:
         response = _create_version()
     if not response:

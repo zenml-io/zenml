@@ -708,7 +708,12 @@ class Model(BaseModel):
                             f"`{self.version if self.version else 'new'}` "
                             f"in model `{self.name}`."
                         ) from e
-                    time.sleep(0.2 * i)
+                    sleep = 0.2 * 1.5**i
+                    logger.debug(
+                        f"Failed to create new model version for "
+                        f"model `{self.name}`, retrying in {sleep}..."
+                    )
+                    time.sleep(sleep)
             self.version = model_version.name
             self.was_created_in_this_run = True
             logger.info(f"New model version `{self.version}` was created.")
