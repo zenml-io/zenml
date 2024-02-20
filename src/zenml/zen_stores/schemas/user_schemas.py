@@ -36,6 +36,7 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        ActionSchema,
         APIKeySchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
@@ -103,6 +104,10 @@ class UserSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     triggers: List["TriggerSchema"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    actions: List["ActionSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},
     )

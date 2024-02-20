@@ -373,6 +373,5 @@ class PluginSubType(StrEnum):
 
     # Event Source Subtypes
     WEBHOOK = "webhook"
-    SCHEDULE = "schedule"
     # Action Subtypes
     PIPELINE_RUN = "pipeline_run"

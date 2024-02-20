@@ -24,10 +24,10 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import PluginSubType
 from zenml.models import (
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     TriggerExecutionResponse,
-    TriggerRequest,
-    TriggerResponse,
-    TriggerUpdate,
 )
 from zenml.models.v2.base.base import BaseResponse
 from zenml.zen_server.rbac.models import (  # TODO: Maybe we move these into a common place?
@@ -105,35 +105,35 @@ class PipelineRunActionHandler(BaseActionHandler):
         except KeyError:
             raise ValueError(f"No deployment found with id {deployment_id}.")
 
-    def _validate_trigger_request(
-        self, trigger: TriggerRequest, config: ActionConfig
+    def _validate_action_request(
+        self, action: ActionRequest, config: ActionConfig
     ) -> None:
-        """Validate a trigger request before it is created in the database.
+        """Validate a action request before it is created in the database.
 
         Args:
-            trigger: Trigger request.
+            action: Action request.
             config: Action configuration instantiated from the request.
         """
         assert isinstance(config, PipelineRunActionConfiguration)
 
         self._validate_configuration(config)
 
-    def _validate_trigger_update(
+    def _validate_action_update(
         self,
-        trigger: TriggerResponse,
+        action: ActionResponse,
         config: ActionConfig,
-        trigger_update: TriggerUpdate,
+        action_update: ActionUpdate,
         config_update: ActionConfig,
     ) -> None:
-        """Validate a trigger update before it is reflected in the database.
+        """Validate a action update before it is reflected in the database.
 
         Args:
-            trigger: Original trigger before the update.
+            action: Original action before the update.
             config: Action configuration instantiated from the original
-                trigger.
-            trigger_update: Trigger update request.
+                action.
+            action_update: Action update request.
             config_update: Action configuration instantiated from the
-                updated trigger.
+                updated action.
         """
         assert isinstance(config, PipelineRunActionConfiguration)
 
@@ -142,12 +142,14 @@ class PipelineRunActionHandler(BaseActionHandler):
     def extract_resources(
         self,
         action_config: ActionConfig,
+        hydrate: bool = False,
     ) -> Dict[ResourceType, BaseResponse[Any, Any, Any]]:
         """Extract related resources for this action.
 
         Args:
             action_config: Action configuration from which to extract related
                 resources.
+            hydrate: Flag deciding whether to hydrate the resources.
 
         Returns:
             List of resources related to the action.
@@ -158,7 +160,9 @@ class PipelineRunActionHandler(BaseActionHandler):
         zen_store = GlobalConfiguration().zen_store
 
         try:
-            deployment = zen_store.get_deployment(deployment_id=deployment_id)
+            deployment = zen_store.get_deployment(
+                deployment_id=deployment_id, hydrate=hydrate
+            )
         except KeyError:
             raise ValueError(f"No deployment found with id {deployment_id}.")
 
@@ -168,7 +172,8 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         if deployment.pipeline is not None:
             pipeline = zen_store.get_pipeline(
-                pipeline_id=deployment.pipeline.id
+                pipeline_id=deployment.pipeline.id,
+                hydrate=hydrate,
             )
             resources[ResourceType.PIPELINE] = pipeline
 

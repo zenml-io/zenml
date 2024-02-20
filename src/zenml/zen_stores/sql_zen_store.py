@@ -92,6 +92,7 @@ from zenml.enums import (
     TaggableResourceTypes,
 )
 from zenml.exceptions import (
+    ActionExistsError,
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
     EntityExistsError,
@@ -105,6 +106,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyInternalResponse,
     APIKeyInternalUpdate,
@@ -254,6 +259,7 @@ from zenml.zen_stores.migrations.alembic import (
 )
 from zenml.zen_stores.migrations.utils import MigrationUtils
 from zenml.zen_stores.schemas import (
+    ActionSchema,
     APIKeySchema,
     ArtifactSchema,
     ArtifactVersionSchema,
@@ -1467,6 +1473,191 @@ class SqlZenStore(BaseZenStore):
                     "The deployment ID could not be loaded from the database."
                 )
             return identity.id
+
+    # -------------------- Event Sources  --------------------
+
+    def _fail_if_action_with_name_exists(
+        self, action: ActionRequest, session: Session
+    ) -> None:
+        """Raise an exception if an action with same name exists.
+
+        Args:
+            action: The action to create.
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            ActionExistsError: If an action with the given name already exists.
+        """
+        existing_domain_action = session.exec(
+            select(ActionSchema)
+            .where(ActionSchema.name == action.name)
+            .where(ActionSchema.workspace_id == action.workspace)
+        ).first()
+        if existing_domain_action is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=action.workspace, session=session
+            )
+            raise ActionExistsError(
+                f"Unable to register action with name "
+                f"'{action.name}': Found an existing action with "
+                f"the same name in the active workspace, '{workspace.name}'."
+            )
+        return None
+
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+        with Session(self.engine) as session:
+            self._fail_if_action_with_name_exists(
+                action=action,
+                session=session,
+            )
+            new_action = ActionSchema.from_request(action)
+            session.add(new_action)
+            session.commit()
+            session.refresh(new_action)
+
+            return new_action.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _get_action(
+        self,
+        action_id: UUID,
+        session: Session,
+    ) -> ActionSchema:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            session: The DB session.
+
+        Returns:
+            The action schema.
+
+        Raises:
+            KeyError: if the action doesn't exist.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=action_id,
+            schema_class=ActionSchema,
+            schema_name="action",
+            session=session,
+        )
+
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+
+        Raises:
+            KeyError: if the stack action doesn't exist.
+        """
+        with Session(self.engine) as session:
+            return self._get_action(
+                action_id=action_id, session=session
+            ).to_model(include_metadata=hydrate, include_resources=hydrate)
+
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all actions matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ActionSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ActionSchema,
+                filter_model=action_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+
+        Raises:
+            KeyError: if the action doesn't exist.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(session=session, action_id=action_id)
+            action.update(action_update=action_update)
+            session.add(action)
+            session.commit()
+
+            # Refresh the action that was just created
+            session.refresh(action)
+            return action.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+
+        Raises:
+            KeyError: if the action doesn't exist.
+        """
+        with Session(self.engine) as session:
+            action = self._get_action(action_id=action_id, session=session)
+            if action is None:
+                raise KeyError(
+                    f"Unable to delete action with ID `{action_id}`: "
+                    f"No action with this ID found."
+                )
+
+            # Prevent deletion of action if it is used by a trigger
+            if action.triggers:
+                raise IllegalOperationError(
+                    f"Unable to delete action with ID `{action_id}` "
+                    f"as it is used by {len(action.triggers)} triggers."
+                )
+
+            session.delete(action)
+            session.commit()
 
     # ------------------------- API Keys -------------------------
 
@@ -2982,6 +3173,193 @@ class SqlZenStore(BaseZenStore):
                     session.delete(device)
             session.commit()
 
+    # -------------------- Event Sources  --------------------
+
+    def _fail_if_event_source_with_name_exists(
+        self, event_source: EventSourceRequest, session: Session
+    ) -> None:
+        """Raise an exception if a stack with same name exists.
+
+        Args:
+            event_source: The event_source to create.
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            StackExistsError: If a stack with the given name already exists.
+        """
+        existing_domain_event_source = session.exec(
+            select(EventSourceSchema)
+            .where(EventSourceSchema.name == event_source.name)
+            .where(EventSourceSchema.workspace_id == event_source.workspace)
+        ).first()
+        if existing_domain_event_source is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=event_source.workspace, session=session
+            )
+            raise EventSourceExistsError(
+                f"Unable to register event source with name "
+                f"'{event_source.name}': Found an existing event source with "
+                f"the same name in the active workspace, '{workspace.name}'."
+            )
+        return None
+
+    def create_event_source(
+        self, event_source: EventSourceRequest
+    ) -> EventSourceResponse:
+        """Create an event_source.
+
+        Args:
+            event_source: The event_source to create.
+
+        Returns:
+            The created event_source.
+        """
+        with Session(self.engine) as session:
+            self._fail_if_event_source_with_name_exists(
+                event_source=event_source,
+                session=session,
+            )
+            new_event_source = EventSourceSchema.from_request(event_source)
+            session.add(new_event_source)
+            session.commit()
+            session.refresh(new_event_source)
+
+            return new_event_source.to_model(include_metadata=True)
+
+    def _get_event_source(
+        self,
+        event_source_id: UUID,
+        session: Session,
+    ) -> EventSourceSchema:
+        """Get an event_source by ID.
+
+        Args:
+            event_source_id: The ID of the event_source to get.
+            session: The DB session.
+
+        Returns:
+            The event_source schema.
+
+        Raises:
+            KeyError: if the event_source doesn't exist.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=event_source_id,
+            schema_class=EventSourceSchema,
+            schema_name="event_source",
+            session=session,
+        )
+
+    def get_event_source(
+        self,
+        event_source_id: UUID,
+        hydrate: bool = True,
+    ) -> EventSourceResponse:
+        """Get an event_source by ID.
+
+        Args:
+            event_source_id: The ID of the event_source to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The event_source.
+
+        Raises:
+            KeyError: if the stack event_source doesn't exist.
+        """
+        with Session(self.engine) as session:
+            return self._get_event_source(
+                event_source_id=event_source_id, session=session
+            ).to_model(include_metadata=hydrate)
+
+    def list_event_sources(
+        self,
+        event_source_filter_model: EventSourceFilter,
+        hydrate: bool = False,
+    ) -> Page[EventSourceResponse]:
+        """List all event_sources matching the given filter criteria.
+
+        Args:
+            event_source_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all event_sources matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(EventSourceSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=EventSourceSchema,
+                filter_model=event_source_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Update an existing event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The updated event_source.
+
+        Raises:
+            KeyError: if the event_source doesn't exist.
+        """
+        with Session(self.engine) as session:
+            event_source = self._get_event_source(
+                session=session, event_source_id=event_source_id
+            )
+            event_source.update(update=event_source_update)
+            session.add(event_source)
+            session.commit()
+
+            # Refresh the event_source that was just created
+            session.refresh(event_source)
+            return event_source.to_model(include_metadata=True)
+
+    def delete_event_source(self, event_source_id: UUID) -> None:
+        """Delete an event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to delete.
+
+        Raises:
+            KeyError: if the event_source doesn't exist.
+        """
+        with Session(self.engine) as session:
+            event_source = self._get_event_source(
+                event_source_id=event_source_id, session=session
+            )
+            if event_source is None:
+                raise KeyError(
+                    f"Unable to delete event_source with ID `{event_source_id}`: "
+                    f"No event_source with this ID found."
+                )
+
+            # Prevent deletion of event source if it is used by a trigger
+            if event_source.triggers:
+                raise IllegalOperationError(
+                    f"Unable to delete event_source with ID `{event_source_id}`"
+                    f" as it is used by {len(event_source.triggers)} triggers."
+                )
+
+            session.delete(event_source)
+            session.commit()
+
     # ----------------------------- Flavors -----------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_FLAVOR)
@@ -3660,188 +4038,6 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(deployment)
             session.commit()
-
-    # -------------------- Event Sources  --------------------
-
-    def _fail_if_event_source_with_name_exists(
-        self, event_source: EventSourceRequest, session: Session
-    ) -> None:
-        """Raise an exception if a stack with same name exists.
-
-        Args:
-            event_source: The event_source to create.
-            session: The Session
-
-        Returns:
-            None
-
-        Raises:
-            StackExistsError: If a stack with the given name already exists.
-        """
-        existing_domain_event_source = session.exec(
-            select(EventSourceSchema)
-            .where(EventSourceSchema.name == event_source.name)
-            .where(EventSourceSchema.workspace_id == event_source.workspace)
-        ).first()
-        if existing_domain_event_source is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=event_source.workspace, session=session
-            )
-            raise EventSourceExistsError(
-                f"Unable to register event source with name "
-                f"'{event_source.name}': Found an existing event source with "
-                f"the same name in the active workspace, '{workspace.name}'."
-            )
-        return None
-
-    def create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Create an event_source.
-
-        Args:
-            event_source: The event_source to create.
-
-        Returns:
-            The created event_source.
-        """
-        with Session(self.engine) as session:
-            self._fail_if_event_source_with_name_exists(
-                event_source=event_source,
-                session=session,
-            )
-            new_event_source = EventSourceSchema.from_request(event_source)
-            session.add(new_event_source)
-            session.commit()
-            session.refresh(new_event_source)
-
-            return new_event_source.to_model(include_metadata=True)
-
-    def _get_event_source(
-        self,
-        event_source_id: UUID,
-        session: Session,
-    ) -> EventSourceSchema:
-        """Get an event_source by ID.
-
-        Args:
-            event_source_id: The ID of the event_source to get.
-            session: The DB session.
-
-        Returns:
-            The event_source schema.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
-        """
-        return self._get_schema_by_name_or_id(
-            object_name_or_id=event_source_id,
-            schema_class=EventSourceSchema,
-            schema_name="event_source",
-            session=session,
-        )
-
-    def get_event_source(
-        self,
-        event_source_id: UUID,
-        hydrate: bool = True,
-    ) -> EventSourceResponse:
-        """Get an event_source by ID.
-
-        Args:
-            event_source_id: The ID of the event_source to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The event_source.
-
-        Raises:
-            KeyError: if the stack event_source doesn't exist.
-        """
-        with Session(self.engine) as session:
-            return self._get_event_source(
-                event_source_id=event_source_id, session=session
-            ).to_model(include_metadata=hydrate)
-
-    def list_event_sources(
-        self,
-        event_source_filter_model: EventSourceFilter,
-        hydrate: bool = False,
-    ) -> Page[EventSourceResponse]:
-        """List all event_sources matching the given filter criteria.
-
-        Args:
-            event_source_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all event_sources matching the filter criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(EventSourceSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=EventSourceSchema,
-                filter_model=event_source_filter_model,
-                hydrate=hydrate,
-            )
-
-    def update_event_source(
-        self,
-        event_source_id: UUID,
-        event_source_update: EventSourceUpdate,
-    ) -> EventSourceResponse:
-        """Update an existing event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to update.
-            event_source_update: The update to be applied to the event_source.
-
-        Returns:
-            The updated event_source.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
-        """
-        with Session(self.engine) as session:
-            event_source = self._get_event_source(
-                session=session, event_source_id=event_source_id
-            )
-            event_source.update(update=event_source_update)
-            session.add(event_source)
-            session.commit()
-
-            # Refresh the event_source that was just created
-            session.refresh(event_source)
-            return event_source.to_model(include_metadata=True)
-
-    def delete_event_source(self, event_source_id: UUID) -> None:
-        """Delete an event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to delete.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
-        """
-        with Session(self.engine) as session:
-            event_source = self._get_event_source(
-                event_source_id=event_source_id, session=session
-            )
-            if event_source is None:
-                raise KeyError(
-                    f"Unable to delete event_source with ID `{event_source_id}`: "
-                    f"No event_source with this ID found."
-                )
-            session.delete(event_source)
-            session.commit()
-
-            # TODO: catch and throw proper error if it can't be deleted due to
-            #  not-null constraints on triggers
 
     # ----------------------------- Pipeline runs -----------------------------
 
@@ -6909,16 +7105,26 @@ class SqlZenStore(BaseZenStore):
             The newly created trigger.
 
         Raises:
-            Exception: If anything goes wrong during the creation of the
-                trigger.
+            ValueError: if neither a schedule nor an event source is provided.
         """
         with Session(self.engine) as session:
-            # Verify that the given event_source exists
-            self._get_event_source(
-                event_source_id=trigger.event_source_id, session=session
-            )
+            # Verify that the given action exists
+            self._get_action(action_id=trigger.action_id, session=session)
 
-            # Verify that the trigger won't validate Unique
+            # Verify that the given event source exists
+            if trigger.event_source_id:
+                self._get_event_source(
+                    event_source_id=trigger.event_source_id, session=session
+                )
+
+            # Verify that either a schedule or an event source is provided
+            if not (trigger.schedule or trigger.event_source_id):
+                raise ValueError(
+                    "Unable to create trigger: Either a schedule or an event "
+                    "source must be provided."
+                )
+
+            # Verify that the trigger name is unique
             self._fail_if_trigger_with_name_exists(
                 trigger_name=trigger.name,
                 workspace_id=trigger.workspace,
@@ -6930,7 +7136,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_trigger)
 
-            return new_trigger.to_model(include_metadata=True)
+            return new_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_trigger(
         self, trigger_id: UUID, hydrate: bool = True
@@ -7001,6 +7209,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the trigger doesn't exist.
             IllegalOperationError: if the trigger is a default trigger.
+            ValueError: if both a schedule and an event source are provided.
         """
         with Session(self.engine) as session:
             # Check if trigger with the domain key (name, workspace, owner)
@@ -7013,6 +7222,15 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update trigger with id '{trigger_id}': Found no"
                     f"existing trigger with this id."
                 )
+
+            # Verify that either a schedule or an event source is provided, not
+            # both
+            if existing_trigger.event_source and trigger_update.schedule:
+                raise ValueError(
+                    "Unable to update trigger: A trigger cannot have both a "
+                    "schedule and an event source."
+                )
+
             # In case of a renaming update, make sure no trigger already exists
             # with that name
             if trigger_update.name:

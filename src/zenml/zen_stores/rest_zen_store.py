@@ -39,6 +39,7 @@ from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    ACTIONS,
     API,
     API_KEY_ROTATE,
     API_KEYS,
@@ -99,6 +100,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionUpdate,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -477,6 +482,109 @@ class RestZenStore(BaseZenStore):
             The ID of the deployment.
         """
         return self.get_store_info().id
+
+    # -------------------- Event Sources  --------------------
+
+    def create_action(self, action: ActionRequest) -> ActionResponse:
+        """Create an action.
+
+        Args:
+            action: The action to create.
+
+        Returns:
+            The created action.
+        """
+        return self._create_resource(
+            resource=action,
+            route=ACTIONS,
+            response_model=ActionResponse,
+        )
+
+    def get_action(
+        self,
+        action_id: UUID,
+        hydrate: bool = True,
+    ) -> ActionResponse:
+        """Get an action by ID.
+
+        Args:
+            action_id: The ID of the action to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The action.
+
+        Raises:
+            KeyError: if the stack action doesn't exist.
+        """
+        return self._get_resource(
+            resource_id=action_id,
+            route=ACTIONS,
+            response_model=ActionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_actions(
+        self,
+        action_filter_model: ActionFilter,
+        hydrate: bool = False,
+    ) -> Page[ActionResponse]:
+        """List all actions matching the given filter criteria.
+
+        Args:
+            action_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all actions matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=ACTIONS,
+            response_model=ActionResponse,
+            filter_model=action_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_action(
+        self,
+        action_id: UUID,
+        action_update: ActionUpdate,
+    ) -> ActionResponse:
+        """Update an existing action.
+
+        Args:
+            action_id: The ID of the action to update.
+            action_update: The update to be applied to the action.
+
+        Returns:
+            The updated action.
+
+        Raises:
+            KeyError: if the action doesn't exist.
+        """
+        return self._update_resource(
+            resource_id=action_id,
+            resource_update=action_update,
+            route=ACTIONS,
+            response_model=ActionResponse,
+        )
+
+    def delete_action(self, action_id: UUID) -> None:
+        """Delete an action.
+
+        Args:
+            action_id: The ID of the action to delete.
+
+        Raises:
+            KeyError: if the action doesn't exist.
+        """
+        self._delete_resource(
+            resource_id=action_id,
+            route=ACTIONS,
+        )
 
     # ----------------------------- API Keys -----------------------------
 
@@ -1047,6 +1155,111 @@ class RestZenStore(BaseZenStore):
             route=STACK_COMPONENTS,
         )
 
+    # -------------------- Event Sources  --------------------
+
+    def create_event_source(
+        self, event_source: EventSourceRequest
+    ) -> EventSourceResponse:
+        """Create an event_source.
+
+        Args:
+            event_source: The event_source to create.
+
+        Returns:
+            The created event_source.
+        """
+        return self._create_resource(
+            resource=event_source,
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+        )
+
+    def get_event_source(
+        self,
+        event_source_id: UUID,
+        hydrate: bool = True,
+    ) -> EventSourceResponse:
+        """Get an event_source by ID.
+
+        Args:
+            event_source_id: The ID of the event_source to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The event_source.
+
+        Raises:
+            KeyError: if the stack event_source doesn't exist.
+        """
+        return self._get_resource(
+            resource_id=event_source_id,
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_event_sources(
+        self,
+        event_source_filter_model: EventSourceFilter,
+        hydrate: bool = False,
+    ) -> Page[EventSourceResponse]:
+        """List all event_sources matching the given filter criteria.
+
+        Args:
+            event_source_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all event_sources matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+            filter_model=event_source_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Update an existing event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The updated event_source.
+
+        Raises:
+            KeyError: if the event_source doesn't exist.
+        """
+        return self._update_resource(
+            resource_id=event_source_id,
+            resource_update=event_source_update,
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+        )
+
+    def delete_event_source(self, event_source_id: UUID) -> None:
+        """Delete an event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to delete.
+
+        Raises:
+            KeyError: if the event_source doesn't exist.
+        """
+        self._delete_resource(
+            resource_id=event_source_id,
+            route=EVENT_SOURCES,
+        )
+
     #  ----------------------------- Flavors -----------------------------
 
     def create_flavor(self, flavor: FlavorRequest) -> FlavorResponse:
@@ -1397,111 +1610,6 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
-        )
-
-    # -------------------- Event Sources  --------------------
-
-    def create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Create an event_source.
-
-        Args:
-            event_source: The event_source to create.
-
-        Returns:
-            The created event_source.
-        """
-        return self._create_resource(
-            resource=event_source,
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-        )
-
-    def get_event_source(
-        self,
-        event_source_id: UUID,
-        hydrate: bool = True,
-    ) -> EventSourceResponse:
-        """Get an event_source by ID.
-
-        Args:
-            event_source_id: The ID of the event_source to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The event_source.
-
-        Raises:
-            KeyError: if the stack event_source doesn't exist.
-        """
-        return self._get_resource(
-            resource_id=event_source_id,
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_event_sources(
-        self,
-        event_source_filter_model: EventSourceFilter,
-        hydrate: bool = False,
-    ) -> Page[EventSourceResponse]:
-        """List all event_sources matching the given filter criteria.
-
-        Args:
-            event_source_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all event_sources matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-            filter_model=event_source_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_event_source(
-        self,
-        event_source_id: UUID,
-        event_source_update: EventSourceUpdate,
-    ) -> EventSourceResponse:
-        """Update an existing event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to update.
-            event_source_update: The update to be applied to the event_source.
-
-        Returns:
-            The updated event_source.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
-        """
-        return self._update_resource(
-            resource_id=event_source_id,
-            resource_update=event_source_update,
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-        )
-
-    def delete_event_source(self, event_source_id: UUID) -> None:
-        """Delete an event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to delete.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
-        """
-        self._delete_resource(
-            resource_id=event_source_id,
-            route=EVENT_SOURCES,
         )
 
     # ----------------------------- Pipeline runs -----------------------------

@@ -180,7 +180,8 @@ ZENML_API_KEY_PREFIX = "ZENKEY_"
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
-ACTIONS = "/action-flavors"
+ACTION_FLAVORS = "/action-flavors"
+ACTIONS = "/actions"
 API = "/api"
 API_KEYS = "/api_keys"
 API_KEY_ROTATE = "/rotate"

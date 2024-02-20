@@ -48,6 +48,15 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
+from zenml.models.v2.core.action import (
+    ActionFilter,
+    ActionRequest,
+    ActionResponse,
+    ActionResponseBody,
+    ActionResponseMetadata,
+    ActionResponseResources,
+    ActionUpdate,
+)
 from zenml.models.v2.core.action_flavor import (
     ActionFlavorResponse,
     ActionFlavorResponseBody,
@@ -356,6 +365,16 @@ from zenml.models.v2.misc.server_models import (
 # ----------------------------- Forward References -----------------------------
 
 # V2
+ActionResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+ActionResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+ActionResponseResources.update_forward_refs(
+    TriggerResponse=TriggerResponse,
+)
+
 APIKeyResponseBody.update_forward_refs(
     ServiceAccountResponse=ServiceAccountResponse,
 )
@@ -425,18 +444,6 @@ ModelVersionPipelineRunResponseBody.update_forward_refs(
 )
 OAuthDeviceResponseBody.update_forward_refs(
     UserResponse=UserResponse,
-)
-TriggerResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-TriggerResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-TriggerResponseResources.update_forward_refs(
-    EventSourceResponse=EventSourceResponse,
-)
-TriggerExecutionResponseBody.update_forward_refs(
-    TriggerResponse=TriggerResponse
 )
 PipelineResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -532,8 +539,18 @@ StepRunResponseMetadata.update_forward_refs(
     LogsResponse=LogsResponse,
     RunMetadataResponse=RunMetadataResponse,
 )
+TriggerResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+TriggerResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
 TriggerResponseResources.update_forward_refs(
+    ActionResponse=ActionResponse,
     EventSourceResponse=EventSourceResponse,
+)
+TriggerExecutionResponseBody.update_forward_refs(
+    TriggerResponse=TriggerResponse
 )
 
 __all__ = [
@@ -564,6 +581,13 @@ __all__ = [
     "UUIDFilter",
     "Page",
     # V2 Core
+    "ActionFilter",
+    "ActionRequest",
+    "ActionResponse",
+    "ActionResponseBody",
+    "ActionResponseMetadata",
+    "ActionResponseResources",
+    "ActionUpdate",
     "ActionFlavorResponse",
     "ActionFlavorResponseBody",
     "ActionFlavorResponseMetadata",
