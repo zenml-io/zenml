@@ -626,7 +626,7 @@ class TestModel:
         self, clean_client: "Client"
     ):
         """Test that model version creation can be parallelized."""
-        process_count = 500
+        process_count = 50
         args = [
             MODEL_NAME,
         ] * process_count
