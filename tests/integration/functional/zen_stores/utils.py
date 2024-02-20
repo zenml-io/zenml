@@ -40,8 +40,8 @@ from zenml.models import (
     ArtifactVersionUpdate,
     AuthenticationMethodModel,
     BaseFilter,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryUpdate,
@@ -846,7 +846,7 @@ class ServiceConnectorTypeContext:
 
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)
 
 
 class CrudTestConfig:

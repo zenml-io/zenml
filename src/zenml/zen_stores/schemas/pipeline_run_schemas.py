@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
@@ -209,12 +209,19 @@ class PipelineRunSchema(NamedSchema, table=True):
             trigger_execution_id=request.trigger_execution_id,
         )
 
-    def to_model(self, hydrate: bool = False) -> "PipelineRunResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `PipelineRunResponse`.
@@ -276,12 +283,14 @@ class PipelineRunSchema(NamedSchema, table=True):
             build=build,
             schedule=schedule,
             code_reference=code_reference,
-            trigger_execution=self.trigger_execution.to_model(),
+            trigger_execution=self.trigger_execution.to_model()
+            if self.trigger_execution
+            else None,
             created=self.created,
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             steps = {step.name: step.to_model() for step in self.step_runs}
 
             metadata = PipelineRunResponseMetadata(

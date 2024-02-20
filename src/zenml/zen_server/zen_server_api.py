@@ -36,7 +36,7 @@ from zenml.zen_server.routers import (
     auth_endpoints,
     code_repositories_endpoints,
     devices_endpoints,
-    event_endpoints,
+    event_source_endpoints,
     flavors_endpoints,
     model_versions_endpoints,
     models_endpoints,
@@ -212,7 +212,7 @@ app.include_router(auth_endpoints.router)
 app.include_router(devices_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
 app.include_router(plugin_endpoints.plugin_router)
-app.include_router(event_endpoints.event_source_router)
+app.include_router(event_source_endpoints.event_source_router)
 app.include_router(flavors_endpoints.router)
 app.include_router(models_endpoints.router)
 app.include_router(model_versions_endpoints.router)

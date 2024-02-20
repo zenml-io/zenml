@@ -28,6 +28,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.misc.service_connector_type import (
@@ -328,9 +329,15 @@ class ServiceConnectorResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ServiceConnectorResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the service connector entity."""
+
+
 class ServiceConnectorResponse(
     WorkspaceScopedResponse[
-        ServiceConnectorResponseBody, ServiceConnectorResponseMetadata
+        ServiceConnectorResponseBody,
+        ServiceConnectorResponseMetadata,
+        ServiceConnectorResponseResources,
     ]
 ):
     """Response model for service connectors."""

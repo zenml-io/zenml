@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base implementation for all Plugin Flavors."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Type
 
 from pydantic import BaseModel, Extra
 
@@ -61,6 +61,15 @@ class BasePlugin(ABC):
             The configuration.
         """
 
+    @property
+    @abstractmethod
+    def flavor_class(self) -> "Type[BasePluginFlavor]":
+        """Returns the flavor class of the plugin.
+
+        Returns:
+            The flavor class of the plugin.
+        """
+
 
 class BasePluginFlavor(ABC):
     """Base Class for all PluginFlavors."""
@@ -72,5 +81,11 @@ class BasePluginFlavor(ABC):
 
     @classmethod
     @abstractmethod
-    def get_plugin_flavor_response_model(cls) -> BasePluginFlavorResponse:
-        """Convert the Flavor into a Response Model."""
+    def get_flavor_response_model(
+        cls, hydrate: bool
+    ) -> BasePluginFlavorResponse[Any, Any, Any]:
+        """Convert the Flavor into a Response Model.
+
+        Args:
+            hydrate: Whether the model should be hydrated.
+        """

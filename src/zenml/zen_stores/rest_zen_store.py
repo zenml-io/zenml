@@ -114,8 +114,8 @@ from zenml.models import (
     ArtifactVersionUpdate,
     ArtifactVisualizationResponse,
     BaseFilter,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
     CodeReferenceResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
@@ -232,7 +232,7 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 AnyWorkspaceScopedRequest = TypeVar(
     "AnyWorkspaceScopedRequest",
     bound=WorkspaceScopedRequest,

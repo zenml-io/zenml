@@ -37,6 +37,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:
@@ -190,9 +191,15 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class PipelineRunResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the pipeline run entity."""
+
+
 class PipelineRunResponse(
     WorkspaceScopedResponse[
-        PipelineRunResponseBody, PipelineRunResponseMetadata
+        PipelineRunResponseBody,
+        PipelineRunResponseMetadata,
+        PipelineRunResponseResources,
     ]
 ):
     """Response model for pipeline runs."""

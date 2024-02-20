@@ -12,13 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+import copy
+from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -26,10 +27,14 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.event_source import EventSourceResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 # ------------------ Base Model ------------------
 
@@ -60,7 +65,7 @@ class TriggerBase(BaseModel):
         title="The flavor of the action that is executed by this trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    action_subtype: str = Field(
+    action_subtype: PluginSubType = Field(
         title="The subtype of the action that is executed by this trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -103,6 +108,24 @@ class TriggerUpdate(BaseZenModel):
         title="The new status of the trigger.",
     )
 
+    @classmethod
+    def from_response(cls, response: "TriggerResponse") -> "TriggerUpdate":
+        """Create an update model from a response model.
+
+        Args:
+            response: The response model to create the update model from.
+
+        Returns:
+            The update model.
+        """
+        return TriggerUpdate(
+            name=response.name,
+            description=response.description,
+            action=copy.deepcopy(response.action),
+            event_filter=copy.deepcopy(response.event_filter),
+            is_active=response.is_active,
+        )
+
 
 # ------------------ Response Model ------------------
 
@@ -110,18 +133,21 @@ class TriggerUpdate(BaseZenModel):
 class TriggerResponseBody(WorkspaceScopedResponseBody):
     """ResponseBody for triggers."""
 
-    event_source_flavor: str
-    action_flavor: str
-    action_subtype: str
-
-    created: datetime = Field(
-        title="The timestamp when this trigger was created."
+    event_source_flavor: str = Field(
+        title="The flavor of the event source that activates this trigger.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
-    updated: datetime = Field(
-        title="The timestamp when this trigger was last updated.",
+    action_flavor: str = Field(
+        title="The flavor of the action that is executed by this trigger.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    is_active: bool
+    action_subtype: PluginSubType = Field(
+        title="The subtype of the action that is executed by this trigger.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    is_active: bool = Field(
+        title="Whether the trigger is active.",
+    )
 
 
 class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -138,13 +164,20 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The description of the trigger",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+
+
+class TriggerResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the trigger entity."""
+
     event_source: "EventSourceResponse" = Field(
         title="The event source that activates this trigger.",
     )
 
 
 class TriggerResponse(
-    WorkspaceScopedResponse[TriggerResponseBody, TriggerResponseMetadata]
+    WorkspaceScopedResponse[
+        TriggerResponseBody, TriggerResponseMetadata, TriggerResponseResources
+    ]
 ):
     """Response model for models."""
 
@@ -182,22 +215,22 @@ class TriggerResponse(
         return self.get_body().action_flavor
 
     @property
-    def created(self) -> datetime:
-        """The `created` property.
+    def action_subtype(self) -> PluginSubType:
+        """The `action_subtype` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().created
+        return self.get_body().action_subtype
 
     @property
-    def updated(self) -> datetime:
-        """The `updated` property.
+    def is_active(self) -> bool:
+        """The `is_active` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().updated
+        return self.get_body().is_active
 
     @property
     def event_filter(self) -> Dict[str, Any]:
@@ -217,14 +250,13 @@ class TriggerResponse(
         """
         return self.get_metadata().action
 
-    @property
-    def description(self) -> str:
-        """The `description` property.
+    def set_action(self, action: Dict[str, Any]) -> None:
+        """Set the `action` property.
 
-        Returns:
-            the value of the property.
+        Args:
+            action: The value to set.
         """
-        return self.get_metadata().description
+        self.get_metadata().action = action
 
     @property
     def event_source(self) -> "EventSourceResponse":
@@ -233,7 +265,16 @@ class TriggerResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().event_source
+        return self.get_resources().event_source
+
+    @property
+    def description(self) -> str:
+        """The `description` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().description
 
 
 # ------------------ Filter Model ------------------
@@ -253,4 +294,21 @@ class TriggerFilter(WorkspaceScopedFilter):
     is_active: Optional[bool] = Field(
         default=None,
         description="Whether the trigger is active.",
+    )
+    action_flavor: Optional[str] = Field(
+        default=None,
+        title="The flavor of the action that is executed by this trigger.",
+    )
+    action_subtype: Optional[str] = Field(
+        default=None,
+        title="The subtype of the action that is executed by this trigger.",
+    )
+    # TODO: Ignore these in normal filter and handle in sqlzenstore
+    resource_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="By the resource this trigger references.",
+    )
+    resource_type: Optional[str] = Field(
+        default=None,
+        description="By the resource type this trigger references.",
     )

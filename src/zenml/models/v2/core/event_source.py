@@ -13,21 +13,26 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
 import copy
-from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TypeVar
 
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import PluginSubType, PluginType
+from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.trigger import TriggerResponse
+
+TriggerPage = TypeVar("TriggerPage", bound=Page[TriggerResponse])
+
 
 # ------------------ Request Model ------------------
 
@@ -41,10 +46,6 @@ class EventSourceRequest(WorkspaceScopedRequest):
     )
     flavor: str = Field(
         title="The flavor of event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    plugin_type: PluginType = Field(
-        title="The plugin type of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     plugin_subtype: PluginSubType = Field(
@@ -117,22 +118,13 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
         title="The flavor of event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    plugin_type: PluginType = Field(
-        title="The plugin type of the event source.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
     plugin_subtype: PluginSubType = Field(
         title="The plugin subtype of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    created: datetime = Field(
-        title="The timestamp when this event filter was created."
+    is_active: bool = Field(
+        title="Whether the event source is active.",
     )
-    updated: datetime = Field(
-        title="The timestamp when this event filter was last updated.",
-    )
-
-    is_active: bool
 
 
 class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -148,9 +140,19 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class EventSourceResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the code repository entity."""
+
+    triggers: TriggerPage = Field(  # type: ignore[valid-type]
+        title="The triggers configured with this event source.",
+    )
+
+
 class EventSourceResponse(
     WorkspaceScopedResponse[
-        EventSourceResponseBody, EventSourceResponseMetadata
+        EventSourceResponseBody,
+        EventSourceResponseMetadata,
+        EventSourceResponseResources,
     ]
 ):
     """Response model for event sources."""
@@ -190,15 +192,6 @@ class EventSourceResponse(
         return self.get_body().is_active
 
     @property
-    def plugin_type(self) -> PluginType:
-        """The `plugin_type` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().plugin_type
-
-    @property
     def plugin_subtype(self) -> PluginSubType:
         """The `plugin_subtype` property.
 
@@ -206,24 +199,6 @@ class EventSourceResponse(
             the value of the property.
         """
         return self.get_body().plugin_subtype
-
-    @property
-    def created(self) -> datetime:
-        """The`created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def description(self) -> str:

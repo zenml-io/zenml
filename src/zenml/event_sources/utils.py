@@ -40,7 +40,7 @@ def validate_event_filter_configuration(
             flavor, type, and subtype.
     """
     event_source_plugin = plugin_flavor_registry.get_plugin(
-        flavor=flavor, _type=plugin_type, subtype=plugin_subtype
+        name=flavor, _type=plugin_type, subtype=plugin_subtype
     )
 
     if not isinstance(event_source_plugin, BaseEventSourceHandler):

@@ -15,7 +15,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic import Field
@@ -30,9 +30,11 @@ from zenml.models import (
     EventSourceResponseBody,
     EventSourceUpdate,
 )
+from zenml.models.v2.core.event_source import EventSourceResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import get_page_from_list
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
@@ -69,7 +71,6 @@ class EventSourceSchema(NamedSchema, table=True):
     )
 
     flavor: str = Field(nullable=False)
-    plugin_type: str = Field(nullable=False)
     plugin_subtype: str = Field(nullable=False)
     description: str = Field(sa_column=Column(TEXT, nullable=True))
 
@@ -90,7 +91,6 @@ class EventSourceSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             flavor=request.flavor,
-            plugin_type=request.plugin_type,
             plugin_subtype=request.plugin_subtype,
             name=request.name,
             description=request.description,
@@ -104,12 +104,20 @@ class EventSourceSchema(NamedSchema, table=True):
             is_active=True,  # Makes no sense to create an inactive event source
         )
 
-    def to_model(self, hydrate: bool = False) -> EventSourceResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> EventSourceResponse:
         """Convert an `EventSourceSchema` to an `EventSourceResponse`.
 
         Args:
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
+            include_metadata: Flag deciding whether to include the output model(s)
+                metadata fields in the response.
+            include_resources: Flag deciding whether to include the output model(s)
+                metadata fields in the response.
+            **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
             The created `EventSourceResponse`.
@@ -119,12 +127,20 @@ class EventSourceSchema(NamedSchema, table=True):
             updated=self.updated,
             user=self.user.to_model() if self.user else None,
             flavor=self.flavor,
-            plugin_type=self.plugin_type,
             plugin_subtype=self.plugin_subtype,
             is_active=self.is_active,
         )
+        resources = None
+        if include_resources:
+            resources = EventSourceResponseResources(
+                triggers=get_page_from_list(
+                    items_list=self.triggers,
+                    include_resources=include_resources,
+                    include_metadata=include_metadata,
+                )
+            )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = EventSourceResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
@@ -137,6 +153,7 @@ class EventSourceSchema(NamedSchema, table=True):
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
     def update(self, update: EventSourceUpdate) -> "EventSourceSchema":

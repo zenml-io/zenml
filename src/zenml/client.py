@@ -86,7 +86,7 @@ from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
-    BaseResponse,
+    BaseIdentifiedResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryResponse,
@@ -183,7 +183,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 
 
 class ClientConfiguration(FileSyncModel):
@@ -2323,7 +2323,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_event_source(
         self,
-        name_id_or_prefix: Optional[Union[UUID, str]] = None,
+        name_id_or_prefix: Union[UUID, str],
         name: Optional[str] = None,
         description: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
@@ -2397,8 +2397,9 @@ class Client(metaclass=ClientMetaClass):
         description: str,
         event_source_id: UUID,
         event_filter: Dict[str, Any],
-        action_plan: Dict[str, Any],
-        action_plan_flavor: str,
+        action: Dict[str, Any],
+        action_flavor: str,
+        action_subtype: str,
     ) -> TriggerResponse:
         """Registers a trigger.
 
@@ -2407,8 +2408,9 @@ class Client(metaclass=ClientMetaClass):
             description: The description of the trigger
             event_source_id: The id of the event source id
             event_filter: The event filter
-            action_plan: The action plan
-            action_plan_flavor: The action plan flavor
+            action: The action
+            action_flavor: The action flavor
+            action_subtype: The action subtype
 
         Returns:
             The model of the registered event source.
@@ -2418,8 +2420,9 @@ class Client(metaclass=ClientMetaClass):
             description=description,
             event_source_id=event_source_id,
             event_filter=event_filter,
-            action_plan=action_plan,
-            action_plan_flavor=action_plan_flavor,
+            action=action,
+            action_flavor=action_flavor,
+            action_subtype=action_subtype,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
@@ -2506,7 +2509,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_trigger(
         self,
-        name_id_or_prefix: Optional[Union[UUID, str]] = None,
+        name_id_or_prefix: Union[UUID, str],
         name: Optional[str] = None,
         description: Optional[str] = None,
         event_filter: Optional[Dict[str, Any]] = None,

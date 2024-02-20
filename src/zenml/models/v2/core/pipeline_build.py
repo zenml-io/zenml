@@ -26,6 +26,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.misc.build_item import BuildItem
 
@@ -203,9 +204,15 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class PipelineBuildResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the pipeline build entity."""
+
+
 class PipelineBuildResponse(
     WorkspaceScopedResponse[
-        PipelineBuildResponseBody, PipelineBuildResponseMetadata
+        PipelineBuildResponseBody,
+        PipelineBuildResponseMetadata,
+        PipelineBuildResponseResources,
     ]
 ):
     """Response model for pipeline builds."""

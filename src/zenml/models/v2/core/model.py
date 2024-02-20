@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing models."""
 
-from datetime import datetime
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
 from uuid import UUID
@@ -26,6 +25,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
 from zenml.utils.pagination_utils import depaginate
@@ -118,12 +118,6 @@ class ModelResponseBody(WorkspaceScopedResponseBody):
     )
     latest_version_name: Optional[str]
     latest_version_id: Optional[UUID]
-    created: datetime = Field(
-        title="The timestamp when this component was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this component was last updated.",
-    )
 
 
 class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -170,8 +164,14 @@ class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ModelResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the model entity."""
+
+
 class ModelResponse(
-    WorkspaceScopedResponse[ModelResponseBody, ModelResponseMetadata]
+    WorkspaceScopedResponse[
+        ModelResponseBody, ModelResponseMetadata, ModelResponseResources
+    ]
 ):
     """Response model for models."""
 
@@ -217,24 +217,6 @@ class ModelResponse(
             the value of the property.
         """
         return self.get_body().latest_version_id
-
-    @property
-    def created(self) -> datetime:
-        """The `created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def license(self) -> Optional[str]:

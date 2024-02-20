@@ -15,12 +15,14 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import Any, List, Optional
 from uuid import UUID
 
+from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
+from zenml import TriggerExecutionResponseResources
 from zenml.models import (
     TriggerExecutionRequest,
     TriggerExecutionResponse,
@@ -30,6 +32,7 @@ from zenml.models import (
     TriggerResponse,
     TriggerResponseBody,
     TriggerResponseMetadata,
+    TriggerResponseResources,
     TriggerUpdate,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
@@ -37,39 +40,6 @@ from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.action_resource_schemas import (
-        ActionResourceSchema,
-    )
-
-
-class ActionResourceCompositionSchema(SQLModel, table=True):
-    """SQL Model for stack definitions.
-
-    Join table between Stacks and StackComponents.
-    """
-
-    __tablename__ = "action_resource_composition"
-
-    trigger_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target="trigger",
-        source_column="trigger_id",
-        target_column="id",
-        ondelete="CASCADE",  # Figure this out
-        nullable=False,
-        primary_key=True,
-    )
-    action_resource_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target="action_resource",
-        source_column="action_resource_id",
-        target_column="id",
-        ondelete="CASCADE",  # Figure this out
-        nullable=False,
-        primary_key=True,
-    )
 
 
 class TriggerSchema(NamedSchema, table=True):
@@ -105,9 +75,7 @@ class TriggerSchema(NamedSchema, table=True):
         ondelete="CASCADE",  # TODO: this should be set null and the trigger should be deactivated
         nullable=False,
     )
-    event_source: Optional["EventSourceSchema"] = Relationship(
-        back_populates="triggers"
-    )
+    event_source: "EventSourceSchema" = Relationship(back_populates="triggers")
 
     executions: List["TriggerExecutionSchema"] = Relationship(
         back_populates="trigger"
@@ -118,11 +86,6 @@ class TriggerSchema(NamedSchema, table=True):
     action: bytes
     action_flavor: str  # <- "builtin"
     action_subtype: str  # <- "PipelineRun"
-    # resource_id: Optional[UUID]  # <- deployment_id
-    resources: List["ActionResourceSchema"] = Relationship(
-        back_populates="triggers",
-        link_model=ActionResourceCompositionSchema,
-    )
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     is_active: bool = Field(nullable=False)
@@ -142,11 +105,15 @@ class TriggerSchema(NamedSchema, table=True):
         ).items():
             if field == "event_filter":
                 self.event_filter = base64.b64encode(
-                    json.dumps(trigger_update.event_filter).encode("utf-8")
+                    json.dumps(
+                        trigger_update.event_filter, default=pydantic_encoder
+                    ).encode("utf-8")
                 )
             elif field == "action":
                 self.action = base64.b64encode(
-                    json.dumps(trigger_update.action).encode("utf-8")
+                    json.dumps(
+                        trigger_update.action, default=pydantic_encoder
+                    ).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -169,24 +136,37 @@ class TriggerSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             action=base64.b64encode(
-                json.dumps(request.action).encode("utf-8")
+                json.dumps(request.action, default=pydantic_encoder).encode(
+                    "utf-8"
+                ),
             ),
             action_flavor=request.action_flavor,
             action_subtype=request.action_subtype,
             event_source_id=request.event_source_id,
             event_filter=base64.b64encode(
-                json.dumps(request.event_filter).encode("utf-8")
+                json.dumps(
+                    request.event_filter, default=pydantic_encoder
+                ).encode("utf-8")
             ),
             description=request.description,
             is_active=True,  # Makes no sense for it to be created inactive
         )
 
-    def to_model(self, hydrate: bool = False) -> "TriggerResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "TriggerResponse":
         """Converts the schema to a model.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Flag deciding whether to include the output model(s)
+                metadata fields in the response.
+            include_resources: Flag deciding whether to include the output model(s)
+                metadata fields in the response.
+
+            **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
             The converted model.
@@ -197,14 +177,11 @@ class TriggerSchema(NamedSchema, table=True):
             updated=self.updated,
             action_flavor=self.action_flavor,
             action_subtype=self.action_subtype,
-            # TODO: make event_source mandatory in the schema and ensure
-            # triggers are deprovisioned and deleted before the event source is
-            # deleted, or make it optional in the model
             event_source_flavor=self.event_source.flavor,
             is_active=self.is_active,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = TriggerResponseMetadata(
                 workspace=self.workspace.to_model(),
                 event_filter=json.loads(
@@ -212,17 +189,18 @@ class TriggerSchema(NamedSchema, table=True):
                 ),
                 action=json.loads(base64.b64decode(self.action).decode()),
                 description=self.description,
-                # TODO: make event_source mandatory in the schema and ensure
-                # triggers are deprovisioned and deleted before the event source is
-                # deleted, or make it optional in the model
+            )
+        resources = None
+        if include_resources:
+            resources = TriggerResponseResources(
                 event_source=self.event_source.to_model(),
             )
-
         return TriggerResponse(
             id=self.id,
             name=self.name,
             body=body,
             metadata=metadata,
+            resources=resources,
         )
 
 
@@ -262,23 +240,29 @@ class TriggerExecutionSchema(BaseSchema, table=True):
             ),
         )
 
-    def to_model(self, hydrate: bool = False) -> "TriggerExecutionResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "TriggerExecutionResponse":
         """Converts the schema to a model.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The converted model.
         """
         body = TriggerExecutionResponseBody(
-            trigger=self.trigger.to_model(),
             created=self.created,
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = TriggerExecutionResponseMetadata(
                 event_metadata=json.loads(
                     base64.b64decode(self.event_metadata).decode()
@@ -286,9 +270,12 @@ class TriggerExecutionSchema(BaseSchema, table=True):
                 if self.event_metadata
                 else {},
             )
+        resources = None
+        if include_resources:
+            resources = TriggerExecutionResponseResources(
+                trigger=self.trigger.to_model(),
+            )
 
         return TriggerExecutionResponse(
-            id=self.id,
-            body=body,
-            metadata=metadata,
+            id=self.id, body=body, metadata=metadata, resources=resources
         )

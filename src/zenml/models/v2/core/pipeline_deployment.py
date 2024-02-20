@@ -13,21 +13,24 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union, TypeVar
 from uuid import UUID
 
 from pydantic import Field
 
+from zenml.models.v2.core.trigger import TriggerResponse
 from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
@@ -39,6 +42,8 @@ from zenml.models.v2.core.pipeline_build import (
 )
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
+
+TriggerPage = TypeVar("TriggerPage", bound=Page[TriggerResponse])
 
 # ------------------ Request Model ------------------
 
@@ -164,9 +169,19 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class PipelineDeploymentResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the pipeline deployment entity."""
+
+    triggers: TriggerPage = Field(  # type: ignore[valid-type]
+        title="The triggers configured with this event source.",
+    )
+
+
 class PipelineDeploymentResponse(
     WorkspaceScopedResponse[
-        PipelineDeploymentResponseBody, PipelineDeploymentResponseMetadata
+        PipelineDeploymentResponseBody,
+        PipelineDeploymentResponseMetadata,
+        PipelineDeploymentResponseResources,
     ]
 ):
     """Response model for pipeline deployments."""

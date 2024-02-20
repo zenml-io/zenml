@@ -23,8 +23,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models import (
     BaseFilter,
-    BaseResponse,
-    BaseResponseBody,
+    BaseIdentifiedResponse,
     BaseResponseMetadata,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -32,6 +31,11 @@ from zenml.models import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
 )
+from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseResponseResources,
+)
+from zenml.models.v2.base.scoped import WorkspaceScopedResponseResources
 from zenml.models.v2.base.update import update_model
 
 if TYPE_CHECKING:
@@ -102,8 +106,16 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class PipelineResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the pipeline entity."""
+
+
 class PipelineResponse(
-    WorkspaceScopedResponse[PipelineResponseBody, PipelineResponseMetadata]
+    WorkspaceScopedResponse[
+        PipelineResponseBody,
+        PipelineResponseMetadata,
+        PipelineResponseResources,
+    ]
 ):
     """Response model for pipelines."""
 
@@ -275,7 +287,7 @@ class PipelineFilter(WorkspaceScopedFilter):
 # ------------------ Pipeline Namespaces ------------------
 
 
-class PipelineNamespaceResponseBody(BaseResponseBody):
+class PipelineNamespaceResponseBody(BaseDatedResponseBody):
     """Response body for pipeline namespaces."""
 
     latest_run_id: Optional[UUID] = Field(
@@ -292,9 +304,15 @@ class PipelineNamespaceResponseMetadata(BaseResponseMetadata):
     """Response metadata for pipeline namespaces."""
 
 
+class PipelineNamespaceResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the pipeline namespace entity."""
+
+
 class PipelineNamespaceResponse(
-    BaseResponse[
-        PipelineNamespaceResponseBody, PipelineNamespaceResponseMetadata
+    BaseIdentifiedResponse[
+        PipelineNamespaceResponseBody,
+        PipelineNamespaceResponseMetadata,
+        PipelineNamespaceResponseResources,
     ]
 ):
     """Response model for pipeline namespaces."""

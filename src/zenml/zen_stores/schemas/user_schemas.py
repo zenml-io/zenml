@@ -14,7 +14,7 @@
 """SQLModel implementation of user tables."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -223,13 +223,16 @@ class UserSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self, hydrate: bool = False, include_private: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        include_private: bool = False,
+        **kwargs: Any,
     ) -> UserResponse:
         """Convert a `UserSchema` to a `UserResponse`.
 
-        Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+        **kwargs: Keyword arguments to filter models.
+
             include_private: Whether to include the user private information
                              this is to limit the amount of data one can get
                              about other users
@@ -238,7 +241,7 @@ class UserSchema(NamedSchema, table=True):
             The converted `UserResponse`.
         """
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = UserResponseMetadata(
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
@@ -260,19 +263,19 @@ class UserSchema(NamedSchema, table=True):
         )
 
     def to_service_account_model(
-        self, hydrate: bool = False
+        self, include_metadata: bool = False, include_resources: bool = False
     ) -> ServiceAccountResponse:
         """Convert a `UserSchema` to a `ServiceAccountResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+             include_metadata: Whether the metadata will be filled.
+             include_resources: Whether the resources will be filled.
 
         Returns:
-            The converted `ServiceAccountResponse`.
+             The converted `ServiceAccountResponse`.
         """
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ServiceAccountResponseMetadata(
                 description=self.description or "",
             )

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,15 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Plugin flavor model definitions."""
+"""Base implementation for events."""
+from typing import (
+    TYPE_CHECKING,
+)
+
 from pydantic import BaseModel
 
-from zenml.enums import PluginSubType, PluginType
+from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    pass
+
+logger = get_logger(__name__)
+
+# -------------------- Event Models -----------------------------------
 
 
-class BasePluginFlavorResponse(BaseModel):
-    """Base response for all Plugin Flavors."""
-
-    flavor_name: str
-    plugin_type: PluginType
-    plugin_subtype: PluginSubType
+class BaseEvent(BaseModel):
+    """Base class for all inbound events."""
