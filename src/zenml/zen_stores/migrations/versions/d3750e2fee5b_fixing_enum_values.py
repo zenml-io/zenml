@@ -206,7 +206,7 @@ def upgraded_value(old_value: str, enum: StrEnum) -> str:
     """Based on a given value and the corresponding enum, fetch the upgraded value.
 
     Args:
-        old_value: the old value.
+        old_value: the outdated value.
         enum: the enum that represents the column of this value.
 
     Returns:
@@ -219,7 +219,7 @@ def downgraded_value(new_value, enum: StrEnum) -> str:
     """Based on a given value and the corresponding enum, fetch the downgraded value.
 
     Args:
-        new_value: the new value.
+        new_value: the updated value.
         enum: the enum that represents the column of this value.
 
     Returns:
