@@ -18,7 +18,7 @@ branch_labels = None
 depends_on = None
 
 
-# Snapshot of ZenML Enums
+# Snapshot of the ZenML Enums at 0.55.3
 class StrEnum(str, Enum):
     """Base enum type for string enum values."""
 
@@ -202,28 +202,48 @@ ASSIGNMENTS = [
 ]
 
 
-def upgrade_func(old_value, enum):
-    return enum(old_value).name
+def upgraded_value(old_value: str, enum: StrEnum) -> str:
+    """Based on a given value and the corresponding enum, fetch the upgraded value.
+
+    Args:
+        old_value: the old value.
+        enum: the enum that represents the column of this value.
+
+    Returns:
+        the value that it will be updated to.
+    """
+    return str(enum(old_value).name)
 
 
-def downgrade_func(new_value, enum):
-    return enum[new_value].value
+def downgraded_value(new_value, enum: StrEnum) -> str:
+    """Based on a given value and the corresponding enum, fetch the downgraded value.
+
+    Args:
+        new_value: the new value.
+        enum: the enum that represents the column of this value.
+
+    Returns:
+        the value that it will be updated to.
+    """
+    return str(enum[new_value].value)
 
 
 def upgrade():
     """Upgrade database schema and/or data, creating a new revision."""
     conn = op.get_bind()
 
+    # Go through all the tables defined above
     for table_name, column_name, enum in ASSIGNMENTS:
-        select_query = f"SELECT {column_name} FROM {table_name}"
-
-        #  Execute the select query
+        # Get all the existing unique values
+        select_query = f"SELECT DISTINCT {column_name} FROM {table_name}"
         result = conn.execute(sa.text(select_query))
 
+        # Create a set of replacements
         replacements = set()
         for old_value in result:
-            replacements.add((old_value[0], upgrade_func(old_value[0], enum)))
+            replacements.add((old_value[0], upgraded_value(old_value[0], enum)))
 
+        # Form and execute the update query
         if replacements:
             cases = " ".join(
                 [
@@ -240,19 +260,20 @@ def upgrade():
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-
     conn = op.get_bind()
 
+    # Go through all the tables defined above
     for table_name, column_name, enum in ASSIGNMENTS:
-        select_query = f"SELECT {column_name} FROM {table_name}"
-
-        #  Execute the select query
+        # Get all the existing unique values
+        select_query = f"SELECT DISTINCT{column_name} FROM {table_name}"
         result = conn.execute(sa.text(select_query))
 
+        # Create a set of replacements
         replacements = set()
         for old_value in result:
-            replacements.add((old_value[0], downgrade_func(old_value[0], enum)))
+            replacements.add((old_value[0], downgraded_value(old_value[0], enum)))
 
+        # Form and execute the update query
         if replacements:
             cases = " ".join(
                 [
