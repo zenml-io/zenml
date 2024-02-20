@@ -110,7 +110,7 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     key: str
     value: str = Field(sa_column=Column(TEXT, nullable=False))
-    type: MetadataTypeEnum
+    type: str
 
     def to_model(self, hydrate: bool = False) -> "RunMetadataResponse":
         """Convert a `RunMetadataSchema` to a `RunMetadataResponse`.
@@ -128,7 +128,7 @@ class RunMetadataSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
             value=json.loads(self.value),
-            type=self.type,
+            type=MetadataTypeEnum(self.type),
         )
         metadata = None
         if hydrate:

@@ -163,7 +163,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     # Fields
     version: str
     version_number: Optional[int]
-    type: ArtifactType
+    type: str
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -269,7 +269,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             artifact_store_id=artifact_version_request.artifact_store_id,
             workspace_id=artifact_version_request.workspace,
             user_id=artifact_version_request.user,
-            type=artifact_version_request.type,
+            type=artifact_version_request.type.value,
             uri=artifact_version_request.uri,
             materializer=artifact_version_request.materializer.json(),
             data_type=artifact_version_request.data_type.json(),
@@ -312,7 +312,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             version=self.version_number or self.version,
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
-            type=self.type,
+            type=ArtifactType(self.type),
             materializer=materializer,
             data_type=data_type,
             created=self.created,
