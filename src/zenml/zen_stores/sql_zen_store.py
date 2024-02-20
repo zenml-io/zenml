@@ -5955,11 +5955,7 @@ class SqlZenStore(BaseZenStore):
             The registered stack.
         """
         with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists(
-                stack=stack,
-                workspace_id=stack.workspace,
-                session=session,
-            )
+            self._fail_if_stack_with_name_exists(stack=stack, session=session)
 
             # Get the Schemas of all components mentioned
             component_ids = (
@@ -6083,7 +6079,6 @@ class SqlZenStore(BaseZenStore):
                     self._fail_if_stack_with_name_exists(
                         stack=stack_update,
                         session=session,
-                        workspace_id=existing_stack.workspace_id,
                     )
 
             components = []
@@ -6152,14 +6147,12 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_stack_with_name_exists(
         self,
         stack: StackRequest,
-        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a stack with same name exists.
 
         Args:
             stack: The Stack
-            workspace_id: The ID of the workspace
             session: The Session
 
         Returns:
@@ -6171,7 +6164,7 @@ class SqlZenStore(BaseZenStore):
         existing_domain_stack = session.exec(
             select(StackSchema)
             .where(StackSchema.name == stack.name)
-            .where(StackSchema.workspace_id == workspace_id)
+            .where(StackSchema.workspace_id == stack.workspace)
         ).first()
         if existing_domain_stack is not None:
             workspace = self._get_workspace_schema(

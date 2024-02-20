@@ -1,5 +1,8 @@
 """Integration tests for artifact util functions."""
 
+import os
+import shutil
+import zipfile
 from typing import Optional, Tuple
 
 import pytest
@@ -12,6 +15,7 @@ from zenml import (
     save_artifact,
     step,
 )
+from zenml.models.v2.core.artifact import ArtifactResponse
 
 
 def test_save_load_artifact_outside_run(clean_client):
@@ -252,3 +256,63 @@ def test_log_artifact_metadata_raises_error_if_output_name_unclear(
 
     with pytest.raises(ValueError):
         artifact_metadata_logging_pipeline()
+
+
+def test_download_artifact_files_from_response(
+    tmp_path, clean_client_with_run
+):
+    """Test that we can download artifact files from an artifact version."""
+    artifact: ArtifactResponse = clean_client_with_run.get_artifact(
+        name_id_or_prefix="connected_two_step_pipeline::step_1::output"
+    )
+    artifact_version_id = list(artifact.versions.values())[0].id
+    av = clean_client_with_run.get_artifact_version(artifact_version_id)
+    # create temporary path ending in .zip
+
+    zipfile_path = os.path.join(tmp_path, "some_file.zip")
+    av.download_files(path=zipfile_path)
+    assert os.path.exists(zipfile_path)
+
+    # unzip the file at zipfile_path
+    with zipfile.ZipFile(zipfile_path, "r") as zip_ref:
+        zip_ref.extractall(tmp_path)
+    with open(os.path.join(tmp_path, "data.json"), "r") as f:
+        assert f.read() == "7"
+
+    # clean up
+    shutil.rmtree(tmp_path)
+
+
+def test_download_artifact_files_from_response_fails_if_exists(
+    tmp_path, clean_client_with_run
+):
+    """Test that downloading artifact files from an artifact version fails.
+
+    Failure when the file already exists and `overwrite` is False."""
+    artifact: ArtifactResponse = clean_client_with_run.get_artifact(
+        name_id_or_prefix="connected_two_step_pipeline::step_1::output"
+    )
+    artifact_version_id = list(artifact.versions.values())[0].id
+    av = clean_client_with_run.get_artifact_version(artifact_version_id)
+    # create temporary path ending in .zip
+
+    zipfile_path = os.path.join(tmp_path, "some_file.zip")
+    # create a file at zipfile_path
+    with open(zipfile_path, "w") as f:
+        f.write("hello aria, blupus and axl")
+
+    # fails if the file already exists
+    with pytest.raises(FileExistsError):
+        av.download_files(path=zipfile_path)
+
+    # it works with overwrite parameter
+    av.download_files(path=zipfile_path, overwrite=True)
+    assert os.path.exists(zipfile_path)
+
+    # unzip the file at zipfile_path
+    with zipfile.ZipFile(zipfile_path, "r") as zip_ref:
+        zip_ref.extractall(tmp_path)
+    with open(os.path.join(tmp_path, "data.json"), "r") as f:
+        assert f.read() == "7"
+    # clean up
+    shutil.rmtree(tmp_path)
