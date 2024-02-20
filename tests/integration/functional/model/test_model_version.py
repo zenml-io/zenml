@@ -116,8 +116,10 @@ def consume_from_model(
         return "Hello, World!"
 
 
-def parallel_model_version_creation(model_name: str):
-    Model(name=model_name)._get_or_create_model_version()
+def parallel_model_version_creation(model_name: str) -> int:
+    with patch("zenml.model.model.logger.debug") as logger_mock:
+        Model(name=model_name)._get_or_create_model_version()
+        return logger_mock.call_count
 
 
 class TestModel:
@@ -631,11 +633,15 @@ class TestModel:
             MODEL_NAME,
         ] * process_count
         with multiprocessing.Pool(5) as pool:
-            pool.map(
+            results = pool.map(
                 parallel_model_version_creation,
                 iterable=args,
             )
 
+        assert sum(results), (
+            "Test was not parallel. "
+            "Consider increasing the number of processes or pools."
+        )
         assert clean_client.get_model(MODEL_NAME).name == MODEL_NAME
         mvs = clean_client.list_model_versions(
             model_name_or_id=MODEL_NAME, size=min(1000, process_count * 10)
