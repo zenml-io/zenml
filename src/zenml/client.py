@@ -4745,6 +4745,7 @@ class Client(metaclass=ClientMetaClass):
         ethics: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
+        save_models_to_registry: Optional[bool] = None,
     ) -> ModelResponse:
         """Updates an existing model in Model Control Plane.
 
@@ -4760,6 +4761,8 @@ class Client(metaclass=ClientMetaClass):
             ethics: The ethical implications of the model.
             add_tags: Tags to add to the model.
             remove_tags: Tags to remove from to the model.
+            save_models_to_registry: Whether to save the model to the
+                registry.
 
         Returns:
             The updated model.
@@ -4779,6 +4782,7 @@ class Client(metaclass=ClientMetaClass):
                 ethics=ethics,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
+                save_models_to_registry=save_models_to_registry,
             ),
         )
 

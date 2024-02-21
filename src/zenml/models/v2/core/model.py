@@ -105,6 +105,7 @@ class ModelUpdate(BaseModel):
     ethics: Optional[str] = None
     add_tags: Optional[List[str]] = None
     remove_tags: Optional[List[str]] = None
+    save_models_to_registry: Optional[bool] = None
 
 
 # ------------------ Response Model ------------------
