@@ -2588,7 +2588,9 @@ class SqlZenStore(BaseZenStore):
                 if existing_component.name != component_update.name:
                     self._fail_if_component_with_name_type_exists(
                         name=component_update.name,
-                        component_type=existing_component.type,
+                        component_type=StackComponentType(
+                            existing_component.type
+                        ),
                         workspace_id=existing_component.workspace_id,
                         session=session,
                     )
