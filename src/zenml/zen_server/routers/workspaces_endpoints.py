@@ -46,6 +46,7 @@ from zenml.models import (
     CodeRepositoryRequest,
     CodeRepositoryResponse,
     ComponentFilter,
+    ComponentRequest,
     ComponentResponse,
     ModelRequest,
     ModelResponse,
@@ -375,6 +376,63 @@ def list_workspace_stack_components(
         resource_type=ResourceType.STACK_COMPONENT,
         list_method=zen_store().list_stack_components,
         hydrate=hydrate,
+    )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + STACK_COMPONENTS,
+    response_model=ComponentResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_stack_component(
+    workspace_name_or_id: Union[str, UUID],
+    component: ComponentRequest,
+    _: AuthContext = Security(authorize),
+) -> ComponentResponse:
+    """Creates a stack component.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        component: Stack component to register.
+
+    Returns:
+        The created stack component.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the stack
+            component does not match the current workspace.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if component.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating components outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+
+    if component.connector:
+        service_connector = zen_store().get_service_connector(
+            component.connector
+        )
+        verify_permission_for_model(service_connector, action=Action.READ)
+
+    from zenml.stack.utils import validate_stack_component_config
+
+    validate_stack_component_config(
+        configuration_dict=component.configuration,
+        flavor_name=component.flavor,
+        component_type=component.type,
+        zen_store=zen_store(),
+        # We allow custom flavors to fail import on the server side.
+        validate_custom_flavors=False,
+    )
+
+    return verify_permissions_and_create_entity(
+        request_model=component,
+        resource_type=ResourceType.STACK_COMPONENT,
+        create_method=zen_store().create_stack_component,
     )
 
 
