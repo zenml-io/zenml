@@ -16,13 +16,18 @@
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
+import os
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from zenml import __version__
 from zenml.analytics.client import default_client
-from zenml.constants import ENV_ZENML_SERVER, handle_bool_env_var
+from zenml.constants import (
+    ENV_ZENML_ORGANIZATION_ID,
+    ENV_ZENML_SERVER,
+    handle_bool_env_var,
+)
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
@@ -55,6 +60,7 @@ class AnalyticsContext:
         self.executed_by_service_account: Optional[bool] = None
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
+        self.organization_id: Optional[UUID] = None
 
         self.database_type: Optional["ServerDatabaseType"] = None
         self.deployment_type: Optional["ServerDeploymentType"] = None
@@ -87,6 +93,12 @@ class AnalyticsContext:
                         auth_context.user.is_service_account
                     )
                     self.external_user_id = auth_context.user.external_user_id
+                    try:
+                        self.organization_id = UUID(
+                            os.environ[ENV_ZENML_ORGANIZATION_ID]
+                        )
+                    except (KeyError, ValueError):
+                        pass
             else:
                 # If the code is running on the client, use the default user.
                 active_user = gc.zen_store.get_user()
@@ -252,6 +264,8 @@ class AnalyticsContext:
                 "client_id": str(self.client_id),
                 "user_id": str(self.user_id),
                 "server_id": str(self.server_id),
+                "organization_id": str(self.organization_id),
+                "account_id": str(self.organization_id),
                 "deployment_type": str(self.deployment_type),
                 "database_type": str(self.database_type),
                 "executed_by_service_account": self.executed_by_service_account,
