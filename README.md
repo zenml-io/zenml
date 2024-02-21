@@ -91,7 +91,7 @@
     <a href="https://www.zenml.io/company#team">Meet the Team</a>
     <br />
     <br />
-    🎉 Version 0.55.2 is out. Check out the release notes
+    🎉 Version 0.55.3 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
