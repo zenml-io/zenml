@@ -381,7 +381,7 @@ class Client(metaclass=ClientMetaClass):
             if self.zen_store.__class__.__name__ == "SqlZenStore":
                 raise TypeError(
                     "This method is not allowed when not connected "
-                    "to a ZenML Server through the API interface.."
+                    "to a ZenML Server through the API interface."
                 )
             return method(self, *args, **kwargs)
 
