@@ -13,12 +13,11 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Union, TypeVar
+from typing import Dict, Optional, TypeVar, Union
 from uuid import UUID
 
 from pydantic import Field
 
-from zenml.models.v2.core.trigger import TriggerResponse
 from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
@@ -42,6 +41,7 @@ from zenml.models.v2.core.pipeline_build import (
 )
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
+from zenml.models.v2.core.trigger import TriggerResponse
 
 TriggerPage = TypeVar("TriggerPage", bound=Page[TriggerResponse])
 
