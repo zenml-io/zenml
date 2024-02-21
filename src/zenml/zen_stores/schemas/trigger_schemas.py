@@ -65,7 +65,10 @@ class TriggerSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: Optional["UserSchema"] = Relationship(back_populates="triggers")
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="triggers",
+        sa_relationship_kwargs={"foreign_keys": "[TriggerSchema.user_id]"},
+    )
 
     event_source_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -89,7 +92,12 @@ class TriggerSchema(NamedSchema, table=True):
         ondelete="CASCADE",  # TODO: this should be set null and the trigger should be deactivated
         nullable=False,
     )
-    service_account: UserSchema = Relationship(back_populates="auth_triggers")
+    service_account: UserSchema = Relationship(
+        back_populates="auth_triggers",
+        sa_relationship_kwargs={
+            "foreign_keys": "[TriggerSchema.service_account_id]"
+        },
+    )
     auth_window: int
 
     event_filter: bytes

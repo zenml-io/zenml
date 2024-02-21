@@ -30,6 +30,7 @@ from zenml.models import (
     TriggerResponse,
 )
 from zenml.utils.pagination_utils import depaginate
+from zenml.zen_server.utils import plugin_flavor_registry
 
 logger = get_logger(__name__)
 
@@ -122,8 +123,6 @@ class InternalEventHub(BaseEventHub):
         Returns:
             The list of matching triggers.
         """
-        from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
-
         # get all event sources configured for this flavor
         triggers: List[TriggerResponse] = depaginate(
             partial(
@@ -143,7 +142,7 @@ class InternalEventHub(BaseEventHub):
             # to a more generic solution that doesn't require the plugin
             # implementation to be imported here.
             try:
-                plugin_flavor = plugin_flavor_registry.get_flavor_class(
+                plugin_flavor = plugin_flavor_registry().get_flavor_class(
                     name=event_source.flavor,
                     _type=PluginType.EVENT_SOURCE,
                     subtype=event_source.plugin_subtype,

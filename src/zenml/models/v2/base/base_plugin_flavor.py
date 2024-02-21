@@ -69,9 +69,11 @@ class BasePluginFlavorResponse(
         Raises:
             NotImplementedError: in case the method is not implemented.
         """
-        from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
+        # TODO: shouldn't this call the Zen store ? The client should not have
+        #  to know about the plugin flavor registry
+        from zenml.zen_server.utils import plugin_flavor_registry
 
-        plugin_flavor = plugin_flavor_registry.get_flavor_class(
+        plugin_flavor = plugin_flavor_registry().get_flavor_class(
             name=self.name, _type=self.type, subtype=self.subtype
         )
         return plugin_flavor.get_flavor_response_model(hydrate=True)

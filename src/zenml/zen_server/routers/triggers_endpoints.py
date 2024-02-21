@@ -30,7 +30,6 @@ from zenml.models import (
     TriggerResponse,
     TriggerUpdate,
 )
-from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -47,6 +46,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    plugin_flavor_registry,
     zen_store,
 )
 
@@ -104,7 +104,7 @@ def list_triggers(
 
         # Process the triggers through their associated plugins
         for idx, trigger in enumerate(triggers.items):
-            action_handler = plugin_flavor_registry.get_plugin(
+            action_handler = plugin_flavor_registry().get_plugin(
                 name=trigger.action_flavor,
                 _type=PluginType.ACTION,
                 subtype=trigger.action_subtype,
@@ -157,7 +157,7 @@ def get_trigger(
 
     verify_permission_for_model(trigger, action=Action.READ)
 
-    action_handler = plugin_flavor_registry.get_plugin(
+    action_handler = plugin_flavor_registry().get_plugin(
         name=trigger.action_flavor,
         _type=PluginType.ACTION,
         subtype=trigger.action_subtype,
@@ -209,7 +209,7 @@ def create_trigger(
         event_source_id=trigger.event_source_id
     )
 
-    event_source_handler = plugin_flavor_registry.get_plugin(
+    event_source_handler = plugin_flavor_registry().get_plugin(
         name=event_source.flavor,
         _type=PluginType.EVENT_SOURCE,
         subtype=event_source.plugin_subtype,
@@ -229,7 +229,7 @@ def create_trigger(
         trigger.event_filter
     )
 
-    action_handler = plugin_flavor_registry.get_plugin(
+    action_handler = plugin_flavor_registry().get_plugin(
         name=trigger.action_flavor,
         _type=PluginType.ACTION,
         subtype=trigger.action_subtype,
@@ -284,7 +284,7 @@ def update_trigger(
             event_source_id=trigger.event_source.id
         )
 
-        event_source_handler = plugin_flavor_registry.get_plugin(
+        event_source_handler = plugin_flavor_registry().get_plugin(
             name=event_source.flavor,
             _type=PluginType.EVENT_SOURCE,
             subtype=event_source.plugin_subtype,
@@ -306,7 +306,7 @@ def update_trigger(
 
     verify_permission_for_model(trigger, action=Action.UPDATE)
 
-    action_handler = plugin_flavor_registry.get_plugin(
+    action_handler = plugin_flavor_registry().get_plugin(
         name=trigger.action_flavor,
         _type=PluginType.ACTION,
         subtype=trigger.action_subtype,
@@ -349,7 +349,7 @@ def delete_trigger(
 
     verify_permission_for_model(trigger, action=Action.DELETE)
 
-    action_handler = plugin_flavor_registry.get_plugin(
+    action_handler = plugin_flavor_registry().get_plugin(
         name=trigger.action_flavor,
         _type=PluginType.ACTION,
         subtype=trigger.action_subtype,

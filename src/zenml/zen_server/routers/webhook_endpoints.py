@@ -23,8 +23,11 @@ from zenml.event_sources.webhooks.base_webhook_event_source import (
 )
 from zenml.exceptions import AuthorizationException, WebhookInactiveError
 from zenml.logger import get_logger
-from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
-from zenml.zen_server.utils import handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    handle_exceptions,
+    plugin_flavor_registry,
+    zen_store,
+)
 
 logger = get_logger(__name__)
 
@@ -79,7 +82,7 @@ def webhook(
 
     flavor = event_source.flavor
     try:
-        plugin = plugin_flavor_registry.get_plugin(
+        plugin = plugin_flavor_registry().get_plugin(
             name=flavor,
             _type=PluginType.EVENT_SOURCE,
             subtype=PluginSubType.WEBHOOK,

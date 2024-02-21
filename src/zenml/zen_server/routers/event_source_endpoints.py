@@ -26,7 +26,6 @@ from zenml import (
 from zenml.constants import API, EVENT_SOURCES, VERSION_1
 from zenml.enums import PluginType
 from zenml.event_sources.base_event_source import BaseEventSourceHandler
-from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -41,6 +40,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    plugin_flavor_registry,
     zen_store,
 )
 
@@ -101,7 +101,7 @@ def list_event_sources(
 
         # Process the event sources through their associated plugins
         for idx, event_source in enumerate(event_sources.items):
-            event_source_handler = plugin_flavor_registry.get_plugin(
+            event_source_handler = plugin_flavor_registry().get_plugin(
                 name=event_source.flavor,
                 _type=PluginType.EVENT_SOURCE,
                 subtype=event_source.plugin_subtype,
@@ -160,7 +160,7 @@ def get_event_source(
 
     verify_permission_for_model(event_source, action=Action.READ)
 
-    event_source_handler = plugin_flavor_registry.get_plugin(
+    event_source_handler = plugin_flavor_registry().get_plugin(
         name=event_source.flavor,
         _type=PluginType.EVENT_SOURCE,
         subtype=event_source.plugin_subtype,
@@ -206,7 +206,7 @@ def create_event_source(
         ValueError: If the plugin for an event source is not a valid event
             source plugin.
     """
-    event_source_handler = plugin_flavor_registry.get_plugin(
+    event_source_handler = plugin_flavor_registry().get_plugin(
         name=event_source.flavor,
         _type=PluginType.EVENT_SOURCE,
         subtype=event_source.plugin_subtype,
@@ -258,7 +258,7 @@ def update_event_source(
 
     verify_permission_for_model(event_source, action=Action.UPDATE)
 
-    event_source_handler = plugin_flavor_registry.get_plugin(
+    event_source_handler = plugin_flavor_registry().get_plugin(
         name=event_source.flavor,
         _type=PluginType.EVENT_SOURCE,
         subtype=event_source.plugin_subtype,
@@ -310,7 +310,7 @@ def delete_event_source(
 
     verify_permission_for_model(event_source, action=Action.DELETE)
 
-    event_source_handler = plugin_flavor_registry.get_plugin(
+    event_source_handler = plugin_flavor_registry().get_plugin(
         name=event_source.flavor,
         _type=PluginType.EVENT_SOURCE,
         subtype=event_source.plugin_subtype,
