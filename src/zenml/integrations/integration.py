@@ -65,7 +65,7 @@ class Integration(metaclass=IntegrationMeta):
         """
         for r in cls.get_requirements():
             try:
-                # Fist check if the base package is installed
+                # First check if the base package is installed
                 dist = pkg_resources.get_distribution(r)
 
                 # Next, check if the dependencies (including extras) are
