@@ -54,6 +54,7 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import EntityExistsError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
@@ -757,9 +758,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     user=Client().active_user.id,
                     workspace=deployment_model.workspace.id,
                     deployment=deployment_model.id,
-                    pipeline=deployment_model.pipeline.id
-                    if deployment_model.pipeline
-                    else None,
+                    pipeline=(
+                        deployment_model.pipeline.id
+                        if deployment_model.pipeline
+                        else None
+                    ),
                     status=ExecutionStatus.INITIALIZING,
                 )
                 run = Client().zen_store.create_run(run_request)
@@ -1174,46 +1177,57 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The registered pipeline model.
         """
+
+        def _get(version_hash: str) -> PipelineResponse:
+            client = Client()
+
+            matching_pipelines = client.list_pipelines(
+                name=self.name,
+                version_hash=version_hash,
+                size=1,
+                sort_by="desc:created",
+            )
+            if matching_pipelines.total:
+                registered_pipeline = matching_pipelines.items[0]
+                logger.info(
+                    "Reusing registered pipeline version: `(version: %s)`.",
+                    registered_pipeline.version,
+                )
+                return registered_pipeline
+            raise RuntimeError("No matching pipelines found.")
+
         version_hash = self._compute_unique_identifier(
             pipeline_spec=pipeline_spec
         )
 
         client = Client()
-        matching_pipelines = client.list_pipelines(
-            name=self.name,
-            version_hash=version_hash,
-            size=1,
-            sort_by="desc:created",
-        )
-        if matching_pipelines.total:
-            registered_pipeline = matching_pipelines.items[0]
-            logger.info(
-                "Reusing registered pipeline version: `(version: %s)`.",
-                registered_pipeline.version,
+        try:
+            return _get(version_hash)
+        except RuntimeError:
+            latest_version = self._get_latest_version() or 0
+            version = str(latest_version + 1)
+
+            request = PipelineRequest(
+                workspace=client.active_workspace.id,
+                user=client.active_user.id,
+                name=self.name,
+                version=version,
+                version_hash=version_hash,
+                spec=pipeline_spec,
+                docstring=self.__doc__,
             )
-            return registered_pipeline
 
-        latest_version = self._get_latest_version() or 0
-        version = str(latest_version + 1)
-
-        request = PipelineRequest(
-            workspace=client.active_workspace.id,
-            user=client.active_user.id,
-            name=self.name,
-            version=version,
-            version_hash=version_hash,
-            spec=pipeline_spec,
-            docstring=self.__doc__,
-        )
-
-        registered_pipeline = client.zen_store.create_pipeline(
-            pipeline=request
-        )
-        logger.info(
-            "Registered new version: `(version %s)`.",
-            registered_pipeline.version,
-        )
-        return registered_pipeline
+            try:
+                registered_pipeline = client.zen_store.create_pipeline(
+                    pipeline=request
+                )
+                logger.info(
+                    "Registered new version: `(version %s)`.",
+                    registered_pipeline.version,
+                )
+                return registered_pipeline
+            except EntityExistsError:
+                return _get(version_hash)
 
     def _compute_unique_identifier(self, pipeline_spec: PipelineSpec) -> str:
         """Computes a unique identifier from the pipeline spec and steps.
