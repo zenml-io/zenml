@@ -65,7 +65,7 @@ from zenml.enums import (
     ModelStages,
     StackComponentType,
     StoreType,
-    TaggableResourceTypes
+    TaggableResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -124,7 +124,6 @@ from zenml.models.v2.core.run_metadata import RunMetadataRequest
 from zenml.models.v2.core.step_run import StepRunRequest
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_stores.rest_zen_store import RestZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 DEFAULT_NAME = "default"

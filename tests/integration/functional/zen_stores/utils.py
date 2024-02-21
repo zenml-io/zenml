@@ -14,14 +14,19 @@ import logging
 import uuid
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Set, \
-    Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar
 
 from pydantic import BaseModel, Field, SecretStr
 
 from tests.integration.functional.utils import sample_name
-from zenml import EventSourceRequest, EventSourceUpdate, EventSourceFilter, \
-    TriggerRequest, TriggerUpdate, TriggerFilter
+from zenml import (
+    EventSourceFilter,
+    EventSourceRequest,
+    EventSourceUpdate,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerUpdate,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -29,8 +34,9 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
     ArtifactType,
+    PluginSubType,
     SecretScope,
-    StackComponentType, PluginSubType,
+    StackComponentType,
 )
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
@@ -1174,10 +1180,12 @@ event_source_crud_test_config = CrudTestConfig(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
-    update_model=EventSourceUpdate(name=sample_name("updated_sample_component")),
+    update_model=EventSourceUpdate(
+        name=sample_name("updated_sample_component")
+    ),
     filter_model=EventSourceFilter,
     entity_name="event_source",
-    supported_zen_stores=(RestZenStore,)
+    supported_zen_stores=(RestZenStore,),
 )
 trigger_crud_test_config = CrudTestConfig(
     create_model=TriggerRequest(
@@ -1237,5 +1245,5 @@ list_of_entities = [
     service_connector_crud_test_config,
     model_crud_test_config,
     event_source_crud_test_config,
-    trigger_crud_test_config
+    trigger_crud_test_config,
 ]
