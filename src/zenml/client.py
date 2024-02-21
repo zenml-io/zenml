@@ -1160,6 +1160,8 @@ class Client(metaclass=ClientMetaClass):
 
         # Create the update model
         update_model = StackUpdate(  # type: ignore[call-arg]
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
             stack_spec_path=stack_spec_file,
         )
 
@@ -1663,6 +1665,8 @@ class Client(metaclass=ClientMetaClass):
         )
 
         update_model = ComponentUpdate(  # type: ignore[call-arg]
+            workspace=self.active_workspace.id,
+            user=self.active_user.id,
             component_spec_path=component_spec_path,
         )
 
@@ -4295,13 +4299,15 @@ class Client(metaclass=ClientMetaClass):
         elif expiration_seconds is None:
             expiration_seconds = connector_model.expiration_seconds
 
-        connector_update = ServiceConnectorUpdate(  # type: ignore[call-arg]
+        connector_update = ServiceConnectorUpdate(
             name=name or connector_model.name,
             connector_type=connector.connector_type,
             description=description or connector_model.description,
             auth_method=auth_method or connector_model.auth_method,
             expires_skew_tolerance=expires_skew_tolerance,
             expiration_seconds=expiration_seconds,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
         )
         # Validate and configure the resources
         if configuration is not None:
@@ -4739,6 +4745,7 @@ class Client(metaclass=ClientMetaClass):
         ethics: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
+        save_models_to_registry: Optional[bool] = None,
     ) -> ModelResponse:
         """Updates an existing model in Model Control Plane.
 
@@ -4754,6 +4761,8 @@ class Client(metaclass=ClientMetaClass):
             ethics: The ethical implications of the model.
             add_tags: Tags to add to the model.
             remove_tags: Tags to remove from to the model.
+            save_models_to_registry: Whether to save the model to the
+                registry.
 
         Returns:
             The updated model.
@@ -4773,6 +4782,7 @@ class Client(metaclass=ClientMetaClass):
                 ethics=ethics,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
+                save_models_to_registry=save_models_to_registry,
             ),
         )
 

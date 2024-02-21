@@ -26,6 +26,9 @@ inputs:
   runners_cache_secret_access_key:
     description: Runner cache AWS secret access key
     required: true
+  discord_webhook:
+    description: Discord webhook URL
+    required: true
 runs:
   using: composite
   steps:
@@ -87,7 +90,15 @@ runs:
           ~/.cache/pip
         restore-keys: |
           ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
-
+    - name: Custom runners cache miss
+      uses: rjstone/discord-webhook-notify@v1
+      if: steps.custom-cache-pip.outputs.cache-hit != 'true'
+      continue-on-error: true
+      with:
+        severity: warn
+        details: The custom github runnners cache was missed and failed to restore
+          the cache from minio bucket
+        webhookUrl: ${{ inputs.discord_webhook }}
     # Disabled for now because it doesn't work well with multiple parallel jobs
     # - uses: syphar/restore-pip-download-cache@v1
     #   with:
