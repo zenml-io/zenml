@@ -35,6 +35,7 @@ class GreatExpectationsIntegration(Integration):
         "great-expectations>=0.15.0,<=0.15.47",
         # typing_extensions 4.6.0 and above doesn't work with GE
         "typing_extensions<4.6.0",
+        "sqlmodel<0.0.10",
     ]
 
     @staticmethod

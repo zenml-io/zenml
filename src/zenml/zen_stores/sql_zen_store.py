@@ -882,10 +882,10 @@ class SqlZenStore(BaseZenStore):
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
         else:
-            total = session.scalar(
-                select(func.count()).select_from(
-                    query.options(noload("*")).subquery()
-                )
+            total = (
+                session.query(func.count())
+                .select_from(query.options(noload("*")).subquery())
+                .scalar()
             )
 
         # Sorting
@@ -6704,7 +6704,9 @@ class SqlZenStore(BaseZenStore):
         assert pipeline_run.deployment
         num_steps = len(pipeline_run.deployment.to_model().step_configurations)
         new_status = get_pipeline_run_status(
-            step_statuses=[step_run.status for step_run in step_runs],
+            step_statuses=[
+                ExecutionStatus(step_run.status) for step_run in step_runs
+            ],
             num_steps=num_steps,
         )
 
