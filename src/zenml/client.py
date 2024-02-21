@@ -2404,7 +2404,7 @@ class Client(metaclass=ClientMetaClass):
         event_filter: Dict[str, Any],
         action: Dict[str, Any],
         action_flavor: str,
-        action_subtype: str,
+        action_subtype: PluginSubType,
     ) -> TriggerResponse:
         """Registers a trigger.
 

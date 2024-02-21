@@ -65,7 +65,7 @@ from zenml.enums import (
     ModelStages,
     StackComponentType,
     StoreType,
-    TaggableResourceTypes,
+    TaggableResourceTypes
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -124,6 +124,7 @@ from zenml.models.v2.core.run_metadata import RunMetadataRequest
 from zenml.models.v2.core.step_run import StepRunRequest
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
+from zenml.zen_stores.rest_zen_store import RestZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 DEFAULT_NAME = "default"
@@ -140,6 +141,12 @@ DEFAULT_NAME = "default"
 )
 def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     """Tests the basic crud operations for a given entity."""
+
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip("Test only applies to SQL store")
+
     # Test the creation
     created_entity = crud_test_config.create()
 
@@ -3603,6 +3610,32 @@ def test_connector_validation():
 #################
 # Models
 #################
+
+# class TestEventSource:
+#
+#     def test_create_event_source(self, clean_client: "Client"):
+#         """Test that creating event source works."""
+#         zs = clean_client.zen_store
+#         if not isinstance(zs, RestZenStore):
+#             pytest.skip("Test only applies to SQL store")
+#         event_source = zs.create_event_source(
+#             EventSourceRequest(
+#                 name="blupus_cat_cam",
+#                 configuration={},
+#                 description="Best event source ever",
+#                 flavor="github",
+#                 event_source_subtype=PluginSubType.WEBHOOK
+#             )
+#         )
+#
+#         zs.update_model(
+#             model_id=model_.id,
+#             model_update=ModelUpdate(
+#                 name="and yet another one",
+#             ),
+#         )
+#         model = zs.get_model(model_.id)
+#         assert model.name == "and yet another one"
 
 
 class TestModel:

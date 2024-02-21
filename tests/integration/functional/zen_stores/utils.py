@@ -14,11 +14,14 @@ import logging
 import uuid
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Set, \
+    Tuple
 
 from pydantic import BaseModel, Field, SecretStr
 
 from tests.integration.functional.utils import sample_name
+from zenml import EventSourceRequest, EventSourceUpdate, EventSourceFilter, \
+    TriggerRequest, TriggerUpdate, TriggerFilter
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -27,7 +30,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
     ArtifactType,
     SecretScope,
-    StackComponentType,
+    StackComponentType, PluginSubType,
 )
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
@@ -87,6 +90,9 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.steps import step
 from zenml.utils.string_utils import random_str
+from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.rest_zen_store import RestZenStore
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @step
@@ -858,6 +864,7 @@ class CrudTestConfig:
         filter_model: Type[BaseFilter],
         entity_name: str,
         update_model: Optional["BaseModel"] = None,
+        supported_zen_stores: Tuple[Type["BaseZenStore"]] = None,
         conditional_entities: Optional[Dict[str, "CrudTestConfig"]] = None,
     ):
         """Initializes a CrudTestConfig.
@@ -867,8 +874,7 @@ class CrudTestConfig:
             update_model: Model to use for updating the entity.
             filter_model: Model to use for filtering entities.
             entity_name: Name of the entity.
-            conditional_entity_names: Names of entities that need to exist
-                before the entity under test can be created.
+            supported_zen_stores: Set of supported Zen Stores. Defaults to all.
             conditional_entities: Other entities that need to exist before the
                 entity under test can be created. Expected to be a mapping from
                 field in the `create_model` to corresponding `CrudTestConfig`.
@@ -879,6 +885,10 @@ class CrudTestConfig:
         self.entity_name = entity_name
         self.conditional_entities = conditional_entities or {}
         self.id: Optional[uuid.UUID] = None
+        if not supported_zen_stores:
+            self.supported_zen_stores = (RestZenStore, SqlZenStore)
+        else:
+            self.supported_zen_stores = supported_zen_stores
 
     @property
     def list_method(
@@ -1154,6 +1164,43 @@ model_crud_test_config = CrudTestConfig(
     filter_model=ModelFilter,
     entity_name="model",
 )
+event_source_crud_test_config = CrudTestConfig(
+    create_model=EventSourceRequest(
+        name="blupus_cat_cam",
+        configuration={},
+        description="Best event source ever",
+        flavor="github",  # TODO: Implementations can be parametrized later
+        plugin_subtype=PluginSubType.WEBHOOK,
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    update_model=EventSourceUpdate(name=sample_name("updated_sample_component")),
+    filter_model=EventSourceFilter,
+    entity_name="event_source",
+    supported_zen_stores=(RestZenStore,)
+)
+trigger_crud_test_config = CrudTestConfig(
+    create_model=TriggerRequest(
+        name="blupus_feeder",
+        configuration={},
+        description="Feeds blupus when he meows.",
+        event_filter={},
+        event_source_id=uuid.uuid4(),  # will be overridden in create()
+        action={"pipeline_deployment_id": uuid.uuid4()},
+        flavor="github",  # TODO: Implementations can be parametrized later
+        action_subtype=PluginSubType.WEBHOOK,
+        action_flavor="builtin",
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    update_model=TriggerUpdate(name=sample_name("updated_sample_component")),
+    filter_model=TriggerFilter,
+    entity_name="trigger",
+    supported_zen_stores=(RestZenStore,),
+    conditional_entities={
+        "event_source_id": deepcopy(event_source_crud_test_config)
+    },
+)
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(
@@ -1189,4 +1236,6 @@ list_of_entities = [
     code_repository_crud_test_config,
     service_connector_crud_test_config,
     model_crud_test_config,
+    event_source_crud_test_config,
+    trigger_crud_test_config
 ]
