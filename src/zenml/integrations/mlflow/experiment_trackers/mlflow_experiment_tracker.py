@@ -252,6 +252,10 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 module = importlib.import_module(module_name)
                 # Call the autolog function with disable=True
                 module.autolog(disable=True)
+            except ImportError as e:
+                # only log on mlflow relevant errors
+                if "mlflow" in e.msg.lower():
+                    failed_frameworks.append(framework)
             except Exception:
                 failed_frameworks.append(framework)
 
