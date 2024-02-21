@@ -128,7 +128,7 @@ Airflow server manually.
     export AIRFLOW__CORE__DAGS_FOLDER=...
     export AIRFLOW__CORE__LOAD_EXAMPLES=false
     export AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
-    
+
     # Prevent crashes during forking on MacOS
     # https://github.com/apache/airflow/issues/28487
     export no_proxy=*
