@@ -60,6 +60,8 @@ class BaseEventHub(ABC):
         Returns:
             The active zen store.
         """
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+
         zen_store = GlobalConfiguration().zen_store
 
         if not isinstance(zen_store, SqlZenStore):
