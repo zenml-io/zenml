@@ -364,6 +364,17 @@ class Client(metaclass=ClientMetaClass):
         """
         cls._global_client = client
 
+    def _fail_for_sql_zen_store(self):
+        def decorator(func):
+            def inner(*args, **kwargs):
+                # No isinstance check to avoid importing ZenStore implementations
+                if self.zen_store.__class__.__name__ == 'SqlZenStore':
+                    raise TypeError("This method is not allowed when not connected "
+                                    "to a ZenML Server through the API interface..")
+                return func(*args, **kwargs)
+            return inner
+        return decorator
+
     def _set_active_root(self, root: Optional[Path] = None) -> None:
         """Set the supplied path as the repository root.
 
@@ -2212,6 +2223,7 @@ class Client(metaclass=ClientMetaClass):
 
     # --------------------------------- Event Sources -------------------------
 
+    @_fail_for_sql_zen_store
     def create_event_source(
         self,
         name: str,
@@ -2245,6 +2257,7 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.create_event_source(event_source=event_source)
 
+    @_fail_for_sql_zen_store
     def get_event_source(
         self,
         name_id_or_prefix: Union[UUID, str],
@@ -2326,6 +2339,7 @@ class Client(metaclass=ClientMetaClass):
             event_source_filter_model, hydrate=hydrate
         )
 
+    @_fail_for_sql_zen_store
     def update_event_source(
         self,
         name_id_or_prefix: Union[UUID, str],
@@ -2380,6 +2394,7 @@ class Client(metaclass=ClientMetaClass):
         )
         return updated_event_source
 
+    @_fail_for_sql_zen_store
     def delete_event_source(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Deletes an event_source.
 
@@ -2396,6 +2411,7 @@ class Client(metaclass=ClientMetaClass):
 
     # --------------------------------- Triggers -------------------------
 
+    @_fail_for_sql_zen_store
     def create_trigger(
         self,
         name: str,
@@ -2434,6 +2450,7 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.create_trigger(trigger=trigger)
 
+    @_fail_for_sql_zen_store
     def get_trigger(
         self,
         name_id_or_prefix: Union[UUID, str],
@@ -2459,6 +2476,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
+    @_fail_for_sql_zen_store
     def list_triggers(
         self,
         sort_by: str = "created",
@@ -2512,6 +2530,7 @@ class Client(metaclass=ClientMetaClass):
             trigger_filter_model, hydrate=hydrate
         )
 
+    @_fail_for_sql_zen_store
     def update_trigger(
         self,
         name_id_or_prefix: Union[UUID, str],
@@ -2565,6 +2584,7 @@ class Client(metaclass=ClientMetaClass):
         )
         return updated_trigger
 
+    @_fail_for_sql_zen_store
     def delete_trigger(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Deletes an trigger.
 
