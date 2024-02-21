@@ -104,11 +104,17 @@ class UserSchema(NamedSchema, table=True):
     )
     triggers: List["TriggerSchema"] = Relationship(
         back_populates="user",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "UserSchema.id==TriggerSchema.user_id",
+        },
     )
     auth_triggers: List["TriggerSchema"] = Relationship(
         back_populates="service_account",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "UserSchema.id==TriggerSchema.service_account_id",
+        },
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="user",

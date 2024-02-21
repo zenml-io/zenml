@@ -27,11 +27,11 @@ from zenml.models.v2.base.base_plugin_flavor import (
     BasePluginFlavorResponse,
 )
 from zenml.models.v2.base.page import Page
-from zenml.plugins.plugin_flavor_registry import plugin_flavor_registry
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
     handle_exceptions,
+    plugin_flavor_registry,
 )
 
 plugin_router = APIRouter(
@@ -70,7 +70,7 @@ def list_flavors(
     Returns:
         A page of flavors.
     """
-    flavors = plugin_flavor_registry.list_available_flavor_responses_for_type_and_subtype(
+    flavors = plugin_flavor_registry().list_available_flavor_responses_for_type_and_subtype(
         _type=type, subtype=subtype, page=page, size=size, hydrate=hydrate
     )
     return flavors
@@ -101,7 +101,7 @@ def get_flavor(
     Returns:
         The requested flavor response.
     """
-    plugin_flavor = plugin_flavor_registry.get_flavor_class(
+    plugin_flavor = plugin_flavor_registry().get_flavor_class(
         name=name, _type=type, subtype=subtype
     )
     return plugin_flavor.get_flavor_response_model(hydrate=True)

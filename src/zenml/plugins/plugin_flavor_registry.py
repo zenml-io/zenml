@@ -349,6 +349,3 @@ class PluginFlavorRegistry:
                     registry_entry.plugin_instance = (
                         registry_entry.flavor_class.PLUGIN_CLASS()
                     )
-
-
-plugin_flavor_registry = PluginFlavorRegistry()
