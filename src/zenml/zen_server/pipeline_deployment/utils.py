@@ -254,7 +254,7 @@ def generate_image_hash(dockerfile: str) -> str:
     Returns:
         The hash of the Dockerfile.
     """
-    hash_ = hashlib.md5()
+    hash_ = hashlib.md5()  # nosec
     # Uncomment this line when developing to guarantee a new docker image gets
     # built after restarting the server
     # hash_.update(f"{os.getpid()}".encode())
