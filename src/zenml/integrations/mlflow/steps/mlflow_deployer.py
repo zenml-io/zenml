@@ -150,9 +150,10 @@ def mlflow_model_deployer_step(
             f"MLflow deployment service started and reachable at:\n"
             f"    {new_service.prediction_url}\n"
         )
-        logger.info("Stopping existing services...")
-        for existing_service in existing_services:
-            existing_service.stop(timeout)
+        if existing_services:
+            logger.info("Stopping existing services...")
+            for existing_service in existing_services:
+                existing_service.stop(timeout)
         return new_service
 
     # Check whether an existing service can be reused
