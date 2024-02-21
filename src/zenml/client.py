@@ -378,13 +378,12 @@ class Client(metaclass=ClientMetaClass):
         @functools.wraps(method)
         def wrapper(self, *args, **kwargs):
             # No isinstance check to avoid importing ZenStore implementations
-            breakpoint()
             if self.zen_store.__class__.__name__ == "SqlZenStore":
                 raise TypeError(
                     "This method is not allowed when not connected "
                     "to a ZenML Server through the API interface.."
                 )
-            return method(*args, **kwargs)
+            return method(self, *args, **kwargs)
 
         return wrapper
 
