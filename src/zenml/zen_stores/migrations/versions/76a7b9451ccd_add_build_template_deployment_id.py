@@ -1,7 +1,7 @@
 """Add build template deployment ID [76a7b9451ccd].
 
 Revision ID: 76a7b9451ccd
-Revises: 0.55.2
+Revises: 0.55.3
 Create Date: 2023-11-10 15:00:51.057119
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "76a7b9451ccd"
-down_revision = "0.55.2"
+down_revision = "0.55.3"
 branch_labels = None
 depends_on = None
 
