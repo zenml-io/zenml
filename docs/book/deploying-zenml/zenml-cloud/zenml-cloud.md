@@ -4,19 +4,19 @@ description: Your one-stop MLOps control plane.
 
 # ☁ ZenML Cloud
 
-One of the most straightforward paths to start with a deployed ZenML server is through [ZenML Cloud](https://zenml.io/cloud). ZenML Cloud eliminates the need for you to dedicate time and resources to deploy and manage the ZenML server, allowing you to focus primarily on your MLOps workflows.
+One of the most straightforward paths to start with a deployed ZenML server is to use  [ZenML Cloud](https://zenml.io/cloud). ZenML Cloud eliminates the need for you to dedicate time and resources to deploy and manage the ZenML server, allowing you to focus primarily on your MLOps workflows.
 
 <div data-full-width="true">
 <figure><img src="../../.gitbook/assets/zenml-cloud-tenant-overview.png" alt=""><figcaption><p>ZenML Cloud comes equipped with a powerful cloud-only dashboard</p></figcaption></figure>
 </div>
 
 {% hint style="info" %}
-Should you be interested in assessing ZenML Cloud, you can simply create a [free account](https://cloud.zenml.io). Learn more about ZenML Cloud on the [ZenML Website](https://zenml.io/cloud).
+If you're interested in assessing ZenML Cloud, you can simply create a [free account](https://cloud.zenml.io). Learn more about ZenML Cloud on the [ZenML Website](https://zenml.io/cloud).
 {% endhint %}
 
 ## Key features
 
-ZenML Cloud is a Software-as-a-Service (SaaS) platform that enhances the functionalities of the open-source ZenML product. It equips you with a centralized interface to seamlessly launch and manage ZenML server instances. While it remains rooted in the robust open-source offering, ZenML Cloud offers added features designed to optimize your machine learning workflow.
+ZenML Cloud is a Software-as-a-Service (SaaS) platform that enhances the functionalities of the open-source ZenML product. It equips you with a centralized interface to seamlessly launch and manage ZenML server instances. While it remains rooted in the robust open-source offering, ZenML Cloud offers extra features designed to optimize your machine learning workflow.
 
 ### Managed ZenML Server (Multi-tenancy)
 
