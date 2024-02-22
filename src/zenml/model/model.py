@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model user facing interface to pass into pipeline or step."""
 
+import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -25,6 +26,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, PrivateAttr, root_validator
 
+from zenml.constants import MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -521,39 +523,6 @@ class Model(BaseModel):
             model = zenml_client.zen_store.get_model(
                 model_name_or_id=self.name
             )
-
-            difference: Dict[str, Any] = {}
-            for key in (
-                "license",
-                "audience",
-                "use_cases",
-                "limitations",
-                "trade_offs",
-                "ethics",
-                "save_models_to_registry",
-            ):
-                if self_attr := getattr(self, key, None):
-                    if self_attr != getattr(model, key):
-                        difference[key] = {
-                            "config": getattr(self, key),
-                            "db": getattr(model, key),
-                        }
-            if self.tags:
-                configured_tags = set(self.tags)
-                db_tags = {t.name for t in model.tags}
-                if db_tags != configured_tags:
-                    difference["tags added"] = list(configured_tags - db_tags)
-                    difference["tags removed"] = list(
-                        db_tags - configured_tags
-                    )
-            if difference:
-                logger.warning(
-                    "Provided model configuration does not match "
-                    f"existing model `{self.name}` with the "
-                    f"following changes: {difference}. If you want to "
-                    "update the model configuration, please use the "
-                    "`zenml model update` command."
-                )
         except KeyError:
             model_request = ModelRequest(
                 name=self.name,
@@ -646,6 +615,7 @@ class Model(BaseModel):
 
         Raises:
             RuntimeError: if the model version needs to be created, but provided name is reserved
+            RuntimeError: if the model version cannot be created
         """
         from zenml.client import Client
         from zenml.models import ModelVersionRequest
@@ -723,9 +693,33 @@ class Model(BaseModel):
                     " as an example. You can explore model versions using "
                     f"`zenml model version list {self.name}` CLI command."
                 )
-            model_version = zenml_client.zen_store.create_model_version(
-                model_version=mv_request
-            )
+            retries_made = 0
+            for i in range(MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION):
+                try:
+                    model_version = (
+                        zenml_client.zen_store.create_model_version(
+                            model_version=mv_request
+                        )
+                    )
+                    break
+                except EntityExistsError as e:
+                    if i == MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION - 1:
+                        raise RuntimeError(
+                            f"Failed to create model version "
+                            f"`{self.version if self.version else 'new'}` "
+                            f"in model `{self.name}`. Retried {retries_made} times. "
+                            "This could be driven by exceptionally high concurrency of "
+                            "pipeline runs. Please, reach out to us on ZenML Slack for support."
+                        ) from e
+                    # smoothed exponential back-off, it will go as 0.2, 0.3,
+                    # 0.45, 0.68, 1.01, 1.52, 2.28, 3.42, 5.13, 7.69, ...
+                    sleep = 0.2 * 1.5**i
+                    logger.debug(
+                        f"Failed to create new model version for "
+                        f"model `{self.name}`. Retrying in {sleep}..."
+                    )
+                    time.sleep(sleep)
+                    retries_made += 1
             self.version = model_version.name
             self.was_created_in_this_run = True
             logger.info(f"New model version `{self.version}` was created.")
