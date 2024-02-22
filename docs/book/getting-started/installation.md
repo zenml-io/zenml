@@ -80,3 +80,9 @@ docker run -it -d -p 8080:8080 zenmldocker/zenml-server
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+
+## Deploying the server
+
+While ZenML can be run completely locally, many of it's features rely on the ZenML server being deployed and available to other MLOps stack components centrally. Read more [here](../deploying-zenml/why-deploy-zenml.md).
+
+In order to deploy ZenML, you can [self-host](https://docs.zenml.io/deploying-zenml/zenml-self-hosted) or create a free account on [ZenML Cloud](https://cloud.zenml.io).
