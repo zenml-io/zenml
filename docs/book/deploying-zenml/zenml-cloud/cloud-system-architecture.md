@@ -5,7 +5,7 @@ description: Different variations of the ZenML Cloud architecture depending on y
 # System Architecture
 
 {% hint style="info" %}
-Should you be interested in assessing ZenML Cloud, you can register for a [free trial](https://cloud.zenml.io), which defaults to a [Scenario 1](#scenario-1-full-saas) deployment. To upgrade to different scenarios, please [reach out to us](mailto:cloud@zenml.io).
+Should you be interested in assessing ZenML Cloud, you can create a [free account](https://cloud.zenml.io), which defaults to a [Scenario 1](#scenario-1-full-saas) deployment. To upgrade to different scenarios, please [reach out to us](mailto:cloud@zenml.io).
 {% endhint %}
 
 Machine learning often involves data that is sensitive and thus data security is a fundamental requirement. The ZenML Cloud is flexible enough to meet your security requirements, from easy installations to completely airgapped deployments.
