@@ -153,6 +153,15 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
         """
         return True
 
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
+        return self.synchronous
+
 
 class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
     """Vertex Orchestrator flavor."""

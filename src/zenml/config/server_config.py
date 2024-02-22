@@ -141,6 +141,7 @@ class ServerConfiguration(BaseModel):
     external_server_id: Optional[UUID] = None
 
     rbac_implementation_source: Optional[str] = None
+    workload_manager_implementation_source: Optional[str] = None
 
     _deployment_id: Optional[UUID] = None
 
@@ -211,6 +212,15 @@ class ServerConfiguration(BaseModel):
             Whether RBAC is enabled on the server or not.
         """
         return self.rbac_implementation_source is not None
+
+    @property
+    def workload_manager_enabled(self) -> bool:
+        """Whether workload management is enabled on the server or not.
+
+        Returns:
+            Whether workload management is enabled on the server or not.
+        """
+        return self.workload_manager_implementation_source is not None
 
     def get_jwt_token_issuer(self) -> str:
         """Get the JWT token issuer.
