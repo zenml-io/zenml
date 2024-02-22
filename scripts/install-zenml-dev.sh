@@ -53,8 +53,11 @@ install_integrations() {
     echo "" >> integration-requirements.txt
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
 
-    pip install -r integration-requirements.txt
+    sort integration-requirements.txt > integration-requirements-sorted.txt
+
+    pip install -r integration-requirements-sorted.txt
     rm integration-requirements.txt
+    rm integration-requirements-sorted.txt
 
     # install langchain separately
     zenml integration install -y langchain
