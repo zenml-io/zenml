@@ -214,6 +214,10 @@ jobs:
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
         timeout-minutes: ${{ inputs.tmate_timeout }}
+      - name: print out pip freeze
+        shell: bash
+        run: |
+          pip freeze
       - name: Integration Tests (Ubuntu) - Slow CI
           # Ubuntu Slow CI integration tests run on single machines
         if: runner.os != 'macOS' && runner.os != 'Windows'
