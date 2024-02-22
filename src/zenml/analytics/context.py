@@ -264,8 +264,6 @@ class AnalyticsContext:
                 "client_id": str(self.client_id),
                 "user_id": str(self.user_id),
                 "server_id": str(self.server_id),
-                "organization_id": str(self.organization_id),
-                "account_id": str(self.organization_id),
                 "deployment_type": str(self.deployment_type),
                 "database_type": str(self.database_type),
                 "executed_by_service_account": self.executed_by_service_account,
@@ -274,6 +272,10 @@ class AnalyticsContext:
 
         if self.external_user_id:
             properties["external_user_id"] = self.external_user_id
+
+        if self.organization_id:
+            properties["organization_id"] = str(self.organization_id)
+            properties["account_id"] = str(self.organization_id)
 
         for k, v in properties.items():
             if isinstance(v, UUID):
