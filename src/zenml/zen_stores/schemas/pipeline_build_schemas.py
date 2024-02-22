@@ -15,7 +15,7 @@
 
 
 import json
-from typing import TYPE_CHECKING, List, Optional
+from typing import Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -36,11 +36,6 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-        PipelineDeploymentSchema,
-    )
 
 
 class PipelineBuildSchema(BaseSchema, table=True):
@@ -90,11 +85,14 @@ class PipelineBuildSchema(BaseSchema, table=True):
         back_populates="builds"
     )
 
-    deployments: List["PipelineDeploymentSchema"] = Relationship(
-        back_populates="build",
+    template_deployment_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target="pipeline_deployment",
+        source_column="template_deployment_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
-
-    template_deployment_id: Optional[UUID] = None
     images: str = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
