@@ -267,6 +267,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             code_reference=code_reference,
             created=self.created,
             updated=self.updated,
+            deployment_id=self.deployment_id,
         )
         metadata = None
         if hydrate:
