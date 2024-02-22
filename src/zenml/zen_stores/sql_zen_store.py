@@ -6788,7 +6788,7 @@ class SqlZenStore(BaseZenStore):
         foreign_keys: List[Tuple[Type[SQLModel], str]] = []
         for resource_attr in resource_attrs:
             # Extract the target schema from the annotation
-            annotation = UserSchema.__annotations__[resource_attr]
+            annotation = UserSchema.__annotations__[resource_attr].__args__[0]
 
             # The annotation must be of the form
             # `typing.List[ForwardRef('<schema-class>')]`
