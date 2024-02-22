@@ -149,8 +149,9 @@ any cloud or tool. It enables centralized pipeline management, enabling
 developers to write code once and effortlessly deploy it to various
 infrastructures.
 
-
-<img width="40%" src="/docs/book/.gitbook/assets/zenml-hero.png" alt="ZenML Hero"/>
+<div align="center">
+  <img width="50%" src="/docs/book/.gitbook/assets/zenml-hero.png" alt="ZenML Hero"/>
+</div>
 
 # 🤸 Quickstart
 
