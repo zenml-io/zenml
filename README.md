@@ -72,7 +72,7 @@
   <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
   <p align="center">
     <div align="center">
-      Join our <a href="https://zenml.io/slack-invite" target="_blank">
+      Join our <a href="https://zenml.io/slack" target="_blank">
       <img width="18" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
     <b>Slack Community</b> </a> and be part of the ZenML family.
     </div>
@@ -149,7 +149,8 @@ any cloud or tool. It enables centralized pipeline management, enabling
 developers to write code once and effortlessly deploy it to various
 infrastructures.
 
-![ZenML Hero Image.](/docs/book/.gitbook/assets/zenml-hero.png)
+
+<img width="40%" src="/docs/book/.gitbook/assets/zenml-hero.png" alt="ZenML Hero"/>
 
 # 🤸 Quickstart
 
