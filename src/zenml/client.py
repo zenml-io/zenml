@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
-
+import functools
 import json
 import os
 from abc import ABCMeta
@@ -188,6 +188,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+T = TypeVar("T")
 
 
 class ClientConfiguration(FileSyncModel):
@@ -363,6 +364,29 @@ class Client(metaclass=ClientMetaClass):
                 value.
         """
         cls._global_client = client
+
+    @staticmethod
+    def _fail_for_sql_zen_store(method: Callable[..., T]) -> Callable[..., T]:
+        """Decorator for all methods, that are disallowed when the client is not connected through REST API.
+
+        Args:
+            method: The method
+
+        Returns:
+            The decorated method.
+        """
+
+        @functools.wraps(method)
+        def wrapper(self: "Client", *args: Any, **kwargs: Any) -> Any:
+            # No isinstance check to avoid importing ZenStore implementations
+            if self.zen_store.__class__.__name__ == "SqlZenStore":
+                raise TypeError(
+                    "This method is not allowed when not connected "
+                    "to a ZenML Server through the API interface."
+                )
+            return method(self, *args, **kwargs)
+
+        return wrapper
 
     def _set_active_root(self, root: Optional[Path] = None) -> None:
         """Set the supplied path as the repository root.
@@ -2212,6 +2236,7 @@ class Client(metaclass=ClientMetaClass):
 
     # --------------------------------- Event Sources -------------------------
 
+    @_fail_for_sql_zen_store
     def create_event_source(
         self,
         name: str,
@@ -2245,6 +2270,7 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.create_event_source(event_source=event_source)
 
+    @_fail_for_sql_zen_store
     def get_event_source(
         self,
         name_id_or_prefix: Union[UUID, str],
@@ -2326,6 +2352,7 @@ class Client(metaclass=ClientMetaClass):
             event_source_filter_model, hydrate=hydrate
         )
 
+    @_fail_for_sql_zen_store
     def update_event_source(
         self,
         name_id_or_prefix: Union[UUID, str],
@@ -2380,6 +2407,7 @@ class Client(metaclass=ClientMetaClass):
         )
         return updated_event_source
 
+    @_fail_for_sql_zen_store
     def delete_event_source(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Deletes an event_source.
 
@@ -2396,6 +2424,7 @@ class Client(metaclass=ClientMetaClass):
 
     # --------------------------------- Triggers -------------------------
 
+    @_fail_for_sql_zen_store
     def create_trigger(
         self,
         name: str,
@@ -2445,6 +2474,7 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.create_trigger(trigger=trigger)
 
+    @_fail_for_sql_zen_store
     def get_trigger(
         self,
         name_id_or_prefix: Union[UUID, str],
@@ -2470,6 +2500,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
+    @_fail_for_sql_zen_store
     def list_triggers(
         self,
         sort_by: str = "created",
@@ -2523,6 +2554,7 @@ class Client(metaclass=ClientMetaClass):
             trigger_filter_model, hydrate=hydrate
         )
 
+    @_fail_for_sql_zen_store
     def update_trigger(
         self,
         name_id_or_prefix: Union[UUID, str],
@@ -2588,6 +2620,7 @@ class Client(metaclass=ClientMetaClass):
         )
         return updated_trigger
 
+    @_fail_for_sql_zen_store
     def delete_trigger(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Deletes an trigger.
 
