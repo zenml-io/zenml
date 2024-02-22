@@ -136,13 +136,13 @@ experimentation while writing code that is production-ready from the get-go.
 - 🛫 ZenML enables MLOps infrastructure experts to define, deploy, and manage
 sophisticated production environments that are easy to use for colleagues.
 
-![The long journey from experimentation to production.](/docs/book/.gitbook/assets/zenml-why.png)
+<div align="center">
+  <img width="60%" src="/docs/book/.gitbook/assets/zenml-hero.png" alt="ZenML Hero"/>
+</div>
 
 ZenML aims to optimize your entire machine learning lifecycle - you'll be 80% faster to production, generate 3x more models, and massively reduce your cloud spend.
 
-<div align="center">
-  <img width="50%" src="/docs/book/.gitbook/assets/zenml-hero.png" alt="ZenML Hero"/>
-</div>
+![The long journey from experimentation to production.](/docs/book/.gitbook/assets/zenml-why.png)
 
 # 🤸 Quickstart
 
