@@ -16,7 +16,7 @@ Should you be interested in assessing ZenML Cloud, you can simply create a [free
 
 ## Key features
 
-ZenML Cloud is a Software-as-a-Service (SaaS) platform that enhances the functionalities of the open-source ZenML product. It equips you with a centralized interface to seamlessly launch and manage ZenML server instances. While it remains rooted in the robust open-source offering, ZenML Cloud offers added features designed to optimize your machine learning workflow.
+ZenML Cloud is a Software-as-a-Service (SaaS) platform that enhances the functionalities of the open-source ZenML product. It equips you with a centralized interface to seamlessly launch and manage ZenML server instances. While it remains rooted in the robust open-source offering, ZenML Cloud offers extra features designed to optimize your machine learning workflow.
 
 ### Managed ZenML Server (Multi-tenancy)
 
