@@ -20,8 +20,6 @@ from zenml.actions.base_action import (
     BaseActionFlavor,
     BaseActionHandler,
 )
-
-from zenml.zen_server.pipeline_deployment.utils import run_pipeline
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import PluginSubType
@@ -32,6 +30,7 @@ from zenml.models import (
     TriggerUpdate,
 )
 from zenml.models.v2.base.base import BaseResponse
+from zenml.zen_server.pipeline_deployment.utils import run_pipeline
 from zenml.zen_server.rbac.models import (  # TODO: Maybe we move these into a common place?
     ResourceType,
 )
@@ -97,7 +96,7 @@ class PipelineRunActionHandler(BaseActionHandler):
         run_pipeline(
             deployment=deployment,
             run_config=config.run_config,
-            auth_context=api_token  # TODO: @stefan your time to shine
+            auth_context=api_token,  # TODO: @stefan your time to shine
         )
 
     def _validate_configuration(

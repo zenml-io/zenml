@@ -15,7 +15,7 @@
 
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
