@@ -150,7 +150,7 @@ developers to write code once and effortlessly deploy it to various
 infrastructures.
 
 <div align="center">
-    <img src="docs/book/.gitbook/assets/overview.gif">
+    <img src="docs/book/.gitbook/assets/zenml-hero.png">
 </div>
 
 # 🤸 Quickstart
