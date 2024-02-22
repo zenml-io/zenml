@@ -62,6 +62,8 @@ def test_model_create_short_names(clean_client_with_models: "Client"):
             "j",
             "-t",
             "k",
+            "-s",
+            "true",
         ],
     )
     assert result.exit_code == 0, result.stderr
@@ -75,6 +77,7 @@ def test_model_create_short_names(clean_client_with_models: "Client"):
     assert model.trade_offs == "f"
     assert model.ethics == "g"
     assert model.limitations == "e"
+    assert model.save_models_to_registry
     assert {t.name for t in model.tags} == {"i", "j", "k"}
 
 
@@ -108,6 +111,8 @@ def test_model_create_full_names(clean_client_with_models: "Client"):
             "j",
             "--tag",
             "k",
+            "--save-models-to-registry",
+            "false",
         ],
     )
     assert result.exit_code == 0, result.stderr
@@ -121,6 +126,7 @@ def test_model_create_full_names(clean_client_with_models: "Client"):
     assert model.trade_offs == "f"
     assert model.ethics == "g"
     assert model.limitations == "e"
+    assert not model.save_models_to_registry
     assert {t.name for t in model.tags} == {"i", "j", "k"}
 
 
@@ -144,6 +150,7 @@ def test_model_create_only_required(clean_client_with_models: "Client"):
     assert model.trade_offs is None
     assert model.ethics is None
     assert model.limitations is None
+    assert model.save_models_to_registry
     assert len(model.tags) == 0
 
 
@@ -164,7 +171,7 @@ def test_model_update(clean_client_with_models: "Client"):
 
     result = runner.invoke(
         update_command,
-        args=[NAME, "-d", "bar", "-r", "a", "-t", "b"],
+        args=[NAME, "-d", "bar", "-r", "a", "-t", "b", "-s", "false"],
     )
     assert result.exit_code == 0, result.stderr
 
@@ -172,6 +179,7 @@ def test_model_update(clean_client_with_models: "Client"):
     assert model.trade_offs == "foo"
     assert {t.name for t in model.tags} == {"b"}
     assert model.description == "bar"
+    assert not model.save_models_to_registry
 
 
 def test_model_create_without_required_fails(

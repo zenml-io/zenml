@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
+from pkg_resources import Requirement
 
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
@@ -66,53 +67,64 @@ class Integration(metaclass=IntegrationMeta):
         Returns:
             True if all required packages are installed, False otherwise.
         """
-        try:
-            for r in cls.get_requirements():
-                name, extras = parse_requirement(r)
-                if name:
-                    dist = pkg_resources.get_distribution(name)
-                    # Check if extras are specified and installed
-                    if extras:
-                        extra_list = extras[1:-1].split(",")
-                        for extra in extra_list:
-                            try:
-                                requirements = dist.requires(extras=[extra])  # type: ignore[arg-type]
-                            except pkg_resources.UnknownExtra as e:
-                                logger.debug("Unknown extra: " + str(e))
-                                return False
+        for r in cls.get_requirements():
+            try:
+                # First check if the base package is installed
+                dist = pkg_resources.get_distribution(r)
 
-                            for ri in requirements:
-                                try:
-                                    pkg_resources.get_distribution(ri)
-                                except IndexError:
-                                    logger.debug(
-                                        f"Unable to find required extra '{ri.project_name}' for "
-                                        f"requirements '{name}' coming from integration '{cls.NAME}'."
-                                    )
-                                    return False
+                # Next, check if the dependencies (including extras) are
+                # installed
+                deps: List[Requirement] = []
+
+                _, extras = parse_requirement(r)
+                if extras:
+                    extra_list = extras[1:-1].split(",")
+                    for extra in extra_list:
+                        try:
+                            requirements = dist.requires(extras=[extra])  # type: ignore[arg-type]
+                        except pkg_resources.UnknownExtra as e:
+                            logger.debug("Unknown extra: " + str(e))
+                            return False
+                        deps.extend(requirements)
                 else:
-                    logger.debug(
-                        f"Invalid requirement format '{r}' for integration {cls.NAME}."
-                    )
-                    return False
+                    deps = dist.requires()
 
-            logger.debug(
-                f"Integration {cls.NAME} is installed correctly with "
-                f"requirements {cls.get_requirements()}."
-            )
-            return True
-        except pkg_resources.DistributionNotFound as e:
-            logger.debug(
-                f"Unable to find required package '{e.req}' for "
-                f"integration {cls.NAME}."
-            )
-            return False
-        except pkg_resources.VersionConflict as e:
-            logger.debug(
-                f"VersionConflict error when loading installation {cls.NAME}: "
-                f"{str(e)}"
-            )
-            return False
+                for ri in deps:
+                    try:
+                        pkg_resources.get_distribution(ri)
+                    except pkg_resources.DistributionNotFound as e:
+                        logger.debug(
+                            f"Unable to find required dependency "
+                            f"'{e.req}' for requirement '{r}' "
+                            f"necessary for integration '{cls.NAME}'."
+                        )
+                        return False
+                    except pkg_resources.VersionConflict as e:
+                        logger.debug(
+                            f"Package version '{e.dist}' does not match "
+                            f"version '{e.req}' required by '{r}' "
+                            f"necessary for integration '{cls.NAME}'."
+                        )
+                        return False
+
+            except pkg_resources.DistributionNotFound as e:
+                logger.debug(
+                    f"Unable to find required package '{e.req}' for "
+                    f"integration {cls.NAME}."
+                )
+                return False
+            except pkg_resources.VersionConflict as e:
+                logger.debug(
+                    f"Package version '{e.dist}' does not match version "
+                    f"'{e.req}' necessary for integration {cls.NAME}."
+                )
+                return False
+
+        logger.debug(
+            f"Integration {cls.NAME} is installed correctly with "
+            f"requirements {cls.get_requirements()}."
+        )
+        return True
 
     @classmethod
     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
