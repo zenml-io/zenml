@@ -164,6 +164,7 @@ class PipelineBuildRequest(PipelineBuildBase, WorkspaceScopedRequest):
     pipeline: Optional[UUID] = Field(
         title="The pipeline that was used for this build."
     )
+    template_deployment_id: Optional[UUID] = None
 
 
 # ------------------ Update Model ------------------
@@ -202,6 +203,7 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     contains_code: bool = Field(
         title="Whether any image of the build contains user code.",
     )
+    template_deployment_id: Optional[UUID] = None
 
 
 class PipelineBuildResponseResources(WorkspaceScopedResponseResources):
@@ -423,6 +425,15 @@ class PipelineBuildResponse(
             the value of the property.
         """
         return self.get_metadata().contains_code
+
+    @property
+    def template_deployment_id(self) -> Optional[UUID]:
+        """The `template_deployment_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().template_deployment_id
 
 
 # ------------------ Filter Model ------------------

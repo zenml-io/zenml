@@ -63,6 +63,7 @@ from zenml.zen_server.routers import (
 from zenml.zen_server.utils import (
     initialize_plugins,
     initialize_rbac,
+    initialize_workload_manager,
     initialize_zen_store,
     server_config,
 )
@@ -156,6 +157,7 @@ def initialize() -> None:
     # race conditions
     initialize_zen_store()
     initialize_rbac()
+    initialize_workload_manager()
     initialize_plugins()
 
 

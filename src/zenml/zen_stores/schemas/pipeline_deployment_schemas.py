@@ -139,7 +139,11 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     stack: "StackSchema" = Relationship()
     pipeline: "PipelineSchema" = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
-    build: Optional["PipelineBuildSchema"] = Relationship()
+    build: Optional["PipelineBuildSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "foreign_keys": "[PipelineDeploymentSchema.build_id]"
+        }
+    )
     code_reference: Optional["CodeReferenceSchema"] = Relationship()
 
     pipeline_runs: List["PipelineRunSchema"] = Relationship(

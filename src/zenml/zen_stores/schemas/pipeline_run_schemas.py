@@ -288,6 +288,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             else None,
             created=self.created,
             updated=self.updated,
+            deployment_id=self.deployment_id,
         )
         metadata = None
         if include_metadata:

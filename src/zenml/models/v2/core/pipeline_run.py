@@ -144,6 +144,9 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     code_reference: Optional["CodeReferenceResponse"] = Field(
         default=None, title="The code reference that was used for this run."
     )
+    deployment_id: Optional[UUID] = Field(
+        default=None, title="The deployment that was used for this run."
+    )
     trigger_execution: Optional["TriggerExecutionResponse"] = Field(
         default=None, title="The trigger execution that triggered this run."
     )
@@ -309,6 +312,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().code_reference
+
+    @property
+    def deployment_id(self) -> Optional["UUID"]:
+        """The `deployment_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().deployment_id
 
     @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:
