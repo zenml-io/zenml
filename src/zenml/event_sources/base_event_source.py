@@ -196,6 +196,9 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
         Returns:
             The created event source.
+
+        Raises:
+            Reraises any exception thrown.
         """
         # Validate and instantiate the configuration from the request
         config = self.validate_event_source_configuration(
@@ -253,6 +256,9 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
         Returns:
             The updated event source.
+
+        Raises:
+            Reraises any exception thrown.
         """
         # Validate and instantiate the configuration from the original event
         # source
@@ -332,6 +338,9 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             force: Whether to force delete the event source from the database
                 even if the event source handler fails to delete the event
                 source.
+
+        Raises:
+            Reraises any exception thrown.
         """
         # Validate and instantiate the configuration from the original event
         # source
@@ -414,6 +423,9 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
         Args:
             configuration: The configuration to validate.
+
+        Returns:
+            Instantiated event filter config.
 
         Raises:
             ValueError: if the configuration is invalid.
@@ -664,6 +676,9 @@ class BaseEventSourceFlavor(BasePluginFlavor, ABC):
 
         Args:
             hydrate: Whether the model should be hydrated.
+
+        Returns:
+            The Flavor Response model for the Event Source implementation
         """
         metadata = None
         if hydrate:

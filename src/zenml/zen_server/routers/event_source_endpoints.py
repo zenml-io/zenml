@@ -201,8 +201,6 @@ def create_event_source(
         The created event source.
 
     Raises:
-        IllegalOperationError: If the workspace specified in the stack
-            component does not match the current workspace.
         ValueError: If the plugin for an event source is not a valid event
             source plugin.
     """
@@ -296,9 +294,6 @@ def delete_event_source(
     Args:
         event_source_id: Name of the event_source.
         force: Flag deciding whether to force delete the event source.
-
-    Returns:
-        The deleted event_source.
 
     Raises:
         ValueError: If the plugin for an event source is not a valid event

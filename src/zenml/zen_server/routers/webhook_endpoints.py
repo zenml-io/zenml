@@ -64,6 +64,12 @@ def webhook(
         event_source_id: The event_source_id
         request: The request object
         raw_body: The raw request body
+
+    Raises:
+        AuthorizationException: If the Event Source does not exist.
+        KeyError: If no appropriate Plugin found in the plugin registry
+        ValueError: If the id of the Event Source is not actually a webhook event source
+        WebhookInactiveError: In case this webhook has been deactivated
     """
     # Get the Event Source
     try:
@@ -73,7 +79,7 @@ def webhook(
             f"Webhook HTTP request received for unknown event source "
             f"'{event_source_id}'."
         )
-        raise AuthorizationException(
+        raise AuthorizationException(  # TODO: Are we sure about this error message?
             f"No webhook is registered at "
             f"'{router.prefix}/{event_source_id}'"
         )

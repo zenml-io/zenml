@@ -66,8 +66,8 @@ class BasePluginFlavorResponse(
     ) -> "BasePluginFlavorResponse[AnyPluginBody, AnyPluginMetadata, AnyPluginResources]":
         """Abstract method to fetch the hydrated version of the model.
 
-        Raises:
-            NotImplementedError: in case the method is not implemented.
+        Returns:
+            Hydrated version of the PluginFlavorResponse
         """
         # TODO: shouldn't this call the Zen store ? The client should not have
         #  to know about the plugin flavor registry

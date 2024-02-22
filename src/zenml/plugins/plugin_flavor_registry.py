@@ -53,7 +53,11 @@ class PluginFlavorRegistry:
 
     @property
     def _types(self) -> List[PluginType]:
-        """Returns all available flavors."""
+        """Returns all available types.
+
+        Returns:
+            List of all available plugin types.
+        """
         return list(self.plugin_flavors.keys())
 
     def list_subtypes_within_type(
@@ -66,9 +70,6 @@ class PluginFlavorRegistry:
 
         Returns:
             A list of available plugin subtypes for this plugin type.
-
-        Raises:
-            KeyError: If the type has no registry entries.
         """
         return list(self.plugin_flavors[_type].keys())
 
@@ -80,6 +81,9 @@ class PluginFlavorRegistry:
         Args:
             _type: The type of Plugin
             subtype: The subtype of the plugin
+
+        Returns:
+            Dict of Registry entries sorted by flavor name.
         """
         if (
             _type in self.plugin_flavors
@@ -103,6 +107,9 @@ class PluginFlavorRegistry:
             subtype: The subtype of the plugin
             page: For optional pagination
             size: For optional pagination
+
+        Returns:
+            List of flavor names for the given type/subtype combination.
         """
         flavor_names = list(
             self._flavor_entries(_type=_type, subtype=subtype).keys()
@@ -128,6 +135,9 @@ class PluginFlavorRegistry:
         Args:
             _type: The type of Plugin
             subtype: The subtype of the plugin
+
+        Returns:
+            List of flavors for the given type/subtype combination.
         """
         flavors = list(
             [
@@ -225,9 +235,6 @@ class PluginFlavorRegistry:
 
         Returns:
             The registry entry.
-
-        Raises:
-            KeyError: In case no entry exists.
         """
         return self.plugin_flavors[_type][subtype][flavor_name]
 
@@ -289,6 +296,9 @@ class PluginFlavorRegistry:
 
         Returns:
             `BaseEventConfiguration` subclass that was registered for this key.
+
+        Raises:
+            KeyError: If there is no entry at this type, subtype, flavor
         """
         try:
             return self._get_registry_entry(

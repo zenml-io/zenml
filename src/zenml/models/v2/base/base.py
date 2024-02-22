@@ -406,7 +406,6 @@ class BaseIdentifiedResponse(
         Raises:
             IllegalOperationError: If the user lacks permission to access the
                 entity represented by this response.
-            RuntimeError: If the body was not included in the response.
         """
         if self.permission_denied:
             raise IllegalOperationError(

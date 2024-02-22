@@ -152,6 +152,9 @@ def get_trigger(
 
     Returns:
         The requested trigger.
+
+    Raises:
+        ValueError: If the action flavor/subtype combination is not actually a webhook event source
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=hydrate)
 
@@ -196,8 +199,7 @@ def create_trigger(
         The created trigger.
 
     Raises:
-        IllegalOperationError: If the workspace specified in the stack
-            component does not match the current workspace.
+        ValueError: If the action flavor/subtype combination is not actually a webhook event source
     """
     if trigger.service_account_id:
         service_account = zen_store().get_service_account(
@@ -270,6 +272,9 @@ def update_trigger(
 
     Returns:
         The updated trigger.
+
+    Raises:
+        ValueError: If the action flavor/subtype combination is not actually a webhook event source
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id)
 
@@ -344,6 +349,9 @@ def delete_trigger(
     Args:
         trigger_id: Name of the trigger.
         force: Flag deciding whether to force delete the trigger.
+
+    Raises:
+        ValueError: If the action flavor/subtype combination is not actually a webhook event source
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id)
 
