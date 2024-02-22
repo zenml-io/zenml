@@ -103,12 +103,14 @@ class BaseResponse(
     """Base domain model for all responses."""
 
     # Body and metadata pair
-    body: Optional["AnyBody"] = Field(title="The body of the resource.")
+    body: Optional["AnyBody"] = Field(
+        default=None, title="The body of the resource."
+    )
     metadata: Optional["AnyMetadata"] = Field(
-        title="The metadata related to this resource."
+        default=None, title="The metadata related to this resource."
     )
     resources: Optional["AnyResources"] = Field(
-        title="The resources related to this resource."
+        default=None, title="The resources related to this resource."
     )
 
     _response_update_strategy: (

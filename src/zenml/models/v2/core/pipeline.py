@@ -23,7 +23,6 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models import (
     BaseFilter,
-    BaseIdentifiedResponse,
     BaseResponseMetadata,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -32,7 +31,8 @@ from zenml.models import (
     WorkspaceScopedResponseMetadata,
 )
 from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
+    BaseResponse,
+    BaseResponseBody,
     BaseResponseResources,
 )
 from zenml.models.v2.base.scoped import WorkspaceScopedResponseResources
@@ -287,7 +287,7 @@ class PipelineFilter(WorkspaceScopedFilter):
 # ------------------ Pipeline Namespaces ------------------
 
 
-class PipelineNamespaceResponseBody(BaseDatedResponseBody):
+class PipelineNamespaceResponseBody(BaseResponseBody):
     """Response body for pipeline namespaces."""
 
     latest_run_id: Optional[UUID] = Field(
@@ -309,7 +309,7 @@ class PipelineNamespaceResponseResources(BaseResponseResources):
 
 
 class PipelineNamespaceResponse(
-    BaseIdentifiedResponse[
+    BaseResponse[
         PipelineNamespaceResponseBody,
         PipelineNamespaceResponseMetadata,
         PipelineNamespaceResponseResources,

@@ -37,7 +37,7 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import SecretStr, root_validator, validator
 from sqlalchemy import asc, desc, func
@@ -127,6 +127,7 @@ from zenml.models import (
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseIdentifiedResponse,
+    BaseResponse,
     CodeReferenceRequest,
     CodeReferenceResponse,
     CodeRepositoryFilter,
@@ -306,7 +307,11 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
-B = TypeVar("B", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]  # noqa: F821
+AnyIdentifiedResponse = TypeVar(
+    "AnyIdentifiedResponse",
+    bound=BaseIdentifiedResponse,  # type: ignore[type-arg]  # noqa: F821
+)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -850,7 +855,9 @@ class SqlZenStore(BaseZenStore):
         query: Union[Select[Any], SelectOfScalar[Any]],
         table: Type[AnySchema],
         filter_model: BaseFilter,
-        custom_schema_to_model_conversion: Optional[Callable[..., B]] = None,
+        custom_schema_to_model_conversion: Optional[
+            Callable[..., AnyResponse]
+        ] = None,
         custom_fetch: Optional[
             Callable[
                 [
@@ -862,7 +869,7 @@ class SqlZenStore(BaseZenStore):
             ]
         ] = None,
         hydrate: bool = False,
-    ) -> Page[B]:
+    ) -> Page[AnyResponse]:
         """Given a query, return a Page instance with a list of filtered Models.
 
         Args:
@@ -944,7 +951,7 @@ class SqlZenStore(BaseZenStore):
             )
 
         # Convert this page of items from schemas to models.
-        items: List[B] = []
+        items: List[AnyResponse] = []
         for schema in item_schemas:
             # If a custom conversion function is provided, use it.
             if custom_schema_to_model_conversion:
@@ -3318,11 +3325,9 @@ class SqlZenStore(BaseZenStore):
             body = PipelineNamespaceResponseBody(
                 latest_run_id=latest_run_id,
                 latest_run_status=latest_run_status,
-                created=None,
-                updated=None,
             )
 
-            return PipelineNamespaceResponse(id=uuid4(), name=name, body=body)
+            return PipelineNamespaceResponse(name=name, body=body)
 
         def _custom_fetch(
             session: Session,
@@ -7844,7 +7849,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_entity_by_id(
         self, entity_id: UUID, schema_class: Type[AnySchema]
-    ) -> Optional[B]:
+    ) -> Optional[AnyIdentifiedResponse]:
         """Get an entity by ID.
 
         Args:
@@ -7867,7 +7872,7 @@ class SqlZenStore(BaseZenStore):
 
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                return cast(B, to_model(hydrate=True))
+                return cast(AnyIdentifiedResponse, to_model(hydrate=True))
             else:
                 raise RuntimeError("Unable to convert schema to model.")
 
