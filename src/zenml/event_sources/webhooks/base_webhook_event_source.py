@@ -168,6 +168,28 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
                 "Webhook signature verification failed!"
             )
 
+    def _load_payload(
+        self, raw_body: bytes, headers: Dict[str, str]
+    ) -> Dict[str, Any]:
+        """Converts the raw body of the request into a python dictionary.
+
+        Args:
+            raw_body: The raw event body.
+            headers: The request headers.
+
+        Return:
+            An instance of the event source specific pydantic model.
+
+        Raises:
+            ValueError: In case the body can not be parsed.
+        """
+        # For now assume all webhook events are json encoded and parse
+        # the body as such.
+        try:
+            return json.loads(raw_body)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON body received: {e}")
+
     def process_webhook_event(
         self,
         event_source: EventSourceResponse,
@@ -181,12 +203,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
             raw_body: The raw inbound webhook event.
             headers: The headers of the inbound webhook event.
         """
-        # For now assume all webhook events are json encoded and parse
-        # the body as such.
-        try:
-            json_body = json.loads(raw_body)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON body received: {e}")
+        json_body = self._load_payload(raw_body=raw_body, headers=headers)
 
         webhook_secret = self._get_webhook_secret(event_source)
         if webhook_secret:

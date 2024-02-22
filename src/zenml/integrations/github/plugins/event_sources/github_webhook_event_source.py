@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the github webhook event source."""
 import json
+import urllib
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type
 from uuid import UUID
@@ -243,6 +244,31 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
             raise ValueError("Event did not match the pydantic model.")
         else:
             return github_event
+
+    def _load_payload(
+        self, raw_body: bytes, headers: Dict[str, str]
+    ) -> Dict[str, Any]:
+        """Converts the raw body of the request into a python dictionary.
+
+        For github webhooks users can optionally choose to urlencode the
+        messages. The body will look something like this:
+        b'payload=%7B%22...%7D%7D'. In this case the header will contain the
+        following field {'content-type': 'application/x-www-form-urlencoded'}.
+
+        Args:
+            raw_body: The raw event body.
+            headers: The request headers.
+
+        Return:
+            An instance of the event source specific pydantic model.
+        """
+        content_type = headers.get("content-type", "")
+        if content_type == "application/x-www-form-urlencoded":
+            string_body = urllib.parse.unquote_plus(raw_body.decode())
+            # Body looks like this: "payload={}", removing the prefix
+            raw_body = string_body[8:].encode()
+
+        return super()._load_payload(raw_body=raw_body, headers=headers)
 
     def _get_webhook_secret(
         self, event_source: EventSourceResponse
