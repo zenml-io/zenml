@@ -30,6 +30,7 @@ from zenml.models import (
     TriggerUpdate,
 )
 from zenml.models.v2.base.base import BaseResponse
+from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.pipeline_deployment.utils import run_pipeline
 from zenml.zen_server.rbac.models import (  # TODO: Maybe we move these into a common place?
     ResourceType,
@@ -74,18 +75,19 @@ class PipelineRunActionHandler(BaseActionHandler):
         self,
         config: ActionConfig,
         trigger_execution: TriggerExecutionResponse,
-        api_token: str,
+        auth_context: AuthContext,
     ) -> None:
         """Execute an action.
 
         Args:
             config: The action configuration
             trigger_execution: The trigger execution
-            api_token: An API token that can be used by external workloads to
-                authenticate with the server during the execution of the action.
-                This API token is associated with the service account that
-                was configured for the trigger that activated the action and has
-                a validity defined by the trigger's authentication window.
+            auth_context: Authentication context with an API token that can be
+                used by external workloads to authenticate with the server
+                during the execution of the action. This API token is associated
+                with the service account that was configured for the trigger
+                that activated the action and has a validity defined by the
+                trigger's authentication window.
         """
         from zenml.zen_server.utils import zen_store
 
@@ -96,7 +98,7 @@ class PipelineRunActionHandler(BaseActionHandler):
         run_pipeline(
             deployment=deployment,
             run_config=config.run_config,
-            auth_context=api_token,  # TODO: @stefan your time to shine
+            auth_context=auth_context,
         )
 
     def _validate_configuration(

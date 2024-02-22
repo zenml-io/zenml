@@ -365,6 +365,7 @@ class Client(metaclass=ClientMetaClass):
         """
         cls._global_client = client
 
+    @staticmethod
     def _fail_for_sql_zen_store(method: Callable[..., T]) -> Callable[..., T]:
         """Decorator for all methods, that are disallowed when the client is not connected through REST API.
 

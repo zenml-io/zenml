@@ -27,6 +27,7 @@ from zenml.models import (
     TriggerExecutionResponse,
     TriggerResponse,
 )
+from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.jwt import JWTToken
 
 if TYPE_CHECKING:
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ActionHandlerCallback = Callable[
-    [Dict[str, Any], TriggerExecutionResponse, str], None
+    [Dict[str, Any], TriggerExecutionResponse, AuthContext], None
 ]
 
 
@@ -133,6 +134,11 @@ class BaseEventHub(ABC):
                 minutes=trigger.auth_window
             )
         encoded_token = token.encode(expires=expires)
+        auth_context = AuthContext(
+            user=trigger.service_account,
+            access_token=token,
+            encoded_access_token=encoded_token,
+        )
 
         try:
             # TODO: We need to make this async, as this might take quite some
@@ -143,7 +149,7 @@ class BaseEventHub(ABC):
             action_callback(
                 action_config,
                 trigger_execution,
-                encoded_token,
+                auth_context,
             )
         except Exception:
             # Don't let action errors stop the event hub from working
