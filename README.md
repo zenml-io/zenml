@@ -142,16 +142,14 @@ experimentation while writing code that is production-ready from the get-go.
 - 🛫 ZenML enables MLOps infrastructure experts to define, deploy, and manage
 sophisticated production environments that are easy to use for colleagues.
 
-![The long journey from experimentation to production.](/docs/book/.gitbook/assets/zenml-why.png)
+![The long journey from experimentation to production.](/docs/book/.gitbook/assets/zenml-hero.png)
 
 ZenML provides a user-friendly syntax designed for ML workflows, compatible with
 any cloud or tool. It enables centralized pipeline management, enabling
 developers to write code once and effortlessly deploy it to various
 infrastructures.
 
-<div align="center">
-    <img src="docs/book/.gitbook/assets/zenml-hero.png">
-</div>
+![ZenML Hero Image.](/docs/book/.gitbook/assets/zenml-hero.png)
 
 # 🤸 Quickstart
 
