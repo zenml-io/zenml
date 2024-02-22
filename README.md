@@ -89,7 +89,7 @@
     ·
     <a href="https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22">Contribute to Open Source</a>
     ·
-    <a href="https://www.zenml.io/company#team">Meet the Team</a>
+    <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
     🎉 Version 0.55.3 is out. Check out the release notes
@@ -105,21 +105,15 @@
 <details>
   <summary>🏁 Table of Contents</summary>
   <ol>
-    <li><a href="#-introduction">Introduction</a></li>
-    <li><a href="#-quickstart">Quickstart</a></li>
+    <li><a href="#🤖-introduction">Introduction</a></li>
+    <li><a href="#🤸-quickstart">Quickstart</a></li>
     <li>
-      <a href="#-create-your-own-mlops-platform">Create your own MLOps Platform</a>
-      <ul>
-        <li><a href="##-1-deploy-zenml">Deploy ZenML</a></li>
-        <li><a href="#-2-deploy-stack-components">Deploy Stack Components</a></li>
-        <li><a href="#-3-create-a-pipeline">Create a Pipeline</a></li>
-        <li><a href="#-4-start-the-dashboard">Start the Dashboard</a></li>
-      </ul>
+      <a href="#🖼️-learning">Learning</a>
     </li>
-    <li><a href="#-roadmap">Roadmap</a></li>
-    <li><a href="#-contributing-and-community">Contributing and Community</a></li>
-    <li><a href="#-getting-help">Getting Help</a></li>
-    <li><a href="#-license">License</a></li>
+    <li><a href="#🗺-roadmap">Roadmap</a></li>
+    <li><a href="#🙌-contributing-and-community">Contributing and Community</a></li>
+    <li><a href="#🆘-getting-help">Getting Help</a></li>
+    <li><a href="#📜-license">License</a></li>
   </ol>
 </details>
 
@@ -144,10 +138,7 @@ sophisticated production environments that are easy to use for colleagues.
 
 ![The long journey from experimentation to production.](/docs/book/.gitbook/assets/zenml-why.png)
 
-ZenML provides a user-friendly syntax designed for ML workflows, compatible with
-any cloud or tool. It enables centralized pipeline management, enabling
-developers to write code once and effortlessly deploy it to various
-infrastructures.
+ZenML aims to optimize your entire machine learning lifecycle - you'll be 80% faster to production, generate 3x more models, and massively reduce your cloud spend.
 
 <div align="center">
   <img width="50%" src="/docs/book/.gitbook/assets/zenml-hero.png" alt="ZenML Hero"/>
@@ -168,9 +159,16 @@ Take a tour with the guided quickstart by running:
 zenml go
 ```
 
-# 🖼️ Create your own MLOps Platform
+# 🖼️ Learning
 
+The best way to learn about ZenML is the [docs](https://docs.zenml.io) - with the best path being through the [Starter Guide](https://docs.zenml.io/user-guide/starter-guide).
 
+For inspiration, here are some other examples & use-cases:
+
+1. [E2E Batch Inference](examples/e2e/): Feature engineering, training, and inference pipelines for tabular machine learning.
+2. [Basic NLP with BERT](examples/e2e_nlp/): Feature engineering, training, and inference focused on NLP.
+3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents): Using Langchain to create a simple RAG pipeline.
+4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace.
 
 # 🗺 Roadmap
 
