@@ -9,12 +9,12 @@ jobs:
   setup-and-test:
     uses: ./.github/workflows/unit-test.yml
     with:
-      os: ubuntu-latest
+      os: ubuntu-dind-runners
       python-version: '3.8'
     secrets: inherit
   mlstacks-compatibility-check:
     needs: setup-and-test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-dind-runners
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
@@ -72,7 +72,7 @@ jobs:
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
   wait-for-package-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-dind-runners
     needs: publish-python-package
     steps:
       - name: Sleep for 4 minutes
