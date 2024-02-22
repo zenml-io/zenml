@@ -639,7 +639,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 # due to failed version registration or misuse. In such rare
                 # cases, it's best to suppress those versions that are not usable.
                 logger.warning(
-                    f"Error encountered while loading MLflow model version: {e}"
+                    "Error encountered while loading MLflow model version "
+                    f"`{mlflow_model_version.name}:{mlflow_model_version.version}`: {e}"
                 )
             if count and len(model_versions) == count:
                 return model_versions
