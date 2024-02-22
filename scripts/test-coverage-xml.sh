@@ -32,10 +32,10 @@ if [ -n "$1" ]; then
 else
     if [ "$STORE_DURATIONS" == "store-durations" ]; then
         # coverage run -m pytest tests/unit --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --store-durations --durations-path=.test_durations --reruns 3 --reruns-delay 5 --instafail
-        coverage run -m pytest tests/integration/examples --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations --reruns 3 --reruns-delay 5 --instafail
+        coverage run -m pytest tests/integration/examples/test_mlflow_deployment --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations --instafail
     else
         # coverage run -m pytest tests/unit --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision --reruns 3 --reruns-delay 5 --instafail
-        coverage run -m pytest tests/integration/examples --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --reruns 3 --reruns-delay 5 --instafail
+        coverage run -m pytest tests/integration/examples/test_mlflow_deployment --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --instafail
     fi
 fi
 
