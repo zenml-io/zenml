@@ -35,13 +35,7 @@ from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.pipeline_deployment.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
-from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
-    get_workload_manager,
-)
-from zenml.zen_server.utils import (
-    server_config,
-    zen_store,
-)
+from zenml.zen_server.utils import server_config, workload_manager, zen_store
 
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 
@@ -113,8 +107,6 @@ def run_pipeline(
     )
 
     def _task() -> None:
-        workload_manager = get_workload_manager(workload_id=new_deployment.id)
-
         pypi_requirements, apt_packages = get_requirements_for_stack(
             stack=stack
         )
@@ -129,14 +121,19 @@ def run_pipeline(
 
         image_hash = generate_image_hash(dockerfile=dockerfile)
 
-        runner_image = workload_manager.build_and_push_image(
+        runner_image = workload_manager().build_and_push_image(
+            workload_id=new_deployment.id,
             dockerfile=dockerfile,
             image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
             sync=True,
         )
 
-        workload_manager.log("Starting pipeline deployment.")
-        workload_manager.run(
+        workload_manager().log(
+            workload_id=new_deployment.id,
+            message="Starting pipeline deployment.",
+        )
+        workload_manager().run(
+            workload_id=new_deployment.id,
             image=runner_image,
             command=command,
             arguments=args,
@@ -144,7 +141,10 @@ def run_pipeline(
             timeout_in_seconds=30,
             sync=True,
         )
-        workload_manager.log("Pipeline deployed successfully.")
+        workload_manager().log(
+            workload_id=new_deployment.id,
+            message="Pipeline deployed successfully.",
+        )
 
     if background_tasks:
         background_tasks.add_task(_task)

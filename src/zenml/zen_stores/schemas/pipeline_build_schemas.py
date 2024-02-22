@@ -95,15 +95,6 @@ class PipelineBuildSchema(BaseSchema, table=True):
     )
 
     template_deployment_id: Optional[UUID] = None
-    # build_foreign_key_field(
-    #     source=__tablename__,
-    #     target="pipeline_deployment",
-    #     source_column="template_deployment_id",
-    #     target_column="id",
-    #     ondelete="CASCADE",
-    #     nullable=True,
-    # )
-
     images: str = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(

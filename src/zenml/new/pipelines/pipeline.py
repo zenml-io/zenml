@@ -52,12 +52,8 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-<<<<<<< HEAD
 from zenml.enums import StackComponentType
-=======
-from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import EntityExistsError
->>>>>>> develop
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (

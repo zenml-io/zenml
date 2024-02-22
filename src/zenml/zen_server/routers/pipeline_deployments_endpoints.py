@@ -27,9 +27,6 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
-    get_workload_manager,
-)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -41,6 +38,7 @@ from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
     server_config,
+    workload_manager,
     zen_store,
 )
 
@@ -208,4 +206,4 @@ if server_config().workload_manager_enabled:
             hydrate=True,
         )
 
-        return get_workload_manager(workload_id=deployment.id).get_logs()
+        return workload_manager().get_logs(workload_id=deployment.id)
