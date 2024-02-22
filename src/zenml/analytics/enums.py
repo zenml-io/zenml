@@ -20,6 +20,7 @@ class AnalyticsEvent(str, Enum):
 
     # Connected to server
     CONNECT_TO_SERVER = "Server connected"
+    SIGNED_IN = "Signed In"
 
     # Pipelines
     RUN_PIPELINE = "Pipeline run"
