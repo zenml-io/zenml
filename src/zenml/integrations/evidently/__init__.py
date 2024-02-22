@@ -54,7 +54,7 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently>0.2.6,<0.4.5", "sqlmodel<0.0.10"]  # supports pyyaml 6
+    REQUIREMENTS = ["evidently>0.2.6,<0.4.5", "sqlmodel>=0.0.9, <=0.0.16"]  # supports pyyaml 6
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
