@@ -137,7 +137,7 @@ class GithubEvent(BaseEvent):
         """The type of github event.
 
         Args:
-            The type of the event pased on github specific fields.
+            The type of the event based on github specific fields.
 
         Returns:
             The type of the event.
