@@ -177,7 +177,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
             raw_body: The raw event body.
             headers: The request headers.
 
-        Return:
+        Returns:
             An instance of the event source specific pydantic model.
 
         Raises:

@@ -3778,9 +3778,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The event_source.
-
-        Raises:
-            KeyError: if the stack event_source doesn't exist.
         """
         with Session(self.engine) as session:
             return self._get_event_source(

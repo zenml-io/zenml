@@ -76,6 +76,9 @@ class BaseActionFlavor(BasePluginFlavor, ABC):
 
         Args:
             hydrate: Whether the model should be hydrated.
+
+        Returns:
+            The response model.
         """
         metadata = None
         if hydrate:
@@ -247,6 +250,8 @@ class BaseActionHandler(BasePlugin, ABC):
 
         Returns:
             The created trigger.
+
+        # noqa: DAR401
         """
         # Validate and instantiate the configuration from the request
         config = self.validate_action_configuration(trigger.action)
@@ -301,6 +306,8 @@ class BaseActionHandler(BasePlugin, ABC):
 
         Returns:
             The updated trigger.
+
+        # noqa: DAR401
         """
         # Validate and instantiate the configuration from the original event
         # source
@@ -381,6 +388,8 @@ class BaseActionHandler(BasePlugin, ABC):
             force: Whether to force delete the trigger from the database
                 even if the trigger handler fails to delete the event
                 source.
+
+        # noqa: DAR401
         """
         # Validate and instantiate the configuration from the original event
         # source

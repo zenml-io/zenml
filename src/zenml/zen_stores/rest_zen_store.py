@@ -1476,9 +1476,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated event_source.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
         """
         return self._update_resource(
             resource_id=event_source_id,
@@ -2675,9 +2672,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The trigger.
-
-        Raises:
-            KeyError: if the stack trigger doesn't exist.
         """
         return self._get_resource(
             resource_id=trigger_id,

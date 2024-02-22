@@ -60,6 +60,9 @@ class BaseEventHub(ABC):
 
         Returns:
             The active zen store.
+
+        Raises:
+            ValueError: If the active zen store is not a SQL zen store.
         """
         from zenml.zen_stores.sql_zen_store import SqlZenStore
 

@@ -110,6 +110,9 @@ class PluginFlavorRegistry:
 
         Returns:
             List of flavor names for the given type/subtype combination.
+
+        Raises:
+            ValueError: If the page or size are invalid.
         """
         flavor_names = list(
             self._flavor_entries(_type=_type, subtype=subtype).keys()
@@ -119,7 +122,7 @@ class PluginFlavorRegistry:
             end = start + size
             return flavor_names[start:end]
         else:
-            raise RuntimeError(
+            raise ValueError(
                 f"Invalid pagination values. Both values for "
                 f"page: {page} and size: {size} need to be "
                 f"positive, non-zero integers."

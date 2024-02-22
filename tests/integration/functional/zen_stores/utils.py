@@ -75,7 +75,9 @@ from zenml.models import (
     ResourceTypeModel,
     SecretFilter,
     SecretRequest,
+    ServiceAccountFilter,
     ServiceAccountRequest,
+    ServiceAccountUpdate,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
     ServiceConnectorTypeModel,
@@ -1130,6 +1132,18 @@ code_repository_crud_test_config = CrudTestConfig(
     filter_model=CodeRepositoryFilter,
     entity_name="code_repository",
 )
+service_account_crud_test_config = CrudTestConfig(
+    create_model=ServiceAccountRequest(
+        name=sample_name("sCat-net-2000"),
+        description="Meow with me if you want to live.",
+        active=True,
+    ),
+    update_model=ServiceAccountUpdate(
+        name=sample_name("purrminator-t-1000"),
+    ),
+    filter_model=ServiceAccountFilter,
+    entity_name="service_account",
+)
 service_connector_crud_test_config = CrudTestConfig(
     create_model=ServiceConnectorRequest(
         user=uuid.uuid4(),
@@ -1152,7 +1166,7 @@ model_crud_test_config = CrudTestConfig(
     create_model=ModelRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
-        name="super_model",
+        name=sample_name("super_model"),
         license="who cares",
         description="cool stuff",
         audience="world",
@@ -1172,7 +1186,7 @@ model_crud_test_config = CrudTestConfig(
 )
 event_source_crud_test_config = CrudTestConfig(
     create_model=EventSourceRequest(
-        name="blupus_cat_cam",
+        name=sample_name("blupus_cat_cam"),
         configuration={},
         description="Best event source ever",
         flavor="github",  # TODO: Implementations can be parametrized later
@@ -1189,11 +1203,12 @@ event_source_crud_test_config = CrudTestConfig(
 )
 trigger_crud_test_config = CrudTestConfig(
     create_model=TriggerRequest(
-        name="blupus_feeder",
+        name=sample_name("blupus_feeder"),
         configuration={},
         description="Feeds blupus when he meows.",
         event_filter={},
         event_source_id=uuid.uuid4(),  # will be overridden in create()
+        service_account_id=uuid.uuid4(),  # will be overridden in create()
         action={"pipeline_deployment_id": uuid.uuid4()},
         flavor="github",  # TODO: Implementations can be parametrized later
         action_subtype=PluginSubType.WEBHOOK,
@@ -1206,7 +1221,8 @@ trigger_crud_test_config = CrudTestConfig(
     entity_name="trigger",
     supported_zen_stores=(RestZenStore,),
     conditional_entities={
-        "event_source_id": deepcopy(event_source_crud_test_config)
+        "event_source_id": deepcopy(event_source_crud_test_config),
+        "service_account_id": deepcopy(service_account_crud_test_config),
     },
 )
 
