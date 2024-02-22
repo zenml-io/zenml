@@ -113,6 +113,15 @@ class LocalOrchestratorConfig(BaseOrchestratorConfig):
         """
         return True
 
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
+        return True
+
 
 class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
     """Class for the `LocalOrchestratorFlavor`."""
