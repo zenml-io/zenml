@@ -20,6 +20,8 @@ from zenml.actions.base_action import (
     BaseActionFlavor,
     BaseActionHandler,
 )
+
+from zenml.zen_server.pipeline_deployment.utils import run_pipeline
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import PluginSubType
@@ -92,9 +94,11 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         deployment = zen_store().get_deployment(config.pipeline_deployment_id)
         print("Running deployment:", deployment)
-        # TODO: Call this
-        # from zenml.zen_server.pipeline_deployment.utils import redeploy_pipeline
-        # redeploy_pipeline(deployment=deployment, run_config=config_obj.run_config)
+        run_pipeline(
+            deployment=deployment,
+            run_config=config.run_config,
+            auth_context=api_token  # TODO: @stefan your time to shine
+        )
 
     def _validate_configuration(
         self, config: PipelineRunActionConfiguration
