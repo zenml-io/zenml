@@ -161,7 +161,7 @@ zenml go
 
 # 🖼️ Learning
 
-The best way to learn about ZenML is the [docs](https://docs.zenml.io) - with the best path being through the [Starter Guide](https://docs.zenml.io/user-guide/starter-guide).
+The best way to learn about ZenML is the [docs](https://docs.zenml.io). We recommend beginning with the [Starter Guide](https://docs.zenml.io/user-guide/starter-guide) to get up and running quickly.
 
 For inspiration, here are some other examples & use-cases:
 
