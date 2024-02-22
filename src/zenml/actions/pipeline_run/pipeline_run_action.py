@@ -103,6 +103,9 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         Args:
             config: Pipeline run action configuration.
+
+        Raises:
+            ValueError: In case no deployment can be found with the deployment_id
         """
         deployment_id = config.pipeline_deployment_id
         zen_store = GlobalConfiguration().zen_store
@@ -162,6 +165,9 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         Returns:
             List of resources related to the action.
+
+        Raises:
+            ValueError: In case the deployment_id does not exist.
         """
         assert isinstance(action_config, PipelineRunActionConfiguration)
 

@@ -241,8 +241,10 @@ class UserSchema(NamedSchema, table=True):
     ) -> UserResponse:
         """Convert a `UserSchema` to a `UserResponse`.
 
-        **kwargs: Keyword arguments to filter models.
-
+        Args:
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
             include_private: Whether to include the user private information
                              this is to limit the amount of data one can get
                              about other users

@@ -15,7 +15,7 @@
 import json
 import urllib
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Extra, Field
@@ -123,14 +123,25 @@ class GithubEvent(BaseEvent):
 
     @property
     def branch(self) -> Optional[str]:
-        """THe branch the event happened on."""
+        """The branch the event happened on.
+
+        Returns:
+            The branch name.
+        """
         if self.ref.startswith("refs/heads/"):
             return "/".join(self.ref.split("/")[2:])
         return None
 
     @property
-    def event_type(self) -> str:
-        """The type of github event."""
+    def event_type(self) -> Union[GithubEventType, str]:
+        """The type of github event.
+
+        Args:
+            The type of the event pased on github specific fields.
+
+        Returns:
+            The type of the event.
+        """
         if self.ref.startswith("refs/heads/"):
             return GithubEventType.PUSH_EVENT
         elif self.ref.startswith("refs/tags/"):
@@ -152,7 +163,14 @@ class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
     event_type: Optional[GithubEventType]
 
     def event_matches_filter(self, event: BaseEvent) -> bool:
-        """Checks the filter against the inbound event."""
+        """Checks the filter against the inbound event.
+
+        Args:
+            event: The incoming event
+
+        Returns:
+            Whether the event matches the filter
+        """
         if not isinstance(event, GithubEvent):
             return False
         if self.event_type and event.event_type != self.event_type:
@@ -226,7 +244,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         Args:
             event: The generic event body
 
-        Return:
+        Returns:
             An instance of the event source specific pydantic model.
 
         Raises:
@@ -259,7 +277,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
             raw_body: The raw event body.
             headers: The request headers.
 
-        Return:
+        Returns:
             An instance of the event source specific pydantic model.
         """
         content_type = headers.get("content-type", "")
@@ -278,7 +296,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         Args:
             event_source: The event source to retrieve the secret for.
 
-        Return:
+        Returns:
             The webhook secret associated with the event source, or None if a
             secret is not applicable.
 

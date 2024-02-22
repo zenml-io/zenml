@@ -191,7 +191,6 @@ class TriggerSchema(NamedSchema, table=True):
                 metadata fields in the response.
             include_resources: Flag deciding whether to include the output model(s)
                 metadata fields in the response.
-
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:

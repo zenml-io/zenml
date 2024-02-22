@@ -133,7 +133,6 @@ class PipelineSchema(NamedSchema, table=True):
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
-
             last_x_runs: How many runs to use for the execution status
 
         Returns:

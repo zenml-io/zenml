@@ -37,6 +37,9 @@ def get_page_from_list(
         page: Page number
         include_metadata: Whether metadata should be included in response models
         include_resources: Whether resources should be included in response models
+
+    Returns:
+        A page of list items.
     """
     total = len(items_list)
     total_pages = total / size

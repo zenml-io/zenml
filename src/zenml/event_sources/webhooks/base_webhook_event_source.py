@@ -170,7 +170,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
 
     def _load_payload(
         self, raw_body: bytes, headers: Dict[str, str]
-    ) -> Dict[str, Any]:
+    ) -> Dict[Any, Any]:
         """Converts the raw body of the request into a python dictionary.
 
         Args:
@@ -186,7 +186,8 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         # For now assume all webhook events are json encoded and parse
         # the body as such.
         try:
-            return json.loads(raw_body)
+            body_dict: Dict[Any, Any] = json.loads(raw_body)
+            return body_dict
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON body received: {e}")
 

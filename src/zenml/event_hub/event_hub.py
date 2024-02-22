@@ -122,6 +122,9 @@ class InternalEventHub(BaseEventHub):
 
         Returns:
             The list of matching triggers.
+
+        Raises:
+            KeyError: In case an event source flavor can't be found in the Registry
         """
         # get all event sources configured for this flavor
         triggers: List[TriggerResponse] = depaginate(

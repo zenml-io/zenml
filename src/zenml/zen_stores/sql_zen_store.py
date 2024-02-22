@@ -3702,7 +3702,7 @@ class SqlZenStore(BaseZenStore):
             None
 
         Raises:
-            StackExistsError: If a stack with the given name already exists.
+            EventSourceExistsError: In case the event source already exists
         """
         existing_domain_event_source = session.exec(
             select(EventSourceSchema)
@@ -3756,9 +3756,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The event_source schema.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
         """
         return self._get_schema_by_name_or_id(
             object_name_or_id=event_source_id,
@@ -3829,9 +3826,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated event_source.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
         """
         with Session(self.engine) as session:
             event_source = self._get_event_source(
@@ -6959,10 +6953,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created trigger.
-
-        Raises:
-            Exception: If anything goes wrong during the creation of the
-                trigger.
         """
         with Session(self.engine) as session:
             # Verify that the given event_source exists
@@ -7059,7 +7049,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the trigger doesn't exist.
-            IllegalOperationError: if the trigger is a default trigger.
         """
         with Session(self.engine) as session:
             # Check if trigger with the domain key (name, workspace, owner)

@@ -1432,9 +1432,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The event_source.
-
-        Raises:
-            KeyError: if the stack event_source doesn't exist.
         """
         return self._get_resource(
             resource_id=event_source_id,
@@ -1495,9 +1492,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             event_source_id: The ID of the event_source to delete.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
         """
         self._delete_resource(
             resource_id=event_source_id,
@@ -2728,9 +2722,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated trigger.
-
-        Raises:
-            KeyError: if the trigger doesn't exist.
         """
         return self._update_resource(
             resource_id=trigger_id,
@@ -2744,9 +2735,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             trigger_id: The ID of the trigger to delete.
-
-        Raises:
-            KeyError: if the trigger doesn't exist.
         """
         self._delete_resource(
             resource_id=trigger_id,
@@ -2769,9 +2757,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The trigger execution.
-
-        Raises:
-            KeyError: If the trigger execution doesn't exist.
         """
         return self._get_resource(
             resource_id=trigger_execution_id,
@@ -2808,9 +2793,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             trigger_execution_id: The ID of the trigger execution to delete.
-
-        Raises:
-            KeyError: If the trigger execution doesn't exist.
         """
         self._delete_resource(
             resource_id=trigger_execution_id,
