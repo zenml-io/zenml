@@ -122,9 +122,6 @@ class InternalEventHub(BaseEventHub):
 
         Returns:
             The list of matching triggers.
-
-        Raises:
-            KeyError: In case an event source flavor can't be found in the Registry
         """
         # get all event sources configured for this flavor
         triggers: List[TriggerResponse] = depaginate(
@@ -153,12 +150,10 @@ class InternalEventHub(BaseEventHub):
             except KeyError:
                 logger.exception(
                     f"Could not find plugin flavor for event source "
-                    f"{event_source.id} and flavor {event_source.flavor}."
+                    f"{event_source.id} and flavor {event_source.flavor}. "
+                    f"Skipping trigger {trigger.id}."
                 )
-                raise KeyError(
-                    f"No plugin flavor found for event source "
-                    f"{event_source.id}."
-                )
+                continue
 
             assert issubclass(plugin_flavor, BaseEventSourceFlavor)
 

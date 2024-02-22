@@ -298,6 +298,29 @@ class ClientMetaClass(ABCMeta):
         return cls._global_client
 
 
+def _fail_for_sql_zen_store(method: Callable[..., T]) -> Callable[..., T]:
+    """Decorator for all methods, that are disallowed when the client is not connected through REST API.
+
+    Args:
+        method: The method
+
+    Returns:
+        The decorated method.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self: "Client", *args: Any, **kwargs: Any) -> Any:
+        # No isinstance check to avoid importing ZenStore implementations
+        if self.zen_store.__class__.__name__ == "SqlZenStore":
+            raise TypeError(
+                "This method is not allowed when not connected "
+                "to a ZenML Server through the API interface."
+            )
+        return method(self, *args, **kwargs)
+
+    return wrapper
+
+
 @evaluate_all_lazy_load_args_in_client_methods
 class Client(metaclass=ClientMetaClass):
     """ZenML client class.
@@ -364,29 +387,6 @@ class Client(metaclass=ClientMetaClass):
                 value.
         """
         cls._global_client = client
-
-    @staticmethod
-    def _fail_for_sql_zen_store(method: Callable[..., T]) -> Callable[..., T]:
-        """Decorator for all methods, that are disallowed when the client is not connected through REST API.
-
-        Args:
-            method: The method
-
-        Returns:
-            The decorated method.
-        """
-
-        @functools.wraps(method)
-        def wrapper(self: "Client", *args: Any, **kwargs: Any) -> Any:
-            # No isinstance check to avoid importing ZenStore implementations
-            if self.zen_store.__class__.__name__ == "SqlZenStore":
-                raise TypeError(
-                    "This method is not allowed when not connected "
-                    "to a ZenML Server through the API interface."
-                )
-            return method(self, *args, **kwargs)
-
-        return wrapper
 
     def _set_active_root(self, root: Optional[Path] = None) -> None:
         """Set the supplied path as the repository root.
