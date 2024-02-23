@@ -85,4 +85,4 @@ docker run -it -d -p 8080:8080 zenmldocker/zenml-server
 
 Though ZenML can run entirely as a pip package on a local system, its advanced features are dependent on a centrally-deployed ZenML server accessible to other MLOps stack components. You can read more about it [here](../deploying-zenml/why-deploy-zenml.md).
 
-For deployment of ZenML, you have the option to either [self-host](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md) or register for a free account on [ZenML Cloud](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link).
+For the deployment of ZenML, you have the option to either [self-host](../deploying-zenml/zenml-self-hosted/zenml-self-hosted.md) it or register for a free account on [ZenML Cloud](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link).
