@@ -53,10 +53,29 @@ install_integrations() {
     echo "" >> integration-requirements.txt
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
 
+    # Sort the original requirements file
     sort integration-requirements.txt > integration-requirements-sorted.txt
 
-    pip install -r integration-requirements-sorted.txt
-    rm integration-requirements.txt
+    # Calculate the line count of the sorted file and divide by 2 (using bc for floating to integer conversion)
+    total_lines=$(wc -l < integration-requirements-sorted.txt)
+    half_lines=$(echo "$total_lines / 2" | bc)
+
+    # Split the sorted file into two parts
+    split -l $half_lines integration-requirements-sorted.txt temp_part_
+
+    # Rename the split files for clarity
+    mv temp_part_aa part1.txt
+    mv temp_part_ab part2.txt
+
+    # Install requirements from the first part, then delete the file
+    pip install -r part1.txt
+    rm part1.txt
+
+    # Install requirements from the second part, then delete the file
+    pip install -r part2.txt
+    rm part2.txt
+
+    # Finally, delete the original sorted file
     rm integration-requirements-sorted.txt
 
     # install langchain separately
