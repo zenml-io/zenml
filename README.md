@@ -119,7 +119,7 @@
 
 <br />
 
-# 🤖 Why ZenML?
+# 🤖 Introduction
 
 🤹 ZenML is an extensible, open-source MLOps framework for creating portable,
 production-ready machine learning pipelines. By decoupling infrastructure from
@@ -142,6 +142,21 @@ sophisticated production environments that are easy to use for colleagues.
 
 ZenML aims to optimize your entire machine learning lifecycle - you'll be 80% faster to production, generate 3x more models, and massively reduce your cloud spend.
 
+# 🛠️ Why ZenML?
+
+![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](/docs/book/.gitbook/assets/mcp_walkthrough.gif)
+
+ZenML offers a systematic approach to structuring your machine learning codebase for a seamless transition to production. It's an ideal solution for teams grappling with establishing an internal standard for coordinating ML operations. ZenML provides not just a tool, but a workflow strategy that guides you on integrating all your tools and infrastructure effectively.
+
+Use ZenML if:
+
+- You need to easily automate ML workflows on services like an Airflow cluster or AWS Sagemaker Pipelines.
+- Your ML tasks require repeatability and reproducibility.
+- Automating and standardizing ML workflows across your team is a challenge.
+- Your team integrates multiple tools with no central platform.
+- You'd like a single place to track data, code, configuration, and models along with your cloud artifact storage.
+- Collaboration and hand-overs between multiple data scientists and ML engineers is difficult.
+
 # ☄️ What makes ZenML different?
 
 ![Before and after ZenML](/docs/book/.gitbook/assets/zenml-why.png)
@@ -162,19 +177,6 @@ However, ZenML doesn't:
 - Automatically create visuals and track experiments: It [integrates with experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers) that specialize in this task.
 - Package and deploy models: ZenML catalogs models and metadata, streamlining model deployment. Refer to [ZenML model deployers](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers) for more information.
 - Handle distributed computation: While ZenML pipelines scale vertically with ease, it [works with tools like Spark](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/spark-kubernetes) for intricate distributed workflows.
-
-# 🛠️ When to use ZenML?
-
-![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](/docs/book/.gitbook/assets/mcp_walkthrough.gif)
-
-Use ZenML if:
-
-- You need to easily automate ML workflows on services like an Airflow cluster or AWS Sagemaker Pipelines.
-- Your ML tasks require repeatability and reproducibility.
-- Automating and standardizing ML workflows across your team is a challenge.
-- Your team integrates multiple tools with no central platform.
-- You'd like a single place to track data, code, configuration, and models along with your cloud artifact storage.
-- Collaboration and hand-overs between multiple data scientists and ML engineers is difficult.
 
 # 🤸 Quickstart
 
