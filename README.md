@@ -140,7 +140,7 @@ sophisticated production environments that are easy to use for colleagues.
   <img width="60%" src="/docs/book/.gitbook/assets/zenml-hero.png" alt="ZenML Hero"/>
 </div>
 
-ZenML aims to optimize your entire machine learning lifecycle - you'll be 80% faster to production, generate 3x more models, and massively reduce your cloud spend.
+ZenML optimizes your entire machine learning lifecycle - you'll be 80% faster to production, generate 3x more models, and massively reduce your cloud spend.
 
 # 🛠️ Why ZenML?
 
