@@ -394,9 +394,7 @@ class TestModel:
         """Test that model version can be used to track metadata from function in steps."""
 
         @pipeline(
-            model=Model(
-                name=MODEL_NAME,
-            ),
+            model=Model(name=MODEL_NAME, version="context"),
             enable_cache=False,
         )
         def my_pipeline():
@@ -410,7 +408,7 @@ class TestModel:
 
         my_pipeline()
 
-        mv = Model(name=MODEL_NAME, version="2")
+        mv = Model(name=MODEL_NAME, version="context")
         assert len(mv.run_metadata) == 1
         assert mv.run_metadata["foo"].value == "bar"
 
