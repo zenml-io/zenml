@@ -144,7 +144,10 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     zs = Client().zen_store
 
     if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
-        pytest.skip("Test only applies to SQL store")
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
 
     # Test the creation
     created_entity = crud_test_config.create()
@@ -237,6 +240,14 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 )
 def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
+
     entity_name = crud_test_config.entity_name
     if entity_name in {"build", "deployment"}:
         pytest.skip(f"Duplicates of {entity_name} are allowed.")
@@ -259,6 +270,14 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
 )
 def test_get_nonexistent_entity_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
+
     with pytest.raises(KeyError):
         crud_test_config.get_method(uuid.uuid4())
 
@@ -272,6 +291,14 @@ def test_updating_nonexisting_entity_raises_error(
     crud_test_config: CrudTestConfig,
 ):
     """Tests updating a nonexistent entity raises an error."""
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
+
     if crud_test_config.update_model:
         # Update the created entity
         update_model = crud_test_config.update_model
@@ -292,6 +319,14 @@ def test_deleting_nonexistent_entity_raises_error(
     crud_test_config: CrudTestConfig,
 ):
     """Tests deleting a nonexistent workspace raises an error."""
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
+
     with pytest.raises(KeyError):
         crud_test_config.delete_method(uuid.uuid4())
 
