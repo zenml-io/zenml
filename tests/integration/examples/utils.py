@@ -69,11 +69,12 @@ class IntegrationTestExample:
         Raises:
             RuntimeError: If running the example fails.
         """
-        subprocess.Popen(
+        popen = subprocess.Popen(
             [sys.executable, self.run_dot_py_file, *args],
             cwd=str(self.path),
             env=os.environ.copy(),
         )
+        popen.wait()
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
