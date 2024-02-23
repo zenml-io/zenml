@@ -333,8 +333,6 @@ def token(
         # Shouldn't happen, because we verify all grants in the form data
         raise ValueError("Invalid grant type.")
 
-    # TODO: track sign in event here, probably add grant type as metadata?
-
     return generate_access_token(
         user_id=auth_context.user.id,
         response=response,
