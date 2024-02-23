@@ -146,7 +146,7 @@ ZenML optimizes your entire machine learning lifecycle - you'll be 80% faster to
 
 ![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](/docs/book/.gitbook/assets/mcp_walkthrough.gif)
 
-ZenML offers a systematic approach to structuring your machine learning codebase for a seamless transition to production. It's an ideal solution for teams grappling with establishing an internal standard for coordinating ML operations. ZenML provides not just a tool, but a workflow strategy that guides you on integrating all your tools and infrastructure effectively.
+ZenML offers a systematic approach to structuring your machine learning codebase for a seamless transition to production. It's an ideal solution for teams grappling with establishing an internal standard for coordinating ML operations. ZenML provides not just a tool, but a workflow strategy that guides you in integrating all your tools and infrastructure effectively.
 
 Use ZenML if:
 
