@@ -29,7 +29,7 @@ class WhylogsIntegration(Integration):
     NAME = WHYLOGS
     # REQUIREMENTS = ["whylogs[viz]>=1.3.0"]
     REQUIREMENTS = [
-        "whylogs==1.0.5",
+        "whylogs>=1.0.5",
         # Assuming whylabs-client follows Semantic Versioning; "^0.3.0" means ">=0.3.0,<0.4.0"
         "whylabs-client>=0.3.0,<0.4.0",
         "ipython",
