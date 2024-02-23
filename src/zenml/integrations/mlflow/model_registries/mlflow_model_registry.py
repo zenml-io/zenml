@@ -599,13 +599,35 @@ class MLFlowModelRegistry(BaseModelRegistry):
                     if filter_string:
                         filter_string += " AND "
                     filter_string += f"tags.{tag}='{value}'"
-        # Get the model versions.
+                    # Get the model versions.
+        order_by = []
+        if order_by_date:
+            if order_by_date in ["asc", "desc"]:
+                if order_by_date == "asc":
+                    order_by = ["creation_timestamp ASC"]
+                else:
+                    order_by = ["creation_timestamp DESC"]
         mlflow_model_versions = self.mlflow_client.search_model_versions(
             filter_string=filter_string,
+            order_by=order_by,
         )
         # Cast the MLflow model versions to the ZenML model version class.
         model_versions = []
         for mlflow_model_version in mlflow_model_versions:
+            # check if given MlFlow model version matches the given request
+            # before casting it
+            if stage and not mlflow_model_version.current_stage == str(stage):
+                continue
+            if created_after and not (
+                mlflow_model_version.creation_timestamp
+                >= created_after.timestamp()
+            ):
+                continue
+            if created_before and not (
+                mlflow_model_version.creation_timestamp
+                <= created_before.timestamp()
+            ):
+                continue
             try:
                 model_versions.append(
                     self._cast_mlflow_version_to_model_version(
@@ -617,50 +639,12 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 # due to failed version registration or misuse. In such rare
                 # cases, it's best to suppress those versions that are not usable.
                 logger.warning(
-                    f"Error encountered while loading MLflow model version: {e}"
+                    "Error encountered while loading MLflow model version "
+                    f"`{mlflow_model_version.name}:{mlflow_model_version.version}`: {e}"
                 )
+            if count and len(model_versions) == count:
+                return model_versions
 
-        # Filter the model versions by stage.
-        if stage:
-            model_versions = [
-                model_version
-                for model_version in model_versions
-                if model_version.stage == stage
-            ]
-        # Filter the model versions by creation time.
-        if created_after:
-            model_versions = [
-                model_version
-                for model_version in model_versions
-                if model_version.created_at
-                and model_version.created_at >= created_after
-            ]
-        if created_before:
-            model_versions = [
-                model_version
-                for model_version in model_versions
-                if model_version.created_at
-                and model_version.created_at <= created_before
-            ]
-        # Sort the model versions by creation time.
-        if order_by_date == "asc":
-            model_versions = sorted(
-                model_versions,
-                key=lambda model_version: model_version.created_at
-                if model_version.created_at is not None
-                else float("-inf"),
-            )
-        elif order_by_date == "desc":
-            model_versions = sorted(
-                model_versions,
-                key=lambda model_version: model_version.created_at
-                if model_version.created_at is not None
-                else float("inf"),
-                reverse=True,
-            )
-        # Return the model versions.
-        if count:
-            return model_versions[:count]
         return model_versions
 
     def load_model_version(
