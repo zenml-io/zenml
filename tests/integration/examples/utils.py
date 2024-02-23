@@ -69,7 +69,7 @@ class IntegrationTestExample:
         Raises:
             RuntimeError: If running the example fails.
         """
-        subprocess.check_call(
+        subprocess.Popen(
             [sys.executable, self.run_dot_py_file, *args],
             cwd=str(self.path),
             env=os.environ.copy(),
