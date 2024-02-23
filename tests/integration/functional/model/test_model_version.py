@@ -70,6 +70,9 @@ def step_metadata_logging_functional():
     """Functional logging using implicit Model from context."""
     log_model_metadata({"foo": "bar"})
     assert get_step_context().model.run_metadata["foo"].value == "bar"
+    log_model_metadata(
+        {"foo": "bar"}, model_name=MODEL_NAME, model_version="other"
+    )
 
 
 @step
@@ -399,9 +402,19 @@ class TestModel:
         def my_pipeline():
             step_metadata_logging_functional()
 
+        mv_other = Model(
+            name=MODEL_NAME,
+            version="other",
+        )
+        mv_other._get_or_create_model_version()
+
         my_pipeline()
 
-        mv = Model(name=MODEL_NAME, version="latest")
+        mv = Model(name=MODEL_NAME, version="2")
+        assert len(mv.run_metadata) == 1
+        assert mv.run_metadata["foo"].value == "bar"
+
+        mv = Model(name=MODEL_NAME, version="other")
         assert len(mv.run_metadata) == 1
         assert mv.run_metadata["foo"].value == "bar"
 
