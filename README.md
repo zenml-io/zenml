@@ -167,7 +167,7 @@ There are some things that ZenML does not solve:
 
 ![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](/docs/book/.gitbook/assets/mcp_walkthrough.gif)
 
-You should ZenML if you resonate with one or more of the following problems:
+You should ZenML if one or more of the following problems resonates with you:
 
 - You find it hard to automate ML workflows on your orchestration service, whether that is an Airflow cluster or a managed service like AWS Sagemaker Pipelines.
 - You are working with ML use cases that require repeatability and reproducibility.
