@@ -69,7 +69,7 @@
 
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h3 align="center">Create a MLOps workflow for your entire team.</h3>
+  <h3 align="center">Create an MLOps workflow for your entire team.</h3>
   <p align="center">
     <div align="center">
       Join our <a href="https://zenml.io/slack" target="_blank">
@@ -155,7 +155,7 @@ Use ZenML if:
 - Automating and standardizing ML workflows across your team is a challenge.
 - Your team integrates multiple tools with no central platform.
 - You'd like a single place to track data, code, configuration, and models along with your cloud artifact storage.
-- Collaboration and hand-overs between multiple data scientists and ML engineers is difficult.
+- Collaboration and hand-overs between multiple teams is difficult.
 
 # ☄️ What makes ZenML different?
 
@@ -169,7 +169,7 @@ It excels at:
 - Automating versioning of [data](https://docs.zenml.io/user-guide/starter-guide/manage-artifacts) and [models](https://docs.zenml.io/user-guide/starter-guide/track-ml-models) on [remote artifact storage like S3](https://docs.zenml.io/user-guide/production-guide/remote-storage).
 - Abstracting infrastructure and run configuration from code through a [simple YAML config](https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines).
 - Logging complex [metadata](https://docs.zenml.io/user-guide/advanced-guide/data-management/logging-metadata) for models and artifacts.
-- Automatically containerize and deploy your workflows to the cloud, connected to your [code repository](https://docs.zenml.io/user-guide/production-guide/connect-code-repository).
+- Automatically containerizing and deploying your workflows to the cloud, connected to your [code repository](https://docs.zenml.io/user-guide/production-guide/connect-code-repository).
 - Connecting your [secret store](https://docs.zenml.io/user-guide/advanced-guide/secret-management) to your ML workflows.
 
 However, ZenML doesn't:
