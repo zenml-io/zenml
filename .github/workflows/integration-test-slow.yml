@@ -226,7 +226,7 @@ jobs:
       - name: Integration Tests (Non-Ubuntu) - Slow CI
         if: runner.os == 'macOS' || runner.os == 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh tests/integration/examples/test_mlflow_deployment.py ${{ inputs.test_environment }}
+          bash scripts/test-coverage-xml.sh integration/examples/test_mlflow_deployment.py ${{ inputs.test_environment }}
       - name: print out mlflow logs
         if: failure()
         shell: bash
