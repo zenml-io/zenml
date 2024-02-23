@@ -1,9 +1,11 @@
 """Integration tests for artifact util functions."""
 
+import multiprocessing
 import os
 import shutil
 import zipfile
 from typing import Optional, Tuple
+from unittest.mock import patch
 
 import pytest
 from typing_extensions import Annotated
@@ -15,6 +17,7 @@ from zenml import (
     save_artifact,
     step,
 )
+from zenml.client import Client
 from zenml.models.v2.core.artifact import ArtifactResponse
 
 
@@ -316,3 +319,53 @@ def test_download_artifact_files_from_response_fails_if_exists(
         assert f.read() == "7"
     # clean up
     shutil.rmtree(tmp_path)
+
+
+def parallel_artifact_version_creation(mocked_client) -> int:
+    with patch("zenml.artifacts.utils.Client", return_value=mocked_client):
+        with patch("zenml.artifacts.utils.logger.debug") as logger_mock:
+            save_artifact(42, "meaning_of_life")
+            return logger_mock.call_count
+
+
+class MockedClient(Client):
+    """Mocked client for testing parallel artifact creation.
+
+    Only goal: avoid source problems from `source_utils`.
+    """
+
+    def __init__(self, a_s) -> None:
+        self.a_s = a_s
+        super().__init__()
+
+    @property
+    def active_stack(self):
+        return self.a_s
+
+
+def test_parallel_artifact_creation(clean_client: Client):
+    """Test that artifact version creation can be parallelized."""
+    process_count = 20
+    args = [MockedClient(clean_client.active_stack)] * process_count
+    with multiprocessing.get_context("spawn").Pool(5) as pool:
+        results = pool.map(
+            parallel_artifact_version_creation,
+            iterable=args,
+        )
+
+    assert sum(results), (
+        "Test was not parallel. "
+        "Consider increasing the number of processes or pools."
+    )
+
+    avs = clean_client.list_artifact_versions(
+        name="meaning_of_life", size=min(1000, process_count * 10)
+    )
+    assert len(avs) == process_count
+    print(
+        {str(i) for i in range(1, process_count + 1)}
+        - {av.version for av in avs}
+    )
+    assert {av.version for av in avs} == {
+        str(i) for i in range(1, process_count + 1)
+    }

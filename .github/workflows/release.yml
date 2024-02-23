@@ -72,7 +72,7 @@ jobs:
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
   wait-for-package-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-dind-runners
     needs: publish-python-package
     steps:
       - name: Sleep for 4 minutes
