@@ -66,7 +66,8 @@ set -e
 
 parse_args "$@"
 
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip setuptools wheel
+python -m pip cache purge
 
 install_zenml
 
