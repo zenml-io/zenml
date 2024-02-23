@@ -159,7 +159,7 @@ It does the following really well:
 
 There are some things that ZenML does not solve:
 
-- Automatically creating visualizations and tracking experiments: ZenML [integrates to experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers) that are much specialized at doing this.
+- Automatically creating visualizations and tracking experiments: ZenML [integrates with experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers) that are much more specialized at doing this.
 - Packaging and deploying models - ZenML tracks models and metadata, which you can then use to deploy the models more easily. See the [ZenML model deployers](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers) integrations for more details.
 - Distributed computation: ZenML pipelines scale vertically up and down, and [integrate with tools like Spark](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/spark-kubernetes)for more complex distributed paradigms.
 
