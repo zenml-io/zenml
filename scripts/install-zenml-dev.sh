@@ -45,13 +45,15 @@ install_integrations() {
     done
 
     # install basic ZenML integrations
-    zenml integration export-requirements \
-        --output-file integration-requirements.txt \
-        $ignore_integrations_args
+    # zenml integration export-requirements \
+    #     --output-file integration-requirements.txt \
+    #     $ignore_integrations_args
+
+    zenml integration export-requirements --output-file integration-requirements.txt whylogs scipy pytorch azure
 
     # pin pyyaml>=6.0.1
     echo "" >> integration-requirements.txt
-    echo "pyyaml>=6.0.1" >> integration-requirements.txt
+    # echo "pyyaml>=6.0.1" >> integration-requirements.txt
 
     pip install -r integration-requirements.txt
     rm integration-requirements.txt
