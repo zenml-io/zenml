@@ -242,7 +242,7 @@ Or, if you
 prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on
 our GitHub repo.
 
-# Vulnerability affecting `zenml<0.67` (CVE-2024-25723)
+# Vulnerability affecting `zenml<0.46.7` (CVE-2024-25723)
 
 We have identified a critical security vulnerability in ZenML versions prior to
 0.46.7. This vulnerability potentially allows unauthorized users to take
