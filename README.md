@@ -193,7 +193,24 @@ Take a tour with the guided quickstart by running:
 zenml go
 ```
 
+# 🔋 Deploy ZenML
 
+For full functionality ZenML should be deployed on the cloud to
+enable collaborative features as the central MLOps interface for teams.
+
+![ZenML Architecture Diagram.](docs/book/.gitbook/assets/Scenario3.png)
+
+Currently, there are two main options to deploy ZenML:
+
+- **ZenML Cloud**: With [ZenML Cloud](cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link), 
+you can utilize a control plane to create ZenML servers, also known as tenants. 
+These tenants are managed and maintained by ZenML's dedicated team, alleviating 
+the burden of server management from your end. 
+
+- **Self-hosted deployment**: Alternatively, you have the flexibility to [deploy 
+ZenML on your own self-hosted environment](https://docs.zenml.io/deploying-zenml/zenml-self-hosted). 
+This can be achieved through various methods, including using our CLI, Docker, 
+Helm, or HuggingFace Spaces.
 
 # 🖼️ Learning
 
