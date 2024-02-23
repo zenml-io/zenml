@@ -58,7 +58,7 @@ install_integrations() {
 
     # Calculate the line count of the sorted file and divide by 2 (using bc for floating to integer conversion)
     total_lines=$(wc -l < integration-requirements-sorted.txt)
-    half_lines=$(echo "$total_lines / 2" | bc)
+    half_lines=$((total_lines / 2))
 
     # Split the sorted file into two parts
     split -l $half_lines integration-requirements-sorted.txt temp_part_
