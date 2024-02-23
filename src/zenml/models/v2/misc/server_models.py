@@ -73,6 +73,10 @@ class ServerModel(BaseModel):
     auth_scheme: AuthScheme = Field(
         title="The authentication scheme that the server is using.",
     )
+    server_url: str = Field(
+        "",
+        title="The URL of the server.",
+    )
 
     def is_local(self) -> bool:
         """Return whether the server is running locally.

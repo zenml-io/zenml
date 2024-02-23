@@ -1434,6 +1434,19 @@ class SqlZenStore(BaseZenStore):
         # the one fetched from the global configuration
         model.id = self.get_deployment_id()
 
+        # if ZENML_SERVER_BASE_URL is set as an environment variable, use it
+        # as the base URL for the server
+        base_url = os.environ.get("ZENML_SERVER_BASE_URL")
+        
+        # if cloud org ID and tenant ID are set as environment variables, construct 
+        # the URL by appending the org ID and tenant ID to the base URL
+        if base_url:
+            model.server_url = base_url
+            cloud_org_id = os.environ.get("ZENML_CLOUD_ORGANIZATION_ID")
+            cloud_tenant_id = os.environ.get("ZENML_CLOUD_TENANT_ID")
+            if cloud_org_id and cloud_tenant_id:
+                model.server_url = f"{model.url}/organizations/{cloud_org_id}/tenants/{cloud_tenant_id}"
+
         return model
 
     def get_deployment_id(self) -> UUID:
