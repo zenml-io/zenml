@@ -170,7 +170,7 @@ There are some things that ZenML does not solve:
 You should ZenML if you resonate with one or more of the following problems:
 
 - You find it hard to automate ML workflows on your orchestration service, whether that is an Airflow cluster or a managed service like AWS Sagemaker Pipelines.
-- You are working with ML use-cases that require repeatability and reproducibility.
+- You are working with ML use cases that require repeatability and reproducibility.
 - You are struggling to automate and standardize ML workflows across your team.
 - Your team uses a bunch of tools that do many things, but there is no central place to integrate all of these together.
 - You want a central place to track data, code, config, and models, with your cloud artifact storage.
