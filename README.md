@@ -69,7 +69,7 @@
 
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
+  <h3 align="center">Create a MLOps workflow for your entire team.</h3>
   <p align="center">
     <div align="center">
       Join our <a href="https://zenml.io/slack" target="_blank">
@@ -144,37 +144,37 @@ ZenML aims to optimize your entire machine learning lifecycle - you'll be 80% fa
 
 # ☄️ What makes ZenML different?
 
-![The long journey from experimentation to production.](/docs/book/.gitbook/assets/zenml-why.png)
+![Before and after ZenML](/docs/book/.gitbook/assets/zenml-why.png)
 
-ZenML is a cross between a classic pipeline tool like [Airflow](https://airflow.apache.org/) and a metadata tracking service like [MLflow](https://mlflow.org/). 
+ZenML marries the capabilities of a classic pipeline tool like [Airflow](https://airflow.apache.org/) and a metadata tracking service like [MLflow](https://mlflow.org/). Furthermore, both these types of tools can seamlessly co-exist with ZenML, providing a comprehensive, end-to-end ML experience.
 
-It does the following really well:
+It excels at:
 
-- Lets you create simple, pythonic [ML pipelines that run locally](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline) and can be easily be run on any [orchestration backend](https://docs.zenml.io/user-guide/production-guide/cloud-orchestration).
-- Version [data](https://docs.zenml.io/user-guide/starter-guide/manage-artifacts) and [models](https://docs.zenml.io/user-guide/starter-guide/track-ml-models) automatically on [remote artifact storage like S3](https://docs.zenml.io/user-guide/production-guide/remote-storage).
-- Abstract away infrastructure and run configuration from code, with a [simple YAML config](https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines).
+- Enabling creation of simple, pythonic [ML pipelines](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline) that function locally and on any [orchestration backend](https://docs.zenml.io/user-guide/production-guide/cloud-orchestration).
+- Automating versioning of [data](https://docs.zenml.io/user-guide/starter-guide/manage-artifacts) and [models](https://docs.zenml.io/user-guide/starter-guide/track-ml-models) on [remote artifact storage like S3](https://docs.zenml.io/user-guide/production-guide/remote-storage).
+- Abstracting infrastructure and run configuration from code through a [simple YAML config](https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines).
 - Logging complex [metadata](https://docs.zenml.io/user-guide/advanced-guide/data-management/logging-metadata) for models and artifacts.
 - Automatically containerize and deploy your workflows to the cloud, connected to your [code repository](https://docs.zenml.io/user-guide/production-guide/connect-code-repository).
 - Connecting your [secret store](https://docs.zenml.io/user-guide/advanced-guide/secret-management) to your ML workflows.
 
-There are some things that ZenML does not solve:
+However, ZenML doesn't:
 
-- Automatically creating visualizations and tracking experiments: ZenML [integrates with experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers) that are much more specialized at doing this.
-- Packaging and deploying models - ZenML tracks models and metadata, which you can then use to deploy the models more easily. See the [ZenML model deployers](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers) integrations for more details.
-- Distributed computation: ZenML pipelines scale vertically up and down, and [integrate with tools like Spark](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/spark-kubernetes)for more complex distributed paradigms.
+- Automatically create visuals and track experiments: It [integrates with experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers) that specialize in this task.
+- Package and deploy models: ZenML catalogs models and metadata, streamlining model deployment. Refer to [ZenML model deployers](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers) for more information.
+- Handle distributed computation: While ZenML pipelines scale vertically with ease, it [works with tools like Spark](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/spark-kubernetes) for intricate distributed workflows.
 
 # 🛠️ When to use ZenML?
 
 ![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](/docs/book/.gitbook/assets/mcp_walkthrough.gif)
 
-You should ZenML if one or more of the following problems resonates with you:
+Use ZenML if:
 
-- You find it hard to automate ML workflows on your orchestration service, whether that is an Airflow cluster or a managed service like AWS Sagemaker Pipelines.
-- You are working with ML use cases that require repeatability and reproducibility.
-- You are struggling to automate and standardize ML workflows across your team.
-- Your team uses a bunch of tools that do many things, but there is no central place to integrate all of these together.
-- You want a central place to track data, code, config, and models, with your cloud artifact storage.
-- You are collaborating with multiple data scientists and/or ML engineers and struggle with hand-overs.
+- You need to easily automate ML workflows on services like an Airflow cluster or AWS Sagemaker Pipelines.
+- Your ML tasks require repeatability and reproducibility.
+- Automating and standardizing ML workflows across your team is a challenge.
+- Your team integrates multiple tools with no central platform.
+- You'd like a single place to track data, code, configuration, and models along with your cloud artifact storage.
+- Collaboration and hand-overs between multiple data scientists and ML engineers is difficult.
 
 # 🤸 Quickstart
 
