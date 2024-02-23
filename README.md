@@ -198,7 +198,9 @@ zenml go
 For full functionality ZenML should be deployed on the cloud to
 enable collaborative features as the central MLOps interface for teams.
 
-![ZenML Architecture Diagram.](docs/book/.gitbook/assets/Scenario3.png)
+<div align="center">
+  <img width="60%" src="docs/book/.gitbook/assets/Scenario3.png" alt="ZenML Architecture Diagram."/>
+</div>
 
 Currently, there are two main options to deploy ZenML:
 
