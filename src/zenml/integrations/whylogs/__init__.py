@@ -27,16 +27,7 @@ class WhylogsIntegration(Integration):
     """Definition of [whylogs](https://github.com/whylabs/whylogs) integration for ZenML."""
 
     NAME = WHYLOGS
-    # REQUIREMENTS = ["whylogs[viz]>=1.3.0"]
-    REQUIREMENTS = [
-        "whylogs>=1.0.5",
-        # Assuming whylabs-client follows Semantic Versioning; "^0.3.0" means ">=0.3.0,<0.4.0"
-        "whylabs-client>=0.3.0,<0.4.0",
-        "ipython",
-        # Assuming pybars follows Semantic Versioning; "^0.9" likely intends ">=0.9,<1.0"
-        "pybars3>=0.9,<1.0",  # Adjusted to pybars3 for Python 3, assuming this was the intended package
-        "scipy>=1.5,<1.8",
-    ]
+    REQUIREMENTS = ["whylogs[viz]>1.3.0"]
 
     @classmethod
     def activate(cls) -> None:
