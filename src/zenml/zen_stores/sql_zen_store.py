@@ -1437,8 +1437,8 @@ class SqlZenStore(BaseZenStore):
         # if ZENML_SERVER_BASE_URL is set as an environment variable, use it
         # as the base URL for the server
         base_url = os.environ.get("ZENML_SERVER_BASE_URL")
-        
-        # if cloud org ID and tenant ID are set as environment variables, construct 
+
+        # if cloud org ID and tenant ID are set as environment variables, construct
         # the URL by appending the org ID and tenant ID to the base URL
         if base_url:
             model.server_url = base_url
