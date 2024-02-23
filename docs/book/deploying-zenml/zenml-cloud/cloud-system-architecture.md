@@ -5,7 +5,7 @@ description: Different variations of the ZenML Cloud architecture depending on y
 # System Architecture
 
 {% hint style="info" %}
-If you're interested in assessing ZenML Cloud, you can create a [free account](https://cloud.zenml.io), which defaults to a [Scenario 1](#scenario-1-full-saas) deployment. To upgrade to different scenarios, please [reach out to us](mailto:cloud@zenml.io).
+If you're interested in assessing ZenML Cloud, you can create a [free account](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link), which defaults to a [Scenario 1](#scenario-1-full-saas) deployment. To upgrade to different scenarios, please [reach out to us](mailto:cloud@zenml.io).
 {% endhint %}
 
 Machine learning often involves data that is sensitive and thus data security is a fundamental requirement. The ZenML Cloud is flexible enough to meet your security requirements, from easy installations to completely airgapped deployments.
@@ -78,6 +78,6 @@ Here is a concrete example of how this works:
 
 In this scenario, all services, data, and secrets are deployed on the customer cloud. This is the opposite of Scenario 1, and is meant for customers who require completely airgapped deployments, for the tightest security standards.
 
-Are you interested in the ZenML Cloud? While in beta, we're looking for early adopters to talk to! [Sign up](https://cloud.zenml.io) and get access to Scenario 1. with a free 30 day trial now!
+Are you interested in the ZenML Cloud? While in beta, we're looking for early adopters to talk to! [Sign up](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link) and get access to Scenario 1. with a free 30 day trial now!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

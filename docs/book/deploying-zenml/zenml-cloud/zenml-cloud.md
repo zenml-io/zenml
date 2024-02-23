@@ -11,7 +11,7 @@ One of the most straightforward paths to start with a deployed ZenML server is t
 </div>
 
 {% hint style="info" %}
-If you're interested in assessing ZenML Cloud, you can simply create a [free account](https://cloud.zenml.io). Learn more about ZenML Cloud on the [ZenML Website](https://zenml.io/cloud).
+If you're interested in assessing ZenML Cloud, you can simply create a [free account](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link). Learn more about ZenML Cloud on the [ZenML Website](https://zenml.io/cloud).
 {% endhint %}
 
 ## Key features
