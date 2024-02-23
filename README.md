@@ -150,7 +150,7 @@ ZenML is a cross between a classic pipeline tool like [Airflow](https://airflow.
 
 It does the following really well:
 
-- Let's you create simple, pythonic [ML pipelines that run locally](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline) and can be easily be run on any [orchestration backend](https://docs.zenml.io/user-guide/production-guide/cloud-orchestration).
+- Lets you create simple, pythonic [ML pipelines that run locally](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline) and can be easily be run on any [orchestration backend](https://docs.zenml.io/user-guide/production-guide/cloud-orchestration).
 - Version [data](https://docs.zenml.io/user-guide/starter-guide/manage-artifacts) and [models](https://docs.zenml.io/user-guide/starter-guide/track-ml-models) automatically on [remote artifact storage like S3](https://docs.zenml.io/user-guide/production-guide/remote-storage).
 - Abstract away infrastructure and run configuration from code, with a [simple YAML config](https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines).
 - Logging complex [metadata](https://docs.zenml.io/user-guide/advanced-guide/data-management/logging-metadata) for models and artifacts.
