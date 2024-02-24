@@ -23,6 +23,7 @@ parse_args () {
 
 install_zenml() {
     # install ZenML in editable mode
+
     pip install -e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]
 }
 
@@ -45,18 +46,19 @@ install_integrations() {
     done
 
     # install basic ZenML integrations
-    # zenml integration export-requirements \
-    #     --output-file integration-requirements.txt \
-    #     $ignore_integrations_args
-
-    zenml integration export-requirements --output-file integration-requirements.txt whylogs scipy pytorch azure
+    zenml integration export-requirements \
+        --output-file integration-requirements.txt \
+        $ignore_integrations_args
 
     # pin pyyaml>=6.0.1
     echo "" >> integration-requirements.txt
-    # echo "pyyaml>=6.0.1" >> integration-requirements.txt
+    echo "pyyaml>=6.0.1" >> integration-requirements.txt
 
-    pip install -r integration-requirements.txt
+    sort integration-requirements.txt > integration-requirements-sorted.txt
+
+    pip install -r integration-requirements-sorted.txt
     rm integration-requirements.txt
+    rm integration-requirements-sorted.txt
 
     # install langchain separately
     zenml integration install -y langchain
@@ -65,6 +67,9 @@ install_integrations() {
 
 set -x
 set -e
+
+export ZENML_DEBUG=1
+export ZENML_ANALYTICS_OPT_IN=false
 
 parse_args "$@"
 

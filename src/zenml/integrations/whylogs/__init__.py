@@ -27,7 +27,15 @@ class WhylogsIntegration(Integration):
     """Definition of [whylogs](https://github.com/whylabs/whylogs) integration for ZenML."""
 
     NAME = WHYLOGS
-    REQUIREMENTS = ["whylogs[viz]>1.2.0"]
+    REQUIREMENTS = [
+        "whylogs==1.1.46",
+        "requests>=2.27,<3.0",
+        "ipython",
+        "pybars3>=0.9,<1.0",
+        "numpy",
+        "scipy>=1.5",
+        "Pillow>=9.2.0,<10.0",
+    ]
 
     @classmethod
     def activate(cls) -> None:
