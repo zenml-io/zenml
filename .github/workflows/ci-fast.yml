@@ -38,6 +38,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
       - name: Set up Python 3.9
         uses: actions/setup-python@v5.0.0
         with:
