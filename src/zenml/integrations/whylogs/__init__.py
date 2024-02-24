@@ -32,8 +32,8 @@ class WhylogsIntegration(Integration):
         "requests>=2.27,<3.0",
         "ipython",
         "pybars3>=0.9,<1.0",
-        "numpy>=1.23.2",
-        "scipy>=1.9.2",
+        "numpy",
+        "scipy>=1.5",
         "Pillow>=9.2.0,<10.0",
     ]
 
