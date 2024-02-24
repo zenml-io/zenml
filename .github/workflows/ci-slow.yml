@@ -54,6 +54,9 @@ jobs:
   sqlite-db-migration-testing:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
     runs-on: ubuntu-dind-runners
     steps:
       - uses: actions/checkout@v4.1.1
@@ -63,9 +66,6 @@ jobs:
           python-version: '3.9'
       - name: Test migrations across versions
         run: bash scripts/test-migrations-mysql.sh sqlite
-        env:
-          ZENML_ANALYTICS_OPT_IN: false
-          ZENML_DEBUG: true
   small-checks:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set

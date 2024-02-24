@@ -30,6 +30,9 @@ jobs:
         run: pip check
   mysql-db-migration-testing:
     runs-on: ubuntu-dind-runners
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
@@ -41,6 +44,9 @@ jobs:
         run: bash scripts/test-migrations-mysql.sh mysql
   sqlite-db-migration-testing:
     runs-on: ubuntu-dind-runners
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
@@ -52,6 +58,9 @@ jobs:
         run: bash scripts/test-migrations-mysql.sh sqlite
   mariadb-db-migration-testing:
     runs-on: ubuntu-dind-runners
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1

@@ -75,7 +75,9 @@ do
 
     # Install the specific version
     pip3 install -U pip setuptools wheel
-    pip3 install "zenml[templates,server]==$VERSION"
+
+    git checkout release/$VERSION
+    pip3 install -e ".[templates,server]"
     # handles unpinned sqlmodel dependency in older versions
     pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
 
