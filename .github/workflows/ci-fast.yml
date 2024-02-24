@@ -30,6 +30,9 @@ jobs:
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
     runs-on: ubuntu-dind-runners
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
     # if team member commented, not a draft, on a PR, using /fulltest
     if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
     steps:

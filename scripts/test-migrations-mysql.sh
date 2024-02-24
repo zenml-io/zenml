@@ -3,6 +3,9 @@
 DB="sqlite"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
 
+export ZENML_ANALYTICS_OPT_IN=false
+export ZENML_DEBUG=true
+
 if [ -z "$1" ]; then
   echo "No argument passed, using default: $DB"
 else

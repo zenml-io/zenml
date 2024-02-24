@@ -63,6 +63,9 @@ jobs:
           python-version: '3.9'
       - name: Test migrations across versions
         run: bash scripts/test-migrations-mysql.sh sqlite
+        env:
+          ZENML_ANALYTICS_OPT_IN: false
+          ZENML_DEBUG: true
   small-checks:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
