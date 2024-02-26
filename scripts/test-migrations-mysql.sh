@@ -3,6 +3,9 @@
 DB="sqlite"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
 
+export ZENML_ANALYTICS_OPT_IN=false
+export ZENML_DEBUG=true
+
 if [ -z "$1" ]; then
   echo "No argument passed, using default: $DB"
 else
@@ -58,7 +61,7 @@ if [ "$1" == "mysql" ]; then
 fi
 
 # List of versions to test
-VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2")
+VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3" "0.45.4" "0.45.5" "0.45.6" "0.46.0" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.0" "0.53.1" "0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3")
 
 # Start completely fresh
 rm -rf ~/.config/zenml
@@ -72,7 +75,9 @@ do
 
     # Install the specific version
     pip3 install -U pip setuptools wheel
-    pip3 install "zenml[templates,server]==$VERSION"
+
+    git checkout release/$VERSION
+    pip3 install -e ".[templates,server]"
     # handles unpinned sqlmodel dependency in older versions
     pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
 

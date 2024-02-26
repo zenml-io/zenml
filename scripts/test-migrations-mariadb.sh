@@ -33,13 +33,17 @@ function run_tests_for_version() {
 }
 
 echo "===== Testing MariaDB ====="
+
+export ZENML_ANALYTICS_OPT_IN=false
+export ZENML_DEBUG=true
+
 # run a mariadb instance in docker
 docker run --name mariadb -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:10.6
 # mariadb takes a while to start up
 sleep $DB_STARTUP_DELAY
 
 # List of versions to test
-VERSIONS=("0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2")
+VERSIONS=("0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3")
 
 # Start completely fresh
 rm -rf ~/.config/zenml
@@ -53,7 +57,12 @@ do
 
     # Install the specific version
     pip3 install -U pip setuptools wheel
-    pip3 install "zenml[templates,server]==$VERSION"
+    
+    git checkout release/$VERSION
+    pip3 install -e ".[templates,server]"
+
+    export ZENML_ANALYTICS_OPT_IN=false
+    export ZENML_DEBUG=true
 
     zenml connect --url mysql://127.0.0.1/zenml --username root --password password
 

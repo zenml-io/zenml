@@ -629,8 +629,8 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                 "Python environment. Spinning up a local Airflow server to "
                 "run ZenML pipelines requires the `DockerOperator` to be "
                 "available. Please run "
-                "`pip install apache-airflow-providers-docker` to install it "
-                "and try again."
+                "`pip install 'apache-airflow-providers-docker<3.8.0' "
+                "'apache-airflow~=2.4.0'` to install it and try again."
             )
 
     def _log_webserver_credentials(self) -> None:

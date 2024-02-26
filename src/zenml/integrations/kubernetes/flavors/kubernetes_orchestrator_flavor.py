@@ -104,6 +104,15 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
         """
         return self.local
 
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
+        return self.synchronous
+
 
 class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
     """Kubernetes orchestrator flavor."""
