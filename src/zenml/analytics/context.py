@@ -61,6 +61,7 @@ class AnalyticsContext:
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
         self.organization_id: Optional[UUID] = None
+        self.external_server_id: Optional[UUID] = None
 
         self.database_type: Optional["ServerDatabaseType"] = None
         self.deployment_type: Optional["ServerDeploymentType"] = None
@@ -84,6 +85,7 @@ class AnalyticsContext:
             # Fetch the `user_id`
             if self.in_server:
                 from zenml.zen_server.auth import get_auth_context
+                from zenml.zen_server.utils import server_config
 
                 # If the code is running on the server, use the auth context.
                 auth_context = get_auth_context()
@@ -99,6 +101,8 @@ class AnalyticsContext:
                         )
                     except (KeyError, ValueError):
                         pass
+
+                self.external_server_id = server_config().external_server_id
             else:
                 # If the code is running on the client, use the default user.
                 active_user = gc.zen_store.get_user()
@@ -272,6 +276,9 @@ class AnalyticsContext:
 
         if self.external_user_id:
             properties["external_user_id"] = self.external_user_id
+
+        if self.external_server_id:
+            properties["external_server_id"] = self.external_server_id
 
         if self.organization_id:
             properties["organization_id"] = str(self.organization_id)
