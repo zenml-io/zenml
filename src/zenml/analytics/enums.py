@@ -18,8 +18,7 @@ from enum import Enum
 class AnalyticsEvent(str, Enum):
     """Enum of events to track in segment."""
 
-    # Connected to server
-    CONNECT_TO_SERVER = "Server connected"
+    # Login
     DEVICE_VERIFIED = "Device verified"
 
     # Pipelines

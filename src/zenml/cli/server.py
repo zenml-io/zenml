@@ -789,8 +789,7 @@ def connect(
 
     store_config = store_config_class.parse_obj(store_dict)
     try:
-        with track_handler(event=AnalyticsEvent.CONNECT_TO_SERVER):
-            GlobalConfiguration().set_store(store_config)
+        GlobalConfiguration().set_store(store_config)
     except IllegalOperationError:
         cli_utils.warning(
             f"User '{username}' does not have sufficient permissions to "
