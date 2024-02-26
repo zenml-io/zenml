@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning trigger executions."""
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -27,7 +27,9 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
 )
 from zenml.models.v2.base.scoped import WorkspaceScopedFilter
-from zenml.models.v2.core.trigger import TriggerResponse
+
+if TYPE_CHECKING:
+    from zenml.models.v2.core.trigger import TriggerResponse
 
 # ------------------ Request Model ------------------
 
@@ -58,7 +60,7 @@ class TriggerExecutionResponseMetadata(BaseResponseMetadata):
 class TriggerExecutionResponseResources(BaseResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
-    trigger: TriggerResponse = Field(
+    trigger: "TriggerResponse" = Field(
         title="The event source that activates this trigger.",
     )
 

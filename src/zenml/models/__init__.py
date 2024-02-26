@@ -427,18 +427,6 @@ ModelVersionPipelineRunResponseBody.update_forward_refs(
 OAuthDeviceResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
-TriggerResponseBody.update_forward_refs(
-    UserResponse=UserResponse,
-)
-TriggerResponseMetadata.update_forward_refs(
-    WorkspaceResponse=WorkspaceResponse,
-)
-TriggerResponseResources.update_forward_refs(
-    EventSourceResponse=EventSourceResponse,
-)
-TriggerExecutionResponseBody.update_forward_refs(
-    TriggerResponse=TriggerResponse
-)
 PipelineResponseBody.update_forward_refs(
     UserResponse=UserResponse,
 )
@@ -533,8 +521,21 @@ StepRunResponseMetadata.update_forward_refs(
     LogsResponse=LogsResponse,
     RunMetadataResponse=RunMetadataResponse,
 )
+TriggerExecutionResponseResources.update_forward_refs(
+    TriggerResponse=TriggerResponse
+)
+TriggerResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+TriggerResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
 TriggerResponseResources.update_forward_refs(
     EventSourceResponse=EventSourceResponse,
+)
+TriggerResponseResources.update_forward_refs(
+    EventSourceResponse=EventSourceResponse,
+    TriggerExecutionResponse=TriggerExecutionResponse,
 )
 
 __all__ = [

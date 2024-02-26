@@ -12,27 +12,29 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utils for schemas."""
-from typing import List, TypeVar
+import math
+from typing import List, Type, TypeVar
 
 from zenml.models.v2.base.base import BaseResponse
 from zenml.models.v2.base.page import Page
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 S = TypeVar("S", bound=BaseSchema)
-B = TypeVar("B", bound=BaseResponse)  # type: ignore[type-arg]
 
 
 def get_page_from_list(
     items_list: List[S],
+    response_model: Type[BaseResponse],  # type: ignore[type-arg]
     size: int = 5,
     page: int = 1,
     include_resources: bool = False,
     include_metadata: bool = False,
-) -> Page[B]:
+) -> Page[BaseResponse]:  # type: ignore[type-arg]
     """Converts list of schemas into page of response models.
 
     Args:
         items_list: List of schemas
+        response_model: Response model
         size: Page size
         page: Page number
         include_metadata: Whether metadata should be included in response models
@@ -42,7 +44,11 @@ def get_page_from_list(
         A page of list items.
     """
     total = len(items_list)
-    total_pages = total / size
+    if total == 0:
+        total_pages = 1
+    else:
+        total_pages = math.ceil(total / size)
+
     start = (page - 1) * size
     end = start + size
 
@@ -53,7 +59,7 @@ def get_page_from_list(
         )
         for item in items_list[start:end]
     ]
-    return Page(
+    return Page[response_model](  # type: ignore[valid-type]
         index=page,
         max_size=size,
         total_pages=total_pages,

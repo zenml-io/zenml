@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning triggers."""
 import copy
-from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -30,14 +30,11 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
 from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.event_source import EventSourceResponse
-    from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
-    from zenml.zen_stores.schemas import BaseSchema
-
-    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 # ------------------ Base Model ------------------
 
@@ -195,11 +192,6 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-TriggerExecutionPage = TypeVar(
-    "TriggerExecutionPage", bound=Page["TriggerExecutionResponse"]
-)
-
-
 class TriggerResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
@@ -209,7 +201,7 @@ class TriggerResponseResources(WorkspaceScopedResponseResources):
     service_account: UserResponse = Field(
         title="The service account that is used to execute the action.",
     )
-    executions: TriggerExecutionPage = Field(  # type: ignore[valid-type]
+    executions: Page[TriggerExecutionResponse] = Field(
         title="The executions of this trigger.",
     )
 

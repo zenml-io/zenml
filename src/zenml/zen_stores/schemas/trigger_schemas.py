@@ -15,7 +15,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -24,6 +24,7 @@ from sqlmodel import Field, Relationship
 
 from zenml import TriggerExecutionResponseResources
 from zenml.models import (
+    Page,
     TriggerExecutionRequest,
     TriggerExecutionResponse,
     TriggerExecutionResponseBody,
@@ -197,6 +198,8 @@ class TriggerSchema(NamedSchema, table=True):
         Returns:
             The converted model.
         """
+        from zenml.models import TriggerExecutionResponse
+
         body = TriggerResponseBody(
             user=self.user.to_model() if self.user else None,
             created=self.created,
@@ -219,14 +222,19 @@ class TriggerSchema(NamedSchema, table=True):
             )
         resources = None
         if include_resources:
-            resources = TriggerResponseResources(
-                event_source=self.event_source.to_model(),
-                service_account=self.service_account.to_model(),
-                executions=get_page_from_list(
+            executions = cast(
+                Page[TriggerExecutionResponse],
+                get_page_from_list(
                     items_list=self.executions,
+                    response_model=TriggerExecutionResponse,
                     include_resources=include_resources,
                     include_metadata=include_metadata,
                 ),
+            )
+            resources = TriggerResponseResources(
+                event_source=self.event_source.to_model(),
+                service_account=self.service_account.to_model(),
+                executions=executions,
             )
         return TriggerResponse(
             id=self.id,

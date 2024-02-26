@@ -15,7 +15,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 from uuid import UUID
 
 from pydantic import Field
@@ -28,9 +28,10 @@ from zenml.models import (
     EventSourceRequest,
     EventSourceResponse,
     EventSourceResponseBody,
+    EventSourceResponseResources,
     EventSourceUpdate,
+    Page,
 )
-from zenml.models.v2.core.event_source import EventSourceResponseResources
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -122,6 +123,8 @@ class EventSourceSchema(NamedSchema, table=True):
         Returns:
             The created `EventSourceResponse`.
         """
+        from zenml.models import TriggerResponse
+
         body = EventSourceResponseBody(
             created=self.created,
             updated=self.updated,
@@ -132,12 +135,17 @@ class EventSourceSchema(NamedSchema, table=True):
         )
         resources = None
         if include_resources:
-            resources = EventSourceResponseResources(
-                triggers=get_page_from_list(
+            triggers = cast(
+                Page[TriggerResponse],
+                get_page_from_list(
                     items_list=self.triggers,
+                    response_model=TriggerResponse,
                     include_resources=include_resources,
                     include_metadata=include_metadata,
-                )
+                ),
+            )
+            resources = EventSourceResponseResources(
+                triggers=triggers,
             )
         metadata = None
         if include_metadata:

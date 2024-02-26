@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
 import copy
-from typing import Any, Dict, Optional, TypeVar
+from typing import Any, Dict, Optional
 
 from pydantic import Field
 
@@ -30,9 +30,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.trigger import TriggerResponse
-
-TriggerPage = TypeVar("TriggerPage", bound=Page[TriggerResponse])
-
 
 # ------------------ Request Model ------------------
 
@@ -143,7 +140,7 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
 class EventSourceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the code repository entity."""
 
-    triggers: TriggerPage = Field(  # type: ignore[valid-type]
+    triggers: Page[TriggerResponse] = Field(
         title="The triggers configured with this event source.",
     )
 

@@ -3746,7 +3746,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_event_source)
 
-            return new_event_source.to_model(include_metadata=True)
+            return new_event_source.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def _get_event_source(
         self,
@@ -3787,7 +3789,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_event_source(
                 event_source_id=event_source_id, session=session
-            ).to_model(include_metadata=hydrate)
+            ).to_model(include_metadata=hydrate, include_resources=True)
 
     def list_event_sources(
         self,
@@ -3839,7 +3841,9 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the event_source that was just created
             session.refresh(event_source)
-            return event_source.to_model(include_metadata=True)
+            return event_source.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_event_source(self, event_source_id: UUID) -> None:
         """Delete an event_source.
@@ -6981,7 +6985,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_trigger)
 
-            return new_trigger.to_model(include_metadata=True)
+            return new_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def get_trigger(
         self, trigger_id: UUID, hydrate: bool = True
@@ -7090,7 +7096,9 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_trigger)
 
-            return existing_trigger.to_model(include_metadata=True)
+            return existing_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_trigger(self, trigger_id: UUID) -> None:
         """Delete a trigger.

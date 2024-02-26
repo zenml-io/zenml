@@ -949,8 +949,23 @@ class CrudTestConfig:
             field_name,
             conditional_entity,
         ) in self.conditional_entities.items():
-            setattr(create_model, field_name, conditional_entity.create().id)
-
+            # Split the field name by '.' to handle nested fields
+            field_names = field_name.split(".")
+            parent_model = create_model
+            # Set the field name of the create_model
+            for name in field_names[:-1]:
+                if isinstance(parent_model, dict):
+                    parent_model = parent_model[name]
+                else:
+                    parent_model = getattr(parent_model, name)
+            if isinstance(parent_model, dict):
+                parent_model[field_names[-1]] = conditional_entity.create().id
+            else:
+                setattr(
+                    parent_model,
+                    field_names[-1],
+                    conditional_entity.create().id,
+                )
         # Create the entity itself
         response = self.create_method(create_model)
         self.id = response.id
@@ -1204,14 +1219,12 @@ event_source_crud_test_config = CrudTestConfig(
 trigger_crud_test_config = CrudTestConfig(
     create_model=TriggerRequest(
         name=sample_name("blupus_feeder"),
-        configuration={},
         description="Feeds blupus when he meows.",
         event_filter={},
         event_source_id=uuid.uuid4(),  # will be overridden in create()
         service_account_id=uuid.uuid4(),  # will be overridden in create()
         action={"pipeline_deployment_id": uuid.uuid4()},
-        flavor="github",  # TODO: Implementations can be parametrized later
-        action_subtype=PluginSubType.WEBHOOK,
+        action_subtype=PluginSubType.PIPELINE_RUN,
         action_flavor="builtin",
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
@@ -1223,6 +1236,7 @@ trigger_crud_test_config = CrudTestConfig(
     conditional_entities={
         "event_source_id": deepcopy(event_source_crud_test_config),
         "service_account_id": deepcopy(service_account_crud_test_config),
+        "action.pipeline_deployment_id": deepcopy(deployment_crud_test_config),
     },
 )
 
