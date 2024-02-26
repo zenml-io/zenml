@@ -46,7 +46,7 @@ EXAMPLE_EVENT = correct_event = {
     "commits": [
         {
             "id": "9d20eda4b61e691b9e22f8d5e73fd3f4fca658d0",
-            "message": "Introduced mouse-catching capabilites.",
+            "message": "Introduced mouse-catching capabilities.",
             "timestamp": "2024-01-29T17:51:00+01:00",
             "url": "https://github.com/zenml-io/zenml/commit"
             "/9d20eda4b61e691b9e34f8d5e73fd3f4fca658d0",

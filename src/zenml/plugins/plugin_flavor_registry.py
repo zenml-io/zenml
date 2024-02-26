@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Registry for all plugins."""
+import math
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Type
 
 from pydantic import BaseModel
@@ -93,41 +94,6 @@ class PluginFlavorRegistry:
         else:
             return {}
 
-    def list_available_flavor_names_for_type_and_subtype(
-        self,
-        _type: PluginType,
-        subtype: PluginSubType,
-        page: int,
-        size: int,
-    ) -> List[str]:
-        """Get a list of all subtypes for a specific flavor and type.
-
-        Args:
-            _type: The type of Plugin
-            subtype: The subtype of the plugin
-            page: For optional pagination
-            size: For optional pagination
-
-        Returns:
-            List of flavor names for the given type/subtype combination.
-
-        Raises:
-            ValueError: If the page or size are invalid.
-        """
-        flavor_names = list(
-            self._flavor_entries(_type=_type, subtype=subtype).keys()
-        )
-        if page > 0 and size > 0:
-            start = page * size
-            end = start + size
-            return flavor_names[start:end]
-        else:
-            raise ValueError(
-                f"Invalid pagination values. Both values for "
-                f"page: {page} and size: {size} need to be "
-                f"positive, non-zero integers."
-            )
-
     def list_available_flavors_for_type_and_subtype(
         self,
         _type: PluginType,
@@ -177,14 +143,26 @@ class PluginFlavorRegistry:
             subtype=subtype,
         )
         total = len(flavors)
-        total_pages = total / size
+        if total == 0:
+            total_pages = 1
+        else:
+            total_pages = math.ceil(total / size)
+
+        if page > total_pages:
+            raise ValueError(
+                f"Invalid page {page}. The requested page size is "
+                f"{size} and there are a total of {total} items "
+                f"for this query. The maximum page value therefore is "
+                f"{total_pages}."
+            )
+
         start = (page - 1) * size
         end = start + size
 
         page_items = [
             flavor.get_flavor_response_model(hydrate=hydrate)
-            for flavor in flavors
-        ][start:end]
+            for flavor in flavors[start:end]
+        ]
 
         return Page(
             index=page,
