@@ -14,11 +14,10 @@
 import logging
 import os
 import shutil
-import subprocess
-import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime
+from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Generator, List, Optional, Set, Tuple
 
@@ -69,12 +68,8 @@ class IntegrationTestExample:
         Raises:
             RuntimeError: If running the example fails.
         """
-        popen = subprocess.Popen(
-            [sys.executable, self.run_dot_py_file, *args],
-            cwd=str(self.path),
-            env=os.environ.copy(),
-        )
-        popen.wait()
+        run = import_module("run")
+        run.main(*args)
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
