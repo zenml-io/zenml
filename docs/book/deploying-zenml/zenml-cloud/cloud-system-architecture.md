@@ -5,7 +5,7 @@ description: Different variations of the ZenML Cloud architecture depending on y
 # System Architecture
 
 {% hint style="info" %}
-If you would like to evaluate ZenML Cloud, please [book a demo](https://zenml.io/book-a-demo) and we can help you decide what scenario suits you best!
+If you're interested in assessing ZenML Cloud, you can create a [free account](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link), which defaults to a [Scenario 1](#scenario-1-full-saas) deployment. To upgrade to different scenarios, please [reach out to us](mailto:cloud@zenml.io).
 {% endhint %}
 
 Machine learning often involves data that is sensitive and thus data security is a fundamental requirement. The ZenML Cloud is flexible enough to meet your security requirements, from easy installations to completely airgapped deployments.
@@ -16,7 +16,7 @@ The ZenML Cloud consists of the following moving pieces:
 * **Single Sign-On (SSO)**: The ZenML Cloud API is integrated with [Auth0](https://auth0.com/) as an SSO provider to manage user authentication and authorization. Users can log in to the ZenML Cloud dashboard using their social media accounts or their corporate credentials.
 * **Secrets Store**: All secrets and credentials required to access customer infrastructure services are stored in a secure secrets store. The ZenML Cloud API has access to these secrets and uses them to access customer infrastructure services on behalf of the ZenML Cloud. The secrets store can be hosted either by the ZenML Cloud or by the customer.
 * **ML Metadata Store**: This is where all ZenML metadata is stored, including ML metadata such as tracking and versioning information about pipelines and models.
-* **ZenML Cloud Agent**: This service is optionally deployed customer-side, and interacts with customer MLOps stack components on behalf of the remote ZenML Cloud control plane.
+* **ZenML Cloud Agent (Optional)**: This service is optionally deployed customer-side, and interacts with customer MLOps stack components on behalf of the remote ZenML Cloud control plane.
 
 The above five interact with other MLOps stack components, secrets, and data in varying scenarios described below.
 
@@ -78,6 +78,6 @@ Here is a concrete example of how this works:
 
 In this scenario, all services, data, and secrets are deployed on the customer cloud. This is the opposite of Scenario 1, and is meant for customers who require completely airgapped deployments, for the tightest security standards.
 
-Are you interested in the ZenML Cloud? While in beta, we're looking for early adopters to talk to! [Sign up](https://cloud.zenml.io) and get access to Scenario 1. with a free 30 day trial now!
+Are you interested in the ZenML Cloud? While in beta, we're looking for early adopters to talk to! [Sign up](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link) and get access to Scenario 1. with a free 30 day trial now!
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

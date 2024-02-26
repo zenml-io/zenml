@@ -257,6 +257,15 @@ class LocalDockerOrchestratorConfig(  # type: ignore[misc] # https://github.com/
         """
         return True
 
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
+        return True
+
 
 class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
     """Flavor for the local Docker orchestrator."""

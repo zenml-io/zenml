@@ -161,13 +161,20 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             os.makedirs(local_mlflow_tracking_uri)
         return "file:" + local_mlflow_tracking_uri
 
-    def get_tracking_uri(self) -> str:
+    def get_tracking_uri(self, as_plain_text: bool = True) -> str:
         """Returns the configured tracking URI or a local fallback.
+
+        Args:
+            as_plain_text: Whether to return the tracking URI as plain text.
 
         Returns:
             The tracking URI.
         """
-        return self.config.tracking_uri or self._local_mlflow_backend()
+        if as_plain_text:
+            tracking_uri = self.config.tracking_uri
+        else:
+            tracking_uri = self.config.dict()["tracking_uri"]
+        return tracking_uri or self._local_mlflow_backend()
 
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Sets the MLflow tracking uri and credentials.
@@ -214,7 +221,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             A dictionary of metadata.
         """
         return {
-            METADATA_EXPERIMENT_TRACKER_URL: Uri(self.get_tracking_uri()),
+            METADATA_EXPERIMENT_TRACKER_URL: Uri(
+                self.get_tracking_uri(as_plain_text=False)
+            ),
             "mlflow_run_id": mlflow.active_run().info.run_id,
             "mlflow_experiment_id": mlflow.active_run().info.experiment_id,
         }
@@ -243,6 +252,10 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 module = importlib.import_module(module_name)
                 # Call the autolog function with disable=True
                 module.autolog(disable=True)
+            except ImportError as e:
+                # only log on mlflow relevant errors
+                if "mlflow" in e.msg.lower():
+                    failed_frameworks.append(framework)
             except Exception:
                 failed_frameworks.append(framework)
 

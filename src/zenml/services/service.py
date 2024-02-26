@@ -15,7 +15,19 @@
 
 import time
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, Generator, Optional, Tuple, Type, cast
+from functools import wraps
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Generator,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -29,6 +41,52 @@ from zenml.services.service_type import ServiceType
 from zenml.utils.typed_model import BaseTypedModel, BaseTypedModelMeta
 
 logger = get_logger(__name__)
+
+T = TypeVar("T", bound=Callable[..., Any])
+
+
+def update_service_status(
+    pre_status: Optional[ServiceState] = None,
+    post_status: Optional[ServiceState] = None,
+    error_status: ServiceState = ServiceState.ERROR,
+) -> Callable[[T], T]:
+    """A decorator to update the service status before and after a method call.
+
+    This decorator is used to wrap service methods and update the service status
+    before and after the method call. If the method raises an exception, the
+    service status is updated to reflect the error state.
+
+    Args:
+        pre_status: the status to update before the method call.
+        post_status: the status to update after the method call.
+        error_status: the status to update if the method raises an exception.
+
+    Returns:
+        Callable[..., Any]: The wrapped method with exception handling.
+    """
+
+    def decorator(func: T) -> T:
+        @wraps(func)
+        def wrapper(self: "BaseService", *args: Any, **kwargs: Any) -> Any:
+            if pre_status:
+                self.status.update_state(pre_status, "")
+            try:
+                logger.info(f"Calling {func.__name__} method...")
+                result = func(self, *args, **kwargs)
+                logger.info(f"{func.__name__} method executed successfully.")
+                if post_status:
+                    self.status.update_state(post_status, "")
+                return result
+            except Exception as e:
+                logger.error(
+                    f"Error occurred in {func.__name__} method: {str(e)}"
+                )
+                self.status.update_state(error_status, str(e))
+                raise
+
+        return wrapper  # type: ignore
+
+    return decorator
 
 
 class ServiceConfig(BaseTypedModel):
@@ -220,7 +278,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
 
     def update_status(self) -> None:
-        """Update the service of the service.
+        """Update the status of the service.
 
         Check the current operational state of the external service
         and update the local operational status information to reflect it.
@@ -232,21 +290,28 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             "Running status check for service '%s' ...",
             self,
         )
-        state, err = self.check_status()
-        logger.debug(
-            "Status check results for service '%s': %s [%s]",
-            self,
-            state.name,
-            err,
-        )
-        self.status.update_state(state, err)
+        try:
+            state, err = self.check_status()
+            logger.debug(
+                "Status check results for service '%s': %s [%s]",
+                self,
+                state.name,
+                err,
+            )
+            self.status.update_state(state, err)
 
-        # don't bother checking the endpoint state if the service is not active
-        if self.status.state == ServiceState.INACTIVE:
-            return
+            # don't bother checking the endpoint state if the service is not active
+            if self.status.state == ServiceState.INACTIVE:
+                return
 
-        if self.endpoint:
-            self.endpoint.update_status()
+            if self.endpoint:
+                self.endpoint.update_status()
+        except Exception as e:
+            logger.error(
+                f"Failed to update status for service '{self}': {e}",
+                exc_info=True,
+            )
+            self.status.update_state(ServiceState.ERROR, str(e))
 
     def get_service_status_message(self) -> str:
         """Get a service status message.
@@ -373,6 +438,10 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
         self.config = config
 
+    @update_service_status(
+        pre_status=ServiceState.PENDING_STARTUP,
+        post_status=ServiceState.ACTIVE,
+    )
     def start(self, timeout: int = 0) -> None:
         """Start the service and optionally wait for it to become active.
 
@@ -394,6 +463,10 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
                         + self.get_service_status_message()
                     )
 
+    @update_service_status(
+        pre_status=ServiceState.PENDING_SHUTDOWN,
+        post_status=ServiceState.INACTIVE,
+    )
     def stop(self, timeout: int = 0, force: bool = False) -> None:
         """Stop the service and optionally wait for it to shutdown.
 
