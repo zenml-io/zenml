@@ -17,7 +17,7 @@ The Airflow integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Airflow orchestrator with
 the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
 """
-from typing import List, Optional, Type
+from typing import List, Type
 
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
@@ -30,7 +30,13 @@ class AirflowIntegration(Integration):
     """Definition of Airflow Integration for ZenML."""
 
     NAME = AIRFLOW
-    REQUIREMENTS = ["apache-airflow~=2.4.0", "sqlmodel>=0.0.9,<=0.0.16"]
+    # remove pendulum version requirement once Airflow supports
+    # pendulum>-3.0.0
+    REQUIREMENTS = [
+        "apache-airflow~=2.4.0",
+        "pendulum<3.0.0",
+        "sqlmodel>=0.0.9,<=0.0.16",
+    ]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
