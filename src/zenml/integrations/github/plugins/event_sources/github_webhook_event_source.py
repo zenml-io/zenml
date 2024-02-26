@@ -12,9 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the github webhook event source."""
-import json
 import urllib
-from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
@@ -252,7 +250,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         """
         try:
             github_event = GithubEvent(**event)
-        except ValueError as e:
+        except ValueError:
             raise ValueError("Event did not match the pydantic model.")
         else:
             return github_event
