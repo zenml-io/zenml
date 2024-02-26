@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -29,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
 from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
@@ -85,8 +87,6 @@ class TriggerBase(BaseModel):
 # ------------------ Request Model ------------------
 class TriggerRequest(TriggerBase, WorkspaceScopedRequest):
     """Model for creating a new Trigger."""
-
-    # executions: somehow we need to link to executed Actions here
 
 
 # ------------------ Update Model ------------------
@@ -195,6 +195,11 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+TriggerExecutionPage = TypeVar(
+    "TriggerExecutionPage", bound=Page[TriggerExecutionResponse]
+)
+
+
 class TriggerResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
@@ -203,6 +208,9 @@ class TriggerResponseResources(WorkspaceScopedResponseResources):
     )
     service_account: UserResponse = Field(
         title="The service account that is used to execute the action.",
+    )
+    executions: TriggerExecutionPage = Field(  # type: ignore[valid-type]
+        title="The executions of this trigger.",
     )
 
 

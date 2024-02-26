@@ -137,6 +137,9 @@ class PluginFlavorRegistry:
 
         Returns:
             A page of flavors.
+
+        Raises:
+            ValueError: If the page is out of range.
         """
         flavors = self.list_available_flavors_for_type_and_subtype(
             _type=_type,

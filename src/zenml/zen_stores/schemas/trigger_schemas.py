@@ -39,6 +39,7 @@ from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import get_page_from_list
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
@@ -221,6 +222,11 @@ class TriggerSchema(NamedSchema, table=True):
             resources = TriggerResponseResources(
                 event_source=self.event_source.to_model(),
                 service_account=self.service_account.to_model(),
+                executions=get_page_from_list(
+                    items_list=self.executions,
+                    include_resources=include_resources,
+                    include_metadata=include_metadata,
+                ),
             )
         return TriggerResponse(
             id=self.id,
