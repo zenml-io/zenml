@@ -75,7 +75,6 @@ from zenml.new.pipelines.run_utils import (
     prepare_model_versions,
 )
 from zenml.stack import Stack
-from zenml.stack.utils import stack_context
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
     StepArtifact,
@@ -537,9 +536,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The build output.
         """
+        from zenml.cli.utils import temporary_active_stack
+
         with track_handler(
             event=AnalyticsEvent.BUILD_PIPELINE
-        ), stack_context():
+        ), temporary_active_stack():
             self._prepare_if_possible()
             deployment, pipeline_spec, _, _ = self._compile(
                 config_path=config_path,
@@ -607,6 +608,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             Model of the pipeline run if running without a schedule, `None` if
             running with a schedule.
         """
+        from zenml.cli.utils import temporary_active_stack
+        
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
             # pipelines. This is done to prevent execution of module-level
@@ -624,7 +627,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         with track_handler(
             AnalyticsEvent.RUN_PIPELINE
-        ) as analytics_handler, stack_context():
+        ) as analytics_handler, temporary_active_stack():
             deployment, pipeline_spec, schedule, build = self._compile(
                 config_path=config_path,
                 run_name=run_name,
@@ -1453,5 +1456,5 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Args:
             run_configuration: The run configuration for this pipeline.
         """
-        if run_configuration.active_stack is not None:
-            Client().activate_stack(run_configuration.active_stack)
+        if run_configuration.stack is not None:
+            Client().activate_stack(run_configuration.stack)
