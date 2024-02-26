@@ -253,12 +253,6 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         try:
             github_event = GithubEvent(**event)
         except ValueError as e:
-            logger.exception(e)
-            # TODO: Remove this - currently useful for debugging
-            with open(
-                f'{datetime.now().strftime("%Y%m%d%H%M%S")}.json', "w"
-            ) as f:
-                json.dump(event, f)
             raise ValueError("Event did not match the pydantic model.")
         else:
             return github_event
