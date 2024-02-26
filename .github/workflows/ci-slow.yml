@@ -54,9 +54,14 @@ jobs:
   sqlite-db-migration-testing:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
     runs-on: ubuntu-dind-runners
     steps:
       - uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
       - name: Set up Python 3.9
         uses: actions/setup-python@v5.0.0
         with:
