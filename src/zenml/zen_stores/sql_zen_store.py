@@ -6729,7 +6729,7 @@ class SqlZenStore(BaseZenStore):
                     start_time_str = None
                     duration_seconds = None
 
-                stack = pipeline_run.stack
+                stack = pipeline_run.deployment.stack
                 assert stack
                 stack_metadata = {
                     component.type.value: component.flavor
