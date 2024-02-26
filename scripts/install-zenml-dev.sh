@@ -79,7 +79,8 @@ install_zenml
 
 # install integrations, if requested
 if [ "$INTEGRATIONS" = yes ]; then
-    install_integrations
+    # install_integrations
+    pip install -r integration-requirements-compiled.txt
     # refresh the ZenML installation after installing integrations
     install_zenml
 fi
