@@ -385,7 +385,7 @@ def test_pipeline_run_with_different_stack_in_config_file(
 
     config_path = tmp_path / "config.yaml"
     run_config = PipelineRunConfiguration(
-        run_name="custom_run_name", active_stack=str(new_stack.id)
+        run_name="custom_run_name", stack=str(new_stack.id)
     )
     config_path.write_text(run_config.yaml())
 

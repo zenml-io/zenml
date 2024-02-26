@@ -132,7 +132,7 @@ python run.py
 <summary>An example of a generated YAML configuration template</summary>
 
 ```yaml
-active_stack: Optional[str]
+stack: Optional[str]
 build: Union[PipelineBuildBase, UUID, NoneType]
 enable_artifact_metadata: Optional[bool]
 enable_artifact_visualization: Optional[bool]
