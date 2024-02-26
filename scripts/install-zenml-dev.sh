@@ -57,6 +57,7 @@ install_integrations() {
     # pin pyyaml>=6.0.1
     echo "" >> integration-requirements.txt
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
+    echo "pyopenssl" >> integration-requirements.txt
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> integration-requirements.txt
     cp integration-requirements.txt integration-requirements.in
 
