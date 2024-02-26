@@ -30,11 +30,11 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
 from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.event_source import EventSourceResponse
+    from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -196,7 +196,7 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
 
 
 TriggerExecutionPage = TypeVar(
-    "TriggerExecutionPage", bound=Page[TriggerExecutionResponse]
+    "TriggerExecutionPage", bound=Page["TriggerExecutionResponse"]
 )
 
 
