@@ -36,6 +36,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    get_origin,
 )
 from uuid import UUID, uuid4
 
@@ -47,7 +48,7 @@ from sqlalchemy.exc import (
     IntegrityError,
     NoResultFound,
 )
-from sqlalchemy.orm import noload
+from sqlalchemy.orm import Mapped, noload
 from sqlmodel import (
     Session,
     SQLModel,
@@ -6789,6 +6790,8 @@ class SqlZenStore(BaseZenStore):
         for resource_attr in resource_attrs:
             # Extract the target schema from the annotation
             annotation = UserSchema.__annotations__[resource_attr]
+            if get_origin(annotation) == Mapped:
+                annotation = annotation.__args__[0]
 
             # The annotation must be of the form
             # `typing.List[ForwardRef('<schema-class>')]`
@@ -6846,11 +6849,13 @@ class SqlZenStore(BaseZenStore):
         resource_attrs = self._get_resource_references()
         for schema, resource_attr in resource_attrs:
             # Check if the user owns any resources of this type
-            count = session.scalar(
-                select([func.count("*")])
+            count = (
+                session.query(func.count())
                 .select_from(schema)
                 .where(getattr(schema, resource_attr) == account.id)
+                .scalar()
             )
+
             if count > 0:
                 logger.debug(
                     f"User {account.name} owns {count} resources of type "
