@@ -72,13 +72,19 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 
 {% tabs %}
 {% tab title="Local" %}
-In the local case, we need to install one additional Python package that is needed for the local Airflow server:
+In the local case, we need to reinstall in a certain way for the local Airflow server:
 
 ```bash
-pip install apache-airflow-providers-docker apache-airflow~=2.5.0
+pip install "apache-airflow-providers-docker<3.8.0" "apache-airflow==2.4.0" "pendulum<3.0.0" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.4.0/constraints-3.9.txt"
 ```
 
-Once that is installed, we can start the local Airflow server by running:
+Please make sure to replace 3.9 with your Python (major) version in the
+constraints file URL given above.
+
+Once that is installed, we can start the local Airflow server by running the
+following command in your terminal. See further below on an alternative way to
+set up the Airflow server manually since the `zenml stack up` command is
+deprecated.
 
 ```shell
 zenml stack up
@@ -122,7 +128,7 @@ Airflow server manually.
     export AIRFLOW__CORE__DAGS_FOLDER=...
     export AIRFLOW__CORE__LOAD_EXAMPLES=false
     export AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
-    
+
     # Prevent crashes during forking on MacOS
     # https://github.com/apache/airflow/issues/28487
     export no_proxy=*
