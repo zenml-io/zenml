@@ -14,6 +14,7 @@
 import logging
 import os
 import shutil
+import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime
@@ -68,6 +69,7 @@ class IntegrationTestExample:
         Raises:
             RuntimeError: If running the example fails.
         """
+        sys.path.insert(0, ".")
         run = import_module("run")
         run.main(*args)
 
