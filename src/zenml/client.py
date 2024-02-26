@@ -1462,9 +1462,9 @@ class Client(metaclass=ClientMetaClass):
             health_check_url = service.endpoint.monitor.get_healthcheck_uri(
                 service.endpoint
             )
-
+        breakpoint()
         # Create the ServiceRequest model
-        create_service_model = ServiceRequest(
+        service_request = ServiceRequest(
             name=service.config.name,
             type=service.SERVICE_TYPE,
             configuration=service.config.dict(),
@@ -1477,9 +1477,10 @@ class Client(metaclass=ClientMetaClass):
             health_check_url=health_check_url,
             labels=service.config.get_service_labels(),
         )
+        breakpoint()
 
         # Register the service
-        return self.zen_store.create_service(service=create_service_model)
+        return self.zen_store.create_service(service_request)
 
     def get_service(
         self,
@@ -1539,23 +1540,24 @@ class Client(metaclass=ClientMetaClass):
                 by including metadata fields in the response.
 
         Returns:
-            The Service
+            The Service response page.
         """
+        service_filter_model = ServiceFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            type=type,
+            workspace_id=workspace_id,
+            user_id=user_id,
+        )
+        service_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_services(
-            ServiceFilter(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                name=name,
-                type=type,
-                workspace_id=workspace_id,
-                user_id=user_id,
-            ),
-            hydrate=hydrate,
+            filter_model=service_filter_model, hydrate=hydrate
         )
 
     def update_service(

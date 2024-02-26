@@ -270,10 +270,6 @@ class ServiceFilter(WorkspaceScopedFilter):
         default=None,
         description="Name of the service",
     )
-    type: Optional[ServiceType] = Field(
-        default=None,
-        description="Type of the service",
-    )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the service"
     )

@@ -396,6 +396,7 @@ def get_resource_type_for_model(
         TagResponse,
         UserResponse,
         WorkspaceResponse,
+        ServiceResponse,
     )
 
     mapping: Dict[
@@ -421,6 +422,7 @@ def get_resource_type_for_model(
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
         TagResponse: ResourceType.TAG,
         ServiceAccountResponse: ResourceType.SERVICE_ACCOUNT,
+        ServiceResponse: ResourceType.SERVICE,
     }
 
     return mapping.get(type(model))
@@ -533,6 +535,7 @@ def get_schema_for_resource_type(
         TagSchema,
         UserSchema,
         WorkspaceSchema,
+        ServiceSchemas,
     )
 
     mapping: Dict[ResourceType, Type["BaseSchema"]] = {
@@ -540,6 +543,7 @@ def get_schema_for_resource_type(
         ResourceType.FLAVOR: FlavorSchema,
         ResourceType.STACK_COMPONENT: StackComponentSchema,
         ResourceType.PIPELINE: PipelineSchema,
+        ResourceType.SERVICE: ServiceSchemas,
         ResourceType.CODE_REPOSITORY: CodeRepositorySchema,
         ResourceType.MODEL: ModelSchema,
         ResourceType.MODEL_VERSION: ModelVersionSchema,

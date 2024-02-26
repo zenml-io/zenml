@@ -46,6 +46,7 @@ from zenml.model.utils import (
     log_model_metadata,
     link_artifact_to_model,
     log_model_version_metadata,
+    link_service_to_model_from_artifacts,
 )
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
@@ -70,6 +71,7 @@ __all__ = [
     "Model",
     "ModelVersion", # TODO: deprecate me
     "link_artifact_to_model",
+    "link_service_to_model_from_artifacts",
     "pipeline",
     "save_artifact",
     "show",
