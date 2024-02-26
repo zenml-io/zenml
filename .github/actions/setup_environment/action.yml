@@ -116,12 +116,12 @@ runs:
       run: |
         brew tap hashicorp/tap
         brew install hashicorp/tap/terraform
-    - name: Install BLAS and LAPACK for scipy
-      if: ${{ inputs.os == 'ubuntu-latest' }}
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libblas3 liblapack3 liblapack-dev libblas-dev
+    # - name: Install BLAS and LAPACK for scipy
+    #   if: ${{ inputs.os == 'ubuntu-latest' }}
+    #   shell: bash
+    #   run: |
+    #     sudo apt-get update
+    #     sudo apt-get install -y libblas3 liblapack3 liblapack-dev libblas-dev
     - name: Install ZenML and dependencies
       shell: bash
       run: |
