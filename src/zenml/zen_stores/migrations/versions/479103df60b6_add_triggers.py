@@ -1,7 +1,7 @@
 """add triggers [479103df60b6].
 
 Revision ID: 479103df60b6
-Revises: 0.55.3
+Revises: 76a7b9451ccd
 Create Date: 2024-02-21 09:31:48.400366
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "479103df60b6"
-down_revision = "0.55.3"
+down_revision = "76a7b9451ccd"
 branch_labels = None
 depends_on = None
 
