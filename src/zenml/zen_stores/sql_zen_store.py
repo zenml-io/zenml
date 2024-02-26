@@ -153,6 +153,9 @@ from zenml.models import (
     ModelVersionPipelineRunResponse,
     ModelVersionRequest,
     ModelVersionResponse,
+    ModelVersionServiceFilter,
+    ModelVersionServiceRequest,
+    ModelVersionServiceResponse,
     ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceInternalRequest,
@@ -201,6 +204,10 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponse,
+    ServiceUpdate,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -257,6 +264,7 @@ from zenml.zen_stores.schemas import (
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
     ModelVersionSchema,
+    ModelVersionServiceSchema,
     NamedSchema,
     OAuthDeviceSchema,
     PipelineBuildSchema,
@@ -282,6 +290,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+from zenml.zen_stores.schemas.service_schemas import ServiceSchemas
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
@@ -1779,6 +1788,140 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.delete(api_key)
+            session.commit()
+
+    # -------------------- Services --------------------
+
+    def create_service(self, service: ServiceRequest) -> ServiceResponse:
+        """Create a new service.
+
+        Args:
+            service: The service to create.
+
+        Returns:
+            The newly created service.
+
+        Raises:
+            EntityExistsError: If a service with the same name already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if a service with the given name already exists
+            existing_service = session.exec(
+                select(ServiceSchemas).where(
+                    ServiceSchemas.name == service.name
+                )
+            ).first()
+            if existing_service is not None:
+                raise EntityExistsError(
+                    f"Unable to create service with name '{service.name}': "
+                    "A service with the same name already exists."
+                )
+
+            # Create the service.
+            service_schema = ServiceSchemas.from_request(service)
+            session.add(service_schema)
+            session.commit()
+
+            return service_schema.to_model(hydrate=True)
+
+    def get_service(
+        self, service_id: UUID, hydrate: bool = True
+    ) -> ServiceResponse:
+        """Get a service.
+
+        Args:
+            service_id: The ID of the service to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The service.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+        with Session(self.engine) as session:
+            service = session.exec(
+                select(ServiceSchemas).where(ServiceSchemas.id == service_id)
+            ).first()
+            if service is None:
+                raise KeyError(
+                    f"Unable to get service with ID {service_id}: No "
+                    "service with this ID found."
+                )
+            return service.to_model(hydrate=hydrate)
+
+    def list_services(
+        self, filter_model: ServiceFilter, hydrate: bool = False
+    ) -> Page[ServiceResponse]:
+        """List all services matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all services matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(ServiceSchemas)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ServiceSchemas,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_service(
+        self, service_id: UUID, service_update: ServiceUpdate
+    ) -> ServiceResponse:
+        """Update a service.
+
+        Args:
+            service_id: The ID of the service to update.
+            service_update: The update to be applied to the service.
+
+        Returns:
+            The updated service.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+        with Session(self.engine) as session:
+            existing_service = session.exec(
+                select(ServiceSchemas).where(ServiceSchemas.id == service_id)
+            ).first()
+            if not existing_service:
+                raise KeyError(f"Service with ID {service_id} not found.")
+
+            # Update the schema itself.
+            existing_service.update(service_update=service_update)
+            session.add(existing_service)
+            session.commit()
+            session.refresh(existing_service)
+            return existing_service.to_model(hydrate=True)
+
+    def delete_service(self, service_id: UUID) -> None:
+        """Delete a service.
+
+        Args:
+            service_id: The ID of the service to delete.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+        with Session(self.engine) as session:
+            existing_service = session.exec(
+                select(ServiceSchemas).where(ServiceSchemas.id == service_id)
+            ).first()
+            if not existing_service:
+                raise KeyError(f"Service with ID {service_id} not found.")
+
+            # Delete the service
+            session.delete(existing_service)
             session.commit()
 
     # -------------------- Artifacts --------------------
@@ -8341,6 +8484,124 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(model_version_pipeline_run_link)
+            session.commit()
+
+    # ----------------------------- Model Versions Services -----------------------------
+
+    def create_model_version_services_link(
+        self,
+        model_version_service_link: ModelVersionServiceRequest,
+    ) -> ModelVersionServiceResponse:
+        """Creates a new model version to service link.
+
+        Args:
+            model_version_service_link: the Model Version to Service Link to be
+                created.
+
+        Returns:
+            - If Model Version to Service Link already exists - returns the
+                existing link.
+            - Otherwise, returns the newly created model version to service link.
+        """
+        with Session(self.engine) as session:
+            # If the link already exists, return it
+            existing_model_version_service_link = session.exec(
+                select(ModelVersionServiceSchema)
+                .where(
+                    ModelVersionServiceSchema.model_version_id
+                    == model_version_service_link.model_version
+                )
+                .where(
+                    ModelVersionServiceSchema.service_id
+                    == model_version_service_link.service,
+                )
+            ).first()
+            if existing_model_version_service_link is not None:
+                return existing_model_version_service_link.to_model()
+
+            # Otherwise, create a new link
+            model_version_service_link_schema = (
+                ModelVersionServiceSchema.from_request(
+                    model_version_service_link
+                )
+            )
+            session.add(model_version_service_link_schema)
+            session.commit()
+            return model_version_service_link_schema.to_model(hydrate=True)
+
+    def list_model_version_service_links(
+        self,
+        model_version_service_link_filter_model: ModelVersionServiceFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionServiceResponse]:
+        """Get all model version to service links by filter.
+
+        Args:
+            model_version_service_link_filter_model: All filter parameters
+                including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all model version to service links.
+        """
+        query = select(ModelVersionServiceSchema)
+        with Session(self.engine) as session:
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ModelVersionServiceSchema,
+                filter_model=model_version_service_link_filter_model,
+                hydrate=hydrate,
+            )
+
+    def delete_model_version_service_link(
+        self,
+        model_version_id: UUID,
+        model_version_service_link_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version to service link.
+
+        Args:
+            model_version_id: name or ID of the model version containing the
+                link.
+            model_version_service_link_name_or_id: name or ID of the model
+                version to service link to be deleted.
+
+        Raises:
+            KeyError: specified ID not found.
+
+        """
+        with Session(self.engine) as session:
+            model_version = self.get_model_version(
+                model_version_id=model_version_id
+            )
+            query = select(ModelVersionServiceSchema).where(
+                ModelVersionServiceSchema.model_version_id == model_version.id
+            )
+            try:
+                UUID(str(model_version_service_link_name_or_id))
+                query = query.where(
+                    ModelVersionServiceSchema.id
+                    == model_version_service_link_name_or_id
+                )
+            except ValueError:
+                query = query.where(
+                    ModelVersionServiceSchema.service_id == ServiceSchemas.id
+                ).where(
+                    ServiceSchemas.name
+                    == model_version_service_link_name_or_id
+                )
+
+            model_version_service_link = session.exec(query).first()
+            if model_version_service_link is None:
+                raise KeyError(
+                    f"Unable to delete model version link with name "
+                    f"`{model_version_service_link_name_or_id}`: "
+                    f"No model version link with this name found."
+                )
+
+            session.delete(model_version_service_link)
             session.commit()
 
     #################

@@ -37,12 +37,16 @@ from zenml.models import (
     ModelVersionResponse,
     ModelVersionResponseBody,
     ModelVersionResponseMetadata,
+    ModelVersionServiceRequest,
+    ModelVersionServiceResponse,
+    ModelVersionServiceResponseBody,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.service_schemas import ServiceSchemas
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -100,6 +104,10 @@ class ModelSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
+        back_populates="model",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    services_links: List["ModelVersionServiceSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -249,6 +257,10 @@ class ModelVersionSchema(NamedSchema, table=True):
         back_populates="model_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    services_links: List["ModelVersionServiceSchema"] = Relationship(
+        back_populates="model_version",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     tags: List["TagResourceSchema"] = Relationship(
         back_populates="model_version",
         sa_relationship_kwargs=dict(
@@ -337,6 +349,14 @@ class ModelVersionSchema(NamedSchema, table=True):
             pipeline_run = pipeline_run_link.pipeline_run
             pipeline_run_ids[pipeline_run.name] = pipeline_run.id
 
+        # Construct {name: id} dict for all linked services
+        service_ids: Dict[str, UUID] = {}
+        for service_link in self.services_links:
+            if not service_link.service:
+                continue
+            service = service_link.service
+            service_ids[service.name] = service.id
+
         metadata = None
 
         if hydrate:
@@ -360,6 +380,7 @@ class ModelVersionSchema(NamedSchema, table=True):
             data_artifact_ids=data_artifact_ids,
             deployment_artifact_ids=deployment_artifact_ids,
             pipeline_run_ids=pipeline_run_ids,
+            service_ids=service_ids,
             tags=[t.tag.to_model() for t in self.tags],
         )
 
@@ -616,6 +637,114 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
                 model=self.model_id,
                 model_version=self.model_version_id,
                 pipeline_run=self.pipeline_run.to_model(),
+            ),
+            metadata=BaseResponseMetadata() if hydrate else None,
+        )
+
+
+class ModelVersionServiceSchema(BaseSchema, table=True):
+    """SQL Model for linking of Model Versions and services M:M."""
+
+    __tablename__ = "model_versions_services"
+
+    workspace_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    workspace: "WorkspaceSchema" = Relationship(
+        back_populates="model_versions_services_links"
+    )
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="model_versions_services_links"
+    )
+
+    model_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ModelSchema.__tablename__,
+        source_column="model_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    model: "ModelSchema" = Relationship(back_populates="services_links")
+    model_version_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ModelVersionSchema.__tablename__,
+        source_column="model_version_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    model_version: "ModelVersionSchema" = Relationship(
+        back_populates="services_links"
+    )
+    service_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ServiceSchemas.__tablename__,
+        source_column="service_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    service: "ServiceSchemas" = Relationship(
+        back_populates="model_versions_services_links"
+    )
+
+    @classmethod
+    def from_request(
+        cls,
+        model_version_service_request: ModelVersionServiceRequest,
+    ) -> "ModelVersionServiceSchema":
+        """Convert an `ModelVersionServiceRequest` to an `ModelVersionServiceSchema`.
+
+        Args:
+            model_version_service_request: The request link to convert.
+
+        Returns:
+            The converted schema.
+        """
+        return cls(
+            workspace_id=model_version_service_request.workspace,
+            user_id=model_version_service_request.user,
+            model_id=model_version_service_request.model,
+            model_version_id=model_version_service_request.model_version,
+            service_id=model_version_service_request.service,
+        )
+
+    def to_model(
+        self,
+        hydrate: bool = False,
+    ) -> ModelVersionServiceResponse:
+        """Convert an `ModelVersionServiceRequest` to an `ModelVersionServiceResponse`.
+
+        Args:
+            hydrate: bool to decide whether to return a hydrated version of the
+                model.
+
+        Returns:
+            The created `ModelVersionServiceResponse`.
+        """
+        return ModelVersionServiceResponse(
+            id=self.id,
+            body=ModelVersionServiceResponseBody(
+                created=self.created,
+                updated=self.updated,
+                model=self.model_id,
+                model_version=self.model_version_id,
+                service=self.service.to_model(),
             ),
             metadata=BaseResponseMetadata() if hydrate else None,
         )

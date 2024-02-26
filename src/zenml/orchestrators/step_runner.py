@@ -44,7 +44,10 @@ from zenml.exceptions import StepContextError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.model.utils import link_step_artifacts_to_model
+from zenml.model.utils import (
+    link_service_to_model_from_artifacts,
+    link_step_artifacts_to_model,
+)
 from zenml.new.steps.step_context import StepContext, get_step_context
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
@@ -254,6 +257,9 @@ class StepRunner:
                             artifact_visualization_enabled=artifact_visualization_enabled,
                         )
                         link_step_artifacts_to_model(
+                            artifact_version_ids=output_artifact_ids
+                        )
+                        link_service_to_model_from_artifacts(
                             artifact_version_ids=output_artifact_ids
                         )
                         self._link_pipeline_run_to_model_from_artifacts(

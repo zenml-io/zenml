@@ -65,6 +65,7 @@ class ResourceType(StrEnum):
     PIPELINE_BUILD = "pipeline_build"
     RUN_METADATA = "run_metadata"
     USER = "user"
+    SERVICE = "service"
 
 
 class Resource(BaseModel):

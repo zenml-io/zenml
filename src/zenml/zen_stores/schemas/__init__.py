@@ -40,6 +40,7 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
+from zenml.zen_stores.schemas.service_schemas import ServiceSchemas
 from zenml.zen_stores.schemas.service_connector_schemas import (
     ServiceConnectorSchema,
 )
@@ -61,6 +62,7 @@ from zenml.zen_stores.schemas.model_schemas import (
     ModelVersionSchema,
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
+    ModelVersionServiceSchema,
 )
 
 __all__ = [
@@ -84,6 +86,7 @@ __all__ = [
     "ScheduleSchema",
     "SecretSchema",
     "ServiceConnectorSchema",
+    "ServiceSchemas",
     "StackComponentSchema",
     "StackCompositionSchema",
     "StackSchema",
@@ -99,5 +102,6 @@ __all__ = [
     "ModelVersionSchema",
     "ModelVersionArtifactSchema",
     "ModelVersionPipelineRunSchema",
+    "ModelVersionServiceSchema",
     "WorkspaceSchema",
 ]

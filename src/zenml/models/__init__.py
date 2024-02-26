@@ -80,6 +80,14 @@ from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationResponseBody,
     ArtifactVisualizationResponseMetadata,
 )
+from zenml.models.v2.core.service import (
+    ServiceResponse,
+    ServiceResponseBody,
+    ServiceResponseMetadata,
+    ServiceUpdate,
+    ServiceFilter,
+    ServiceRequest,
+)
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
     CodeReferenceResponse,
@@ -154,6 +162,12 @@ from zenml.models.v2.core.model_version_pipeline_run import (
     ModelVersionPipelineRunRequest,
     ModelVersionPipelineRunResponse,
     ModelVersionPipelineRunResponseBody,
+)
+from zenml.models.v2.core.model_version_service import (
+    ModelVersionServiceRequest,
+    ModelVersionServiceResponseBody,
+    ModelVersionServiceResponse,
+    ModelVersionServiceFilter,
 )
 from zenml.models.v2.core.pipeline import (
     PipelineRequest,
@@ -350,6 +364,12 @@ FlavorResponseBody.update_forward_refs(
 FlavorResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
 )
+ServiceResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+ServiceResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
 ModelResponseBody.update_forward_refs(
     UserResponse=UserResponse,
     TagResponse=TagResponse,
@@ -371,6 +391,9 @@ ModelVersionArtifactResponseBody.update_forward_refs(
 )
 ModelVersionPipelineRunResponseBody.update_forward_refs(
     PipelineRunResponse=PipelineRunResponse
+)
+ModelVersionServiceResponseBody.update_forward_refs(
+    ServiceResponse=ServiceResponse,
 )
 OAuthDeviceResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -564,6 +587,10 @@ __all__ = [
     "ModelVersionPipelineRunRequest",
     "ModelVersionPipelineRunResponse",
     "ModelVersionPipelineRunResponseBody",
+    "ModelVersionServiceRequest",
+    "ModelVersionServiceResponseBody",
+    "ModelVersionServiceResponse",
+    "ModelVersionServiceFilter",
     "OAuthDeviceUpdate",
     "OAuthDeviceFilter",
     "OAuthDeviceResponse",
@@ -661,6 +688,12 @@ __all__ = [
     "WorkspaceResponse",
     "WorkspaceResponseBody",
     "WorkspaceResponseMetadata",
+    "ServiceResponse",
+    "ServiceResponseBody",
+    "ServiceResponseMetadata",
+    "ServiceUpdate",
+    "ServiceFilter",
+    "ServiceRequest",
     # V2 Misc
     "AuthenticationMethodModel",
     "ServiceConnectorResourcesModel",

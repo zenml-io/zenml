@@ -58,6 +58,9 @@ from zenml.models import (
     ModelVersionPipelineRunResponse,
     ModelVersionRequest,
     ModelVersionResponse,
+    ModelVersionServiceFilter,
+    ModelVersionServiceRequest,
+    ModelVersionServiceResponse,
     ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceResponse,
@@ -99,6 +102,10 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponse,
+    ServiceUpdate,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -346,6 +353,87 @@ class ZenStoreInterface(ABC):
         Raises:
             KeyError: if an API key with the given name or ID is not configured
                 for the given service account.
+        """
+
+    # -------------------- Services --------------------
+
+    @abstractmethod
+    def create_service(
+        self,
+        service: ServiceRequest,
+    ) -> ServiceResponse:
+        """Create a new service.
+
+        Args:
+            service: The service to create.
+
+        Returns:
+            The newly created service.
+
+        Raises:
+            EntityExistsError: If a service with the same name already exists.
+        """
+
+    @abstractmethod
+    def get_service(
+        self, service_id: UUID, hydrate: bool = True
+    ) -> ServiceResponse:
+        """Get a service by ID.
+
+        Args:
+            service_id: The ID of the service to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The service.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+
+    @abstractmethod
+    def list_services(
+        self, filter_model: ServiceFilter, hydrate: bool = False
+    ) -> Page[ServiceResponse]:
+        """List all services matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all services matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_service(
+        self, service_id: UUID, update: ServiceUpdate
+    ) -> ServiceResponse:
+        """Update an existing service.
+
+        Args:
+            service_id: The ID of the service to update.
+            update: The update to be applied to the service.
+
+        Returns:
+            The updated service.
+
+        Raises:
+            KeyError: if the service doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_service(self, service_id: UUID) -> None:
+        """Delete a service.
+
+        Args:
+            service_id: The ID of the service to delete.
+
+        Raises:
+            KeyError: if the service doesn't exist.
         """
 
     # -------------------- Artifacts --------------------
@@ -2433,6 +2521,60 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: specified ID not found.
+        """
+
+    # -------------------- Model Versions Services --------------------
+
+    @abstractmethod
+    def create_model_version_services_link(
+        self, model_version_service_link: ModelVersionServiceRequest
+    ) -> ModelVersionServiceResponse:
+        """Creates a new model version to service link.
+
+        Args:
+            model_version_service_link: the Model Version to Service Link to
+                be created.
+
+        Returns:
+            The newly created model version to service link.
+
+        Raises:
+            EntityExistsError: If a link with the given name already exists.
+        """
+
+    @abstractmethod
+    def list_model_version_service_links(
+        self,
+        model_version_service_link_filter_model: ModelVersionServiceFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionServiceResponse]:
+        """Get all model version to service links by filter.
+
+        Args:
+            model_version_service_link_filter_model: All filter parameters
+                including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all model version to service links.
+        """
+
+    @abstractmethod
+    def delete_model_version_service_link(
+        self,
+        model_version_id: UUID,
+        model_version_service_link_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version to service link.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+            model_version_service_link_name_or_id: name or ID of the model
+                version to service link to be deleted.
+
+        Raises:
+            KeyError: specified ID or name not found.
         """
 
     #################

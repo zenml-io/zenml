@@ -44,6 +44,7 @@ if TYPE_CHECKING:
         ModelVersionArtifactSchema,
         ModelVersionPipelineRunSchema,
         ModelVersionSchema,
+        ModelVersionServiceSchema,
         OAuthDeviceSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
         ScheduleSchema,
         SecretSchema,
         ServiceConnectorSchema,
+        ServiceSchemas,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -103,6 +105,7 @@ class UserSchema(NamedSchema, table=True):
     code_repositories: List["CodeRepositorySchema"] = Relationship(
         back_populates="user",
     )
+    services: List["ServiceSchemas"] = Relationship(back_populates="user")
     service_connectors: List["ServiceConnectorSchema"] = Relationship(
         back_populates="user",
     )
@@ -117,6 +120,9 @@ class UserSchema(NamedSchema, table=True):
     ] = Relationship(back_populates="user")
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
+    ] = Relationship(back_populates="user")
+    model_versions_services_links: List[
+        "ModelVersionServiceSchema"
     ] = Relationship(back_populates="user")
     auth_devices: List["OAuthDeviceSchema"] = Relationship(
         back_populates="user",

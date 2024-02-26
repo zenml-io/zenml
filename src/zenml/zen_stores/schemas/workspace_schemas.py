@@ -35,6 +35,7 @@ if TYPE_CHECKING:
         ModelVersionArtifactSchema,
         ModelVersionPipelineRunSchema,
         ModelVersionSchema,
+        ModelVersionServiceSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
         PipelineRunSchema,
@@ -43,6 +44,7 @@ if TYPE_CHECKING:
         ScheduleSchema,
         SecretSchema,
         ServiceConnectorSchema,
+        ServiceSchemas,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -108,6 +110,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    services: List["ServiceSchemas"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     service_connectors: List["ServiceConnectorSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -128,6 +134,13 @@ class WorkspaceSchema(NamedSchema, table=True):
     )
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
+    ] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+
+    model_versions_services_links: List[
+        "ModelVersionServiceSchema"
     ] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},

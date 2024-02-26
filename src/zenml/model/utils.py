@@ -23,7 +23,10 @@ from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.model.model import Model
-from zenml.models import ModelVersionArtifactRequest
+from zenml.models import (
+    ModelVersionArtifactRequest,
+    ModelVersionServiceRequest,
+)
 from zenml.new.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
@@ -72,6 +75,70 @@ def link_step_artifacts_to_model(
                 artifact_version_id=artifact_version_id,
                 model=model,
             )
+
+
+def link_service_to_model_from_artifacts(
+    artifact_version_ids: Dict[str, UUID],
+) -> None:
+    """Links the created service to the model from the artifacts.
+
+    Args:
+        artifact_version_ids: The IDs of the published output artifacts.
+
+    Raises:
+        RuntimeError: If called outside of a step.
+    """
+    try:
+        step_context = get_step_context()
+    except StepContextError:
+        raise RuntimeError(
+            "`link_step_artifacts_to_model` can only be called from within a "
+            "step."
+        )
+    try:
+        model = step_context.model
+    except StepContextError:
+        model = None
+        logger.debug("No model context found, unable to auto-link artifacts.")
+
+    for artifact_name, artifact_version_id in artifact_version_ids.items():
+        artifact_config = step_context._get_output(
+            artifact_name
+        ).artifact_config
+
+        if artifact_config and artifact_config.is_deployment_artifact:
+            link_service_to_model(
+                service_id=artifact_version_id,
+                model=model,
+            )
+
+
+def link_service_to_model(
+    service_id: UUID,
+    model: Optional["Model"] = None,
+) -> None:
+    """Link the service to the model.
+
+    Args:
+        service_id: The ID of the service.
+        model: The model to link to.
+
+    Raises:
+        RuntimeError: If called outside of a step.
+    """
+    client = Client()
+
+    if model:
+        model._get_or_create_model_version()
+        model_version_response = model._get_model_version()
+        request = ModelVersionServiceRequest(
+            user=client.active_user.id,
+            workspace=client.active_workspace.id,
+            service=service_id,
+            model=model_version_response.model.id,
+            model_version=model_version_response.id,
+        )
+        client.zen_store.create_model_version_services_link(request)
 
 
 def link_artifact_config_to_model(

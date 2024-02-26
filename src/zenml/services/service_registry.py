@@ -17,6 +17,7 @@ import json
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 from uuid import UUID
 
+from zenml.enums import ZenMLServiceType
 from zenml.logger import get_logger
 from zenml.services.service_type import ServiceType
 from zenml.utils.singleton import SingletonMetaClass
@@ -113,6 +114,22 @@ class ServiceRegistry(metaclass=SingletonMetaClass):
         if service_type not in self.service_types:
             raise TypeError(
                 f"Service type `{service_type}` is not registered."
+            )
+
+        # If the service type is MODEL_SERVING, we need to create the service
+        # in the DB and update the UUID with the ID returned
+        # from the external system
+        if service_type.type == ZenMLServiceType.MODEL_SERVING:
+            from zenml.client import Client
+
+            client = Client()
+
+            # Assuming client.create_service returns an object with an `id` attribute
+            service_response = client.create_service(service)
+
+            # Update the service UUID with the ID returned from the external system
+            service.uuid = (
+                service_response.id if service_response else service.uuid
             )
 
         if service.uuid not in self.services:

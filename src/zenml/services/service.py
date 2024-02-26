@@ -110,6 +110,18 @@ class ServiceConfig(BaseTypedModel):
     pipeline_step_name: str = ""
     run_name: str = ""
 
+    def get_service_labels(self) -> Dict[str, str]:
+        """Get the service labels.
+
+        Returns:
+            a dictionary of service labels.
+        """
+        labels = {}
+        for k, v in self.dict().items():
+            label = f"zenml_{k}".upper()
+            labels[label] = str(v)
+        return labels
+
 
 class BaseServiceMeta(BaseTypedModelMeta):
     """Metaclass responsible for registering different BaseService subclasses.

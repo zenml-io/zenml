@@ -78,6 +78,7 @@ from zenml.constants import (
     SERVICE_CONNECTOR_TYPES,
     SERVICE_CONNECTOR_VERIFY,
     SERVICE_CONNECTORS,
+    SERVICES,
     STACK_COMPONENTS,
     STACKS,
     STEPS,
@@ -140,6 +141,9 @@ from zenml.models import (
     ModelVersionPipelineRunResponse,
     ModelVersionRequest,
     ModelVersionResponse,
+    ModelVersionServiceFilter,
+    ModelVersionServiceRequest,
+    ModelVersionServiceResponse,
     ModelVersionUpdate,
     OAuthDeviceFilter,
     OAuthDeviceResponse,
@@ -181,6 +185,10 @@ from zenml.models import (
     ServiceConnectorResponse,
     ServiceConnectorTypeModel,
     ServiceConnectorUpdate,
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponse,
+    ServiceUpdate,
     StackFilter,
     StackRequest,
     StackResponse,
@@ -610,6 +618,93 @@ class RestZenStore(BaseZenStore):
             resource_id=api_key_name_or_id,
             route=f"{SERVICE_ACCOUNTS}/{str(service_account_id)}{API_KEYS}",
         )
+
+    # ----------------------------- Services -----------------------------
+
+    def create_service(
+        self, service_request: ServiceRequest
+    ) -> ServiceResponse:
+        """Create a new service.
+
+        Args:
+            service_request: The service to create.
+
+        Returns:
+            The created service.
+        """
+        return self._create_resource(
+            resource=service_request,
+            response_model=ServiceResponse,
+            route=SERVICES,
+        )
+
+    def get_service(
+        self, service_id: UUID, hydrate: bool = True
+    ) -> ServiceResponse:
+        """Get a service.
+
+        Args:
+            service_id: The ID of the service to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The service.
+        """
+        return self._get_resource(
+            resource_id=service_id,
+            route=SERVICES,
+            response_model=ServiceResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_services(
+        self, filter_model: ServiceFilter, hydrate: bool = False
+    ) -> Page[ServiceResponse]:
+        """List all services matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all services matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=SERVICES,
+            response_model=ServiceResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_service(
+        self, service_id: UUID, service_update: ServiceUpdate
+    ) -> ServiceResponse:
+        """Update a service.
+
+        Args:
+            service_id: The ID of the service to update.
+            service_update: The update to be applied to the service.
+
+        Returns:
+            The updated service.
+        """
+        return self._update_resource(
+            resource_id=service_id,
+            resource_update=service_update,
+            response_model=ServiceResponse,
+            route=SERVICES,
+        )
+
+    def delete_service(self, service_id: UUID) -> None:
+        """Delete a service.
+
+        Args:
+            service_id: The ID of the service to delete.
+        """
+        self._delete_resource(resource_id=service_id, route=SERVICES)
 
     # ----------------------------- Artifacts -----------------------------
 
@@ -3062,6 +3157,68 @@ class RestZenStore(BaseZenStore):
         """
         self._delete_resource(
             resource_id=model_version_pipeline_run_link_name_or_id,
+            route=f"{MODEL_VERSIONS}/{model_version_id}{RUNS}",
+        )
+
+    # ---------------------- Model Versions Services ----------------------
+
+    def create_model_version_services_link(
+        self,
+        model_version_service_link: ModelVersionServiceRequest,
+    ) -> ModelVersionServiceResponse:
+        """Creates a new model version to services link.
+
+        Args:
+            model_version_service_link: the Model Version to Service
+                Link to be created.
+
+        Returns:
+            - If Model Version to Service Link already exists - returns
+                the existing link.
+            - Otherwise, returns the newly created model version to service link.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=model_version_service_link,
+            response_model=ModelVersionServiceResponse,
+            route=f"{MODEL_VERSIONS}/{model_version_service_link.model_version}{RUNS}",
+        )
+
+    def list_model_version_service_links(
+        self,
+        model_version_service_link_filter_model: ModelVersionServiceFilter,
+        hydrate: bool = False,
+    ) -> Page[ModelVersionServiceResponse]:
+        """Get all model version to pipeline run links by filter.
+
+        Args:
+            model_version_service_link_filter_model: All filter parameters
+                including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all model version to pipeline run links.
+        """
+        return self._list_paginated_resources(
+            route=MODEL_VERSION_PIPELINE_RUNS,
+            response_model=ModelVersionServiceResponse,
+            filter_model=model_version_service_link_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def delete_model_version_service_link(
+        self,
+        model_version_id: UUID,
+        model_version_service_link_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Deletes a model version to pipeline run link.
+
+        Args:
+            model_version_id: ID of the model version containing the link.
+            model_version_service_link_name_or_id: name or ID of the model version to pipeline run link to be deleted.
+        """
+        self._delete_resource(
+            resource_id=model_version_service_link_name_or_id,
             route=f"{MODEL_VERSIONS}/{model_version_id}{RUNS}",
         )
 
