@@ -35,7 +35,7 @@ and workflow.
 Registering models can be done in a number of ways depending on your specific
 needs. You can explicitly register models using the CLI or the Python SDK, or
 you can just allow ZenML to implicitly register your models as part of a
-pipeline run. (If you are using [ZenML Cloud](https://cloud.zenml.io/) you already
+pipeline run. (If you are using [ZenML Cloud](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link/) you already
 have access to [a dashboard interface that allows you to register
 models](./model-control-plane-dashboard.md).)
 
