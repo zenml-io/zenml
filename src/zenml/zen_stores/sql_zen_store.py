@@ -22,7 +22,7 @@ import re
 import sys
 from datetime import datetime
 from functools import lru_cache
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -604,53 +604,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             if file_path and os.path.isfile(file_path):
                 with open(file_path, "r") as f:
                     setattr(self, key, f.read())
-
-    @classmethod
-    def copy_configuration(
-        cls,
-        config: "StoreConfiguration",
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> "StoreConfiguration":
-        """Copy the store config using a different configuration path.
-
-        This method is used to create a copy of the store configuration that can
-        be loaded using a different configuration path or in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.).
-
-        Args:
-            config: The store configuration to copy.
-            config_path: new path where the configuration copy will be loaded
-                from.
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-
-        Returns:
-            A new store configuration object that reflects the new configuration
-            path.
-        """
-        assert isinstance(config, SqlZenStoreConfiguration)
-        config = config.copy()
-
-        if config.driver == SQLDatabaseDriver.MYSQL:
-            # Load the certificate values back into the configuration
-            config.expand_certificates()
-
-        elif config.driver == SQLDatabaseDriver.SQLITE:
-            if load_config_path:
-                config.url = cls.get_local_url(str(load_config_path))
-            else:
-                config.url = cls.get_local_url(config_path)
-
-        return config
 
     def get_sqlalchemy_config(
         self,

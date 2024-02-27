@@ -16,7 +16,7 @@
 import json
 import os
 import uuid
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
@@ -435,74 +435,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             The path to the global configuration file.
         """
         return os.path.join(config_path or self._config_path, "config.yaml")
-
-    def copy_configuration(
-        self,
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-        store_config: Optional[StoreConfiguration] = None,
-        empty_store: bool = False,
-    ) -> "GlobalConfiguration":
-        """Create a copy of the global config using a different config path.
-
-        This method is used to copy the global configuration and store it in a
-        different configuration path, where it can be loaded in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.)
-        unless a custom store configuration is provided or the `empty_store`
-        flag is set to `True`.
-
-        If the default local store is currently in use, it will not be included
-        in the configuration copy. This is the same as explicitly setting the
-        `empty_store` flag to `True`.
-
-        Args:
-            config_path: path where the configuration copy should be saved
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-            store_config: custom store configuration to use for the copied
-                global configuration. If not specified, the current global store
-                configuration is used.
-            empty_store: if `True`, an empty store configuration is used for the
-                copied global configuration. This means that the copied global
-                configuration will be initialized to the default local store in
-                the new environment.
-
-        Returns:
-            A new global configuration object copied to the specified path.
-        """
-        from zenml.zen_stores.base_zen_store import BaseZenStore
-
-        self._write_config(config_path)
-        config_copy = GlobalConfiguration(config_path=config_path)
-
-        store: Optional[StoreConfiguration] = None
-
-        if store_config is not None:
-            store = store_config
-
-        elif empty_store or self.uses_default_store():
-            store = None
-
-        elif self.store:
-            store_config_class = BaseZenStore.get_store_config_class(
-                self.store.type
-            )
-
-            store_config_copy = store_config_class.copy_configuration(
-                self.store, config_path, load_config_path
-            )
-            store = store_config_copy
-        config_copy.store = store
-
-        return config_copy
 
     @property
     def config_directory(self) -> str:
