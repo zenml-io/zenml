@@ -71,7 +71,7 @@ class IntegrationTestExample:
         """
         sys.path.insert(0, ".")
         run = import_module("run")
-        run.main(*args)
+        run.main(args)
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
