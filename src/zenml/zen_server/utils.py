@@ -217,9 +217,9 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
     """
     # Check for connected servers first
     gc = GlobalConfiguration()
-    if not gc.uses_default_store() and gc.store is not None:
+    if not gc.uses_default_store():
         logger.debug("Getting URL of connected server.")
-        parsed_url = urlparse(gc.store.url)
+        parsed_url = urlparse(gc.store_configuration.url)
         return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
     # Else, check for deployed servers
     server = get_active_deployment(local=False)

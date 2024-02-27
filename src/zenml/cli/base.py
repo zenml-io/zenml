@@ -577,7 +577,7 @@ def info(
     client = Client()
     store_info = client.zen_store.get_store_info()
 
-    store_cfg = gc.store
+    store_cfg = gc.store_configuration
 
     user_info = {
         "zenml_local_version": zenml_version,
@@ -586,7 +586,7 @@ def info(
         "zenml_server_deployment_type": str(store_info.deployment_type),
         "zenml_config_dir": gc.config_directory,
         "zenml_local_store_dir": gc.local_stores_path,
-        "zenml_server_url": "" if store_cfg is None else store_cfg.url,
+        "zenml_server_url": store_cfg.url,
         "zenml_active_repository_root": str(client.root),
         "python_version": environment.python_version(),
         "environment": get_environment(),

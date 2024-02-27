@@ -93,11 +93,7 @@ def get_config_environment_vars(
     global_config = GlobalConfiguration()
     environment_vars = global_config.get_config_environment_vars()
 
-    if (
-        deployment
-        and global_config.store
-        and global_config.store.type == StoreType.REST
-    ):
+    if deployment and global_config.store_configuration.type == StoreType.REST:
         # When connected to a ZenML server, if a pipeline deployment is
         # supplied, we need to fetch an API token that will be valid for the
         # duration of the pipeline run.

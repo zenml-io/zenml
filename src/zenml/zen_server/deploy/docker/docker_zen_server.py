@@ -191,7 +191,7 @@ class DockerZenServer(ContainerService):
         import uvicorn
 
         gc = GlobalConfiguration()
-        if gc.store and gc.store.type == StoreType.REST:
+        if gc.store_configuration.type == StoreType.REST:
             raise ValueError(
                 "The ZenML server cannot be started with REST store type."
             )
