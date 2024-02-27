@@ -412,6 +412,57 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             LOCAL_STORES_DIRECTORY_NAME,
         )
 
+    def get_config_environment_vars(self) -> Dict[str, str]:
+        """Convert the global configuration to environment variables.
+
+        Returns:
+            Environment variables dictionary.
+        """
+        from zenml.zen_stores.rest_zen_store import RestZenStore
+
+        environment_vars = {}
+
+        for key in self.__fields__.keys():
+            if key == "store":
+                # The store configuration uses its own environment variable
+                # naming scheme
+                continue
+
+            value = getattr(self, key)
+            if value is not None:
+                environment_vars[CONFIG_ENV_VAR_PREFIX + key.upper()] = str(
+                    value
+                )
+
+        store_dict = self.store_configuration.dict(exclude_none=True)
+
+        # The secrets store and backup secrets store configurations use their
+        # own environment variables naming scheme
+        secrets_store_dict = store_dict.pop("secrets_store", None) or {}
+        backup_secrets_store_dict = (
+            store_dict.pop("backup_secrets_store", None) or {}
+        )
+
+        for key, value in store_dict.items():
+            if key in ["username", "password"]:
+                # Never include the username and password in the env vars. Use
+                # the API token instead.
+                continue
+
+            environment_vars[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
+
+        for key, value in secrets_store_dict.items():
+            environment_vars[
+                ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()
+            ] = str(value)
+
+        for key, value in backup_secrets_store_dict.items():
+            environment_vars[
+                ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX + key.upper()
+            ] = str(value)
+
+        return environment_vars
+
     def get_default_store(self) -> StoreConfiguration:
         """Get the default store configuration.
 
