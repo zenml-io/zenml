@@ -73,13 +73,13 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
         # fetch the MLflow registered model
         registered_model = model_registry.get_model(
-            name="tensorflow-mnist-model",
+            name="sklearn-mnist-model",
         )
         assert registered_model is not None
 
         # fetch the MLflow registered model version
         registered_model_version = model_registry.get_model_version(
-            name="tensorflow-mnist-model",
+            name="sklearn-mnist-model",
             version="1",
         )
         assert registered_model_version is not None

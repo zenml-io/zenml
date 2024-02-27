@@ -18,7 +18,7 @@ from zenml import step
 
 
 @step
-def tf_predict_preprocessor(
+def predict_preprocessor(
     input: np.ndarray,
 ) -> Annotated[np.ndarray, "data"]:
     """Prepares the data for inference."""

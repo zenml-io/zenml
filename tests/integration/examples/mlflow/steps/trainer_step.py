@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import mlflow
 import numpy as np
-import tensorflow as tf
+from sklearn.ensemble import RandomForestClassifier
 
 from zenml import step
 from zenml.client import Client
@@ -36,29 +36,17 @@ if not experiment_tracker or not isinstance(
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
-    epochs: int = 5,
-    lr: float = 0.001,
-) -> tf.keras.Model:
-    """Train a neural net from scratch to recognize MNIST digits return our
+) -> RandomForestClassifier:
+    """Train a RF Classifier to recognize MNIST digits return our
     model or the learner."""
-    model = tf.keras.Sequential(
-        [
-            tf.keras.layers.Flatten(input_shape=(28, 28)),
-            tf.keras.layers.Dense(10),
-        ]
+    model = RandomForestClassifier(
+        n_estimators=20, max_depth=10, min_samples_leaf=5
     )
 
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(lr),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=["accuracy"],
-    )
-
-    mlflow.tensorflow.autolog()
+    mlflow.sklearn.autolog()
     model.fit(
         X_train,
         y_train,
-        epochs=epochs,
     )
 
     # write model
