@@ -12,7 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.sklearn_digits_pipeline import sklearn_digits_pipeline as main
+from pipelines.sklearn_digits_pipeline import sklearn_digits_pipeline
+
+
+def main():
+    sklearn_digits_pipeline()
+
 
 if __name__ == "__main__":
     main()

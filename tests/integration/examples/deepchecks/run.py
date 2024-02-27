@@ -11,7 +11,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.data_validation import data_validation_pipeline as main
+from pipelines.data_validation import data_validation_pipeline
+
+
+def main():
+    data_validation_pipeline()
+
 
 if __name__ == "__main__":
     main()
