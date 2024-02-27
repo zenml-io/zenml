@@ -14,7 +14,7 @@
 """SQLModel implementation of user tables."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -39,6 +39,7 @@ if TYPE_CHECKING:
         APIKeySchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionArtifactSchema,
@@ -56,6 +57,7 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
+        TriggerSchema,
     )
 
 
@@ -80,6 +82,9 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     flavors: List["FlavorSchema"] = Relationship(back_populates="user")
+    event_sources: List["EventSourceSchema"] = Relationship(
+        back_populates="user"
+    )
     pipelines: List["PipelineSchema"] = Relationship(back_populates="user")
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="user",
@@ -96,6 +101,20 @@ class UserSchema(NamedSchema, table=True):
     secrets: List["SecretSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    triggers: List["TriggerSchema"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "UserSchema.id==TriggerSchema.user_id",
+        },
+    )
+    auth_triggers: List["TriggerSchema"] = Relationship(
+        back_populates="service_account",
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "UserSchema.id==TriggerSchema.service_account_id",
+        },
     )
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="user",
@@ -214,13 +233,18 @@ class UserSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self, hydrate: bool = False, include_private: bool = False
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        include_private: bool = False,
+        **kwargs: Any,
     ) -> UserResponse:
         """Convert a `UserSchema` to a `UserResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
             include_private: Whether to include the user private information
                              this is to limit the amount of data one can get
                              about other users
@@ -229,7 +253,7 @@ class UserSchema(NamedSchema, table=True):
             The converted `UserResponse`.
         """
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = UserResponseMetadata(
                 email=self.email if include_private else None,
                 hub_token=self.hub_token if include_private else None,
@@ -251,19 +275,19 @@ class UserSchema(NamedSchema, table=True):
         )
 
     def to_service_account_model(
-        self, hydrate: bool = False
+        self, include_metadata: bool = False, include_resources: bool = False
     ) -> ServiceAccountResponse:
         """Convert a `UserSchema` to a `ServiceAccountResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+             include_metadata: Whether the metadata will be filled.
+             include_resources: Whether the resources will be filled.
 
         Returns:
-            The converted `ServiceAccountResponse`.
+             The converted `ServiceAccountResponse`.
         """
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ServiceAccountResponseMetadata(
                 description=self.description or "",
             )

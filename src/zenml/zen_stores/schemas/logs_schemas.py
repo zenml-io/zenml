@@ -14,7 +14,7 @@
 """SQLModel implementation of pipeline logs tables."""
 
 
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -75,12 +75,19 @@ class LogsSchema(BaseSchema, table=True):
     )
     step_run: Optional["StepRunSchema"] = Relationship(back_populates="logs")
 
-    def to_model(self, hydrate: bool = False) -> "LogsResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "LogsResponse":
         """Convert a `LogsSchema` to a `LogsResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `LogsResponse`.
@@ -91,7 +98,7 @@ class LogsSchema(BaseSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = LogsResponseMetadata(
                 step_run_id=self.step_run_id,
                 pipeline_run_id=self.pipeline_run_id,

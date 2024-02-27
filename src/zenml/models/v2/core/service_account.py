@@ -19,10 +19,11 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
@@ -71,7 +72,7 @@ class ServiceAccountUpdate(ServiceAccountRequest):
 # ------------------ Response Model ------------------
 
 
-class ServiceAccountResponseBody(BaseResponseBody):
+class ServiceAccountResponseBody(BaseDatedResponseBody):
     """Response body for service accounts."""
 
     active: bool = Field(default=False, title="Whether the account is active.")
@@ -87,8 +88,16 @@ class ServiceAccountResponseMetadata(BaseResponseMetadata):
     )
 
 
+class ServiceAccountResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the service account entity."""
+
+
 class ServiceAccountResponse(
-    BaseResponse[ServiceAccountResponseBody, ServiceAccountResponseMetadata]
+    BaseIdentifiedResponse[
+        ServiceAccountResponseBody,
+        ServiceAccountResponseMetadata,
+        ServiceAccountResponseResources,
+    ]
 ):
     """Response model for service accounts."""
 
@@ -136,6 +145,8 @@ class ServiceAccountResponse(
                 active=self.active,
                 is_service_account=True,
                 email_opted_in=False,
+                created=self.created,
+                updated=self.updated,
             ),
             metadata=UserResponseMetadata(
                 description=self.description,

@@ -14,7 +14,6 @@
 """Models representing stacks."""
 
 import json
-from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
@@ -31,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.models.v2.core.component import ComponentResponse
@@ -95,13 +95,6 @@ class StackUpdate(StackRequest):
 class StackResponseBody(WorkspaceScopedResponseBody):
     """Response body for stacks."""
 
-    created: datetime = Field(
-        title="The timestamp when this component was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this component was last updated.",
-    )
-
 
 class StackResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for stacks."""
@@ -121,8 +114,14 @@ class StackResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class StackResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the stack entity."""
+
+
 class StackResponse(
-    WorkspaceScopedResponse[StackResponseBody, StackResponseMetadata]
+    WorkspaceScopedResponse[
+        StackResponseBody, StackResponseMetadata, StackResponseResources
+    ]
 ):
     """Response model for stacks."""
 
@@ -192,25 +191,6 @@ class StackResponse(
         metadata = super().get_analytics_metadata()
         metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
         return metadata
-
-    # Body and metadata properties
-    @property
-    def created(self) -> datetime:
-        """The`created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def description(self) -> Optional[str]:

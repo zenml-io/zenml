@@ -197,12 +197,24 @@ class EntityExistsError(ZenMLBaseException):
     """Raised when trying to register an entity that already exists."""
 
 
+class TriggerExistsError(EntityExistsError):
+    """Raised when registering a trigger with name that already exists."""
+
+
+class WebhookInactiveError(ZenMLBaseException):
+    """Raised when source is inactive."""
+
+
 class StackExistsError(EntityExistsError):
     """Raised when trying to register a stack with name that already exists."""
 
 
 class StackComponentExistsError(EntityExistsError):
     """Raised when trying to register a stack component with existing name."""
+
+
+class EventSourceExistsError(EntityExistsError):
+    """Raised when trying to register an event source with existing name."""
 
 
 class SecretExistsError(EntityExistsError):
