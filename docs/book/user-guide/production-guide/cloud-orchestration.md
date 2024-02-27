@@ -8,8 +8,8 @@ Until now, we've only run pipelines locally. The next step is to get free from o
 
 In order to do this, we need to get familiar with two more stack components: 
 
-- The [orchestrator](../../stacks-and-components/component-guide/orchestrators/) manages the workflow and execution of your pipelines.
-- The [container registry](../../stacks-and-components/component-guide/container-registries/) is a storage and content delivery system that holds your Docker container images.
+- The [orchestrator](../../stacks-and-components/component-guide/orchestrators) manages the workflow and execution of your pipelines.
+- The [container registry](../../stacks-and-components/component-guide/container-registries) is a storage and content delivery system that holds your Docker container images.
 
 These, along with [remote storage](remote-storage.md), complete a basic cloud stack where our pipeline is entirely running on the cloud. 
 
@@ -159,7 +159,7 @@ For more information, you can always check the [dedicated Skypilot orchestrator 
 {% endtabs %}
 
 {% hint style="info" %}
-Having trouble with setting up infrastructure? Try reading the [stack deployment](../../stacks-and-components/stack-deployment/) section of the docs to gain more insight. If that still doesn't work, join the [ZenML community](https://zenml.io/slack) and ask!
+Having trouble with setting up infrastructure? Try reading the [stack deployment](../../stacks-and-components/stack-deployment) section of the docs to gain more insight. If that still doesn't work, join the [ZenML community](https://zenml.io/slack) and ask!
 {% endhint %}
 
 ## Running a pipeline on a cloud stack
@@ -192,7 +192,7 @@ python run.py --training-pipeline
  
 You will notice this time your pipeline behaves differently. After it has built the Docker image with all your code, it will push that image, and run a VM on the cloud. Here is where your pipeline will execute, and the logs will be streamed back to you. So with a few commands, we were able to ship our entire code to the cloud!
 
-Curious to see what other stacks you can create? The [Component Guide](../../stacks-and-components/component-guide/) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
+Curious to see what other stacks you can create? The [Component Guide](../../stacks-and-components/component-guide/component-guide.md) has an exhaustive list of various artifact stores, container registries, and orchestrators that are integrated with ZenML. Try playing around with more stack components to see how easy it is to switch between MLOps stacks with ZenML.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
