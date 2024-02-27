@@ -3,6 +3,9 @@
 DB="sqlite"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
 
+export ZENML_ANALYTICS_OPT_IN=false
+export ZENML_DEBUG=true
+
 if [ -z "$1" ]; then
   echo "No argument passed, using default: $DB"
 else
@@ -72,7 +75,9 @@ do
 
     # Install the specific version
     pip3 install -U pip setuptools wheel
-    pip3 install "zenml[templates,server]==$VERSION"
+
+    git checkout release/$VERSION
+    pip3 install -e ".[templates,server]"
     # handles unpinned sqlmodel dependency in older versions
     pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
 
