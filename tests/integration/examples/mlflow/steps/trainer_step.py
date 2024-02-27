@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import mlflow
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 
 from zenml import step
 from zenml.client import Client
@@ -36,12 +36,10 @@ if not experiment_tracker or not isinstance(
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
-) -> RandomForestClassifier:
+) -> SVC:
     """Train a RF Classifier to recognize MNIST digits return our
     model or the learner."""
-    model = RandomForestClassifier(
-        n_estimators=20, max_depth=10, min_samples_leaf=5
-    )
+    model = SVC(gamma=0.001)
 
     mlflow.sklearn.autolog()
     model.fit(

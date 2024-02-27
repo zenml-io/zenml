@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 from steps.evaluator_step import evaluator
 from steps.loader_step import importer
 from steps.normalizer_step import normalizer
@@ -25,7 +25,7 @@ docker_settings = DockerSettings(required_integrations=[MLFLOW, SKLEARN])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def mlflow_tracking_pipeline() -> RandomForestClassifier:
+def mlflow_tracking_pipeline() -> SVC:
     X_train, X_test, y_train, y_test = importer()
     X_trained_normed, X_test_normed = normalizer(
         X_train=X_train, X_test=X_test
