@@ -85,7 +85,6 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
-      MLFLOW_DEPLOYMENT_SERVER_START_TIMEOUT: 300
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
