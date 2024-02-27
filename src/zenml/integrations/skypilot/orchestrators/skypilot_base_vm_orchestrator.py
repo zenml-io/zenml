@@ -174,7 +174,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             )
         if deployment.schedule:
             logger.warning(
-                "Skypilot Orchestrator currently does not support the"
+                "Skypilot Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )

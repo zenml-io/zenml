@@ -136,7 +136,9 @@ The step can then be inserted into your pipeline where it can take in a pandas d
 ```python
 from zenml import pipeline
 
-@pipeline(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
+docker_settings = DockerSettings(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
+
+@pipeline(settings={"docker": docker_settings})
 def profiling_pipeline():
     """Data profiling pipeline for Great Expectations.
 
@@ -194,7 +196,9 @@ ge_validator_step = great_expectations_validator_step.with_options(
 The step can then be inserted into your pipeline where it can take in a pandas dataframe and a bool flag used solely for order reinforcement purposes, e.g.:
 
 ```python
-@pipeline(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
+docker_settings = DockerSettings(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
+
+@pipeline(settings={"docker": docker_settings})
 def validation_pipeline():
     """Data validation pipeline for Great Expectations.
 

@@ -112,7 +112,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         """
         if deployment.schedule:
             logger.warning(
-                "Local Docker Orchestrator currently does not support the"
+                "Local Docker Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
@@ -254,6 +254,15 @@ class LocalDockerOrchestratorConfig(  # type: ignore[misc] # https://github.com/
 
         Returns:
             True if this config is for a local component, False otherwise.
+        """
+        return True
+
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
         """
         return True
 

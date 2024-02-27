@@ -34,6 +34,9 @@ from zenml.zen_server.deploy.local.local_zen_server import (
     LocalServerDeploymentConfig,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
+from zenml.zen_server.pipeline_deployment.workload_manager_interface import (
+    WorkloadManagerInterface,
+)
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -41,6 +44,7 @@ logger = get_logger(__name__)
 
 _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
+_workload_manager: Optional[WorkloadManagerInterface] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -73,6 +77,21 @@ def rbac() -> RBACInterface:
     return _rbac
 
 
+def workload_manager() -> WorkloadManagerInterface:
+    """Return the initialized workload manager component.
+
+    Raises:
+        RuntimeError: If the workload manager component is not initialized.
+
+    Returns:
+        The workload manager component.
+    """
+    global _workload_manager
+    if _workload_manager is None:
+        raise RuntimeError("Workload manager component not initialized")
+    return _workload_manager
+
+
 def initialize_rbac() -> None:
     """Initialize the RBAC component."""
     global _rbac
@@ -84,6 +103,21 @@ def initialize_rbac() -> None:
             rbac_source, expected_class=RBACInterface
         )
         _rbac = implementation_class()
+
+
+def initialize_workload_manager() -> None:
+    """Initialize the workload manager component."""
+    global _workload_manager
+
+    if source := server_config().workload_manager_implementation_source:
+        from zenml.utils import source_utils
+
+        workload_manager_class: Type[
+            WorkloadManagerInterface
+        ] = source_utils.load_and_validate_class(
+            source=source, expected_class=WorkloadManagerInterface
+        )
+        _workload_manager = workload_manager_class()
 
 
 def initialize_zen_store() -> None:
