@@ -21,9 +21,10 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
-    BaseResponse,
-    BaseResponseBody,
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
@@ -67,7 +68,7 @@ class ModelVersionArtifactRequest(WorkspaceScopedRequest):
 # ------------------ Response Model ------------------
 
 
-class ModelVersionArtifactResponseBody(BaseResponseBody):
+class ModelVersionArtifactResponseBody(BaseDatedResponseBody):
     """Response body for links between model versions and artifacts."""
 
     model: UUID
@@ -77,8 +78,16 @@ class ModelVersionArtifactResponseBody(BaseResponseBody):
     is_deployment_artifact: bool = False
 
 
+class ModelVersionArtifactResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the model version artifact entity."""
+
+
 class ModelVersionArtifactResponse(
-    BaseResponse[ModelVersionArtifactResponseBody, BaseResponseMetadata]
+    BaseIdentifiedResponse[
+        ModelVersionArtifactResponseBody,
+        BaseResponseMetadata,
+        ModelVersionArtifactResponseResources,
+    ]
 ):
     """Response model for links between model versions and artifacts."""
 

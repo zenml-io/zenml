@@ -68,10 +68,11 @@
 [build-url]: https://github.com/zenml-io/zenml/actions/workflows/ci.yml
 
 <div align="center">
-  <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
+  <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
+  <h3 align="center">Create an MLOps workflow for your entire team.</h3>
   <p align="center">
     <div align="center">
-      Join our <a href="https://zenml.io/slack-invite" target="_blank">
+      Join our <a href="https://zenml.io/slack" target="_blank">
       <img width="18" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
     <b>Slack Community</b> </a> and be part of the ZenML family.
     </div>
@@ -82,13 +83,13 @@
     ·
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
     ·
-    <a href="https://zenml.io/discussion">Vote New Features</a>
+    <a href="https://zenml.io/cloud">Sign up for Cloud</a>
     ·
     <a href="https://www.zenml.io/blog">Read Blog</a>
     ·
     <a href="https://github.com/issues?q=is%3Aopen+is%3Aissue+archived%3Afalse+user%3Azenml-io+label%3A%22good+first+issue%22">Contribute to Open Source</a>
     ·
-    <a href="https://www.zenml.io/company#team">Meet the Team</a>
+    <a href="https://github.com/zenml-io/zenml-projects">Projects Showcase</a>
     <br />
     <br />
     🎉 Version 0.55.3 is out. Check out the release notes
@@ -104,21 +105,15 @@
 <details>
   <summary>🏁 Table of Contents</summary>
   <ol>
-    <li><a href="#-introduction">Introduction</a></li>
-    <li><a href="#-quickstart">Quickstart</a></li>
+    <li><a href="#🤖-introduction">Introduction</a></li>
+    <li><a href="#🤸-quickstart">Quickstart</a></li>
     <li>
-      <a href="#-create-your-own-mlops-platform">Create your own MLOps Platform</a>
-      <ul>
-        <li><a href="##-1-deploy-zenml">Deploy ZenML</a></li>
-        <li><a href="#-2-deploy-stack-components">Deploy Stack Components</a></li>
-        <li><a href="#-3-create-a-pipeline">Create a Pipeline</a></li>
-        <li><a href="#-4-start-the-dashboard">Start the Dashboard</a></li>
-      </ul>
+      <a href="#🖼️-learning">Learning</a>
     </li>
-    <li><a href="#-roadmap">Roadmap</a></li>
-    <li><a href="#-contributing-and-community">Contributing and Community</a></li>
-    <li><a href="#-getting-help">Getting Help</a></li>
-    <li><a href="#-license">License</a></li>
+    <li><a href="#🗺-roadmap">Roadmap</a></li>
+    <li><a href="#🙌-contributing-and-community">Contributing and Community</a></li>
+    <li><a href="#🆘-getting-help">Getting Help</a></li>
+    <li><a href="#📜-license">License</a></li>
   </ol>
 </details>
 
@@ -141,16 +136,45 @@ experimentation while writing code that is production-ready from the get-go.
 - 🛫 ZenML enables MLOps infrastructure experts to define, deploy, and manage
 sophisticated production environments that are easy to use for colleagues.
 
-![The long journey from experimentation to production.](/docs/book/.gitbook/assets/intro-zenml-overview.png)
-
-ZenML provides a user-friendly syntax designed for ML workflows, compatible with
-any cloud or tool. It enables centralized pipeline management, enabling
-developers to write code once and effortlessly deploy it to various
-infrastructures.
-
 <div align="center">
-    <img src="docs/book/.gitbook/assets/overview.gif">
+  <img width="60%" src="/docs/book/.gitbook/assets/zenml-hero.png" alt="ZenML Hero"/>
 </div>
+
+# 🛠️ Why ZenML?
+
+![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Cloud)](/docs/book/.gitbook/assets/mcp_walkthrough.gif)
+
+ZenML offers a systematic approach to structuring your machine learning codebase for a seamless transition to production. It's an ideal solution for teams grappling with establishing an internal standard for coordinating ML operations. ZenML provides not just a tool, but a workflow strategy that guides you in integrating all your tools and infrastructure effectively.
+
+Use ZenML if:
+
+- You need to easily automate ML workflows on services like an Airflow cluster or AWS Sagemaker Pipelines.
+- Your ML tasks require repeatability and reproducibility.
+- Automating and standardizing ML workflows across your team is a challenge.
+- Your team integrates multiple tools with no central platform.
+- You'd like a single place to track data, code, configuration, and models along with your cloud artifact storage.
+- Collaboration and hand-overs between multiple teams is difficult.
+
+# ☄️ What makes ZenML different?
+
+![Before and after ZenML](/docs/book/.gitbook/assets/zenml-why.png)
+
+ZenML marries the capabilities of a classic pipeline tool like [Airflow](https://airflow.apache.org/) and a metadata tracking service like [MLflow](https://mlflow.org/). Furthermore, both these types of tools can seamlessly co-exist with ZenML, providing a comprehensive, end-to-end ML experience.
+
+It excels at:
+
+- Enabling creation of simple, pythonic [ML pipelines](https://docs.zenml.io/user-guide/starter-guide/create-an-ml-pipeline) that function locally and on any [orchestration backend](https://docs.zenml.io/user-guide/production-guide/cloud-orchestration).
+- Automating versioning of [data](https://docs.zenml.io/user-guide/starter-guide/manage-artifacts) and [models](https://docs.zenml.io/user-guide/starter-guide/track-ml-models) on [remote artifact storage like S3](https://docs.zenml.io/user-guide/production-guide/remote-storage).
+- Abstracting infrastructure and run configuration from code through a [simple YAML config](https://docs.zenml.io/user-guide/advanced-guide/pipelining-features/configure-steps-pipelines).
+- Logging complex [metadata](https://docs.zenml.io/user-guide/advanced-guide/data-management/logging-metadata) for models and artifacts.
+- Automatically containerizing and deploying your workflows to the cloud, connected to your [code repository](https://docs.zenml.io/user-guide/production-guide/connect-code-repository).
+- Connecting your [secret store](https://docs.zenml.io/user-guide/advanced-guide/secret-management) to your ML workflows.
+
+However, ZenML doesn't:
+
+- Automatically create visuals and track experiments: It [integrates with experiment trackers](https://docs.zenml.io/stacks-and-components/component-guide/experiment-trackers) that specialize in this task.
+- Package and deploy models: ZenML catalogs models and metadata, streamlining model deployment. Refer to [ZenML model deployers](https://docs.zenml.io/stacks-and-components/component-guide/model-deployers) for more information.
+- Handle distributed computation: While ZenML pipelines scale vertically with ease, it [works with tools like Spark](https://docs.zenml.io/stacks-and-components/component-guide/step-operators/spark-kubernetes) for intricate distributed workflows.
 
 # 🤸 Quickstart
 
@@ -167,22 +191,18 @@ Take a tour with the guided quickstart by running:
 zenml go
 ```
 
-# 🖼️ Create your own MLOps Platform
-
-ZenML allows you to create and manage your own MLOps platform using 
-best-in-class open-source and cloud-based technologies. Here is an example of 
-how you could set this up for your team:
-
-## 🔋 1. Deploy ZenML
+# 🔋 Deploy ZenML
 
 For full functionality ZenML should be deployed on the cloud to
 enable collaborative features as the central MLOps interface for teams.
 
-![ZenML Architecture Diagram.](docs/book/.gitbook/assets/Scenario3.png)
+<div align="center">
+  <img width="60%" src="docs/book/.gitbook/assets/Scenario3.png" alt="ZenML Architecture Diagram."/>
+</div>
 
 Currently, there are two main options to deploy ZenML:
 
-- **ZenML Cloud**: With [ZenML Cloud](https://docs.zenml.io/deploying-zenml/zenml-cloud), 
+- **ZenML Cloud**: With [ZenML Cloud](cloud.zenml.io/?utm_source=readme&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link), 
 you can utilize a control plane to create ZenML servers, also known as tenants. 
 These tenants are managed and maintained by ZenML's dedicated team, alleviating 
 the burden of server management from your end. 
@@ -192,73 +212,16 @@ ZenML on your own self-hosted environment](https://docs.zenml.io/deploying-zenml
 This can be achieved through various methods, including using our CLI, Docker, 
 Helm, or HuggingFace Spaces.
 
-## 👨‍🍳 2. Deploy Stack Components
+# 🖼️ Learning
 
-ZenML boasts a ton of [integrations](https://zenml.io/integrations) into 
-popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/user-guide/starter-guide/understand-stacks) 
-concept ensures that these tools work nicely together, therefore bringing
-structure and standardization into the MLOps workflow.
+The best way to learn about ZenML is the [docs](https://docs.zenml.io). We recommend beginning with the [Starter Guide](https://docs.zenml.io/user-guide/starter-guide) to get up and running quickly.
 
-Deploying and configuring this is super easy with ZenML. For **AWS**, this might 
-look a bit like this
+For inspiration, here are some other examples and use cases:
 
-```bash
-# Deploy and register an orchestrator and an artifact store
-zenml orchestrator deploy kubernetes_orchestrator --flavor kubernetes --cloud aws
-zenml artifact-store deploy s3_artifact_store --flavor s3
-
-# Register this combination of components as a stack
-zenml stack register production_stack --orchestrator kubernetes_orchestrator --artifact-store s3_artifact_store --set # Register your production environment
-```
-
-When you run a pipeline with this stack set, it will be running on your deployed
-Kubernetes cluster.
-
-You can also [deploy your own tooling manually](https://docs.zenml.io/stacks-and-components/stack-deployment).
-
-## 🏇 3. Create a Pipeline
-
-Here's an example of a hello world ZenML pipeline in code:
-
-```python
-# run.py
-from zenml import pipeline, step
-
-
-@step
-def step_1() -> str:
-    """Returns the `world` substring."""
-    return "world"
-
-
-@step
-def step_2(input_one: str, input_two: str) -> None:
-    """Combines the two strings at its input and prints them."""
-    combined_str = input_one + ' ' + input_two
-    print(combined_str)
-
-
-@pipeline
-def my_pipeline():
-    output_step_one = step_1()
-    step_2(input_one="hello", input_two=output_step_one)
-
-
-if __name__ == "__main__":
-    my_pipeline()
-```
-
-```bash
-python run.py
-```
-
-## 👭 4. Start the Dashboard
-
-Open up the ZenML dashboard using this command.
-
-```bash
-zenml show
-```
+1. [E2E Batch Inference](examples/e2e/): Feature engineering, training, and inference pipelines for tabular machine learning.
+2. [Basic NLP with BERT](examples/e2e_nlp/): Feature engineering, training, and inference focused on NLP.
+3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents): Using Langchain to create a simple RAG pipeline.
+4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace.
 
 # 🗺 Roadmap
 
@@ -266,14 +229,14 @@ ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a
 regularly updated source of truth for the ZenML community to understand where
 the product is going in the short, medium, and long term.
 
-ZenML is managed by a [core team](https://zenml.io/company#CompanyTeam) of
+ZenML is managed by a [core team](https://zenml.io/company) of
 developers that are responsible for making key decisions and incorporating
 feedback from the community. The team oversees feedback via various channels,
 and you can directly influence the roadmap as follows:
 
 - Vote on your most wanted feature on our [Discussion
   board](https://zenml.io/discussion).
-- Start a thread in our [Slack channel](https://zenml.io/slack-invite).
+- Start a thread in our [Slack channel](https://zenml.io/slack).
 - [Create an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our
   GitHub repo.
 
@@ -291,12 +254,12 @@ Guide](CONTRIBUTING.md) for all relevant details.
 The first point of call should
 be [our Slack group](https://zenml.io/slack-invite/).
 Ask your questions about bugs or specific use cases, and someone from
-the [core team](https://zenml.io/company#CompanyTeam) will respond.
+the [core team](https://zenml.io/company) will respond.
 Or, if you
 prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on
 our GitHub repo.
 
-# Vulnerability affecting `zenml<0.67` (CVE-2024-25723)
+# Vulnerability affecting `zenml<0.46.7` (CVE-2024-25723)
 
 We have identified a critical security vulnerability in ZenML versions prior to
 0.46.7. This vulnerability potentially allows unauthorized users to take

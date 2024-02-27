@@ -32,6 +32,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 
@@ -114,8 +115,14 @@ class SecretResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for secrets."""
 
 
+class SecretResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the secret entity."""
+
+
 class SecretResponse(
-    WorkspaceScopedResponse[SecretResponseBody, SecretResponseMetadata]
+    WorkspaceScopedResponse[
+        SecretResponseBody, SecretResponseMetadata, SecretResponseResources
+    ]
 ):
     """Response model for secrets."""
 
