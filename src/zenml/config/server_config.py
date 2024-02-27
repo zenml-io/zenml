@@ -51,6 +51,7 @@ class ServerConfiguration(BaseModel):
 
     Attributes:
         deployment_type: The type of ZenML server deployment that is running.
+        base_url: The base URL of the ZenML server.
         root_url_path: The root URL path of the ZenML server.
         auth_scheme: The authentication scheme used by the ZenML server.
         jwt_token_algorithm: The algorithm used to sign and verify JWT tokens.
@@ -106,13 +107,19 @@ class ServerConfiguration(BaseModel):
         external_server_id: The ID of the ZenML server to use with the
             `EXTERNAL` authentication scheme. If not specified, the regular
             ZenML server ID is used.
+        cloud_organization_id: The ID of the cloud organization that the ZenML
+            server is running in. If not specified, the server is not running
+            in a cloud organization.
         rbac_implementation_source: Source pointing to a class implementing
             the RBAC interface defined by
             `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
             RBAC will not be enabled for this server.
+        workload_manager_implementation_source: Source pointing to a class
+            implementing the workload management interface.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
+    base_url: str = ""
     root_url_path: str = ""
     auth_scheme: AuthScheme = AuthScheme.OAUTH2_PASSWORD_BEARER
     jwt_token_algorithm: str = DEFAULT_ZENML_JWT_TOKEN_ALGORITHM
@@ -139,6 +146,7 @@ class ServerConfiguration(BaseModel):
     external_user_info_url: Optional[str] = None
     external_cookie_name: Optional[str] = None
     external_server_id: Optional[UUID] = None
+    cloud_organization_id: Optional[str] = None
 
     rbac_implementation_source: Optional[str] = None
     workload_manager_implementation_source: Optional[str] = None
