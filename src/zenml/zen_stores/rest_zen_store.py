@@ -480,6 +480,10 @@ class RestZenStore(BaseZenStore):
         """
         self.config.api_key = api_key
         self.clear_session()
+        # TODO: find a way to persist the API key in the configuration file
+        #  without calling _write_config() here.
+        # This is the only place where we need to explicitly call
+        # _write_config() to persist the global configuration.
         GlobalConfiguration()._write_config()
 
     def list_api_keys(

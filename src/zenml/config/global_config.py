@@ -77,11 +77,6 @@ class GlobalConfigMetaClass(ModelMetaclass):
     def __call__(cls, *args: Any, **kwargs: Any) -> "GlobalConfiguration":
         """Create or return the default global config instance.
 
-        If the GlobalConfiguration constructor is called with custom arguments,
-        the singleton functionality of the metaclass is bypassed: a new
-        GlobalConfiguration instance is created and returned immediately and
-        without saving it as the global GlobalConfiguration singleton.
-
         Args:
             *args: positional arguments
             **kwargs: keyword arguments
@@ -89,14 +84,9 @@ class GlobalConfigMetaClass(ModelMetaclass):
         Returns:
             The global GlobalConfiguration instance.
         """
-        if args or kwargs:
-            return cast(
-                "GlobalConfiguration", super().__call__(*args, **kwargs)
-            )
-
         if not cls._global_config:
             cls._global_config = cast(
-                "GlobalConfiguration", super().__call__(*args, **kwargs)
+                "GlobalConfiguration", super().__call__()
             )
             cls._global_config._migrate_config()
         return cls._global_config
@@ -120,7 +110,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         active_stack_id: The ID of the active stack.
         active_workspace_name: The name of the active workspace.
         jwt_secret_key: The secret key used to sign and verify JWT tokens.
-        _config_path: Directory where the global config file is stored.
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
@@ -132,45 +121,22 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     active_stack_id: Optional[uuid.UUID]
     active_workspace_name: Optional[str]
 
-    _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
     _active_workspace: Optional["WorkspaceResponse"] = None
     _active_stack: Optional["StackResponse"] = None
 
-    def __init__(
-        self, config_path: Optional[str] = None, **kwargs: Any
-    ) -> None:
+    def __init__(self) -> None:
         """Initializes a GlobalConfiguration using values from the config file.
 
         GlobalConfiguration is a singleton class: only one instance can exist.
         Calling this constructor multiple times will always yield the same
-        instance (see the exception below).
-
-        The `config_path` argument is only meant for internal use and testing
-        purposes. User code must never pass it to the constructor. When a custom
-        `config_path` value is passed, an anonymous GlobalConfiguration instance
-        is created and returned independently of the GlobalConfiguration
-        singleton and that will have no effect as far as the rest of the ZenML
-        core code is concerned.
-
-        If the config file doesn't exist yet, we try to read values from the
-        legacy (ZenML version < 0.6) config file.
-
-        Args:
-            config_path: (internal use) custom config file path. When not
-                specified, the default global configuration path is used and the
-                global configuration singleton instance is returned. Only used
-                to create configuration copies for transfer to different
-                runtime environments.
-            **kwargs: keyword arguments
+        instance.
         """
-        self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
-        config_values.update(**kwargs)
 
         super().__init__(**config_values)
 
-        if not fileio.exists(self._config_file(config_path)):
+        if not fileio.exists(self._config_file):
             self._write_config()
 
     @classmethod
@@ -322,30 +288,24 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             A dictionary containing the configuration options.
         """
+        config_file = self._config_file
         config_values = {}
-        if fileio.exists(self._config_file()):
+        if fileio.exists(config_file):
             config_values = cast(
                 Dict[str, Any],
-                yaml_utils.read_yaml(self._config_file()),
+                yaml_utils.read_yaml(config_file),
             )
 
         return config_values
 
-    def _write_config(self, config_path: Optional[str] = None) -> None:
-        """Writes the global configuration options to disk.
-
-        Args:
-            config_path: custom config file path. When not specified, the
-                default global configuration path is used.
-        """
-        config_file = self._config_file(config_path)
+    def _write_config(self) -> None:
+        """Writes the global configuration options to disk."""
+        config_file = self._config_file
         yaml_dict = json.loads(self.json(exclude_none=True))
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):
-            io_utils.create_dir_recursive_if_not_exists(
-                config_path or self.config_directory
-            )
+            io_utils.create_dir_recursive_if_not_exists(self.config_directory)
 
         yaml_utils.write_yaml(config_file, yaml_dict)
 
@@ -415,16 +375,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._active_workspace = active_workspace
         self.set_active_stack(active_stack)
 
-    @staticmethod
-    def default_config_directory() -> str:
-        """Path to the default global configuration directory.
-
-        Returns:
-            The default global configuration directory.
-        """
-        return io_utils.get_global_config_directory()
-
-    def _config_file(self, config_path: Optional[str] = None) -> str:
+    @property
+    def _config_file(self) -> str:
         """Path to the file where global configuration options are stored.
 
         Args:
@@ -434,7 +386,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             The path to the global configuration file.
         """
-        return os.path.join(config_path or self._config_path, "config.yaml")
+        return os.path.join(self.config_directory, "config.yaml")
 
     @property
     def config_directory(self) -> str:
@@ -443,7 +395,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             The directory where the global configuration file is located.
         """
-        return self._config_path
+        return io_utils.get_global_config_directory()
 
     @property
     def local_stores_path(self) -> str:
