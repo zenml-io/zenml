@@ -144,6 +144,15 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
         """
         return True
 
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
+        return self.synchronous
+
 
 class SagemakerOrchestratorFlavor(BaseOrchestratorFlavor):
     """Flavor for the Sagemaker orchestrator."""

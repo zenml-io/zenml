@@ -1954,24 +1954,31 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if an artifact with the given name and version exists
-            existing_artifact = session.exec(
-                select(ArtifactVersionSchema)
-                .where(
-                    ArtifactVersionSchema.artifact_id
-                    == artifact_version.artifact_id
+            def _check(tolerance: int = 0) -> None:
+                query = session.exec(
+                    select(ArtifactVersionSchema)
+                    .where(
+                        ArtifactVersionSchema.artifact_id
+                        == artifact_version.artifact_id
+                    )
+                    .where(
+                        ArtifactVersionSchema.version
+                        == artifact_version.version
+                    )
                 )
-                .where(
-                    ArtifactVersionSchema.version == artifact_version.version
-                )
-            ).first()
-            if existing_artifact is not None:
-                raise EntityExistsError(
-                    f"Unable to create artifact with name "
-                    f"'{existing_artifact.artifact.name}' and version "
-                    f"'{artifact_version.version}': An artifact with the same "
-                    "name and version already exists."
-                )
+                existing_artifact = query.fetchmany(tolerance + 1)
+                if (
+                    existing_artifact is not None
+                    and len(existing_artifact) > tolerance
+                ):
+                    raise EntityExistsError(
+                        f"Unable to create artifact with name "
+                        f"'{existing_artifact[0].artifact.name}' and version "
+                        f"'{artifact_version.version}': An artifact with the same "
+                        "name and version already exists."
+                    )
 
+            _check()
             # Create the artifact version.
             artifact_version_schema = ArtifactVersionSchema.from_request(
                 artifact_version
@@ -1995,7 +2002,13 @@ class SqlZenStore(BaseZenStore):
                     resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
                 )
 
-            session.commit()
+            try:
+                _check(1)
+                session.commit()
+            except EntityExistsError as e:
+                session.rollback()
+                raise e
+
             return artifact_version_schema.to_model(hydrate=True)
 
     def get_artifact_version(
@@ -3217,7 +3230,7 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.version == pipeline.version)
+                .where(PipelineSchema.version_hash == pipeline.version_hash)
                 .where(PipelineSchema.workspace_id == pipeline.workspace)
             ).first()
             if existing_pipeline is not None:
@@ -5957,11 +5970,7 @@ class SqlZenStore(BaseZenStore):
             The registered stack.
         """
         with Session(self.engine) as session:
-            self._fail_if_stack_with_name_exists(
-                stack=stack,
-                workspace_id=stack.workspace,
-                session=session,
-            )
+            self._fail_if_stack_with_name_exists(stack=stack, session=session)
 
             # Get the Schemas of all components mentioned
             component_ids = (
@@ -6085,7 +6094,6 @@ class SqlZenStore(BaseZenStore):
                     self._fail_if_stack_with_name_exists(
                         stack=stack_update,
                         session=session,
-                        workspace_id=existing_stack.workspace_id,
                     )
 
             components = []
@@ -6154,14 +6162,12 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_stack_with_name_exists(
         self,
         stack: StackRequest,
-        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a stack with same name exists.
 
         Args:
             stack: The Stack
-            workspace_id: The ID of the workspace
             session: The Session
 
         Returns:
@@ -6173,7 +6179,7 @@ class SqlZenStore(BaseZenStore):
         existing_domain_stack = session.exec(
             select(StackSchema)
             .where(StackSchema.name == stack.name)
-            .where(StackSchema.workspace_id == workspace_id)
+            .where(StackSchema.workspace_id == stack.workspace)
         ).first()
         if existing_domain_stack is not None:
             workspace = self._get_workspace_schema(
@@ -7827,44 +7833,57 @@ class SqlZenStore(BaseZenStore):
                 "`number` field  must be None during model version creation."
             )
         with Session(self.engine) as session:
-            model = self.get_model(model_version.model)
-            existing_model_version = session.exec(
-                select(ModelVersionSchema)
-                .where(ModelVersionSchema.model_id == model.id)
-                .where(ModelVersionSchema.name == model_version.name)
-            ).first()
-            if existing_model_version is not None:
-                raise EntityExistsError(
-                    f"Unable to create model version {model_version.name}: "
-                    f"A model version with this name already exists in {model.name} model."
-                )
+            model_version_ = model_version.copy()
+            model = self.get_model(model_version_.model)
 
+            def _check(tolerance: int = 0) -> None:
+                query = session.exec(
+                    select(ModelVersionSchema)
+                    .where(ModelVersionSchema.model_id == model.id)
+                    .where(ModelVersionSchema.name == model_version_.name)
+                )
+                existing_model_version = query.fetchmany(tolerance + 1)
+                if (
+                    existing_model_version is not None
+                    and len(existing_model_version) > tolerance
+                ):
+                    raise EntityExistsError(
+                        f"Unable to create model version {model_version_.name}: "
+                        f"A model version with this name already exists in {model.name} model."
+                    )
+
+            _check()
             all_versions = session.exec(
                 select(ModelVersionSchema)
                 .where(ModelVersionSchema.model_id == model.id)
                 .order_by(ModelVersionSchema.number.desc())  # type: ignore[attr-defined]
             ).first()
 
-            model_version.number = (
+            model_version_.number = (
                 all_versions.number + 1 if all_versions else 1
             )
 
-            if model_version.name is None:
-                model_version.name = str(model_version.number)
+            if model_version_.name is None:
+                model_version_.name = str(model_version_.number)
 
             model_version_schema = ModelVersionSchema.from_request(
-                model_version
+                model_version_
             )
             session.add(model_version_schema)
 
-            if model_version.tags:
+            if model_version_.tags:
                 self._attach_tags_to_resource(
-                    tag_names=model_version.tags,
+                    tag_names=model_version_.tags,
                     resource_id=model_version_schema.id,
                     resource_type=TaggableResourceTypes.MODEL_VERSION,
                 )
+            try:
+                _check(1)
+                session.commit()
+            except EntityExistsError as e:
+                session.rollback()
+                raise e
 
-            session.commit()
             return model_version_schema.to_model(hydrate=True)
 
     def get_model_version(

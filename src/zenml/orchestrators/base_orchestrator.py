@@ -55,6 +55,15 @@ class BaseOrchestratorConfig(StackComponentConfig):
 
         return values
 
+    @property
+    def is_synchronous(self) -> bool:
+        """Whether the orchestrator runs synchronous or not.
+
+        Returns:
+            Whether the orchestrator runs synchronous or not.
+        """
+        return False
+
 
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all orchestrators.
