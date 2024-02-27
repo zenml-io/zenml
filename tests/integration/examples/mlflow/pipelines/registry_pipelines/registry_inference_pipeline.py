@@ -22,7 +22,9 @@ from zenml.integrations.mlflow.steps.mlflow_deployer import (
     mlflow_model_registry_deployer_step,
 )
 
-docker_settings = DockerSettings(required_integrations=[MLFLOW, SKLEARN])
+docker_settings = DockerSettings(
+    required_integrations=[MLFLOW, SKLEARN], requirements=["skimage"]
+)
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})

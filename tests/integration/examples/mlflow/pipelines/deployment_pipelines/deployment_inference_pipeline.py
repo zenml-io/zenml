@@ -20,7 +20,9 @@ from zenml import pipeline
 from zenml.config import DockerSettings
 from zenml.integrations.constants import MLFLOW, SKLEARN
 
-docker_settings = DockerSettings(required_integrations=[MLFLOW, SKLEARN])
+docker_settings = DockerSettings(
+    required_integrations=[MLFLOW, SKLEARN], requirements=["skimage"]
+)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
