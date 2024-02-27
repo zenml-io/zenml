@@ -114,6 +114,7 @@ class ServiceSchemas(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             type=json.loads(self.type),
+            labels=json.loads(self.labels) if self.labels else None,
         )
 
         return ServiceResponse(

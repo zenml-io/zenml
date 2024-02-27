@@ -30,6 +30,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
+    verify_permissions_and_create_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
@@ -43,6 +44,31 @@ router = APIRouter(
     tags=["services"],
     responses={401: error_response, 403: error_response},
 )
+
+
+@router.post(
+    "",
+    response_model=ServiceResponse,
+    responses={401: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_service(
+    service: ServiceUpdate,
+    _: AuthContext = Security(authorize),
+) -> ServiceResponse:
+    """Creates a new service.
+
+    Args:
+        service: The model containing the attributes of the new service.
+
+    Returns:
+        The created service object.
+    """
+    return verify_permissions_and_create_entity(
+        request_model=service,
+        create_method=zen_store().create_service,
+        resource_type=ResourceType.SERVICE,
+    )
 
 
 @router.get(

@@ -239,7 +239,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
 
     SERVICE_TYPE: ClassVar[ServiceType]
 
-    uuid: UUID = Field(default_factory=uuid4, allow_mutation=False)
+    uuid: UUID = Field(default_factory=uuid4, allow_mutation=True)
     admin_state: ServiceState = ServiceState.INACTIVE
     config: ServiceConfig
     status: ServiceStatus

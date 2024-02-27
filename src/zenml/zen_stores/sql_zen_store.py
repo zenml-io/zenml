@@ -1818,9 +1818,8 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the service.
-            breakpoint()
             service_schema = ServiceSchemas.from_request(service)
-            breakpoint()
+            logger.debug("Creating service: %s", service_schema)
             session.add(service_schema)
             session.commit()
 

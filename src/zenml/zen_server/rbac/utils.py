@@ -392,11 +392,11 @@ def get_resource_type_for_model(
         SecretResponse,
         ServiceAccountResponse,
         ServiceConnectorResponse,
+        ServiceResponse,
         StackResponse,
         TagResponse,
         UserResponse,
         WorkspaceResponse,
-        ServiceResponse,
     )
 
     mapping: Dict[
@@ -530,12 +530,12 @@ def get_schema_for_resource_type(
         RunMetadataSchema,
         SecretSchema,
         ServiceConnectorSchema,
+        ServiceSchemas,
         StackComponentSchema,
         StackSchema,
         TagSchema,
         UserSchema,
         WorkspaceSchema,
-        ServiceSchemas,
     )
 
     mapping: Dict[ResourceType, Type["BaseSchema"]] = {
@@ -543,7 +543,6 @@ def get_schema_for_resource_type(
         ResourceType.FLAVOR: FlavorSchema,
         ResourceType.STACK_COMPONENT: StackComponentSchema,
         ResourceType.PIPELINE: PipelineSchema,
-        ResourceType.SERVICE: ServiceSchemas,
         ResourceType.CODE_REPOSITORY: CodeRepositorySchema,
         ResourceType.MODEL: ModelSchema,
         ResourceType.MODEL_VERSION: ModelVersionSchema,
@@ -551,6 +550,7 @@ def get_schema_for_resource_type(
         ResourceType.ARTIFACT: ArtifactSchema,
         ResourceType.ARTIFACT_VERSION: ArtifactVersionSchema,
         ResourceType.SECRET: SecretSchema,
+        ResourceType.SERVICE: ServiceSchemas,
         ResourceType.TAG: TagSchema,
         ResourceType.SERVICE_ACCOUNT: UserSchema,
         ResourceType.WORKSPACE: WorkspaceSchema,

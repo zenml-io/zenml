@@ -1462,7 +1462,7 @@ class Client(metaclass=ClientMetaClass):
             health_check_url = service.endpoint.monitor.get_healthcheck_uri(
                 service.endpoint
             )
-        breakpoint()
+
         # Create the ServiceRequest model
         service_request = ServiceRequest(
             name=service.config.name,
@@ -1477,7 +1477,6 @@ class Client(metaclass=ClientMetaClass):
             health_check_url=health_check_url,
             labels=service.config.get_service_labels(),
         )
-        breakpoint()
 
         # Register the service
         return self.zen_store.create_service(service_request)
