@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.fashion_mnist_pipeline import fashion_mnist_pipeline
+from pipelines.fashion_mnist_pipeline import fashion_mnist_pipeline as main
 
 if __name__ == "__main__":
-    fashion_mnist_pipeline()
+    main()

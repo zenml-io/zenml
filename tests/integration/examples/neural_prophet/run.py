@@ -11,8 +11,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from pipelines.neural_prophet_pipeline.neural_prophet_pipeline import (
-    neural_prophet_pipeline,
+    neural_prophet_pipeline as main,
 )
 
 if __name__ == "__main__":
-    neural_prophet_pipeline()
+    main()

@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Generator, List, Optional, Set, Tuple
 
 import pytest
+from click import Command
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
@@ -70,8 +71,14 @@ class IntegrationTestExample:
             RuntimeError: If running the example fails.
         """
         sys.path.insert(0, ".")
+        # importing `run` from the example directory
         run = import_module("run")
-        run.main(args, standalone_mode=False)
+        if isinstance(run.main, Command):
+            # main is a click command
+            run.main(args, standalone_mode=False)
+        else:
+            # main is a function
+            run.main(*args)
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:

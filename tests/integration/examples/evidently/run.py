@@ -12,13 +12,13 @@
 #  permissions and limitations under the License.
 
 from pipelines.text_report_test_pipeline.text_report_test import (
-    text_data_report_test_pipeline,
+    text_data_report_test_pipeline as main,
 )
 
 if __name__ == "__main__":
-    text_data_report_test_pipeline()
+    main()
 
-    last_run = text_data_report_test_pipeline.model.last_run
+    last_run = main.model.last_run
     text_analysis_step = last_run.steps["text_analyzer"]
 
     print(

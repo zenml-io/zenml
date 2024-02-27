@@ -12,7 +12,7 @@
 #  permissions and limitations under the License.
 
 
-from pipelines import data_profiling_pipeline
+from pipelines import data_profiling_pipeline as main
 
 if __name__ == "__main__":
-    data_profiling_pipeline()
+    main()

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pipelines.facets_pipeline.facets_pipeline import facets_pipeline
+from pipelines.facets_pipeline.facets_pipeline import facets_pipeline as main
 
 if __name__ == "__main__":
-    facets_pipeline()
+    main()
