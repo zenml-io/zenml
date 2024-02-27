@@ -12,10 +12,5 @@
 #  permissions and limitations under the License.
 from pipelines.lgbm_pipeline.lgbm_pipeline import lgbm_pipeline
 
-
-def main():
-    lgbm_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    lgbm_pipeline()

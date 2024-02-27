@@ -14,10 +14,5 @@
 
 from pipelines.validation import validation_pipeline
 
-
-def main():
-    validation_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    validation_pipeline()

@@ -14,10 +14,5 @@ from pipelines.neural_prophet_pipeline.neural_prophet_pipeline import (
     neural_prophet_pipeline,
 )
 
-
-def main():
-    neural_prophet_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    neural_prophet_pipeline()

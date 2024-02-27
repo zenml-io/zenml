@@ -12,10 +12,5 @@
 #  permissions and limitations under the License.
 from pipelines import xgboost_pipeline
 
-
-def main():
-    xgboost_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    xgboost_pipeline()

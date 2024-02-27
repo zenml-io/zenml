@@ -13,10 +13,5 @@
 #  permissions and limitations under the License.
 from pipelines.facets_pipeline.facets_pipeline import facets_pipeline
 
-
-def main():
-    facets_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    facets_pipeline()

@@ -13,10 +13,5 @@
 
 from pipelines.data_validation import data_validation_pipeline
 
-
-def main():
-    data_validation_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    data_validation_pipeline()

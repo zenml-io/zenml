@@ -13,10 +13,5 @@
 #  permissions and limitations under the License.
 from pipelines import scipy_example_pipeline
 
-
-def main():
-    scipy_example_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    scipy_example_pipeline()

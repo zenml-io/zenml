@@ -14,10 +14,5 @@
 
 from pipelines.fashion_mnist_pipeline import fashion_mnist_pipeline
 
-
-def main():
-    fashion_mnist_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    fashion_mnist_pipeline()

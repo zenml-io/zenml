@@ -14,16 +14,15 @@
 import logging
 import os
 import shutil
+import subprocess
 import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime
-from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Generator, List, Optional, Set, Tuple
 
 import pytest
-from click import Command
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
@@ -70,15 +69,11 @@ class IntegrationTestExample:
         Raises:
             RuntimeError: If running the example fails.
         """
-        sys.path.insert(0, ".")
-        # importing `run` from the example directory
-        run = import_module("run")
-        if isinstance(run.main, Command):
-            # main is a click command
-            run.main(args, standalone_mode=False)
-        else:
-            # main is a function
-            run.main(*args)
+        subprocess.check_call(
+            [sys.executable, self.run_dot_py_file, *args],
+            cwd=str(self.path),
+            env=os.environ.copy(),
+        )
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:

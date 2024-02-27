@@ -14,10 +14,5 @@
 
 from pipelines import data_profiling_pipeline
 
-
-def main():
-    data_profiling_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    data_profiling_pipeline()

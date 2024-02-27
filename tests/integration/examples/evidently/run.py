@@ -15,13 +15,8 @@ from pipelines.text_report_test_pipeline.text_report_test import (
     text_data_report_test_pipeline,
 )
 
-
-def main():
-    text_data_report_test_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    text_data_report_test_pipeline()
 
     last_run = text_data_report_test_pipeline.model.last_run
     text_analysis_step = last_run.steps["text_analyzer"]

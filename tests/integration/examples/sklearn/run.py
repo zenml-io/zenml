@@ -14,10 +14,5 @@
 
 from pipelines.sklearn_digits_pipeline import sklearn_digits_pipeline
 
-
-def main():
-    sklearn_digits_pipeline()
-
-
 if __name__ == "__main__":
-    main()
+    sklearn_digits_pipeline()
