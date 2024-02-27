@@ -14,7 +14,7 @@
 """SQL Model Implementations for Flavors."""
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -103,12 +103,19 @@ class FlavorSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, hydrate: bool = False) -> "FlavorResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "FlavorResponse":
         """Converts a flavor schema to a flavor model.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The flavor model.
@@ -122,7 +129,7 @@ class FlavorSchema(NamedSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = FlavorResponseMetadata(
                 workspace=self.workspace.to_model()
                 if self.workspace
