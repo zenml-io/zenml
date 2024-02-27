@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import Any, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -21,18 +21,17 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
-    BaseResponse,
-    BaseResponseBody,
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
 )
-
-if TYPE_CHECKING:
-    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 # ------------------ Request Model ------------------
 
@@ -52,16 +51,24 @@ class ModelVersionPipelineRunRequest(WorkspaceScopedRequest):
 # ------------------ Response Model ------------------
 
 
-class ModelVersionPipelineRunResponseBody(BaseResponseBody):
+class ModelVersionPipelineRunResponseBody(BaseDatedResponseBody):
     """Response body for links between model versions and pipeline runs."""
 
     model: UUID
     model_version: UUID
-    pipeline_run: "PipelineRunResponse"
+    pipeline_run: PipelineRunResponse
+
+
+class ModelVersionPipelineRunResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the model version pipeline run entity."""
 
 
 class ModelVersionPipelineRunResponse(
-    BaseResponse[ModelVersionPipelineRunResponseBody, BaseResponseMetadata]
+    BaseIdentifiedResponse[
+        ModelVersionPipelineRunResponseBody,
+        BaseResponseMetadata,
+        ModelVersionPipelineRunResponseResources,
+    ]
 ):
     """Response model for links between model versions and pipeline runs."""
 

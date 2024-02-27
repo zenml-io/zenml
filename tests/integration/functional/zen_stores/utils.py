@@ -14,11 +14,19 @@ import logging
 import uuid
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar
 
 from pydantic import BaseModel, Field, SecretStr
 
 from tests.integration.functional.utils import sample_name
+from zenml import (
+    EventSourceFilter,
+    EventSourceRequest,
+    EventSourceUpdate,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerUpdate,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -26,6 +34,7 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import (
     ArtifactType,
+    PluginSubType,
     SecretScope,
     StackComponentType,
 )
@@ -40,8 +49,8 @@ from zenml.models import (
     ArtifactVersionUpdate,
     AuthenticationMethodModel,
     BaseFilter,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryUpdate,
@@ -66,7 +75,9 @@ from zenml.models import (
     ResourceTypeModel,
     SecretFilter,
     SecretRequest,
+    ServiceAccountFilter,
     ServiceAccountRequest,
+    ServiceAccountUpdate,
     ServiceConnectorFilter,
     ServiceConnectorRequest,
     ServiceConnectorTypeModel,
@@ -87,6 +98,9 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.steps import step
 from zenml.utils.string_utils import random_str
+from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.rest_zen_store import RestZenStore
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @step
@@ -846,7 +860,7 @@ class ServiceConnectorTypeContext:
 
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)
 
 
 class CrudTestConfig:
@@ -858,6 +872,7 @@ class CrudTestConfig:
         filter_model: Type[BaseFilter],
         entity_name: str,
         update_model: Optional["BaseModel"] = None,
+        supported_zen_stores: Tuple[Type["BaseZenStore"]] = None,
         conditional_entities: Optional[Dict[str, "CrudTestConfig"]] = None,
     ):
         """Initializes a CrudTestConfig.
@@ -867,8 +882,7 @@ class CrudTestConfig:
             update_model: Model to use for updating the entity.
             filter_model: Model to use for filtering entities.
             entity_name: Name of the entity.
-            conditional_entity_names: Names of entities that need to exist
-                before the entity under test can be created.
+            supported_zen_stores: Set of supported Zen Stores. Defaults to all.
             conditional_entities: Other entities that need to exist before the
                 entity under test can be created. Expected to be a mapping from
                 field in the `create_model` to corresponding `CrudTestConfig`.
@@ -879,6 +893,10 @@ class CrudTestConfig:
         self.entity_name = entity_name
         self.conditional_entities = conditional_entities or {}
         self.id: Optional[uuid.UUID] = None
+        if not supported_zen_stores:
+            self.supported_zen_stores = (RestZenStore, SqlZenStore)
+        else:
+            self.supported_zen_stores = supported_zen_stores
 
     @property
     def list_method(
@@ -931,8 +949,23 @@ class CrudTestConfig:
             field_name,
             conditional_entity,
         ) in self.conditional_entities.items():
-            setattr(create_model, field_name, conditional_entity.create().id)
-
+            # Split the field name by '.' to handle nested fields
+            field_names = field_name.split(".")
+            parent_model = create_model
+            # Set the field name of the create_model
+            for name in field_names[:-1]:
+                if isinstance(parent_model, dict):
+                    parent_model = parent_model[name]
+                else:
+                    parent_model = getattr(parent_model, name)
+            if isinstance(parent_model, dict):
+                parent_model[field_names[-1]] = conditional_entity.create().id
+            else:
+                setattr(
+                    parent_model,
+                    field_names[-1],
+                    conditional_entity.create().id,
+                )
         # Create the entity itself
         response = self.create_method(create_model)
         self.id = response.id
@@ -1114,6 +1147,18 @@ code_repository_crud_test_config = CrudTestConfig(
     filter_model=CodeRepositoryFilter,
     entity_name="code_repository",
 )
+service_account_crud_test_config = CrudTestConfig(
+    create_model=ServiceAccountRequest(
+        name=sample_name("sCat-net-2000"),
+        description="Meow with me if you want to live.",
+        active=True,
+    ),
+    update_model=ServiceAccountUpdate(
+        name=sample_name("purrminator-t-1000"),
+    ),
+    filter_model=ServiceAccountFilter,
+    entity_name="service_account",
+)
 service_connector_crud_test_config = CrudTestConfig(
     create_model=ServiceConnectorRequest(
         user=uuid.uuid4(),
@@ -1136,7 +1181,7 @@ model_crud_test_config = CrudTestConfig(
     create_model=ModelRequest(
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
-        name="super_model",
+        name=sample_name("super_model"),
         license="who cares",
         description="cool stuff",
         audience="world",
@@ -1153,6 +1198,46 @@ model_crud_test_config = CrudTestConfig(
     ),
     filter_model=ModelFilter,
     entity_name="model",
+)
+event_source_crud_test_config = CrudTestConfig(
+    create_model=EventSourceRequest(
+        name=sample_name("blupus_cat_cam"),
+        configuration={},
+        description="Best event source ever",
+        flavor="github",  # TODO: Implementations can be parametrized later
+        plugin_subtype=PluginSubType.WEBHOOK,
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    update_model=EventSourceUpdate(
+        name=sample_name("updated_sample_component")
+    ),
+    filter_model=EventSourceFilter,
+    entity_name="event_source",
+    supported_zen_stores=(RestZenStore,),
+)
+trigger_crud_test_config = CrudTestConfig(
+    create_model=TriggerRequest(
+        name=sample_name("blupus_feeder"),
+        description="Feeds blupus when he meows.",
+        event_filter={},
+        event_source_id=uuid.uuid4(),  # will be overridden in create()
+        service_account_id=uuid.uuid4(),  # will be overridden in create()
+        action={"pipeline_deployment_id": uuid.uuid4()},
+        action_subtype=PluginSubType.PIPELINE_RUN,
+        action_flavor="builtin",
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    update_model=TriggerUpdate(name=sample_name("updated_sample_component")),
+    filter_model=TriggerFilter,
+    entity_name="trigger",
+    supported_zen_stores=(RestZenStore,),
+    conditional_entities={
+        "event_source_id": deepcopy(event_source_crud_test_config),
+        "service_account_id": deepcopy(service_account_crud_test_config),
+        "action.pipeline_deployment_id": deepcopy(deployment_crud_test_config),
+    },
 )
 
 # step_run_crud_test_config = CrudTestConfig(
@@ -1189,4 +1274,6 @@ list_of_entities = [
     code_repository_crud_test_config,
     service_connector_crud_test_config,
     model_crud_test_config,
+    event_source_crud_test_config,
+    trigger_crud_test_config,
 ]

@@ -15,7 +15,7 @@
 
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, List
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column
@@ -71,12 +71,19 @@ class TagSchema(NamedSchema, table=True):
             color=request.color.value,
         )
 
-    def to_model(self, hydrate: bool = False) -> TagResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> TagResponse:
         """Convert an `TagSchema` to an `TagResponse`.
 
         Args:
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `TagResponse`.
@@ -168,12 +175,19 @@ class TagResourceSchema(BaseSchema, table=True):
             resource_type=request.resource_type.value,
         )
 
-    def to_model(self, hydrate: bool = False) -> TagResourceResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> TagResourceResponse:
         """Convert an `TagResourceSchema` to an `TagResourceResponse`.
 
         Args:
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `TagResourceResponse`.
