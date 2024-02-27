@@ -37,7 +37,7 @@ def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> SVC:
-    """Train a RF Classifier to recognize MNIST digits return our
+    """Train an SVC Classifier to recognize MNIST digits return our
     model or the learner."""
     model = SVC(gamma=0.001)
 
