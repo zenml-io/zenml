@@ -27,6 +27,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 
@@ -119,8 +120,16 @@ class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
     pipeline_id: Optional[UUID]
 
 
+class ScheduleResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the schedule entity."""
+
+
 class ScheduleResponse(
-    WorkspaceScopedResponse[ScheduleResponseBody, ScheduleResponseMetadata],
+    WorkspaceScopedResponse[
+        ScheduleResponseBody,
+        ScheduleResponseMetadata,
+        ScheduleResponseResources,
+    ],
 ):
     """Response model for schedules."""
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
-from typing import Any, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
 from pkg_resources import Requirement
@@ -22,6 +22,10 @@ from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.stack.flavor import Flavor
 from zenml.utils.integration_utils import parse_requirement
+
+if TYPE_CHECKING:
+    from zenml.plugins.base_plugin_flavor import BasePluginFlavor
+
 
 logger = get_logger(__name__)
 
@@ -144,5 +148,14 @@ class Integration(metaclass=IntegrationMeta):
 
         Returns:
             A list of new stack component flavors.
+        """
+        return []
+
+    @classmethod
+    def plugin_flavors(cls) -> List[Type["BasePluginFlavor"]]:
+        """Abstract method to declare new plugin flavors.
+
+        Returns:
+            A list of new plugin flavors.
         """
         return []
