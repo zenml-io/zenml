@@ -378,6 +378,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
                     )
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
+            GlobalConfiguration._reset_instance()
             fresh_gc = GlobalConfiguration(
                 user_id=gc.user_id,
                 analytics_opt_in=gc.analytics_opt_in,
@@ -646,10 +647,7 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     """
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    store_config = (
-        GlobalConfiguration().store
-        or GlobalConfiguration().get_default_store()
-    )
+    store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
         BaseZenStore.create_store(
             store_config, skip_default_registrations=skip_default_registrations
@@ -705,10 +703,7 @@ def backup_database(
     from zenml.zen_stores.base_zen_store import BaseZenStore
     from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-    store_config = (
-        GlobalConfiguration().store
-        or GlobalConfiguration().get_default_store()
-    )
+    store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
         store = BaseZenStore.create_store(
             store_config, skip_default_registrations=True, skip_migrations=True
@@ -772,10 +767,7 @@ def restore_database(
     from zenml.zen_stores.base_zen_store import BaseZenStore
     from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-    store_config = (
-        GlobalConfiguration().store
-        or GlobalConfiguration().get_default_store()
-    )
+    store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
         store = BaseZenStore.create_store(
             store_config, skip_default_registrations=True, skip_migrations=True

@@ -20,14 +20,11 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.global_config import (
-    CONFIG_ENV_VAR_PREFIX,
     GlobalConfiguration,
 )
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
-    ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX,
-    ENV_ZENML_SECRETS_STORE_PREFIX,
     ENV_ZENML_STORE_PREFIX,
     PIPELINE_API_TOKEN_EXPIRES_MINUTES,
 )
