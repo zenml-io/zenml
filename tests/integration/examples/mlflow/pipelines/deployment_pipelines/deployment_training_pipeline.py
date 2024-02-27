@@ -23,7 +23,7 @@ from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 
 SERVICE_START_STOP_TIMEOUT = 120
 docker_settings = DockerSettings(
-    required_integrations=[MLFLOW, SKLEARN], requirements=["skimage"]
+    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
 )
 
 

@@ -21,7 +21,7 @@ from zenml.config import DockerSettings
 from zenml.integrations.constants import MLFLOW, SKLEARN
 
 docker_settings = DockerSettings(
-    required_integrations=[MLFLOW, SKLEARN], requirements=["skimage"]
+    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
 )
 
 

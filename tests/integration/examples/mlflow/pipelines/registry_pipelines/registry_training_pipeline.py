@@ -23,7 +23,7 @@ from zenml.integrations.mlflow.steps.mlflow_registry import (
 )
 
 docker_settings = DockerSettings(
-    required_integrations=[MLFLOW, SKLEARN], requirements=["skimage"]
+    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
 )
 
 
