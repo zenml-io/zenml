@@ -1437,15 +1437,15 @@ class SqlZenStore(BaseZenStore):
         # if ZENML_SERVER_BASE_URL is set as an environment variable, use it
         # as the base URL for the server
         base_url = os.environ.get("ZENML_SERVER_BASE_URL")
+        cloud_org_id = os.environ.get("ZENML_CLOUD_ORGANIZATION_ID")
+        cloud_tenant_id = os.environ.get("ZENML_CLOUD_TENANT_ID")
         
-        # if cloud org ID and tenant ID are set as environment variables, construct 
-        # the URL by appending the org ID and tenant ID to the base URL
         if base_url:
-            model.server_url = base_url
-            cloud_org_id = os.environ.get("ZENML_CLOUD_ORGANIZATION_ID")
-            cloud_tenant_id = os.environ.get("ZENML_CLOUD_TENANT_ID")
-            if cloud_org_id and cloud_tenant_id:
-                model.server_url = f"{model.url}/organizations/{cloud_org_id}/tenants/{cloud_tenant_id}"
+            model.base_url = base_url
+        if cloud_org_id:
+            model.cloud_org_id = cloud_org_id
+        if cloud_tenant_id:
+            model.cloud_tenant_id = cloud_tenant_id
 
         return model
 

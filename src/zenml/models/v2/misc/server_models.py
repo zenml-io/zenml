@@ -73,9 +73,17 @@ class ServerModel(BaseModel):
     auth_scheme: AuthScheme = Field(
         title="The authentication scheme that the server is using.",
     )
-    server_url: str = Field(
+    base_url: str = Field(
         "",
-        title="The URL of the server.",
+        title="The Base URL of the server.",
+    )
+    cloud_org_id: str = Field(
+        "",
+        title="The ZenML Cloud organization ID for the tenant.",
+    )
+    cloud_tenant_id: str = Field(
+        "",
+        title="The ZenML Cloud tenant ID for the server.",
     )
 
     def is_local(self) -> bool:
