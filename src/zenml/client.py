@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
-
+import functools
 import json
 import os
 from abc import ABCMeta
@@ -61,6 +61,8 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OAuthDeviceStatus,
+    PluginSubType,
+    PluginType,
     SecretScope,
     SorterOps,
     StackComponentType,
@@ -88,7 +90,7 @@ from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
-    BaseResponse,
+    BaseIdentifiedResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
     CodeRepositoryResponse,
@@ -97,6 +99,10 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    EventSourceFilter,
+    EventSourceRequest,
+    EventSourceResponse,
+    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -153,6 +159,12 @@ from zenml.models import (
     TagRequest,
     TagResponse,
     TagUpdate,
+    TriggerExecutionFilter,
+    TriggerExecutionResponse,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerResponse,
+    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -175,7 +187,8 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+T = TypeVar("T")
 
 
 class ClientConfiguration(FileSyncModel):
@@ -283,6 +296,29 @@ class ClientMetaClass(ABCMeta):
             )
 
         return cls._global_client
+
+
+def _fail_for_sql_zen_store(method: Callable[..., T]) -> Callable[..., T]:
+    """Decorator for all methods, that are disallowed when the client is not connected through REST API.
+
+    Args:
+        method: The method
+
+    Returns:
+        The decorated method.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self: "Client", *args: Any, **kwargs: Any) -> Any:
+        # No isinstance check to avoid importing ZenStore implementations
+        if self.zen_store.__class__.__name__ == "SqlZenStore":
+            raise TypeError(
+                "This method is not allowed when not connected "
+                "to a ZenML Server through the API interface."
+            )
+        return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 @evaluate_all_lazy_load_args_in_client_methods
@@ -2197,6 +2233,407 @@ class Client(metaclass=ClientMetaClass):
         """
         build = self.get_build(id_or_prefix=id_or_prefix)
         self.zen_store.delete_build(build_id=build.id)
+
+    # --------------------------------- Event Sources -------------------------
+
+    @_fail_for_sql_zen_store
+    def create_event_source(
+        self,
+        name: str,
+        configuration: Dict[str, Any],
+        description: str,
+        flavor: str,
+        event_source_subtype: PluginSubType,
+    ) -> EventSourceResponse:
+        """Registers a event_source.
+
+        Args:
+            name: The name of the event_source to create.
+            configuration: Configuration for this event source
+            description: The description of the event_source
+            flavor: The flavor of event source
+            event_source_subtype: str
+
+        Returns:
+            The model of the registered event source.
+        """
+        event_source = EventSourceRequest(
+            name=name,
+            configuration=configuration,
+            description=description,
+            flavor=flavor,
+            plugin_type=PluginType.EVENT_SOURCE,
+            plugin_subtype=event_source_subtype,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+        )
+
+        return self.zen_store.create_event_source(event_source=event_source)
+
+    @_fail_for_sql_zen_store
+    def get_event_source(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
+    ) -> EventSourceResponse:
+        """Get a event source by name, ID or prefix.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the stack.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The event_source.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_event_source,
+            list_method=self.list_event_sources,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+        )
+
+    def list_event_sources(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        flavor: Optional[str] = None,
+        event_source_type: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[EventSourceResponse]:
+        """Lists all event_sources.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of event_sources to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            name: The name of the event_source to filter by.
+            flavor: The flavor of the event_source to filter by.
+            event_source_type: The subtype of the event_source to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of event_sources.
+        """
+        event_source_filter_model = EventSourceFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            name=name,
+            flavor=flavor,
+            plugin_subtype=event_source_type,
+            id=id,
+            created=created,
+            updated=updated,
+        )
+        event_source_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_event_sources(
+            event_source_filter_model, hydrate=hydrate
+        )
+
+    @_fail_for_sql_zen_store
+    def update_event_source(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        rotate_secret: Optional[bool] = None,
+        is_active: Optional[bool] = None,
+    ) -> EventSourceResponse:
+        """Updates a event_source.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the event_source to update.
+            name: the new name of the event_source.
+            description: the new description of the event_source.
+            configuration: The event source configuration.
+            rotate_secret: Allows rotating of secret, if true, the response will
+                contain the new secret value
+            is_active: Optional[bool] = Allows for activation/deactivating the
+                event source
+
+        Returns:
+            The model of the updated event_source.
+
+        Raises:
+            EntityExistsError: If the event_source name is already taken.
+        """
+        # First, get the eve
+        event_source = self.get_event_source(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        # Create the update model
+        update_model = EventSourceUpdate(
+            name=name,
+            description=description,
+            configuration=configuration,
+            rotate_secret=rotate_secret,
+            is_active=is_active,
+        )
+
+        if name:
+            if self.list_event_sources(name=name):
+                raise EntityExistsError(
+                    "There are already existing event_sources with the name "
+                    f"'{name}'."
+                )
+
+        updated_event_source = self.zen_store.update_event_source(
+            event_source_id=event_source.id,
+            event_source_update=update_model,
+        )
+        return updated_event_source
+
+    @_fail_for_sql_zen_store
+    def delete_event_source(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Deletes an event_source.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the event_source
+                to deregister.
+        """
+        event_source = self.get_event_source(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        self.zen_store.delete_event_source(event_source_id=event_source.id)
+        logger.info("Deleted event_source with name '%s'.", event_source.name)
+
+    # --------------------------------- Triggers -------------------------
+
+    @_fail_for_sql_zen_store
+    def create_trigger(
+        self,
+        name: str,
+        description: str,
+        event_source_id: UUID,
+        event_filter: Dict[str, Any],
+        action: Dict[str, Any],
+        action_flavor: str,
+        action_subtype: PluginSubType,
+        service_account: Union[str, UUID],
+        auth_window: Optional[int] = None,
+    ) -> TriggerResponse:
+        """Registers a trigger.
+
+        Args:
+            name: The name of the trigger to create.
+            description: The description of the trigger
+            event_source_id: The id of the event source id
+            event_filter: The event filter
+            action: The action
+            action_flavor: The action flavor
+            action_subtype: The action subtype
+            service_account: The service account
+            auth_window: The auth window
+
+        Returns:
+            The model of the registered event source.
+        """
+        # Fetch the service account
+        service_account_model = self.get_service_account(
+            name_id_or_prefix=service_account, allow_name_prefix_match=False
+        )
+
+        trigger = TriggerRequest(
+            name=name,
+            description=description,
+            event_source_id=event_source_id,
+            event_filter=event_filter,
+            action=action,
+            action_flavor=action_flavor,
+            action_subtype=action_subtype,
+            service_account_id=service_account_model.id,
+            auth_window=auth_window,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+        )
+
+        return self.zen_store.create_trigger(trigger=trigger)
+
+    @_fail_for_sql_zen_store
+    def get_trigger(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        allow_name_prefix_match: bool = True,
+        hydrate: bool = True,
+    ) -> TriggerResponse:
+        """Get a event source by name, ID or prefix.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the stack.
+            allow_name_prefix_match: If True, allow matching by name prefix.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_trigger,
+            list_method=self.list_triggers,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+        )
+
+    @_fail_for_sql_zen_store
+    def list_triggers(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        event_source_id: Optional[UUID] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[TriggerResponse]:
+        """Lists all triggers.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of triggers to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            name: The name of the trigger to filter by.
+            event_source_id: The event source associated with the Trigger
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of triggers.
+        """
+        trigger_filter_model = TriggerFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            name=name,
+            event_source_id=event_source_id,
+            id=id,
+            created=created,
+            updated=updated,
+        )
+        trigger_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_triggers(
+            trigger_filter_model, hydrate=hydrate
+        )
+
+    @_fail_for_sql_zen_store
+    def update_trigger(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        event_filter: Optional[Dict[str, Any]] = None,
+        action: Optional[Dict[str, Any]] = None,
+        is_active: Optional[bool] = None,
+        service_account: Optional[Union[str, UUID]] = None,
+        auth_window: Optional[int] = None,
+    ) -> TriggerResponse:
+        """Updates a trigger.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the trigger to update.
+            name: the new name of the trigger.
+            description: the new description of the trigger.
+            event_filter: The event filter configuration.
+            action: The action configuration.
+            is_active: Optional[bool] = Allows for activation/deactivating the
+                event source
+            service_account: The service account
+            auth_window: The auth window
+
+        Returns:
+            The model of the updated trigger.
+
+        Raises:
+            EntityExistsError: If the trigger name is already taken.
+        """
+        # First, get the eve
+        trigger = self.get_trigger(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        # Create the update model
+        update_model = TriggerUpdate(
+            name=name,
+            description=description,
+            event_filter=event_filter,
+            action=action,
+            is_active=is_active,
+            auth_window=auth_window,
+        )
+        if service_account:
+            # Fetch the service account
+            service_account_model = self.get_service_account(
+                name_id_or_prefix=service_account,
+                allow_name_prefix_match=False,
+            )
+            update_model.service_account_id = service_account_model.id
+
+        if name:
+            if self.list_triggers(name=name):
+                raise EntityExistsError(
+                    "There are already is an existing trigger with the name "
+                    f"'{name}'."
+                )
+
+        updated_trigger = self.zen_store.update_trigger(
+            trigger_id=trigger.id,
+            trigger_update=update_model,
+        )
+        return updated_trigger
+
+    @_fail_for_sql_zen_store
+    def delete_trigger(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Deletes an trigger.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the trigger
+                to deregister.
+        """
+        trigger = self.get_trigger(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+
+        self.zen_store.delete_trigger(trigger_id=trigger.id)
+        logger.info("Deleted trigger with name '%s'.", trigger.name)
 
     # ------------------------------ Deployments -------------------------------
 
@@ -4745,6 +5182,7 @@ class Client(metaclass=ClientMetaClass):
         ethics: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
+        save_models_to_registry: Optional[bool] = None,
     ) -> ModelResponse:
         """Updates an existing model in Model Control Plane.
 
@@ -4760,6 +5198,8 @@ class Client(metaclass=ClientMetaClass):
             ethics: The ethical implications of the model.
             add_tags: Tags to add to the model.
             remove_tags: Tags to remove from to the model.
+            save_models_to_registry: Whether to save the model to the
+                registry.
 
         Returns:
             The updated model.
@@ -4779,6 +5219,7 @@ class Client(metaclass=ClientMetaClass):
                 ethics=ethics,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
+                save_models_to_registry=save_models_to_registry,
             ),
         )
 
@@ -5421,6 +5862,72 @@ class Client(metaclass=ClientMetaClass):
             allow_id_prefix_match=False,
         )
         self.zen_store.delete_authorized_device(device.id)
+
+    # --------------------------- Trigger Executions ---------------------------
+
+    def get_trigger_execution(
+        self,
+        trigger_execution_id: UUID,
+        hydrate: bool = True,
+    ) -> TriggerExecutionResponse:
+        """Get an trigger execution by ID.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger execution.
+        """
+        return self.zen_store.get_trigger_execution(
+            trigger_execution_id=trigger_execution_id, hydrate=hydrate
+        )
+
+    def list_trigger_executions(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        trigger_id: Optional[UUID] = None,
+        hydrate: bool = False,
+    ) -> Page[TriggerExecutionResponse]:
+        """List all trigger executions matching the given filter criteria.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            trigger_id: ID of the trigger to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all trigger executions matching the filter criteria.
+        """
+        filter_model = TriggerExecutionFilter(
+            trigger_id=trigger_id,
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+        )
+        filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_trigger_executions(
+            trigger_execution_filter_model=filter_model, hydrate=hydrate
+        )
+
+    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
+        """Delete a trigger execution.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to delete.
+        """
+        self.zen_store.delete_trigger_execution(
+            trigger_execution_id=trigger_execution_id
+        )
 
     # ---- utility prefix matching get functions -----
 

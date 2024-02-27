@@ -15,7 +15,7 @@
 
 
 import json
-from typing import TYPE_CHECKING, List, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -36,11 +36,6 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-        PipelineDeploymentSchema,
-    )
 
 
 class PipelineBuildSchema(BaseSchema, table=True):
@@ -90,10 +85,14 @@ class PipelineBuildSchema(BaseSchema, table=True):
         back_populates="builds"
     )
 
-    deployments: List["PipelineDeploymentSchema"] = Relationship(
-        back_populates="build",
+    template_deployment_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target="pipeline_deployment",
+        source_column="template_deployment_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
-
     images: str = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -133,14 +132,22 @@ class PipelineBuildSchema(BaseSchema, table=True):
             zenml_version=request.zenml_version,
             python_version=request.python_version,
             checksum=request.checksum,
+            template_deployment_id=request.template_deployment_id,
         )
 
-    def to_model(self, hydrate: bool = False) -> PipelineBuildResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> PipelineBuildResponse:
         """Convert a `PipelineBuildSchema` to a `PipelineBuildResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `PipelineBuildResponse`.
@@ -151,7 +158,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = PipelineBuildResponseMetadata(
                 workspace=self.workspace.to_model(),
                 pipeline=self.pipeline.to_model() if self.pipeline else None,
@@ -162,6 +169,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
                 checksum=self.checksum,
                 is_local=self.is_local,
                 contains_code=self.contains_code,
+                template_deployment_id=self.template_deployment_id,
             )
         return PipelineBuildResponse(
             id=self.id,

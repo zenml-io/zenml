@@ -26,6 +26,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.misc.build_item import BuildItem
 
@@ -163,6 +164,7 @@ class PipelineBuildRequest(PipelineBuildBase, WorkspaceScopedRequest):
     pipeline: Optional[UUID] = Field(
         title="The pipeline that was used for this build."
     )
+    template_deployment_id: Optional[UUID] = None
 
 
 # ------------------ Update Model ------------------
@@ -201,11 +203,18 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     contains_code: bool = Field(
         title="Whether any image of the build contains user code.",
     )
+    template_deployment_id: Optional[UUID] = None
+
+
+class PipelineBuildResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the pipeline build entity."""
 
 
 class PipelineBuildResponse(
     WorkspaceScopedResponse[
-        PipelineBuildResponseBody, PipelineBuildResponseMetadata
+        PipelineBuildResponseBody,
+        PipelineBuildResponseMetadata,
+        PipelineBuildResponseResources,
     ]
 ):
     """Response model for pipeline builds."""
@@ -416,6 +425,15 @@ class PipelineBuildResponse(
             the value of the property.
         """
         return self.get_metadata().contains_code
+
+    @property
+    def template_deployment_id(self) -> Optional[UUID]:
+        """The `template_deployment_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().template_deployment_id
 
 
 # ------------------ Filter Model ------------------

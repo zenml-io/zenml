@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing model versions."""
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
@@ -27,6 +26,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.tag import TagResponse
@@ -157,12 +157,6 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
     tags: List[TagResponse] = Field(
         title="Tags associated with the model version", default=[]
     )
-    created: datetime = Field(
-        title="The timestamp when this component was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this component was last updated.",
-    )
 
 
 class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -179,9 +173,15 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ModelVersionResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the model version entity."""
+
+
 class ModelVersionResponse(
     WorkspaceScopedResponse[
-        ModelVersionResponseBody, ModelVersionResponseMetadata
+        ModelVersionResponseBody,
+        ModelVersionResponseMetadata,
+        ModelVersionResponseResources,
     ]
 ):
     """Response model for model versions."""
@@ -254,24 +254,6 @@ class ModelVersionResponse(
             the value of the property.
         """
         return self.get_body().pipeline_run_ids
-
-    @property
-    def created(self) -> datetime:
-        """The `created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def tags(self) -> List[TagResponse]:
