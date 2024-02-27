@@ -115,7 +115,7 @@ azure-mgmt-resource = { version = ">=21.0.0", optional = true }
 s3fs = { version = ">2022.11.0", optional = true }
 
 # Optional dependencies for the GCS artifact store
-gcsfs = { version = "2022.11.0", optional = true }
+gcsfs = { version = ">=2022.11.0", optional = true }
 
 # Optional dependencies for the Azure artifact store
 adlfs = { version = ">=2021.10.0", optional = true }
