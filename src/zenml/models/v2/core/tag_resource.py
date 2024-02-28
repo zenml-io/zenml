@@ -17,10 +17,11 @@ from uuid import UUID
 
 from zenml.enums import TaggableResourceTypes
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 
 # ------------------ Request Model ------------------
@@ -41,7 +42,7 @@ class TagResourceRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
-class TagResourceResponseBody(BaseResponseBody):
+class TagResourceResponseBody(BaseDatedResponseBody):
     """Response body for the links between tags and resources."""
 
     tag_id: UUID
@@ -49,8 +50,16 @@ class TagResourceResponseBody(BaseResponseBody):
     resource_type: TaggableResourceTypes
 
 
+class TagResourceResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the tag resource entity."""
+
+
 class TagResourceResponse(
-    BaseResponse[TagResourceResponseBody, BaseResponseMetadata]
+    BaseIdentifiedResponse[
+        TagResourceResponseBody,
+        BaseResponseMetadata,
+        TagResourceResponseResources,
+    ]
 ):
     """Response model for the links between tags and resources."""
 

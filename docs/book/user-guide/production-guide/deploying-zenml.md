@@ -21,7 +21,7 @@ While there are many options on how to [deploy ZenML](../../deploying-zenml/), t
 ### Option 1: Sign up for a free ZenML Cloud Trial
 
 [ZenML Cloud](https://zenml.io/cloud) is a managed SaaS solution that offers a one-click deployment for your ZenML server.
-Click [here](https://cloud.zenml.io) to start a free trial.
+Click [here](https://cloud.zenml.io/?utm_source=docs&utm_medium=referral_link&utm_campaign=cloud_promotion&utm_content=signup_link) to start a free trial.
 
 On top of the one-click experience, ZenML Cloud also comes built-in with additional features and a new dashboard that might be beneficial to follow for this guide. You can always go back to self-hosting after your learning journey is complete.
 

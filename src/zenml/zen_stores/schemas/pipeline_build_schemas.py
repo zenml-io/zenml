@@ -15,7 +15,7 @@
 
 
 import json
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -135,12 +135,19 @@ class PipelineBuildSchema(BaseSchema, table=True):
             template_deployment_id=request.template_deployment_id,
         )
 
-    def to_model(self, hydrate: bool = False) -> PipelineBuildResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> PipelineBuildResponse:
         """Convert a `PipelineBuildSchema` to a `PipelineBuildResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `PipelineBuildResponse`.
@@ -151,7 +158,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = PipelineBuildResponseMetadata(
                 workspace=self.workspace.to_model(),
                 pipeline=self.pipeline.to_model() if self.pipeline else None,

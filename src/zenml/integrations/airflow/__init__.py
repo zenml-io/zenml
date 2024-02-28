@@ -30,7 +30,9 @@ class AirflowIntegration(Integration):
     """Definition of Airflow Integration for ZenML."""
 
     NAME = AIRFLOW
-    REQUIREMENTS = ["apache-airflow~=2.4.0"]
+    # remove pendulum version requirement once Airflow supports
+    # pendulum>-3.0.0
+    REQUIREMENTS = ["apache-airflow~=2.4.0", "pendulum<3.0.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

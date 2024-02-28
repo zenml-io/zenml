@@ -26,6 +26,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
+    DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     ENV_ZENML_SERVER_PREFIX,
 )
 from zenml.enums import AuthScheme
@@ -114,6 +115,9 @@ class ServerConfiguration(BaseModel):
             RBAC will not be enabled for this server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
+        pipeline_run_auth_window: The default time window in minutes for which
+            a pipeline run action is allowed to authenticate with the ZenML
+            server.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -149,6 +153,9 @@ class ServerConfiguration(BaseModel):
 
     rbac_implementation_source: Optional[str] = None
     workload_manager_implementation_source: Optional[str] = None
+    pipeline_run_auth_window: int = (
+        DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
+    )
 
     _deployment_id: Optional[UUID] = None
 

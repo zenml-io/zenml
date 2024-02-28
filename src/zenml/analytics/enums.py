@@ -37,6 +37,10 @@ class AnalyticsEvent(str, Enum):
     REGISTERED_STACK = "Stack registered"
     UPDATED_STACK = "Stack updated"
 
+    # Trigger
+    CREATED_TRIGGER = "Trigger created"
+    UPDATED_TRIGGER = "Trigger updated"
+
     # Model Control Plane
     MODEL_DEPLOYED = "Model deployed"
     CREATED_MODEL = "Model created"

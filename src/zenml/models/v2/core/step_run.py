@@ -28,6 +28,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:
@@ -215,8 +216,14 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class StepRunResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the step run entity."""
+
+
 class StepRunResponse(
-    WorkspaceScopedResponse[StepRunResponseBody, StepRunResponseMetadata]
+    WorkspaceScopedResponse[
+        StepRunResponseBody, StepRunResponseMetadata, StepRunResponseResources
+    ]
 ):
     """Response model for step runs."""
 
