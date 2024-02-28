@@ -26,10 +26,11 @@ from zenml.constants import (
     ZENML_API_KEY_PREFIX,
 )
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.models.v2.base.update import update_model
@@ -130,7 +131,7 @@ class APIKeyInternalUpdate(APIKeyUpdate):
 # ------------------ Response Model ------------------
 
 
-class APIKeyResponseBody(BaseResponseBody):
+class APIKeyResponseBody(BaseDatedResponseBody):
     """Response body for API keys."""
 
     key: Optional[str] = Field(
@@ -166,7 +167,15 @@ class APIKeyResponseMetadata(BaseResponseMetadata):
     )
 
 
-class APIKeyResponse(BaseResponse[APIKeyResponseBody, APIKeyResponseMetadata]):
+class APIKeyResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the APIKey entity."""
+
+
+class APIKeyResponse(
+    BaseIdentifiedResponse[
+        APIKeyResponseBody, APIKeyResponseMetadata, APIKeyResponseResources
+    ]
+):
     """Response model for API keys."""
 
     name: str = Field(

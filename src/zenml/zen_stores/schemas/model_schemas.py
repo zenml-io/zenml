@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import BOOLEAN, INTEGER, TEXT, Column
@@ -130,13 +130,17 @@ class ModelSchema(NamedSchema, table=True):
 
     def to_model(
         self,
-        hydrate: bool = False,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> ModelResponse:
         """Convert an `ModelSchema` to an `ModelResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `ModelResponse`.
@@ -153,7 +157,7 @@ class ModelSchema(NamedSchema, table=True):
             latest_version_id = None
 
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ModelResponseMetadata(
                 workspace=self.workspace.to_model(),
                 license=self.license,
@@ -295,13 +299,17 @@ class ModelVersionSchema(NamedSchema, table=True):
 
     def to_model(
         self,
-        hydrate: bool = False,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> ModelVersionResponse:
         """Convert an `ModelVersionSchema` to an `ModelVersionResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `ModelVersionResponse`.
@@ -339,12 +347,12 @@ class ModelVersionSchema(NamedSchema, table=True):
 
         metadata = None
 
-        if hydrate:
+        if include_metadata:
             metadata = ModelVersionResponseMetadata(
                 workspace=self.workspace.to_model(),
                 description=self.description,
                 run_metadata={
-                    rm.key: rm.to_model(hydrate=True)
+                    rm.key: rm.to_model(include_metadata=True)
                     for rm in self.run_metadata
                 },
             )
@@ -487,13 +495,17 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
 
     def to_model(
         self,
-        hydrate: bool = False,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> ModelVersionArtifactResponse:
         """Convert an `ModelVersionArtifactSchema` to an `ModelVersionArtifactResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `ModelVersionArtifactResponseModel`.
@@ -509,7 +521,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
                 is_model_artifact=self.is_model_artifact,
                 is_deployment_artifact=self.is_deployment_artifact,
             ),
-            metadata=BaseResponseMetadata() if hydrate else None,
+            metadata=BaseResponseMetadata() if include_metadata else None,
         )
 
 
@@ -597,13 +609,17 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
 
     def to_model(
         self,
-        hydrate: bool = False,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> ModelVersionPipelineRunResponse:
         """Convert an `ModelVersionPipelineRunSchema` to an `ModelVersionPipelineRunResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `ModelVersionPipelineRunResponse`.
@@ -617,5 +633,5 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
                 model_version=self.model_version_id,
                 pipeline_run=self.pipeline_run.to_model(),
             ),
-            metadata=BaseResponseMetadata() if hydrate else None,
+            metadata=BaseResponseMetadata() if include_metadata else None,
         )

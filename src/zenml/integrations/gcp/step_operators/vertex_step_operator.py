@@ -250,7 +250,14 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                             "boot_disk_size_gb": settings.boot_disk_size_gb,
                         },
                     }
-                ]
+                ],
+                "service_account": self.config.service_account,
+                "network": self.config.network,
+                "reserved_ip_ranges": (
+                    self.config.reserved_ip_ranges.split(",")
+                    if self.config.reserved_ip_ranges
+                    else []
+                ),
             },
             "labels": job_labels,
             "encryption_spec": {
