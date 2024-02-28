@@ -86,23 +86,33 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
         """
         # Search for legacy attributes and populate the connector configuration
         # from them, if they exist.
-        if (
-            values.get("aws_access_key_id")
-            and values.get("aws_secret_access_key")
-            and values.get("region_name")
-        ):
-            logger.warning(
-                "The `aws_access_key_id`, `aws_secret_access_key` and "
-                "`region_name` AWS secrets store attributes are deprecated and "
-                "will be removed in a future version of ZenML. Please use the "
-                "`auth_method` and `auth_config` attributes instead."
-            )
-            values["auth_method"] = AWSAuthenticationMethods.SECRET_KEY
-            values["auth_config"] = dict(
-                aws_access_key_id=values.get("aws_access_key_id"),
-                aws_secret_access_key=values.get("aws_secret_access_key"),
-                region=values.get("region_name"),
-            )
+        if values.get("region_name"):
+            if not values.get("aws_access_key_id") or not values.get(
+                "aws_secret_access_key"
+            ):
+                logger.warning(
+                    "The `region_name` AWS secrets store attribute is deprecated "
+                    "and will be removed in a future version of ZenML. Please use "
+                    "the `auth_method` and `auth_config` attributes instead. "
+                    "Using an implicit authentication method for AWS Secrets."
+                )
+                values["auth_method"] = AWSAuthenticationMethods.IMPLICIT
+                values["auth_config"] = dict(
+                    region=values.get("region_name"),
+                )
+            else:
+                logger.warning(
+                    "The `aws_access_key_id`, `aws_secret_access_key` and "
+                    "`region_name` AWS secrets store attributes are deprecated and "
+                    "will be removed in a future version of ZenML. Please use the "
+                    "`auth_method` and `auth_config` attributes instead."
+                )
+                values["auth_method"] = AWSAuthenticationMethods.SECRET_KEY
+                values["auth_config"] = dict(
+                    aws_access_key_id=values.get("aws_access_key_id"),
+                    aws_secret_access_key=values.get("aws_secret_access_key"),
+                    region=values.get("region_name"),
+                )
 
         return values
 
