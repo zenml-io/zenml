@@ -36,12 +36,14 @@ from zenml.zen_server.routers import (
     auth_endpoints,
     code_repositories_endpoints,
     devices_endpoints,
+    event_source_endpoints,
     flavors_endpoints,
     model_versions_endpoints,
     models_endpoints,
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
     pipelines_endpoints,
+    plugin_endpoints,
     run_metadata_endpoints,
     runs_endpoints,
     schedule_endpoints,
@@ -53,11 +55,15 @@ from zenml.zen_server.routers import (
     stacks_endpoints,
     steps_endpoints,
     tags_endpoints,
+    triggers_endpoints,
     users_endpoints,
+    webhook_endpoints,
     workspaces_endpoints,
 )
 from zenml.zen_server.utils import (
+    initialize_plugins,
     initialize_rbac,
+    initialize_workload_manager,
     initialize_zen_store,
     server_config,
 )
@@ -151,6 +157,8 @@ def initialize() -> None:
     # race conditions
     initialize_zen_store()
     initialize_rbac()
+    initialize_workload_manager()
+    initialize_plugins()
 
 
 app.mount(
@@ -200,13 +208,22 @@ def dashboard(request: Request) -> Any:
 # to run this file locally, execute:
 # uvicorn zenml.zen_server.zen_server_api:app --reload
 
-
+app.include_router(artifact_endpoint.artifact_router)
+app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
 app.include_router(devices_endpoints.router)
+app.include_router(code_repositories_endpoints.router)
+app.include_router(plugin_endpoints.plugin_router)
+app.include_router(event_source_endpoints.event_source_router)
+app.include_router(flavors_endpoints.router)
+app.include_router(models_endpoints.router)
+app.include_router(model_versions_endpoints.router)
+app.include_router(model_versions_endpoints.model_version_artifacts_router)
+app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(pipelines_endpoints.namespace_router)
-app.include_router(workspaces_endpoints.router)
-app.include_router(flavors_endpoints.router)
+app.include_router(pipeline_builds_endpoints.router)
+app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
 app.include_router(schedule_endpoints.router)
@@ -220,24 +237,17 @@ app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
-app.include_router(artifact_endpoint.artifact_router)
-app.include_router(artifact_version_endpoints.artifact_version_router)
+app.include_router(tags_endpoints.router)
+app.include_router(triggers_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
+app.include_router(webhook_endpoints.router)
+app.include_router(workspaces_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.
 if server_config().auth_scheme != AuthScheme.EXTERNAL:
     app.include_router(users_endpoints.activation_router)
-
-app.include_router(pipeline_builds_endpoints.router)
-app.include_router(pipeline_deployments_endpoints.router)
-app.include_router(code_repositories_endpoints.router)
-app.include_router(models_endpoints.router)
-app.include_router(model_versions_endpoints.router)
-app.include_router(model_versions_endpoints.model_version_artifacts_router)
-app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
-app.include_router(tags_endpoints.router)
 
 
 def get_root_static_files() -> List[str]:

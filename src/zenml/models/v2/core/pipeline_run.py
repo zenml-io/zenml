@@ -37,11 +37,13 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
+    from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.code_reference import CodeReferenceResponse
     from zenml.models.v2.core.pipeline import PipelineResponse
@@ -54,6 +56,7 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
+
 
 # ------------------ Request Model ------------------
 
@@ -101,6 +104,10 @@ class PipelineRunRequest(WorkspaceScopedRequest):
             "(OS, Python version, etc.)."
         ),
     )
+    trigger_execution_id: Optional[UUID] = Field(
+        default=None,
+        title="ID of the trigger execution that triggered this run.",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -136,6 +143,12 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     )
     code_reference: Optional["CodeReferenceResponse"] = Field(
         default=None, title="The code reference that was used for this run."
+    )
+    deployment_id: Optional[UUID] = Field(
+        default=None, title="The deployment that was used for this run."
+    )
+    trigger_execution: Optional["TriggerExecutionResponse"] = Field(
+        default=None, title="The trigger execution that triggered this run."
     )
 
 
@@ -181,9 +194,15 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class PipelineRunResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the pipeline run entity."""
+
+
 class PipelineRunResponse(
     WorkspaceScopedResponse[
-        PipelineRunResponseBody, PipelineRunResponseMetadata
+        PipelineRunResponseBody,
+        PipelineRunResponseMetadata,
+        PipelineRunResponseResources,
     ]
 ):
     """Response model for pipeline runs."""
@@ -277,6 +296,15 @@ class PipelineRunResponse(
         return self.get_body().schedule
 
     @property
+    def trigger_execution(self) -> Optional["TriggerExecutionResponse"]:
+        """The `trigger_execution` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().trigger_execution
+
+    @property
     def code_reference(self) -> Optional["CodeReferenceResponse"]:
         """The `schedule` property.
 
@@ -284,6 +312,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().code_reference
+
+    @property
+    def deployment_id(self) -> Optional["UUID"]:
+        """The `deployment_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().deployment_id
 
     @property
     def run_metadata(self) -> Dict[str, "RunMetadataResponse"]:

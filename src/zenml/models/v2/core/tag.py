@@ -21,10 +21,11 @@ from pydantic import BaseModel, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 from zenml.models.v2.base.filter import BaseFilter
 
@@ -57,7 +58,7 @@ class TagUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class TagResponseBody(BaseResponseBody):
+class TagResponseBody(BaseDatedResponseBody):
     """Response body for tags."""
 
     color: ColorVariants = Field(
@@ -69,7 +70,15 @@ class TagResponseBody(BaseResponseBody):
     )
 
 
-class TagResponse(BaseResponse[TagResponseBody, BaseResponseMetadata]):
+class TagResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the tag entity."""
+
+
+class TagResponse(
+    BaseIdentifiedResponse[
+        TagResponseBody, BaseResponseMetadata, TagResponseResources
+    ]
+):
     """Response model for tags."""
 
     name: str = Field(

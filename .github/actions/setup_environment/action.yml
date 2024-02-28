@@ -9,15 +9,12 @@ inputs:
     required: true
   python-version:
     description: Python version
-    type: string
     required: true
   os:
     description: OS
-    type: string
     required: true
   install_integrations:
     description: Install ZenML integrations
-    type: string
     required: false
     default: 'yes'
   runners_cache_access_key_id:

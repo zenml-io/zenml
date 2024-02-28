@@ -440,7 +440,7 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
         )
 
 
-def test_getting_a_pipeline(clean_client):
+def test_getting_a_pipeline(clean_client: "Client"):
     """Tests fetching of a pipeline."""
     # Non-existent ID
     with pytest.raises(KeyError):
@@ -476,6 +476,7 @@ def test_getting_a_pipeline(clean_client):
         clean_client.get_pipeline(name_id_or_prefix="pipeline", version="2")
 
     request.version = "2"
+    request.version_hash = "foo"
     response_2 = clean_client.zen_store.create_pipeline(request)
 
     # Gets latest version

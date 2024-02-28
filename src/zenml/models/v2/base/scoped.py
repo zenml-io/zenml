@@ -31,10 +31,11 @@ from pydantic import Field
 from sqlmodel import col
 
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
@@ -94,7 +95,7 @@ class WorkspaceScopedRequest(UserScopedRequest):
 
 
 # User-scoped models
-class UserScopedResponseBody(BaseResponseBody):
+class UserScopedResponseBody(BaseDatedResponseBody):
     """Base user-owned body."""
 
     user: Optional["UserResponse"] = Field(
@@ -106,12 +107,18 @@ class UserScopedResponseMetadata(BaseResponseMetadata):
     """Base user-owned metadata."""
 
 
+class UserScopedResponseResources(BaseResponseResources):
+    """Base class for all resource models associated with the user."""
+
+
 UserBody = TypeVar("UserBody", bound=UserScopedResponseBody)
 UserMetadata = TypeVar("UserMetadata", bound=UserScopedResponseMetadata)
+UserResources = TypeVar("UserResources", bound=UserScopedResponseResources)
 
 
 class UserScopedResponse(
-    BaseResponse[UserBody, UserMetadata], Generic[UserBody, UserMetadata]
+    BaseIdentifiedResponse[UserBody, UserMetadata, UserResources],
+    Generic[UserBody, UserMetadata, UserResources],
 ):
     """Base user-owned model.
 
@@ -202,15 +209,22 @@ class WorkspaceScopedResponseMetadata(UserScopedResponseMetadata):
     )
 
 
+class WorkspaceScopedResponseResources(UserScopedResponseResources):
+    """Base workspace-scoped resources."""
+
+
 WorkspaceBody = TypeVar("WorkspaceBody", bound=WorkspaceScopedResponseBody)
 WorkspaceMetadata = TypeVar(
     "WorkspaceMetadata", bound=WorkspaceScopedResponseMetadata
 )
+WorkspaceResources = TypeVar(
+    "WorkspaceResources", bound=WorkspaceScopedResponseResources
+)
 
 
 class WorkspaceScopedResponse(
-    UserScopedResponse[WorkspaceBody, WorkspaceMetadata],
-    Generic[WorkspaceBody, WorkspaceMetadata],
+    UserScopedResponse[WorkspaceBody, WorkspaceMetadata, WorkspaceResources],
+    Generic[WorkspaceBody, WorkspaceMetadata, WorkspaceResources],
 ):
     """Base workspace-scoped domain model.
 
