@@ -383,10 +383,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     def _config_file(self) -> str:
         """Path to the file where global configuration options are stored.
 
-        Args:
-            config_path: custom config file path. When not specified, the
-                default global configuration path is used.
-
         Returns:
             The path to the global configuration file.
         """
