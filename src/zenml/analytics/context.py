@@ -16,7 +16,6 @@
 This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
-import os
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
@@ -24,7 +23,6 @@ from uuid import UUID
 from zenml import __version__
 from zenml.analytics.client import default_client
 from zenml.constants import (
-    ENV_ZENML_ORGANIZATION_ID,
     ENV_ZENML_SERVER,
     handle_bool_env_var,
 )
@@ -60,7 +58,6 @@ class AnalyticsContext:
         self.executed_by_service_account: Optional[bool] = None
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
-        self.organization_id: Optional[UUID] = None
         self.external_server_id: Optional[UUID] = None
 
         self.database_type: Optional["ServerDatabaseType"] = None
@@ -95,12 +92,6 @@ class AnalyticsContext:
                         auth_context.user.is_service_account
                     )
                     self.external_user_id = auth_context.user.external_user_id
-                    try:
-                        self.organization_id = UUID(
-                            os.environ[ENV_ZENML_ORGANIZATION_ID]
-                        )
-                    except (KeyError, ValueError):
-                        pass
 
                 self.external_server_id = server_config().external_server_id
             else:
@@ -279,10 +270,6 @@ class AnalyticsContext:
 
         if self.external_server_id:
             properties["external_server_id"] = self.external_server_id
-
-        if self.organization_id:
-            properties["organization_id"] = str(self.organization_id)
-            properties["account_id"] = str(self.organization_id)
 
         for k, v in properties.items():
             if isinstance(v, UUID):
