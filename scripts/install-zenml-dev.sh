@@ -73,9 +73,6 @@ install_integrations() {
     rm integration-requirements.txt
     rm integration-requirements.in
     rm integration-requirements-compiled.txt
-
-    # install langchain separately
-    zenml integration install -y langchain
 }
 
 
@@ -94,7 +91,4 @@ install_zenml
 # install integrations, if requested
 if [ "$INTEGRATIONS" = yes ]; then
     install_integrations
-
-    # refresh the ZenML installation after installing integrations
-    install_zenml
 fi
