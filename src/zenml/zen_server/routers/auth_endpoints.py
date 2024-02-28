@@ -512,11 +512,12 @@ def api_token(
         resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
     )
 
-    if not token.device_id:
-        # If not authenticated with a device, the current API token is returned
-        # as is, without any modifications. Issuing workload tokens is only
-        # supported for device authenticated users, because device tokens can
-        # be revoked at any time.
+    if not token.device_id and not token.api_key_id:
+        # If not authenticated with a device or a service account, the current
+        # API token is returned as is, without any modifications. Issuing
+        # workload tokens is only supported for device authenticated users and
+        # service accounts, because device tokens can be revoked at any time and
+        # service accounts can be disabled.
         return auth_context.encoded_access_token
 
     # If authenticated with a device, a new API token is generated for the

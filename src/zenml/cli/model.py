@@ -42,6 +42,9 @@ def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
         "latest_version": model.latest_version_name,
         "description": model.description,
         "tags": [t.name for t in model.tags],
+        "save_to_registry": ":white_check_mark:"
+        if model.save_models_to_registry
+        else "",
         "use_cases": model.use_cases,
         "audience": model.audience,
         "limitations": model.limitations,
@@ -168,6 +171,14 @@ def list_models(**kwargs: Any) -> None:
     required=False,
     multiple=True,
 )
+@click.option(
+    "--save-models-to-registry",
+    "-s",
+    help="Whether to automatically save model artifacts to the model registry.",
+    type=click.BOOL,
+    required=False,
+    default=True,
+)
 def register_model(
     name: str,
     license: Optional[str],
@@ -178,6 +189,7 @@ def register_model(
     ethical: Optional[str],
     limitations: Optional[str],
     tag: Optional[List[str]],
+    save_models_to_registry: Optional[bool],
 ) -> None:
     """Register a new model in the Model Control Plane.
 
@@ -191,18 +203,25 @@ def register_model(
         ethical: The ethical implications of the model.
         limitations: The know limitations of the model.
         tag: Tags associated with the model.
+        save_models_to_registry: Whether to save the model to the
+            registry.
     """
     try:
         model = Client().create_model(
-            name=name,
-            license=license,
-            description=description,
-            audience=audience,
-            use_cases=use_cases,
-            trade_offs=tradeoffs,
-            ethics=ethical,
-            limitations=limitations,
-            tags=tag,
+            **remove_none_values(
+                dict(
+                    name=name,
+                    license=license,
+                    description=description,
+                    audience=audience,
+                    use_cases=use_cases,
+                    trade_offs=tradeoffs,
+                    ethics=ethical,
+                    limitations=limitations,
+                    tags=tag,
+                    save_models_to_registry=save_models_to_registry,
+                )
+            )
         )
     except (EntityExistsError, ValueError) as e:
         cli_utils.error(str(e))
@@ -282,6 +301,14 @@ def register_model(
     required=False,
     multiple=True,
 )
+@click.option(
+    "--save-models-to-registry",
+    "-s",
+    help="Whether to automatically save model artifacts to the model registry.",
+    type=click.BOOL,
+    required=False,
+    default=True,
+)
 def update_model(
     model_name_or_id: str,
     name: Optional[str],
@@ -294,6 +321,7 @@ def update_model(
     limitations: Optional[str],
     tag: Optional[List[str]],
     remove_tag: Optional[List[str]],
+    save_models_to_registry: Optional[bool],
 ) -> None:
     """Register a new model in the Model Control Plane.
 
@@ -309,6 +337,8 @@ def update_model(
         limitations: The know limitations of the model.
         tag: Tags to be added to the model.
         remove_tag: Tags to be removed from the model.
+        save_models_to_registry: Whether to save the model to the
+            registry.
     """
     model_id = Client().get_model(model_name_or_id=model_name_or_id).id
     update_dict = remove_none_values(
@@ -323,6 +353,7 @@ def update_model(
             limitations=limitations,
             add_tags=tag,
             remove_tags=remove_tag,
+            save_models_to_registry=save_models_to_registry,
         )
     )
     model = Client().update_model(model_name_or_id=model_id, **update_dict)

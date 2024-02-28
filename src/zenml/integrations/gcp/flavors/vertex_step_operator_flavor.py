@@ -71,6 +71,13 @@ class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydan
     Attributes:
         region: Region name, e.g., `europe-west1`.
         encryption_spec_key_name: Encryption spec key name.
+        network: The full name of the Compute Engine network to which the Job should be peered.
+            For example, projects/12345/global/networks/myVPC
+        reserved_ip_ranges: A list of names for the reserved ip ranges under the VPC network that can be used
+            for this job. If set, we will deploy the job within the provided ip ranges. Otherwise, the job
+            will be deployed to any ip ranges under the provided VPC network.
+        service_account: Specifies the service account for workload run-as account. Users submitting jobs
+            must have act-as permission on this run-as account.
     """
 
     region: str
@@ -78,6 +85,12 @@ class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydan
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
     encryption_spec_key_name: Optional[str] = None
+
+    network: Optional[str] = None
+
+    reserved_ip_ranges: Optional[str] = None
+
+    service_account: Optional[str] = None
 
     @property
     def is_remote(self) -> bool:

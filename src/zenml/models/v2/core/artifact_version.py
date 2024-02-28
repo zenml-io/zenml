@@ -36,6 +36,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
@@ -163,9 +164,15 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ArtifactVersionResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the artifact version entity."""
+
+
 class ArtifactVersionResponse(
     WorkspaceScopedResponse[
-        ArtifactVersionResponseBody, ArtifactVersionResponseMetadata
+        ArtifactVersionResponseBody,
+        ArtifactVersionResponseMetadata,
+        ArtifactVersionResponseResources,
     ]
 ):
     """Response model for artifact versions."""
@@ -332,6 +339,32 @@ class ArtifactVersionResponse(
         from zenml.artifacts.utils import load_artifact_from_response
 
         return load_artifact_from_response(self)
+
+    def download_files(self, path: str, overwrite: bool = False) -> None:
+        """Downloads data for an artifact with no materializing.
+
+        Any artifacts will be saved as a zip file to the given path.
+
+        Args:
+            path: The path to save the binary data to.
+            overwrite: Whether to overwrite the file if it already exists.
+
+        Raises:
+            ValueError: If the path does not end with '.zip'.
+        """
+        if not path.endswith(".zip"):
+            raise ValueError(
+                "The path should end with '.zip' to save the binary data."
+            )
+        from zenml.artifacts.utils import (
+            download_artifact_files_from_response,
+        )
+
+        download_artifact_files_from_response(
+            self,
+            path=path,
+            overwrite=overwrite,
+        )
 
     def read(self) -> Any:
         """(Deprecated) Materializes (loads) the data stored in this artifact.

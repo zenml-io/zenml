@@ -14,7 +14,7 @@
 """SQL Model Implementations for Pipeline Schedules."""
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 from sqlmodel import Field, Relationship
@@ -154,12 +154,19 @@ class ScheduleSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, hydrate: bool = False) -> ScheduleResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> ScheduleResponse:
         """Convert a `ScheduleSchema` to a `ScheduleResponseModel`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created `ScheduleResponseModel`.
@@ -181,7 +188,7 @@ class ScheduleSchema(NamedSchema, table=True):
             created=self.created,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ScheduleResponseMetadata(
                 workspace=self.workspace.to_model(),
                 pipeline_id=self.pipeline_id,

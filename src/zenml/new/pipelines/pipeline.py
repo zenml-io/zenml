@@ -15,7 +15,6 @@
 import copy
 import hashlib
 import inspect
-from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -53,7 +52,8 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
+from zenml.exceptions import EntityExistsError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
@@ -65,13 +65,15 @@ from zenml.models import (
     PipelineDeploymentResponse,
     PipelineRequest,
     PipelineResponse,
-    PipelineRunRequest,
     PipelineRunResponse,
     ScheduleRequest,
 )
 from zenml.new.pipelines import build_utils
-from zenml.new.pipelines.model_utils import NewModelRequest
-from zenml.orchestrators.utils import get_run_name
+from zenml.new.pipelines.run_utils import (
+    create_placeholder_run,
+    deploy_pipeline,
+    prepare_model_versions,
+)
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import (
@@ -173,7 +175,6 @@ class Pipeline:
         self._parameters: Dict[str, Any] = {}
 
         self.__suppress_warnings_flag__ = False
-        self.__new_unnamed_model_versions_in_current_run__: Dict[str, int] = {}
 
     @property
     def name(self) -> str:
@@ -599,9 +600,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 to any pipeline).
             prevent_build_reuse: Whether to prevent the reuse of a build.
 
-        Raises:
-            Exception: bypass any exception from pipeline up.
-
         Returns:
             Model of the pipeline run if running without a schedule, `None` if
             running with a schedule.
@@ -688,7 +686,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             stack = Client().active_stack
             stack.validate()
 
-            self.prepare_model_versions(deployment)
+            prepare_model_versions(deployment)
 
             local_repo_context = (
                 code_repository_utils.find_active_code_repository()
@@ -735,58 +733,18 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 deployment=deployment_request
             )
 
-            stack.prepare_pipeline_deployment(deployment=deployment_model)
-
             self.log_pipeline_deployment_metadata(deployment_model)
-
-            run = None
-            run_id = None
-            if not schedule:
-                run_request = PipelineRunRequest(
-                    name=get_run_name(
-                        run_name_template=deployment_model.run_name_template
-                    ),
-                    # We set the start time on the placeholder run already to
-                    # make it consistent with the {time} placeholder in the
-                    # run name. This means the placeholder run will usually
-                    # have longer durations than scheduled runs, as for them
-                    # the start_time is only set once the first step starts
-                    # running.
-                    start_time=datetime.utcnow(),
-                    orchestrator_run_id=None,
-                    user=Client().active_user.id,
-                    workspace=deployment_model.workspace.id,
-                    deployment=deployment_model.id,
-                    pipeline=deployment_model.pipeline.id
-                    if deployment_model.pipeline
-                    else None,
-                    status=ExecutionStatus.INITIALIZING,
-                )
-                run = Client().zen_store.create_run(run_request)
-                run_id = run.id
+            run = create_placeholder_run(deployment=deployment_model)
 
             analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=deployment_model, stack=stack, run_id=run_id
+                deployment=deployment_model,
+                stack=stack,
+                run_id=run.id if run else None,
             )
-            # Prevent execution of nested pipelines which might lead to
-            # unexpected behavior
-            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
-            try:
-                stack.deploy_pipeline(deployment=deployment_model)
-            except Exception as e:
-                if (
-                    run
-                    and Client().get_pipeline_run(run.id).status
-                    == ExecutionStatus.INITIALIZING
-                ):
-                    # The run hasn't actually started yet, which means that we
-                    # failed during initialization -> We don't want the
-                    # placeholder run to stay in the database
-                    Client().delete_pipeline_run(run.id)
 
-                raise e
-            finally:
-                constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+            deploy_pipeline(
+                deployment=deployment_model, stack=stack, placeholder_run=run
+            )
 
             if run:
                 run_url = dashboard_utils.get_run_url(run)
@@ -871,107 +829,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     )
         except Exception as e:
             logger.debug(f"Logging pipeline deployment metadata failed: {e}")
-
-    def _update_new_requesters(
-        self,
-        requester_name: str,
-        model: "Model",
-        new_versions_requested: Dict[
-            Tuple[str, Optional[str]], NewModelRequest
-        ],
-        other_models: Set["Model"],
-    ) -> None:
-        key = (
-            model.name,
-            str(model.version) if model.version else None,
-        )
-        if model.version is None:
-            version_existed = False
-        else:
-            try:
-                model._get_model_version()
-                version_existed = key not in new_versions_requested
-            except KeyError:
-                version_existed = False
-        if not version_existed:
-            model.was_created_in_this_run = True
-            new_versions_requested[key].update_request(
-                model,
-                NewModelRequest.Requester(source="step", name=requester_name),
-            )
-        else:
-            other_models.add(model)
-
-    def prepare_model_versions(
-        self, deployment: "PipelineDeploymentBase"
-    ) -> None:
-        """Create model versions which are missing and validate existing ones that are used in the pipeline run.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-        """
-        new_versions_requested: Dict[
-            Tuple[str, Optional[str]], NewModelRequest
-        ] = defaultdict(NewModelRequest)
-        other_models: Set["Model"] = set()
-        all_steps_have_own_config = True
-        for step in deployment.step_configurations.values():
-            step_model = step.config.model
-            all_steps_have_own_config = (
-                all_steps_have_own_config and step.config.model is not None
-            )
-            if step_model:
-                self._update_new_requesters(
-                    model=step_model,
-                    requester_name=step.config.name,
-                    new_versions_requested=new_versions_requested,
-                    other_models=other_models,
-                )
-        if not all_steps_have_own_config:
-            pipeline_model = deployment.pipeline_configuration.model
-            if pipeline_model:
-                self._update_new_requesters(
-                    model=pipeline_model,
-                    requester_name=self.name,
-                    new_versions_requested=new_versions_requested,
-                    other_models=other_models,
-                )
-        elif deployment.pipeline_configuration.model is not None:
-            logger.warning(
-                f"ModelConfig of pipeline `{self.name}` is overridden in all "
-                f"steps. "
-            )
-
-        self._validate_new_version_requests(new_versions_requested)
-
-        for other_model in other_models:
-            other_model._validate_config_in_runtime()
-
-    def _validate_new_version_requests(
-        self,
-        new_versions_requested: Dict[
-            Tuple[str, Optional[str]], NewModelRequest
-        ],
-    ) -> None:
-        """Validate the model version that are used in the pipeline run.
-
-        Args:
-            new_versions_requested: A dict of new model version request objects.
-
-        """
-        for key, data in new_versions_requested.items():
-            model_name, model_version = key
-            if len(data.requesters) > 1:
-                logger.warning(
-                    f"New version of model version `{model_name}::{model_version or 'NEW'}` "
-                    f"requested in multiple decorators:\n{data.requesters}\n We recommend "
-                    "that `Model` requesting new version is configured only in one "
-                    "place of the pipeline."
-                )
-            data.model._validate_config_in_runtime()
-            self.__new_unnamed_model_versions_in_current_run__[
-                data.model.name
-            ] = data.model.number
 
     def get_runs(self, **kwargs: Any) -> List["PipelineRunResponse"]:
         """(Deprecated) Get runs of this pipeline.
@@ -1174,46 +1031,57 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The registered pipeline model.
         """
+
+        def _get(version_hash: str) -> PipelineResponse:
+            client = Client()
+
+            matching_pipelines = client.list_pipelines(
+                name=self.name,
+                version_hash=version_hash,
+                size=1,
+                sort_by="desc:created",
+            )
+            if matching_pipelines.total:
+                registered_pipeline = matching_pipelines.items[0]
+                logger.info(
+                    "Reusing registered pipeline version: `(version: %s)`.",
+                    registered_pipeline.version,
+                )
+                return registered_pipeline
+            raise RuntimeError("No matching pipelines found.")
+
         version_hash = self._compute_unique_identifier(
             pipeline_spec=pipeline_spec
         )
 
         client = Client()
-        matching_pipelines = client.list_pipelines(
-            name=self.name,
-            version_hash=version_hash,
-            size=1,
-            sort_by="desc:created",
-        )
-        if matching_pipelines.total:
-            registered_pipeline = matching_pipelines.items[0]
-            logger.info(
-                "Reusing registered pipeline version: `(version: %s)`.",
-                registered_pipeline.version,
+        try:
+            return _get(version_hash)
+        except RuntimeError:
+            latest_version = self._get_latest_version() or 0
+            version = str(latest_version + 1)
+
+            request = PipelineRequest(
+                workspace=client.active_workspace.id,
+                user=client.active_user.id,
+                name=self.name,
+                version=version,
+                version_hash=version_hash,
+                spec=pipeline_spec,
+                docstring=self.__doc__,
             )
-            return registered_pipeline
 
-        latest_version = self._get_latest_version() or 0
-        version = str(latest_version + 1)
-
-        request = PipelineRequest(
-            workspace=client.active_workspace.id,
-            user=client.active_user.id,
-            name=self.name,
-            version=version,
-            version_hash=version_hash,
-            spec=pipeline_spec,
-            docstring=self.__doc__,
-        )
-
-        registered_pipeline = client.zen_store.create_pipeline(
-            pipeline=request
-        )
-        logger.info(
-            "Registered new version: `(version %s)`.",
-            registered_pipeline.version,
-        )
-        return registered_pipeline
+            try:
+                registered_pipeline = client.zen_store.create_pipeline(
+                    pipeline=request
+                )
+                logger.info(
+                    "Registered new version: `(version %s)`.",
+                    registered_pipeline.version,
+                )
+                return registered_pipeline
+            except EntityExistsError:
+                return _get(version_hash)
 
     def _compute_unique_identifier(self, pipeline_spec: PipelineSpec) -> str:
         """Computes a unique identifier from the pipeline spec and steps.

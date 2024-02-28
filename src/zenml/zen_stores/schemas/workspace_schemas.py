@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Workspaces."""
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, List
 
 from sqlmodel import Relationship
 
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionArtifactSchema,
@@ -46,6 +47,7 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
+        TriggerSchema,
     )
 
 
@@ -100,6 +102,15 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    triggers: List["TriggerSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    event_sources: List["EventSourceSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -161,18 +172,25 @@ class WorkspaceSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, hydrate: bool = False) -> WorkspaceResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> WorkspaceResponse:
         """Convert a `WorkspaceSchema` to a `WorkspaceResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The converted `WorkspaceResponseModel`.
         """
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = WorkspaceResponseMetadata(
                 description=self.description,
             )

@@ -100,6 +100,9 @@ jobs:
       - name: Run unit tests
         run: |
           bash scripts/test-coverage-xml.sh unit
+        env:
+          ZENML_ANALYTICS_OPT_IN: false
+          ZENML_DEBUG: true
 
       # - name: Upload coverage
       #  # only do it for python 3.8, we don't need to do it for every version
