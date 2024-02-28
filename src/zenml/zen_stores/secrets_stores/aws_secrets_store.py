@@ -91,8 +91,10 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
                 "aws_secret_access_key"
             ):
                 logger.warning(
-                    "The `aws_access_key_id` and `aws_secret_access_key` is not "
-                    "set. Using an implicit authentication method for AWS Secrets "
+                    "The `region_name` AWS secrets store attribute is deprecated "
+                    "and will be removed in a future version of ZenML. Please use "
+                    "the `auth_method` and `auth_config` attributes instead. "
+                    "Using an implicit authentication method for AWS Secrets."
                 )
                 values["auth_method"] = AWSAuthenticationMethods.IMPLICIT
                 values["auth_config"] = dict(

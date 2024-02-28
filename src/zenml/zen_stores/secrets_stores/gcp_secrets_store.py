@@ -94,8 +94,10 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
         if values.get("project_id"):
             if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
                 logger.warning(
-                    "The `GOOGLE_APPLICATION_CREDENTIALS` environment variable "
-                    "is not set. using an implicit GCP authentication to access "
+                    "The `project_id` GCP secrets store attribute is "
+                    "deprecated and will be removed in a future version of ZenML. "
+                    "Please use the `auth_method` and `auth_config` attributes "
+                    "instead. Using an implicit GCP authentication to access "
                     "the GCP Secrets Manager API."
                 )
                 values["auth_method"] = GCPAuthenticationMethods.IMPLICIT
