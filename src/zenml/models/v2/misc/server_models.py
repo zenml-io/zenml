@@ -77,10 +77,9 @@ class ServerModel(BaseModel):
         "",
         title="The Base URL of the server.",
     )
-    cloud_organization_id: str = Field(
-        "",
-        title="The organization ID in ZenML Cloud that this server "
-        "is running in.",
+    metadata: dict = Field(
+        {},
+        title="The metadata associated with the server.",
     )
 
     def is_local(self) -> bool:

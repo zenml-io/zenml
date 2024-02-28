@@ -375,7 +375,7 @@ class BaseZenStore(
         deployment_type = server_config.deployment_type
         auth_scheme = server_config.auth_scheme
         base_url = server_config.base_url
-        cloud_organization_id = server_config.cloud_organization_id
+        metadata = server_config.metadata
         secrets_store_type = SecretsStoreType.NONE
         if isinstance(self, SqlZenStore):
             secrets_store_type = self.secrets_store.type
@@ -388,7 +388,7 @@ class BaseZenStore(
             secrets_store_type=secrets_store_type,
             auth_scheme=auth_scheme,
             base_url=base_url,
-            cloud_organization_id=cloud_organization_id,
+            metadata=metadata, 
         )
 
     def is_local_store(self) -> bool:

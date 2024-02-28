@@ -107,9 +107,7 @@ class ServerConfiguration(BaseModel):
         external_server_id: The ID of the ZenML server to use with the
             `EXTERNAL` authentication scheme. If not specified, the regular
             ZenML server ID is used.
-        cloud_organization_id: The ID of the cloud organization that the ZenML
-            server is running in. If not specified, the server is not running
-            in a cloud organization.
+        metadata: Additional metadata to be associated with the ZenML server.
         rbac_implementation_source: Source pointing to a class implementing
             the RBAC interface defined by
             `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
@@ -146,7 +144,8 @@ class ServerConfiguration(BaseModel):
     external_user_info_url: Optional[str] = None
     external_cookie_name: Optional[str] = None
     external_server_id: Optional[UUID] = None
-    cloud_organization_id: Optional[str] = None
+
+    metadata: Optional[Dict[str, Any]] = None
 
     rbac_implementation_source: Optional[str] = None
     workload_manager_implementation_source: Optional[str] = None
