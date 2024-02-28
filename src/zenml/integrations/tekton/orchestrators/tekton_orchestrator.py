@@ -188,10 +188,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 f"--skip_local_validations=True'\n"
             )
 
-            if (
-                not self.config.skip_local_validations
-                and not self.config.is_local
-            ):
+            if not self.config.skip_local_validations and not self.config.is_local:
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
@@ -217,8 +214,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         f"otherwise you may run into pipeline execution "
                         f"problems. You should use a flavor of "
                         f"{stack_comp.type.value} other than "
-                        f"'{stack_comp.flavor}'.\n"
-                        + silence_local_validations_msg
+                        f"'{stack_comp.flavor}'.\n" + silence_local_validations_msg
                     )
 
                 # if the orchestrator is remote, the container registry must
@@ -342,12 +338,13 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             pipeline_task = pipeline_task.set_memory_limit(memory_limit)
 
     def _create_dynamic_component(
+        self,
         image: str,
         command: List[str],
         arguments: List[str],
         component_name: str,
     ) -> dsl.PipelineTask:
-        """Creates a dynamic component for a Tekton pipeline.
+        """Creates a dynamic container component for a Tekton pipeline.
 
         Args:
             image: The image to use for the component.
@@ -358,13 +355,15 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
         @dsl.container_component
         def dynamic_container_component():
-            dsl.ContainerSpec(
+            _component = dsl.ContainerSpec(
                 image=image,
                 command=command,
                 args=arguments,
             )
 
-        dynamic_container_component.__name__ = component_name
+            _component.__name__ = component_name
+            return _component
+
         return dynamic_container_component
 
     def prepare_or_run_pipeline(
@@ -415,11 +414,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     step_name=step_name,
                 )
                 command = StepEntrypointConfiguration.get_entrypoint_command()
-                arguments = (
-                    StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
-                        deployment_id=deployment.id,
-                    )
+                arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
+                    step_name=step_name,
+                    deployment_id=deployment.id,
                 )
 
                 dynamic_component = self._create_dynamic_component(
@@ -430,63 +427,66 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     TektonOrchestratorSettings, self.get_settings(step)
                 )
                 pod_settings = step_settings.pod_settings
-                if pod_settings.host_ipc:
-                    logger.warning(
-                        "Host IPC is set to `True` but not supported in "
-                        "this orchestrator. Ignoring..."
-                    )
-                if pod_settings.affinity:
-                    logger.warning(
-                        "Affinity is set but not supported in Tekton with "
-                        "Kubeflow Pipelines 2.x. Ignoring..."
-                    )
-                if pod_settings.tolerations:
-                    logger.warning(
-                        "Tolerations are set but not supported in Tekton with "
-                        "Kubeflow Pipelines 2.x. Ignoring..."
-                    )
-                if pod_settings.volumes:
-                    logger.warning(
-                        "Volumes are set but not supported in Tekton with "
-                        "Kubeflow Pipelines 2.x. Ignoring..."
-                    )
-                if pod_settings.volume_mounts:
-                    logger.warning(
-                        "Volume mounts are set but not supported in Tekton "
-                        "with Kubeflow Pipelines 2.x. Ignoring..."
-                    )
+                if pod_settings:
+                    if pod_settings.host_ipc:
+                        logger.warning(
+                            "Host IPC is set to `True` but not supported in "
+                            "this orchestrator. Ignoring..."
+                        )
+                    if pod_settings.affinity:
+                        logger.warning(
+                            "Affinity is set but not supported in Tekton with "
+                            "Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.tolerations:
+                        logger.warning(
+                            "Tolerations are set but not supported in "
+                            "Tekton with Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.volumes:
+                        logger.warning(
+                            "Volumes are set but not supported in Tekton with "
+                            "Kubeflow Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.volume_mounts:
+                        logger.warning(
+                            "Volume mounts are set but not supported in "
+                            "Tekton with Kubeflow Pipelines 2.x. Ignoring..."
+                        )
 
-                # apply pod settings
-                for key, value in pod_settings.node_selectors.items():
-                    dynamic_component.add_node_selector_constraint(
-                        label_name=key, value=value
-                    )
+                    # apply pod settings
+                    for key, value in pod_settings.node_selectors.items():
+                        dynamic_component.add_node_selector_constraint(
+                            label_name=key, value=value
+                        )
 
                 # add resource requirements
-                if step_settings.resource_settings.cpu_count is not None:
-                    dynamic_component = dynamic_component.set_cpu_limit(
-                        str(step_settings.resource_settings.cpu_count)
-                    )
+                if step_settings.resource_settings:
+                    if step_settings.resource_settings.cpu_count is not None:
+                        dynamic_component = dynamic_component.set_cpu_limit(
+                            str(step_settings.resource_settings.cpu_count)
+                        )
 
-                if step_settings.resource_settings.gpu_count is not None:
-                    dynamic_component = (
-                        dynamic_component.set_accelerator_limit(
+                    if step_settings.resource_settings.gpu_count is not None:
+                        dynamic_component = dynamic_component.set_accelerator_limit(
                             step_settings.resource_settings.gpu_count
                         )
-                    )
 
-                if step_settings.resource_settings.memory is not None:
-                    memory_limit = step_settings.resource_settings.memory[:-1]
-                    dynamic_component = dynamic_component.set_memory_limit(
-                        memory_limit
-                    )
+                    if step_settings.resource_settings.memory is not None:
+                        memory_limit = step_settings.resource_settings.memory[:-1]
+                        dynamic_component = dynamic_component.set_memory_limit(
+                            memory_limit
+                        )
 
+                # TODO: this must be set within a pipeline definition
+                # https://github.com/kubeflow/website/pull/3489/files
                 # set environment variables
-                for key, value in environment.items():
-                    dynamic_component.set_env_variable(
-                        name=key,
-                        value=value,
-                    )
+                # for key, value in environment.items():
+                #     breakpoint()
+                #     dynamic_component.set_env_variable(
+                #         name=key,
+                #         value=value,
+                #     )
 
                 step_name_to_dynamic_component[step_name] = dynamic_component
 
@@ -496,10 +496,12 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             def dynamic_pipeline():
                 # iterate through the components one by one
                 # (from step_name_to_dynamic_component)
-                for component in step_name_to_dynamic_component.values():
+                for (
+                    component_name,
+                    component,
+                ) in step_name_to_dynamic_component.items():
                     # for each component, check to see what other steps are
                     # upstream of it
-                    component_name = component.__name__
                     step = deployment.step_configurations[component_name]
                     upstream_step_names = [
                         step.name for step in step.spec.upstream_steps
@@ -513,7 +515,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     ).set_env_variable(
                         name=ENV_ZENML_TEKTON_RUN_ID,
                         value="$(context.pipelineRun.name)",
-                    ).after(*upstream_step_components)
+                    ).after(
+                        *upstream_step_components
+                    )
 
             return dynamic_pipeline
 
@@ -554,16 +558,15 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         )
 
         Compiler().compile(
-            pipeline_func=_create_dynamic_pipeline,
+            pipeline_func=_create_dynamic_pipeline(),
             package_path=pipeline_file_path,
             pipeline_name=orchestrator_run_name,
-            pipeline_parameters={
-                "pipelines.kubeflow.org/cache_enabled": "false"
-            },
+            # TODO: turn off caching
+            # pipeline_parameters={
+            #     "pipelines.kubeflow.org/cache_enabled": "false"
+            # },
         )
-        logger.info(
-            "Writing Tekton workflow definition to `%s`.", pipeline_file_path
-        )
+        logger.info("Writing Tekton workflow definition to `%s`.", pipeline_file_path)
 
         if deployment.schedule:
             logger.warning(
@@ -597,12 +600,14 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         custom_objects_api = k8s_client.CustomObjectsApi(self.kube_client)
 
         try:
+            # breakpoint()
             logger.debug("Creating Tekton resource ...")
             response = custom_objects_api.create_namespaced_custom_object(
-                group=tekton_resource["apiVersion"].split("/")[0],
-                version=tekton_resource["apiVersion"].split("/")[1],
+                group=tekton_resource["sdkVersion"].split("/")[0],
+                version=tekton_resource["sdkVersion"].split("/")[1],
                 namespace=self.config.kubernetes_namespace,
-                plural=tekton_resource["kind"].lower() + "s",
+                # plural=tekton_resource["kind"].lower() + "s",
+                plural="pipelines",
                 body=tekton_resource,
             )
             logger.debug("Tekton API response: %s", response)

@@ -40,6 +40,7 @@ class TektonOrchestratorSettings(BaseSettings):
     """
 
     pod_settings: Optional[KubernetesPodSettings] = None
+    resource_settings: Optional[Dict[str, Any]] = None
 
 
 class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
