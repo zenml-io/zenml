@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact visualization table."""
-
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -75,12 +75,20 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
             artifact_version_id=artifact_version_id,
         )
 
-    def to_model(self, hydrate: bool = False) -> ArtifactVisualizationResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> ArtifactVisualizationResponse:
         """Convert an `ArtifactVisualizationSchema` to a `Visualization`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+
 
         Returns:
             The `Visualization`.
@@ -93,7 +101,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         )
 
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = ArtifactVisualizationResponseMetadata(
                 artifact_version_id=self.artifact_version_id,
             )

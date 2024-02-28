@@ -20,10 +20,11 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import (
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
-    BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 
 # ------------------ Request Model ------------------
@@ -49,7 +50,7 @@ class LogsRequest(BaseRequest):
 # ------------------ Response Model ------------------
 
 
-class LogsResponseBody(BaseResponseBody):
+class LogsResponseBody(BaseDatedResponseBody):
     """Response body for logs."""
 
     uri: str = Field(
@@ -77,7 +78,15 @@ class LogsResponseMetadata(BaseResponseMetadata):
     )
 
 
-class LogsResponse(BaseResponse[LogsResponseBody, LogsResponseMetadata]):
+class LogsResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the Logs entity."""
+
+
+class LogsResponse(
+    BaseIdentifiedResponse[
+        LogsResponseBody, LogsResponseMetadata, LogsResponseResources
+    ]
+):
     """Response model for logs."""
 
     def get_hydrated_version(self) -> "LogsResponse":

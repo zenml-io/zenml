@@ -161,22 +161,19 @@ def log_model_metadata(
         ValueError: If no model name/version is provided and the function is not
             called inside a step with configured `model` in decorator.
     """
-    mv = None
-    try:
-        step_context = get_step_context()
-        mv = step_context.model
-    except RuntimeError:
-        step_context = None
-
-    if not step_context and not (model_name and model_version):
-        raise ValueError(
-            "Model name and version must be provided unless the function is "
-            "called inside a step with configured `model` in decorator."
-        )
-    if mv is None:
+    if model_name and model_version:
         from zenml import Model
 
         mv = Model(name=model_name, version=model_version)
+    else:
+        try:
+            step_context = get_step_context()
+        except RuntimeError:
+            raise ValueError(
+                "Model name and version must be provided unless the function is "
+                "called inside a step with configured `model` in decorator."
+            )
+        mv = step_context.model
 
     mv.log_metadata(metadata)
 

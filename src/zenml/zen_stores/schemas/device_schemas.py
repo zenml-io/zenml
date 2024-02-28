@@ -15,7 +15,7 @@
 
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 from uuid import UUID
 
 from passlib.context import CryptContext
@@ -197,18 +197,25 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         self.updated = now
         return self, user_code, device_code
 
-    def to_model(self, hydrate: bool = False) -> OAuthDeviceResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> OAuthDeviceResponse:
         """Convert a device schema to a device response model.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The converted device response model.
         """
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = OAuthDeviceResponseMetadata(
                 python_version=self.python_version,
                 zenml_version=self.zenml_version,
@@ -249,7 +256,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         Returns:
             The converted internal device response model.
         """
-        device_model = self.to_model(hydrate=hydrate)
+        device_model = self.to_model(include_metadata=hydrate)
         return OAuthDeviceInternalResponse(
             id=device_model.id,
             body=device_model.body,

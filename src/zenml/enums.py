@@ -359,3 +359,19 @@ class DatabaseBackupStrategy(StrEnum):
     DUMP_FILE = "dump-file"
     # Create a backup of the database in the remote database service
     DATABASE = "database"
+
+
+class PluginType(StrEnum):
+    """All possible types of Plugins."""
+
+    EVENT_SOURCE = "event_source"
+    ACTION = "action"
+
+
+class PluginSubType(StrEnum):
+    """All possible types of Plugins."""
+
+    # Event Source Subtypes
+    WEBHOOK = "webhook"
+    # Action Subtypes
+    PIPELINE_RUN = "pipeline_run"

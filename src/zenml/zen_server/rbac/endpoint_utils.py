@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseFilter,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
     Page,
     UserScopedRequest,
 )
@@ -23,7 +23,7 @@ from zenml.zen_server.rbac.utils import (
 )
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 AnyFilter = TypeVar("AnyFilter", bound=BaseFilter)
 AnyUpdate = TypeVar("AnyUpdate", bound=BaseModel)
 UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])

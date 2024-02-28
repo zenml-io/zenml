@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -95,12 +95,19 @@ class CodeRepositorySchema(NamedSchema, table=True):
             logo_url=request.logo_url,
         )
 
-    def to_model(self, hydrate: bool = False) -> "CodeRepositoryResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "CodeRepositoryResponse":
         """Convert a `CodeRepositorySchema` to a `CodeRepositoryResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created CodeRepositoryResponse.
@@ -113,7 +120,7 @@ class CodeRepositorySchema(NamedSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = CodeRepositoryResponseMetadata(
                 workspace=self.workspace.to_model(),
                 config=json.loads(self.config),
@@ -196,12 +203,20 @@ class CodeReferenceSchema(BaseSchema, table=True):
             code_repository_id=request.code_repository,
         )
 
-    def to_model(self, hydrate: bool = False) -> "CodeReferenceResponse":
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> "CodeReferenceResponse":
         """Convert a `CodeReferenceSchema` to a `CodeReferenceResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
+            kwargs: Additional keyword arguments.
 
         Returns:
             The converted model.
@@ -214,7 +229,7 @@ class CodeReferenceSchema(BaseSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = CodeReferenceResponseMetadata()
 
         return CodeReferenceResponse(
