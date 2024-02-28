@@ -14,6 +14,7 @@
 import numpy as np  # type: ignore [import]
 import pandas as pd  # type: ignore [import]
 import requests  # type: ignore [import]
+from skimage.transform import resize
 from typing_extensions import Annotated
 
 from zenml import step
@@ -27,7 +28,17 @@ def get_data_from_api():
 
     df = pd.DataFrame(requests.get(url, timeout=31).json())
     data = df["image"].map(lambda x: np.array(x)).values
-    data = np.array([x.reshape(28, 28) for x in data])
+    data = np.array(
+        [
+            resize(
+                x.reshape(28, 28).astype("uint8"),
+                (8, 8),
+                anti_aliasing=False,
+                preserve_range=True,
+            )
+            for x in data
+        ]
+    )
     return data
 
 
