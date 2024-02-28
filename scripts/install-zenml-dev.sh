@@ -27,8 +27,12 @@ install_zenml() {
     touch zenml_requirements.txt
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> zenml_requirements.txt
 
-    pip install -r zenml_requirements.txt
+    cp zenml_requirements.txt zenml_requirements.in
+    uv pip compile zenml_requirements.in -o zenml_requirements-compiled.txt
+
+    pip install -r zenml_requirements-compiled.txt
     rm zenml_requirements.txt
+    rm zenml_requirements.in
 }
 
 install_integrations() {
