@@ -18,21 +18,21 @@ from pipelines.tracking_pipeline.tracking_pipeline import (
 
 from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.integrations.constants import MLFLOW, TENSORFLOW
+from zenml.integrations.constants import MLFLOW, SKLEARN
 from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 
 SERVICE_START_STOP_TIMEOUT = 120
-docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
+docker_settings = DockerSettings(
+    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
+)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
 def mlflow_train_deploy_pipeline(
-    epochs: int = 1,
-    lr: float = 0.001,
     workers: int = 1,
     timeout: int = SERVICE_START_STOP_TIMEOUT,
 ):
-    model = mlflow_tracking_pipeline(epochs=epochs, lr=lr)
+    model = mlflow_tracking_pipeline()
     mlflow_model_deployer_step(
         model=model,
         workers=workers,

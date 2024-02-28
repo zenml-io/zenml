@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import sys
 
 import pytest
 
@@ -23,66 +22,59 @@ from zenml.enums import ExecutionStatus
 
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the mlflow_deployment example."""
+    with run_example(
+        request=request,
+        name="mlflow",
+        example_args=["--type", "deployment"],
+        pipelines={
+            "mlflow_train_deploy_pipeline": (1, 5),
+            "mlflow_deployment_inference_pipeline": (1, 4),
+        },
+    ):
+        import mlflow
+        from mlflow.tracking import MlflowClient
 
-    # TODO: remove this temporary disabling of the test for Python 3.9
-    # and 3.10 once the MLflow issue is resolved
-    if sys.platform != "darwin" and sys.version_info[:2] not in [
-        (3, 9),
-        (3, 10),
-    ]:
-        with run_example(
-            request=request,
-            name="mlflow",
-            example_args=["--type", "deployment"],
-            pipelines={
-                "mlflow_train_deploy_pipeline": (1, 5),
-                "mlflow_deployment_inference_pipeline": (1, 4),
-            },
-        ):
-            import mlflow
-            from mlflow.tracking import MlflowClient
+        from zenml.integrations.mlflow.experiment_trackers import (
+            MLFlowExperimentTracker,
+        )
+        from zenml.integrations.mlflow.services import (
+            MLFlowDeploymentService,
+        )
 
-            from zenml.integrations.mlflow.experiment_trackers import (
-                MLFlowExperimentTracker,
-            )
-            from zenml.integrations.mlflow.services import (
-                MLFlowDeploymentService,
-            )
+        deployment_run = (
+            Client().get_pipeline("mlflow_train_deploy_pipeline").last_run
+        )
+        assert deployment_run.status == ExecutionStatus.COMPLETED
 
-            deployment_run = (
-                Client().get_pipeline("mlflow_train_deploy_pipeline").last_run
-            )
-            assert deployment_run.status == ExecutionStatus.COMPLETED
+        experiment_tracker = Client().active_stack.experiment_tracker
+        assert isinstance(experiment_tracker, MLFlowExperimentTracker)
+        experiment_tracker.configure_mlflow()
 
-            experiment_tracker = Client().active_stack.experiment_tracker
-            assert isinstance(experiment_tracker, MLFlowExperimentTracker)
-            experiment_tracker.configure_mlflow()
+        # fetch the MLflow experiment created for the deployment run
+        mlflow_experiment = mlflow.get_experiment_by_name(
+            "mlflow_train_deploy_pipeline"
+        )
 
-            # fetch the MLflow experiment created for the deployment run
-            mlflow_experiment = mlflow.get_experiment_by_name(
-                "mlflow_train_deploy_pipeline"
-            )
+        assert mlflow_experiment is not None
 
-            assert mlflow_experiment is not None
+        # fetch the MLflow run created for the deployment run
+        mlflow_runs = mlflow.search_runs(
+            experiment_ids=[mlflow_experiment.experiment_id],
+            filter_string=f'tags.mlflow.runName = "{deployment_run.name}"',
+            output_format="list",
+        )
+        assert len(mlflow_runs) == 1
+        mlflow_run = mlflow_runs[0]
 
-            # fetch the MLflow run created for the deployment run
-            mlflow_runs = mlflow.search_runs(
-                experiment_ids=[mlflow_experiment.experiment_id],
-                filter_string=f'tags.mlflow.runName = "{deployment_run.name}"',
-                output_format="list",
-            )
-            assert len(mlflow_runs) == 1
-            mlflow_run = mlflow_runs[0]
+        client = MlflowClient()
+        # fetch the MLflow artifacts logged during the first pipeline run
+        artifacts = client.list_artifacts(mlflow_run.info.run_id)
+        assert len(artifacts) == 3
 
-            client = MlflowClient()
-            # fetch the MLflow artifacts logged during the first pipeline run
-            artifacts = client.list_artifacts(mlflow_run.info.run_id)
-            assert len(artifacts) == 3
+        service = deployment_run.steps[
+            "mlflow_model_deployer_step"
+        ].output.load()
+        assert isinstance(service, MLFlowDeploymentService)
 
-            service = deployment_run.steps[
-                "mlflow_model_deployer_step"
-            ].output.load()
-            assert isinstance(service, MLFlowDeploymentService)
-
-            if service.is_running:
-                service.stop(timeout=180)
+        if service.is_running:
+            service.stop(timeout=180)
