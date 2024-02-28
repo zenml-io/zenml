@@ -87,7 +87,7 @@ export ZENML_ANALYTICS_OPT_IN=false
 
 parse_args "$@"
 
-python -m pip install --upgrade pip setuptools wheel
+python -m pip install --upgrade pip setuptools wheel uv
 
 install_zenml
 
