@@ -119,26 +119,6 @@ class LocalZenServer(LocalDaemonService):
         """
         return os.path.join(self.config_path(), ".zenconfig")
 
-    def _copy_global_configuration(self) -> None:
-        """Copy the global configuration to the local ZenML server location.
-
-        The local ZenML server global configuration is a copy of the local
-        global configuration. If a store configuration is explicitly set in
-        the server configuration, it will be used. Otherwise, the store
-        configuration is set to point to the local store.
-        """
-        gc = GlobalConfiguration()
-
-        # this creates a copy of the global configuration and saves it to
-        # the server configuration path. The store is set to point to the local
-        # default database unless a custom store configuration is explicitly
-        # supplied with the server configuration.
-        gc.copy_configuration(
-            config_path=self._global_config_path,
-            store_config=self.config.server.store,
-            empty_store=self.config.server.store is None,
-        )
-
     @classmethod
     def get_service(cls) -> Optional["LocalZenServer"]:
         """Load and return the local ZenML server service, if present.
@@ -173,8 +153,8 @@ class LocalZenServer(LocalDaemonService):
         env[ENV_ZENML_CONFIG_PATH] = self._global_config_path
         env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.LOCAL
         # Set the local stores path to the same path used by the client. This
-        # ensures that the server's store configuration is initialized with
-        # the same path as the client.
+        # ensures that the server's default store configuration is initialized
+        # to point at the same local SQLite database as the client.
         env[
             ENV_ZENML_LOCAL_STORES_PATH
         ] = GlobalConfiguration().local_stores_path
@@ -184,7 +164,6 @@ class LocalZenServer(LocalDaemonService):
 
     def provision(self) -> None:
         """Provision the service."""
-        self._copy_global_configuration()
         super().provision()
 
     def start(self, timeout: int = 0) -> None:
@@ -198,18 +177,27 @@ class LocalZenServer(LocalDaemonService):
         if not self.config.blocking:
             super().start(timeout)
         else:
-            self._copy_global_configuration()
+            # In the blocking mode, we need to temporarily set the environment
+            # variables for the running process to make it look like the server
+            # is running in a separate environment (i.e. using a different
+            # global configuration path). This is necessary to avoid polluting
+            # the client environment with the server's configuration.
             local_stores_path = GlobalConfiguration().local_stores_path
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
-            config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
+            original_config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
             os.environ[ENV_ZENML_CONFIG_PATH] = self._global_config_path
+            # Set the local stores path to the same path used by the client.
+            # This ensures that the server's default store configuration is
+            # initialized to point at the same local SQLite database as the
+            # client.
             os.environ[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
             try:
                 self.run()
             finally:
-                if config_path:
-                    os.environ[ENV_ZENML_CONFIG_PATH] = config_path
+                # Restore the original client environment variables
+                if original_config_path:
+                    os.environ[ENV_ZENML_CONFIG_PATH] = original_config_path
                 else:
                     del os.environ[ENV_ZENML_CONFIG_PATH]
                 del os.environ[ENV_ZENML_LOCAL_STORES_PATH]
@@ -226,7 +214,7 @@ class LocalZenServer(LocalDaemonService):
         import uvicorn
 
         gc = GlobalConfiguration()
-        if gc.store and gc.store.type == StoreType.REST:
+        if gc.store_configuration.type == StoreType.REST:
             raise ValueError(
                 "The ZenML server cannot be started with REST store type."
             )
