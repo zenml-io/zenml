@@ -6732,7 +6732,7 @@ class SqlZenStore(BaseZenStore):
                 stack = pipeline_run.deployment.stack
                 assert stack
                 stack_metadata = {
-                    component.type.value: component.flavor
+                    str(component.type): component.flavor
                     for component in stack.components
                 }
                 with track_handler(
