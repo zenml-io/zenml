@@ -38,8 +38,6 @@ class MlflowIntegration(Integration):
         "mlflow>=2.1.1,<=2.10.2",
         "mlserver>=1.3.3",
         "mlserver-mlflow>=1.3.3",
-        # TODO: remove this requirement once rapidjson is fixed
-        "python-rapidjson<1.15",
     ]
 
     @classmethod
