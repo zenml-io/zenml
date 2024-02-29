@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import pytest
+from kfp.compiler import Compiler
 
 from zenml.config.resource_settings import ResourceSettings
 from zenml.enums import StackComponentType
@@ -189,7 +190,6 @@ def test_vertex_orchestrator_configure_container_resources(
 ) -> None:
     """Tests that the vertex orchestrator sets the correct container resources for a step."""
     import kfp
-    from kfp.v2.compiler import Compiler as KFPV2Compiler
 
     accelerator = "NVIDIA_TESLA_K80"
     orchestrator = _get_vertex_orchestrator(
@@ -220,9 +220,9 @@ def test_vertex_orchestrator_configure_container_resources(
             node_selector_constraint=orchestrator.config.node_selector_constraint,
         )
 
-    package_path = "unit_test_pipeline.json"
+    package_path = "unit_test_pipeline.yaml"
 
-    KFPV2Compiler().compile(
+    Compiler().compile(
         pipeline_func=_build_kfp_pipeline,
         package_path=package_path,
         pipeline_name="unit-test",

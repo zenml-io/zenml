@@ -16,18 +16,17 @@
 
 from typing import TYPE_CHECKING
 
-from zenml.integrations.kubernetes import serialization_utils
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from kfp.dsl import ContainerOp
+    from kfp.dsl import PipelineTask
 
 
 def apply_pod_settings(
-    container_op: "ContainerOp",
+    pipeline_task: "PipelineTask",
     settings: KubernetesPodSettings,
 ) -> None:
     """Applies Kubernetes Pod settings to a KFP container.
@@ -36,12 +35,6 @@ def apply_pod_settings(
         container_op: The container to which to apply the settings.
         settings: The settings to apply.
     """
-    from kubernetes.client.models import (
-        V1Affinity,
-        V1Toleration,
-        V1Volume,
-        V1VolumeMount,
-    )
 
     if settings.host_ipc:
         logger.warning(
@@ -50,47 +43,44 @@ def apply_pod_settings(
         )
 
     for key, value in settings.node_selectors.items():
-        container_op.add_node_selector_constraint(label_name=key, value=value)
+        pipeline_task.add_node_selector_constraint(label_name=key, value=value)
 
-    if settings.affinity:
-        affinity: (
-            V1Affinity
-        ) = serialization_utils.deserialize_kubernetes_model(
-            settings.affinity, "V1Affinity"
-        )
-        container_op.add_affinity(affinity)
+    # TODO: add these back in
+    # https://github.com/kubeflow/pipelines/issues/9682
 
-    for toleration_dict in settings.tolerations:
-        toleration: (
-            V1Toleration
-        ) = serialization_utils.deserialize_kubernetes_model(
-            toleration_dict, "V1Toleration"
-        )
-        container_op.add_toleration(toleration)
+    # if settings.affinity:
+    #     affinity: V1Affinity = serialization_utils.deserialize_kubernetes_model(
+    #         settings.affinity, "V1Affinity"
+    #     )
+    #     pipeline_task.add_affinity(affinity)
 
-    if settings.volumes:
-        for v in settings.volumes:
-            volume: (
-                V1Volume
-            ) = serialization_utils.deserialize_kubernetes_model(v, "V1Volume")
-            container_op.add_volume(volume)
+    # for toleration_dict in settings.tolerations:
+    #     toleration: V1Toleration = serialization_utils.deserialize_kubernetes_model(
+    #         toleration_dict, "V1Toleration"
+    #     )
+    #     pipeline_task.add_toleration(toleration)
 
-    if settings.volume_mounts:
-        for v in settings.volume_mounts:
-            volume_mount: (
-                V1VolumeMount
-            ) = serialization_utils.deserialize_kubernetes_model(
-                v, "V1VolumeMount"
-            )
-            container_op.container.add_volume_mount(volume_mount)
+    # if settings.volumes:
+    #     for v in settings.volumes:
+    #         volume: V1Volume = serialization_utils.deserialize_kubernetes_model(
+    #             v, "V1Volume"
+    #         )
+    #         pipeline_task.add_volume(volume)
 
-    resource_requests = settings.resources.get("requests") or {}
-    for name, value in resource_requests.items():
-        container_op.add_resource_request(name, value)
+    # if settings.volume_mounts:
+    #     for v in settings.volume_mounts:
+    #         volume_mount: V1VolumeMount = (
+    #             serialization_utils.deserialize_kubernetes_model(v, "V1VolumeMount")
+    #         )
+    #         pipeline_task.container.add_volume_mount(volume_mount)
 
-    resource_limits = settings.resources.get("limits") or {}
-    for name, value in resource_limits.items():
-        container_op.add_resource_limit(name, value)
+    # resource_requests = settings.resources.get("requests") or {}
+    # for name, value in resource_requests.items():
+    #     pipeline_task.add_resource_request(name, value)
 
-    for name, value in settings.annotations.items():
-        container_op.add_pod_annotation(name, value)
+    # resource_limits = settings.resources.get("limits") or {}
+    # for name, value in resource_limits.items():
+    #     pipeline_task.add_resource_limit(name, value)
+
+    # for name, value in settings.annotations.items():
+    #     pipeline_task.add_pod_annotation(name, value)

@@ -35,14 +35,14 @@ def _get_kubeflow_orchestrator(
     """Helper function to get a Kubeflow orchestrator."""
 
     from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
-        KubeflowOrchestratorConfig,
+        Kubeflow2OrchestratorConfig,
     )
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
     return KubeflowOrchestrator(
         name="",
         id=uuid4(),
-        config=KubeflowOrchestratorConfig(
+        config=Kubeflow2OrchestratorConfig(
             kubernetes_context=K8S_CONTEXT,
             local=local,
             skip_local_validations=skip_local_validations,

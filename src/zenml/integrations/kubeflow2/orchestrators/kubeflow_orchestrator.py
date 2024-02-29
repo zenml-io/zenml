@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC. All Rights Reserved.
+# Copyright 2024 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
 
 # Minor parts of the `prepare_or_run_pipeline()` method of this file are
 # inspired by the kubeflow dag runner implementation of tfx
-"""Implementation of the Kubeflow orchestrator."""
+"""Implementation of the Kubeflow 2 orchestrator."""
 import os
 import sys
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
@@ -52,11 +52,11 @@ from zenml.constants import (
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
-from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
-    KubeflowOrchestratorConfig,
-    KubeflowOrchestratorSettings,
+from zenml.integrations.kubeflow2.flavors.kubeflow_orchestrator_flavor import (
+    Kubeflow2OrchestratorConfig,
+    Kubeflow2OrchestratorSettings,
 )
-from zenml.integrations.kubeflow.utils import apply_pod_settings
+from zenml.integrations.kubeflow2.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
@@ -141,17 +141,17 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
         return config
 
 
-class KubeflowOrchestrator(ContainerizedOrchestrator):
-    """Orchestrator responsible for running pipelines using Kubeflow."""
+class Kubeflow2Orchestrator(ContainerizedOrchestrator):
+    """Orchestrator responsible for running pipelines using Kubeflow 2."""
 
     @property
-    def config(self) -> KubeflowOrchestratorConfig:
+    def config(self) -> Kubeflow2OrchestratorConfig:
         """Returns the `KubeflowOrchestratorConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(KubeflowOrchestratorConfig, self._config)
+        return cast(Kubeflow2OrchestratorConfig, self._config)
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
         """Get the list of configured Kubernetes contexts and the active context.
@@ -170,13 +170,13 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         return context_names, active_context_name
 
     @property
-    def settings_class(self) -> Type[KubeflowOrchestratorSettings]:
+    def settings_class(self) -> Type[Kubeflow2OrchestratorSettings]:
         """Settings class for the Kubeflow orchestrator.
 
         Returns:
             The settings class.
         """
-        return KubeflowOrchestratorSettings
+        return Kubeflow2OrchestratorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -341,7 +341,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         """
         return os.path.join(
             io_utils.get_global_config_directory(),
-            "kubeflow",
+            "kubeflow2",
             str(self.id),
         )
 
@@ -357,7 +357,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
     def _configure_container_op(
         self,
         container_op: dsl.ContainerOp,
-        settings: KubeflowOrchestratorSettings,
+        settings: Kubeflow2OrchestratorSettings,
     ) -> None:
         """Makes changes in place to the configuration of the container op.
 
@@ -565,7 +565,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 )
 
                 settings = cast(
-                    KubeflowOrchestratorSettings, self.get_settings(step)
+                    Kubeflow2OrchestratorSettings, self.get_settings(step)
                 )
                 self._configure_container_op(
                     container_op=container_op,
@@ -643,7 +643,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         """
         pipeline_name = deployment.pipeline_configuration.name
         settings = cast(
-            KubeflowOrchestratorSettings, self.get_settings(deployment)
+            Kubeflow2OrchestratorSettings, self.get_settings(deployment)
         )
         user_namespace = settings.user_namespace
 
@@ -775,7 +775,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
     def _get_kfp_client(
         self,
-        settings: KubeflowOrchestratorSettings,
+        settings: Kubeflow2OrchestratorSettings,
     ) -> kfp.Client:
         """Creates a KFP client instance.
 
@@ -806,13 +806,10 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     f"linked connector, but got {type(client)}."
                 )
 
-            kfp_client = KubeClientKFPClient(
+            return KubeClientKFPClient(
                 client=client,
                 **client_args,
             )
-
-            return kfp_client
-
         elif self.config.kubernetes_context:
             client_args["kube_context"] = self.config.kubernetes_context
 

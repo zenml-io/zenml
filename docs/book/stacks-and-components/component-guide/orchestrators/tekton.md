@@ -67,7 +67,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
   the [deployment guide](/docs/book/deploying-zenml/zenml-self-hosted/zenml-self-hosted.md) for more information.
 * Have an existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation) set up.
 * Make sure you have the [`az` CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) set up first.
-* Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and it to talk to your AKS cluster using the
+* Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and set it to talk to your AKS cluster using the
   following command:
 
   ```powershell
