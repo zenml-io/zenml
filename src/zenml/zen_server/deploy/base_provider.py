@@ -277,9 +277,7 @@ class BaseServerProvider(ABC):
             assert service.endpoint is not None
 
             url = service.endpoint.status.uri
-        connected = (
-            url is not None and gc.store is not None and gc.store.url == url
-        )
+        connected = url is not None and gc.store_configuration.url == url
 
         return ServerDeploymentStatus(
             url=url,

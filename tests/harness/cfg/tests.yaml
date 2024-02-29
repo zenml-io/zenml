@@ -82,7 +82,7 @@ tests:
           synchronized: true
   - module: tests.integration.examples.test_mlflow_tracking
     requirements:
-      - integrations: [tensorflow]
+      - integrations: [sklearn]
         stacks:
           - type: experiment_tracker
             flavor: mlflow
@@ -90,7 +90,7 @@ tests:
           synchronized: true
   - module: tests.integration.examples.test_mlflow_registry
     requirements:
-      - integrations: [tensorflow]
+      - integrations: [sklearn]
         stacks:
           - type: experiment_tracker
             flavor: mlflow
@@ -147,7 +147,7 @@ tests:
           synchronized: true
   - module: tests.integration.examples.test_mlflow_deployment
     requirements:
-      - integrations: [tensorflow, mlflow]
+      - integrations: [sklearn, mlflow]
         stacks:
           - type: experiment_tracker
             flavor: mlflow

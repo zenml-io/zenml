@@ -14,7 +14,7 @@
 """REST Zen Store implementation."""
 import os
 import re
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import (
     Any,
     ClassVar,
@@ -376,45 +376,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
             with open(self.verify_ssl, "r") as f:
                 self.verify_ssl = f.read()
 
-    @classmethod
-    def copy_configuration(
-        cls,
-        config: "StoreConfiguration",
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> "StoreConfiguration":
-        """Create a copy of the store config using a different path.
-
-        This method is used to create a copy of the store configuration that can
-        be loaded using a different configuration path or in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.).
-
-        Args:
-            config: The store configuration to copy.
-            config_path: new path where the configuration copy will be loaded
-                from.
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-
-        Returns:
-            A new store configuration object that reflects the new configuration
-            path.
-        """
-        assert isinstance(config, RestZenStoreConfiguration)
-        assert config.api_token is not None or config.api_key is not None
-        config = config.copy(exclude={"username", "password"}, deep=True)
-        # Load the certificate values back into the configuration
-        config.expand_certificates()
-        return config
-
     class Config:
         """Pydantic configuration class."""
 
@@ -532,6 +493,10 @@ class RestZenStore(BaseZenStore):
         """
         self.config.api_key = api_key
         self.clear_session()
+        # TODO: find a way to persist the API key in the configuration file
+        #  without calling _write_config() here.
+        # This is the only place where we need to explicitly call
+        # _write_config() to persist the global configuration.
         GlobalConfiguration()._write_config()
 
     def list_api_keys(

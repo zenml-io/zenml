@@ -12,15 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from steps.dynamic_importer_step import dynamic_importer
-from steps.predict_preprocessor_step import tf_predict_preprocessor
+from steps.predict_preprocessor_step import predict_preprocessor
 from steps.prediction_service_loader_step import prediction_service_loader
 from steps.predictor_step import predictor
 
 from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.integrations.constants import MLFLOW, TENSORFLOW
+from zenml.integrations.constants import MLFLOW, SKLEARN
 
-docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
+docker_settings = DockerSettings(
+    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
+)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
@@ -30,7 +32,7 @@ def mlflow_deployment_inference_pipeline(
 ):
     # Link all the steps artifacts together
     batch_data = dynamic_importer()
-    inference_data = tf_predict_preprocessor(batch_data)
+    inference_data = predict_preprocessor(batch_data)
     model_deployment_service = prediction_service_loader(
         pipeline_name=pipeline_name,
         pipeline_step_name=pipeline_step_name,
