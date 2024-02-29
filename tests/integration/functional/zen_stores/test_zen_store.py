@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-import threading
 import time
 import uuid
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from threading import Thread
 from typing import Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 
@@ -416,6 +416,10 @@ def test_creating_users_in_parallel_do_not_duplicate_fails(
     """Tests creating a user with an existing username fails in parallel mode."""
 
     def silent_create_user(user_request: UserRequest):
+        """This function attempts to create a user and silently passes
+        if a duplicate user exists. This is used to simulate race
+        conditions in parallel user creation.
+        """
         try:
             clean_client.zen_store.create_user(user_request)
         except EntityExistsError:
@@ -425,9 +429,9 @@ def test_creating_users_in_parallel_do_not_duplicate_fails(
     password = "P@ssw0rd"
     count = 100
 
-    threads: List[threading.Thread] = []
+    threads: List[Thread] = []
     for _ in range(count):
-        t = threading.Thread(
+        t = Thread(
             target=silent_create_user,
             args=(UserRequest(name=user_name, password=password),),
         )
@@ -451,6 +455,10 @@ def test_creating_service_accounts_in_parallel_do_not_duplicate_fails(
     def silent_create_service_account(
         service_account_request: ServiceAccountRequest,
     ):
+        """This function attempts to create a service account and silently
+        passes if a duplicate user exists. This is used to simulate race
+        conditions in parallel user creation.
+        """
         try:
             clean_client.zen_store.create_service_account(
                 service_account_request
@@ -461,9 +469,9 @@ def test_creating_service_accounts_in_parallel_do_not_duplicate_fails(
     user_name = "test_user"
     count = 100
 
-    threads: List[threading.Thread] = []
+    threads: List[Thread] = []
     for _ in range(count):
-        t = threading.Thread(
+        t = Thread(
             target=silent_create_service_account,
             args=(ServiceAccountRequest(name=user_name, active=True),),
         )
