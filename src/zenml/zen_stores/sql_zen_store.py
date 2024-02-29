@@ -5156,7 +5156,8 @@ class SqlZenStore(BaseZenStore):
             # exists
             service_accounts = session.execute(
                 select(UserSchema).where(
-                    UserSchema.name == service_account.name
+                    UserSchema.name == service_account.name,
+                    UserSchema.is_service_account.is_(True),  # type: ignore[attr-defined]
                 )
             ).fetchall()
             if len(service_accounts) == 1:
@@ -7354,7 +7355,10 @@ class SqlZenStore(BaseZenStore):
 
             # Check if a user account with the given name already exists
             users = session.execute(
-                select(UserSchema).where(UserSchema.name == user.name)
+                select(UserSchema).where(
+                    UserSchema.name == user.name,
+                    UserSchema.is_service_account.is_(False),  # type: ignore[attr-defined]
+                )
             ).fetchall()
             if len(users) == 1:
                 session.commit()
