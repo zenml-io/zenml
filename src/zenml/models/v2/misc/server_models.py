@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML servers."""
 
+from typing import Dict
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -77,7 +78,7 @@ class ServerModel(BaseModel):
         "",
         title="The Base URL of the server.",
     )
-    metadata: dict = Field(
+    metadata: Dict[str, str] = Field(
         {},
         title="The metadata associated with the server.",
     )
