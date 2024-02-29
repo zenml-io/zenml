@@ -58,7 +58,7 @@ do
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    uv pip install -U setuptools wheel
+    uv pip install -U setuptools wheel pip
 
     git checkout release/$VERSION
     uv pip install -e ".[templates,server]"
@@ -84,7 +84,7 @@ uv venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
 
 echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
-uv pip install -U setuptools wheel
+uv pip install -U setuptools wheel pip
 uv pip install -e ".[templates,server]"
 uv pip install importlib_metadata
 

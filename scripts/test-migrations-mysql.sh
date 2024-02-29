@@ -76,7 +76,7 @@ do
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    uv pip install -U setuptools wheel
+    uv pip install -U setuptools wheel pip
 
     git checkout release/$VERSION
     uv pip install -e ".[templates,server]"
@@ -118,7 +118,7 @@ set -e
 uv venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
 
-uv pip install setuptools wheel
+uv pip install setuptools wheel pip
 
 uv pip install -e ".[templates,server]"
 uv pip install importlib_metadata
