@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import yaml
 from kfp import dsl
+from kfp.client import Client
 from kfp.compiler import Compiler
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -402,7 +403,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
-        )
+        ).replace("_", "-")
 
         def _create_dynamic_pipeline():
             """Create a dynamic pipeline including each step."""
@@ -592,32 +593,27 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 connector.name or str(connector),
             )
 
-        # Read the Tekton pipeline resource from the generated YAML file
-        with open(pipeline_file_path, "r") as f:
-            tekton_resource = yaml.safe_load(f)
-
-        # Upload the Tekton pipeline to the Kubernetes cluster
-        custom_objects_api = k8s_client.CustomObjectsApi(self.kube_client)
-
-        try:
-            # breakpoint()
-            logger.debug("Creating Tekton resource ...")
-            response = custom_objects_api.create_namespaced_custom_object(
-                group=tekton_resource["sdkVersion"].split("/")[0],
-                version=tekton_resource["sdkVersion"].split("/")[1],
-                namespace=self.config.kubernetes_namespace,
-                # plural=tekton_resource["kind"].lower() + "s",
-                plural="pipelines",
-                body=tekton_resource,
-            )
-            logger.debug("Tekton API response: %s", response)
-        except k8s_client.rest.ApiException as e:
-            logger.error("Exception when creating Tekton resource: %s", str(e))
-            raise RuntimeError(
-                f"Failed to upload Tekton pipeline: {str(e)}. "
-                f"Please make sure your Kubernetes cluster is running and "
-                f"accessible.",
-            )
+        client = Client(host="http://20.73.208.165")
+        client.create_run_from_pipeline_package(pipeline_file_path)
+        # try:
+        #     # breakpoint()
+        #     logger.debug("Creating Tekton resource ...")
+        #     response = custom_objects_api.create_namespaced_custom_object(
+        #         group=tekton_resource["sdkVersion"].split("/")[0],
+        #         version=tekton_resource["sdkVersion"].split("/")[1],
+        #         namespace=self.config.kubernetes_namespace,
+        #         # plural=tekton_resource["kind"].lower() + "s",
+        #         plural="pipelines",
+        #         body=tekton_resource,
+        #     )
+        #     logger.debug("Tekton API response: %s", response)
+        # except k8s_client.rest.ApiException as e:
+        #     logger.error("Exception when creating Tekton resource: %s", str(e))
+        #     raise RuntimeError(
+        #         f"Failed to upload Tekton pipeline: {str(e)}. "
+        #         f"Please make sure your Kubernetes cluster is running and "
+        #         f"accessible.",
+        #     )
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
