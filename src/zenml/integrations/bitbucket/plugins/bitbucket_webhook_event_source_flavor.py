@@ -11,32 +11,32 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Github webhook event source flavor."""
+"""Bitbucket webhook event source flavor."""
 from typing import ClassVar, Type
 
 from zenml.event_sources.webhooks.base_webhook_event_source import (
     BaseWebhookEventSourceFlavor,
 )
-from zenml.integrations.github import GITHUB_EVENT_FLAVOR
-from zenml.integrations.github.plugins.event_sources.github_webhook_event_source import (
-    GithubWebhookEventFilterConfiguration,
-    GithubWebhookEventSourceConfiguration,
-    GithubWebhookEventSourceHandler,
+from zenml.integrations.bitbucket import BITBUCKET_EVENT_FLAVOR
+from zenml.integrations.bitbucket.plugins.event_sources.bitbucket_webhook_event_source import (
+    BitbucketWebhookEventFilterConfiguration,
+    BitbucketWebhookEventSourceConfiguration,
+    BitbucketWebhookEventSourceHandler,
 )
 
 
-class GithubWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
-    """Enables users to configure github event sources."""
+class BitbucketWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
+    """Enables users to configure Bitbucket event sources."""
 
-    FLAVOR: ClassVar[str] = GITHUB_EVENT_FLAVOR
+    FLAVOR: ClassVar[str] = BITBUCKET_EVENT_FLAVOR
     PLUGIN_CLASS: ClassVar[
-        Type[GithubWebhookEventSourceHandler]
-    ] = GithubWebhookEventSourceHandler
+        Type[BitbucketWebhookEventSourceHandler]
+    ] = BitbucketWebhookEventSourceHandler
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[
-        Type[GithubWebhookEventSourceConfiguration]
-    ] = GithubWebhookEventSourceConfiguration
+        Type[BitbucketWebhookEventSourceConfiguration]
+    ] = BitbucketWebhookEventSourceConfiguration
     EVENT_FILTER_CONFIG_CLASS: ClassVar[
-        Type[GithubWebhookEventFilterConfiguration]
-    ] = GithubWebhookEventFilterConfiguration
+        Type[BitbucketWebhookEventFilterConfiguration]
+    ] = BitbucketWebhookEventFilterConfiguration
