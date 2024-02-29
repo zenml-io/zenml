@@ -6885,6 +6885,13 @@ class SqlZenStore(BaseZenStore):
                 else:
                     start_time_str = None
                     duration_seconds = None
+
+                stack = pipeline_run.deployment.stack
+                assert stack
+                stack_metadata = {
+                    str(component.type): component.flavor
+                    for component in stack.components
+                }
                 with track_handler(
                     AnalyticsEvent.RUN_PIPELINE_ENDED
                 ) as analytics_handler:
@@ -6897,6 +6904,7 @@ class SqlZenStore(BaseZenStore):
                             "%Y-%m-%dT%H:%M:%S.%fZ"
                         ),
                         "duration_seconds": duration_seconds,
+                        **stack_metadata,
                     }
             pipeline_run.update(run_update)
             session.add(pipeline_run)
