@@ -27,6 +27,7 @@ jobs:
       - name: Install darglint using uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.cargo/env
           uv pip install --system darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh

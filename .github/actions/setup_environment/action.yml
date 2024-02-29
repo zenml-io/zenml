@@ -50,6 +50,7 @@ runs:
       # we have to create and activate a virtual environment
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
+        source $HOME/.cargo/env
         uv venv .venv
         echo "VIRTUAL_ENV=.venv" >> $GITHUB_ENV
         echo "$PWD/.venv/bin" >> $GITHUB_PATH

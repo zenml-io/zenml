@@ -51,6 +51,7 @@ jobs:
       - name: Install current package as editable
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.cargo/env
           uv pip install --system darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
@@ -84,6 +85,7 @@ jobs:
       - name: Install current package as editable
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.cargo/env
           uv pip install --system -e .
       - name: Install mlstacks package
         run: uv pip install --system mlstacks
