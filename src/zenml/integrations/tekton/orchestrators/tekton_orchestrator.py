@@ -15,7 +15,6 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
-import yaml
 from kfp import dsl
 from kfp.client import Client
 from kfp.compiler import Compiler
@@ -189,7 +188,10 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 f"--skip_local_validations=True'\n"
             )
 
-            if not self.config.skip_local_validations and not self.config.is_local:
+            if (
+                not self.config.skip_local_validations
+                and not self.config.is_local
+            ):
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
@@ -215,7 +217,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         f"otherwise you may run into pipeline execution "
                         f"problems. You should use a flavor of "
                         f"{stack_comp.type.value} other than "
-                        f"'{stack_comp.flavor}'.\n" + silence_local_validations_msg
+                        f"'{stack_comp.flavor}'.\n"
+                        + silence_local_validations_msg
                     )
 
                 # if the orchestrator is remote, the container registry must
@@ -415,9 +418,11 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     step_name=step_name,
                 )
                 command = StepEntrypointConfiguration.get_entrypoint_command()
-                arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name,
-                    deployment_id=deployment.id,
+                arguments = (
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name,
+                        deployment_id=deployment.id,
+                    )
                 )
 
                 dynamic_component = self._create_dynamic_component(
@@ -469,12 +474,16 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         )
 
                     if step_settings.resource_settings.gpu_count is not None:
-                        dynamic_component = dynamic_component.set_accelerator_limit(
-                            step_settings.resource_settings.gpu_count
+                        dynamic_component = (
+                            dynamic_component.set_accelerator_limit(
+                                step_settings.resource_settings.gpu_count
+                            )
                         )
 
                     if step_settings.resource_settings.memory is not None:
-                        memory_limit = step_settings.resource_settings.memory[:-1]
+                        memory_limit = step_settings.resource_settings.memory[
+                            :-1
+                        ]
                         dynamic_component = dynamic_component.set_memory_limit(
                             memory_limit
                         )
@@ -516,9 +525,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     ).set_env_variable(
                         name=ENV_ZENML_TEKTON_RUN_ID,
                         value="$(context.pipelineRun.name)",
-                    ).after(
-                        *upstream_step_components
-                    )
+                    ).after(*upstream_step_components)
 
             return dynamic_pipeline
 
@@ -567,7 +574,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             #     "pipelines.kubeflow.org/cache_enabled": "false"
             # },
         )
-        logger.info("Writing Tekton workflow definition to `%s`.", pipeline_file_path)
+        logger.info(
+            "Writing Tekton workflow definition to `%s`.", pipeline_file_path
+        )
 
         if deployment.schedule:
             logger.warning(
