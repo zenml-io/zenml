@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML GlobalConfiguration."""
 
+import json
 import os
 from secrets import token_hex
 from typing import Any, Dict, List, Optional
@@ -197,6 +198,15 @@ class ServerConfiguration(BaseModel):
             values["cors_allow_origins"] = origins
         else:
             values["cors_allow_origins"] = ["*"]
+
+        # if metadata is a string, convert it to a dictionary
+        if isinstance(values.get("metadata"), str):
+            try:
+                values["metadata"] = json.loads(values["metadata"])
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"The server metadata is not a valid JSON string: {e}"
+                )
 
         return values
 
