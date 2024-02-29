@@ -5146,21 +5146,30 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
+            # Check if a service account with the given name already
+            # exists
+            err_msg = (
+                f"Unable to create service account with name "
+                f"'{service_account.name}': Found existing service "
+                "account with this name."
+            )
+            try:
+                self._get_account_schema(
+                    service_account.name, session=session, service_account=True
+                )
+                raise EntityExistsError(err_msg)
+            except KeyError:
+                pass
+
             # Create the service account
             new_account = UserSchema.from_service_account_request(
                 service_account
             )
             session.add(new_account)
-
             try:
                 session.commit()
             except IntegrityError as e:
-                session.rollback()
-                raise EntityExistsError(
-                    f"Unable to create service account with name "
-                    f"'{service_account.name}': Found existing service "
-                    "account with this name."
-                ) from e
+                raise EntityExistsError(err_msg) from e
 
             return new_account.to_service_account_model(include_metadata=True)
 
@@ -7351,19 +7360,29 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
+            # Check if a user account with the given name already exists
+            err_msg = (
+                f"Unable to create user with name '{user.name}': "
+                f"Found an existing user account with this name."
+            )
+            try:
+                self._get_account_schema(
+                    user.name,
+                    session=session,
+                    # Filter out service accounts
+                    service_account=False,
+                )
+                raise EntityExistsError(err_msg)
+            except KeyError:
+                pass
+
             # Create the user
             new_user = UserSchema.from_user_request(user)
             session.add(new_user)
-
             try:
                 session.commit()
             except IntegrityError as e:
-                session.rollback()
-                raise EntityExistsError(
-                    f"Unable to create user with name '{user.name}': "
-                    f"Found an existing user account with this name."
-                ) from e
-
+                raise EntityExistsError(err_msg) from e
             return new_user.to_model(include_metadata=True)
 
     def get_user(
