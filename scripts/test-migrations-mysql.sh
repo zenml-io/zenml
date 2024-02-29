@@ -35,7 +35,9 @@ function run_tests_for_version() {
     export ZENML_DEBUG=true
 
     echo "===== Installing sklearn integration ====="
-    zenml integration install sklearn -y
+    zenml integration export-requirements sklearn --output-file sklearn-requirements.txt
+    uv pip install -r sklearn-requirements.txt
+    rm sklearn-requirements.txt
 
     echo "===== Running starter template pipeline ====="
     python3 run.py
