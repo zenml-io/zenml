@@ -24,11 +24,7 @@ parse_args () {
 install_zenml() {
     # install ZenML in editable mode
 
-    touch zenml_requirements.txt
-    echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> zenml_requirements.txt
-
-    uv pip install -r zenml_requirements.txt
-    rm zenml_requirements.txt
+    uv pip install --system "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
 }
 
 install_integrations() {
@@ -59,17 +55,9 @@ install_integrations() {
     echo "pyyaml>=6.0.1" >> integration-requirements.txt
     echo "pyopenssl" >> integration-requirements.txt
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> integration-requirements.txt
-    cp integration-requirements.txt integration-requirements.in
 
-    uv pip compile integration-requirements.in -o integration-requirements-compiled.txt
-
-    uv pip install -r integration-requirements-compiled.txt
+    uv pip install --system -r integration-requirements.txt
     rm integration-requirements.txt
-    rm integration-requirements.in
-    rm integration-requirements-compiled.txt
-
-    # install langchain separately
-    zenml integration install -y langchain
 }
 
 
@@ -88,7 +76,4 @@ install_zenml
 # install integrations, if requested
 if [ "$INTEGRATIONS" = yes ]; then
     install_integrations
-
-    # refresh the ZenML installation after installing integrations
-    install_zenml
 fi
