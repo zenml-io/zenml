@@ -5152,22 +5152,16 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(new_account)
 
-            # Check if a service account with the given name already
-            # exists
-            service_accounts = session.execute(
-                select(UserSchema).where(
-                    UserSchema.name == service_account.name,
-                    UserSchema.is_service_account.is_(True),  # type: ignore[attr-defined]
-                )
-            ).fetchall()
-            if len(service_accounts) == 1:
+            try:
                 session.commit()
-            else:
+            except IntegrityError as e:
+                session.rollback()
                 raise EntityExistsError(
                     f"Unable to create service account with name "
                     f"'{service_account.name}': Found existing service "
                     "account with this name."
-                )
+                ) from e
+
             return new_account.to_service_account_model(include_metadata=True)
 
     def get_service_account(
@@ -7361,20 +7355,15 @@ class SqlZenStore(BaseZenStore):
             new_user = UserSchema.from_user_request(user)
             session.add(new_user)
 
-            # Check if a user account with the given name already exists
-            users = session.execute(
-                select(UserSchema).where(
-                    UserSchema.name == user.name,
-                    UserSchema.is_service_account.is_(False),  # type: ignore[attr-defined]
-                )
-            ).fetchall()
-            if len(users) == 1:
+            try:
                 session.commit()
-            else:
+            except IntegrityError as e:
+                session.rollback()
                 raise EntityExistsError(
                     f"Unable to create user with name '{user.name}': "
                     f"Found an existing user account with this name."
-                )
+                ) from e
+
             return new_user.to_model(include_metadata=True)
 
     def get_user(
