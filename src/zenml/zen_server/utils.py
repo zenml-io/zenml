@@ -121,7 +121,10 @@ def initialize_rbac() -> None:
 
 
 def initialize_workload_manager() -> None:
-    """Initialize the workload manager component."""
+    """Initialize the workload manager component.
+
+    This does not fail if the source can't be loaded but only logs a warning.
+    """
     global _workload_manager
 
     if source := server_config().workload_manager_implementation_source:
