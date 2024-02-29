@@ -64,7 +64,6 @@ jobs:
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-      - run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
       - name: Check-out fresh E2E template
         run: |
           rm -rf examples/e2e
@@ -137,7 +136,6 @@ jobs:
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-      - run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
       - name: Check-out fresh NLP template
         run: |
           mkdir -p examples/e2e_nlp
@@ -210,7 +208,6 @@ jobs:
       - uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-      - run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
       - name: Check-out fresh Starter template
         run: |
           rm -rf examples/quickstart
