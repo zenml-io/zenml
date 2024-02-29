@@ -14,7 +14,7 @@
 """SQLModel implementation of step run tables."""
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String
@@ -174,12 +174,19 @@ class StepRunSchema(NamedSchema, table=True):
             source_code=request.source_code,
         )
 
-    def to_model(self, hydrate: bool = False) -> StepRunResponse:
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> StepRunResponse:
         """Convert a `StepRunSchema` to a `StepRunResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            **kwargs: Keyword arguments to allow schema specific logic
+
 
         Returns:
             The created StepRunResponse.
@@ -224,7 +231,7 @@ class StepRunSchema(NamedSchema, table=True):
             updated=self.updated,
         )
         metadata = None
-        if hydrate:
+        if include_metadata:
             metadata = StepRunResponseMetadata(
                 workspace=self.workspace.to_model(),
                 config=full_step_config.config,

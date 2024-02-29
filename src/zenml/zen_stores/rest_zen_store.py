@@ -14,7 +14,7 @@
 """REST Zen Store implementation."""
 import os
 import re
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import (
     Any,
     ClassVar,
@@ -53,6 +53,7 @@ from zenml.constants import (
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    EVENT_SOURCES,
     FLAVORS,
     GET_OR_CREATE,
     INFO,
@@ -82,6 +83,8 @@ from zenml.constants import (
     STACKS,
     STEPS,
     TAGS,
+    TRIGGER_EXECUTIONS,
+    TRIGGERS,
     USERS,
     VERSION_1,
     WORKSPACES,
@@ -111,8 +114,8 @@ from zenml.models import (
     ArtifactVersionUpdate,
     ArtifactVisualizationResponse,
     BaseFilter,
+    BaseIdentifiedResponse,
     BaseRequest,
-    BaseResponse,
     CodeReferenceResponse,
     CodeRepositoryFilter,
     CodeRepositoryRequest,
@@ -122,6 +125,10 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    EventSourceFilter,
+    EventSourceRequest,
+    EventSourceResponse,
+    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -193,6 +200,12 @@ from zenml.models import (
     TagRequest,
     TagResponse,
     TagUpdate,
+    TriggerExecutionFilter,
+    TriggerExecutionResponse,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerResponse,
+    TriggerUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
@@ -219,7 +232,7 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
-AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 AnyWorkspaceScopedRequest = TypeVar(
     "AnyWorkspaceScopedRequest",
     bound=WorkspaceScopedRequest,
@@ -363,45 +376,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
             with open(self.verify_ssl, "r") as f:
                 self.verify_ssl = f.read()
 
-    @classmethod
-    def copy_configuration(
-        cls,
-        config: "StoreConfiguration",
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> "StoreConfiguration":
-        """Create a copy of the store config using a different path.
-
-        This method is used to create a copy of the store configuration that can
-        be loaded using a different configuration path or in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.).
-
-        Args:
-            config: The store configuration to copy.
-            config_path: new path where the configuration copy will be loaded
-                from.
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-
-        Returns:
-            A new store configuration object that reflects the new configuration
-            path.
-        """
-        assert isinstance(config, RestZenStoreConfiguration)
-        assert config.api_token is not None or config.api_key is not None
-        config = config.copy(exclude={"username", "password"}, deep=True)
-        # Load the certificate values back into the configuration
-        config.expand_certificates()
-        return config
-
     class Config:
         """Pydantic configuration class."""
 
@@ -519,6 +493,10 @@ class RestZenStore(BaseZenStore):
         """
         self.config.api_key = api_key
         self.clear_session()
+        # TODO: find a way to persist the API key in the configuration file
+        #  without calling _write_config() here.
+        # This is the only place where we need to explicitly call
+        # _write_config() to persist the global configuration.
         GlobalConfiguration()._write_config()
 
     def list_api_keys(
@@ -1384,6 +1362,102 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=deployment_id,
             route=PIPELINE_DEPLOYMENTS,
+        )
+
+    # -------------------- Event Sources  --------------------
+
+    def create_event_source(
+        self, event_source: EventSourceRequest
+    ) -> EventSourceResponse:
+        """Create an event_source.
+
+        Args:
+            event_source: The event_source to create.
+
+        Returns:
+            The created event_source.
+        """
+        return self._create_resource(
+            resource=event_source,
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+        )
+
+    def get_event_source(
+        self,
+        event_source_id: UUID,
+        hydrate: bool = True,
+    ) -> EventSourceResponse:
+        """Get an event_source by ID.
+
+        Args:
+            event_source_id: The ID of the event_source to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The event_source.
+        """
+        return self._get_resource(
+            resource_id=event_source_id,
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_event_sources(
+        self,
+        event_source_filter_model: EventSourceFilter,
+        hydrate: bool = False,
+    ) -> Page[EventSourceResponse]:
+        """List all event_sources matching the given filter criteria.
+
+        Args:
+            event_source_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all event_sources matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+            filter_model=event_source_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Update an existing event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The updated event_source.
+        """
+        return self._update_resource(
+            resource_id=event_source_id,
+            resource_update=event_source_update,
+            route=EVENT_SOURCES,
+            response_model=EventSourceResponse,
+        )
+
+    def delete_event_source(self, event_source_id: UUID) -> None:
+        """Delete an event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to delete.
+        """
+        self._delete_resource(
+            resource_id=event_source_id,
+            route=EVENT_SOURCES,
         )
 
     # ----------------------------- Pipeline runs -----------------------------
@@ -2530,6 +2604,158 @@ class RestZenStore(BaseZenStore):
             resource_update=step_run_update,
             response_model=StepRunResponse,
             route=STEPS,
+        )
+
+    # -------------------- Triggers  --------------------
+
+    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
+        """Create an trigger.
+
+        Args:
+            trigger: The trigger to create.
+
+        Returns:
+            The created trigger.
+        """
+        return self._create_resource(
+            resource=trigger,
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+        )
+
+    def get_trigger(
+        self,
+        trigger_id: UUID,
+        hydrate: bool = True,
+    ) -> TriggerResponse:
+        """Get a trigger by ID.
+
+        Args:
+            trigger_id: The ID of the trigger to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger.
+        """
+        return self._get_resource(
+            resource_id=trigger_id,
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_triggers(
+        self,
+        trigger_filter_model: TriggerFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerResponse]:
+        """List all triggers matching the given filter criteria.
+
+        Args:
+            trigger_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all triggers matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+            filter_model=trigger_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_trigger(
+        self,
+        trigger_id: UUID,
+        trigger_update: TriggerUpdate,
+    ) -> TriggerResponse:
+        """Update an existing trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to update.
+            trigger_update: The update to be applied to the trigger.
+
+        Returns:
+            The updated trigger.
+        """
+        return self._update_resource(
+            resource_id=trigger_id,
+            resource_update=trigger_update,
+            route=TRIGGERS,
+            response_model=TriggerResponse,
+        )
+
+    def delete_trigger(self, trigger_id: UUID) -> None:
+        """Delete an trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to delete.
+        """
+        self._delete_resource(
+            resource_id=trigger_id,
+            route=TRIGGERS,
+        )
+
+    # -------------------- Trigger Executions --------------------
+
+    def get_trigger_execution(
+        self,
+        trigger_execution_id: UUID,
+        hydrate: bool = True,
+    ) -> TriggerExecutionResponse:
+        """Get an trigger execution by ID.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger execution.
+        """
+        return self._get_resource(
+            resource_id=trigger_execution_id,
+            route=TRIGGER_EXECUTIONS,
+            response_model=TriggerExecutionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_trigger_executions(
+        self,
+        trigger_execution_filter_model: TriggerExecutionFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerExecutionResponse]:
+        """List all trigger executions matching the given filter criteria.
+
+        Args:
+            trigger_execution_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all trigger executions matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=TRIGGER_EXECUTIONS,
+            response_model=TriggerExecutionResponse,
+            filter_model=trigger_execution_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
+        """Delete a trigger execution.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to delete.
+        """
+        self._delete_resource(
+            resource_id=trigger_execution_id,
+            route=TRIGGER_EXECUTIONS,
         )
 
     # ----------------------------- Users -----------------------------

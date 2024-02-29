@@ -571,9 +571,7 @@ def upgrade() -> None:
 
     logger.info("Migrating secrets from the external secrets store to the db.")
 
-    store_cfg = GlobalConfiguration().store
-    if store_cfg is None:
-        store_cfg = GlobalConfiguration().get_default_store()
+    store_cfg = GlobalConfiguration().store_configuration
 
     # We create a new SqlZenStore instance with the same configuration as the
     # one used to run migrations, but we skip the default registrations and

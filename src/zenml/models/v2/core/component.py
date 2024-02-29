@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing components."""
 
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -37,6 +36,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.base.update import update_model
 from zenml.utils import secret_utils
@@ -150,12 +150,6 @@ class ComponentResponseBody(WorkspaceScopedResponseBody):
         title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    created: datetime = Field(
-        title="The timestamp when this component was created."
-    )
-    updated: datetime = Field(
-        title="The timestamp when this component was last updated.",
-    )
 
 
 class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -183,8 +177,16 @@ class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ComponentResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the component entity."""
+
+
 class ComponentResponse(
-    WorkspaceScopedResponse[ComponentResponseBody, ComponentResponseMetadata]
+    WorkspaceScopedResponse[
+        ComponentResponseBody,
+        ComponentResponseMetadata,
+        ComponentResponseResources,
+    ]
 ):
     """Response model for components."""
 
@@ -223,24 +225,6 @@ class ComponentResponse(
             the value of the property.
         """
         return self.get_body().flavor
-
-    @property
-    def created(self) -> datetime:
-        """The`created` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().created
-
-    @property
-    def updated(self) -> datetime:
-        """The `updated` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().updated
 
     @property
     def configuration(self) -> Dict[str, Any]:

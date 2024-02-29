@@ -36,6 +36,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
@@ -163,9 +164,15 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
+class ArtifactVersionResponseResources(WorkspaceScopedResponseResources):
+    """Class for all resource models associated with the artifact version entity."""
+
+
 class ArtifactVersionResponse(
     WorkspaceScopedResponse[
-        ArtifactVersionResponseBody, ArtifactVersionResponseMetadata
+        ArtifactVersionResponseBody,
+        ArtifactVersionResponseMetadata,
+        ArtifactVersionResponseResources,
     ]
 ):
     """Response model for artifact versions."""

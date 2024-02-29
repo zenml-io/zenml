@@ -17,30 +17,24 @@ from pipelines.tracking_pipeline.tracking_pipeline import (
 
 from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.integrations.constants import MLFLOW, TENSORFLOW
+from zenml.integrations.constants import MLFLOW, SKLEARN
 from zenml.integrations.mlflow.steps.mlflow_registry import (
     mlflow_register_model_step,
 )
-from zenml.model_registries.base_model_registry import (
-    ModelRegistryModelMetadata,
-)
 
-docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
+docker_settings = DockerSettings(
+    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
+)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
 def mlflow_registry_training_pipeline(
-    epochs: int = 1,
-    lr: float = 0.001,
     num_run: int = 1,
 ):
-    model = mlflow_tracking_pipeline(epochs=epochs, lr=lr)
+    model = mlflow_tracking_pipeline()
     mlflow_register_model_step(
         model=model,
-        name="tensorflow-mnist-model",
-        metadata=ModelRegistryModelMetadata(
-            lr=lr, epochs=epochs, optimizer="Adam"
-        ),
+        name="sklearn-mnist-model",
         description=(
             f"Run #{num_run} of the mlflow_registry_training_pipeline."
         ),

@@ -210,8 +210,7 @@ class ServerDeployer(metaclass=SingletonMetaClass):
         return (
             server.status is not None
             and server.status.url is not None
-            and gc.store is not None
-            and gc.store.url == server.status.url
+            and gc.store_configuration.url == server.status.url
         )
 
     def connect_to_server(
@@ -255,7 +254,7 @@ class ServerDeployer(metaclass=SingletonMetaClass):
             verify_ssl=verify_ssl,
         )
 
-        if gc.store == store_config:
+        if gc.store_configuration == store_config:
             logger.info(
                 f"ZenML is already connected to the '{server_name}' "
                 f"{provider_name} ZenML server."
@@ -287,8 +286,9 @@ class ServerDeployer(metaclass=SingletonMetaClass):
                 will disconnect from any ZenML server.
         """
         gc = GlobalConfiguration()
+        store_cfg = gc.store_configuration
 
-        if not gc.store or gc.store.type != StoreType.REST:
+        if store_cfg.type != StoreType.REST:
             logger.info("ZenML is not currently connected to a ZenML server.")
             return
 
@@ -307,11 +307,11 @@ class ServerDeployer(metaclass=SingletonMetaClass):
 
             logger.info(
                 f"Disconnecting ZenML from the '{server_name}' "
-                f"{provider_name} ZenML server ({gc.store.url})."
+                f"{provider_name} ZenML server ({store_cfg.url})."
             )
         else:
             logger.info(
-                f"Disconnecting ZenML from the {gc.store.url} ZenML server."
+                f"Disconnecting ZenML from the {store_cfg.url} ZenML server."
             )
 
         gc.set_default_store()
