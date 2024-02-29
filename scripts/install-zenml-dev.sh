@@ -24,7 +24,7 @@ parse_args () {
 install_zenml() {
     # install ZenML in editable mode
 
-    uv pip install --system "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
+    uv pip install --system -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]"
 }
 
 install_integrations() {
