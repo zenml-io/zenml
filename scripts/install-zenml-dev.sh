@@ -60,7 +60,6 @@ install_integrations() {
     rm integration-requirements.txt
 }
 
-
 set -x
 set -e
 
