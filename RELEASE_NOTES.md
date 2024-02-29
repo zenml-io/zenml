@@ -8,10 +8,6 @@ parallel pipelines and database entities. We've also made strides in optimizing
 MLflow interactions, enhancing our documentation, and ensuring our CI processes
 are more robust.
 
-A standout feature is the enablement of pipeline execution via
-REST, marking a step forward in our platform's usability and flexibility. More
-on his soon!
-
 Additionally, we've tackled several bug fixes and performance improvements,
 making our platform even more reliable and user-friendly.
 
