@@ -5146,27 +5146,27 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
-            # Check if a service account with the given name already
-            # exists
-            try:
-                self._get_account_schema(
-                    service_account.name, session=session, service_account=True
-                )
-                raise EntityExistsError(
-                    f"Unable to create service account with name "
-                    f"'{service_account.name}': Found existing service "
-                    "account with this name."
-                )
-            except KeyError:
-                pass
-
             # Create the service account
             new_account = UserSchema.from_service_account_request(
                 service_account
             )
             session.add(new_account)
-            session.commit()
 
+            # Check if a service account with the given name already
+            # exists
+            service_accounts = session.execute(
+                select(UserSchema).where(
+                    UserSchema.name == service_account.name
+                )
+            ).fetchall()
+            if len(service_accounts) == 1:
+                session.commit()
+            else:
+                raise EntityExistsError(
+                    f"Unable to create service account with name "
+                    f"'{service_account.name}': Found existing service "
+                    "account with this name."
+                )
             return new_account.to_service_account_model(include_metadata=True)
 
     def get_service_account(
@@ -7348,25 +7348,21 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
+            # Create the user
+            new_user = UserSchema.from_user_request(user)
+            session.add(new_user)
+
             # Check if a user account with the given name already exists
-            try:
-                self._get_account_schema(
-                    user.name,
-                    session=session,
-                    # Filter out service accounts
-                    service_account=False,
-                )
+            users = session.execute(
+                select(UserSchema).where(UserSchema.name == user.name)
+            ).fetchall()
+            if len(users) == 1:
+                session.commit()
+            else:
                 raise EntityExistsError(
                     f"Unable to create user with name '{user.name}': "
                     f"Found an existing user account with this name."
                 )
-            except KeyError:
-                pass
-
-            # Create the user
-            new_user = UserSchema.from_user_request(user)
-            session.add(new_user)
-            session.commit()
             return new_user.to_model(include_metadata=True)
 
     def get_user(

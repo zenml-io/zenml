@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import threading
 import time
 import uuid
 from contextlib import ExitStack as does_not_raise
@@ -122,6 +123,7 @@ from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
 from zenml.models.v2.core.step_run import StepRunRequest
+from zenml.models.v2.core.user import UserFilter
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.sql_zen_store import SqlZenStore
@@ -406,6 +408,75 @@ def test_creating_user_with_existing_name_fails():
             )
             # clean up
             zen_store.delete_user(user.id)
+
+
+def test_creating_users_in_parallel_do_not_duplicate_fails(
+    clean_client: "Client",
+):
+    """Tests creating a user with an existing username fails in parallel mode."""
+
+    def silent_create_user(user_request: UserRequest):
+        try:
+            clean_client.zen_store.create_user(user_request)
+        except EntityExistsError:
+            pass
+
+    user_name = "test_user"
+    password = "P@ssw0rd"
+    count = 100
+
+    threads: List[threading.Thread] = []
+    for _ in range(count):
+        t = threading.Thread(
+            target=silent_create_user,
+            args=(UserRequest(name=user_name, password=password),),
+        )
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    users = clean_client.zen_store.list_users(
+        user_filter_model=UserFilter(name=user_name)
+    )
+    assert users.total == 1
+
+
+def test_creating_service_accounts_in_parallel_do_not_duplicate_fails(
+    clean_client: "Client",
+):
+    """Tests creating a user with an existing username fails in parallel mode."""
+
+    def silent_create_service_account(
+        service_account_request: ServiceAccountRequest,
+    ):
+        try:
+            clean_client.zen_store.create_service_account(
+                service_account_request
+            )
+        except EntityExistsError:
+            pass
+
+    user_name = "test_user"
+    count = 100
+
+    threads: List[threading.Thread] = []
+    for _ in range(count):
+        t = threading.Thread(
+            target=silent_create_service_account,
+            args=(ServiceAccountRequest(name=user_name, active=True),),
+        )
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    service_accounts = clean_client.zen_store.list_service_accounts(
+        filter_model=ServiceAccountFilter(name=user_name)
+    )
+    assert service_accounts.total == 1
 
 
 def test_get_user():
