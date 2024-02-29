@@ -27,8 +27,6 @@ from fastapi import (
     status,
 )
 from fastapi.param_functions import Form
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from starlette.requests import Request
 
 from zenml.constants import (
@@ -77,7 +75,6 @@ from zenml.zen_server.utils import (
 )
 
 logger = get_logger(__name__)
-limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(
     prefix=API + VERSION_1,
@@ -259,7 +256,6 @@ def generate_access_token(
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
 )
 @handle_exceptions
-@limiter.limit("5/minute;1000/day")
 def token(
     request: Request,
     response: Response,
