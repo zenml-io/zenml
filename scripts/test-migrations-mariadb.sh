@@ -48,18 +48,20 @@ VERSIONS=("0.54.0" "0.54.1" "0.55.0" "0.55.1" "0.55.2" "0.55.3")
 # Start completely fresh
 rm -rf ~/.config/zenml
 
+pip install -U uv
+
 for VERSION in "${VERSIONS[@]}"
 do
     set -e  # Exit immediately if a command exits with a non-zero status
     # Create a new virtual environment
-    python3 -m venv ".venv-$VERSION"
+    uv venv ".venv-$VERSION"
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    pip3 install -U pip setuptools wheel
+    uv pip install -U setuptools wheel
 
     git checkout release/$VERSION
-    pip3 install -e ".[templates,server]"
+    uv pip install -e ".[templates,server]"
 
     export ZENML_ANALYTICS_OPT_IN=false
     export ZENML_DEBUG=true
@@ -78,11 +80,11 @@ done
 # Test the most recent migration with MariaDB
 echo "===== TESTING CURRENT BRANCH ====="
 set -e
-python3 -m venv ".venv-current-branch"
+uv venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
 
 echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
-pip3 install -U pip setuptools wheel uv
+uv pip install -U setuptools wheel
 uv pip install -e ".[templates,server]"
 uv pip install importlib_metadata
 

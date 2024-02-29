@@ -66,18 +66,20 @@ VERSIONS=("0.40.0" "0.40.3" "0.41.0" "0.43.0" "0.44.1" "0.44.3" "0.45.2" "0.45.3
 # Start completely fresh
 rm -rf ~/.config/zenml
 
+pip install -U uv
+
 for VERSION in "${VERSIONS[@]}"
 do
     set -e  # Exit immediately if a command exits with a non-zero status
     # Create a new virtual environment
-    python3 -m venv ".venv-$VERSION"
+    uv venv ".venv-$VERSION"
     source ".venv-$VERSION/bin/activate"
 
     # Install the specific version
-    pip3 install -U pip setuptools wheel
+    uv pip install -U setuptools wheel
 
     git checkout release/$VERSION
-    pip3 install -e ".[templates,server]"
+    uv pip install -e ".[templates,server]"
     # handles unpinned sqlmodel dependency in older versions
     uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1"
 
@@ -113,12 +115,11 @@ done
 # Test the most recent migration with MySQL
 echo "===== TESTING CURRENT BRANCH ====="
 set -e
-python3 -m venv ".venv-current-branch"
+uv venv ".venv-current-branch"
 source ".venv-current-branch/bin/activate"
 
-pip3 install -U pip setuptools wheel uv
-uv venv
-VIRTUAL_ENV=./.venv
+uv pip install setuptools wheel
+
 uv pip install -e ".[templates,server]"
 uv pip install importlib_metadata
 
