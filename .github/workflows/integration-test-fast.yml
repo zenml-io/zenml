@@ -147,13 +147,11 @@ jobs:
           runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
           runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
           discord_webhook: ${{ secrets.DISCORD_WEBHOOK }}
-      - run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
       - name: Install docker-compose for non-default environments
         if: inputs.test_environment != 'default'
         run: |
           pip install uv
-          uv pip install pyyaml==5.3.1
-          uv pip install docker-compose
+          uv pip install --system "pyyaml==5.3.1" docker-compose
       - name: Install Linux System Dependencies
         if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
         run: sudo apt install graphviz
@@ -229,5 +227,5 @@ jobs:
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list
-          pip list
+          uv pip list
           pip check || true

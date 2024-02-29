@@ -50,8 +50,8 @@ jobs:
       - run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
       - name: Install current package as editable
         run: |
-          pip install uv
-          uv pip install darglint
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv pip install --system darglint
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
@@ -81,13 +81,12 @@ jobs:
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.8'
-      - run: echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
       - name: Install current package as editable
         run: |
-          pip install -U pip uv
-          uv pip install -e .
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv pip install --system -e .
       - name: Install mlstacks package
-        run: uv pip install mlstacks
+        run: uv pip install --system mlstacks
       - name: Check for broken dependencies
         run: pip check
       - name: Markdown link check
@@ -102,13 +101,13 @@ jobs:
         continue-on-error: true
       - name: Security check
         run: |
-          uv pip install bandit
+          uv pip install --system bandit
           bash scripts/check-security.sh
       - name: Check for alembic branch divergence
         env:
           ZENML_DEBUG: 0
         run: |
-          uv pip install alembic
+          uv pip install --system alembic
           bash scripts/check-alembic-branches.sh
   custom-ubuntu-unit-test:
     if: github.event.pull_request.draft == false
