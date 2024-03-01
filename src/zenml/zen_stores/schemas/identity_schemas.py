@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation for the server information table."""
 
-
 from uuid import UUID
 
 from sqlmodel import Field, SQLModel

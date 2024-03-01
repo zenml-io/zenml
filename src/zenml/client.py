@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
+
 import functools
 import json
 import os
@@ -4112,10 +4113,10 @@ class Client(metaclass=ClientMetaClass):
         """
         from zenml.code_repositories import BaseCodeRepository
 
-        code_repo_class: Type[
-            BaseCodeRepository
-        ] = source_utils.load_and_validate_class(
-            source=source, expected_class=BaseCodeRepository
+        code_repo_class: Type[BaseCodeRepository] = (
+            source_utils.load_and_validate_class(
+                source=source, expected_class=BaseCodeRepository
+            )
         )
         try:
             # Validate the repo config

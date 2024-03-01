@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML pipeline decorator definition."""
+
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -38,8 +39,7 @@ logger = get_logger(__name__)
 
 
 @overload
-def pipeline(_func: "F") -> "Pipeline":
-    ...
+def pipeline(_func: "F") -> "Pipeline": ...
 
 
 @overload
@@ -51,8 +51,7 @@ def pipeline(
     enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-) -> Callable[["F"], "Pipeline"]:
-    ...
+) -> Callable[["F"], "Pipeline"]: ...
 
 
 def pipeline(

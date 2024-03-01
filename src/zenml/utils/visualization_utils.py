@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for dashboard visualizations."""
 
-
 from typing import TYPE_CHECKING, Optional
 
 from IPython.core.display import HTML, Image, Markdown, display

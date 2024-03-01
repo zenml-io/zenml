@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base secrets store class used for all secrets stores that use a service connector."""
 
-
 import json
 from abc import abstractmethod
 from threading import Lock

@@ -5,6 +5,7 @@ Revises: 0.35.1
 Create Date: 2023-03-16 16:07:09.596900
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.mysql import MEDIUMTEXT

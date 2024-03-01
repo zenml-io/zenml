@@ -6,7 +6,6 @@ Create Date: 2023-04-03 18:04:47.776420
 
 """
 
-
 # revision identifiers, used by Alembic.
 revision = "0.37.0"
 down_revision = "b4eccf34dfa3"

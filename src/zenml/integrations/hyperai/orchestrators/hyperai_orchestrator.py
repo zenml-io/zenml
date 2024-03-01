@@ -223,9 +223,9 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                     ".env"
                 ]
 
-            compose_definition["services"][container_name][
-                "environment"
-            ] = environment
+            compose_definition["services"][container_name]["environment"] = (
+                environment
+            )
 
             # Add dependency on upstream steps if applicable
             upstream_steps = step.spec.upstream_steps

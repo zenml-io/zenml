@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML secrets store interface."""
+
 from abc import ABC, abstractmethod
 from typing import Dict
 from uuid import UUID

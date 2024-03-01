@@ -61,9 +61,9 @@ class DeepchecksDataValidator(BaseDataValidator):
     """Deepchecks data validator stack component."""
 
     NAME: ClassVar[str] = "Deepchecks"
-    FLAVOR: ClassVar[
-        Type[BaseDataValidatorFlavor]
-    ] = DeepchecksDataValidatorFlavor
+    FLAVOR: ClassVar[Type[BaseDataValidatorFlavor]] = (
+        DeepchecksDataValidatorFlavor
+    )
 
     @staticmethod
     def _split_checks(

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of a GCP Container Registry class."""
+
 from typing import Optional
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
