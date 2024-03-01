@@ -61,6 +61,7 @@ from zenml.zen_server.routers import (
     workspaces_endpoints,
 )
 from zenml.zen_server.utils import (
+    initialize_feature_gate,
     initialize_plugins,
     initialize_rbac,
     initialize_workload_manager,
@@ -157,6 +158,7 @@ def initialize() -> None:
     # race conditions
     initialize_zen_store()
     initialize_rbac()
+    initialize_feature_gate()
     initialize_workload_manager()
     initialize_plugins()
 

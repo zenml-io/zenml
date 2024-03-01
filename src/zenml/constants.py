@@ -12,10 +12,35 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML constants."""
-
+import json
 import os
+from typing import List, Optional
 
 from zenml.enums import AuthScheme
+
+
+def handle_list_env_var(var: str, default: Optional[List[str]] = None) -> List[str]:
+    """Converts normal env var to list.
+
+    Args:
+        var: The environment variable to convert.
+        default: The default value to return if the env var is not set.
+
+    Returns:
+        The converted list value.
+    """
+    # this needs tpo be here to avoid mutable defaults
+    if default is None:
+        default = []
+
+    value = os.getenv(var)
+    if value:
+        try:
+            return json.loads(value)
+        except (TypeError, json.JSONDecodeError):
+            return default
+    else:
+        return default
 
 
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
@@ -95,6 +120,8 @@ ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
 ENV_ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES = (
     "ZENML_PIPELINE_API_TOKEN_EXPIRES_MINUTES"
 )
+
+ENV_ZENML_REPORTABLE_RESOURCES = "ZENML_REPORTABLE_RESOURCES"
 
 # ZenML Server environment variables
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
@@ -178,6 +205,13 @@ DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING = 5  # seconds
 DEFAULT_HTTP_TIMEOUT = 30
 ZENML_API_KEY_PREFIX = "ZENKEY_"
 DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
+
+# Configurations to decide which resources report their usage and check for
+# entitlement in the case of a cloud deployment. Expected Format is this:
+# ENV_ZENML_REPORTABLE_RESOURCES='["Foo", "bar"]'
+REPORTABLE_RESOURCES = handle_list_env_var(
+    ENV_ZENML_REPORTABLE_RESOURCES, default=["pipeline_run", "model"]
+)
 
 # API Endpoint paths:
 ACTIVATE = "/activate"

@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from zenml.constants import REPORTABLE_RESOURCES
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseFilter,
@@ -13,6 +14,10 @@ from zenml.models import (
     UserScopedRequest,
 )
 from zenml.zen_server.auth import get_auth_context
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+    report_usage,
+)
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
@@ -57,9 +62,18 @@ def verify_permissions_and_create_entity(
                 f"Not allowed to create resource '{resource_type}' for a "
                 "different user."
             )
-
     verify_permission(resource_type=resource_type, action=Action.CREATE)
-    return create_method(request_model)
+
+    is_gated_feature = True if resource_type in REPORTABLE_RESOURCES else False
+    if is_gated_feature:
+        check_entitlement(resource_type)
+
+    created = create_method(request_model)
+
+    if is_gated_feature:
+        report_usage(resource_type)
+
+    return created
 
 
 def verify_permissions_and_get_entity(
