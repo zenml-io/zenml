@@ -12,8 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """The base interface to extend the ZenML artifact store."""
+import inspect
 import textwrap
 from abc import abstractmethod
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -71,6 +73,8 @@ def _sanitize_potential_path(potential_path: Any) -> Any:
         import posixpath
 
         path = path.replace(ntpath.sep, posixpath.sep)
+    else:
+        path = str(Path(path).absolute().resolve())
 
     return path
 
@@ -102,6 +106,55 @@ def _sanitize_paths(_func: Callable[..., Any]) -> Callable[..., Any]:
         }
 
         return _func(*args, **kwargs)
+
+    return inner_function
+
+
+def _verify(_func: Callable[..., Any]) -> Callable[..., Any]:
+    """Verifies that the file belongs to the artifact store.
+
+    Args:
+        _func: The function for which to verify the inputs.
+
+    Returns:
+        Function that calls the input function.
+    """
+
+    def inner_function(
+        self: "BaseArtifactStore", *args: Any, **kwargs: Any
+    ) -> Any:
+        """Inner function.
+
+        Args:
+            self: The artifact store.
+            *args: Positional args.
+            **kwargs: Keyword args.
+
+        Returns:
+            Output of the input function called with sanitized paths.
+        """
+        params = inspect.signature(_func).parameters
+        valid = []
+        has_self = False
+        for i, k in enumerate(params):
+            if params[k].name == "self":
+                has_self = True
+                continue
+            if params[k].annotation == PathType:
+                valid.append(str(i))
+                valid.append(k)
+        all_args = {str(i + has_self): a for i, a in enumerate(args)}
+        all_args.update(**kwargs)
+        for k, arg in all_args.items():
+            if k in valid:
+                if isinstance(arg, bytes):
+                    self._inner_verify(arg.decode())
+                else:
+                    self._inner_verify(str(arg))
+        if has_self:
+            return _func(self, *args, **kwargs)
+        else:
+            return _func(*args, **kwargs)
 
     return inner_function
 
@@ -402,6 +455,34 @@ class BaseArtifactStore(StackComponent):
         )
 
         default_filesystem_registry.register(filesystem_class)
+
+    def __init_subclass__(cls) -> None:
+        """Wrap all abstract methods implementations with a path verifier.
+
+        This is done to ensure that the path is within the artifact store
+        bounds.
+        """
+        for abc_method in inspect.getmembers(BaseArtifactStore):
+            if getattr(abc_method[1], "__isabstractmethod__", False):
+                setattr(
+                    cls, abc_method[0], _verify(getattr(cls, abc_method[0]))
+                )
+
+    def _inner_verify(self, name: PathType) -> None:
+        """Verify that the path is inside artifact store bounds.
+
+        Args:
+            name: The path to verify.
+
+        Raises:
+            IOError: If the path is not inside the artifact store bounds.
+        """
+        request_path = _sanitize_potential_path(name)
+        if not request_path.startswith(self.path):
+            raise IOError(
+                f"File `{request_path}` is outside of "
+                f"artifact store bounds `{self.path}`"
+            )
 
 
 class BaseArtifactStoreFlavor(Flavor):

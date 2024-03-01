@@ -752,6 +752,7 @@ def _load_file_from_artifact_store(
     Raises:
         DoesNotExistException: If the file does not exist in the artifact store.
         NotImplementedError: If the artifact store cannot open the file.
+        IOError: If the artifact store rejects the request.
     """
     try:
         with artifact_store.open(uri, mode) as text_file:
@@ -761,6 +762,8 @@ def _load_file_from_artifact_store(
             f"File '{uri}' does not exist in artifact store "
             f"'{artifact_store.name}'."
         )
+    except IOError as e:
+        raise e
     except Exception as e:
         logger.exception(e)
         link = "https://docs.zenml.io/stacks-and-components/component-guide/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"
