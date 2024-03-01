@@ -35,6 +35,9 @@ class AirflowIntegration(Integration):
     REQUIREMENTS = [
         "apache-airflow~=2.4.0",
         "pendulum<3.0.0",
+        # We need to add this as an extra dependency to manually downgrade
+        # SQLModel. Otherwise, the initial installation of ZenML installs
+        # a higher version SQLModel and a version mismatch is created.
         "sqlmodel>=0.0.9,<=0.0.16",
     ]
 
