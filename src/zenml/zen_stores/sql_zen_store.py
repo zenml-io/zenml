@@ -5166,10 +5166,8 @@ class SqlZenStore(BaseZenStore):
                 service_account
             )
             session.add(new_account)
-            try:
-                session.commit()
-            except IntegrityError as e:
-                raise EntityExistsError(err_msg) from e
+            # on commit an IntegrityError may arise we let it bubble up
+            session.commit()
 
             return new_account.to_service_account_model(include_metadata=True)
 
@@ -7379,10 +7377,8 @@ class SqlZenStore(BaseZenStore):
             # Create the user
             new_user = UserSchema.from_user_request(user)
             session.add(new_user)
-            try:
-                session.commit()
-            except IntegrityError as e:
-                raise EntityExistsError(err_msg) from e
+            # on commit an IntegrityError may arise we let it bubble up
+            session.commit()
             return new_user.to_model(include_metadata=True)
 
     def get_user(
