@@ -5,6 +5,7 @@ Revises: 0.23.0
 Create Date: 2022-11-17 08:00:24.936750
 
 """
+
 from typing import TYPE_CHECKING, Dict
 
 import sqlalchemy as sa

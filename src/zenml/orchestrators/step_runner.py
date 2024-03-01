@@ -297,10 +297,10 @@ class StepRunner:
             output_materializers = []
 
             for source in output.materializer_source:
-                materializer_class: Type[
-                    BaseMaterializer
-                ] = source_utils.load_and_validate_class(
-                    source, expected_class=BaseMaterializer
+                materializer_class: Type[BaseMaterializer] = (
+                    source_utils.load_and_validate_class(
+                        source, expected_class=BaseMaterializer
+                    )
                 )
                 output_materializers.append(materializer_class)
 
@@ -441,10 +441,10 @@ class StepRunner:
             # we use the datatype of the stored artifact
             data_type = source_utils.load(artifact.data_type)
 
-        materializer_class: Type[
-            BaseMaterializer
-        ] = source_utils.load_and_validate_class(
-            artifact.materializer, expected_class=BaseMaterializer
+        materializer_class: Type[BaseMaterializer] = (
+            source_utils.load_and_validate_class(
+                artifact.materializer, expected_class=BaseMaterializer
+            )
         )
         materializer: BaseMaterializer = materializer_class(artifact.uri)
         materializer.validate_type_compatibility(data_type)
@@ -579,11 +579,11 @@ class StepRunner:
                 ].default_materializer_source
 
                 if default_materializer_source:
-                    default_materializer_class: Type[
-                        BaseMaterializer
-                    ] = source_utils.load_and_validate_class(
-                        default_materializer_source,
-                        expected_class=BaseMaterializer,
+                    default_materializer_class: Type[BaseMaterializer] = (
+                        source_utils.load_and_validate_class(
+                            default_materializer_source,
+                            expected_class=BaseMaterializer,
+                        )
                     )
                     materializer_registry.default_materializer = (
                         default_materializer_class

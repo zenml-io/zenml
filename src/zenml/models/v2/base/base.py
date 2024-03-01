@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base model definitions."""
+
 from datetime import datetime
 from typing import Any, Dict, Generic, Optional, TypeVar
 from uuid import UUID
@@ -113,9 +114,9 @@ class BaseResponse(
         default=None, title="The resources related to this resource."
     )
 
-    _response_update_strategy: (
-        ResponseUpdateStrategy
-    ) = ResponseUpdateStrategy.ALLOW
+    _response_update_strategy: ResponseUpdateStrategy = (
+        ResponseUpdateStrategy.ALLOW
+    )
     _warn_on_response_updates: bool = True
 
     def _validate_hydrated_version(

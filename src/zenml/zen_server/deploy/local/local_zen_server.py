@@ -57,9 +57,9 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     """
 
     port: int = 8237
-    ip_address: Union[
-        ipaddress.IPv4Address, ipaddress.IPv6Address
-    ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = (
+        ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+    )
     blocking: bool = False
     store: Optional[StoreConfiguration] = None
 
@@ -155,9 +155,9 @@ class LocalZenServer(LocalDaemonService):
         # Set the local stores path to the same path used by the client. This
         # ensures that the server's default store configuration is initialized
         # to point at the same local SQLite database as the client.
-        env[
-            ENV_ZENML_LOCAL_STORES_PATH
-        ] = GlobalConfiguration().local_stores_path
+        env[ENV_ZENML_LOCAL_STORES_PATH] = (
+            GlobalConfiguration().local_stores_path
+        )
         env[ENV_ZENML_DISABLE_DATABASE_MIGRATION] = "True"
 
         return cmd, env

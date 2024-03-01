@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for local code repository contexts."""
+
 from abc import ABC, abstractmethod
 from uuid import UUID
 

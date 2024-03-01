@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Test zenml Model Control Plane CLI commands."""
 
-
 from uuid import uuid4
 
 import pytest

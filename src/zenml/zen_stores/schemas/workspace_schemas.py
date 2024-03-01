@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Workspaces."""
+
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List
 
@@ -131,11 +132,11 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    model_versions_artifacts_links: List[
-        "ModelVersionArtifactSchema"
-    ] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
+    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+        Relationship(
+            back_populates="workspace",
+            sa_relationship_kwargs={"cascade": "delete"},
+        )
     )
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
