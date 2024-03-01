@@ -131,10 +131,10 @@ def initialize_workload_manager() -> None:
         from zenml.utils import source_utils
 
         try:
-            workload_manager_class: Type[
-                WorkloadManagerInterface
-            ] = source_utils.load_and_validate_class(
-                source=source, expected_class=WorkloadManagerInterface
+            workload_manager_class: Type[WorkloadManagerInterface] = (
+                source_utils.load_and_validate_class(
+                    source=source, expected_class=WorkloadManagerInterface
+                )
             )
         except (ModuleNotFoundError, KeyError):
             logger.warning("Unable to load workload manager source.")

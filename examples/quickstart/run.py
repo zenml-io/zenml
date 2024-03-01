@@ -188,12 +188,12 @@ def main(
                 test_dataset_name, test_dataset_version_name
             )
             # Use versioned artifacts
-            run_args_train[
-                "train_dataset_id"
-            ] = train_dataset_artifact_version.id
-            run_args_train[
-                "test_dataset_id"
-            ] = test_dataset_artifact_version.id
+            run_args_train["train_dataset_id"] = (
+                train_dataset_artifact_version.id
+            )
+            run_args_train["test_dataset_id"] = (
+                test_dataset_artifact_version.id
+            )
 
         # Run the SGD pipeline
         pipeline_args = {}

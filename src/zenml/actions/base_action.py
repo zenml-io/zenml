@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base implementation of actions."""
+
 import json
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Type

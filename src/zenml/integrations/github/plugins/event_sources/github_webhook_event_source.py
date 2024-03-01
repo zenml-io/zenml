@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the github webhook event source."""
+
 import urllib
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
