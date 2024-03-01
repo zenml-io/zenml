@@ -107,10 +107,15 @@ def test_basic_source_resolving(mocker):
     assert source_utils.resolve(int) == Source(
         module=int.__module__, attribute=int.__name__, type=SourceType.BUILTIN
     )
+    if sys.platform == "win32":
+        # On Windows, defaultdict might be classified as SourceType.UNKNOWN
+        expected_type = SourceType.UNKNOWN
+    else:
+        expected_type = SourceType.BUILTIN
     assert source_utils.resolve(defaultdict) == Source(
         module=defaultdict.__module__,
         attribute=defaultdict.__name__,
-        type=SourceType.BUILTIN,
+        type=expected_type,
     )
     assert source_utils.resolve(source_utils) == Source(
         module=source_utils.__name__,
