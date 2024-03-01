@@ -39,7 +39,6 @@ from zenml.exceptions import (
     EntityExistsError,
     StepContextError,
 )
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactRequest,
@@ -152,7 +151,7 @@ def save_artifact(
     if not uri.startswith(artifact_store.path):
         uri = os.path.join(artifact_store.path, uri)
 
-    if manual_save and fileio.exists(uri):
+    if manual_save and artifact_store.exists(uri):
         # This check is only necessary for manual saves as we already check
         # it when creating the directory for step output artifacts
         other_artifacts = client.list_artifact_versions(uri=uri, size=1)
@@ -162,7 +161,7 @@ def save_artifact(
                 f"{uri} because the URI is already used by artifact "
                 f"{other_artifact.name} (version {other_artifact.version})."
             )
-    fileio.makedirs(uri)
+    artifact_store.makedirs(uri)
 
     # Find and initialize the right materializer class
     if isinstance(materializer, type):
@@ -503,7 +502,8 @@ def download_artifact_files_from_response(
         FileExistsError: If the file already exists and `overwrite` is `False`.
         Exception: If the artifact could not be downloaded to the zip file.
     """
-    if not overwrite and fileio.exists(path):
+    artifact_store = Client().active_stack.artifact_store
+    if not overwrite and artifact_store.exists(path):
         raise FileExistsError(
             f"File '{path}' already exists and `overwrite` is set to `False`."
         )
@@ -822,7 +822,8 @@ def load_model_from_metadata(model_uri: str) -> Any:
         The ML model object loaded into memory.
     """
     # Load the model from its metadata
-    with fileio.open(
+    artifact_store = Client().active_stack.artifact_store
+    with artifact_store.open(
         os.path.join(model_uri, MODEL_METADATA_YAML_FILE_NAME), "r"
     ) as f:
         metadata = read_yaml(f.name)
