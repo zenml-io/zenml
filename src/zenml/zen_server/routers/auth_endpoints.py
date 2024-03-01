@@ -258,8 +258,8 @@ def generate_access_token(
     LOGIN,
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
 )
-@handle_exceptions
 @limiter.limit("5/minute;1000/day")
+@handle_exceptions
 def token(
     request: Request,
     response: Response,
