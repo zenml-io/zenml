@@ -34,7 +34,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-          - ubuntu-dind-runners
+          - arc-runner-set
         required: false
         default: ubuntu-latest
       python-version:
@@ -153,7 +153,7 @@ jobs:
           pip install pyyaml==5.3.1
           pip install docker-compose
       - name: Install Linux System Dependencies
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
         run: sudo apt install graphviz
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
@@ -180,7 +180,7 @@ jobs:
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'ubuntu-dind-runners')
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
       - name: Install kubectl on MacOS
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
