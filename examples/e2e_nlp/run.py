@@ -208,9 +208,9 @@ def main(
 
         pipeline_args["model"] = model
 
-        pipeline_args[
-            "run_name"
-        ] = f"nlp_use_case_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        pipeline_args["run_name"] = (
+            f"nlp_use_case_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        )
         nlp_use_case_training_pipeline.with_options(**pipeline_args)(
             **run_args_train
         )
@@ -221,9 +221,9 @@ def main(
         run_args_promoting = {}
         model = Model(name=zenml_model_name, version=ModelStages.LATEST)
         pipeline_args["model"] = model
-        pipeline_args[
-            "run_name"
-        ] = f"nlp_use_case_promoting_pipeline_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        pipeline_args["run_name"] = (
+            f"nlp_use_case_promoting_pipeline_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        )
         nlp_use_case_promote_pipeline.with_options(**pipeline_args)(
             **run_args_promoting
         )
@@ -243,9 +243,9 @@ def main(
             "interpretation": deployment_app_interpretation,
             "example": deployment_app_example,
         }
-        pipeline_args[
-            "run_name"
-        ] = f"nlp_use_case_deploy_pipeline_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        pipeline_args["run_name"] = (
+            f"nlp_use_case_deploy_pipeline_run_{dt.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        )
         nlp_use_case_deploy_pipeline.with_options(**pipeline_args)(
             **run_args_deploying
         )
