@@ -258,7 +258,10 @@ def generate_access_token(
     LOGIN,
     response_model=Union[OAuthTokenResponse, OAuthRedirectResponse],
 )
-@limiter.limit("5/minute;1000/day")
+@limiter.limit(
+    f"{server_config().login_rate_limit_minute}/minute;"
+    f"{server_config().login_rate_limit_day}/day"
+)
 @handle_exceptions
 def token(
     request: Request,
