@@ -1,7 +1,7 @@
 """unique users [72675226b2de].
 
 Revision ID: 72675226b2de
-Revises: 479103df60b6
+Revises: 0.55.4
 Create Date: 2024-02-29 14:58:25.584731
 
 """
@@ -9,7 +9,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "72675226b2de"
-down_revision = "479103df60b6"
+down_revision = "0.55.4"
 branch_labels = None
 depends_on = None
 
