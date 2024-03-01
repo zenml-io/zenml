@@ -388,7 +388,7 @@ class BaseZenStore(
             secrets_store_type=secrets_store_type,
             auth_scheme=auth_scheme,
             base_url=base_url,
-            metadata=metadata, 
+            metadata=metadata,
         )
 
     def is_local_store(self) -> bool:
