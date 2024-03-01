@@ -51,9 +51,9 @@ logger = get_logger(__name__)
 class TerraformServerProvider(BaseServerProvider):
     """Terraform ZenML server provider."""
 
-    CONFIG_TYPE: ClassVar[
-        Type[ServerDeploymentConfig]
-    ] = TerraformServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[ServerDeploymentConfig]] = (
+        TerraformServerDeploymentConfig
+    )
 
     @staticmethod
     def _get_server_recipe_root_path() -> str:

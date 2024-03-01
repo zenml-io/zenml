@@ -249,13 +249,13 @@ def register_stack(
         if step_operator:
             components[StackComponentType.STEP_OPERATOR] = step_operator
         if experiment_tracker:
-            components[
-                StackComponentType.EXPERIMENT_TRACKER
-            ] = experiment_tracker
+            components[StackComponentType.EXPERIMENT_TRACKER] = (
+                experiment_tracker
+            )
         if container_registry:
-            components[
-                StackComponentType.CONTAINER_REGISTRY
-            ] = container_registry
+            components[StackComponentType.CONTAINER_REGISTRY] = (
+                container_registry
+            )
 
         try:
             created_stack = client.create_stack(
