@@ -39,7 +39,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import SecretStr, root_validator, validator
+from pydantic import Field, SecretStr, root_validator, validator
 from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -384,9 +384,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     # database backup directory
-    backup_directory: str = os.path.join(
-        GlobalConfiguration().config_directory,
-        SQL_STORE_BACKUP_DIRECTORY_NAME,
+    backup_directory: str = Field(
+        default_factory=lambda: os.path.join(
+            GlobalConfiguration().config_directory,
+            SQL_STORE_BACKUP_DIRECTORY_NAME,
+        )
     )
     backup_database: Optional[str] = None
 
