@@ -214,9 +214,12 @@ def test_module_type_detection(mocker):
     assert source_utils.get_source_type(builtin_module) == SourceType.BUILTIN
 
     standard_lib_module = sys.modules[defaultdict.__module__]
-    assert (
-        source_utils.get_source_type(standard_lib_module) == SourceType.BUILTIN
-    )
+    if sys.platform == "win32":
+        # On Windows, the module containing defaultdict might be classified as SourceType.DISTRIBUTION_PACKAGE
+        expected_type = SourceType.DISTRIBUTION_PACKAGE
+    else:
+        expected_type = SourceType.BUILTIN
+    assert source_utils.get_source_type(standard_lib_module) == expected_type
     assert source_utils.is_standard_lib_file(standard_lib_module.__file__)
 
     internal_module = sys.modules[source_utils.__name__]
