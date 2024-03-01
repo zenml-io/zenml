@@ -206,11 +206,11 @@ class PipelineRunActionFlavor(BaseActionFlavor):
 
     FLAVOR: ClassVar[str] = "builtin"
     SUBTYPE: ClassVar[PluginSubType] = PluginSubType.PIPELINE_RUN
-    PLUGIN_CLASS: ClassVar[Type[PipelineRunActionHandler]] = (
-        PipelineRunActionHandler
-    )
+    PLUGIN_CLASS: ClassVar[
+        Type[PipelineRunActionHandler]
+    ] = PipelineRunActionHandler
 
     # EventPlugin specific
-    ACTION_CONFIG_CLASS: ClassVar[Type[PipelineRunActionConfiguration]] = (
-        PipelineRunActionConfiguration
-    )
+    ACTION_CONFIG_CLASS: ClassVar[
+        Type[PipelineRunActionConfiguration]
+    ] = PipelineRunActionConfiguration

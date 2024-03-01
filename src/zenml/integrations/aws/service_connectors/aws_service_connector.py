@@ -1451,9 +1451,9 @@ class AWSServiceConnector(ServiceConnector):
             }
 
             if credentials.token:
-                all_profiles[aws_profile_name]["aws_session_token"] = (
-                    credentials.token
-                )
+                all_profiles[aws_profile_name][
+                    "aws_session_token"
+                ] = credentials.token
 
             aws_credentials_path = os.path.join(
                 users_home, ".aws", "credentials"

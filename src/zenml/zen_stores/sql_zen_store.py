@@ -688,9 +688,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     )
                 sqlalchemy_ssl_args[key.lstrip("ssl_")] = ssl_setting
             if len(sqlalchemy_ssl_args) > 0:
-                sqlalchemy_ssl_args["check_hostname"] = (
-                    self.ssl_verify_server_cert
-                )
+                sqlalchemy_ssl_args[
+                    "check_hostname"
+                ] = self.ssl_verify_server_cert
                 sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
@@ -2506,14 +2506,14 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackComponentSchema)
-            paged_components: Page[ComponentResponse] = (
-                self.filter_and_paginate(
-                    session=session,
-                    query=query,
-                    table=StackComponentSchema,
-                    filter_model=component_filter_model,
-                    hydrate=hydrate,
-                )
+            paged_components: Page[
+                ComponentResponse
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StackComponentSchema,
+                filter_model=component_filter_model,
+                hydrate=hydrate,
             )
             return paged_components
 
@@ -5215,17 +5215,17 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(UserSchema)
-            paged_service_accounts: Page[ServiceAccountResponse] = (
-                self.filter_and_paginate(
-                    session=session,
-                    query=query,
-                    table=UserSchema,
-                    filter_model=filter_model,
-                    custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
-                        include_metadata=hydrate
-                    ),
-                    hydrate=hydrate,
-                )
+            paged_service_accounts: Page[
+                ServiceAccountResponse
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserSchema,
+                filter_model=filter_model,
+                custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
+                    include_metadata=hydrate
+                ),
+                hydrate=hydrate,
             )
             return paged_service_accounts
 
@@ -5474,15 +5474,15 @@ class SqlZenStore(BaseZenStore):
 
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)
-            paged_connectors: Page[ServiceConnectorResponse] = (
-                self.filter_and_paginate(
-                    session=session,
-                    query=query,
-                    table=ServiceConnectorSchema,
-                    filter_model=filter_model,
-                    custom_fetch=fetch_connectors,
-                    hydrate=hydrate,
-                )
+            paged_connectors: Page[
+                ServiceConnectorResponse
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ServiceConnectorSchema,
+                filter_model=filter_model,
+                custom_fetch=fetch_connectors,
+                hydrate=hydrate,
             )
 
             self._populate_connector_type(*paged_connectors.items)

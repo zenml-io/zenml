@@ -44,9 +44,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
     """BentoML model deployer stack component implementation."""
 
     NAME: ClassVar[str] = "BentoML"
-    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = (
-        BentoMLModelDeployerFlavor
-    )
+    FLAVOR: ClassVar[
+        Type[BaseModelDeployerFlavor]
+    ] = BentoMLModelDeployerFlavor
 
     _service_path: Optional[str] = None
 

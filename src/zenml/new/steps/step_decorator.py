@@ -53,7 +53,8 @@ logger = get_logger(__name__)
 
 
 @overload
-def step(_func: "F") -> "BaseStep": ...
+def step(_func: "F") -> "BaseStep":
+    ...
 
 
 @overload
@@ -73,7 +74,8 @@ def step(
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     model_version: Optional["Model"] = None,  # TODO: deprecate me
-) -> Callable[["F"], "BaseStep"]: ...
+) -> Callable[["F"], "BaseStep"]:
+    ...
 
 
 def step(
