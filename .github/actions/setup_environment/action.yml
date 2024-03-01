@@ -72,5 +72,5 @@ runs:
       shell: bash
       run: |-
         zenml integration list
-        pip list
+        uv pip list
         pip check || true

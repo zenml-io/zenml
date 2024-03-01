@@ -53,5 +53,5 @@ jobs:
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list
-          pip list
+          uv pip list
           pip check || true
