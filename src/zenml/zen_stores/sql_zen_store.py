@@ -22,7 +22,7 @@ import re
 import sys
 from datetime import datetime
 from functools import lru_cache
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -626,53 +626,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             if file_path and os.path.isfile(file_path):
                 with open(file_path, "r") as f:
                     setattr(self, key, f.read())
-
-    @classmethod
-    def copy_configuration(
-        cls,
-        config: "StoreConfiguration",
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> "StoreConfiguration":
-        """Copy the store config using a different configuration path.
-
-        This method is used to create a copy of the store configuration that can
-        be loaded using a different configuration path or in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.).
-
-        Args:
-            config: The store configuration to copy.
-            config_path: new path where the configuration copy will be loaded
-                from.
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-
-        Returns:
-            A new store configuration object that reflects the new configuration
-            path.
-        """
-        assert isinstance(config, SqlZenStoreConfiguration)
-        config = config.copy()
-
-        if config.driver == SQLDatabaseDriver.MYSQL:
-            # Load the certificate values back into the configuration
-            config.expand_certificates()
-
-        elif config.driver == SQLDatabaseDriver.SQLITE:
-            if load_config_path:
-                config.url = cls.get_local_url(str(load_config_path))
-            else:
-                config.url = cls.get_local_url(config_path)
-
-        return config
 
     def get_sqlalchemy_config(
         self,
@@ -5194,27 +5147,28 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
-            # Check if a service account with the given name already
-            # exists
-            try:
-                self._get_account_schema(
-                    service_account.name, session=session, service_account=True
-                )
-                raise EntityExistsError(
-                    f"Unable to create service account with name "
-                    f"'{service_account.name}': Found existing service "
-                    "account with this name."
-                )
-            except KeyError:
-                pass
-
             # Create the service account
             new_account = UserSchema.from_service_account_request(
                 service_account
             )
             session.add(new_account)
-            session.commit()
 
+            # Check if a service account with the given name already
+            # exists
+            service_accounts = session.execute(
+                select(UserSchema).where(
+                    UserSchema.name == service_account.name,
+                    UserSchema.is_service_account.is_(True),  # type: ignore[attr-defined]
+                )
+            ).fetchall()
+            if len(service_accounts) == 1:
+                session.commit()
+            else:
+                raise EntityExistsError(
+                    f"Unable to create service account with name "
+                    f"'{service_account.name}': Found existing service "
+                    "account with this name."
+                )
             return new_account.to_service_account_model(include_metadata=True)
 
     def get_service_account(
@@ -6935,6 +6889,13 @@ class SqlZenStore(BaseZenStore):
                 else:
                     start_time_str = None
                     duration_seconds = None
+
+                stack = pipeline_run.deployment.stack
+                assert stack
+                stack_metadata = {
+                    str(component.type): component.flavor
+                    for component in stack.components
+                }
                 with track_handler(
                     AnalyticsEvent.RUN_PIPELINE_ENDED
                 ) as analytics_handler:
@@ -6947,6 +6908,7 @@ class SqlZenStore(BaseZenStore):
                             "%Y-%m-%dT%H:%M:%S.%fZ"
                         ),
                         "duration_seconds": duration_seconds,
+                        **stack_metadata,
                     }
             pipeline_run.update(run_update)
             session.add(pipeline_run)
@@ -7402,25 +7364,24 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
+            # Create the user
+            new_user = UserSchema.from_user_request(user)
+            session.add(new_user)
+
             # Check if a user account with the given name already exists
-            try:
-                self._get_account_schema(
-                    user.name,
-                    session=session,
-                    # Filter out service accounts
-                    service_account=False,
+            users = session.execute(
+                select(UserSchema).where(
+                    UserSchema.name == user.name,
+                    UserSchema.is_service_account.is_(False),  # type: ignore[attr-defined]
                 )
+            ).fetchall()
+            if len(users) == 1:
+                session.commit()
+            else:
                 raise EntityExistsError(
                     f"Unable to create user with name '{user.name}': "
                     f"Found an existing user account with this name."
                 )
-            except KeyError:
-                pass
-
-            # Create the user
-            new_user = UserSchema.from_user_request(user)
-            session.add(new_user)
-            session.commit()
             return new_user.to_model(include_metadata=True)
 
     def get_user(

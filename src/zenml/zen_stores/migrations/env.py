@@ -32,9 +32,9 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 def run_migrations() -> None:
     """Run migrations through the ZenML SqlZenStore and Alembic classes."""
-    store_cfg = GlobalConfiguration().store
+    store_cfg = GlobalConfiguration().store_configuration
 
-    if store_cfg is None or store_cfg.type != StoreType.SQL:
+    if store_cfg.type != StoreType.SQL:
         store_cfg = GlobalConfiguration().get_default_store()
 
     store = SqlZenStore(

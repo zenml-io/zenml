@@ -16,7 +16,7 @@
 import json
 import os
 import uuid
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
@@ -77,11 +77,6 @@ class GlobalConfigMetaClass(ModelMetaclass):
     def __call__(cls, *args: Any, **kwargs: Any) -> "GlobalConfiguration":
         """Create or return the default global config instance.
 
-        If the GlobalConfiguration constructor is called with custom arguments,
-        the singleton functionality of the metaclass is bypassed: a new
-        GlobalConfiguration instance is created and returned immediately and
-        without saving it as the global GlobalConfiguration singleton.
-
         Args:
             *args: positional arguments
             **kwargs: keyword arguments
@@ -89,11 +84,6 @@ class GlobalConfigMetaClass(ModelMetaclass):
         Returns:
             The global GlobalConfiguration instance.
         """
-        if args or kwargs:
-            return cast(
-                "GlobalConfiguration", super().__call__(*args, **kwargs)
-            )
-
         if not cls._global_config:
             cls._global_config = cast(
                 "GlobalConfiguration", super().__call__(*args, **kwargs)
@@ -120,7 +110,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         active_stack_id: The ID of the active stack.
         active_workspace_name: The name of the active workspace.
         jwt_secret_key: The secret key used to sign and verify JWT tokens.
-        _config_path: Directory where the global config file is stored.
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
@@ -132,45 +121,26 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     active_stack_id: Optional[uuid.UUID]
     active_workspace_name: Optional[str]
 
-    _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
     _active_workspace: Optional["WorkspaceResponse"] = None
     _active_stack: Optional["StackResponse"] = None
 
-    def __init__(
-        self, config_path: Optional[str] = None, **kwargs: Any
-    ) -> None:
+    def __init__(self, **data: Any) -> None:
         """Initializes a GlobalConfiguration using values from the config file.
 
         GlobalConfiguration is a singleton class: only one instance can exist.
         Calling this constructor multiple times will always yield the same
-        instance (see the exception below).
-
-        The `config_path` argument is only meant for internal use and testing
-        purposes. User code must never pass it to the constructor. When a custom
-        `config_path` value is passed, an anonymous GlobalConfiguration instance
-        is created and returned independently of the GlobalConfiguration
-        singleton and that will have no effect as far as the rest of the ZenML
-        core code is concerned.
-
-        If the config file doesn't exist yet, we try to read values from the
-        legacy (ZenML version < 0.6) config file.
+        instance.
 
         Args:
-            config_path: (internal use) custom config file path. When not
-                specified, the default global configuration path is used and the
-                global configuration singleton instance is returned. Only used
-                to create configuration copies for transfer to different
-                runtime environments.
-            **kwargs: keyword arguments
+            data: Custom configuration options.
         """
-        self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
-        config_values.update(**kwargs)
+        config_values.update(data)
 
         super().__init__(**config_values)
 
-        if not fileio.exists(self._config_file(config_path)):
+        if not fileio.exists(self._config_file):
             self._write_config()
 
     @classmethod
@@ -322,30 +292,24 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             A dictionary containing the configuration options.
         """
+        config_file = self._config_file
         config_values = {}
-        if fileio.exists(self._config_file()):
+        if fileio.exists(config_file):
             config_values = cast(
                 Dict[str, Any],
-                yaml_utils.read_yaml(self._config_file()),
+                yaml_utils.read_yaml(config_file),
             )
 
         return config_values
 
-    def _write_config(self, config_path: Optional[str] = None) -> None:
-        """Writes the global configuration options to disk.
-
-        Args:
-            config_path: custom config file path. When not specified, the
-                default global configuration path is used.
-        """
-        config_file = self._config_file(config_path)
+    def _write_config(self) -> None:
+        """Writes the global configuration options to disk."""
+        config_file = self._config_file
         yaml_dict = json.loads(self.json(exclude_none=True))
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):
-            io_utils.create_dir_recursive_if_not_exists(
-                config_path or self.config_directory
-            )
+            io_utils.create_dir_recursive_if_not_exists(self.config_directory)
 
         yaml_utils.write_yaml(config_file, yaml_dict)
 
@@ -415,94 +379,14 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._active_workspace = active_workspace
         self.set_active_stack(active_stack)
 
-    @staticmethod
-    def default_config_directory() -> str:
-        """Path to the default global configuration directory.
-
-        Returns:
-            The default global configuration directory.
-        """
-        return io_utils.get_global_config_directory()
-
-    def _config_file(self, config_path: Optional[str] = None) -> str:
+    @property
+    def _config_file(self) -> str:
         """Path to the file where global configuration options are stored.
-
-        Args:
-            config_path: custom config file path. When not specified, the
-                default global configuration path is used.
 
         Returns:
             The path to the global configuration file.
         """
-        return os.path.join(config_path or self._config_path, "config.yaml")
-
-    def copy_configuration(
-        self,
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-        store_config: Optional[StoreConfiguration] = None,
-        empty_store: bool = False,
-    ) -> "GlobalConfiguration":
-        """Create a copy of the global config using a different config path.
-
-        This method is used to copy the global configuration and store it in a
-        different configuration path, where it can be loaded in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.)
-        unless a custom store configuration is provided or the `empty_store`
-        flag is set to `True`.
-
-        If the default local store is currently in use, it will not be included
-        in the configuration copy. This is the same as explicitly setting the
-        `empty_store` flag to `True`.
-
-        Args:
-            config_path: path where the configuration copy should be saved
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-            store_config: custom store configuration to use for the copied
-                global configuration. If not specified, the current global store
-                configuration is used.
-            empty_store: if `True`, an empty store configuration is used for the
-                copied global configuration. This means that the copied global
-                configuration will be initialized to the default local store in
-                the new environment.
-
-        Returns:
-            A new global configuration object copied to the specified path.
-        """
-        from zenml.zen_stores.base_zen_store import BaseZenStore
-
-        self._write_config(config_path)
-        config_copy = GlobalConfiguration(config_path=config_path)
-
-        store: Optional[StoreConfiguration] = None
-
-        if store_config is not None:
-            store = store_config
-
-        elif empty_store or self.uses_default_store():
-            store = None
-
-        elif self.store:
-            store_config_class = BaseZenStore.get_store_config_class(
-                self.store.type
-            )
-
-            store_config_copy = store_config_class.copy_configuration(
-                self.store, config_path, load_config_path
-            )
-            store = store_config_copy
-        config_copy.store = store
-
-        return config_copy
+        return os.path.join(self.config_directory, "config.yaml")
 
     @property
     def config_directory(self) -> str:
@@ -511,7 +395,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             The directory where the global configuration file is located.
         """
-        return self._config_path
+        return io_utils.get_global_config_directory()
 
     @property
     def local_stores_path(self) -> str:
@@ -528,20 +412,96 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             LOCAL_STORES_DIRECTORY_NAME,
         )
 
-    def get_default_store(self) -> StoreConfiguration:
-        """Get the default store configuration.
+    def get_config_environment_vars(self) -> Dict[str, str]:
+        """Convert the global configuration to environment variables.
 
         Returns:
-            The default store configuration.
+            Environment variables dictionary.
+        """
+        environment_vars = {}
+
+        for key in self.__fields__.keys():
+            if key == "store":
+                # The store configuration uses its own environment variable
+                # naming scheme
+                continue
+
+            value = getattr(self, key)
+            if value is not None:
+                environment_vars[CONFIG_ENV_VAR_PREFIX + key.upper()] = str(
+                    value
+                )
+
+        store_dict = self.store_configuration.dict(exclude_none=True)
+
+        # The secrets store and backup secrets store configurations use their
+        # own environment variables naming scheme
+        secrets_store_dict = store_dict.pop("secrets_store", None) or {}
+        backup_secrets_store_dict = (
+            store_dict.pop("backup_secrets_store", None) or {}
+        )
+
+        for key, value in store_dict.items():
+            if key in ["username", "password"]:
+                # Never include the username and password in the env vars. Use
+                # the API token instead.
+                continue
+
+            environment_vars[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
+
+        for key, value in secrets_store_dict.items():
+            environment_vars[
+                ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()
+            ] = str(value)
+
+        for key, value in backup_secrets_store_dict.items():
+            environment_vars[
+                ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX + key.upper()
+            ] = str(value)
+
+        return environment_vars
+
+    def _get_store_configuration(
+        self, baseline: Optional[StoreConfiguration] = None
+    ) -> StoreConfiguration:
+        """Get the store configuration.
+
+        This method computes a store configuration starting from a baseline and
+        applying the environment variables on top. If no baseline is provided,
+        the following are used as a baseline:
+
+        * the current store configuration, if it exists (e.g. if a store was
+        configured in the global configuration file or explicitly set in the
+        global configuration by calling `set_store`), or
+        * the default store configuration, otherwise
+
+        Args:
+            baseline: Optional baseline store configuration to use.
+
+        Returns:
+            The store configuration.
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
+
+        # Step 1: Create a baseline store configuration
+
+        if baseline is not None:
+            # Use the provided baseline store configuration
+            store = baseline
+        elif self.store is not None:
+            # Use the current store configuration as a baseline
+            store = self.store
+        else:
+            # Start with the default store configuration as a baseline
+            store = self.get_default_store()
+
+        # Step 2: Replace or update the baseline store configuration with the
+        # environment variables
 
         env_store_config: Dict[str, str] = {}
         env_secrets_store_config: Dict[str, str] = {}
         env_backup_secrets_store_config: Dict[str, str] = {}
         for k, v in os.environ.items():
-            if v == "":
-                continue
             if k.startswith(ENV_ZENML_STORE_PREFIX):
                 env_store_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
             elif k.startswith(ENV_ZENML_SECRETS_STORE_PREFIX):
@@ -554,60 +514,126 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 ] = v
 
         if len(env_store_config):
+            # As a convenience, we also infer the store type from the URL if
+            # not explicitly set in the environment variables.
             if "type" not in env_store_config and "url" in env_store_config:
                 env_store_config["type"] = BaseZenStore.get_store_type(
                     env_store_config["url"]
                 )
 
-            logger.debug(
-                "Using environment variables to configure the default store"
-            )
+            # We distinguish between two cases here: the environment variables
+            # are used to completely replace the store configuration (i.e. when
+            # the store type or URL is set using the environment variables), or
+            # they are only used to update the store configuration. In the first
+            # case, we replace the baseline store configuration with the
+            # environment variables. In the second case, we only merge the
+            # environment variables into the baseline store config.
 
-            config = StoreConfiguration(
-                **env_store_config,
-            )
-        else:
-            config = BaseZenStore.get_default_store_config(
-                path=os.path.join(
-                    self.local_stores_path,
-                    DEFAULT_STORE_DIRECTORY_NAME,
+            if "type" in env_store_config:
+                logger.debug(
+                    "Using environment variables to configure the store"
                 )
+                store = StoreConfiguration(
+                    **env_store_config,
+                )
+            else:
+                logger.debug(
+                    "Using environment variables to update the default store"
+                )
+                store = store.copy(update=env_store_config, deep=True)
+
+        # Step 3: Replace or update the baseline secrets store configuration
+        # with the environment variables. This only applies to SQL stores.
+
+        if store.type == StoreType.SQL:
+            # We distinguish between two cases here: the environment
+            # variables are used to completely replace the secrets store
+            # configuration (i.e. when the secrets store type is set using
+            # the environment variable), or they are only used to update the
+            # store configuration. In the first case, we replace the
+            # baseline secrets store configuration with the environment
+            # variables. In the second case, we only merge the environment
+            # variables into the baseline secrets store config (if any is
+            # set).
+
+            if len(env_secrets_store_config):
+                if "type" in env_secrets_store_config:
+                    logger.debug(
+                        "Using environment variables to configure the secrets "
+                        "store"
+                    )
+                    store.secrets_store = SecretsStoreConfiguration(
+                        **env_secrets_store_config
+                    )
+                elif store.secrets_store:
+                    logger.debug(
+                        "Using environment variables to update the secrets "
+                        "store"
+                    )
+                    store.secrets_store = store.secrets_store.copy(
+                        update=env_secrets_store_config, deep=True
+                    )
+
+            if len(env_backup_secrets_store_config):
+                if "type" in env_backup_secrets_store_config:
+                    logger.debug(
+                        "Using environment variables to configure the backup "
+                        "secrets store"
+                    )
+                    store.backup_secrets_store = SecretsStoreConfiguration(
+                        **env_backup_secrets_store_config
+                    )
+                elif store.backup_secrets_store:
+                    logger.debug(
+                        "Using environment variables to update the backup "
+                        "secrets store"
+                    )
+                    store.backup_secrets_store = (
+                        store.backup_secrets_store.copy(
+                            update=env_backup_secrets_store_config, deep=True
+                        )
+                    )
+
+        return store
+
+    @property
+    def store_configuration(self) -> StoreConfiguration:
+        """Get the current store configuration.
+
+        Returns:
+            The store configuration.
+        """
+        # If the zen store is already initialized, we can get the store
+        # configuration from there and disregard the global configuration.
+        if self._zen_store is not None:
+            return self._zen_store.config
+        return self._get_store_configuration()
+
+    def get_default_store(self) -> StoreConfiguration:
+        """Get the default SQLite store configuration.
+
+        Returns:
+            The default SQLite store configuration.
+        """
+        from zenml.zen_stores.base_zen_store import BaseZenStore
+
+        return BaseZenStore.get_default_store_config(
+            path=os.path.join(
+                self.local_stores_path,
+                DEFAULT_STORE_DIRECTORY_NAME,
             )
-
-        if len(env_secrets_store_config):
-            if "type" not in env_secrets_store_config:
-                env_secrets_store_config["type"] = config.type.value
-
-            logger.debug(
-                "Using environment variables to configure the secrets store"
-            )
-
-            config.secrets_store = SecretsStoreConfiguration(
-                **env_secrets_store_config
-            )
-
-        if len(env_backup_secrets_store_config):
-            if "type" not in env_backup_secrets_store_config:
-                env_backup_secrets_store_config["type"] = config.type.value
-
-            logger.debug(
-                "Using environment variables to configure the backup secrets "
-                "store"
-            )
-
-            config.backup_secrets_store = SecretsStoreConfiguration(
-                **env_backup_secrets_store_config
-            )
-
-        return config
+        )
 
     def set_default_store(self) -> None:
-        """Creates and sets the default store configuration.
+        """Initializes and sets the default store configuration.
 
         Call this method to initialize or revert the store configuration to the
         default store.
         """
-        default_store_cfg = self.get_default_store()
+        # Apply the environment variables to the default store configuration
+        default_store_cfg = self._get_store_configuration(
+            baseline=self.get_default_store()
+        )
         self._configure_store(default_store_cfg)
         logger.debug("Using the default store for the global config.")
 
@@ -617,10 +643,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             `True` if the global configuration uses the default store.
         """
-        return (
-            self.store is not None
-            and self.store.url == self.get_default_store().url
-        )
+        return self.store_configuration.url == self.get_default_store().url
 
     def set_store(
         self,
@@ -639,6 +662,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             **kwargs: Additional keyword arguments to pass to the store
                 constructor.
         """
+        # Apply the environment variables to the custom store configuration
+        config = self._get_store_configuration(baseline=config)
         self._configure_store(config, skip_default_registrations, **kwargs)
         logger.info("Updated the global store configuration.")
 
@@ -669,11 +694,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             The current zen store.
         """
-        if not self.store:
-            self.set_default_store()
-        elif self._zen_store is None:
-            self._configure_store(self.store)
-
+        if self._zen_store is None:
+            self._configure_store(self.store_configuration)
         assert self._zen_store is not None
 
         return self._zen_store

@@ -35,7 +35,7 @@ on:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-          - ubuntu-dind-runners
+          - arc-runner-set
         required: false
         default: ubuntu-latest
       python-version:
@@ -106,7 +106,7 @@ jobs:
 
       # - name: Upload coverage
       #  # only do it for python 3.8, we don't need to do it for every version
-      #   if: ${{ inputs.os == 'ubuntu-dind-runners' && inputs.python-version == '3.8' }}
+      #   if: ${{ inputs.os == 'arc-runner-set' && inputs.python-version == '3.8' }}
       #   uses: codecov/codecov-action@v2
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}

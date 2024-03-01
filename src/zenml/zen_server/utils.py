@@ -121,18 +121,25 @@ def initialize_rbac() -> None:
 
 
 def initialize_workload_manager() -> None:
-    """Initialize the workload manager component."""
+    """Initialize the workload manager component.
+
+    This does not fail if the source can't be loaded but only logs a warning.
+    """
     global _workload_manager
 
     if source := server_config().workload_manager_implementation_source:
         from zenml.utils import source_utils
 
-        workload_manager_class: Type[
-            WorkloadManagerInterface
-        ] = source_utils.load_and_validate_class(
-            source=source, expected_class=WorkloadManagerInterface
-        )
-        _workload_manager = workload_manager_class()
+        try:
+            workload_manager_class: Type[
+                WorkloadManagerInterface
+            ] = source_utils.load_and_validate_class(
+                source=source, expected_class=WorkloadManagerInterface
+            )
+        except (ModuleNotFoundError, KeyError):
+            logger.warning("Unable to load workload manager source.")
+        else:
+            _workload_manager = workload_manager_class()
 
 
 def initialize_plugins() -> None:
@@ -237,9 +244,9 @@ def get_active_server_details() -> Tuple[str, Optional[int]]:
     """
     # Check for connected servers first
     gc = GlobalConfiguration()
-    if not gc.uses_default_store() and gc.store is not None:
+    if not gc.uses_default_store():
         logger.debug("Getting URL of connected server.")
-        parsed_url = urlparse(gc.store.url)
+        parsed_url = urlparse(gc.store_configuration.url)
         return f"{parsed_url.scheme}://{parsed_url.hostname}", parsed_url.port
     # Else, check for deployed servers
     server = get_active_deployment(local=False)

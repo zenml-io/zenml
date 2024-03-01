@@ -18,6 +18,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
+from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.utils import track_handler
 from zenml.constants import (
     API,
     DEVICE_VERIFY,
@@ -208,63 +210,64 @@ def verify_authorized_device(
         device_id=device_id,
     )
 
-    # Check if the device is in a state that allows verification.
-    if device_model.status != OAuthDeviceStatus.PENDING:
-        raise ValueError(
-            "Invalid request: device not pending verification.",
-        )
+    with track_handler(event=AnalyticsEvent.DEVICE_VERIFIED):
+        # Check if the device is in a state that allows verification.
+        if device_model.status != OAuthDeviceStatus.PENDING:
+            raise ValueError(
+                "Invalid request: device not pending verification.",
+            )
 
-    # Check if the device verification has expired.
-    if device_model.expires and device_model.expires < datetime.utcnow():
-        raise ValueError(
-            "Invalid request: device verification expired.",
-        )
+        # Check if the device verification has expired.
+        if device_model.expires and device_model.expires < datetime.utcnow():
+            raise ValueError(
+                "Invalid request: device verification expired.",
+            )
 
-    # Check if the device already has a user associated with it. If so, the
-    # current user and the user associated with the device must be the same.
-    if device_model.user and device_model.user.id != auth_context.user.id:
-        raise ValueError(
-            "Invalid request: this device is associated with another user.",
-        )
+        # Check if the device already has a user associated with it. If so, the
+        # current user and the user associated with the device must be the same.
+        if device_model.user and device_model.user.id != auth_context.user.id:
+            raise ValueError(
+                "Invalid request: this device is associated with another user.",
+            )
 
-    # Check if the device code is valid.
-    if not device_model.verify_user_code(request.user_code):
-        # If the device code is invalid, increment the failed auth attempts
-        # counter and lock the device if the maximum number of failed auth
-        # attempts has been reached.
-        failed_auth_attempts = device_model.failed_auth_attempts + 1
+        # Check if the device code is valid.
+        if not device_model.verify_user_code(request.user_code):
+            # If the device code is invalid, increment the failed auth attempts
+            # counter and lock the device if the maximum number of failed auth
+            # attempts has been reached.
+            failed_auth_attempts = device_model.failed_auth_attempts + 1
+            update = OAuthDeviceInternalUpdate(
+                failed_auth_attempts=failed_auth_attempts
+            )
+            if failed_auth_attempts >= config.max_failed_device_auth_attempts:
+                update.locked = True
+            store.update_internal_authorized_device(
+                device_id=device_model.id,
+                update=update,
+            )
+            if failed_auth_attempts >= config.max_failed_device_auth_attempts:
+                raise ValueError(
+                    "Invalid request: device locked due to too many failed "
+                    "authentication attempts.",
+                )
+            raise ValueError(
+                "Invalid request: invalid user code.",
+            )
+
+        # If the device code is valid, associate the device with the current user.
+        # We don't reset the expiration date yet, because we want to make sure
+        # that the client has received the access token before we do so, to avoid
+        # brute force attacks on the device code.
         update = OAuthDeviceInternalUpdate(
-            failed_auth_attempts=failed_auth_attempts
+            status=OAuthDeviceStatus.VERIFIED,
+            user_id=auth_context.user.id,
+            failed_auth_attempts=0,
+            trusted_device=request.trusted_device,
         )
-        if failed_auth_attempts >= config.max_failed_device_auth_attempts:
-            update.locked = True
-        store.update_internal_authorized_device(
+        device_model = store.update_internal_authorized_device(
             device_id=device_model.id,
             update=update,
         )
-        if failed_auth_attempts >= config.max_failed_device_auth_attempts:
-            raise ValueError(
-                "Invalid request: device locked due to too many failed "
-                "authentication attempts.",
-            )
-        raise ValueError(
-            "Invalid request: invalid user code.",
-        )
-
-    # If the device code is valid, associate the device with the current user.
-    # We don't reset the expiration date yet, because we want to make sure
-    # that the client has received the access token before we do so, to avoid
-    # brute force attacks on the device code.
-    update = OAuthDeviceInternalUpdate(
-        status=OAuthDeviceStatus.VERIFIED,
-        user_id=auth_context.user.id,
-        failed_auth_attempts=0,
-        trusted_device=request.trusted_device,
-    )
-    device_model = store.update_internal_authorized_device(
-        device_id=device_model.id,
-        update=update,
-    )
 
     return device_model
 
