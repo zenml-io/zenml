@@ -181,9 +181,9 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         # Set up some variables for configuration
         orchestrator_run_id = str(uuid4())
-        environment[
-            ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID
-        ] = orchestrator_run_id
+        environment[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
+            orchestrator_run_id
+        )
 
         settings = cast(
             SkypilotBaseOrchestratorSettings,

@@ -131,9 +131,9 @@ class UserSchema(NamedSchema, table=True):
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="user",
     )
-    model_versions_artifacts_links: List[
-        "ModelVersionArtifactSchema"
-    ] = Relationship(back_populates="user")
+    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+        Relationship(back_populates="user")
+    )
     model_versions_pipeline_runs_links: List[
         "ModelVersionPipelineRunSchema"
     ] = Relationship(back_populates="user")

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models used by the Facets integration."""
 
-
 from typing import Dict, List, Union
 
 import pandas as pd

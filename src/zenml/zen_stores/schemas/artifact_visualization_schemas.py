@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact visualization table."""
+
 from typing import Any
 from uuid import UUID
 

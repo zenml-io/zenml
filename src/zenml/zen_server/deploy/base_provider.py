@@ -48,9 +48,9 @@ class BaseServerProvider(ABC):
     """
 
     TYPE: ClassVar[ServerProviderType]
-    CONFIG_TYPE: ClassVar[
-        Type[ServerDeploymentConfig]
-    ] = ServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[ServerDeploymentConfig]] = (
+        ServerDeploymentConfig
+    )
 
     @classmethod
     def register_as_provider(cls) -> None:

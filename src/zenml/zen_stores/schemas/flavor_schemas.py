@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Flavors."""
+
 import json
 from datetime import datetime
 from typing import Any, Optional

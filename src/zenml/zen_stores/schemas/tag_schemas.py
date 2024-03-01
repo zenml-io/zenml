@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List
 from uuid import UUID

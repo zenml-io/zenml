@@ -51,9 +51,9 @@ class AzureServerProvider(TerraformServerProvider):
     """Azure ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.AZURE
-    CONFIG_TYPE: ClassVar[
-        Type[TerraformServerDeploymentConfig]
-    ] = AzureServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[TerraformServerDeploymentConfig]] = (
+        AzureServerDeploymentConfig
+    )
 
 
 AzureServerProvider.register_as_provider()

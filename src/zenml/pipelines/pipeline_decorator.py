@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Legacy ZenML pipeline decorator definition."""
+
 from types import FunctionType
 from typing import (
     TYPE_CHECKING,
@@ -54,8 +55,7 @@ F = TypeVar("F", bound=Callable[..., None])
 
 
 @overload
-def pipeline(_func: F) -> Type[BasePipeline]:
-    ...
+def pipeline(_func: F) -> Type[BasePipeline]: ...
 
 
 @overload
@@ -69,8 +69,7 @@ def pipeline(
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     model: Optional["Model"] = None,
-) -> Callable[[F], Type[BasePipeline]]:
-    ...
+) -> Callable[[F], Type[BasePipeline]]: ...
 
 
 def pipeline(
