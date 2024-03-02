@@ -116,6 +116,8 @@ class ServerConfiguration(BaseModel):
         pipeline_run_auth_window: The default time window in minutes for which
             a pipeline run action is allowed to authenticate with the ZenML
             server.
+        login_rate_limit_minute: The number of login attempts allowed per minute.
+        login_rate_limit_day: The number of login attempts allowed per day.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
