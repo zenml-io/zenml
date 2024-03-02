@@ -201,9 +201,9 @@ class KanikoImageBuilder(BaseImageBuilder):
 
         optional_container_args: Dict[str, Any] = {}
         if self.config.service_account_name:
-            optional_container_args[
-                "serviceAccountName"
-            ] = self.config.service_account_name
+            optional_container_args["serviceAccountName"] = (
+                self.config.service_account_name
+            )
 
         return {
             "apiVersion": "v1",

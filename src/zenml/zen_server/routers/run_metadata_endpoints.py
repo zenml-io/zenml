@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for run metadata."""
 
-
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security

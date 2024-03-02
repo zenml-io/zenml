@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-
 from fastapi import APIRouter
 
 import zenml

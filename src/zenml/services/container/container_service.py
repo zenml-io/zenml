@@ -305,9 +305,9 @@ class ContainerService(BaseService):
                 command_env[k] = v
         # the global configuration is mounted into the container at a
         # different location
-        command_env[
-            ENV_ZENML_CONFIG_PATH
-        ] = SERVICE_CONTAINER_GLOBAL_CONFIG_PATH
+        command_env[ENV_ZENML_CONFIG_PATH] = (
+            SERVICE_CONTAINER_GLOBAL_CONFIG_PATH
+        )
 
         return command, command_env
 

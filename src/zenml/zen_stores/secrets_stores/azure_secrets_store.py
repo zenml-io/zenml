@@ -88,9 +88,9 @@ class AzureSecretsStoreConfiguration(
                 "removed in a future version or ZenML. Please use the "
                 "`auth_method` and `auth_config` attributes instead."
             )
-            values[
-                "auth_method"
-            ] = AzureAuthenticationMethods.SERVICE_PRINCIPAL
+            values["auth_method"] = (
+                AzureAuthenticationMethods.SERVICE_PRINCIPAL
+            )
             values["auth_config"] = dict(
                 client_id=values.get("azure_client_id"),
                 client_secret=values.get("azure_client_secret"),
@@ -129,9 +129,9 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
 
     config: AzureSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AZURE
-    CONFIG_TYPE: ClassVar[
-        Type[ServiceConnectorSecretsStoreConfiguration]
-    ] = AzureSecretsStoreConfiguration
+    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]] = (
+        AzureSecretsStoreConfiguration
+    )
     SERVICE_CONNECTOR_TYPE: ClassVar[str] = AZURE_CONNECTOR_TYPE
     SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = AZURE_RESOURCE_TYPE
 

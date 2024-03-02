@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Local git repository context."""
+
 from typing import TYPE_CHECKING, Callable, Optional, cast
 from uuid import UUID
 
