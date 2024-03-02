@@ -39,6 +39,7 @@ from zenml.exceptions import (
     EntityExistsError,
     StepContextError,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactRequest,
@@ -502,8 +503,7 @@ def download_artifact_files_from_response(
         FileExistsError: If the file already exists and `overwrite` is `False`.
         Exception: If the artifact could not be downloaded to the zip file.
     """
-    artifact_store = Client().active_stack.artifact_store
-    if not overwrite and artifact_store.exists(path):
+    if not overwrite and fileio.exists(path):
         raise FileExistsError(
             f"File '{path}' already exists and `overwrite` is set to `False`."
         )

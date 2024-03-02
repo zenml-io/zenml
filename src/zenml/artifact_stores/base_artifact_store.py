@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """The base interface to extend the ZenML artifact store."""
-import inspect
 
+import inspect
 import textwrap
 from abc import abstractmethod
 from pathlib import Path
@@ -69,6 +69,7 @@ def _sanitize_potential_path(
     """
     if not is_path_type:
         return potential_path
+
     if isinstance(potential_path, bytes):
         path = fileio.convert_to_str(potential_path)
     elif isinstance(potential_path, str):
