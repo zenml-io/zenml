@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Example file of what an event Plugin could look like."""
+
 from typing import ClassVar, Type
 
 from zenml.event_sources.webhooks.base_webhook_event_source import (
@@ -29,9 +30,9 @@ class GithubWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
     """Enables users to configure github event sources."""
 
     FLAVOR: ClassVar[str] = GITHUB_EVENT_FLAVOR
-    PLUGIN_CLASS: ClassVar[
-        Type[GithubWebhookEventSourceHandler]
-    ] = GithubWebhookEventSourceHandler
+    PLUGIN_CLASS: ClassVar[Type[GithubWebhookEventSourceHandler]] = (
+        GithubWebhookEventSourceHandler
+    )
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[

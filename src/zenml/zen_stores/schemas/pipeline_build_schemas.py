@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of pipeline build tables."""
 
-
 import json
 from typing import Any, Optional
 from uuid import UUID

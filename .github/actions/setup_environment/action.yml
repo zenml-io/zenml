@@ -62,7 +62,7 @@ runs:
       id: date
       run: echo "::set-output name=week::$(date +'calendar-week-%W')"
     - uses: syphar/restore-virtualenv@v1
-      if: ${{ inputs.os != 'ubuntu-dind-runners' }}
+      if: ${{ inputs.os != 'arc-runner-set' }}
       id: cache-virtualenv
       with:
         requirement_files: pyproject.toml
@@ -74,7 +74,7 @@ runs:
         custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{
           hashFiles('src/zenml/integrations/*/__init__.py') }}
     - uses: tespkg/actions-cache@v1
-      if: ${{ inputs.os == 'ubuntu-dind-runners' }}
+      if: ${{ inputs.os == 'arc-runner-set' }}
       id: custom-cache-pip
       env:
         AWS_ACCESS_KEY_ID: ${{ inputs.runners_cache_access_key_id }}

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base implementation for all Plugin Flavors."""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Type
 

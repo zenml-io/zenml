@@ -9,12 +9,12 @@ jobs:
   setup-and-test:
     uses: ./.github/workflows/unit-test.yml
     with:
-      os: ubuntu-dind-runners
+      os: arc-runner-set
       python-version: '3.8'
     secrets: inherit
   mlstacks-compatibility-check:
     needs: setup-and-test
-    runs-on: ubuntu-dind-runners
+    runs-on: arc-runner-set
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
@@ -29,7 +29,7 @@ jobs:
       - name: Check for broken dependencies
         run: pip check
   mysql-db-migration-testing:
-    runs-on: ubuntu-dind-runners
+    runs-on: arc-runner-set
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -45,7 +45,7 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations-mysql.sh mysql
   sqlite-db-migration-testing:
-    runs-on: ubuntu-dind-runners
+    runs-on: arc-runner-set
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -61,7 +61,7 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations-mysql.sh sqlite
   mariadb-db-migration-testing:
-    runs-on: ubuntu-dind-runners
+    runs-on: arc-runner-set
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -87,7 +87,7 @@ jobs:
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
   wait-for-package-release:
-    runs-on: ubuntu-dind-runners
+    runs-on: arc-runner-set
     needs: publish-python-package
     steps:
       - name: Sleep for 4 minutes

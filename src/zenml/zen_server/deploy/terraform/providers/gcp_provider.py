@@ -51,9 +51,9 @@ class GCPServerProvider(TerraformServerProvider):
     """GCP ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.GCP
-    CONFIG_TYPE: ClassVar[
-        Type[TerraformServerDeploymentConfig]
-    ] = GCPServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[TerraformServerDeploymentConfig]] = (
+        GCPServerDeploymentConfig
+    )
 
 
 GCPServerProvider.register_as_provider()

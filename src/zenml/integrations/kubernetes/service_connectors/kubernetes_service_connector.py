@@ -16,6 +16,7 @@
 The Kubernetes Service Connector implements various authentication methods for
 Kubernetes clusters.
 """
+
 import base64
 import os
 import subprocess
@@ -271,9 +272,9 @@ class KubernetesServiceConnector(ServiceConnector):
             assert isinstance(cfg, KubernetesTokenConfig)
 
             if cfg.token:
-                k8s_conf.api_key[
-                    "authorization"
-                ] = cfg.token.get_secret_value()
+                k8s_conf.api_key["authorization"] = (
+                    cfg.token.get_secret_value()
+                )
                 k8s_conf.api_key_prefix["authorization"] = "Bearer"
 
             if cfg.client_certificate is not None:
