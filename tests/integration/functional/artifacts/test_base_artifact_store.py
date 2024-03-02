@@ -27,23 +27,23 @@ def test_files_outside_of_artifact_store_are_not_reachable_by_it(
     a_s = clean_client.active_stack.artifact_store
 
     outside_dir = Path(a_s.path) / ".."
-    outside_file = outside_dir / "tmp.file"
+    outside_file = str(outside_dir / "tmp.file")
     try:
         # create a file outside of artifact store
         with open(outside_file, "w") as f:
             f.write("test")
         # try to open it via artifact store interface
-        with pytest.raises(IOError):
+        with pytest.raises(FileNotFoundError):
             a_s.open(outside_file, "r")
         # try to copy it via artifact store interface
-        with pytest.raises(IOError):
+        with pytest.raises(FileNotFoundError):
             a_s.copyfile(outside_file, ".", "r")
     except Exception as e:
         raise e
     finally:
         os.remove(outside_file)
 
-    inside_file = Path(a_s.path) / "tmp.file"
+    inside_file = str(Path(a_s.path) / "tmp.file")
     try:
         # create a file inside of artifact store
         with open(inside_file, "w") as f:
@@ -51,14 +51,15 @@ def test_files_outside_of_artifact_store_are_not_reachable_by_it(
         # try to open it via artifact store interface
         assert a_s.open(inside_file, "r").read() == "test"
         # try to copy it via artifact store interface
-        a_s.copyfile(inside_file, Path(a_s.path) / "tmp2.file", "r")
+        inside_file2 = str(Path(a_s.path) / "tmp2.file")
+        a_s.copyfile(inside_file, inside_file2, "r")
         # try to open it via artifact store interface
-        assert open(Path(a_s.path) / "tmp2.file", "r").read() == "test"
+        assert open(inside_file2, "r").read() == "test"
         # try to copy it via artifact store interface, but with target outside of bounds
-        with pytest.raises(IOError):
+        with pytest.raises(FileNotFoundError):
             a_s.copyfile(inside_file, ".", "r")
     except Exception as e:
         raise e
     finally:
         os.remove(inside_file)
-        os.remove(Path(a_s.path) / "tmp2.file")
+        os.remove(inside_file2)

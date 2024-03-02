@@ -45,7 +45,9 @@ logger = get_logger(__name__)
 PathType = Union[bytes, str]
 
 
-def _sanitize_potential_path(potential_path: Any) -> Any:
+def _sanitize_potential_path(
+    potential_path: Any, root_path: str, is_path_type: bool
+) -> Any:
     """Sanitizes the input if it is a path.
 
     If the input is a **remote** path, this function replaces backslash path
@@ -53,11 +55,19 @@ def _sanitize_potential_path(potential_path: Any) -> Any:
 
     Args:
         potential_path: Value that potentially refers to a (remote) path.
+        root_path: The root path of the artifact store.
+        is_path_type: Whether the input is a path type.
 
     Returns:
         The original input or a sanitized version of it in case of a remote
         path.
+
+    Raises:
+        FileNotFoundError: If the input path is outside of the artifact store
+            bounds.
     """
+    if not is_path_type:
+        return potential_path
     if isinstance(potential_path, bytes):
         path = fileio.convert_to_str(potential_path)
     elif isinstance(potential_path, str):
@@ -76,87 +86,100 @@ def _sanitize_potential_path(potential_path: Any) -> Any:
     else:
         path = str(Path(path).absolute().resolve())
 
+    if not path.startswith(root_path):
+        raise FileNotFoundError(
+            f"File `{path}` is outside of "
+            f"artifact store bounds `{root_path}`"
+        )
+
     return path
 
 
-def _sanitize_paths(_func: Callable[..., Any]) -> Callable[..., Any]:
+def _sanitize_paths(fixed_root_path: Optional[str]) -> Callable[..., Any]:
     """Sanitizes path inputs before calling the original function.
 
+    Extra decoration layer is needed to pass in fixed artifact store root
+    path for static methods that are called on filesystems directly.
+
     Args:
-        _func: The function for which to sanitize the inputs.
+        fixed_root_path: The fixed artifact store root path.
 
     Returns:
         Function that calls the input function with sanitized path inputs.
     """
 
-    def inner_function(*args: Any, **kwargs: Any) -> Any:
-        """Inner function.
+    def decorator(_func: Callable[..., Any]) -> Callable[..., Any]:
+        """Sanitizes path inputs before calling the original function.
 
         Args:
-            *args: Positional args.
-            **kwargs: Keyword args.
+            _func: The function for which to sanitize the inputs.
 
         Returns:
-            Output of the input function called with sanitized paths.
+            Function that calls the input function with sanitized path inputs.
         """
-        args = tuple(_sanitize_potential_path(arg) for arg in args)
-        kwargs = {
-            key: _sanitize_potential_path(value)
-            for key, value in kwargs.items()
-        }
 
-        return _func(*args, **kwargs)
+        def inner_function(*args: Any, **kwargs: Any) -> Any:
+            """Inner function.
 
-    return inner_function
+            Args:
+                *args: Positional args.
+                **kwargs: Keyword args.
 
+            Returns:
+                Output of the input function called with sanitized paths.
 
-def _verify(_func: Callable[..., Any]) -> Callable[..., Any]:
-    """Verifies that the file belongs to the artifact store.
-
-    Args:
-        _func: The function for which to verify the inputs.
-
-    Returns:
-        Function that calls the input function.
-    """
-
-    def inner_function(
-        self: "BaseArtifactStore", *args: Any, **kwargs: Any
-    ) -> Any:
-        """Inner function.
-
-        Args:
-            self: The artifact store.
-            *args: Positional args.
-            **kwargs: Keyword args.
-
-        Returns:
-            Output of the input function called with sanitized paths.
-        """
-        params = inspect.signature(_func).parameters
-        valid = []
-        has_self = False
-        for i, k in enumerate(params):
-            if params[k].name == "self":
+            Raises:
+                ValueError: If `self` is not passed and `fixed_root_path` is
+                    `None`.
+            """
+            # verify if `self` is part of the args
+            has_self = False
+            if isinstance(args[0], BaseArtifactStore):
+                # `self` is part of the args - get root path
+                # from it
                 has_self = True
-                continue
-            if params[k].annotation == PathType:
-                valid.append(str(i))
-                valid.append(k)
-        all_args = {str(i + has_self): a for i, a in enumerate(args)}
-        all_args.update(**kwargs)
-        for k, arg in all_args.items():
-            if k in valid:
-                if isinstance(arg, bytes):
-                    self._inner_verify(arg.decode())
-                else:
-                    self._inner_verify(str(arg))
-        if has_self:
-            return _func(self, *args, **kwargs)
-        else:
+                root_path = args[0].path
+            elif fixed_root_path is not None:
+                # `self` is not part of the args - get root path
+                # from `fixed_root_path`
+                root_path = fixed_root_path
+            else:
+                raise ValueError(
+                    "Non-static method must be called on class instances only."
+                )
+
+            # find out which input arguments are relevant for sanitization
+            params = inspect.signature(_func).parameters
+            valid = set()
+            is_static = True
+            for i, k in enumerate(params):
+                if k == "self":
+                    is_static = False
+                    continue
+                if params[k].annotation == PathType:
+                    valid.add(str(i))
+                    valid.add(k)
+
+            # if function is static, but `self` was still passed - ignore it
+            # this happens on call to the artifact store instances, which
+            # are passed to local filesystem internally
+            if is_static and has_self:
+                args = args[1:]
+
+            # sanitize inputs for relevant args and kwargs, keep rest unchanged
+            args = tuple(
+                _sanitize_potential_path(arg, root_path, str(i) in valid)
+                for i, arg in enumerate(args)
+            )
+            kwargs = {
+                key: _sanitize_potential_path(value, root_path, key in valid)
+                for key, value in kwargs.items()
+            }
             return _func(*args, **kwargs)
 
-    return inner_function
+        return inner_function
+
+    return decorator
 
 
 class BaseArtifactStoreConfig(StackComponentConfig):
@@ -375,6 +398,7 @@ class BaseArtifactStore(StackComponent):
             The stat descriptor.
         """
 
+    @abstractmethod
     def size(self, path: PathType) -> Optional[int]:
         """Get the size of a file in bytes.
 
@@ -432,32 +456,24 @@ class BaseArtifactStore(StackComponent):
         if isinstance(self, LocalFilesystem):
             return
 
+        overloads: Dict[str, Any] = {
+            "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
+        }
+        for abc_method in inspect.getmembers(BaseArtifactStore):
+            if getattr(abc_method[1], "__isabstractmethod__", False):
+                overloads[abc_method[0]] = staticmethod(
+                    _sanitize_paths(self.path)(
+                        getattr(self, abc_method[0]),
+                    )
+                )
         filesystem_class = type(
-            self.__class__.__name__,
-            (BaseFilesystem,),
-            {
-                "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
-                "open": staticmethod(_sanitize_paths(self.open)),
-                "copyfile": staticmethod(_sanitize_paths(self.copyfile)),
-                "exists": staticmethod(_sanitize_paths(self.exists)),
-                "glob": staticmethod(_sanitize_paths(self.glob)),
-                "isdir": staticmethod(_sanitize_paths(self.isdir)),
-                "listdir": staticmethod(_sanitize_paths(self.listdir)),
-                "makedirs": staticmethod(_sanitize_paths(self.makedirs)),
-                "mkdir": staticmethod(_sanitize_paths(self.mkdir)),
-                "remove": staticmethod(_sanitize_paths(self.remove)),
-                "rename": staticmethod(_sanitize_paths(self.rename)),
-                "rmtree": staticmethod(_sanitize_paths(self.rmtree)),
-                "size": staticmethod(_sanitize_paths(self.size)),
-                "stat": staticmethod(_sanitize_paths(self.stat)),
-                "walk": staticmethod(_sanitize_paths(self.walk)),
-            },
+            self.__class__.__name__, (BaseFilesystem,), overloads
         )
 
         default_filesystem_registry.register(filesystem_class)
 
     def __init_subclass__(cls) -> None:
-        """Wrap all abstract methods implementations with a path verifier.
+        """Wrap all abstract methods implementations with a path sanitizer.
 
         This is done to ensure that the path is within the artifact store
         bounds.
@@ -465,24 +481,10 @@ class BaseArtifactStore(StackComponent):
         for abc_method in inspect.getmembers(BaseArtifactStore):
             if getattr(abc_method[1], "__isabstractmethod__", False):
                 setattr(
-                    cls, abc_method[0], _verify(getattr(cls, abc_method[0]))
+                    cls,
+                    abc_method[0],
+                    _sanitize_paths(None)(getattr(cls, abc_method[0])),
                 )
-
-    def _inner_verify(self, name: PathType) -> None:
-        """Verify that the path is inside artifact store bounds.
-
-        Args:
-            name: The path to verify.
-
-        Raises:
-            IOError: If the path is not inside the artifact store bounds.
-        """
-        request_path = _sanitize_potential_path(name)
-        if not request_path.startswith(self.path):
-            raise IOError(
-                f"File `{request_path}` is outside of "
-                f"artifact store bounds `{self.path}`"
-            )
 
 
 class BaseArtifactStoreFlavor(Flavor):
