@@ -1,4 +1,5 @@
 """Workload manager interface definition."""
+
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 from uuid import UUID

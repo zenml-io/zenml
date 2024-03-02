@@ -101,9 +101,9 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
 
     config: HashiCorpVaultSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.HASHICORP
-    CONFIG_TYPE: ClassVar[
-        Type[SecretsStoreConfiguration]
-    ] = HashiCorpVaultSecretsStoreConfiguration
+    CONFIG_TYPE: ClassVar[Type[SecretsStoreConfiguration]] = (
+        HashiCorpVaultSecretsStoreConfiguration
+    )
 
     _client: Optional[hvac.Client] = None
 

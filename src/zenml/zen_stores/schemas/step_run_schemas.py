@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQLModel implementation of step run tables."""
+
 import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional

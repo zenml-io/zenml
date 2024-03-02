@@ -205,9 +205,9 @@ class AzureMLStepOperator(BaseStepOperator):
             if value:
                 environment_variables[key] = value
 
-        environment_variables[
-            ENV_ZENML_CONFIG_PATH
-        ] = f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
+        environment_variables[ENV_ZENML_CONFIG_PATH] = (
+            f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
+        )
         environment_variables.update(docker_settings.environment)
         environment.environment_variables = environment_variables
         return environment

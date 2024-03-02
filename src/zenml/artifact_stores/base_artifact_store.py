@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """The base interface to extend the ZenML artifact store."""
 import inspect
+
 import textwrap
 from abc import abstractmethod
 from pathlib import Path

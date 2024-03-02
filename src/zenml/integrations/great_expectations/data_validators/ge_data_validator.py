@@ -61,9 +61,9 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     """Great Expectations data validator stack component."""
 
     NAME: ClassVar[str] = "Great Expectations"
-    FLAVOR: ClassVar[
-        Type[BaseDataValidatorFlavor]
-    ] = GreatExpectationsDataValidatorFlavor
+    FLAVOR: ClassVar[Type[BaseDataValidatorFlavor]] = (
+        GreatExpectationsDataValidatorFlavor
+    )
 
     _context: BaseDataContext = None
     _context_config: Optional[Dict[str, Any]] = None
@@ -287,17 +287,17 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 for site_name, site_config in zenml_context_config[  # type: ignore[attr-defined]
                     "data_docs_sites"
                 ].items():
-                    self._context.config.data_docs_sites[
-                        site_name
-                    ] = site_config
+                    self._context.config.data_docs_sites[site_name] = (
+                        site_config
+                    )
 
             if self.config.configure_local_docs:
                 client = Client()
                 artifact_store = client.active_stack.artifact_store
                 if artifact_store.flavor != "local":
-                    self._context.config.data_docs_sites[
-                        "zenml_local"
-                    ] = self.get_data_docs_config("data_docs", local=True)
+                    self._context.config.data_docs_sites["zenml_local"] = (
+                        self.get_data_docs_config("data_docs", local=True)
+                    )
 
         return self._context
 

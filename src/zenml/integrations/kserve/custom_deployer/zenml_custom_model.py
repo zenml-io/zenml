@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implements a custom model for the Kserve integration."""
+
 from typing import Any, Dict
 
 import click
