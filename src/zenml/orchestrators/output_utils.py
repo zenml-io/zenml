@@ -72,7 +72,7 @@ def prepare_output_artifact_uris(
     Returns:
         A dictionary mapping output names to artifact URIs.
     """
-    artifact_store = Client().active_stack.artifact_store
+    artifact_store = stack.artifact_store
     output_artifact_uris: Dict[str, str] = {}
     for output_name in step.config.outputs.keys():
         artifact_uri = generate_artifact_uri(
