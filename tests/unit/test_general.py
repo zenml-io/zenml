@@ -16,6 +16,7 @@ import os
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, Optional, Type
 
+from zenml.client import Client
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.enums import VisualizationType
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -76,7 +77,8 @@ def _test_materializer(
     if materializer_class is None:
         materializer_class = materializer_registry[step_output_type]
 
-    with TemporaryDirectory() as artifact_uri:
+    artifact_store_uri = Client().active_stack.artifact_store.path
+    with TemporaryDirectory(dir=artifact_store_uri) as artifact_uri:
         materializer = materializer_class(uri=artifact_uri)
         existing_files = os.listdir(artifact_uri)
 
