@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Class for all lineage artifact nodes."""
 
-
 from typing import List, Optional, Tuple
 
 from zenml.lineage_graph.node.base_node import (

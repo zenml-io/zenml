@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Secret reference mixin implementation."""
+
 from typing import TYPE_CHECKING, Any, Set
 
 from pydantic import BaseModel

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the BentoML Model Deployer."""
+
 import os
 import shutil
 from pathlib import Path
@@ -43,9 +44,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
     """BentoML model deployer stack component implementation."""
 
     NAME: ClassVar[str] = "BentoML"
-    FLAVOR: ClassVar[
-        Type[BaseModelDeployerFlavor]
-    ] = BentoMLModelDeployerFlavor
+    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = (
+        BentoMLModelDeployerFlavor
+    )
 
     _service_path: Optional[str] = None
 

@@ -70,9 +70,9 @@ class SeldonGSSecretSchema(BaseSecretSchema):
         rclone_config_gs_auth_url: auth server URL.
     """
 
-    rclone_config_gs_type: Literal[
+    rclone_config_gs_type: Literal["google cloud storage"] = (
         "google cloud storage"
-    ] = "google cloud storage"
+    )
     rclone_config_gs_client_id: Optional[str] = None
     rclone_config_gs_client_secret: Optional[str] = None
     rclone_config_gs_project_number: Optional[str] = None

@@ -45,9 +45,9 @@ class EvidentlyDataValidator(BaseDataValidator):
     """Evidently data validator stack component."""
 
     NAME: ClassVar[str] = "Evidently"
-    FLAVOR: ClassVar[
-        Type[BaseDataValidatorFlavor]
-    ] = EvidentlyDataValidatorFlavor
+    FLAVOR: ClassVar[Type[BaseDataValidatorFlavor]] = (
+        EvidentlyDataValidatorFlavor
+    )
 
     @classmethod
     def _unpack_options(
