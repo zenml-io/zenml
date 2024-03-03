@@ -15,6 +15,7 @@
 
 import shutil
 from typing import ClassVar, List, Optional, Tuple, Type, cast
+from uuid import uuid4
 
 from zenml import __version__
 from zenml.enums import ServerProviderType
@@ -157,7 +158,9 @@ class LocalServerProvider(BaseServerProvider):
                 config=monitor_cfg,
             ),
         )
-        service = LocalZenServer(config=service_config, endpoint=endpoint)
+        service = LocalZenServer(
+            uuid=uuid4(), config=service_config, endpoint=endpoint
+        )
         service.start(timeout=timeout)
         return service
 

@@ -23,14 +23,15 @@ from zenml.models import (
     ServiceResponse,
     ServiceUpdate,
 )
+from zenml.models.v2.core.service import ServiceRequest
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
-    verify_permissions_and_create_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
@@ -53,7 +54,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def create_service(
-    service: ServiceUpdate,
+    service: ServiceRequest,
     _: AuthContext = Security(authorize),
 ) -> ServiceResponse:
     """Creates a new service.

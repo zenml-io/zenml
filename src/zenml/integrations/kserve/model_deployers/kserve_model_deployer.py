@@ -210,7 +210,7 @@ class KServeModelDeployer(BaseModelDeployer):
 
         return builds
 
-    def deploy_model(
+    def perform_deploy_model(
         self,
         config: ServiceConfig,
         replace: bool = False,
@@ -468,7 +468,7 @@ class KServeModelDeployer(BaseModelDeployer):
 
         return services
 
-    def stop_model_server(
+    def perform_stop_model(
         self,
         uuid: UUID,
         timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
@@ -490,7 +490,7 @@ class KServeModelDeployer(BaseModelDeployer):
             "deleting the KServe model server instead."
         )
 
-    def start_model_server(
+    def perform_start_model(
         self,
         uuid: UUID,
         timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
@@ -512,7 +512,7 @@ class KServeModelDeployer(BaseModelDeployer):
             "Starting KServe model servers is not implemented"
         )
 
-    def delete_model_server(
+    def perfom_delete_model(
         self,
         uuid: UUID,
         timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,

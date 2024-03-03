@@ -33,12 +33,12 @@ from zenml.constants import (
     SECRETS,
     SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTORS,
+    SERVICES,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
     VERSION_1,
     WORKSPACES,
-    SERVICES,
 )
 from zenml.enums import MetadataResourceTypes
 from zenml.exceptions import IllegalOperationError
@@ -55,10 +55,10 @@ from zenml.models import (
     ModelVersionArtifactResponse,
     ModelVersionPipelineRunRequest,
     ModelVersionPipelineRunResponse,
-    ModelVersionServiceRequest,
-    ModelVersionServiceResponse,
     ModelVersionRequest,
     ModelVersionResponse,
+    ModelVersionServiceRequest,
+    ModelVersionServiceResponse,
     Page,
     PipelineBuildFilter,
     PipelineBuildRequest,
@@ -82,7 +82,6 @@ from zenml.models import (
     ServiceConnectorRequest,
     ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
-    ServiceFilter,
     ServiceRequest,
     ServiceResponse,
     StackFilter,
@@ -1448,7 +1447,7 @@ def create_service(
     workspace_name_or_id: Union[str, UUID],
     service: ServiceRequest,
     _: AuthContext = Security(authorize),
-) -> ModelResponse:
+) -> ServiceResponse:
     """Create a new service.
 
     Args:
@@ -1477,6 +1476,7 @@ def create_service(
         resource_type=ResourceType.SERVICE,
         create_method=zen_store().create_service,
     )
+
 
 @router.post(
     WORKSPACES
@@ -1512,9 +1512,7 @@ def create_model_version_service_link(
             user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    if str(model_version_id) != str(
-        model_version_service_link.model_version
-    ):
+    if str(model_version_id) != str(model_version_service_link.model_version):
         raise IllegalOperationError(
             f"The model version id in your path `{model_version_id}` does not "
             f"match the model version specified in the request model "

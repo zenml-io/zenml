@@ -174,6 +174,7 @@ class SeldonDeploymentService(BaseDeploymentService):
         type="model-serving",
         flavor="seldon",
         description="Seldon Core prediction service",
+        logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/seldon.png",
     )
 
     config: SeldonDeploymentConfig

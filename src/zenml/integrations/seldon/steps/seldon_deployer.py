@@ -173,7 +173,10 @@ def seldon_model_deployer_step(
     service = cast(
         SeldonDeploymentService,
         model_deployer.deploy_model(
-            service_config, replace=True, timeout=timeout
+            service_config,
+            replace=True,
+            timeout=timeout,
+            service_type=SeldonDeploymentService.SERVICE_TYPE,
         ),
     )
 
@@ -325,7 +328,10 @@ def seldon_custom_model_deployer_step(
     service = cast(
         SeldonDeploymentService,
         model_deployer.deploy_model(
-            service_config, replace=True, timeout=timeout
+            service_config,
+            replace=True,
+            timeout=timeout,
+            service_type=SeldonDeploymentService.SERVICE_TYPE,
         ),
     )
 
@@ -476,7 +482,10 @@ def seldon_mlflow_registry_deployer_step(
     service = cast(
         SeldonDeploymentService,
         model_deployer.deploy_model(
-            service_config, replace=True, timeout=timeout
+            service_config,
+            replace=True,
+            timeout=timeout,
+            service_type=SeldonDeploymentService.SERVICE_TYPE,
         ),
     )
 

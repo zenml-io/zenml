@@ -479,8 +479,9 @@ class SeldonModelDeployer(BaseModelDeployer):
                 return
         self.seldon_client.delete_secret(secret_name)
 
-    def deploy_model(
+    def perform_deploy_model(
         self,
+        id: UUID,
         config: ServiceConfig,
         replace: bool = False,
         timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
@@ -517,6 +518,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         to be updated and the others are deleted.
 
         Args:
+            id: the UUID of the model server to deploy.
             config: the configuration of the model to be deployed with Seldon.
                 Core
             replace: set this flag to True to find and update an equivalent
@@ -589,6 +591,7 @@ class SeldonModelDeployer(BaseModelDeployer):
 
             # start the service which in turn provisions the Seldon Core
             # deployment server and waits for it to reach a ready state
+            # TODO: Move every service start and stop method to model_deployer.start and stop
             service.start(timeout=timeout)
 
             # Add telemetry with metadata that gets the stack metadata and
@@ -685,7 +688,7 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         return services
 
-    def stop_model_server(
+    def perform_stop_model(
         self,
         uuid: UUID,
         timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
@@ -707,7 +710,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             "deleting the Seldon Core model server instead."
         )
 
-    def start_model_server(
+    def perform_start_model(
         self,
         uuid: UUID,
         timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
@@ -729,7 +732,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             "Starting Seldon Core model servers is not implemented"
         )
 
-    def delete_model_server(
+    def perform_delete_model(
         self,
         uuid: UUID,
         timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,

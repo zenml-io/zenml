@@ -1877,13 +1877,13 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_service(
-        self, service_id: UUID, service_update: ServiceUpdate
+        self, service_id: UUID, update: ServiceUpdate
     ) -> ServiceResponse:
         """Update a service.
 
         Args:
             service_id: The ID of the service to update.
-            service_update: The update to be applied to the service.
+            update: The update to be applied to the service.
 
         Returns:
             The updated service.
@@ -1899,7 +1899,7 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError(f"Service with ID {service_id} not found.")
 
             # Update the schema itself.
-            existing_service.update(service_update=service_update)
+            existing_service.update(update=update)
             session.add(existing_service)
             session.commit()
             session.refresh(existing_service)

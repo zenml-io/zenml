@@ -680,20 +680,20 @@ class RestZenStore(BaseZenStore):
         )
 
     def update_service(
-        self, service_id: UUID, service_update: ServiceUpdate
+        self, service_id: UUID, update: ServiceUpdate
     ) -> ServiceResponse:
         """Update a service.
 
         Args:
             service_id: The ID of the service to update.
-            service_update: The update to be applied to the service.
+            update: The update to be applied to the service.
 
         Returns:
             The updated service.
         """
         return self._update_resource(
             resource_id=service_id,
-            resource_update=service_update,
+            resource_update=update,
             response_model=ServiceResponse,
             route=SERVICES,
         )

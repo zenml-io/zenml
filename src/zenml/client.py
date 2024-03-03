@@ -166,9 +166,9 @@ from zenml.models import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from zenml.services.service import BaseDeploymentService, BaseService
-from zenml.services.service_monitor import HTTPEndpointHealthMonitor
+from zenml.services.service import ServiceConfig, generate_service_name
 from zenml.services.service_status import ServiceState
+from zenml.services.service_type import ServiceType
 from zenml.utils import io_utils, source_utils
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -1438,46 +1438,25 @@ class Client(metaclass=ClientMetaClass):
 
     # ----------------------------- Services -----------------------------------
 
-    def create_service(self, service: BaseService) -> ServiceResponse:
+    def create_service(
+        self, config: ServiceConfig, service_type: ServiceType
+    ) -> ServiceResponse:
         """Registers a service.
 
         Args:
-            service: The service to register.
+            config: The configuration of the service.
+            service_type: The type of the service.
 
         Returns:
             The registered service.
         """
-        # Get the prediction url
-        prediction_url = None
-        if isinstance(service, BaseDeploymentService):
-            prediction_url = service.prediction_url or None
-        elif service.endpoint:
-            prediction_url = service.endpoint.status.uri or None
-
-        # get the health check url
-        health_check_url = None
-        if (service.endpoint and service.endpoint.monitor) and isinstance(
-            service.endpoint.monitor, HTTPEndpointHealthMonitor
-        ):
-            health_check_url = service.endpoint.monitor.get_healthcheck_uri(
-                service.endpoint
-            )
-
-        # Create the ServiceRequest model
         service_request = ServiceRequest(
-            name=service.config.name,
-            type=service.SERVICE_TYPE,
-            configuration=service.config.dict(),
+            name=config.name or generate_service_name(service_type),
+            service_type=service_type,
+            config=config.dict(),
             workspace=self.active_workspace.id,
             user=self.active_user.id,
-            admin_state=service.admin_state,
-            status=service.status.dict(),
-            endpoint=service.endpoint.dict() if service.endpoint else None,
-            endpoint_url=prediction_url,
-            health_check_url=health_check_url,
-            labels=service.config.get_service_labels(),
         )
-
         # Register the service
         return self.zen_store.create_service(service_request)
 
@@ -1486,6 +1465,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
+        type: Optional[str] = None,
     ) -> ServiceResponse:
         """Gets a service.
 
@@ -1494,13 +1474,38 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match: If True, allow matching by name prefix.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            type: The type of the service.
 
         Returns:
             The Service
         """
+
+        def type_scoped_list_method(
+            hydrate: bool = False,
+            **kwargs: Any,
+        ) -> Page[ServiceResponse]:
+            """Call `zen_store.list_services` with type scoping.
+
+            Args:
+                hydrate: Flag deciding whether to hydrate the output model(s)
+                    by including metadata fields in the response.
+                **kwargs: Keyword arguments to pass to `ServiceFilterModel`.
+
+            Returns:
+                The type-scoped list of services.
+            """
+            service_filter_model = ServiceFilter(**kwargs)
+            if type:
+                service_filter_model.set_type(type=type)
+            service_filter_model.set_scope_workspace(self.active_workspace.id)
+            return self.zen_store.list_services(
+                filter_model=service_filter_model,
+                hydrate=hydrate,
+            )
+
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_service,
-            list_method=self.list_services,
+            list_method=type_scoped_list_method,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
             hydrate=hydrate,
@@ -1515,11 +1520,17 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
-        name: Optional[str] = None,
         type: Optional[str] = None,
+        flavor: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
+        running: Optional[bool] = None,
+        endpoint_name_or_model_name: Optional[str] = None,
+        run_name: Optional[Union[str, UUID]] = None,
+        pipeline_step_name: Optional[str] = None,
+        model_name: Optional[str] = None,
+        model_version: Optional[str] = None,
     ) -> Page[ServiceResponse]:
         """List all services.
 
@@ -1533,10 +1544,18 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             name: Use the service name for filtering
             type: Use the service type for filtering
+            flavor: Use the service flavor for filtering
             workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            running: Use the running status for filtering
+            endpoint_name_or_model_name: Use the endpoint name or model name
+                for filtering
+            run_name: Use the pipeline run id for filtering
+            pipeline_step_name: Use the pipeline step name for filtering
+            model_name: Use the model name for filtering
+            model_version: Use the model version for filtering
 
         Returns:
             The Service response page.
@@ -1549,10 +1568,16 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
-            name=name,
             type=type,
+            flavor=flavor,
             workspace_id=workspace_id,
             user_id=user_id,
+            running=running,
+            name=endpoint_name_or_model_name,
+            run_name=run_name,
+            pipeline_step_name=pipeline_step_name,
+            model_name=model_name,
+            model_version=model_version,
         )
         service_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_services(
@@ -1561,47 +1586,66 @@ class Client(metaclass=ClientMetaClass):
 
     def update_service(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        updated_name: Optional[str] = None,
-        updated_admin_state: Optional[ServiceState] = None,
-        updated_status: Optional[Dict[str, Any]] = None,
-        updated_endpoint: Optional[Dict[str, Any]] = None,
+        id: UUID,
+        name: Optional[str] = None,
+        service_source: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
+        admin_state: Optional[ServiceState] = None,
+        status: Optional[Dict[str, Any]] = None,
+        endpoint: Optional[Dict[str, Any]] = None,
+        labels: Optional[Dict[str, str]] = None,
+        prediction_url: Optional[str] = None,
+        health_check_url: Optional[str] = None,
     ) -> ServiceResponse:
         """Update a service.
 
         Args:
-            name_id_or_prefix: The name or ID of the service to update.
-            updated_name: The new name of the service.
-            updated_admin_state: The new admin state of the service.
-            updated_status: The new status of the service.
-            updated_endpoint: The new endpoint of the service.
+            id: The ID of the service to update.
+            name: The new name of the service.
+            admin_state: The new admin state of the service.
+            status: The new status of the service.
+            endpoint: The new endpoint of the service.
+            config: The new config of the service.
+            service_source: The new service source of the service.
+            labels: The new labels of the service.
+            prediction_url: The new prediction url of the service.
+            health_check_url: The new health check url of the service.
 
         Returns:
             The updated service.
         """
-        service = self.get_service(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
-        )
-        service_update = ServiceUpdate(name=updated_name or service.name)
-        if updated_admin_state:
-            service_update.admin_state = updated_admin_state
-        if updated_status:
-            service_update.status = updated_status
-        if updated_endpoint:
-            service_update.endpoint = updated_endpoint
-
+        service_update = ServiceUpdate()
+        if name:
+            service_update.name = name
+        if service_source:
+            service_update.service_source = service_source
+        if admin_state:
+            service_update.admin_state = admin_state
+        if status:
+            service_update.status = status
+        if endpoint:
+            service_update.endpoint = endpoint
+        if config:
+            service_update.config = config
+        if labels:
+            service_update.labels = labels
+        if prediction_url:
+            service_update.prediction_url = prediction_url
+        if health_check_url:
+            service_update.health_check_url = health_check_url
         return self.zen_store.update_service(
-            service_id=service.id, update=service_update
+            service_id=id, update=service_update
         )
 
-    def delete_service(self, name_id_or_prefix: str) -> None:
+    def delete_service(self, name_id_or_prefix: UUID) -> None:
         """Delete a service.
 
         Args:
             name_id_or_prefix: The name or ID of the service to delete.
         """
         service = self.get_service(
-            name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix,
+            allow_name_prefix_match=False,
         )
         self.zen_store.delete_service(service_id=service.id)
 

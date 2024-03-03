@@ -14,10 +14,21 @@
 """Models representing Services."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+from sqlmodel import SQLModel
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.scoped import (
@@ -34,7 +45,6 @@ from zenml.services.service_type import ServiceType
 if TYPE_CHECKING:
     pass
 
-
 # ------------------ Request Model ------------------
 
 
@@ -46,16 +56,20 @@ class ServiceRequest(WorkspaceScopedRequest):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    type: ServiceType = Field(
+    service_type: ServiceType = Field(
         title="The type of the service.",
     )
 
-    admin_state: ServiceState = Field(
+    service_source: Optional[str] = Field(
+        title="The class of the service.",
+    )
+
+    admin_state: Optional[ServiceState] = Field(
         title="The admin state of the service.",
     )
 
-    configuration: Dict[str, Any] = Field(
-        title="The service configuration.",
+    config: Dict[str, Any] = Field(
+        title="The service config.",
     )
 
     labels: Optional[Dict[str, str]] = Field(
@@ -63,7 +77,7 @@ class ServiceRequest(WorkspaceScopedRequest):
         title="The service labels.",
     )
 
-    status: Dict[str, Any] = Field(
+    status: Optional[Dict[str, Any]] = Field(
         title="The status of the service.",
     )
 
@@ -72,7 +86,7 @@ class ServiceRequest(WorkspaceScopedRequest):
         title="The service endpoint.",
     )
 
-    endpoint_url: Optional[str] = Field(
+    prediction_url: Optional[str] = Field(
         default=None,
         title="The service endpoint URL.",
     )
@@ -87,16 +101,44 @@ class ServiceRequest(WorkspaceScopedRequest):
 
 
 class ServiceUpdate(BaseModel):
-    """Service update model."""
+    """Update model for stack components."""
 
-    name: Optional[str] = None
-    admin_state: Optional[ServiceState] = None
-    configuration: Optional[Dict[str, Any]] = None
-    labels: Optional[Dict[str, str]] = None
-    status: Optional[Dict[str, Any]] = None
-    endpoint: Optional[Dict[str, Any]] = None
-    endpoint_url: Optional[str] = None
-    health_check_url: Optional[str] = None
+    name: Optional[str] = Field(
+        title="The name of the service.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+    admin_state: Optional[ServiceState] = Field(
+        title="The admin state of the service.",
+    )
+
+    service_source: Optional[str] = Field(
+        title="The class of the service.",
+    )
+
+    config: Optional[Dict[str, Any]] = Field(
+        title="The service config.",
+    )
+
+    status: Optional[Dict[str, Any]] = Field(
+        title="The status of the service.",
+    )
+
+    endpoint: Optional[Dict[str, Any]] = Field(
+        title="The service endpoint.",
+    )
+
+    prediction_url: Optional[str] = Field(
+        title="The service endpoint URL.",
+    )
+
+    health_check_url: Optional[str] = Field(
+        title="The service health check URL.",
+    )
+    labels: Optional[Dict[str, str]] = Field(
+        default=None,
+        title="The service labels.",
+    )
 
 
 # ------------------ Response Model ------------------
@@ -105,7 +147,7 @@ class ServiceUpdate(BaseModel):
 class ServiceResponseBody(WorkspaceScopedResponseBody):
     """Response body for services."""
 
-    type: ServiceType = Field(
+    service_type: ServiceType = Field(
         title="The type of the service.",
     )
     labels: Optional[Dict[str, str]] = Field(
@@ -123,21 +165,23 @@ class ServiceResponseBody(WorkspaceScopedResponseBody):
 class ServiceResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for services."""
 
-    admin_state: ServiceState = Field(
+    service_source: Optional[str] = Field(
+        title="The class of the service.",
+    )
+    admin_state: Optional[ServiceState] = Field(
         title="The admin state of the service.",
     )
-
-    configuration: Dict[str, Any] = Field(
-        title="The service configuration.",
+    config: Dict[str, Any] = Field(
+        title="The service config.",
     )
-    status: Dict[str, Any] = Field(
+    status: Optional[Dict[str, Any]] = Field(
         title="The status of the service.",
     )
     endpoint: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The service endpoint.",
     )
-    endpoint_url: Optional[str] = Field(
+    prediction_url: Optional[str] = Field(
         default=None,
         title="The service endpoint URL.",
     )
@@ -170,13 +214,13 @@ class ServiceResponse(
     # Body and metadata properties
 
     @property
-    def type(self) -> ServiceType:
-        """The `type` property.
+    def service_type(self) -> ServiceType:
+        """The `service_type` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().type
+        return self.get_body().service_type
 
     @property
     def labels(self) -> Optional[Dict[str, str]]:
@@ -188,16 +232,25 @@ class ServiceResponse(
         return self.get_body().labels
 
     @property
-    def configuration(self) -> Dict[str, Any]:
-        """The `configuration` property.
+    def service_source(self) -> Optional[str]:
+        """The `service_source` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().configuration
+        return self.get_metadata().service_source
 
     @property
-    def status(self) -> Dict[str, Any]:
+    def config(self) -> Dict[str, Any]:
+        """The `config` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().config
+
+    @property
+    def status(self) -> Optional[Dict[str, Any]]:
         """The `status` property.
 
         Returns:
@@ -233,7 +286,7 @@ class ServiceResponse(
         return self.get_body().updated
 
     @property
-    def admin_state(self) -> ServiceState:
+    def admin_state(self) -> Optional[ServiceState]:
         """The `admin_state` property.
 
         Returns:
@@ -242,13 +295,13 @@ class ServiceResponse(
         return self.get_metadata().admin_state
 
     @property
-    def endpoint_url(self) -> Optional[str]:
-        """The `endpoint_url` property.
+    def prediction_url(self) -> Optional[str]:
+        """The `prediction_url` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().endpoint_url
+        return self.get_metadata().prediction_url
 
     @property
     def health_check_url(self) -> Optional[str]:
@@ -264,10 +317,15 @@ class ServiceResponse(
 
 
 class ServiceFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of services."""
+    """Model to enable advanced filtering of services.
+
+    The Service needs additional scoping. As such the `_scope_user` field
+    can be set to the user that is doing the filtering. The
+    `generate_filter()` method of the baseclass is overwritten to include the
+    scoping.
+    """
 
     name: Optional[str] = Field(
-        default=None,
         description="Name of the service",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
@@ -276,9 +334,119 @@ class ServiceFilter(WorkspaceScopedFilter):
     user_id: Optional[Union[UUID, str]] = Field(
         default=None, description="User of the service"
     )
+    type: Optional[str] = Field(
+        default=None, description="Type of the service"
+    )
+    flavor: Optional[str] = Field(
+        default=None, description="Flavor of the service"
+    )
+    run_name: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Pipeline run id responsible for deploying the service",
+    )
+    pipeline_step_name: Optional[str] = Field(
+        default=None,
+        description="Pipeline step name responsible for deploying the service",
+    )
+    model_name: Optional[str] = Field(
+        default=None, description="Model name linked to the service"
+    )
+    model_version: Optional[str] = Field(
+        default=None, description="Model version linked to the service"
+    )
+    running: Optional[bool] = Field(
+        default=None, description="Whether the service is running"
+    )
 
+    def set_type(self, type: str) -> None:
+        """Set the type of the service.
+
+        Args:
+            type: The type of the service.
+
+        Returns:
+            The updated filter.
+        """
+        self.type = type
+
+    def set_flavor(self, flavor: str) -> None:
+        """Set the flavor of the service.
+
+        Args:
+            flavor: The flavor of the service.
+
+        Returns:
+            The updated filter.
+        """
+        self.flavor = flavor
+
+    # Artifact name and type are not DB fields and need to be handled separately
+    FILTER_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "flavor",
+        "type",
+        "run_name",
+        "pipeline_step_name",
+        "model_name",
+        "model_version",
+        "running",
+    ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
         "workspace_id",
         "user_id",
+        "flavor",
+        "type",
+        "run_name",
+        "pipeline_step_name",
+        "model_name",
+        "model_version",
+        "running",
     ]
+
+    def generate_filter(
+        self, table: Type["SQLModel"]
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+        """Generate the filter for the query.
+
+        Stack components can be scoped by type to narrow the search.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            The filter expression for the query.
+        """
+        from sqlalchemy import and_
+
+        base_filter = super().generate_filter(table)
+
+        if self.type:
+            type_filter = getattr(table, "type") == self.type
+            base_filter = and_(base_filter, type_filter)
+
+        if self.flavor:
+            flavor_filter = getattr(table, "flavor") == self.flavor
+            base_filter = and_(base_filter, flavor_filter)
+
+        if self.run_name:
+            run_name_filter = getattr(table, "run_name") == self.run_name
+            base_filter = and_(base_filter, run_name_filter)
+
+        if self.pipeline_step_name:
+            pipeline_step_name_filter = (
+                getattr(table, "pipeline_step_name") == self.pipeline_step_name
+            )
+            base_filter = and_(base_filter, pipeline_step_name_filter)
+
+        if self.model_name:
+            model_name_filter = getattr(table, "model_name") == self.model_name
+            base_filter = and_(base_filter, model_name_filter)
+
+        if self.model_version:
+            model_version_filter = (
+                getattr(table, "model_version") == self.model_version
+            )
+            base_filter = and_(base_filter, model_version_filter)
+
+        return base_filter

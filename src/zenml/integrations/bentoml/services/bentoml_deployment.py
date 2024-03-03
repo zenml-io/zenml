@@ -147,6 +147,7 @@ class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
         type="model-serving",
         flavor="bentoml",
         description="BentoML prediction service",
+        logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/bentoml.png",
     )
 
     config: BentoMLDeploymentConfig

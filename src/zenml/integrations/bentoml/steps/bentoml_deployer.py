@@ -91,7 +91,7 @@ def bentoml_model_deployer_step(
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
-        pipeline_name=pipeline_name,
+        run_name=run_name,
         pipeline_step_name=step_name,
         model_name=model_name,
     )
@@ -158,6 +158,7 @@ def bentoml_model_deployer_step(
             replace=True,
             config=predictor_cfg,
             timeout=timeout,
+            service_type=BentoMLDeploymentService.SERVICE_TYPE,
         ),
     )
 

@@ -72,14 +72,6 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "component.",
     )
     @click.option(
-        "--pipeline",
-        "-p",
-        type=click.STRING,
-        default=None,
-        help="Show only served models that were deployed by the indicated "
-        "pipeline.",
-    )
-    @click.option(
         "--step",
         "-s",
         type=click.STRING,
@@ -103,6 +95,20 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         help="Show only served model versions for the given model name.",
     )
     @click.option(
+        "--model-version",
+        "-v",
+        type=click.STRING,
+        default=None,
+        help="Show only served model versions for the given model version.",
+    )
+    @click.option(
+        "--flavor",
+        "-f",
+        type=click.STRING,
+        default=None,
+        help="Show only served model versions for the given model flavor.",
+    )
+    @click.option(
         "--running",
         is_flag=True,
         help="Show only model servers that are currently running.",
@@ -110,10 +116,11 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
     @click.pass_obj
     def list_models(
         model_deployer: "BaseModelDeployer",
-        pipeline: Optional[str],
         step: Optional[str],
         run_name: Optional[str],
         model: Optional[str],
+        model_version: Optional[str],
+        flavor: Optional[str],
         running: bool,
     ) -> None:
         """List of all served models within the model-deployer stack component.
@@ -128,13 +135,17 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
                 indicated pipeline run.
             model: Show only served model versions for the given model name.
             running: Show only model servers that are currently running.
+            model_version: Show only served model versions for the given model
+                version.
+            flavor: Show only served model versions for the given model flavor.
         """
         services = model_deployer.find_model_server(
             running=running,
-            pipeline_name=pipeline,
             run_name=run_name,
             pipeline_step_name=step,
             model_name=model,
+            model_version=model_version,
+            flavor=flavor,
         )
         if services:
             pretty_print_model_deployer(

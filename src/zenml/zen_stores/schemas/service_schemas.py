@@ -64,17 +64,29 @@ class ServiceSchemas(NamedSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship(back_populates="services")
-
+    service_source: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
+    service_type: str = Field(sa_column=Column(TEXT, nullable=False))
     type: str = Field(sa_column=Column(TEXT, nullable=False))
-    admin_state: str = Field(sa_column=Column(TEXT, nullable=False))
+    flavor: str = Field(sa_column=Column(TEXT, nullable=False))
+    admin_state: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     labels: Optional[bytes]
-    configuration: bytes = Field(sa_column=Column(TEXT, nullable=False))
-    status: bytes = Field(sa_column=Column(TEXT, nullable=False))
+    config: bytes
+    status: Optional[bytes]
     endpoint: Optional[bytes]
-    endpoint_url: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    prediction_url: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
     health_check_url: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
+    run_name: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    pipeline_step_name: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
+    model_name: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    model_version: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     model_versions_services_links: List[
         "ModelVersionServiceSchema"
@@ -100,11 +112,12 @@ class ServiceSchemas(NamedSchema, table=True):
         if hydrate:
             metadata = ServiceResponseMetadata(
                 workspace=self.workspace.to_model(),
-                configuration=json.loads(self.configuration),
-                status=json.loads(self.status),
+                service_source=self.service_source,
+                config=json.loads(self.config),
+                status=json.loads(self.status) if self.status else None,
                 endpoint=json.loads(self.endpoint) if self.endpoint else None,
-                admin_state=self.admin_state,
-                endpoint_url=self.endpoint_url,
+                admin_state=self.admin_state or None,
+                prediction_url=self.prediction_url or None,
                 health_check_url=self.health_check_url,
             )
 
@@ -113,7 +126,7 @@ class ServiceSchemas(NamedSchema, table=True):
             workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
-            type=json.loads(self.type),
+            service_type=json.loads(self.service_type),
             labels=json.loads(self.labels) if self.labels else None,
         )
 
@@ -126,34 +139,34 @@ class ServiceSchemas(NamedSchema, table=True):
 
     def update(
         self,
-        service_update: ServiceUpdate,
+        update: ServiceUpdate,
     ) -> "ServiceSchemas":
         """Updates a `ServiceSchema` from a `ServiceUpdate`.
 
         Args:
-            service_update: The `ServiceUpdate` to update from.
+            update: The `ServiceUpdate` to update from.
 
         Returns:
             The updated `ServiceSchema`.
         """
-        for field, value in service_update.dict(
+        for field, value in update.dict(
             exclude_unset=True, exclude_none=True
         ).items():
-            if field == "configuration":
-                self.configuration = base64.b64encode(
-                    json.dumps(service_update.configuration).encode("utf-8")
+            if field == "config":
+                self.config = base64.b64encode(
+                    json.dumps(update.config).encode("utf-8")
                 )
             elif field == "labels":
                 self.labels = base64.b64encode(
-                    json.dumps(service_update.labels).encode("utf-8")
+                    json.dumps(update.labels).encode("utf-8")
                 )
             elif field == "status":
                 self.status = base64.b64encode(
-                    json.dumps(service_update.status).encode("utf-8")
+                    json.dumps(update.status).encode("utf-8")
                 )
             elif field == "endpoint":
                 self.endpoint = base64.b64encode(
-                    json.dumps(service_update.endpoint).encode("utf-8")
+                    json.dumps(update.endpoint).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -176,16 +189,27 @@ class ServiceSchemas(NamedSchema, table=True):
             name=service_request.name,
             workspace_id=service_request.workspace,
             user_id=service_request.user,
-            type=service_request.type.json(),
+            service_source=service_request.service_source,
+            service_type=service_request.service_type.json(),
+            type=service_request.service_type.type,
+            flavor=service_request.service_type.flavor,
             admin_state=service_request.admin_state,
-            configuration=json.dumps(service_request.configuration),
+            config=json.dumps(service_request.config),
             labels=json.dumps(service_request.labels).encode("utf-8")
             if service_request.labels
             else None,
-            status=json.dumps(service_request.status),
+            status=json.dumps(service_request.status)
+            if service_request.status
+            else None,
             endpoint=json.dumps(service_request.endpoint)
             if service_request.endpoint
             else None,
-            endpoint_url=service_request.endpoint_url,
+            prediction_url=service_request.prediction_url,
             health_check_url=service_request.health_check_url,
+            run_name=service_request.config.get("run_name"),
+            pipeline_step_name=service_request.config.get(
+                "pipeline_step_name"
+            ),
+            model_name=service_request.config.get("model_name"),
+            model_version=service_request.config.get("model_version"),
         )

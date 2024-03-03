@@ -14,13 +14,12 @@
 """Implementation of a materializer to read and write ZenML service instances."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.services.service import BaseService
-from zenml.services.service_registry import ServiceRegistry
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -48,7 +47,7 @@ class ServiceMaterializer(BaseMaterializer):
         """
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "r") as f:
-            service = ServiceRegistry().load_service_from_json(f.read())
+            service = cast(BaseService, BaseService.from_json(f.read()))
         return service
 
     def save(self, service: BaseService) -> None:
