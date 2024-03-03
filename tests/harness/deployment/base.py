@@ -209,7 +209,6 @@ class BaseTestDeployment(ABC):
             dockerfile=str(docker_file_path),
             build_context_root=str(context_root),
             platform="linux/amd64",
-            buildargs={"LOGIN_RATE_LIMIT_MINUTE": 100},
         )
 
     @staticmethod
