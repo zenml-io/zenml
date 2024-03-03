@@ -16,6 +16,7 @@ import time
 import uuid
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from threading import Thread
 from typing import Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 
@@ -122,6 +123,7 @@ from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
 from zenml.models.v2.core.step_run import StepRunRequest
+from zenml.models.v2.core.user import UserFilter
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.sql_zen_store import SqlZenStore
@@ -140,6 +142,15 @@ DEFAULT_NAME = "default"
 )
 def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     """Tests the basic crud operations for a given entity."""
+
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
+
     # Test the creation
     created_entity = crud_test_config.create()
 
@@ -231,6 +242,14 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 )
 def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
+
     entity_name = crud_test_config.entity_name
     if entity_name in {"build", "deployment"}:
         pytest.skip(f"Duplicates of {entity_name} are allowed.")
@@ -253,6 +272,14 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
 )
 def test_get_nonexistent_entity_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
+
     with pytest.raises(KeyError):
         crud_test_config.get_method(uuid.uuid4())
 
@@ -266,6 +293,14 @@ def test_updating_nonexisting_entity_raises_error(
     crud_test_config: CrudTestConfig,
 ):
     """Tests updating a nonexistent entity raises an error."""
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
+
     if crud_test_config.update_model:
         # Update the created entity
         update_model = crud_test_config.update_model
@@ -286,6 +321,14 @@ def test_deleting_nonexistent_entity_raises_error(
     crud_test_config: CrudTestConfig,
 ):
     """Tests deleting a nonexistent workspace raises an error."""
+    zs = Client().zen_store
+
+    if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
+        pytest.skip(
+            f"Test only applies to "
+            f"{[c.__name__ for c in crud_test_config.supported_zen_stores]}"
+        )
+
     with pytest.raises(KeyError):
         crud_test_config.delete_method(uuid.uuid4())
 
@@ -365,6 +408,83 @@ def test_creating_user_with_existing_name_fails():
             )
             # clean up
             zen_store.delete_user(user.id)
+
+
+def test_creating_users_in_parallel_do_not_duplicate_fails(
+    clean_client: "Client",
+):
+    """Tests creating a user with an existing username fails in parallel mode."""
+
+    def silent_create_user(user_request: UserRequest):
+        """This function attempts to create a user and silently passes
+        if a duplicate user exists. This is used to simulate race
+        conditions in parallel user creation.
+        """
+        try:
+            clean_client.zen_store.create_user(user_request)
+        except EntityExistsError:
+            pass
+
+    user_name = "test_user"
+    password = "P@ssw0rd"
+    count = 100
+
+    threads: List[Thread] = []
+    for _ in range(count):
+        t = Thread(
+            target=silent_create_user,
+            args=(UserRequest(name=user_name, password=password),),
+        )
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    users = clean_client.zen_store.list_users(
+        user_filter_model=UserFilter(name=user_name)
+    )
+    assert users.total == 1
+
+
+def test_creating_service_accounts_in_parallel_do_not_duplicate_fails(
+    clean_client: "Client",
+):
+    """Tests creating a user with an existing username fails in parallel mode."""
+
+    def silent_create_service_account(
+        service_account_request: ServiceAccountRequest,
+    ):
+        """This function attempts to create a service account and silently
+        passes if a duplicate user exists. This is used to simulate race
+        conditions in parallel user creation.
+        """
+        try:
+            clean_client.zen_store.create_service_account(
+                service_account_request
+            )
+        except EntityExistsError:
+            pass
+
+    user_name = "test_user"
+    count = 100
+
+    threads: List[Thread] = []
+    for _ in range(count):
+        t = Thread(
+            target=silent_create_service_account,
+            args=(ServiceAccountRequest(name=user_name, active=True),),
+        )
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    service_accounts = clean_client.zen_store.list_service_accounts(
+        filter_model=ServiceAccountFilter(name=user_name)
+    )
+    assert service_accounts.total == 1
 
 
 def test_get_user():
@@ -3603,6 +3723,32 @@ def test_connector_validation():
 #################
 # Models
 #################
+
+# class TestEventSource:
+#
+#     def test_create_event_source(self, clean_client: "Client"):
+#         """Test that creating event source works."""
+#         zs = clean_client.zen_store
+#         if not isinstance(zs, RestZenStore):
+#             pytest.skip("Test only applies to SQL store")
+#         event_source = zs.create_event_source(
+#             EventSourceRequest(
+#                 name="blupus_cat_cam",
+#                 configuration={},
+#                 description="Best event source ever",
+#                 flavor="github",
+#                 event_source_subtype=PluginSubType.WEBHOOK
+#             )
+#         )
+#
+#         zs.update_model(
+#             model_id=model_.id,
+#             model_update=ModelUpdate(
+#                 name="and yet another one",
+#             ),
+#         )
+#         model = zs.get_model(model_.id)
+#         assert model.name == "and yet another one"
 
 
 class TestModel:

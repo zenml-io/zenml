@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for workspaces."""
+
 from typing import Dict, List, Optional, Tuple, Union
 from uuid import UUID
 

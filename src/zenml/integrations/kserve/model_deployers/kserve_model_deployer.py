@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the KServe Model Deployer."""
+
 import base64
 import json
 import re
@@ -624,30 +625,30 @@ class KServeModelDeployer(BaseModelDeployer):
         annotations: Dict[str, str] = {}
         if "aws_access_key_id" in credentials:
             if credentials.get("s3_region"):
-                annotations[
-                    "serving.kubeflow.org/s3-region"
-                ] = credentials.pop("s3_region")
+                annotations["serving.kubeflow.org/s3-region"] = (
+                    credentials.pop("s3_region")
+                )
             if credentials.get("s3_endpoint"):
-                annotations[
-                    "serving.kubeflow.org/s3-endpoint"
-                ] = credentials.pop("s3_endpoint")
+                annotations["serving.kubeflow.org/s3-endpoint"] = (
+                    credentials.pop("s3_endpoint")
+                )
             if credentials.get("s3_use_https"):
-                annotations[
-                    "serving.kubeflow.org/s3-usehttps"
-                ] = credentials.pop("s3_use_https")
+                annotations["serving.kubeflow.org/s3-usehttps"] = (
+                    credentials.pop("s3_use_https")
+                )
             if credentials.get("s3_verify_ssl"):
-                annotations[
-                    "serving.kubeflow.org/s3-verifyssl"
-                ] = credentials.pop("s3_verify_ssl")
+                annotations["serving.kubeflow.org/s3-verifyssl"] = (
+                    credentials.pop("s3_verify_ssl")
+                )
 
         # Convert all keys to uppercase
         credentials = {k.upper(): v for k, v in credentials.items()}
 
         # The GCP credentials need to use a specific key name
         if "GOOGLE_APPLICATION_CREDENTIALS" in credentials:
-            credentials[
-                "gcloud-application-credentials.json"
-            ] = credentials.pop("GOOGLE_APPLICATION_CREDENTIALS")
+            credentials["gcloud-application-credentials.json"] = (
+                credentials.pop("GOOGLE_APPLICATION_CREDENTIALS")
+            )
 
         # Create or update the Kubernetes secret object
         config.k8s_secret = self.create_or_update_k8s_secret(

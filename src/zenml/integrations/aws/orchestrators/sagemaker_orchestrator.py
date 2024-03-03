@@ -233,9 +233,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
 
-            environment[
-                ENV_ZENML_SAGEMAKER_RUN_ID
-            ] = ExecutionVariables.PIPELINE_EXECUTION_ARN
+            environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
+                ExecutionVariables.PIPELINE_EXECUTION_ARN
+            )
 
             # Retrieve Processor arguments provided in the Step settings.
             processor_args_for_step = step_settings.processor_args or {}

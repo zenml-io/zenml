@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipelines."""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -38,7 +39,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.rbac.utils import (
-    dehydrate_page,
     get_allowed_resource_ids,
 )
 from zenml.zen_server.utils import (
@@ -247,5 +247,4 @@ def list_pipeline_namespaces(
     filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id, id=allowed_ids
     )
-    page = zen_store().list_pipeline_namespaces(filter_model, hydrate=hydrate)
-    return dehydrate_page(page)
+    return zen_store().list_pipeline_namespaces(filter_model, hydrate=hydrate)

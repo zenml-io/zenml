@@ -16,6 +16,7 @@
 The Docker Service Connector is responsible for authenticating with a Docker
 (or compatible) registry.
 """
+
 import re
 import subprocess
 from typing import Any, List, Optional

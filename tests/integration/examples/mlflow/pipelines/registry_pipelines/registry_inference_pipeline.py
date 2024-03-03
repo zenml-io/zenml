@@ -12,28 +12,30 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from steps.dynamic_importer_step import dynamic_importer
-from steps.predict_preprocessor_step import tf_predict_preprocessor
+from steps.predict_preprocessor_step import predict_preprocessor
 from steps.predictor_step import predictor
 
 from zenml import pipeline
 from zenml.config import DockerSettings
-from zenml.integrations.constants import MLFLOW, TENSORFLOW
+from zenml.integrations.constants import MLFLOW, SKLEARN
 from zenml.integrations.mlflow.steps.mlflow_deployer import (
     mlflow_model_registry_deployer_step,
 )
 
-docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
+docker_settings = DockerSettings(
+    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
+)
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})
 def mlflow_registry_inference_pipeline():
     # Link all the steps artifacts together
     deployed_model = mlflow_model_registry_deployer_step(
-        registry_model_name="tensorflow-mnist-model",
+        registry_model_name="sklearn-mnist-model",
         registry_model_version="1",
         # or you can use the model stage if you have set it in the MLflow registry
         # registered_model_stage="None" # "Staging", "Production", "Archived"
     )
     batch_data = dynamic_importer()
-    inference_data = tf_predict_preprocessor(batch_data)
+    inference_data = predict_preprocessor(batch_data)
     predictor(deployed_model, inference_data)

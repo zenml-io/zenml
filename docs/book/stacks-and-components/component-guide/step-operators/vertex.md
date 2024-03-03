@@ -122,9 +122,38 @@ more about how ZenML builds these images and how you can customize them.
 
 #### Additional configuration
 
+You can specify the service account, network and reserved IP ranges to use for the VertexAI `CustomJob` by passing the `service_account`, `network` and `reserved_ip_ranges` parameters to the `step-operator register` command:
+
+```shell
+    zenml step-operator register <STEP_OPERATOR_NAME> \
+        --flavor=vertex \
+        --project=<GCP_PROJECT> \
+        --region=<REGION> \
+        --service_account=<SERVICE_ACCOUNT> # optionally specify the service account to use for the VertexAI CustomJob
+        --network=<NETWORK> # optionally specify the network to use for the VertexAI CustomJob
+        --reserved_ip_ranges=<RESERVED_IP_RANGES> # optionally specify the reserved IP range to use for the VertexAI CustomJob
+```
+
 For additional configuration of the Vertex step operator, you can pass `VertexStepOperatorSettings` when defining or
-running your pipeline. Check out
-the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_step\_operator\_flavor.VertexStepOperatorSettings)
+running your pipeline.
+
+```python
+from zenml import step
+from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import VertexStepOperatorSettings
+
+@step(step_operator= <NAME>, settings=settings= {"step_operator.vertex": vertex_operator_settings = VertexStepOperatorSettings(
+    accelerator_type  = "NVIDIA_TESLA_T4" # see https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
+    accelerator_count = 1
+    machine_type = "n1-standard-2"        # see https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+    disk_type = "pd-ssd"                  # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-types
+    disk_size_gb = 100                    # see https://cloud.google.com/vertex-ai/docs/training/configure-storage#disk-size
+    )})
+def trainer(...) -> ...:
+    """Train a model."""
+    # This step will be executed in Vertex.
+```
+
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_step\_operator\_flavor.VertexStepOperatorSettings)
 for a full list of available attributes and [this docs page](/docs/book/user-guide/advanced-guide/pipelining-features/pipeline-settings.md) for
 more information on how to specify settings.
 

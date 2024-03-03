@@ -17,11 +17,14 @@
 
 # V2 Base
 from zenml.models.v2.base.base import (
+    BaseZenModel,
     BaseRequest,
     BaseResponse,
+    BaseIdentifiedResponse,
     BaseResponseBody,
     BaseResponseMetadata,
-    BaseZenModel,
+    BaseResponseResources,
+    BaseDatedResponseBody
 )
 from zenml.models.v2.base.scoped import (
     UserScopedRequest,
@@ -46,6 +49,12 @@ from zenml.models.v2.base.filter import (
 from zenml.models.v2.base.page import Page
 
 # V2 Core
+from zenml.models.v2.core.action_flavor import (
+    ActionFlavorResponse,
+    ActionFlavorResponseBody,
+    ActionFlavorResponseMetadata,
+    ActionFlavorResponseResources,
+)
 from zenml.models.v2.core.api_key import (
     APIKey,
     APIKeyRequest,
@@ -110,6 +119,12 @@ from zenml.models.v2.core.component import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
+)
+from zenml.models.v2.core.event_source_flavor import (
+    EventSourceFlavorResponse,
+    EventSourceFlavorResponseBody,
+    EventSourceFlavorResponseMetadata,
+    EventSourceFlavorResponseResources,
 )
 from zenml.models.v2.core.device import (
     OAuthDeviceUpdate,
@@ -196,6 +211,7 @@ from zenml.models.v2.core.pipeline_deployment import (
     PipelineDeploymentResponse,
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
+    PipelineDeploymentResponseResources,
 )
 from zenml.models.v2.core.pipeline_run import (
     PipelineRunRequest,
@@ -205,6 +221,7 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
 )
+from zenml.models.v2.base.base_plugin_flavor import BasePluginFlavorResponse
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
     RunMetadataFilter,
@@ -299,6 +316,32 @@ from zenml.models.v2.misc.service_connector_type import (
     ResourceTypeModel,
 )
 from zenml.models.v2.misc.server_models import ServerDatabaseType, ServerModel
+from zenml.models.v2.core.trigger import (
+    TriggerRequest,
+    TriggerFilter,
+    TriggerUpdate,
+    TriggerResponse,
+    TriggerResponseBody,
+    TriggerResponseMetadata,
+    TriggerResponseResources
+)
+from zenml.models.v2.core.trigger_execution import (
+    TriggerExecutionRequest,
+    TriggerExecutionFilter,
+    TriggerExecutionResponse,
+    TriggerExecutionResponseBody,
+    TriggerExecutionResponseMetadata,
+    TriggerExecutionResponseResources
+)
+from zenml.models.v2.core.event_source import (
+    EventSourceRequest,
+    EventSourceFilter,
+    EventSourceUpdate,
+    EventSourceResponse,
+    EventSourceResponseBody,
+    EventSourceResponseMetadata,
+    EventSourceResponseResources
+)
 from zenml.models.v2.misc.user_auth import UserAuthModel
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
@@ -357,6 +400,15 @@ ComponentResponseBody.update_forward_refs(
 ComponentResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
     ServiceConnectorResponse=ServiceConnectorResponse,
+)
+EventSourceResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+EventSourceResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+EventSourceResponseResources.update_forward_refs(
+    TriggerResponse=TriggerResponse,
 )
 FlavorResponseBody.update_forward_refs(
     UserResponse=UserResponse,
@@ -430,6 +482,9 @@ PipelineDeploymentResponseMetadata.update_forward_refs(
     ScheduleResponse=ScheduleResponse,
     CodeReferenceResponse=CodeReferenceResponse,
 )
+PipelineDeploymentResponseResources.update_forward_refs(
+    TriggerResponse=TriggerResponse,
+)
 PipelineRunResponseBody.update_forward_refs(
     UserResponse=UserResponse,
     PipelineResponse=PipelineResponse,
@@ -437,6 +492,7 @@ PipelineRunResponseBody.update_forward_refs(
     PipelineBuildResponse=PipelineBuildResponse,
     ScheduleResponse=ScheduleResponse,
     CodeReferenceResponse=CodeReferenceResponse,
+    TriggerExecutionResponse=TriggerExecutionResponse,
 )
 PipelineRunResponseMetadata.update_forward_refs(
     WorkspaceResponse=WorkspaceResponse,
@@ -488,14 +544,34 @@ StepRunResponseMetadata.update_forward_refs(
     LogsResponse=LogsResponse,
     RunMetadataResponse=RunMetadataResponse,
 )
+TriggerExecutionResponseResources.update_forward_refs(
+    TriggerResponse=TriggerResponse
+)
+TriggerResponseBody.update_forward_refs(
+    UserResponse=UserResponse,
+)
+TriggerResponseMetadata.update_forward_refs(
+    WorkspaceResponse=WorkspaceResponse,
+)
+TriggerResponseResources.update_forward_refs(
+    EventSourceResponse=EventSourceResponse,
+)
+TriggerResponseResources.update_forward_refs(
+    EventSourceResponse=EventSourceResponse,
+    TriggerExecutionResponse=TriggerExecutionResponse,
+)
 
 __all__ = [
     # V2 Base
     "BaseRequest",
     "BaseResponse",
+    "BaseIdentifiedResponse",
     "BaseResponseBody",
     "BaseResponseMetadata",
+    "BaseResponseResources",
+    "BaseDatedResponseBody",
     "BaseZenModel",
+    "BasePluginFlavorResponse",
     "UserScopedRequest",
     "UserScopedFilter",
     "UserScopedResponse",
@@ -514,6 +590,10 @@ __all__ = [
     "UUIDFilter",
     "Page",
     # V2 Core
+    "ActionFlavorResponse",
+    "ActionFlavorResponseBody",
+    "ActionFlavorResponseMetadata",
+    "ActionFlavorResponseResources",
     "APIKey",
     "APIKeyRequest",
     "APIKeyUpdate",
@@ -557,6 +637,10 @@ __all__ = [
     "ComponentResponse",
     "ComponentResponseBody",
     "ComponentResponseMetadata",
+    "EventSourceFlavorResponse",
+    "EventSourceFlavorResponseBody",
+    "EventSourceFlavorResponseMetadata",
+    "EventSourceFlavorResponseResources",
     "FlavorRequest",
     "FlavorUpdate",
     "FlavorFilter",
@@ -676,6 +760,26 @@ __all__ = [
     "TagResponseBody",
     "TagRequest",
     "TagUpdate",
+    "TriggerResponse",
+    "TriggerRequest",
+    "TriggerFilter",
+    "TriggerUpdate",
+    "TriggerResponseBody",
+    "TriggerResponseMetadata",
+    "TriggerResponseResources",
+    "TriggerExecutionRequest",
+    "TriggerExecutionFilter",
+    "TriggerExecutionResponse",
+    "TriggerExecutionResponseBody",
+    "TriggerExecutionResponseMetadata",
+    "TriggerExecutionResponseResources",
+    "EventSourceResponse",
+    "EventSourceRequest",
+    "EventSourceFilter",
+    "EventSourceUpdate",
+    "EventSourceResponseBody",
+    "EventSourceResponseMetadata",
+    "EventSourceResponseResources",
     "UserRequest",
     "UserUpdate",
     "UserFilter",

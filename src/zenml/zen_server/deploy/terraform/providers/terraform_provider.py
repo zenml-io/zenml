@@ -52,9 +52,9 @@ logger = get_logger(__name__)
 class TerraformServerProvider(BaseServerProvider):
     """Terraform ZenML server provider."""
 
-    CONFIG_TYPE: ClassVar[
-        Type[ServerDeploymentConfig]
-    ] = TerraformServerDeploymentConfig
+    CONFIG_TYPE: ClassVar[Type[ServerDeploymentConfig]] = (
+        TerraformServerDeploymentConfig
+    )
 
     @staticmethod
     def _get_server_recipe_root_path() -> str:
@@ -320,9 +320,7 @@ class TerraformServerProvider(BaseServerProvider):
         if service.is_running:
             url = service.get_server_url()
             ca_crt = service.get_certificate()
-        connected = (
-            url is not None and gc.store is not None and gc.store.url == url
-        )
+        connected = url is not None and gc.store_configuration.url == url
 
         return ServerDeploymentStatus(
             url=url,

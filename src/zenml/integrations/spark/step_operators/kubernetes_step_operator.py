@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
+
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 from pyspark.conf import SparkConf

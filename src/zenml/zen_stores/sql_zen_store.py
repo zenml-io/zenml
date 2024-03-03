@@ -22,7 +22,7 @@ import re
 import sys
 from datetime import datetime
 from functools import lru_cache
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -37,7 +37,7 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import SecretStr, root_validator, validator
 from sqlalchemy import asc, desc, func
@@ -99,10 +99,12 @@ from zenml.exceptions import (
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
     EntityExistsError,
+    EventSourceExistsError,
     IllegalOperationError,
     SecretsStoreNotConfiguredError,
     StackComponentExistsError,
     StackExistsError,
+    TriggerExistsError,
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
@@ -124,6 +126,7 @@ from zenml.models import (
     ArtifactVersionUpdate,
     ArtifactVisualizationResponse,
     BaseFilter,
+    BaseIdentifiedResponse,
     BaseResponse,
     CodeReferenceRequest,
     CodeReferenceResponse,
@@ -135,6 +138,10 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    EventSourceFilter,
+    EventSourceRequest,
+    EventSourceResponse,
+    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -222,6 +229,13 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerExecutionFilter,
+    TriggerExecutionRequest,
+    TriggerExecutionResponse,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerResponse,
+    TriggerUpdate,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -258,6 +272,7 @@ from zenml.zen_stores.schemas import (
     BaseSchema,
     CodeReferenceSchema,
     CodeRepositorySchema,
+    EventSourceSchema,
     FlavorSchema,
     IdentitySchema,
     ModelSchema,
@@ -283,6 +298,7 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
     TagResourceSchema,
     TagSchema,
+    TriggerExecutionSchema,
     UserSchema,
     WorkspaceSchema,
 )
@@ -291,6 +307,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchemas
+from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
@@ -299,7 +316,11 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
-B = TypeVar("B", bound=BaseResponse)  # type: ignore[type-arg]
+AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]  # noqa: F821
+AnyIdentifiedResponse = TypeVar(
+    "AnyIdentifiedResponse",
+    bound=BaseIdentifiedResponse,  # type: ignore[type-arg]  # noqa: F821
+)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -614,53 +635,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 with open(file_path, "r") as f:
                     setattr(self, key, f.read())
 
-    @classmethod
-    def copy_configuration(
-        cls,
-        config: "StoreConfiguration",
-        config_path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> "StoreConfiguration":
-        """Copy the store config using a different configuration path.
-
-        This method is used to create a copy of the store configuration that can
-        be loaded using a different configuration path or in the context of a
-        new environment, such as a container image.
-
-        The configuration files accompanying the store configuration are also
-        copied to the new configuration path (e.g. certificates etc.).
-
-        Args:
-            config: The store configuration to copy.
-            config_path: new path where the configuration copy will be loaded
-                from.
-            load_config_path: absolute path that will be used to load the copied
-                configuration. This can be set to a value different from
-                `config_path` if the configuration copy will be loaded from
-                a different environment, e.g. when the configuration is copied
-                to a container image and loaded using a different absolute path.
-                This will be reflected in the paths and URLs encoded in the
-                copied configuration.
-
-        Returns:
-            A new store configuration object that reflects the new configuration
-            path.
-        """
-        assert isinstance(config, SqlZenStoreConfiguration)
-        config = config.copy()
-
-        if config.driver == SQLDatabaseDriver.MYSQL:
-            # Load the certificate values back into the configuration
-            config.expand_certificates()
-
-        elif config.driver == SQLDatabaseDriver.SQLITE:
-            if load_config_path:
-                config.url = cls.get_local_url(str(load_config_path))
-            else:
-                config.url = cls.get_local_url(config_path)
-
-        return config
-
     def get_sqlalchemy_config(
         self,
         database: Optional[str] = None,
@@ -723,9 +697,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     )
                 sqlalchemy_ssl_args[key.lstrip("ssl_")] = ssl_setting
             if len(sqlalchemy_ssl_args) > 0:
-                sqlalchemy_ssl_args[
-                    "check_hostname"
-                ] = self.ssl_verify_server_cert
+                sqlalchemy_ssl_args["check_hostname"] = (
+                    self.ssl_verify_server_cert
+                )
                 sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
@@ -843,7 +817,9 @@ class SqlZenStore(BaseZenStore):
         query: Union[Select[Any], SelectOfScalar[Any]],
         table: Type[AnySchema],
         filter_model: BaseFilter,
-        custom_schema_to_model_conversion: Optional[Callable[..., B]] = None,
+        custom_schema_to_model_conversion: Optional[
+            Callable[..., AnyResponse]
+        ] = None,
         custom_fetch: Optional[
             Callable[
                 [
@@ -855,7 +831,7 @@ class SqlZenStore(BaseZenStore):
             ]
         ] = None,
         hydrate: bool = False,
-    ) -> Page[B]:
+    ) -> Page[AnyResponse]:
         """Given a query, return a Page instance with a list of filtered Models.
 
         Args:
@@ -937,7 +913,7 @@ class SqlZenStore(BaseZenStore):
             )
 
         # Convert this page of items from schemas to models.
-        items: List[B] = []
+        items: List[AnyResponse] = []
         for schema in item_schemas:
             # If a custom conversion function is provided, use it.
             if custom_schema_to_model_conversion:
@@ -946,7 +922,7 @@ class SqlZenStore(BaseZenStore):
             # Otherwise, try to use the `to_model` method of the schema.
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                items.append(to_model(hydrate=hydrate))
+                items.append(to_model(include_metadata=hydrate))
                 continue
             # If neither of the above work, raise an error.
             raise RuntimeError(
@@ -1558,7 +1534,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_api_key)
             session.commit()
 
-            api_key_model = new_api_key.to_model(hydrate=True)
+            api_key_model = new_api_key.to_model(include_metadata=True)
             api_key_model.set_key(key_value)
             return api_key_model
 
@@ -1586,7 +1562,7 @@ class SqlZenStore(BaseZenStore):
                 api_key_name_or_id=api_key_name_or_id,
                 session=session,
             )
-            return api_key.to_model(hydrate=hydrate)
+            return api_key.to_model(include_metadata=hydrate)
 
     def get_internal_api_key(
         self, api_key_id: UUID, hydrate: bool = True
@@ -1700,7 +1676,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(api_key)
-            return api_key.to_model(hydrate=True)
+            return api_key.to_model(include_metadata=True)
 
     def update_internal_api_key(
         self, api_key_id: UUID, api_key_update: APIKeyInternalUpdate
@@ -1731,7 +1707,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(api_key)
-            return api_key.to_model(hydrate=True)
+            return api_key.to_model(include_metadata=True)
 
     def rotate_api_key(
         self,
@@ -1965,7 +1941,7 @@ class SqlZenStore(BaseZenStore):
 
             session.add(artifact_schema)
             session.commit()
-            return artifact_schema.to_model(hydrate=True)
+            return artifact_schema.to_model(include_metadata=True)
 
     def get_artifact(
         self, artifact_id: UUID, hydrate: bool = True
@@ -1992,7 +1968,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get artifact with ID {artifact_id}: No "
                     "artifact with this ID found."
                 )
-            return artifact.to_model(hydrate=hydrate)
+            return artifact.to_model(include_metadata=hydrate)
 
     def list_artifacts(
         self, filter_model: ArtifactFilter, hydrate: bool = False
@@ -2059,7 +2035,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_artifact)
             session.commit()
             session.refresh(existing_artifact)
-            return existing_artifact.to_model(hydrate=True)
+            return existing_artifact.to_model(include_metadata=True)
 
     def delete_artifact(self, artifact_id: UUID) -> None:
         """Deletes an artifact.
@@ -2153,7 +2129,7 @@ class SqlZenStore(BaseZenStore):
                 session.rollback()
                 raise e
 
-            return artifact_version_schema.to_model(hydrate=True)
+            return artifact_version_schema.to_model(include_metadata=True)
 
     def get_artifact_version(
         self, artifact_version_id: UUID, hydrate: bool = True
@@ -2183,7 +2159,7 @@ class SqlZenStore(BaseZenStore):
                     f"{artifact_version_id}: No artifact version with this ID "
                     f"found."
                 )
-            return artifact_version.to_model(hydrate=hydrate)
+            return artifact_version.to_model(include_metadata=hydrate)
 
     def list_artifact_versions(
         self,
@@ -2261,7 +2237,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_artifact_version)
             session.commit()
             session.refresh(existing_artifact_version)
-            return existing_artifact_version.to_model(hydrate=True)
+            return existing_artifact_version.to_model(include_metadata=True)
 
     def delete_artifact_version(self, artifact_version_id: UUID) -> None:
         """Deletes an artifact version.
@@ -2368,7 +2344,7 @@ class SqlZenStore(BaseZenStore):
                     f"{artifact_visualization_id}: "
                     f"No artifact visualization with this ID found."
                 )
-            return artifact_visualization.to_model(hydrate=hydrate)
+            return artifact_visualization.to_model(include_metadata=hydrate)
 
     # ------------------------ Code References ------------------------
 
@@ -2400,7 +2376,7 @@ class SqlZenStore(BaseZenStore):
                     f"{code_reference_id}: "
                     f"No code reference with this ID found."
                 )
-            return code_reference.to_model(hydrate=hydrate)
+            return code_reference.to_model(include_metadata=hydrate)
 
     # --------------------------- Code Repositories ---------------------------
 
@@ -2441,7 +2417,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_repo)
 
-            return new_repo.to_model(hydrate=True)
+            return new_repo.to_model(include_metadata=True)
 
     def get_code_repository(
         self, code_repository_id: UUID, hydrate: bool = True
@@ -2472,7 +2448,7 @@ class SqlZenStore(BaseZenStore):
                     "ID found."
                 )
 
-            return repo.to_model(hydrate=hydrate)
+            return repo.to_model(include_metadata=hydrate)
 
     def list_code_repositories(
         self,
@@ -2533,7 +2509,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_repo)
             session.commit()
 
-            return existing_repo.to_model(hydrate=True)
+            return existing_repo.to_model(include_metadata=True)
 
     def delete_code_repository(self, code_repository_id: UUID) -> None:
         """Deletes a code repository.
@@ -2624,7 +2600,7 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(new_component)
 
-            return new_component.to_model(hydrate=True)
+            return new_component.to_model(include_metadata=True)
 
     def get_stack_component(
         self, component_id: UUID, hydrate: bool = True
@@ -2654,7 +2630,7 @@ class SqlZenStore(BaseZenStore):
                     f"Stack component with ID {component_id} not found."
                 )
 
-            return stack_component.to_model(hydrate=hydrate)
+            return stack_component.to_model(include_metadata=hydrate)
 
     def list_stack_components(
         self,
@@ -2674,14 +2650,14 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackComponentSchema)
-            paged_components: Page[
-                ComponentResponse
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=StackComponentSchema,
-                filter_model=component_filter_model,
-                hydrate=hydrate,
+            paged_components: Page[ComponentResponse] = (
+                self.filter_and_paginate(
+                    session=session,
+                    query=query,
+                    table=StackComponentSchema,
+                    filter_model=component_filter_model,
+                    hydrate=hydrate,
+                )
             )
             return paged_components
 
@@ -2764,7 +2740,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_component)
             session.commit()
 
-            return existing_component.to_model(hydrate=True)
+            return existing_component.to_model(include_metadata=True)
 
     def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
@@ -2941,7 +2917,7 @@ class SqlZenStore(BaseZenStore):
                     "this ID found."
                 )
 
-            return device.to_model(hydrate=hydrate)
+            return device.to_model(include_metadata=hydrate)
 
     def get_internal_authorized_device(
         self,
@@ -3047,7 +3023,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_device)
             session.commit()
 
-            return existing_device.to_model(hydrate=True)
+            return existing_device.to_model(include_metadata=True)
 
     def update_internal_authorized_device(
         self, device_id: UUID, update: OAuthDeviceInternalUpdate
@@ -3201,7 +3177,7 @@ class SqlZenStore(BaseZenStore):
                 session.add(new_flavor)
                 session.commit()
 
-                return new_flavor.to_model(hydrate=True)
+                return new_flavor.to_model(include_metadata=True)
 
     def get_flavor(
         self, flavor_id: UUID, hydrate: bool = True
@@ -3225,7 +3201,7 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if flavor_in_db is None:
                 raise KeyError(f"Flavor with ID {flavor_id} not found.")
-            return flavor_in_db.to_model(hydrate=hydrate)
+            return flavor_in_db.to_model(include_metadata=hydrate)
 
     def list_flavors(
         self,
@@ -3282,7 +3258,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_flavor)
-            return existing_flavor.to_model(hydrate=True)
+            return existing_flavor.to_model(include_metadata=True)
 
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a flavor.
@@ -3349,7 +3325,7 @@ class SqlZenStore(BaseZenStore):
                     f"{logs_id}: "
                     f"No logs with this ID found."
                 )
-            return logs.to_model(hydrate=hydrate)
+            return logs.to_model(include_metadata=hydrate)
 
     # ----------------------------- Pipelines -----------------------------
 
@@ -3390,7 +3366,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_pipeline)
 
-            return new_pipeline.to_model(hydrate=True)
+            return new_pipeline.to_model(include_metadata=True)
 
     def get_pipeline(
         self, pipeline_id: UUID, hydrate: bool = True
@@ -3419,7 +3395,7 @@ class SqlZenStore(BaseZenStore):
                     "No pipeline with this ID found."
                 )
 
-            return pipeline.to_model(hydrate=hydrate)
+            return pipeline.to_model(include_metadata=hydrate)
 
     def list_pipeline_namespaces(
         self,
@@ -3448,7 +3424,7 @@ class SqlZenStore(BaseZenStore):
                 latest_run_status=latest_run_status,
             )
 
-            return PipelineNamespaceResponse(id=uuid4(), name=name, body=body)
+            return PipelineNamespaceResponse(name=name, body=body)
 
         def _custom_fetch(
             session: Session,
@@ -3571,7 +3547,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_pipeline)
             session.commit()
 
-            return existing_pipeline.to_model(hydrate=True)
+            return existing_pipeline.to_model(include_metadata=True)
 
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
@@ -3617,7 +3593,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_build)
 
-            return new_build.to_model(hydrate=True)
+            return new_build.to_model(include_metadata=True)
 
     def get_build(
         self, build_id: UUID, hydrate: bool = True
@@ -3648,7 +3624,7 @@ class SqlZenStore(BaseZenStore):
                     "No build with this ID found."
                 )
 
-            return build.to_model(hydrate=hydrate)
+            return build.to_model(include_metadata=hydrate)
 
     def list_builds(
         self,
@@ -3729,7 +3705,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_deployment)
 
-            return new_deployment.to_model(hydrate=True)
+            return new_deployment.to_model(include_metadata=True)
 
     def get_deployment(
         self, deployment_id: UUID, hydrate: bool = True
@@ -3760,7 +3736,7 @@ class SqlZenStore(BaseZenStore):
                     "No deployment with this ID found."
                 )
 
-            return deployment.to_model(hydrate=hydrate)
+            return deployment.to_model(include_metadata=hydrate)
 
     def list_deployments(
         self,
@@ -3813,6 +3789,183 @@ class SqlZenStore(BaseZenStore):
             session.delete(deployment)
             session.commit()
 
+    # -------------------- Event Sources  --------------------
+
+    def _fail_if_event_source_with_name_exists(
+        self, event_source: EventSourceRequest, session: Session
+    ) -> None:
+        """Raise an exception if a stack with same name exists.
+
+        Args:
+            event_source: The event_source to create.
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            EventSourceExistsError: In case the event source already exists
+        """
+        existing_domain_event_source = session.exec(
+            select(EventSourceSchema)
+            .where(EventSourceSchema.name == event_source.name)
+            .where(EventSourceSchema.workspace_id == event_source.workspace)
+        ).first()
+        if existing_domain_event_source is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=event_source.workspace, session=session
+            )
+            raise EventSourceExistsError(
+                f"Unable to register event source with name "
+                f"'{event_source.name}': Found an existing event source with "
+                f"the same name in the active workspace, '{workspace.name}'."
+            )
+        return None
+
+    def create_event_source(
+        self, event_source: EventSourceRequest
+    ) -> EventSourceResponse:
+        """Create an event_source.
+
+        Args:
+            event_source: The event_source to create.
+
+        Returns:
+            The created event_source.
+        """
+        with Session(self.engine) as session:
+            self._fail_if_event_source_with_name_exists(
+                event_source=event_source,
+                session=session,
+            )
+            new_event_source = EventSourceSchema.from_request(event_source)
+            session.add(new_event_source)
+            session.commit()
+            session.refresh(new_event_source)
+
+            return new_event_source.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _get_event_source(
+        self,
+        event_source_id: UUID,
+        session: Session,
+    ) -> EventSourceSchema:
+        """Get an event_source by ID.
+
+        Args:
+            event_source_id: The ID of the event_source to get.
+            session: The DB session.
+
+        Returns:
+            The event_source schema.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=event_source_id,
+            schema_class=EventSourceSchema,
+            schema_name="event_source",
+            session=session,
+        )
+
+    def get_event_source(
+        self,
+        event_source_id: UUID,
+        hydrate: bool = True,
+    ) -> EventSourceResponse:
+        """Get an event_source by ID.
+
+        Args:
+            event_source_id: The ID of the event_source to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The event_source.
+        """
+        with Session(self.engine) as session:
+            return self._get_event_source(
+                event_source_id=event_source_id, session=session
+            ).to_model(include_metadata=hydrate, include_resources=True)
+
+    def list_event_sources(
+        self,
+        event_source_filter_model: EventSourceFilter,
+        hydrate: bool = False,
+    ) -> Page[EventSourceResponse]:
+        """List all event_sources matching the given filter criteria.
+
+        Args:
+            event_source_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all event_sources matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(EventSourceSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=EventSourceSchema,
+                filter_model=event_source_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_event_source(
+        self,
+        event_source_id: UUID,
+        event_source_update: EventSourceUpdate,
+    ) -> EventSourceResponse:
+        """Update an existing event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to update.
+            event_source_update: The update to be applied to the event_source.
+
+        Returns:
+            The updated event_source.
+        """
+        with Session(self.engine) as session:
+            event_source = self._get_event_source(
+                session=session, event_source_id=event_source_id
+            )
+            event_source.update(update=event_source_update)
+            session.add(event_source)
+            session.commit()
+
+            # Refresh the event_source that was just created
+            session.refresh(event_source)
+            return event_source.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_event_source(self, event_source_id: UUID) -> None:
+        """Delete an event_source.
+
+        Args:
+            event_source_id: The ID of the event_source to delete.
+
+        Raises:
+            KeyError: if the event_source doesn't exist.
+        """
+        with Session(self.engine) as session:
+            event_source = self._get_event_source(
+                event_source_id=event_source_id, session=session
+            )
+            if event_source is None:
+                raise KeyError(
+                    f"Unable to delete event_source with ID `{event_source_id}`: "
+                    f"No event_source with this ID found."
+                )
+            session.delete(event_source)
+            session.commit()
+
+            # TODO: catch and throw proper error if it can't be deleted due to
+            #  not-null constraints on triggers
+
     # ----------------------------- Pipeline runs -----------------------------
 
     def create_run(
@@ -3847,7 +4000,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_run)
             session.commit()
 
-            return new_run.to_model(hydrate=True)
+            return new_run.to_model(include_metadata=True)
 
     def get_run(
         self, run_name_or_id: Union[str, UUID], hydrate: bool = True
@@ -3865,7 +4018,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return self._get_run_schema(
                 run_name_or_id, session=session
-            ).to_model(hydrate=hydrate)
+            ).to_model(include_metadata=hydrate)
 
     def _replace_placeholder_run(
         self, pipeline_run: PipelineRunRequest
@@ -3911,7 +4064,7 @@ class SqlZenStore(BaseZenStore):
             session.add(run_schema)
             session.commit()
 
-            return run_schema.to_model(hydrate=True)
+            return run_schema.to_model(include_metadata=True)
 
     def _get_run_by_orchestrator_run_id(
         self, orchestrator_run_id: str, deployment_id: UUID
@@ -3945,7 +4098,7 @@ class SqlZenStore(BaseZenStore):
                     f"{orchestrator_run_id} and deployment ID {deployment_id}."
                 )
 
-            return run_schema.to_model(hydrate=True)
+            return run_schema.to_model(include_metadata=True)
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequest
@@ -4103,7 +4256,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             session.refresh(existing_run)
-            return existing_run.to_model(hydrate=True)
+            return existing_run.to_model(include_metadata=True)
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -4171,7 +4324,9 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(run_metadata_schema)
                 session.commit()
-                return_value.append(run_metadata_schema.to_model(hydrate=True))
+                return_value.append(
+                    run_metadata_schema.to_model(include_metadata=True)
+                )
         return return_value
 
     def get_run_metadata(
@@ -4202,7 +4357,7 @@ class SqlZenStore(BaseZenStore):
                     f"{run_metadata_id}: "
                     f"No run metadata with this ID found."
                 )
-            return run_metadata.to_model(hydrate=hydrate)
+            return run_metadata.to_model(include_metadata=hydrate)
 
     def list_run_metadata(
         self,
@@ -4245,7 +4400,7 @@ class SqlZenStore(BaseZenStore):
             new_schedule = ScheduleSchema.from_request(schedule)
             session.add(new_schedule)
             session.commit()
-            return new_schedule.to_model(hydrate=True)
+            return new_schedule.to_model(include_metadata=True)
 
     def get_schedule(
         self, schedule_id: UUID, hydrate: bool = True
@@ -4273,7 +4428,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get schedule with ID '{schedule_id}': "
                     "No schedule with this ID found."
                 )
-            return schedule.to_model(hydrate=hydrate)
+            return schedule.to_model(include_metadata=hydrate)
 
     def list_schedules(
         self,
@@ -4333,7 +4488,7 @@ class SqlZenStore(BaseZenStore):
             existing_schedule = existing_schedule.update(schedule_update)
             session.add(existing_schedule)
             session.commit()
-            return existing_schedule.to_model(hydrate=True)
+            return existing_schedule.to_model(include_metadata=True)
 
     def delete_schedule(self, schedule_id: UUID) -> None:
         """Deletes a schedule.
@@ -4412,7 +4567,9 @@ class SqlZenStore(BaseZenStore):
         existing_secret = session.exec(scope_filter).first()
 
         if existing_secret is not None:
-            existing_secret_model = existing_secret.to_model(hydrate=True)
+            existing_secret_model = existing_secret.to_model(
+                include_metadata=True
+            )
 
             msg = (
                 f"Found an existing {scope.value} scoped secret with the "
@@ -4797,7 +4954,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_secret)
             session.commit()
 
-            secret_model = new_secret.to_model(hydrate=True)
+            secret_model = new_secret.to_model(include_metadata=True)
 
         try:
             # Set the secret values in the configured secrets store
@@ -4837,7 +4994,7 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if secret_in_db is None:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
-            secret_model = secret_in_db.to_model(hydrate=hydrate)
+            secret_model = secret_in_db.to_model(include_metadata=hydrate)
 
         secret_model.set_secrets(self._get_secret_values(secret_id=secret_id))
 
@@ -4940,7 +5097,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_secret)
-            secret_model = existing_secret.to_model(hydrate=True)
+            secret_model = existing_secret.to_model(include_metadata=True)
 
         if secret_update.values is not None:
             # Update the secret values in the configured secrets store
@@ -5133,28 +5290,29 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
-            # Check if a service account with the given name already
-            # exists
-            try:
-                self._get_account_schema(
-                    service_account.name, session=session, service_account=True
-                )
-                raise EntityExistsError(
-                    f"Unable to create service account with name "
-                    f"'{service_account.name}': Found existing service "
-                    "account with this name."
-                )
-            except KeyError:
-                pass
-
             # Create the service account
             new_account = UserSchema.from_service_account_request(
                 service_account
             )
             session.add(new_account)
-            session.commit()
 
-            return new_account.to_service_account_model(hydrate=True)
+            # Check if a service account with the given name already
+            # exists
+            service_accounts = session.execute(
+                select(UserSchema).where(
+                    UserSchema.name == service_account.name,
+                    UserSchema.is_service_account.is_(True),  # type: ignore[attr-defined]
+                )
+            ).fetchall()
+            if len(service_accounts) == 1:
+                session.commit()
+            else:
+                raise EntityExistsError(
+                    f"Unable to create service account with name "
+                    f"'{service_account.name}': Found existing service "
+                    "account with this name."
+                )
+            return new_account.to_service_account_model(include_metadata=True)
 
     def get_service_account(
         self,
@@ -5181,7 +5339,7 @@ class SqlZenStore(BaseZenStore):
                 service_account=True,
             )
 
-            return account.to_service_account_model(hydrate=hydrate)
+            return account.to_service_account_model(include_metadata=hydrate)
 
     def list_service_accounts(
         self,
@@ -5201,17 +5359,17 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(UserSchema)
-            paged_service_accounts: Page[
-                ServiceAccountResponse
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=UserSchema,
-                filter_model=filter_model,
-                custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
-                    hydrate=hydrate
-                ),
-                hydrate=hydrate,
+            paged_service_accounts: Page[ServiceAccountResponse] = (
+                self.filter_and_paginate(
+                    session=session,
+                    query=query,
+                    table=UserSchema,
+                    filter_model=filter_model,
+                    custom_schema_to_model_conversion=lambda user: user.to_service_account_model(
+                        include_metadata=hydrate
+                    ),
+                    hydrate=hydrate,
+                )
             )
             return paged_service_accounts
 
@@ -5270,7 +5428,7 @@ class SqlZenStore(BaseZenStore):
             # Refresh the Model that was just created
             session.refresh(existing_service_account)
             return existing_service_account.to_service_account_model(
-                hydrate=True
+                include_metadata=True
             )
 
     def delete_service_account(
@@ -5377,7 +5535,7 @@ class SqlZenStore(BaseZenStore):
 
                 raise
 
-            connector = new_service_connector.to_model(hydrate=True)
+            connector = new_service_connector.to_model(include_metadata=True)
             self._populate_connector_type(connector)
             return connector
 
@@ -5410,7 +5568,7 @@ class SqlZenStore(BaseZenStore):
                     "found."
                 )
 
-            connector = service_connector.to_model(hydrate=hydrate)
+            connector = service_connector.to_model(include_metadata=hydrate)
             self._populate_connector_type(connector)
             return connector
 
@@ -5460,15 +5618,15 @@ class SqlZenStore(BaseZenStore):
 
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)
-            paged_connectors: Page[
-                ServiceConnectorResponse
-            ] = self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=ServiceConnectorSchema,
-                filter_model=filter_model,
-                custom_fetch=fetch_connectors,
-                hydrate=hydrate,
+            paged_connectors: Page[ServiceConnectorResponse] = (
+                self.filter_and_paginate(
+                    session=session,
+                    query=query,
+                    table=ServiceConnectorSchema,
+                    filter_model=filter_model,
+                    custom_fetch=fetch_connectors,
+                    hydrate=hydrate,
+                )
             )
 
             self._populate_connector_type(*paged_connectors.items)
@@ -5534,7 +5692,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             existing_connector_model = existing_connector.to_model(
-                hydrate=True
+                include_metadata=True
             )
 
             if len(existing_connector.components):
@@ -5624,7 +5782,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_connector)
             session.commit()
 
-            connector = existing_connector.to_model(hydrate=True)
+            connector = existing_connector.to_model(include_metadata=True)
             self._populate_connector_type(connector)
             return connector
 
@@ -6148,7 +6306,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(new_stack_schema)
 
-            return new_stack_schema.to_model(hydrate=True)
+            return new_stack_schema.to_model(include_metadata=True)
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -6171,7 +6329,7 @@ class SqlZenStore(BaseZenStore):
 
             if stack is None:
                 raise KeyError(f"Stack with ID {stack_id} not found.")
-            return stack.to_model(hydrate=hydrate)
+            return stack.to_model(include_metadata=hydrate)
 
     def list_stacks(
         self,
@@ -6260,7 +6418,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_stack)
 
-            return existing_stack.to_model(hydrate=True)
+            return existing_stack.to_model(include_metadata=True)
 
     def delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
@@ -6512,7 +6670,7 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-            return step_schema.to_model(hydrate=True)
+            return step_schema.to_model(include_metadata=True)
 
     def get_run_step(
         self, step_run_id: UUID, hydrate: bool = True
@@ -6539,7 +6697,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get step run with ID {step_run_id}: No step "
                     "run with this ID found."
                 )
-            return step_run.to_model(hydrate=hydrate)
+            return step_run.to_model(include_metadata=hydrate)
 
     def list_run_steps(
         self,
@@ -6643,7 +6801,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_step_run)
 
-            return existing_step_run.to_model(hydrate=True)
+            return existing_step_run.to_model(include_metadata=True)
 
     @staticmethod
     def _set_run_step_parent_step(
@@ -6872,6 +7030,13 @@ class SqlZenStore(BaseZenStore):
                 else:
                     start_time_str = None
                     duration_seconds = None
+
+                stack = pipeline_run.deployment.stack
+                assert stack
+                stack_metadata = {
+                    str(component.type): component.flavor
+                    for component in stack.components
+                }
                 with track_handler(
                     AnalyticsEvent.RUN_PIPELINE_ENDED
                 ) as analytics_handler:
@@ -6884,9 +7049,329 @@ class SqlZenStore(BaseZenStore):
                             "%Y-%m-%dT%H:%M:%S.%fZ"
                         ),
                         "duration_seconds": duration_seconds,
+                        **stack_metadata,
                     }
             pipeline_run.update(run_update)
             session.add(pipeline_run)
+
+    # --------------------------- Triggers ---------------------------
+
+    @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
+    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
+        """Creates a new trigger.
+
+        Args:
+            trigger: Trigger to be created.
+
+        Returns:
+            The newly created trigger.
+        """
+        with Session(self.engine) as session:
+            # Verify that the given event_source exists
+            self._get_event_source(
+                event_source_id=trigger.event_source_id, session=session
+            )
+
+            # Verify that the given service account exists
+            self._get_account_schema(
+                account_name_or_id=trigger.service_account_id,
+                session=session,
+                service_account=True,
+            )
+
+            # Verify that the trigger won't validate Unique
+            self._fail_if_trigger_with_name_exists(
+                trigger_name=trigger.name,
+                workspace_id=trigger.workspace,
+                session=session,
+            )
+
+            new_trigger = TriggerSchema.from_request(trigger)
+            session.add(new_trigger)
+            session.commit()
+            session.refresh(new_trigger)
+
+            return new_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TriggerResponse:
+        """Get a trigger by its unique ID.
+
+        Args:
+            trigger_id: The ID of the trigger to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger with the given ID.
+
+        Raises:
+            KeyError: if the trigger doesn't exist.
+        """
+        with Session(self.engine) as session:
+            trigger = session.exec(
+                select(TriggerSchema).where(TriggerSchema.id == trigger_id)
+            ).first()
+
+            if trigger is None:
+                raise KeyError(f"Trigger with ID {trigger_id} not found.")
+            return trigger.to_model(
+                include_metadata=hydrate, include_resources=hydrate
+            )
+
+    def list_triggers(
+        self,
+        trigger_filter_model: TriggerFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerResponse]:
+        """List all trigger matching the given filter criteria.
+
+        Args:
+            trigger_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all triggers matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(TriggerSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TriggerSchema,
+                filter_model=trigger_filter_model,
+                hydrate=hydrate,
+            )
+
+    @track_decorator(AnalyticsEvent.UPDATED_TRIGGER)
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TriggerResponse:
+        """Update a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger update.
+            trigger_update: The update request on the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            KeyError: if the trigger doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if trigger with the domain key (name, workspace, owner)
+            # already exists
+            existing_trigger = session.exec(
+                select(TriggerSchema).where(TriggerSchema.id == trigger_id)
+            ).first()
+            if existing_trigger is None:
+                raise KeyError(
+                    f"Unable to update trigger with id '{trigger_id}': Found no"
+                    f"existing trigger with this id."
+                )
+
+            if trigger_update.service_account_id:
+                # Verify that the given service account exists
+                self._get_account_schema(
+                    account_name_or_id=trigger_update.service_account_id,
+                    session=session,
+                    service_account=True,
+                )
+
+            # In case of a renaming update, make sure no trigger already exists
+            # with that name
+            if trigger_update.name:
+                if existing_trigger.name != trigger_update.name:
+                    self._fail_if_trigger_with_name_exists(
+                        trigger_name=trigger_update.name,
+                        workspace_id=existing_trigger.workspace.id,
+                        session=session,
+                    )
+
+            existing_trigger.update(
+                trigger_update=trigger_update,
+            )
+
+            session.add(existing_trigger)
+            session.commit()
+            session.refresh(existing_trigger)
+
+            return existing_trigger.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_trigger(self, trigger_id: UUID) -> None:
+        """Delete a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to delete.
+
+        Raises:
+            KeyError: if the trigger doesn't exist.
+        """
+        with Session(self.engine) as session:
+            try:
+                trigger = session.exec(
+                    select(TriggerSchema).where(TriggerSchema.id == trigger_id)
+                ).one()
+
+                if trigger is None:
+                    raise KeyError(f"Trigger with ID {trigger_id} not found.")
+                session.delete(trigger)
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.commit()
+
+    def _fail_if_trigger_with_name_exists(
+        self,
+        trigger_name: str,
+        workspace_id: UUID,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a trigger with same name exists.
+
+        Args:
+            trigger_name: The Trigger name
+            workspace_id: The workspace ID
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            TriggerExistsError: If a trigger with the given name already exists.
+        """
+        existing_domain_trigger = session.exec(
+            select(TriggerSchema)
+            .where(TriggerSchema.name == trigger_name)
+            .where(TriggerSchema.workspace_id == workspace_id)
+        ).first()
+        if existing_domain_trigger is not None:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=workspace_id, session=session
+            )
+            raise TriggerExistsError(
+                f"Unable to register trigger with name "
+                f"'{trigger_name}': Found an existing trigger with the same "
+                f"name in the active workspace, '{workspace.name}'."
+            )
+        return None
+
+    # -------------------- Trigger Executions --------------------
+
+    def create_trigger_execution(
+        self, trigger_execution: TriggerExecutionRequest
+    ) -> TriggerExecutionResponse:
+        """Create a trigger execution.
+
+        Args:
+            trigger_execution: The trigger execution to create.
+
+        Returns:
+            The created trigger execution.
+        """
+        with Session(self.engine) as session:
+            # TODO: Verify that the given trigger exists
+            new_execution = TriggerExecutionSchema.from_request(
+                trigger_execution
+            )
+            session.add(new_execution)
+            session.commit()
+            session.refresh(new_execution)
+
+            return new_execution.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_trigger_execution(
+        self,
+        trigger_execution_id: UUID,
+        hydrate: bool = True,
+    ) -> TriggerExecutionResponse:
+        """Get an trigger execution by ID.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The trigger execution.
+
+        Raises:
+            KeyError: If the trigger execution doesn't exist.
+        """
+        with Session(self.engine) as session:
+            execution = session.exec(
+                select(TriggerExecutionSchema).where(
+                    TriggerExecutionSchema.id == trigger_execution_id
+                )
+            ).first()
+
+            if execution is None:
+                raise KeyError(
+                    f"Trigger execution with ID {trigger_execution_id} not found."
+                )
+            return execution.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_trigger_executions(
+        self,
+        trigger_execution_filter_model: TriggerExecutionFilter,
+        hydrate: bool = False,
+    ) -> Page[TriggerExecutionResponse]:
+        """List all trigger executions matching the given filter criteria.
+
+        Args:
+            trigger_execution_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all trigger executions matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(TriggerExecutionSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TriggerExecutionSchema,
+                filter_model=trigger_execution_filter_model,
+                hydrate=hydrate,
+            )
+
+    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
+        """Delete a trigger execution.
+
+        Args:
+            trigger_execution_id: The ID of the trigger execution to delete.
+
+        Raises:
+            KeyError: If the trigger execution doesn't exist.
+        """
+        with Session(self.engine) as session:
+            try:
+                execution = session.exec(
+                    select(TriggerExecutionSchema).where(
+                        TriggerExecutionSchema.id == trigger_execution_id
+                    )
+                ).one()
+
+                session.delete(execution)
+                session.commit()
+            except NoResultFound:
+                raise KeyError(
+                    f"Execution with ID {trigger_execution_id} not found."
+                )
 
     # ----------------------------- Users -----------------------------
 
@@ -7016,26 +7501,25 @@ class SqlZenStore(BaseZenStore):
                 already exists.
         """
         with Session(self.engine) as session:
+            # Create the user
+            new_user = UserSchema.from_user_request(user)
+            session.add(new_user)
+
             # Check if a user account with the given name already exists
-            try:
-                self._get_account_schema(
-                    user.name,
-                    session=session,
-                    # Filter out service accounts
-                    service_account=False,
+            users = session.execute(
+                select(UserSchema).where(
+                    UserSchema.name == user.name,
+                    UserSchema.is_service_account.is_(False),  # type: ignore[attr-defined]
                 )
+            ).fetchall()
+            if len(users) == 1:
+                session.commit()
+            else:
                 raise EntityExistsError(
                     f"Unable to create user with name '{user.name}': "
                     f"Found an existing user account with this name."
                 )
-            except KeyError:
-                pass
-
-            # Create the user
-            new_user = UserSchema.from_user_request(user)
-            session.add(new_user)
-            session.commit()
-            return new_user.to_model(hydrate=True)
+            return new_user.to_model(include_metadata=True)
 
     def get_user(
         self,
@@ -7081,7 +7565,7 @@ class SqlZenStore(BaseZenStore):
             )
 
             return user.to_model(
-                include_private=include_private, hydrate=hydrate
+                include_private=include_private, include_metadata=hydrate
             )
 
     def get_auth_user(
@@ -7192,7 +7676,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_user)
-            return existing_user.to_model(hydrate=True)
+            return existing_user.to_model(include_metadata=True)
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
@@ -7293,7 +7777,7 @@ class SqlZenStore(BaseZenStore):
             # Explicitly refresh the new_workspace schema
             session.refresh(new_workspace)
 
-            workspace_model = new_workspace.to_model(hydrate=True)
+            workspace_model = new_workspace.to_model(include_metadata=True)
 
         self._get_or_create_default_stack(workspace=workspace_model)
         return workspace_model
@@ -7315,7 +7799,7 @@ class SqlZenStore(BaseZenStore):
             workspace = self._get_workspace_schema(
                 workspace_name_or_id, session=session
             )
-        return workspace.to_model(hydrate=hydrate)
+        return workspace.to_model(include_metadata=hydrate)
 
     def list_workspaces(
         self,
@@ -7387,7 +7871,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_workspace)
-            return existing_workspace.to_model(hydrate=True)
+            return existing_workspace.to_model(include_metadata=True)
 
     def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
         """Deletes a workspace.
@@ -7478,7 +7962,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_entity_by_id(
         self, entity_id: UUID, schema_class: Type[AnySchema]
-    ) -> Optional[B]:
+    ) -> Optional[AnyIdentifiedResponse]:
         """Get an entity by ID.
 
         Args:
@@ -7501,7 +7985,7 @@ class SqlZenStore(BaseZenStore):
 
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                return cast(B, to_model(hydrate=True))
+                return cast(AnyIdentifiedResponse, to_model(hydrate=True))
             else:
                 raise RuntimeError("Unable to convert schema to model.")
 
@@ -7827,7 +8311,7 @@ class SqlZenStore(BaseZenStore):
                     resource_type=TaggableResourceTypes.MODEL,
                 )
             session.commit()
-            return model_schema.to_model(hydrate=True)
+            return model_schema.to_model(include_metadata=True)
 
     def get_model(
         self,
@@ -7856,7 +8340,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get model with ID `{model_name_or_id}`: "
                     f"No model with this ID found."
                 )
-            return model.to_model(hydrate=hydrate)
+            return model.to_model(include_metadata=hydrate)
 
     def list_models(
         self,
@@ -7952,7 +8436,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_model)
-            return existing_model.to_model(hydrate=True)
+            return existing_model.to_model(include_metadata=True)
 
     # ----------------------------- Model Versions -----------------------------
 
@@ -8028,7 +8512,7 @@ class SqlZenStore(BaseZenStore):
                 session.rollback()
                 raise e
 
-            return model_version_schema.to_model(hydrate=True)
+            return model_version_schema.to_model(include_metadata=True)
 
     def get_model_version(
         self, model_version_id: UUID, hydrate: bool = True
@@ -8060,7 +8544,7 @@ class SqlZenStore(BaseZenStore):
                     f"`{model_version_id}`: No model version with this "
                     f"ID found."
                 )
-            return model_version.to_model(hydrate=hydrate)
+            return model_version.to_model(include_metadata=hydrate)
 
     def list_model_versions(
         self,
@@ -8209,7 +8693,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_model_version)
 
-            return existing_model_version.to_model(hydrate=True)
+            return existing_model_version.to_model(include_metadata=True)
 
     # ------------------------ Model Versions Artifacts ------------------------
 
@@ -8248,7 +8732,9 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_artifact_link_schema)
             session.commit()
-            return model_version_artifact_link_schema.to_model(hydrate=True)
+            return model_version_artifact_link_schema.to_model(
+                include_metadata=True
+            )
 
     def list_model_version_artifact_links(
         self,
@@ -8408,7 +8894,7 @@ class SqlZenStore(BaseZenStore):
             session.add(model_version_pipeline_run_link_schema)
             session.commit()
             return model_version_pipeline_run_link_schema.to_model(
-                hydrate=True
+                include_metadata=True
             )
 
     def list_model_version_pipeline_run_links(
@@ -8689,7 +9175,7 @@ class SqlZenStore(BaseZenStore):
             session.add(tag_schema)
 
             session.commit()
-            return tag_schema.to_model(hydrate=True)
+            return tag_schema.to_model(include_metadata=True)
 
     def delete_tag(
         self,
@@ -8740,7 +9226,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get tag with ID `{tag_name_or_id}`: "
                     f"No tag with this ID found."
                 )
-            return tag.to_model(hydrate=hydrate)
+            return tag.to_model(include_metadata=hydrate)
 
     def list_tags(
         self,
@@ -8798,7 +9284,7 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the tag that was just created
             session.refresh(tag)
-            return tag.to_model(hydrate=True)
+            return tag.to_model(include_metadata=True)
 
     ####################
     # Tags <> resources
@@ -8841,7 +9327,7 @@ class SqlZenStore(BaseZenStore):
             session.add(tag_resource_schema)
 
             session.commit()
-            return tag_resource_schema.to_model(hydrate=True)
+            return tag_resource_schema.to_model(include_metadata=True)
 
     def delete_tag_resource(
         self,
