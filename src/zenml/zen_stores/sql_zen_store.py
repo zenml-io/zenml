@@ -1409,7 +1409,6 @@ class SqlZenStore(BaseZenStore):
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
         model.id = self.get_deployment_id()
-
         return model
 
     def get_deployment_id(self) -> UUID:
