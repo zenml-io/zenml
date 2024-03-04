@@ -513,7 +513,7 @@ class KServeModelDeployer(BaseModelDeployer):
             "Starting KServe model servers is not implemented"
         )
 
-    def perfom_delete_model(
+    def perform_delete_model(
         self,
         uuid: UUID,
         timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
