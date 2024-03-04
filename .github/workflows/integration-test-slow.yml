@@ -97,7 +97,6 @@ jobs:
       GCP_US_EAST4_SERVER_URL: ${{ secrets.GCP_US_EAST4_SERVER_URL }}
       GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
-      ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE: 100
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     defaults:
       run:
