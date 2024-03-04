@@ -743,13 +743,16 @@ class ModelVersionServiceSchema(BaseSchema, table=True):
 
     def to_model(
         self,
-        hydrate: bool = False,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
     ) -> ModelVersionServiceResponse:
         """Convert an `ModelVersionServiceRequest` to an `ModelVersionServiceResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether the metadata will be filled.
+            include_resources: Whether the resources will be filled.
+            kwargs: Additional keyword arguments.
 
         Returns:
             The created `ModelVersionServiceResponse`.
@@ -763,5 +766,5 @@ class ModelVersionServiceSchema(BaseSchema, table=True):
                 model_version=self.model_version_id,
                 service=self.service.to_model(),
             ),
-            metadata=BaseResponseMetadata() if hydrate else None,
+            metadata=BaseResponseMetadata() if include_metadata else None,
         )

@@ -16,10 +16,10 @@
 import base64
 import json
 from datetime import datetime
-from pydantic.json import pydantic_encoder
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
+from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
@@ -105,8 +105,9 @@ class ServiceSchemas(NamedSchema, table=True):
         """Convert an `ServiceSchemas` to an `ServiceResponse`.
 
         Args:
-            hydrate: bool to decide whether to return a hydrated version of the
-                model.
+            include_metadata: Whether to include metadata in the response.
+            include_resources: Whether to include resources in the response.
+            kwargs: Additional keyword arguments.
 
         Returns:
             The created `ServiceResponse`.
@@ -116,15 +117,13 @@ class ServiceSchemas(NamedSchema, table=True):
             metadata = ServiceResponseMetadata(
                 workspace=self.workspace.to_model(),
                 service_source=self.service_source,
-                config=json.loads(
-                    base64.b64decode(self.config).decode()
-                ),
-                status=json.loads(
-                    base64.b64decode(self.status).decode()
-                ) if self.status else None,
-                endpoint=json.loads(
-                    base64.b64decode(self.endpoint).decode()
-                ) if self.endpoint else None,
+                config=json.loads(base64.b64decode(self.config).decode()),
+                status=json.loads(base64.b64decode(self.status).decode())
+                if self.status
+                else None,
+                endpoint=json.loads(base64.b64decode(self.endpoint).decode())
+                if self.endpoint
+                else None,
                 admin_state=self.admin_state or None,
                 prediction_url=self.prediction_url or None,
                 health_check_url=self.health_check_url,
@@ -136,9 +135,9 @@ class ServiceSchemas(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             service_type=json.loads(self.service_type),
-            labels=json.loads(
-                    base64.b64decode(self.labels).decode()
-                ) if self.labels else None,
+            labels=json.loads(base64.b64decode(self.labels).decode())
+            if self.labels
+            else None,
         )
 
         return ServiceResponse(
@@ -165,21 +164,21 @@ class ServiceSchemas(NamedSchema, table=True):
         ).items():
             if field == "config":
                 self.config = base64.b64encode(
-                    json.dumps(
-                        update.config, default=pydantic_encoder
-                    ).encode("utf-8")
+                    json.dumps(update.config, default=pydantic_encoder).encode(
+                        "utf-8"
+                    )
                 )
             elif field == "labels":
                 self.labels = base64.b64encode(
-                    json.dumps(
-                        update.labels, default=pydantic_encoder
-                    ).encode("utf-8")
+                    json.dumps(update.labels, default=pydantic_encoder).encode(
+                        "utf-8"
+                    )
                 )
             elif field == "status":
                 self.status = base64.b64encode(
-                    json.dumps(
-                        update.status, default=pydantic_encoder
-                    ).encode("utf-8")
+                    json.dumps(update.status, default=pydantic_encoder).encode(
+                        "utf-8"
+                    )
                 )
             elif field == "endpoint":
                 self.endpoint = base64.b64encode(
@@ -226,21 +225,27 @@ class ServiceSchemas(NamedSchema, table=True):
                     sort_keys=False,
                     default=pydantic_encoder,
                 ).encode("utf-8")
-            ) if service_request.labels else None,
+            )
+            if service_request.labels
+            else None,
             status=base64.b64encode(
                 json.dumps(
                     service_request.status,
                     sort_keys=False,
                     default=pydantic_encoder,
                 ).encode("utf-8")
-            ) if service_request.status else None,
+            )
+            if service_request.status
+            else None,
             endpoint=base64.b64encode(
                 json.dumps(
                     service_request.endpoint,
                     sort_keys=False,
                     default=pydantic_encoder,
                 ).encode("utf-8")
-            ) if service_request.endpoint else None,
+            )
+            if service_request.endpoint
+            else None,
             prediction_url=service_request.prediction_url,
             health_check_url=service_request.health_check_url,
             run_name=service_request.config.get("run_name"),

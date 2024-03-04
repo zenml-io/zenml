@@ -35,9 +35,9 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
-    WorkspaceScopedResponseResources,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
     WorkspaceScopedTaggableFilter,
 )
 from zenml.services.service_status import ServiceState
@@ -191,11 +191,15 @@ class ServiceResponseMetadata(WorkspaceScopedResponseMetadata):
         title="The service health check URL.",
     )
 
+
 class ServiceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the service entity."""
 
+
 class ServiceResponse(
-    WorkspaceScopedResponse[ServiceResponseBody, ServiceResponseMetadata, ServiceResponseResources]
+    WorkspaceScopedResponse[
+        ServiceResponseBody, ServiceResponseMetadata, ServiceResponseResources
+    ]
 ):
     """Response model for services."""
 

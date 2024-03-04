@@ -64,8 +64,13 @@ class ModelVersionServiceResponseBody(BaseResponseBody):
 class ModelVersionServiceResponseResources(BaseResponseResources):
     """Class for all resource models associated with the model version service entity."""
 
+
 class ModelVersionServiceResponse(
-    BaseResponse[ModelVersionServiceResponseBody, BaseResponseMetadata, ModelVersionServiceResponseResources]
+    BaseResponse[
+        ModelVersionServiceResponseBody,
+        BaseResponseMetadata,
+        ModelVersionServiceResponseResources,
+    ]
 ):
     """Response model for links between model versions and services."""
 
