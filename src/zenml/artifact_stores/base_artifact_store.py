@@ -74,14 +74,15 @@ class _sanitize_paths:
         self.is_static = is_static
 
         params = inspect.signature(self.func).parameters
-        self.valid = set()
+        self.valid_pos = set()
+        self.valid_key = set()
         has_self = False
         for i, k in enumerate(params):
             if k == "self":
                 has_self = True
             if params[k].annotation == PathType:
-                self.valid.add(i - has_self)
-                self.valid.add(k)
+                self.valid_pos.add(i - has_self)
+                self.valid_key.add(k)
 
     def _validate_path(
         self, path: str, pos: Optional[int] = -1, key: Optional[str] = None
@@ -97,7 +98,7 @@ class _sanitize_paths:
             FileNotFoundError: If the path is outside of the artifact store
                 bounds.
         """
-        if pos in self.valid or key in self.valid:
+        if pos in self.valid_pos or key in self.valid_key:
             if not path.startswith(self.fixed_root_path):
                 raise FileNotFoundError(
                     f"File `{path}` is outside of "
