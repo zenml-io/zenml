@@ -22,6 +22,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from pydantic import SecretStr
+from sqlalchemy.exc import IntegrityError
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
@@ -422,7 +423,7 @@ def test_creating_users_in_parallel_do_not_duplicate_fails(
         """
         try:
             clean_client.zen_store.create_user(user_request)
-        except EntityExistsError:
+        except (EntityExistsError, IntegrityError):
             pass
 
     user_name = "test_user"
@@ -463,7 +464,7 @@ def test_creating_service_accounts_in_parallel_do_not_duplicate_fails(
             clean_client.zen_store.create_service_account(
                 service_account_request
             )
-        except EntityExistsError:
+        except (EntityExistsError, IntegrityError):
             pass
 
     user_name = "test_user"
