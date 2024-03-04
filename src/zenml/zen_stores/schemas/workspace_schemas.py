@@ -151,11 +151,11 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
-    model_versions_services_links: List[
-        "ModelVersionServiceSchema"
-    ] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
+    model_versions_services_links: List["ModelVersionServiceSchema"] = (
+        Relationship(
+            back_populates="workspace",
+            sa_relationship_kwargs={"cascade": "delete"},
+        )
     )
 
     @classmethod

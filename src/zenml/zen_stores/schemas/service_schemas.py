@@ -89,11 +89,11 @@ class ServiceSchemas(NamedSchema, table=True):
     model_name: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     model_version: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
-    model_versions_services_links: List[
-        "ModelVersionServiceSchema"
-    ] = Relationship(
-        back_populates="service",
-        sa_relationship_kwargs={"cascade": "delete"},
+    model_versions_services_links: List["ModelVersionServiceSchema"] = (
+        Relationship(
+            back_populates="service",
+            sa_relationship_kwargs={"cascade": "delete"},
+        )
     )
 
     def to_model(
