@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Integration tests for artifact models."""
 
-
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import pytest

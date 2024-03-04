@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of pipeline run metadata tables."""
 
-
 import json
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID

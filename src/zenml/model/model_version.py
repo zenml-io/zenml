@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """DEPRECATED, use `from zenml import Model` instead."""
+
 from typing import Any
 
 from zenml.logger import get_logger

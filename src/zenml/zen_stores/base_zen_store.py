@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
+
 import os
 from abc import ABC
 from typing import (

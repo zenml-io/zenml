@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Internal BaseStep subclass used by the step decorator."""
+
 from typing import Any
 
 from zenml.config.source import Source

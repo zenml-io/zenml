@@ -16,7 +16,7 @@ concurrency:
 jobs:
   docstring-check:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-dind-runners
+    runs-on: arc-runner-set
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
@@ -29,7 +29,7 @@ jobs:
       - name: Check docstrings
         run: bash scripts/docstring.sh
   sqlite-db-migration-testing:
-    runs-on: ubuntu-dind-runners
+    runs-on: arc-runner-set
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
@@ -83,7 +83,7 @@ jobs:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        os: [ubuntu-dind-runners]
+        os: [arc-runner-set]
         python-version: ['3.10']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
@@ -91,11 +91,11 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  custom-ubuntu-runners-integration-test:
+  custom-arc-runner-set-integration-test:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        os: [ubuntu-dind-runners]
+        os: [arc-runner-set]
         python-version: ['3.10']
         test_environment: [default, docker-server-docker-orchestrator-mysql]
       fail-fast: false

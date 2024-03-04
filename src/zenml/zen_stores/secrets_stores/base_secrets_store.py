@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Secrets Store implementation."""
+
 from abc import ABC
 from typing import (
     TYPE_CHECKING,

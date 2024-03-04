@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Secrets Store."""
 
-
 import json
 import os
 from typing import (
@@ -91,23 +90,36 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
         """
         # Search for legacy attributes and populate the connector configuration
         # from them, if they exist.
-        if values.get("project_id") and os.environ.get(
-            "GOOGLE_APPLICATION_CREDENTIALS"
-        ):
-            logger.warning(
-                "The `project_id` GCP secrets store attribute and the "
-                "`GOOGLE_APPLICATION_CREDENTIALS` environment variable are "
-                "deprecated and will be removed in a future version of ZenML. "
-                "Please use the `auth_method` and `auth_config` attributes "
-                "instead."
-            )
-            values["auth_method"] = GCPAuthenticationMethods.SERVICE_ACCOUNT
-            values["auth_config"] = dict(
-                project_id=values.get("project_id"),
-            )
-            # Load the service account credentials from the file
-            with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]) as f:
-                values["auth_config"]["service_account_json"] = f.read()
+        if values.get("project_id"):
+            if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                logger.warning(
+                    "The `project_id` GCP secrets store attribute is "
+                    "deprecated and will be removed in a future version of ZenML. "
+                    "Please use the `auth_method` and `auth_config` attributes "
+                    "instead. Using an implicit GCP authentication to access "
+                    "the GCP Secrets Manager API."
+                )
+                values["auth_method"] = GCPAuthenticationMethods.IMPLICIT
+                values["auth_config"] = dict(
+                    project_id=values.get("project_id"),
+                )
+            else:
+                logger.warning(
+                    "The `project_id` GCP secrets store attribute and the "
+                    "`GOOGLE_APPLICATION_CREDENTIALS` environment variable are "
+                    "deprecated and will be removed in a future version of ZenML. "
+                    "Please use the `auth_method` and `auth_config` attributes "
+                    "instead."
+                )
+                values["auth_method"] = (
+                    GCPAuthenticationMethods.SERVICE_ACCOUNT
+                )
+                values["auth_config"] = dict(
+                    project_id=values.get("project_id"),
+                )
+                # Load the service account credentials from the file
+                with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]) as f:
+                    values["auth_config"]["service_account_json"] = f.read()
 
         return values
 
@@ -123,9 +135,9 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
 
     config: GCPSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.GCP
-    CONFIG_TYPE: ClassVar[
-        Type[ServiceConnectorSecretsStoreConfiguration]
-    ] = GCPSecretsStoreConfiguration
+    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]] = (
+        GCPSecretsStoreConfiguration
+    )
     SERVICE_CONNECTOR_TYPE: ClassVar[str] = GCP_CONNECTOR_TYPE
     SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = GCP_RESOURCE_TYPE
 

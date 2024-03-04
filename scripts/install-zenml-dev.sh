@@ -27,8 +27,12 @@ install_zenml() {
     touch zenml_requirements.txt
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,mlstacks]" >> zenml_requirements.txt
 
-    pip install -r zenml_requirements.txt
+    cp zenml_requirements.txt zenml_requirements.in
+    uv pip compile zenml_requirements.in -o zenml_requirements-compiled.txt
+
+    pip install -r zenml_requirements-compiled.txt
     rm zenml_requirements.txt
+    rm zenml_requirements.in
 }
 
 install_integrations() {
@@ -69,9 +73,6 @@ install_integrations() {
     rm integration-requirements.txt
     rm integration-requirements.in
     rm integration-requirements-compiled.txt
-
-    # install langchain separately
-    zenml integration install -y langchain
 }
 
 
@@ -83,14 +84,11 @@ export ZENML_ANALYTICS_OPT_IN=false
 
 parse_args "$@"
 
-python -m pip install --upgrade pip setuptools wheel
+python -m pip install --upgrade pip setuptools wheel uv
 
 install_zenml
 
 # install integrations, if requested
 if [ "$INTEGRATIONS" = yes ]; then
     install_integrations
-
-    # refresh the ZenML installation after installing integrations
-    install_zenml
 fi
