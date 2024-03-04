@@ -105,7 +105,6 @@ class _sanitize_paths:
 
         Args:
             potential_path: Value that potentially refers to a (remote) path.
-            root_path: The root path of the artifact store.
 
         Returns:
             The original input or a sanitized version of it in case of a remote
