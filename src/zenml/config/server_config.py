@@ -124,6 +124,7 @@ class ServerConfiguration(BaseModel):
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
     base_url: str = ""
     root_url_path: str = ""
+    metadata: Dict[str, Any] = {}
     auth_scheme: AuthScheme = AuthScheme.OAUTH2_PASSWORD_BEARER
     jwt_token_algorithm: str = DEFAULT_ZENML_JWT_TOKEN_ALGORITHM
     jwt_token_issuer: Optional[str] = None
@@ -149,8 +150,6 @@ class ServerConfiguration(BaseModel):
     external_user_info_url: Optional[str] = None
     external_cookie_name: Optional[str] = None
     external_server_id: Optional[UUID] = None
-
-    metadata: Optional[Dict[str, Any]] = None
 
     rbac_implementation_source: Optional[str] = None
     workload_manager_implementation_source: Optional[str] = None
