@@ -61,74 +61,63 @@ class _sanitize_paths:
         Function that calls the input function with sanitized path inputs.
     """
 
-    def __init__(self, func: Any, fixed_root_path: str, is_static: bool):
+    def __init__(self, func: Callable[..., Any], fixed_root_path: str) -> None:
         """Initializes the decorator.
 
         Args:
             func: The function to decorate.
             fixed_root_path: The fixed artifact store root path.
-            is_static: Whether the function is static or not.
         """
         self.func = func
         self.fixed_root_path = fixed_root_path
-        self.is_static = is_static
 
-        params = inspect.signature(self.func).parameters
-        self.valid_pos = set()
-        self.valid_key = set()
-        has_self = False
-        for i, k in enumerate(params):
-            if k == "self":
-                has_self = True
-            if params[k].annotation == PathType:
-                self.valid_pos.add(i - has_self)
-                self.valid_key.add(k)
+        self.path_args: List[int] = []
+        self.path_kwargs: List[str] = []
+        for i, param in enumerate(
+            inspect.signature(self.func).parameters.values()
+        ):
+            if param.annotation == PathType:
+                self.path_kwargs.append(param.name)
+                if param.default == inspect.Parameter.empty:
+                    self.path_args.append(i)
 
-    def _validate_path(
-        self, path: str, pos: Optional[int] = -1, key: Optional[str] = None
-    ) -> None:
-        """Validates the path.
+    def _validate_path(self, path: str) -> None:
+        """Validates a path.
 
         Args:
             path: The path to validate.
-            pos: Position of the path in the function signature.
-            key: Name of the path in the function signature.
 
         Raises:
             FileNotFoundError: If the path is outside of the artifact store
                 bounds.
         """
-        if pos in self.valid_pos or key in self.valid_key:
-            if not path.startswith(self.fixed_root_path):
-                raise FileNotFoundError(
-                    f"File `{path}` is outside of "
-                    f"artifact store bounds `{self.fixed_root_path}`"
-                )
+        if not path.startswith(self.fixed_root_path):
+            raise FileNotFoundError(
+                f"File `{path}` is outside of "
+                f"artifact store bounds `{self.fixed_root_path}`"
+            )
 
-    def _sanitize_potential_path(
-        self, path: Any, pos: Optional[int] = -1, key: Optional[str] = None
-    ) -> Any:
+    def _sanitize_potential_path(self, potential_path: Any) -> Any:
         """Sanitizes the input if it is a path.
 
         If the input is a **remote** path, this function replaces backslash path
         separators by forward slashes.
 
         Args:
-            path: Value that potentially refers to a (remote) path.
-            pos: Position of the path in the function signature.
-            key: Name of the path in the function signature.
+            potential_path: Value that potentially refers to a (remote) path.
+            root_path: The root path of the artifact store.
 
         Returns:
             The original input or a sanitized version of it in case of a remote
             path.
         """
-        if isinstance(path, bytes):
-            path = fileio.convert_to_str(path)
-        elif isinstance(path, str):
-            path = path
+        if isinstance(potential_path, bytes):
+            path = fileio.convert_to_str(potential_path)
+        elif isinstance(potential_path, str):
+            path = potential_path
         else:
             # Neither string nor bytes, this is not a path
-            return path
+            return potential_path
 
         if io_utils.is_remote(path):
             # If we have a remote path, replace windows path separators with
@@ -137,33 +126,42 @@ class _sanitize_paths:
             import posixpath
 
             path = path.replace(ntpath.sep, posixpath.sep)
-            self._validate_path(path, pos, key)
+            self._validate_path(path)
         else:
-            self._validate_path(str(Path(path).absolute().resolve()), pos, key)
+            self._validate_path(str(Path(path).absolute().resolve()))
 
         return path
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Decorator function that sanitizes paths before calling the original function.
+
+        Args:
+            *args: Positional args.
+            **kwargs: Keyword args.
+
+        Returns:
+            Output of the input function called with sanitized paths.
+        """
         # verify if `self` is part of the args
-        has_self = False
-        if args and isinstance(args[0], BaseArtifactStore):
-            has_self = True
+        has_self = bool(args and isinstance(args[0], BaseArtifactStore))
 
         # sanitize inputs for relevant args and kwargs, keep rest unchanged
         args = tuple(
-            self._sanitize_potential_path(arg, pos=i + has_self)
+            self._sanitize_potential_path(
+                arg,
+            )
+            if i + has_self in self.path_args
+            else arg
             for i, arg in enumerate(args)
         )
         kwargs = {
-            key: self._sanitize_potential_path(value, key=key)
+            key: self._sanitize_potential_path(
+                value,
+            )
+            if key in self.path_kwargs
+            else value
             for key, value in kwargs.items()
         }
-
-        # if function is static, but `self` was still passed - ignore it
-        # this happens on call to the artifact store instances, which
-        # are passed to local filesystem internally
-        if self.is_static and has_self:
-            args = args[1:]
 
         return self.func(*args, **kwargs)
 
@@ -443,20 +441,17 @@ class BaseArtifactStore(StackComponent):
         }
         for abc_method in inspect.getmembers(BaseArtifactStore):
             if getattr(abc_method[1], "__isabstractmethod__", False):
-                # prepare overloads for filesystem methods
-                overloads[abc_method[0]] = staticmethod(
-                    _sanitize_paths(
-                        getattr(self, abc_method[0]), self.path, True
-                    )
+                sanitized_method = _sanitize_paths(
+                    getattr(self, abc_method[0]), self.path
                 )
+                # prepare overloads for filesystem methods
+                overloads[abc_method[0]] = staticmethod(sanitized_method)
 
                 # decorate artifact store methods
                 setattr(
                     self,
                     abc_method[0],
-                    _sanitize_paths(
-                        getattr(self, abc_method[0]), self.path, False
-                    ),
+                    sanitized_method,
                 )
 
         # Local filesystem is always registered, no point in doing it again.
