@@ -1670,6 +1670,7 @@ class Client(metaclass=ClientMetaClass):
             service_update.prediction_url = prediction_url
         if health_check_url:
             service_update.health_check_url = health_check_url
+        breakpoint()
         return self.zen_store.update_service(
             service_id=id, update=service_update
         )

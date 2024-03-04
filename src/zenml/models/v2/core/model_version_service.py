@@ -24,6 +24,7 @@ from zenml.models.v2.base.base import (
     BaseResponse,
     BaseResponseBody,
     BaseResponseMetadata,
+    BaseResponseResources,
 )
 from zenml.models.v2.base.filter import StrFilter
 from zenml.models.v2.base.scoped import (
@@ -60,8 +61,11 @@ class ModelVersionServiceResponseBody(BaseResponseBody):
     service: "ServiceResponse"
 
 
+class ModelVersionServiceResponseResources(BaseResponseResources):
+    """Class for all resource models associated with the model version service entity."""
+
 class ModelVersionServiceResponse(
-    BaseResponse[ModelVersionServiceResponseBody, BaseResponseMetadata]
+    BaseResponse[ModelVersionServiceResponseBody, BaseResponseMetadata, ModelVersionServiceResponseResources]
 ):
     """Response model for links between model versions and services."""
 

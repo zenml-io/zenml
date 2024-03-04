@@ -185,6 +185,7 @@ class BaseModelDeployer(StackComponent, ABC):
                 config=config,
                 timeout=timeout,
             )
+        breakpoint()
         # Update the service in store
         client.update_service(
             id=service.uuid,
@@ -198,6 +199,7 @@ class BaseModelDeployer(StackComponent, ABC):
             prediction_url=service.get_the_prediction_url(),
             health_check_url=service.get_the_healthcheck_url(),
         )
+        breakpoint()
         return service
 
     @abstractmethod
@@ -299,6 +301,7 @@ class BaseModelDeployer(StackComponent, ABC):
             model_version=model_version,
             type=type or service_type.type if service_type else None,
             flavor=flavor or service_type.flavor if service_type else None,
+            hydrate=True,
         )
         services = []
         for service_response in service_responses.items:

@@ -1879,7 +1879,7 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_service)
             session.commit()
             session.refresh(existing_service)
-            return existing_service.to_model(hydrate=True)
+            return existing_service.to_model(include_metadata=True)
 
     def delete_service(self, service_id: UUID) -> None:
         """Delete a service.
