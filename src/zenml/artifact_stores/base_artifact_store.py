@@ -45,101 +45,15 @@ logger = get_logger(__name__)
 
 PathType = Union[bytes, str]
 
-ARGUMENTS_FOR_PATH_VALIDATION = {
-    "copyfile": {0, 1, "dst", "src"},
-    "exists": {0, "path"},
-    "glob": {0, "pattern"},
-    "isdir": {0, "path"},
-    "listdir": {0, "path"},
-    "makedirs": {0, "path"},
-    "mkdir": {0, "path"},
-    "open": {0, "name"},
-    "remove": {0, "path"},
-    "rename": {0, 1, "dst", "src"},
-    "rmtree": {0, "path"},
-    "size": {0, "path"},
-    "stat": {0, "path"},
-    "walk": {0, "top"},
-}
 
-
-def _needs_path_validation(
-    func_name: str, pos: Optional[int] = -1, key: Optional[str] = None
-) -> bool:
-    """Checks if the function argument needs a path validation.
-
-    Args:
-        func_name: The function name
-        pos: The position of the argument
-        key: The key of the argument
-
-    Returns:
-        `True` if the argument needs a path validation, `False` otherwise.
-    """
-    return (
-        pos in ARGUMENTS_FOR_PATH_VALIDATION[func_name]
-        or key in ARGUMENTS_FOR_PATH_VALIDATION[func_name]
-    )
-
-
-def _sanitize_potential_path(
-    potential_path: Any, root_path: str, needs_path_validation: bool
-) -> Any:
-    """Sanitizes the input if it is a path.
-
-    If the input is a **remote** path, this function replaces backslash path
-    separators by forward slashes.
-
-    Args:
-        potential_path: Value that potentially refers to a (remote) path.
-        root_path: The root path of the artifact store.
-        needs_path_validation: Whether the input has to be validated.
-
-    Returns:
-        The original input or a sanitized version of it in case of a remote
-        path.
-    """
-
-    def _validate_path(needs_path_validation: bool, path: str) -> None:
-        if needs_path_validation and not path.startswith(root_path):
-            raise FileNotFoundError(
-                f"File `{path}` is outside of "
-                f"artifact store bounds `{root_path}`"
-            )
-
-    if isinstance(potential_path, bytes):
-        path = fileio.convert_to_str(potential_path)
-    elif isinstance(potential_path, str):
-        path = potential_path
-    else:
-        # Neither string nor bytes, this is not a path
-        return potential_path
-
-    if io_utils.is_remote(path):
-        # If we have a remote path, replace windows path separators with
-        # slashes
-        import ntpath
-        import posixpath
-
-        path = path.replace(ntpath.sep, posixpath.sep)
-        _validate_path(needs_path_validation, path)
-    else:
-        _validate_path(
-            needs_path_validation, str(Path(path).absolute().resolve())
-        )
-
-    return path
-
-
-def _sanitize_paths(
-    fixed_root_path: str, is_static: bool
-) -> Callable[..., Any]:
+class _sanitize_paths:
     """Sanitizes path inputs before calling the original function.
 
     Extra decoration layer is needed to pass in fixed artifact store root
     path for static methods that are called on filesystems directly.
 
     Args:
+        func: The function to decorate.
         fixed_root_path: The fixed artifact store root path.
         is_static: Whether the function is static or not.
 
@@ -147,60 +61,110 @@ def _sanitize_paths(
         Function that calls the input function with sanitized path inputs.
     """
 
-    def decorator(_func: Callable[..., Any]) -> Callable[..., Any]:
-        """Sanitizes path inputs before calling the original function.
+    def __init__(self, func: Any, fixed_root_path: str, is_static: bool):
+        """Initializes the decorator.
 
         Args:
-            _func: The function for which to sanitize the inputs.
+            func: The function to decorate.
+            fixed_root_path: The fixed artifact store root path.
+            is_static: Whether the function is static or not.
+        """
+        self.func = func
+        self.fixed_root_path = fixed_root_path
+        self.is_static = is_static
+
+        params = inspect.signature(self.func).parameters
+        self.valid = set()
+        has_self = False
+        for i, k in enumerate(params):
+            if k == "self":
+                has_self = True
+            if params[k].annotation == PathType:
+                self.valid.add(i - has_self)
+                self.valid.add(k)
+
+    def _validate_path(
+        self, path: str, pos: Optional[int] = -1, key: Optional[str] = None
+    ) -> None:
+        """Validates the path.
+
+        Args:
+            path: The path to validate.
+            pos: Position of the path in the function signature.
+            key: Name of the path in the function signature.
+
+        Raises:
+            FileNotFoundError: If the path is outside of the artifact store
+                bounds.
+        """
+        if pos in self.valid or key in self.valid:
+            if not path.startswith(self.fixed_root_path):
+                raise FileNotFoundError(
+                    f"File `{path}` is outside of "
+                    f"artifact store bounds `{self.fixed_root_path}`"
+                )
+
+    def _sanitize_potential_path(
+        self, path: Any, pos: Optional[int] = -1, key: Optional[str] = None
+    ) -> Any:
+        """Sanitizes the input if it is a path.
+
+        If the input is a **remote** path, this function replaces backslash path
+        separators by forward slashes.
+
+        Args:
+            path: Value that potentially refers to a (remote) path.
+            pos: Position of the path in the function signature.
+            key: Name of the path in the function signature.
 
         Returns:
-            Function that calls the input function with sanitized path inputs.
+            The original input or a sanitized version of it in case of a remote
+            path.
         """
+        if isinstance(path, bytes):
+            path = fileio.convert_to_str(path)
+        elif isinstance(path, str):
+            path = path
+        else:
+            # Neither string nor bytes, this is not a path
+            return path
 
-        def inner_function(*args: Any, **kwargs: Any) -> Any:
-            """Inner function.
+        if io_utils.is_remote(path):
+            # If we have a remote path, replace windows path separators with
+            # slashes
+            import ntpath
+            import posixpath
 
-            Args:
-                *args: Positional args.
-                **kwargs: Keyword args.
+            path = path.replace(ntpath.sep, posixpath.sep)
+            self._validate_path(path, pos, key)
+        else:
+            self._validate_path(str(Path(path).absolute().resolve()), pos, key)
 
-            Returns:
-                Output of the input function called with sanitized paths.
-            """
-            # verify if `self` is part of the args
-            has_self = False
-            if isinstance(args[0], BaseArtifactStore):
-                has_self = True
+        return path
 
-            # sanitize inputs for relevant args and kwargs, keep rest unchanged
-            args = tuple(
-                _sanitize_potential_path(
-                    arg,
-                    fixed_root_path,
-                    _needs_path_validation(_func.__name__, pos=i + has_self),
-                )
-                for i, arg in enumerate(args)
-            )
-            kwargs = {
-                key: _sanitize_potential_path(
-                    value,
-                    fixed_root_path,
-                    _needs_path_validation(_func.__name__, key=key),
-                )
-                for key, value in kwargs.items()
-            }
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        # verify if `self` is part of the args
+        has_self = False
+        if args and isinstance(args[0], BaseArtifactStore):
+            has_self = True
 
-            # if function is static, but `self` was still passed - ignore it
-            # this happens on call to the artifact store instances, which
-            # are passed to local filesystem internally
-            if is_static and has_self:
-                args = args[1:]
+        # sanitize inputs for relevant args and kwargs, keep rest unchanged
+        args = tuple(
+            self._sanitize_potential_path(arg, pos=i + has_self)
+            for i, arg in enumerate(args)
+        )
+        kwargs = {
+            key: self._sanitize_potential_path(value, key=key)
+            for key, value in kwargs.items()
+        }
 
-            return _func(*args, **kwargs)
+        # if function is static, but `self` was still passed - ignore it
+        # this happens on call to the artifact store instances, which
+        # are passed to local filesystem internally
+        if self.is_static and has_self:
+            args = args[1:]
 
-        return inner_function
-
-    return decorator
+        return self.func(*args, **kwargs)
 
 
 class BaseArtifactStoreConfig(StackComponentConfig):
@@ -480,8 +444,8 @@ class BaseArtifactStore(StackComponent):
             if getattr(abc_method[1], "__isabstractmethod__", False):
                 # prepare overloads for filesystem methods
                 overloads[abc_method[0]] = staticmethod(
-                    _sanitize_paths(self.path, True)(
-                        getattr(self, abc_method[0]),
+                    _sanitize_paths(
+                        getattr(self, abc_method[0]), self.path, True
                     )
                 )
 
@@ -489,8 +453,8 @@ class BaseArtifactStore(StackComponent):
                 setattr(
                     self,
                     abc_method[0],
-                    _sanitize_paths(self.path, False)(
-                        getattr(self, abc_method[0])
+                    _sanitize_paths(
+                        getattr(self, abc_method[0]), self.path, False
                     ),
                 )
 
