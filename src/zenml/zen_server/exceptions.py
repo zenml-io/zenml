@@ -28,7 +28,7 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
     ValidationError,
-    ZenKeyError,
+    ZenKeyError, UpgradeRequiredError,
 )
 
 if TYPE_CHECKING:
@@ -77,6 +77,8 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     (IllegalOperationError, 403),
     # 401 Unauthorized
     (AuthorizationException, 401),
+    # 402 Unauthorized
+    (UpgradeRequiredError, 402),
     # 404 Not Found
     (DoesNotExistException, 404),
     (ZenKeyError, 404),

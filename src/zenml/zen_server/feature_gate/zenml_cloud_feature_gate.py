@@ -19,6 +19,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.config.server_config import ServerConfiguration
+from zenml.exceptions import UpgradeRequiredError
 from zenml.logger import get_logger
 from zenml.zen_server.cloud_utils import ZenMLCloudSession
 from zenml.zen_server.feature_gate.feature_gate_interface import (
@@ -62,7 +63,7 @@ class RawUsageEvent(BaseModel):
 class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
     """Feature Gate interface definition."""
 
-    def check_entitlement(self, resource: ResourceType) -> bool:
+    def check_entitlement(self, resource: ResourceType):
         """Checks if a user is entitled to create a resource.
 
         Args:
@@ -70,19 +71,24 @@ class ZenMLCloudFeatureGateInterface(FeatureGateInterface, ZenMLCloudSession):
 
         Returns:
             True if yes, False if no.
+
+        Raises:
+            UpgradeRequiredError in case a subscription limit is reached
         """
         response = self._get(endpoint=ENTITLEMENT_ENDPOINT + "/" + resource, params=None)
         if response.status_code == 200:
-            return True
+            pass
         elif response.status_code == 402:
-            return False
+            raise UpgradeRequiredError(
+                "Your organization reached its limit of {resource}. Please "
+                "upgrade your subscription or reach out to our us.")
         else:
             logger.warning(
                 "Unexpected response status code from entitlement "
                 f"endpoint: {response.status_code}. Message: "
                 f"{response.json()}"
             )
-            return False
+            pass
 
     def report_event(
         self, resource: ResourceType, is_decrement: bool = False
