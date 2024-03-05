@@ -24,12 +24,12 @@ from zenml.integrations.bentoml.services.bentoml_deployment import (
 
 @step(enable_cache=False)
 def bentoml_prediction_service_loader(
-    pipeline_name: str, step_name: str, model_name: str
+    pipeline_name:str, run_name: str, step_name: str, model_name: str
 ) -> BentoMLDeploymentService:
     """Get the BentoML prediction service started by the deployment pipeline.
 
     Args:
-        pipeline_name: name of the pipeline that deployed the model.
+        run_name: name of the run_name that deployed the model.
         step_name: the name of the step that deployed the model.
         model_name: the name of the model that was deployed.
     """
@@ -37,6 +37,7 @@ def bentoml_prediction_service_loader(
 
     services = model_deployer.find_model_server(
         pipeline_name=pipeline_name,
+        run_name=run_name,
         pipeline_step_name=step_name,
         model_name=model_name,
     )

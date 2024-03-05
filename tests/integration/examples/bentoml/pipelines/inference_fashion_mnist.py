@@ -34,6 +34,7 @@ def inference_fashion_mnist(
         step_name: The name of the step that deployed the model.
         model_name: The name of the model that was deployed.
     """
+    breakpoint()
     inference_data = inference_loader()
     prediction_service = bentoml_prediction_service_loader(
         model_name=model_name, pipeline_name=pipeline_name, step_name=step_name

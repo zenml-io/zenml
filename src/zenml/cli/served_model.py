@@ -117,6 +117,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
     def list_models(
         model_deployer: "BaseModelDeployer",
         step: Optional[str],
+        pipeline_name: Optional[str],
         run_name: Optional[str],
         model: Optional[str],
         model_version: Optional[str],
@@ -141,6 +142,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         """
         services = model_deployer.find_model_server(
             running=running,
+            pipeline_name=pipeline_name,
             run_name=run_name,
             pipeline_step_name=step,
             model_name=model,

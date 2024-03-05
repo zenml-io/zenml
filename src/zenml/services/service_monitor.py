@@ -146,13 +146,13 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
             ServiceEndpointProtocol.HTTPS,
         ]:
             return (
-                ServiceState.ERROR,
+                ServiceState.FAILED,
                 "endpoint protocol is not HTTP nor HTTPS.",
             )
 
         check_uri = self.get_healthcheck_uri(endpoint)
         if not check_uri:
-            return ServiceState.ERROR, "no HTTP healthcheck URI available"
+            return ServiceState.FAILED, "no HTTP healthcheck URI available"
 
         logger.debug("Running HTTP healthcheck for URI: %s", check_uri)
 
@@ -169,7 +169,7 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
                 )
             if r.status_code == self.config.http_status_code:
                 # the endpoint is healthy
-                return ServiceState.ACTIVE, ""
+                return ServiceState.RUNNING, ""
             error = f"HTTP endpoint healthcheck returned unexpected status code: {r.status_code}"
         except requests.ConnectionError as e:
             error = f"HTTP endpoint healthcheck connection error: {str(e)}"
@@ -181,7 +181,7 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
                 f"healthcheck: {str(e)}"
             )
 
-        return ServiceState.ERROR, error
+        return ServiceState.FAILED, error
 
 
 class TCPEndpointHealthMonitorConfig(ServiceEndpointHealthMonitorConfig):
@@ -213,7 +213,7 @@ class TCPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
         """
         if not endpoint.status.port or not endpoint.status.hostname:
             return (
-                ServiceState.ERROR,
+                ServiceState.FAILED,
                 "TCP port and hostname values are not known",
             )
 
@@ -223,10 +223,10 @@ class TCPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
 
         if port_is_open(endpoint.status.hostname, endpoint.status.port):
             # the endpoint is healthy
-            return ServiceState.ACTIVE, ""
+            return ServiceState.RUNNING, ""
 
         return (
-            ServiceState.ERROR,
+            ServiceState.FAILED,
             "TCP endpoint healthcheck error: TCP port is not "
             "open or not accessible",
         )

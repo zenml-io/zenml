@@ -156,6 +156,7 @@ class BaseModelDeployer(StackComponent, ABC):
         client = Client()
         # Find existing model server
         services = self.find_model_server(
+            pipeline_name=config.pipeline_name,
             run_name=config.run_name,
             pipeline_step_name=config.pipeline_step_name,
             model_name=config.model_name,
@@ -253,6 +254,7 @@ class BaseModelDeployer(StackComponent, ABC):
         self,
         running: bool = False,
         service_uuid: Optional[UUID] = None,
+        pipeline_name: Optional[str] = None,
         run_name: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
         endpoint_name_or_model_name: Optional[str] = None,
@@ -293,6 +295,7 @@ class BaseModelDeployer(StackComponent, ABC):
             id=service_uuid,
             running=running,
             endpoint_name_or_model_name=endpoint_name_or_model_name,
+            pipeline_name=pipeline_name,
             run_name=run_name,
             pipeline_step_name=pipeline_step_name,
             model_name=model_name,
@@ -304,6 +307,7 @@ class BaseModelDeployer(StackComponent, ABC):
         services = []
         for service_response in service_responses.items:
             services.append(BaseDeploymentService.from_model(service_response))
+
         return services
 
     @abstractmethod

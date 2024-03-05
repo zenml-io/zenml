@@ -1535,7 +1535,6 @@ def create_model_version_service_link(
     model_version = zen_store().get_model_version(model_version_id)
     verify_permission_for_model(model_version, action=Action.UPDATE)
 
-    mv = zen_store().create_model_version_services_link(
+    return zen_store().create_model_version_service_link(
         model_version_service_link
     )
-    return mv

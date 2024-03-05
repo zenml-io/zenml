@@ -82,6 +82,7 @@ class ServiceSchemas(NamedSchema, table=True):
     health_check_url: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
+    pipeline_name: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     run_name: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     pipeline_step_name: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
@@ -248,6 +249,7 @@ class ServiceSchemas(NamedSchema, table=True):
             else None,
             prediction_url=service_request.prediction_url,
             health_check_url=service_request.health_check_url,
+            pipeline_name=service_request.config.get("pipeline_name"),
             run_name=service_request.config.get("run_name"),
             pipeline_step_name=service_request.config.get(
                 "pipeline_step_name"

@@ -223,10 +223,10 @@ class ContainerService(BaseService):
         if container is None:
             return ServiceState.INACTIVE, "Docker container is not present"
         elif container.status == "running":
-            return ServiceState.ACTIVE, "Docker container is running"
+            return ServiceState.RUNNING, "Docker container is running"
         elif container.status == "exited":
             return (
-                ServiceState.ERROR,
+                ServiceState.FAILED,
                 "Docker container has exited.",
             )
         else:

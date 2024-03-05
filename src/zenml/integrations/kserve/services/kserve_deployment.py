@@ -263,17 +263,17 @@ class KServeDeploymentService(BaseDeploymentService):
                 status = condition.get("status", "Unknown")
                 if status.lower() == "true":
                     return (
-                        ServiceState.ACTIVE,
+                        ServiceState.RUNNING,
                         f"Inference service '{name}' is available",
                     )
 
                 elif status.lower() == "false":
                     return (
-                        ServiceState.PENDING_STARTUP,
+                        ServiceState.INITIALIZING,
                         f"Inference service '{name}' is not available: {condition.get('message', 'Unknown')}",
                     )
         return (
-            ServiceState.PENDING_STARTUP,
+            ServiceState.INITIALIZING,
             f"Inference service '{name}' still starting up",
         )
 

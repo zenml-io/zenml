@@ -555,7 +555,6 @@ class SeldonModelDeployer(BaseModelDeployer):
 
             # start the service which in turn provisions the Seldon Core
             # deployment server and waits for it to reach a ready state
-            # TODO: Move every service start and stop method to model_deployer.start and stop
             service.start(timeout=timeout)
 
             # Add telemetry with metadata that gets the stack metadata and

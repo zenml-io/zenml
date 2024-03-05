@@ -351,6 +351,9 @@ class ServiceFilter(WorkspaceScopedFilter):
         default=None,
         description="Pipeline run id responsible for deploying the service",
     )
+    pipeline_name: Optional[str] = Field(
+        default=None, description="Pipeline name responsible for deploying the service"
+    )
     pipeline_step_name: Optional[str] = Field(
         default=None,
         description="Pipeline step name responsible for deploying the service",
@@ -397,6 +400,7 @@ class ServiceFilter(WorkspaceScopedFilter):
         "model_name",
         "model_version",
         "running",
+        "pipeline_name",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
@@ -409,6 +413,7 @@ class ServiceFilter(WorkspaceScopedFilter):
         "model_name",
         "model_version",
         "running",
+        "pipeline_name",
     ]
 
     def generate_filter(
@@ -435,6 +440,10 @@ class ServiceFilter(WorkspaceScopedFilter):
         if self.flavor:
             flavor_filter = getattr(table, "flavor") == self.flavor
             base_filter = and_(base_filter, flavor_filter)
+        
+        if self.pipeline_name:
+            pipeline_name_filter = getattr(table, "pipeline_name") == self.pipeline_name
+            base_filter = and_(base_filter, pipeline_name_filter)
 
         if self.run_name:
             run_name_filter = getattr(table, "run_name") == self.run_name

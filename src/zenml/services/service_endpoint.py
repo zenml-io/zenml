@@ -165,7 +165,7 @@ class BaseServiceEndpoint(BaseTypedModel):
             True if the service endpoint is active, otherwise False.
         """
         self.update_status()
-        return self.status.state == ServiceState.ACTIVE
+        return self.status.state == ServiceState.RUNNING
 
     def is_inactive(self) -> bool:
         """Check if the service endpoint is inactive.
