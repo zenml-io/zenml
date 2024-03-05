@@ -26,7 +26,7 @@ import shutil
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Generator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
 from uuid import UUID
 
 import pytest
@@ -224,6 +224,11 @@ def clean_workspace_session(
 class TheClientRemembers:
     """Context manager that remembers which ZenML objects have been created."""
 
+    SPECIAL_CASES = {
+        "create_tag_resource": {"resource_id", "resource_type"},
+        "delete_stack_component": {"component_type"},
+    }
+
     def __init__(self, client: Client):
         """Initializes the context manager.
 
@@ -231,7 +236,7 @@ class TheClientRemembers:
             client: The client to use.
         """
         self.client = client
-        self.mem: List[Tuple[bool, str, UUID]] = []
+        self.mem: List[Tuple[bool, str, UUID, Dict[str, Any]]] = []
         for name, func in inspect.getmembers(self.client):
             if name.startswith("create"):
                 setattr(self.client, name, self.memory(func, name, False))
@@ -278,21 +283,28 @@ class TheClientRemembers:
             """
             ret = func(*args, **kwargs)
             if id_ := getattr(ret, "id", None):
-                self.mem.append((is_store, name, id_))
+                kwargs_ = {}
+                if name in self.SPECIAL_CASES:
+                    kwargs_ = {
+                        case: getattr(ret, case)
+                        for case in self.SPECIAL_CASES[name]
+                    }
+
+                self.mem.append((is_store, name, id_, kwargs_))
             return ret
 
         return inner
 
     def destroy(self) -> None:
         """Deletes all remembered objects."""
-        for is_store, name, id_ in self.mem:
+        for is_store, name, id_, kwargs in self.mem:
             name = name.replace("create", "delete")
             try:
                 if is_store:
                     if func := getattr(self.client.zen_store, name, None):
-                        func(id_)
+                        func(id_, **kwargs)
                 elif func := getattr(self.client, name, None):
-                    func(id_)
+                    func(id_, **kwargs)
             except KeyError:
                 # the resource was deleted in the test session already
                 pass
