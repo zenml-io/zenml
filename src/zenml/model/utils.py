@@ -92,7 +92,7 @@ def link_service_to_model_from_artifacts(
         step_context = get_step_context()
     except StepContextError:
         raise RuntimeError(
-            "`link_step_artifacts_to_model` can only be called from within a "
+            "`link_service_to_model_from_artifacts` can only be called from within a "
             "step."
         )
     try:

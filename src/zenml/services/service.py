@@ -456,31 +456,6 @@ class BaseService(BaseTypedModel):
                         f"'{self.status.last_error}'"
                     )
 
-    def __repr__(self) -> str:
-        """String representation of the service.
-
-        Returns:
-            A string representation of the service.
-        """
-        return f"{self.__class__.__qualname__}[{self.uuid}] (type: {self.SERVICE_TYPE.type}, flavor: {self.SERVICE_TYPE.flavor})"
-
-    def __str__(self) -> str:
-        """String representation of the service.
-
-        Returns:
-            A string representation of the service.
-        """
-        return self.__repr__()
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # validate attribute assignments
-        validate_assignment = True
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
-
     def get_the_prediction_url(self) -> Optional[str]:
         """Gets the prediction URL for the endpoint.
 
@@ -510,6 +485,31 @@ class BaseService(BaseTypedModel):
                 self.endpoint
             )
         return healthcheck_url
+
+    def __repr__(self) -> str:
+        """String representation of the service.
+
+        Returns:
+            A string representation of the service.
+        """
+        return f"{self.__class__.__qualname__}[{self.uuid}] (type: {self.SERVICE_TYPE.type}, flavor: {self.SERVICE_TYPE.flavor})"
+
+    def __str__(self) -> str:
+        """String representation of the service.
+
+        Returns:
+            A string representation of the service.
+        """
+        return self.__repr__()
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # all attributes with leading underscore are private and therefore
+        # are mutable and not included in serialization
+        underscore_attrs_are_private = True
 
 
 class BaseDeploymentService(BaseService):

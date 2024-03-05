@@ -183,7 +183,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
         service = self._create_new_service(
             id=id, timeout=timeout, config=config
         )
-        logger.info(f"Created a new MLflow deployment service: {service}")
+        logger.info(f"Created a new BentoML deployment service: {service}")
         return service
 
     def _clean_up_existing_service(
