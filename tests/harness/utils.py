@@ -26,7 +26,7 @@ import shutil
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple
+from typing import Any, Callable, Generator, List, Optional, Tuple
 from uuid import UUID
 
 import pytest
@@ -222,7 +222,14 @@ def clean_workspace_session(
 
 
 class TheClientRemembers:
+    """Context manager that remembers which ZenML objects have been created."""
+
     def __init__(self, client: Client):
+        """Initializes the context manager.
+
+        Args:
+            client: The client to use.
+        """
         self.client = client
         self.mem: List[Tuple[bool, str, UUID]] = []
         for name, func in inspect.getmembers(self.client):
@@ -234,19 +241,44 @@ class TheClientRemembers:
                     self.client.zen_store, name, self.memory(func, name, True)
                 )
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str):
+        """Proxy attribute access to the client.
+
+        Args:
+            name: The name of the attribute to access.
+
+        Returns:
+            The value of the attribute.
+        """
         return getattr(self.client, name)
 
-    def memory(self, func, name, is_store):
+    def memory(self, func: Callable[..., Any], name: str, is_store: bool):
+        """Decorator to remember which objects have been created.
+
+        Args:
+            func: The function to decorate.
+            name: The name of the function.
+            is_store: Whether the function is a ZenStore function.
+
+        Returns:
+            The decorated function.
+        """
+
         def inner(*args, **kwargs):
+            """Inner function to remember which objects have been created.
+
+            Returns:
+                The result of the function call.
+            """
             ret = func(*args, **kwargs)
-            if id_ := getattr(ret, "id"):
+            if id_ := getattr(ret, "id", None):
                 self.mem.append((is_store, name, id_))
             return ret
 
         return inner
 
     def destroy(self):
+        """Deletes all remembered objects."""
         for is_store, name, id_ in self.mem:
             name = name.replace("create", "delete")
             try:

@@ -442,7 +442,7 @@ class TestAdminUser:
         zen_store: RestZenStore = clean_client.zen_store
         assert clean_client.active_user.name == DEFAULT_USERNAME
         assert clean_client.active_user.is_admin
-        user = zen_store.create_user(
+        zen_store.create_user(
             UserRequest(name=self.test_user, password=self.default_pwd)
         )
 
@@ -536,7 +536,7 @@ class TestAdminUser:
         zen_store: RestZenStore = clean_client.zen_store
         assert clean_client.active_user.name == DEFAULT_USERNAME
         assert clean_client.active_user.is_admin
-        user = zen_store.create_user(
+        zen_store.create_user(
             UserRequest(name=self.test_user, password=self.default_pwd)
         )
 
