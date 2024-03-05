@@ -47,7 +47,7 @@ from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-from zenml.zen_stores.schemas.service_schemas import ServiceSchemas
+from zenml.zen_stores.schemas.service_schemas import ServiceSchema
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -710,13 +710,13 @@ class ModelVersionServiceSchema(BaseSchema, table=True):
     )
     service_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ServiceSchemas.__tablename__,
+        target=ServiceSchema.__tablename__,
         source_column="service_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    service: "ServiceSchemas" = Relationship(
+    service: "ServiceSchema" = Relationship(
         back_populates="model_versions_services_links"
     )
 

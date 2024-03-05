@@ -63,14 +63,17 @@ class ServiceRequest(WorkspaceScopedRequest):
 
     service_source: Optional[str] = Field(
         title="The class of the service.",
+        description="The fully qualified class name of the service implementation.",
     )
 
     admin_state: Optional[ServiceState] = Field(
         title="The admin state of the service.",
+        description="The administrative state of the service, e.g., ACTIVE, INACTIVE.",
     )
 
     config: Dict[str, Any] = Field(
         title="The service config.",
+        description="A dictionary containing configuration parameters for the service.",
     )
 
     labels: Optional[Dict[str, str]] = Field(
@@ -111,14 +114,17 @@ class ServiceUpdate(BaseModel):
 
     admin_state: Optional[ServiceState] = Field(
         title="The admin state of the service.",
+        description="The administrative state of the service, e.g., ACTIVE, INACTIVE.",
     )
 
     service_source: Optional[str] = Field(
         title="The class of the service.",
+        description="The fully qualified class name of the service implementation.",
     )
 
     config: Optional[Dict[str, Any]] = Field(
         title="The service config.",
+        description="A dictionary containing configuration parameters for the service.",
     )
 
     status: Optional[Dict[str, Any]] = Field(

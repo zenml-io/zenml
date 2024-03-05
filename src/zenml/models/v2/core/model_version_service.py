@@ -137,11 +137,11 @@ class ModelVersionServiceFilter(WorkspaceScopedFilter):
         default=None, description="Filter by model version ID"
     )
     service_id: Optional[Union[UUID, str]] = Field(
-        default=None, description="Filter by pipeline run ID"
+        default=None, description="Filter by service ID"
     )
     service_name: Optional[str] = Field(
         default=None,
-        description="Name of the pipeline run",
+        description="Name of the service to filter by",
     )
 
     def get_custom_filters(
@@ -160,7 +160,7 @@ class ModelVersionServiceFilter(WorkspaceScopedFilter):
             ModelVersionServiceSchema,
         )
         from zenml.zen_stores.schemas.service_schemas import (
-            ServiceSchemas,
+            ServiceSchema,
         )
 
         if self.service_name:
@@ -171,8 +171,8 @@ class ModelVersionServiceFilter(WorkspaceScopedFilter):
                 value=value,
             )
             service_name_filter = and_(  # type: ignore[type-var]
-                ModelVersionServiceSchema.service_id == ServiceSchemas.id,
-                filter_.generate_query_conditions(ServiceSchemas),
+                ModelVersionServiceSchema.service_id == ServiceSchema.id,
+                filter_.generate_query_conditions(ServiceSchema),
             )
             custom_filters.append(service_name_filter)
 

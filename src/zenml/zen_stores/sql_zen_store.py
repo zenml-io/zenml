@@ -306,7 +306,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
-from zenml.zen_stores.schemas.service_schemas import ServiceSchemas
+from zenml.zen_stores.schemas.service_schemas import ServiceSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
@@ -1782,8 +1782,8 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if a service with the given name already exists
             existing_service = session.exec(
-                select(ServiceSchemas).where(
-                    ServiceSchemas.name == service.name
+                select(ServiceSchema).where(
+                    ServiceSchema.name == service.name
                 )
             ).first()
             if existing_service is not None:
@@ -1793,7 +1793,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the service.
-            service_schema = ServiceSchemas.from_request(service)
+            service_schema = ServiceSchema.from_request(service)
             logger.debug("Creating service: %s", service_schema)
             session.add(service_schema)
             session.commit()
@@ -1818,7 +1818,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             service = session.exec(
-                select(ServiceSchemas).where(ServiceSchemas.id == service_id)
+                select(ServiceSchema).where(ServiceSchema.id == service_id)
             ).first()
             if service is None:
                 raise KeyError(
@@ -1842,11 +1842,11 @@ class SqlZenStore(BaseZenStore):
             A list of all services matching the filter criteria.
         """
         with Session(self.engine) as session:
-            query = select(ServiceSchemas)
+            query = select(ServiceSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=ServiceSchemas,
+                table=ServiceSchema,
                 filter_model=filter_model,
                 hydrate=hydrate,
             )
@@ -1868,7 +1868,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_service = session.exec(
-                select(ServiceSchemas).where(ServiceSchemas.id == service_id)
+                select(ServiceSchema).where(ServiceSchema.id == service_id)
             ).first()
             if not existing_service:
                 raise KeyError(f"Service with ID {service_id} not found.")
@@ -1891,7 +1891,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_service = session.exec(
-                select(ServiceSchemas).where(ServiceSchemas.id == service_id)
+                select(ServiceSchema).where(ServiceSchema.id == service_id)
             ).first()
             if not existing_service:
                 raise KeyError(f"Service with ID {service_id} not found.")
@@ -9079,9 +9079,9 @@ class SqlZenStore(BaseZenStore):
                 )
             except ValueError:
                 query = query.where(
-                    ModelVersionServiceSchema.service_id == ServiceSchemas.id
+                    ModelVersionServiceSchema.service_id == ServiceSchema.id
                 ).where(
-                    ServiceSchemas.name
+                    ServiceSchema.name
                     == model_version_service_link_name_or_id
                 )
 

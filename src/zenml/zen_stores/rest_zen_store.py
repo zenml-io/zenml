@@ -3408,7 +3408,7 @@ class RestZenStore(BaseZenStore):
         return self._create_workspace_scoped_resource(
             resource=model_version_service_link,
             response_model=ModelVersionServiceResponse,
-            route=f"{MODEL_VERSIONS}/{model_version_service_link.model_version}{RUNS}",
+            route=f"{MODEL_VERSIONS}/{model_version_service_link.model_version}{SERVICES}",
         )
 
     def list_model_version_service_links(

@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     )
 
 
-class ServiceSchemas(NamedSchema, table=True):
+class ServiceSchema(NamedSchema, table=True):
     """SQL Model for service."""
 
     __tablename__ = "service"
@@ -103,7 +103,7 @@ class ServiceSchemas(NamedSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> ServiceResponse:
-        """Convert an `ServiceSchemas` to an `ServiceResponse`.
+        """Convert an `ServiceSchema` to an `ServiceResponse`.
 
         Args:
             include_metadata: Whether to include metadata in the response.
@@ -151,7 +151,7 @@ class ServiceSchemas(NamedSchema, table=True):
     def update(
         self,
         update: ServiceUpdate,
-    ) -> "ServiceSchemas":
+    ) -> "ServiceSchema":
         """Updates a `ServiceSchema` from a `ServiceUpdate`.
 
         Args:
@@ -195,8 +195,8 @@ class ServiceSchemas(NamedSchema, table=True):
     @classmethod
     def from_request(
         cls, service_request: "ServiceRequest"
-    ) -> "ServiceSchemas":
-        """Convert a `ServiceRequest` to a `ServiceSchemas`.
+    ) -> "ServiceSchema":
+        """Convert a `ServiceRequest` to a `ServiceSchema`.
 
         Args:
             service_request: The request model to convert.
