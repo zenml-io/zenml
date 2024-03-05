@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Source classes."""
+
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional, Type, Union
 from uuid import UUID

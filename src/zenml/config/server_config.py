@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML GlobalConfiguration."""
 
+import json
 import os
 from secrets import token_hex
 from typing import Any, Dict, List, Optional
@@ -52,6 +53,7 @@ class ServerConfiguration(BaseModel):
 
     Attributes:
         deployment_type: The type of ZenML server deployment that is running.
+        base_url: The base URL of the ZenML server.
         root_url_path: The root URL path of the ZenML server.
         auth_scheme: The authentication scheme used by the ZenML server.
         jwt_token_algorithm: The algorithm used to sign and verify JWT tokens.
@@ -107,17 +109,22 @@ class ServerConfiguration(BaseModel):
         external_server_id: The ID of the ZenML server to use with the
             `EXTERNAL` authentication scheme. If not specified, the regular
             ZenML server ID is used.
+        metadata: Additional metadata to be associated with the ZenML server.
         rbac_implementation_source: Source pointing to a class implementing
             the RBAC interface defined by
             `zenml.zen_server.rbac_interface.RBACInterface`. If not specified,
             RBAC will not be enabled for this server.
+        workload_manager_implementation_source: Source pointing to a class
+            implementing the workload management interface.
         pipeline_run_auth_window: The default time window in minutes for which
             a pipeline run action is allowed to authenticate with the ZenML
             server.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
+    base_url: str = ""
     root_url_path: str = ""
+    metadata: Dict[str, Any] = {}
     auth_scheme: AuthScheme = AuthScheme.OAUTH2_PASSWORD_BEARER
     jwt_token_algorithm: str = DEFAULT_ZENML_JWT_TOKEN_ALGORITHM
     jwt_token_issuer: Optional[str] = None
@@ -128,13 +135,13 @@ class ServerConfiguration(BaseModel):
     auth_cookie_name: Optional[str] = None
     auth_cookie_domain: Optional[str] = None
     cors_allow_origins: Optional[List[str]] = None
-    max_failed_device_auth_attempts: (
-        int
-    ) = DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
+    max_failed_device_auth_attempts: int = (
+        DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
+    )
     device_auth_timeout: int = DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT
-    device_auth_polling_interval: (
-        int
-    ) = DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
+    device_auth_polling_interval: int = (
+        DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
+    )
     dashboard_url: Optional[str] = None
     device_expiration_minutes: Optional[int] = None
     trusted_device_expiration_minutes: Optional[int] = None
@@ -190,6 +197,15 @@ class ServerConfiguration(BaseModel):
             values["cors_allow_origins"] = origins
         else:
             values["cors_allow_origins"] = ["*"]
+
+        # if metadata is a string, convert it to a dictionary
+        if isinstance(values.get("metadata"), str):
+            try:
+                values["metadata"] = json.loads(values["metadata"])
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"The server metadata is not a valid JSON string: {e}"
+                )
 
         return values
 

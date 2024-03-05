@@ -16,6 +16,10 @@ zenml:
     # Overrides the image tag whose default is the chart appVersion.
     tag:
 
+  # The URL of the ZenML server. This is used to direct users to the correct
+  # address in log messages when running a pipeline and for other similar tasks.
+  baseURL:
+
   debug: true
 
   # Flag to enable/disable the tracking process of the analytics

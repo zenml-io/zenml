@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Bitbucket webhook event source."""
-import urllib
+
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
@@ -104,7 +104,7 @@ class BitbucketEvent(BaseModel):
             The branch name.
         """
         if self.push.changes[0].new:
-            return self.push.changes[0].new.get('name', None)
+            return self.push.changes[0].new.get("name", None)
         return None
 
     @property
@@ -117,8 +117,16 @@ class BitbucketEvent(BaseModel):
         Returns:
             The type of the event.
         """
-        is_push_event = all([change.new is not None for change in self.push.changes])
-        is_tag_event = all([change.new.get('type') == 'tag' for change in self.push.changes if change.new])
+        is_push_event = all(
+            [change.new is not None for change in self.push.changes]
+        )
+        is_tag_event = all(
+            [
+                change.new.get("type") == "tag"
+                for change in self.push.changes
+                if change.new
+            ]
+        )
 
         if is_push_event:
             return BitbucketEventType.PUSH_EVENT
@@ -360,7 +368,9 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
                 updated event source.
         """
         assert isinstance(config, BitbucketWebhookEventSourceConfiguration)
-        assert isinstance(config_update, BitbucketWebhookEventSourceConfiguration)
+        assert isinstance(
+            config_update, BitbucketWebhookEventSourceConfiguration
+        )
 
         config_update.webhook_secret_id = config.webhook_secret_id
 

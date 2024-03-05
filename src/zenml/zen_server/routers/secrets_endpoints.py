@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline run secrets."""
+
 from typing import Optional
 from uuid import UUID
 

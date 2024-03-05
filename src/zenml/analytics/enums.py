@@ -12,11 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of analytics events for ZenML."""
+
 from enum import Enum
 
 
 class AnalyticsEvent(str, Enum):
     """Enum of events to track in segment."""
+
+    # Login
+    DEVICE_VERIFIED = "Device verified"
 
     # Pipelines
     RUN_PIPELINE = "Pipeline run"

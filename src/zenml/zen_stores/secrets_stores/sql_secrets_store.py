@@ -88,9 +88,9 @@ class SqlSecretsStore(BaseSecretsStore):
 
     config: SqlSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.SQL
-    CONFIG_TYPE: ClassVar[
-        Type[SecretsStoreConfiguration]
-    ] = SqlSecretsStoreConfiguration
+    CONFIG_TYPE: ClassVar[Type[SecretsStoreConfiguration]] = (
+        SqlSecretsStoreConfiguration
+    )
 
     _encryption_engine: Optional[AesGcmEngine] = None
 

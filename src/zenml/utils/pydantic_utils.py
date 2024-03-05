@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utilities for pydantic models."""
+
 import inspect
 import json
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast

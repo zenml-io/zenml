@@ -57,7 +57,7 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    runs-on: ubuntu-dind-runners
+    runs-on: arc-runner-set
     steps:
       - uses: actions/checkout@v4.1.1
         with:
@@ -111,7 +111,7 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [ubuntu-dind-runners]
+        os: [arc-runner-set]
         python-version: ['3.8', '3.9', '3.10', '3.11']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
@@ -180,7 +180,7 @@ jobs:
     needs: run-slow-ci-label-is-set
     strategy:
       matrix:
-        os: [ubuntu-dind-runners]
+        os: [arc-runner-set]
         python-version: ['3.8', '3.9', '3.10', '3.11']
         test_environment:
           - default

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Collection of all models concerning event configurations."""
+
 import copy
 from typing import Any, Dict, Optional
 
