@@ -40,6 +40,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import SecretStr, root_validator, validator
+from pydantic.json import pydantic_encoder
 from sqlalchemy import asc, desc, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
@@ -1767,6 +1768,42 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Services --------------------
 
+    @staticmethod
+    def _fail_if_service_with_config_exists(
+        service_request: ServiceRequest, session: Session
+    ) -> None:
+        """Raise an exception if a service with same name/config exists.
+
+        Args:
+            service_request: The service to check for.
+            session: The database session to use for the query.
+
+        Raises:
+            EntityExistsError: If a service with the given name and
+                type already exists.
+        """
+        # Check if service with the same domain key (name, config, workspace)
+        # already exists
+
+        existing_domain_service = session.exec(
+            select(ServiceSchema).where(
+                ServiceSchema.config
+                == base64.b64encode(
+                    json.dumps(
+                        service_request.config,
+                        sort_keys=False,
+                        default=pydantic_encoder,
+                    ).encode("utf-8")
+                )
+            )
+        ).first()
+
+        if existing_domain_service:
+            raise EntityExistsError(
+                "Unable to create service with the given configuration: "
+                "A service with the same configuration already exists."
+            )
+
     def create_service(self, service: ServiceRequest) -> ServiceResponse:
         """Create a new service.
 
@@ -1781,16 +1818,10 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if a service with the given name already exists
-            existing_service = session.exec(
-                select(ServiceSchema).where(
-                    ServiceSchema.name == service.name
-                )
-            ).first()
-            if existing_service is not None:
-                raise EntityExistsError(
-                    f"Unable to create service with name '{service.name}': "
-                    "A service with the same name already exists."
-                )
+            self._fail_if_service_with_config_exists(
+                service_request=service,
+                session=session,
+            )
 
             # Create the service.
             service_schema = ServiceSchema.from_request(service)
@@ -9081,8 +9112,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     ModelVersionServiceSchema.service_id == ServiceSchema.id
                 ).where(
-                    ServiceSchema.name
-                    == model_version_service_link_name_or_id
+                    ServiceSchema.name == model_version_service_link_name_or_id
                 )
 
             model_version_service_link = session.exec(query).first()

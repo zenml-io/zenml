@@ -62,6 +62,7 @@ from zenml.constants import (
     LOGS,
     MODEL_VERSION_ARTIFACTS,
     MODEL_VERSION_PIPELINE_RUNS,
+    MODEL_VERSION_SERVICES,
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
@@ -3428,7 +3429,7 @@ class RestZenStore(BaseZenStore):
             A page of all model version to pipeline run links.
         """
         return self._list_paginated_resources(
-            route=MODEL_VERSION_PIPELINE_RUNS,
+            route=MODEL_VERSION_SERVICES,
             response_model=ModelVersionServiceResponse,
             filter_model=model_version_service_link_filter_model,
             params={"hydrate": hydrate},
@@ -3447,7 +3448,7 @@ class RestZenStore(BaseZenStore):
         """
         self._delete_resource(
             resource_id=model_version_service_link_name_or_id,
-            route=f"{MODEL_VERSIONS}/{model_version_id}{RUNS}",
+            route=f"{MODEL_VERSIONS}/{model_version_id}{SERVICES}",
         )
 
     # ---------------------------- Devices ----------------------------

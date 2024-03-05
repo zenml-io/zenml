@@ -339,7 +339,7 @@ class ServiceFilter(WorkspaceScopedFilter):
     """
 
     name: Optional[str] = Field(
-        description="Name of the service",
+        description="Name of the service. Use this to filter services by their name.",
     )
     workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the service"
@@ -348,10 +348,12 @@ class ServiceFilter(WorkspaceScopedFilter):
         default=None, description="User of the service"
     )
     type: Optional[str] = Field(
-        default=None, description="Type of the service"
+        default=None,
+        description="Type of the service. Filter services by their type.",
     )
     flavor: Optional[str] = Field(
-        default=None, description="Flavor of the service"
+        default=None,
+        description="Flavor of the service. Use this to filter services by their flavor.",
     )
     run_name: Optional[Union[UUID, str]] = Field(
         default=None,
