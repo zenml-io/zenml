@@ -170,7 +170,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             request_model=user,
             resource_type=ResourceType.USER,
             create_method=zen_store().create_user,
-            is_admin=auth_context.user.is_admin,
+            admin_status=auth_context.user.is_admin,
         )
 
         # add back the original unhashed activation token, if generated, to
@@ -207,7 +207,9 @@ def get_user(
     )
     if user.id != auth_context.user.id:
         verify_permission_for_model(
-            user, action=Action.READ, is_admin=auth_context.user.is_admin
+            user,
+            action=Action.READ,
+            admin_status=auth_context.user.is_admin,
         )
 
     return dehydrate_response_model(user)
@@ -245,7 +247,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         user = zen_store().get_user(user_name_or_id)
         if user.id != auth_context.user.id:
             verify_permission_for_model(
-                user, action=Action.UPDATE, is_admin=auth_context.user.is_admin
+                user,
+                action=Action.UPDATE,
+                admin_status=auth_context.user.is_admin,
             )
 
         updated_user = zen_store().update_user(
@@ -317,7 +321,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         user = zen_store().get_user(user_name_or_id)
         if user.id != auth_context.user.id:
             verify_permission_for_model(
-                user, action=Action.UPDATE, is_admin=auth_context.user.is_admin
+                user,
+                action=Action.UPDATE,
+                admin_status=auth_context.user.is_admin,
             )
 
         user_update = UserUpdate(
@@ -365,7 +371,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             )
         else:
             verify_permission_for_model(
-                user, action=Action.DELETE, is_admin=auth_context.user.is_admin
+                user,
+                action=Action.DELETE,
+                admin_status=auth_context.user.is_admin,
             )
 
         zen_store().delete_user(user_name_or_id=user_name_or_id)

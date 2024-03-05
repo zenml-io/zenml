@@ -1,6 +1,6 @@
 """High-level helper functions to write endpoints with RBAC."""
 
-from typing import Any, Callable, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -34,7 +34,7 @@ def verify_permissions_and_create_entity(
     request_model: AnyRequest,
     resource_type: ResourceType,
     create_method: Callable[[AnyRequest], AnyResponse],
-    is_admin: bool = True,
+    admin_status: Optional[bool] = None,
 ) -> AnyResponse:
     """Verify permissions and create the entity if authorized.
 
@@ -42,7 +42,11 @@ def verify_permissions_and_create_entity(
         request_model: The entity request model.
         resource_type: The resource type of the entity to create.
         create_method: The method to create the entity.
-        is_admin: If no RBAC is in place, the user must be an admin.
+        admin_status: Whether the user is an admin or not. This is only used
+            if explicitly specified in the call and even if passed will be
+            ignored, if RBAC is enabled. If operation do not required admin
+            permission, just ignore this param and only pass it explicitly
+            in case operation is allowed only for admins or certain RBAC group.
 
     Raises:
         IllegalOperationError: If the request model has a different owner then
@@ -62,7 +66,9 @@ def verify_permissions_and_create_entity(
             )
 
     verify_permission(
-        resource_type=resource_type, action=Action.CREATE, is_admin=is_admin
+        resource_type=resource_type,
+        action=Action.CREATE,
+        admin_status=admin_status,
     )
     return create_method(request_model)
 
