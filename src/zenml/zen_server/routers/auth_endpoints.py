@@ -72,6 +72,7 @@ from zenml.zen_server.rbac.utils import verify_permission
 from zenml.zen_server.utils import (
     get_ip_location,
     handle_exceptions,
+    ignore_limiter_on_success,
     server_config,
     zen_store,
 )
@@ -262,6 +263,7 @@ def generate_access_token(
     f"{server_config().login_rate_limit_minute}/minute;"
     f"{server_config().login_rate_limit_day}/day"
 )
+@ignore_limiter_on_success(limiter, router.prefix + LOGIN)
 @handle_exceptions
 def token(
     request: Request,

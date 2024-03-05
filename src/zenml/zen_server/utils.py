@@ -20,6 +20,8 @@ from typing import Any, Callable, Optional, Tuple, Type, TypeVar, cast
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ValidationError
+from slowapi import Limiter
+from starlette.requests import Request
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
@@ -316,6 +318,50 @@ def handle_exceptions(func: F) -> F:
             raise http_exception
 
     return cast(F, decorated)
+
+
+def ignore_limiter_on_success(
+    limiter: Limiter, api_path: str
+) -> Callable[..., Any]:
+    """Decorator to handle exceptions in the API.
+
+    Args:
+        limiter: Limiter to use.
+        api_path: API path to use.
+
+    Returns:
+        Decorated function.
+    """
+
+    def decorator(func: F) -> F:
+        @wraps(func)
+        def decorated(*args: Any, **kwargs: Any) -> Any:
+            try:
+                ret = func(*args, **kwargs)
+            except Exception as e:
+                raise e
+            else:
+                for a in list(args) + list(kwargs.values()):
+                    if isinstance(a, Request):
+                        request = a
+                        identifier = limiter._key_func(request)
+                        if "memory" not in (
+                            limiter._storage.STORAGE_SCHEME or []
+                        ):
+                            raise NotImplementedError(
+                                "Limiter not running in memory is not yet supported."
+                            )
+                        for k in limiter._storage.storage.keys():  # type: ignore[union-attr]
+                            if api_path in k:
+                                _, identifier_ = k.split("//")[0].split("/")
+                                if identifier_ == identifier:
+                                    limiter._storage.storage[k] -= 1  # type: ignore[union-attr]
+                        break
+            return ret
+
+        return cast(F, decorated)
+
+    return decorator
 
 
 # Code from https://github.com/tiangolo/fastapi/issues/1474#issuecomment-1160633178
