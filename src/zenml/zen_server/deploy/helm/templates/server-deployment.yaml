@@ -91,6 +91,10 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
+            {{- if .Values.zenml.baseURL }}
+            - name: ZENML_SERVER_BASE_URL
+              value: {{ .Values.zenml.baseURL | quote }}
+            {{- end }}
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}
