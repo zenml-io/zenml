@@ -16,8 +16,8 @@
 import os
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
+from zenml.client import Client
 from zenml.enums import ArtifactType
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.services.service import BaseService
 
@@ -45,8 +45,9 @@ class ServiceMaterializer(BaseMaterializer):
         Returns:
             A ZenML service instance.
         """
+        artifact_store = Client().active_stack.artifact_store
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
-        with fileio.open(filepath, "r") as f:
+        with artifact_store.open(filepath, "r") as f:
             service = cast(BaseService, BaseService.from_json(f.read()))
         return service
 
@@ -59,8 +60,9 @@ class ServiceMaterializer(BaseMaterializer):
         Args:
             service: A ZenML service instance.
         """
+        artifact_store = Client().active_stack.artifact_store
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
-        with fileio.open(filepath, "w") as f:
+        with artifact_store.open(filepath, "w") as f:
             f.write(service.json(indent=4))
 
     def extract_metadata(
