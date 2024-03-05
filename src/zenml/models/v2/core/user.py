@@ -100,6 +100,10 @@ class UserRequest(BaseRequest):
         title="The external user ID associated with the account.",
     )
     active: bool = Field(default=False, title="Whether the account is active.")
+    is_admin: bool = Field(
+        default=False,
+        title="Whether the account is an administrator.",
+    )
 
     class Config:
         """Pydantic configuration class."""
@@ -231,6 +235,9 @@ class UserResponseBody(BaseDatedResponseBody):
     is_service_account: bool = Field(
         title="Indicates whether this is a service account or a user account."
     )
+    is_admin: bool = Field(
+        title="Whether the account is an administrator.",
+    )
 
 
 class UserResponseMetadata(BaseResponseMetadata):
@@ -339,6 +346,15 @@ class UserResponse(
             the value of the property.
         """
         return self.get_body().is_service_account
+
+    @property
+    def is_admin(self) -> bool:
+        """The `is_admin` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().is_admin
 
     @property
     def email(self) -> Optional[str]:

@@ -112,6 +112,9 @@ def list_users(
     if allowed_ids is not None:
         # Make sure users can see themselves
         allowed_ids.add(auth_context.user.id)
+    else:
+        if not auth_context.user.is_admin:
+            allowed_ids = {auth_context.user.id}
 
     user_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id, id=allowed_ids
@@ -139,7 +142,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @handle_exceptions
     def create_user(
         user: UserRequest,
-        _: AuthContext = Security(authorize),
+        auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Creates a user.
 
@@ -167,6 +170,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             request_model=user,
             resource_type=ResourceType.USER,
             create_method=zen_store().create_user,
+            is_admin=auth_context.user.is_admin,
         )
 
         # add back the original unhashed activation token, if generated, to
@@ -202,7 +206,9 @@ def get_user(
         user_name_or_id=user_name_or_id, hydrate=hydrate
     )
     if user.id != auth_context.user.id:
-        verify_permission_for_model(user, action=Action.READ)
+        verify_permission_for_model(
+            user, action=Action.READ, is_admin=auth_context.user.is_admin
+        )
 
     return dehydrate_response_model(user)
 
@@ -238,7 +244,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         """
         user = zen_store().get_user(user_name_or_id)
         if user.id != auth_context.user.id:
-            verify_permission_for_model(user, action=Action.UPDATE)
+            verify_permission_for_model(
+                user, action=Action.UPDATE, is_admin=auth_context.user.is_admin
+            )
 
         updated_user = zen_store().update_user(
             user_id=user.id,
@@ -308,7 +316,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         """
         user = zen_store().get_user(user_name_or_id)
         if user.id != auth_context.user.id:
-            verify_permission_for_model(user, action=Action.UPDATE)
+            verify_permission_for_model(
+                user, action=Action.UPDATE, is_admin=auth_context.user.is_admin
+            )
 
         user_update = UserUpdate(
             name=user.name,
@@ -354,7 +364,9 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
                 "administrator."
             )
         else:
-            verify_permission_for_model(user, action=Action.DELETE)
+            verify_permission_for_model(
+                user, action=Action.DELETE, is_admin=auth_context.user.is_admin
+            )
 
         zen_store().delete_user(user_name_or_id=user_name_or_id)
 

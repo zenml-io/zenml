@@ -197,14 +197,25 @@ def get_permission_denied_model(model: AnyResponse) -> AnyResponse:
 def batch_verify_permissions_for_models(
     models: Sequence[AnyResponse],
     action: Action,
+    is_admin: bool = True,
 ) -> None:
     """Batch permission verification for models.
 
     Args:
         models: The models the user wants to perform the action on.
         action: The action the user wants to perform.
+        is_admin: If no RBAC is in place, the user must be an admin.
+
+    Raises:
+        IllegalOperationError: If the user is not allowed to perform the action.
     """
     if not server_config().rbac_enabled:
+        if not is_admin:
+            raise IllegalOperationError(
+                message=f"Insufficient permissions to {action.upper()} "
+                "only admin users can perform this action "
+                "without RBAC enabled.",
+            )
         return
 
     resources = set()
@@ -223,28 +234,42 @@ def batch_verify_permissions_for_models(
     batch_verify_permissions(resources=resources, action=action)
 
 
-def verify_permission_for_model(model: AnyResponse, action: Action) -> None:
+def verify_permission_for_model(
+    model: AnyResponse, action: Action, is_admin: bool = True
+) -> None:
     """Verifies if a user has permission to perform an action on a model.
 
     Args:
         model: The model the user wants to perform the action on.
         action: The action the user wants to perform.
+        is_admin: If no RBAC is in place, the user must be an admin.
     """
-    batch_verify_permissions_for_models(models=[model], action=action)
+    batch_verify_permissions_for_models(
+        models=[model], action=action, is_admin=is_admin
+    )
 
 
-def batch_verify_permissions(resources: Set[Resource], action: Action) -> None:
+def batch_verify_permissions(
+    resources: Set[Resource], action: Action, is_admin: bool = True
+) -> None:
     """Batch permission verification.
 
     Args:
         resources: The resources the user wants to perform the action on.
         action: The action the user wants to perform.
+        is_admin: If no RBAC is in place, the user must be an admin.
 
     Raises:
         IllegalOperationError: If the user is not allowed to perform the action.
         RuntimeError: If the permission verification failed unexpectedly.
     """
     if not server_config().rbac_enabled:
+        if not is_admin:
+            raise IllegalOperationError(
+                message=f"Insufficient permissions to {action.upper()} "
+                "only admin users can perform this action "
+                "without RBAC enabled.",
+            )
         return
 
     auth_context = get_auth_context()
@@ -274,6 +299,7 @@ def verify_permission(
     resource_type: str,
     action: Action,
     resource_id: Optional[UUID] = None,
+    is_admin: bool = True,
 ) -> None:
     """Verifies if a user has permission to perform an action on a resource.
 
@@ -282,9 +308,12 @@ def verify_permission(
             action on.
         action: The action the user wants to perform.
         resource_id: ID of the resource the user wants to perform the action on.
+        is_admin: If no RBAC is in place, the user must be an admin.
     """
     resource = Resource(type=resource_type, id=resource_id)
-    batch_verify_permissions(resources={resource}, action=action)
+    batch_verify_permissions(
+        resources={resource}, action=action, is_admin=is_admin
+    )
 
 
 def get_allowed_resource_ids(

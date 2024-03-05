@@ -34,6 +34,7 @@ def verify_permissions_and_create_entity(
     request_model: AnyRequest,
     resource_type: ResourceType,
     create_method: Callable[[AnyRequest], AnyResponse],
+    is_admin: bool = True,
 ) -> AnyResponse:
     """Verify permissions and create the entity if authorized.
 
@@ -41,6 +42,7 @@ def verify_permissions_and_create_entity(
         request_model: The entity request model.
         resource_type: The resource type of the entity to create.
         create_method: The method to create the entity.
+        is_admin: If no RBAC is in place, the user must be an admin.
 
     Raises:
         IllegalOperationError: If the request model has a different owner then
@@ -59,7 +61,9 @@ def verify_permissions_and_create_entity(
                 "different user."
             )
 
-    verify_permission(resource_type=resource_type, action=Action.CREATE)
+    verify_permission(
+        resource_type=resource_type, action=Action.CREATE, is_admin=is_admin
+    )
     return create_method(request_model)
 
 

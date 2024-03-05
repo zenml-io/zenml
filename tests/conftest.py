@@ -215,9 +215,7 @@ def clean_client(
     Yields:
         A clean ZenML client.
     """
-    with clean_default_client_session(
-        tmp_path_factory=tmp_path_factory,
-    ) as client:
+    with clean_default_client_session() as client:
         yield client
 
 

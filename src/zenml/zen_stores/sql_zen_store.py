@@ -7595,6 +7595,7 @@ class SqlZenStore(BaseZenStore):
                     name=default_user_name,
                     active=True,
                     password=password,
+                    is_admin=True,
                 )
             )
 

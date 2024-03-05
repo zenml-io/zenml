@@ -19,6 +19,7 @@ ZenML test framework. Most of these functions can be used to create fixtures
 that are used in the tests.
 """
 
+import inspect
 import logging
 import os
 import shutil
@@ -26,14 +27,14 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator, List, Optional, Tuple
+from uuid import UUID
 
 import pytest
 
 from tests.harness.environment import TestEnvironment
 from tests.harness.harness import TestHarness
 from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
+from zenml.constants import ENV_ZENML_DEBUG
 from zenml.stack.stack import Stack
 
 
@@ -220,61 +221,59 @@ def clean_workspace_session(
     client.delete_workspace(workspace_name)
 
 
+class TheClientRemembers:
+    def __init__(self, client: Client):
+        self.client = client
+        self.mem: List[Tuple[bool, str, UUID]] = []
+        for name, func in inspect.getmembers(self.client):
+            if name.startswith("create"):
+                setattr(self.client, name, self.memory(func, name, False))
+        for name, func in inspect.getmembers(self.client.zen_store):
+            if name.startswith("create"):
+                object.__setattr__(
+                    self.client.zen_store, name, self.memory(func, name, True)
+                )
+
+    def __getattr__(self, name):
+        return getattr(self.client, name)
+
+    def memory(self, func, name, is_store):
+        def inner(*args, **kwargs):
+            ret = func(*args, **kwargs)
+            if id_ := getattr(ret, "id"):
+                self.mem.append((is_store, name, id_))
+            return ret
+
+        return inner
+
+    def destroy(self):
+        for is_store, name, id_ in self.mem:
+            name = name.replace("create", "delete")
+            try:
+                if is_store:
+                    getattr(self.client.zen_store, name)(id_)
+                else:
+                    getattr(self.client, name)(id_)
+            except KeyError:
+                # the resource was deleted in the test session already
+                pass
+
+
 @contextmanager
-def clean_default_client_session(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[Client, None, None]:
+def clean_default_client_session() -> Generator[Client, None, None]:
     """Context manager to initialize and use a clean local default ZenML client.
 
-    This context manager creates a clean ZenML client with its own global
-    configuration and local database.
-
-    Args:
-        tmp_path_factory: A pytest fixture that provides a temporary directory.
+    This context manager creates a ZenML client with memory and cleans up
+    resource created during the session.
 
     Yields:
         A clean ZenML client.
     """
-    # save the current global configuration and client singleton instances
-    # to restore them later, then reset them
-    orig_cwd = os.getcwd()
-    original_config = GlobalConfiguration.get_instance()
-    original_client = Client.get_instance()
-    orig_config_path = os.getenv(ENV_ZENML_CONFIG_PATH)
+    memory_client = TheClientRemembers(Client.get_instance())
 
-    GlobalConfiguration._reset_instance()
-    Client._reset_instance()
+    yield memory_client
 
-    # change the working directory to a fresh temp path
-    tmp_path = tmp_path_factory.mktemp("pytest-clean-client")
-    os.chdir(tmp_path)
-
-    os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / "zenml")
-    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
-
-    # initialize the global config client and store at the new path
-    gc = GlobalConfiguration()
-    gc.analytics_opt_in = False
-    client = Client()
-    _ = client.zen_store
-
-    logging.info(f"Tests are running in clean environment: {tmp_path}")
-
-    yield client
-
-    # restore the global configuration path
-    if orig_config_path:
-        os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
-    else:
-        del os.environ[ENV_ZENML_CONFIG_PATH]
-
-    # restore the global configuration and the client
-    GlobalConfiguration._reset_instance(original_config)
-    Client._reset_instance(original_client)
-
-    # remove all traces, and change working directory back to base path
-    os.chdir(orig_cwd)
-    cleanup_folder(str(tmp_path))
+    memory_client.destroy()
 
 
 def check_test_requirements(
