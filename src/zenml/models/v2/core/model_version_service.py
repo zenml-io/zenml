@@ -21,8 +21,8 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
-    BaseResponse,
-    BaseResponseBody,
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseResponseMetadata,
     BaseResponseResources,
 )
@@ -53,7 +53,7 @@ class ModelVersionServiceRequest(WorkspaceScopedRequest):
 # ------------------ Response Model ------------------
 
 
-class ModelVersionServiceResponseBody(BaseResponseBody):
+class ModelVersionServiceResponseBody(BaseDatedResponseBody):
     """Response body for links between model versions and services."""
 
     model: UUID
@@ -66,7 +66,7 @@ class ModelVersionServiceResponseResources(BaseResponseResources):
 
 
 class ModelVersionServiceResponse(
-    BaseResponse[
+    BaseIdentifiedResponse[
         ModelVersionServiceResponseBody,
         BaseResponseMetadata,
         ModelVersionServiceResponseResources,

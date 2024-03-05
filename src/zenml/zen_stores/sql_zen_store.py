@@ -8978,20 +8978,21 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Model Versions Services -----------------------------
 
-    def create_model_version_services_link(
+    def create_model_version_service_link(
         self,
         model_version_service_link: ModelVersionServiceRequest,
     ) -> ModelVersionServiceResponse:
-        """Creates a new model version to service link.
+        """Creates a new model version to pipeline run link.
 
         Args:
-            model_version_service_link: the Model Version to Service Link to be
-                created.
+            model_version_service_link: the Model Version to Pipeline Run
+                Link to be created.
 
         Returns:
-            - If Model Version to Service Link already exists - returns the
-                existing link.
-            - Otherwise, returns the newly created model version to service link.
+            - If Model Version to Pipeline Run Link already exists - returns
+                the existing link.
+            - Otherwise, returns the newly created model version to pipeline
+                run link.
         """
         with Session(self.engine) as session:
             # If the link already exists, return it
@@ -9017,14 +9018,16 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(model_version_service_link_schema)
             session.commit()
-            return model_version_service_link_schema.to_model(hydrate=True)
+            return model_version_service_link_schema.to_model(
+                include_metadata=True
+            )
 
     def list_model_version_service_links(
         self,
         model_version_service_link_filter_model: ModelVersionServiceFilter,
         hydrate: bool = False,
     ) -> Page[ModelVersionServiceResponse]:
-        """Get all model version to service links by filter.
+        """Get all model version to pipeline run links by filter.
 
         Args:
             model_version_service_link_filter_model: All filter parameters
@@ -9033,7 +9036,7 @@ class SqlZenStore(BaseZenStore):
                 by including metadata fields in the response.
 
         Returns:
-            A page of all model version to service links.
+            A page of all model version to pipeline run links.
         """
         query = select(ModelVersionServiceSchema)
         with Session(self.engine) as session:
@@ -9050,17 +9053,16 @@ class SqlZenStore(BaseZenStore):
         model_version_id: UUID,
         model_version_service_link_name_or_id: Union[str, UUID],
     ) -> None:
-        """Deletes a model version to service link.
+        """Deletes a model version to pipeline run link.
 
         Args:
             model_version_id: name or ID of the model version containing the
                 link.
             model_version_service_link_name_or_id: name or ID of the model
-                version to service link to be deleted.
+                version to pipeline run link to be deleted.
 
         Raises:
             KeyError: specified ID not found.
-
         """
         with Session(self.engine) as session:
             model_version = self.get_model_version(

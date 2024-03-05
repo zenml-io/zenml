@@ -102,15 +102,24 @@ def link_service_to_model_from_artifacts(
         logger.debug("No model context found, unable to auto-link artifacts.")
 
     for artifact_name, artifact_version_id in artifact_version_ids.items():
-        artifact_config = step_context._get_output(
+        materializer_classes = step_context._get_output(
             artifact_name
-        ).artifact_config
-
-        if artifact_config and artifact_config.is_deployment_artifact:
-            link_service_to_model(
-                service_id=artifact_version_id,
-                model=model,
-            )
+        ).materializer_classes
+        for materializer_class in materializer_classes:
+            # Implicit linking
+            if (
+                materializer_class.__qualname__ == "ServiceMaterializer"
+                and model
+            ):
+                # Implicitly linking service to model
+                logger.info(
+                    f"Implicitly linking service to model "
+                    f"`{model.name}` version `{model.version}`."
+                )
+                link_service_to_model(
+                    service_id=artifact_version_id,
+                    model=model,
+                )
 
 
 def link_service_to_model(
@@ -138,7 +147,7 @@ def link_service_to_model(
             model=model_version_response.model.id,
             model_version=model_version_response.id,
         )
-        client.zen_store.create_model_version_services_link(request)
+        client.zen_store.create_model_version_service_link(request)
 
 
 def link_artifact_config_to_model(

@@ -185,7 +185,6 @@ class BaseModelDeployer(StackComponent, ABC):
                 config=config,
                 timeout=timeout,
             )
-        breakpoint()
         # Update the service in store
         client.update_service(
             id=service.uuid,
@@ -199,7 +198,6 @@ class BaseModelDeployer(StackComponent, ABC):
             prediction_url=service.get_the_prediction_url(),
             health_check_url=service.get_the_healthcheck_url(),
         )
-        breakpoint()
         return service
 
     @abstractmethod

@@ -3389,20 +3389,21 @@ class RestZenStore(BaseZenStore):
 
     # ---------------------- Model Versions Services ----------------------
 
-    def create_model_version_services_link(
+    def create_model_version_service_link(
         self,
         model_version_service_link: ModelVersionServiceRequest,
     ) -> ModelVersionServiceResponse:
-        """Creates a new model version to services link.
+        """Creates a new model version to pipeline run link.
 
         Args:
-            model_version_service_link: the Model Version to Service
+            model_version_service_link: the Model Version to Pipeline Run
                 Link to be created.
 
         Returns:
-            - If Model Version to Service Link already exists - returns
+            - If Model Version to Pipeline Run Link already exists - returns
                 the existing link.
-            - Otherwise, returns the newly created model version to service link.
+            - Otherwise, returns the newly created model version to pipeline
+                run link.
         """
         return self._create_workspace_scoped_resource(
             resource=model_version_service_link,

@@ -483,7 +483,6 @@ class SeldonModelDeployer(BaseModelDeployer):
         self,
         id: UUID,
         config: ServiceConfig,
-        replace: bool = False,
         timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
         """Create a new Seldon Core deployment or update an existing one.
@@ -543,31 +542,6 @@ class SeldonModelDeployer(BaseModelDeployer):
         """
         with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(SeldonDeploymentConfig, config)
-            service = None
-
-            # if replace is True, find equivalent Seldon Core deployments
-            if replace is True:
-                equivalent_services = self.find_model_server(
-                    running=False,
-                    pipeline_name=config.pipeline_name,
-                    pipeline_step_name=config.pipeline_step_name,
-                    model_name=config.model_name,
-                )
-
-                for equivalent_service in equivalent_services:
-                    if service is None:
-                        # keep the most recently created service
-                        service = equivalent_service
-                    else:
-                        try:
-                            # delete the older services and don't wait for
-                            # them to be deprovisioned
-                            service.stop()
-                        except RuntimeError:
-                            # ignore errors encountered while stopping old
-                            # services
-                            pass
-
             # if a custom Kubernetes secret is not explicitly specified in the
             # SeldonDeploymentConfig, try to create one from the ZenML secret
             # configured for the model deployer
@@ -575,19 +549,9 @@ class SeldonModelDeployer(BaseModelDeployer):
                 config.secret_name
                 or self._create_or_update_kubernetes_secret()
             )
-
-            if service:
-                # update an equivalent service in place
-                service.update(config)
-                logger.info(
-                    f"Updating an existing Seldon deployment service: {service}"
-                )
-            else:
-                # create a new service
-                service = SeldonDeploymentService(config=config)
-                logger.info(
-                    f"Creating a new Seldon deployment service: {service}"
-                )
+            # create a new service
+            service = SeldonDeploymentService(uuid=id, config=config)
+            logger.info(f"Creating a new Seldon deployment service: {service}")
 
             # start the service which in turn provisions the Seldon Core
             # deployment server and waits for it to reach a ready state
@@ -690,14 +654,14 @@ class SeldonModelDeployer(BaseModelDeployer):
 
     def perform_stop_model(
         self,
-        uuid: UUID,
+        service: BaseService,
         timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
-    ) -> None:
+    ) -> BaseService:
         """Stop a Seldon Core model server.
 
         Args:
-            uuid: UUID of the model server to stop.
+            service: The service to stop.
             timeout: timeout in seconds to wait for the service to stop.
             force: if True, force the service to stop.
 
@@ -712,13 +676,13 @@ class SeldonModelDeployer(BaseModelDeployer):
 
     def perform_start_model(
         self,
-        uuid: UUID,
+        service: BaseService,
         timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
-    ) -> None:
+    ) -> BaseService:
         """Start a Seldon Core model deployment server.
 
         Args:
-            uuid: UUID of the model server to start.
+            service: The service to start.
             timeout: timeout in seconds to wait for the service to become
                 active. . If set to 0, the method will return immediately after
                 provisioning the service, without waiting for it to become
@@ -734,26 +698,20 @@ class SeldonModelDeployer(BaseModelDeployer):
 
     def perform_delete_model(
         self,
-        uuid: UUID,
+        service: BaseService,
         timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> None:
         """Delete a Seldon Core model deployment server.
 
         Args:
-            uuid: UUID of the model server to delete.
+            service: The service to delete.
             timeout: timeout in seconds to wait for the service to stop. If
                 set to 0, the method will return immediately after
                 deprovisioning the service, without waiting for it to stop.
             force: if True, force the service to stop.
         """
-        services = self.find_model_server(service_uuid=uuid)
-        if len(services) == 0:
-            return
-
-        service = services[0]
-
-        assert isinstance(service, SeldonDeploymentService)
+        service = cast(SeldonDeploymentService, service)
         service.stop(timeout=timeout, force=force)
 
         if service.config.secret_name:

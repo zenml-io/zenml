@@ -2752,8 +2752,9 @@ class ZenStoreInterface(ABC):
     # -------------------- Model Versions Services --------------------
 
     @abstractmethod
-    def create_model_version_services_link(
-        self, model_version_service_link: ModelVersionServiceRequest
+    def create_model_version_service_link(
+        self,
+        model_version_service_link: ModelVersionServiceRequest,
     ) -> ModelVersionServiceResponse:
         """Creates a new model version to service link.
 
