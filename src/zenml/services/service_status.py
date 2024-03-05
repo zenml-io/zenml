@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 
 class ServiceState(StrEnum):
     """Possible states for the service and service endpoint."""
-    
+
     INITIALIZING = "initializing"
     UPDATING = "updating"
     UPDATE_FAILED = "updateFailed"
@@ -32,7 +32,7 @@ class ServiceState(StrEnum):
     TERMINATING = "terminating"
     INACTIVE = "inactive"
     FAILED = "failed"
-    NOT_FOUND_OR_DELETED = "NotFoundOrDeleted"
+
 
 class ServiceStatus(BaseTypedModel):
     """Information about the status of a service or process.

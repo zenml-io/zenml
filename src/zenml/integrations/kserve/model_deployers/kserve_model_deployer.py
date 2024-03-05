@@ -441,7 +441,6 @@ class KServeModelDeployer(BaseModelDeployer):
         config = KServeDeploymentConfig(
             pipeline_name=pipeline_name or "",
             run_name=run_name or "",
-            pipeline_name=pipeline_name or "",
             pipeline_run_id=run_name or "",
             pipeline_step_name=pipeline_step_name or "",
             model_uri=model_uri or "",

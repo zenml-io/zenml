@@ -352,7 +352,8 @@ class ServiceFilter(WorkspaceScopedFilter):
         description="Pipeline run id responsible for deploying the service",
     )
     pipeline_name: Optional[str] = Field(
-        default=None, description="Pipeline name responsible for deploying the service"
+        default=None,
+        description="Pipeline name responsible for deploying the service",
     )
     pipeline_step_name: Optional[str] = Field(
         default=None,
@@ -440,9 +441,11 @@ class ServiceFilter(WorkspaceScopedFilter):
         if self.flavor:
             flavor_filter = getattr(table, "flavor") == self.flavor
             base_filter = and_(base_filter, flavor_filter)
-        
+
         if self.pipeline_name:
-            pipeline_name_filter = getattr(table, "pipeline_name") == self.pipeline_name
+            pipeline_name_filter = (
+                getattr(table, "pipeline_name") == self.pipeline_name
+            )
             base_filter = and_(base_filter, pipeline_name_filter)
 
         if self.run_name:

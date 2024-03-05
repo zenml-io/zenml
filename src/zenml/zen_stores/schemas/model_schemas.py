@@ -747,7 +747,7 @@ class ModelVersionServiceSchema(BaseSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> ModelVersionServiceResponse:
-        """Convert an `ModelVersionServiceRequest` to an `ModelVersionServiceResponse`.
+        """Convert an `ModelVersionServiceSchema` to an `ModelVersionServiceResponse`.
 
         Args:
             include_metadata: Whether the metadata will be filled.

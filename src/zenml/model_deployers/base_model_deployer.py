@@ -276,6 +276,8 @@ class BaseModelDeployer(StackComponent, ABC):
                 to deploy the model.
             endpoint_name_or_model_name: The name of the endpoint or the model that
                 was originally used to deploy the model.
+            pipeline_name: The name of the pipeline that was originally used to deploy
+                the model from the model registry.
             model_name: The name of the model that was originally used to deploy
                 the model from the model registry.
             model_version: The version of the model that was originally used to
@@ -306,8 +308,19 @@ class BaseModelDeployer(StackComponent, ABC):
         )
         services = []
         for service_response in service_responses.items:
-            services.append(BaseDeploymentService.from_model(service_response))
-
+            service = BaseDeploymentService.from_model(service_response)
+            service.update_status()
+            if service.status.dict() != service_response.status:
+                client.update_service(
+                    config=service.config.dict(),
+                    id=service.uuid,
+                    admin_state=service.admin_state,
+                    status=service.status.dict(),
+                    endpoint=service.endpoint.dict()
+                    if service.endpoint
+                    else None,
+                )
+            services.append(service)
         return services
 
     @abstractmethod

@@ -88,6 +88,14 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "pipeline run.",
     )
     @click.option(
+        "--pipeline-name",
+        "-p",
+        type=click.STRING,
+        default=None,
+        help="Show only served models that were deployed by the indicated "
+        "pipeline.",
+    )
+    @click.option(
         "--model",
         "-m",
         type=click.STRING,
@@ -134,6 +142,8 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
                 pipeline step.
             run_name: Show only served models that were deployed by the
                 indicated pipeline run.
+            pipeline_name: Show only served models that were deployed by the
+                indicated pipeline.
             model: Show only served model versions for the given model name.
             running: Show only model servers that are currently running.
             model_version: Show only served model versions for the given model

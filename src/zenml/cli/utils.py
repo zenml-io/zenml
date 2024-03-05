@@ -1132,6 +1132,8 @@ def get_service_state_emoji(state: "ServiceState") -> str:
         return ":pause_button:"
     if state == ServiceState.FAILED:
         return ":heavy_exclamation_mark:"
+    if state == ServiceState.INITIALIZING:
+        return ":hourglass:"
     return ":hourglass_not_done:"
 
 

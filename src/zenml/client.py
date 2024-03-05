@@ -1588,6 +1588,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             running: Use the running status for filtering
+            pipeline_name: Use the pipeline name for filtering
             endpoint_name_or_model_name: Use the endpoint name or model name
                 for filtering
             run_name: Use the pipeline run id for filtering

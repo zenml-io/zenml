@@ -1456,7 +1456,7 @@ def create_service(
         service: The service to create.
 
     Returns:
-        The created model.
+        The created service.
 
     Raises:
         IllegalOperationError: If the workspace or user specified in the

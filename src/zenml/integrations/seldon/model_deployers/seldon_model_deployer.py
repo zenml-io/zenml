@@ -15,7 +15,6 @@
 
 import json
 import re
-from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
@@ -571,85 +570,6 @@ class SeldonModelDeployer(BaseModelDeployer):
             }
 
         return service
-
-    def find_model_server(
-        self,
-        running: bool = False,
-        service_uuid: Optional[UUID] = None,
-        pipeline_name: Optional[str] = None,
-        run_name: Optional[str] = None,
-        pipeline_step_name: Optional[str] = None,
-        model_name: Optional[str] = None,
-        model_uri: Optional[str] = None,
-        model_type: Optional[str] = None,
-    ) -> List[BaseService]:
-        """Find one or more Seldon Core model services that match the given criteria.
-
-        The Seldon Core deployment services that meet the search criteria are
-        returned sorted in descending order of their creation time (i.e. more
-        recent deployments first).
-
-        Args:
-            running: if true, only running services will be returned.
-            service_uuid: the UUID of the Seldon Core service that was
-                originally used to create the Seldon Core deployment resource.
-            pipeline_name: name of the pipeline that the deployed model was part
-                of.
-            run_name: Name of the pipeline run which the deployed model was
-                part of.
-            pipeline_step_name: the name of the pipeline model deployment step
-                that deployed the model.
-            model_name: the name of the deployed model.
-            model_uri: URI of the deployed model.
-            model_type: the Seldon Core server implementation used to serve
-                the model
-
-        Returns:
-            One or more Seldon Core service objects representing Seldon Core
-            model servers that match the input search criteria.
-        """
-        # Use a Seldon deployment service configuration to compute the labels
-        config = SeldonDeploymentConfig(
-            pipeline_name=pipeline_name or "",
-            run_name=run_name or "",
-            pipeline_run_id=run_name or "",
-            pipeline_step_name=pipeline_step_name or "",
-            model_name=model_name or "",
-            model_uri=model_uri or "",
-            implementation=model_type or "",
-        )
-        labels = config.get_seldon_deployment_labels()
-        if service_uuid:
-            # the service UUID is not a label covered by the Seldon
-            # deployment service configuration, so we need to add it
-            # separately
-            labels["zenml.service_uuid"] = str(service_uuid)
-
-        deployments = self.seldon_client.find_deployments(labels=labels)
-        # sort the deployments in descending order of their creation time
-        deployments.sort(
-            key=lambda deployment: datetime.strptime(
-                deployment.metadata.creationTimestamp,
-                "%Y-%m-%dT%H:%M:%SZ",
-            )
-            if deployment.metadata.creationTimestamp
-            else datetime.min,
-            reverse=True,
-        )
-
-        services: List[BaseService] = []
-        for deployment in deployments:
-            # recreate the Seldon deployment service object from the Seldon
-            # deployment resource
-            service = SeldonDeploymentService.create_from_deployment(
-                deployment=deployment
-            )
-            if running and not service.is_running:
-                # skip non-running services
-                continue
-            services.append(service)
-
-        return services
 
     def perform_stop_model(
         self,
