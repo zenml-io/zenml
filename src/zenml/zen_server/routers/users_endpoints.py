@@ -150,6 +150,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         Args:
             user: User to create.
+            auth_context: Authentication context.
 
         Returns:
             The created user.
