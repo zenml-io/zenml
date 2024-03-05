@@ -251,9 +251,10 @@ class TheClientRemembers:
             name = name.replace("create", "delete")
             try:
                 if is_store:
-                    getattr(self.client.zen_store, name)(id_)
-                else:
-                    getattr(self.client, name)(id_)
+                    if func := getattr(self.client.zen_store, name, None):
+                        func(id_)
+                elif func := getattr(self.client, name, None):
+                    func(id_)
             except KeyError:
                 # the resource was deleted in the test session already
                 pass
