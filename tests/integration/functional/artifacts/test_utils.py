@@ -262,7 +262,7 @@ def test_log_artifact_metadata_raises_error_if_output_name_unclear(
 
 
 def test_download_artifact_files_from_response(
-    tmp_path, clean_client_with_run
+    tmp_path, clean_client_with_run: "Client"
 ):
     """Test that we can download artifact files from an artifact version."""
     artifact: ArtifactResponse = clean_client_with_run.get_artifact(
