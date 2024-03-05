@@ -241,7 +241,7 @@ class TheClientRemembers:
                     self.client.zen_store, name, self.memory(func, name, True)
                 )
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         """Proxy attribute access to the client.
 
         Args:
@@ -252,7 +252,9 @@ class TheClientRemembers:
         """
         return getattr(self.client, name)
 
-    def memory(self, func: Callable[..., Any], name: str, is_store: bool):
+    def memory(
+        self, func: Callable[..., Any], name: str, is_store: bool
+    ) -> Callable[..., Any]:
         """Decorator to remember which objects have been created.
 
         Args:
@@ -264,8 +266,12 @@ class TheClientRemembers:
             The decorated function.
         """
 
-        def inner(*args, **kwargs):
+        def inner(*args: Any, **kwargs: Any) -> Any:
             """Inner function to remember which objects have been created.
+
+            Args:
+                args: The positional arguments.
+                kwargs: The keyword arguments.
 
             Returns:
                 The result of the function call.
@@ -277,7 +283,7 @@ class TheClientRemembers:
 
         return inner
 
-    def destroy(self):
+    def destroy(self) -> None:
         """Deletes all remembered objects."""
         for is_store, name, id_ in self.mem:
             name = name.replace("create", "delete")
@@ -293,16 +299,24 @@ class TheClientRemembers:
 
 
 @contextmanager
-def clean_default_client_session() -> Generator[Client, None, None]:
+def clean_default_client_session() -> (
+    Generator[TheClientRemembers, None, None]
+):
     """Context manager to initialize and use a clean local default ZenML client.
 
     This context manager creates a ZenML client with memory and cleans up
     resource created during the session.
 
+    Raises:
+        RuntimeError: If no default client is found.
+
     Yields:
         A clean ZenML client.
     """
-    memory_client = TheClientRemembers(Client.get_instance())
+    if client := Client.get_instance():
+        memory_client = TheClientRemembers(client)
+    else:
+        raise RuntimeError("No default client found")
 
     yield memory_client
 
