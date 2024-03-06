@@ -519,9 +519,6 @@ class SeldonModelDeployer(BaseModelDeployer):
             id: the UUID of the model server to deploy.
             config: the configuration of the model to be deployed with Seldon.
                 Core
-            replace: set this flag to True to find and update an equivalent
-                Seldon Core deployment server with the new model instead of
-                starting a new deployment server.
             timeout: the timeout in seconds to wait for the Seldon Core server
                 to be provisioned and successfully started or updated. If set
                 to 0, the method will return immediately after the Seldon Core

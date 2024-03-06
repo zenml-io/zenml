@@ -136,8 +136,6 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
 
         Args:
             model_deployer: The model-deployer stack component.
-            pipeline: Show only served models that were deployed by the
-                indicated pipeline.
             step: Show only served models that were deployed by the indicated
                 pipeline step.
             run_name: Show only served models that were deployed by the

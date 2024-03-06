@@ -285,6 +285,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
             service: The service to stop.
             timeout: Timeout in seconds to wait for the service to stop.
             force: If True, force the service to stop.
+
+        Returns:
+            The stopped service.
         """
         service.stop(timeout=timeout, force=force)
         return service
@@ -299,6 +302,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
         Args:
             service: The service to start.
             timeout: Timeout in seconds to wait for the service to start.
+        
+        Returns:
+            The started service.
         """
         service.start(timeout=timeout)
         return service

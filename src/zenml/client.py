@@ -1580,7 +1580,6 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of services to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            name: Use the service name for filtering
             type: Use the service type for filtering
             flavor: Use the service flavor for filtering
             workspace_id: The id of the workspace to filter by.

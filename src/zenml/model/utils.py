@@ -131,9 +131,6 @@ def link_service_to_model(
     Args:
         service_id: The ID of the service.
         model: The model to link to.
-
-    Raises:
-        RuntimeError: If called outside of a step.
     """
     client = Client()
 

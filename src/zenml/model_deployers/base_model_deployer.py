@@ -226,9 +226,6 @@ class BaseModelDeployer(StackComponent, ABC):
             config: Custom Service configuration parameters for the model
                 deployer. Can include the pipeline name, the run id, the step
                 name, the model name, the model uri, the model type etc.
-            replace: If True, it will replace any existing model server instances
-                that serve the same model. If False, it does not replace any
-                existing model server instance.
             timeout: The maximum time in seconds to wait for the model server
                 to start serving the model.
 
@@ -362,6 +359,9 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 deprovisioning the service, without waiting for it to stop.
             force: if True, force the service to stop.
+
+        Raises:
+            RuntimeError: if the model server is not found.
         """
         client = Client()
         try:
@@ -410,6 +410,9 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 provisioning the service, without waiting for it to become
                 active.
+        
+        Raises:
+            RuntimeError: if the model server is not found.
         """
         client = Client()
         try:
@@ -466,6 +469,9 @@ class BaseModelDeployer(StackComponent, ABC):
                 set to 0, the method will return immediately after
                 deprovisioning the service, without waiting for it to stop.
             force: if True, force the service to stop.
+        
+        Raises:
+            RuntimeError: if the model server is not found.
         """
         client = Client()
         try:

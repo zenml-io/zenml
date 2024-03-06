@@ -382,9 +382,6 @@ class ServiceFilter(WorkspaceScopedFilter):
 
         Args:
             type: The type of the service.
-
-        Returns:
-            The updated filter.
         """
         self.type = type
 
@@ -393,9 +390,6 @@ class ServiceFilter(WorkspaceScopedFilter):
 
         Args:
             flavor: The flavor of the service.
-
-        Returns:
-            The updated filter.
         """
         self.flavor = flavor
 

@@ -179,6 +179,9 @@ class BaseService(BaseTypedModel):
 
         Returns:
             The loaded code repository object.
+
+        Raises:
+            ValueError: if the service source is not found in the model.
         """
         if not model.service_source:
             raise ValueError("Service source not found in the model.")
@@ -413,9 +416,6 @@ class BaseService(BaseTypedModel):
             timeout: amount of time to wait for the service to become active.
                 If set to 0, the method will return immediately after checking
                 the service status.
-
-        Raises:
-            RuntimeError: if the service cannot be started
         """
         with console.status(f"Starting service '{self}'.\n"):
             self.admin_state = ServiceState.RUNNING
@@ -440,9 +440,6 @@ class BaseService(BaseTypedModel):
                 the service status.
             force: if True, the service will be stopped even if it is not
                 currently running.
-
-        Raises:
-            RuntimeError: if the service cannot be stopped
         """
         with console.status(f"Stopping service '{self}'.\n"):
             self.admin_state = ServiceState.INACTIVE

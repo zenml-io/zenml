@@ -1814,9 +1814,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created service.
-
-        Raises:
-            EntityExistsError: If a service with the same name already exists.
         """
         with Session(self.engine) as session:
             # Check if a service with the given name already exists
