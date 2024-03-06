@@ -99,11 +99,11 @@ function version_compare() {
     IFS='.' read -ra ver1 <<< "$1"
     IFS='.' read -ra ver2 <<< "$2"
 
-    for ((i=0; i<${#ver1[@]}; i++)); do
-        if ((ver1[i] > ver2[i])); then
+    for ((i=0; i<"${#ver1[@]}"; i++)); do
+        if (("${ver1[i]}" > "${ver2[i]}")); then
             echo ">"
             return
-        elif ((ver1[i] < ver2[i])); then
+        elif (("${ver1[i]}" < "${ver2[i]}")); then
             echo "<"
             return
         fi
