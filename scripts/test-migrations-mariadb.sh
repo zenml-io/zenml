@@ -93,3 +93,39 @@ zenml disconnect
 docker rm -f mariadb
 
 deactivate
+
+# Test sequential migrations across multiple versions
+echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
+set -e
+python3 -m venv ".venv-sequential-migrations"
+source ".venv-sequential-migrations/bin/activate"
+
+pip3 install -U pip setuptools wheel
+
+# Randomly select versions for sequential migrations
+MIGRATION_VERSIONS=()
+while [ ${#MIGRATION_VERSIONS[@]} -lt 3 ]; do
+    VERSION=${VERSIONS[$RANDOM % ${#VERSIONS[@]}]}
+    if [[ ! " ${MIGRATION_VERSIONS[@]} " =~ " $VERSION " ]]; then
+        MIGRATION_VERSIONS+=("$VERSION")
+    fi
+done
+MIGRATION_VERSIONS=($(printf '%s\n' "${MIGRATION_VERSIONS[@]}" | sort -V))
+
+for i in "${!MIGRATION_VERSIONS[@]}"; do
+    if [ $i -eq 0 ]; then
+        git checkout release/${MIGRATION_VERSIONS[$i]}
+        pip3 install -e ".[templates,server]"
+        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+        run_tests_for_version ${MIGRATION_VERSIONS[$i]}
+    else
+        git checkout release/${MIGRATION_VERSIONS[$i]}
+        pip3 install -e ".[templates,server]"
+        run_tests_for_version ${MIGRATION_VERSIONS[$i]}
+    fi
+done
+
+zenml disconnect
+docker rm -f mariadb
+
+deactivate

@@ -133,3 +133,64 @@ fi
 
 deactivate
 
+# Test sequential migrations across multiple versions
+echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
+set -e
+python3 -m venv ".venv-sequential-migrations"
+source ".venv-sequential-migrations/bin/activate"
+
+pip3 install -U pip setuptools wheel
+
+# Randomly select versions for sequential migrations
+MIGRATION_VERSIONS=()
+while [ ${#MIGRATION_VERSIONS[@]} -lt 5 ]; do
+    VERSION=${VERSIONS[$RANDOM % ${#VERSIONS[@]}]}
+    if [[ ! " ${MIGRATION_VERSIONS[@]} " =~ " $VERSION " ]]; then
+        MIGRATION_VERSIONS+=("$VERSION")
+    fi
+done
+MIGRATION_VERSIONS=($(printf '%s\n' "${MIGRATION_VERSIONS[@]}" | sort -V))
+
+for i in "${!MIGRATION_VERSIONS[@]}"; do
+    if [ $i -eq 0 ]; then
+        git checkout release/${MIGRATION_VERSIONS[$i]}
+        pip3 install -e ".[templates,server]"
+        pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
+
+        PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+        if [[ "$PYTHON_VERSION" == "3.9" ]]; then
+            case "${MIGRATION_VERSIONS[$i]}" in
+                "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
+                    pip3 install importlib_metadata
+                    ;;
+            esac
+        fi
+
+        if [ "$1" == "mysql" ]; then
+            zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+        fi
+        run_tests_for_version ${MIGRATION_VERSIONS[$i]}
+    else
+        git checkout release/${MIGRATION_VERSIONS[$i]}
+        pip3 install -e ".[templates,server]"
+        pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
+
+        PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+        if [[ "$PYTHON_VERSION" == "3.9" ]]; then
+            case "${MIGRATION_VERSIONS[$i]}" in
+                "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
+                    pip3 install importlib_metadata
+                    ;;
+            esac
+        fi
+
+        run_tests_for_version ${MIGRATION_VERSIONS[$i]}
+    fi
+done
+
+if [ "$1" == "mysql" ]; then
+    zenml disconnect
+    docker rm -f mysql
+fi
+
+deactivate
