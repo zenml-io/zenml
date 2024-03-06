@@ -39,7 +39,7 @@ class AzureIntegration(Integration):
 
     NAME = AZURE
     REQUIREMENTS = [
-        "adlfs==2021.10.0",
+        "adlfs>=2021.10.0",
         "azure-keyvault-keys",
         "azure-keyvault-secrets",
         "azure-identity==1.10.0",
