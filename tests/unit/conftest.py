@@ -11,343 +11,76 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
-import shutil
-import sys
 from datetime import datetime
-from pathlib import Path
-from typing import Generator, Tuple
+from typing import Any, Callable, Dict, Optional
 from uuid import uuid4
 
 import pytest
-from pytest import File
-from pytest_mock import MockerFixture
 
-from tests.harness.environment import TestEnvironment
-from tests.harness.utils import (
-    check_test_requirements,
-    clean_default_client_session,
-    clean_workspace_session,
-    environment_session,
-)
-from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
 )
-from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.pipeline_spec import PipelineSpec
+from zenml.config.step_configurations import StepConfiguration, StepSpec
+from zenml.config.step_run_info import StepRunInfo
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
 )
+from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models import (
+    ArtifactResponse,
+    ArtifactResponseBody,
+    ArtifactResponseMetadata,
+    ArtifactVersionRequest,
+    ArtifactVersionResponse,
+    ArtifactVersionResponseBody,
+    ArtifactVersionResponseMetadata,
+    CodeRepositoryResponse,
+    CodeRepositoryResponseBody,
+    CodeRepositoryResponseMetadata,
+    HubPluginResponseModel,
+    PipelineBuildResponse,
+    PipelineBuildResponseBody,
+    PipelineBuildResponseMetadata,
+    PipelineDeploymentRequest,
+    PipelineDeploymentResponse,
+    PipelineDeploymentResponseBody,
+    PipelineDeploymentResponseMetadata,
+    PipelineResponse,
+    PipelineResponseBody,
+    PipelineResponseMetadata,
+    PipelineRunRequest,
+    PipelineRunResponse,
+    PipelineRunResponseBody,
+    PipelineRunResponseMetadata,
+    PluginStatus,
+    StepRunRequest,
+    StepRunResponse,
+    StepRunResponseBody,
+    StepRunResponseMetadata,
+    UserResponse,
+    UserResponseBody,
+    UserResponseMetadata,
+    WorkspaceResponse,
+    WorkspaceResponseBody,
+    WorkspaceResponseMetadata,
+)
+from zenml.new.pipelines.pipeline import Pipeline
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.pipelines import pipeline
 from zenml.stack.stack import Stack
 from zenml.stack.stack_component import (
     StackComponentConfig,
     StackComponentType,
 )
-
-DEFAULT_ENVIRONMENT_NAME = "default"
-
-
-def pytest_addoption(parser):
-    """Fixture that gets called by pytest ahead of tests. Adds CLI options that
-    can be used to configure the test deployment, environment, requirements and
-    a few other options that can be used to control the teardown and cleanup
-    process.
-
-    Example of how to use these options:
-
-        ```pytest tests/integration --environment <environment_name> --docker-cleanup```
-    """
-    parser.addoption(
-        "--environment",
-        action="store",
-        default=None,
-        help="Environment to run tests against",
-    )
-    parser.addoption(
-        "--deployment",
-        action="store",
-        default=None,
-        help="Deployment to run tests against",
-    )
-    parser.addoption(
-        "--requirements",
-        action="store",
-        default=None,
-        help="Global test requirements to run tests against",
-    )
-    parser.addoption(
-        "--no-teardown",
-        action="store_true",
-        default=False,
-        help="Do not tear down the test environment after tests have run.",
-    )
-    parser.addoption(
-        "--no-cleanup",
-        action="store_true",
-        default=False,
-        help="Do not cleanup the temporary resources (e.g. stacks, workspaces) "
-        "set up for tests after tests have run.",
-    )
-    parser.addoption(
-        "--no-provision",
-        action="store_true",
-        default=False,
-        help="Do not provision the test environment before running tests "
-        "(assumes it is already provisioned).",
-    )
-    parser.addoption(
-        "--cleanup-docker",
-        action="store_true",
-        default=False,
-        help="Clean up unused Docker container images, containers and volumes "
-        "after tests have run. This is useful if you are running the examples "
-        "integration tests using a Docker based orchestrator.",
-    )
-
-
-@pytest.fixture(scope="session", autouse=True)
-def auto_environment(
-    session_mocker: MockerFixture,
-    request: pytest.FixtureRequest,
-) -> Generator[Tuple[TestEnvironment, Client], None, None]:
-    """Fixture to automatically provision and use a test environment for all
-    tests in a session.
-
-    Yields:
-        The active environment and a client connected with it.
-    """
-    session_mocker.patch("zenml.analytics.request.post")
-
-    environment_name = request.config.getoption("environment", None)
-    no_provision = request.config.getoption("no_provision", False)
-    no_teardown = request.config.getoption("no_teardown", False)
-    no_cleanup = request.config.getoption("no_cleanup", False)
-
-    # If no environment is specified, create an ad-hoc environment
-    # consisting of the supplied deployment (or the default one) and
-    # the supplied test requirements (if present).
-    deployment_name = request.config.getoption(
-        "deployment", DEFAULT_ENVIRONMENT_NAME
-    )
-    requirements_names = request.config.getoption("requirements")
-
-    with environment_session(
-        environment_name=environment_name,
-        deployment_name=deployment_name,
-        requirements_names=requirements_names.split(",")
-        if requirements_names
-        else [],
-        no_provision=no_provision,
-        no_teardown=no_teardown,
-        no_deprovision=no_cleanup,
-    ) as environment:
-        yield environment
-
-
-@pytest.fixture(scope="module", autouse=True)
-def check_module_requirements(
-    auto_environment: Tuple[TestEnvironment, Client],
-    request: pytest.FixtureRequest,
-) -> None:
-    """Fixture to check test-level requirements for a test module.
-
-    Yields:
-        An active ZenML stack with the requirements of the test module.
-    """
-    env, client = auto_environment
-    check_test_requirements(
-        request=request,
-        environment=env,
-        client=client,
-    )
-
-
-@pytest.fixture
-def clean_workspace(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[Client, None, None]:
-    """Fixture to create, activate and use a separate ZenML repository and
-    workspace for an individual test.
-
-    Yields:
-        A ZenML client configured to use the workspace.
-    """
-    with clean_workspace_session(
-        tmp_path_factory=tmp_path_factory,
-        clean_repo=True,
-    ) as client:
-        yield client
-
-
-@pytest.fixture(scope="module")
-def module_clean_workspace(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[Client, None, None]:
-    """Fixture to create, activate and use a separate ZenML repository and
-    workspace for an entire test module.
-
-    Yields:
-        A ZenML client configured to use the workspace.
-    """
-    with clean_workspace_session(
-        tmp_path_factory=tmp_path_factory,
-        clean_repo=True,
-    ) as client:
-        yield client
-
-
-@pytest.fixture
-def clean_client(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[Client, None, None]:
-    """Fixture to get and use a clean local client with its own global
-    configuration and isolated SQLite database for an individual test.
-
-    Args:
-        request: Pytest FixtureRequest object
-        tmp_path_factory: Pytest TempPathFactory in order to create a new
-            temporary directory
-
-    Yields:
-        A clean ZenML client.
-    """
-    with clean_default_client_session(
-        tmp_path_factory=tmp_path_factory,
-    ) as client:
-        yield client
-
-
-@pytest.fixture(scope="module")
-def module_clean_client(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[Client, None, None]:
-    """Fixture to get and use a clean local client with its own global
-    configuration and isolated SQLite database for a test module.
-
-    Args:
-        request: Pytest FixtureRequest object
-        tmp_path_factory: Pytest TempPathFactory in order to create a new
-            temporary directory
-
-    Yields:
-        A clean ZenML client.
-    """
-    with clean_default_client_session(
-        tmp_path_factory=tmp_path_factory,
-    ) as client:
-        yield client
-
-
-@pytest.fixture
-def files_dir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
-    """Fixture that will search for a folder with the same name as the test
-    file and move it into the temp path of the test.
-
-    |dir
-    |--test_functionality
-    |--|--test_specific_method
-    |--test_functionality.py#test_specific_method
-
-    In this case if the `test_specific_method()` function inside the
-    `test_functionality.py` has this fixture, the
-    `test_functionality/test_specific_method` file is copied into the tmp_path.
-    The path is passed into the test_specific_method(datadir: str) as string.
-
-    TO use this, ensure the filename (minus '.py') corresponds to the outer
-    directory name. And the inner directory corresponds to the test methods
-    name.
-
-    Returns:
-        tmp_path at which to find the files.
-    """
-    filename = Path(request.module.__file__)
-    test_dir = filename.with_suffix("")
-
-    test_name = request.function.__name__
-
-    tmp_path = tmp_path / test_name
-
-    if os.path.isdir(test_dir):
-        test_function_dir = test_dir / test_name
-        if os.path.isdir(test_function_dir):
-            shutil.copytree(test_function_dir, tmp_path)
-
-    return tmp_path
-
-
-@pytest.fixture
-def virtualenv(
-    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
-) -> str:
-    """Based on the underlying virtual environment a copy of the environment is
-    made and used for the test that uses this fixture.
-
-    Args:
-        request: Pytest FixtureRequest object used to create unique tmp dir
-                 based on the name of the test
-        tmp_path_factory: Pytest TempPathFactory in order to create a new
-                          temporary directory
-
-    Yields:
-        Path to the virtual environment
-    """
-    if request.config.getoption("use_virtualenv"):
-        # Remember the old executable
-        orig_sys_executable = Path(sys.executable)
-
-        test_name = request.node.name
-        test_name = test_name.replace("[", "-").replace("]", "-")
-
-        # Create temporary venv
-        tmp_path = tmp_path_factory.mktemp(test_name) / "venv"
-        # TODO[ENG-707]: Implement for use outside of a base virtual environment
-        #  If this happens outside of a virtual environment the complete
-        #  /usr space is cloned
-        clone_virtualenv(
-            src_dir=str(orig_sys_executable.parent.parent),
-            dst_dir=str(tmp_path),
-        )
-
-        env_bin_dir = "Scripts" if sys.platform == "win32" else "bin"
-
-        # Activate venv
-        activate_this_file = tmp_path / env_bin_dir / "activate_this.py"
-
-        if not activate_this_file.is_file():
-            raise FileNotFoundError(
-                "Integration tests don't work for some local "
-                "virtual environments. Use virtualenv for "
-                "your virtual environment to run integration "
-                "tests"
-            )
-
-        File(str(activate_this_file), dict(__file__=str(activate_this_file)))
-
-        # Set new system executable
-        sys.executable = tmp_path / env_bin_dir / "python"
-
-        yield tmp_path
-        # Reset system executable
-        sys.executable = orig_sys_executable
-
-        # Switch back to original venv
-        activate_this_f = Path(orig_sys_executable).parent / "activate_this.py"
-
-        if not activate_this_f.is_file():
-            raise FileNotFoundError(
-                "Integration tests don't work for some local "
-                "virtual environments. Use virtualenv for "
-                "your virtual environment to run integration "
-                "tests"
-            )
-        File(str(activate_this_f), dict(__file__=str(activate_this_f)))
-
-    else:
-        yield ""
+from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
+from zenml.steps import StepContext, step
+from zenml.steps.entrypoint_function_utils import StepArtifact
 
 
 @pytest.fixture
@@ -416,52 +149,6 @@ def local_artifact_store():
 
 
 @pytest.fixture
-def gcp_artifact_store():
-    """Fixture that creates a GCP artifact store for testing."""
-    from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
-        GCPArtifactStore,
-    )
-    from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-        GCPArtifactStoreConfig,
-    )
-
-    return GCPArtifactStore(
-        name="",
-        id=uuid4(),
-        config=GCPArtifactStoreConfig(path="gs://bucket"),
-        flavor="gcp",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
-
-
-@pytest.fixture
-def s3_artifact_store():
-    """Fixture that creates an S3 artifact store for testing."""
-    from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
-        S3ArtifactStore,
-    )
-    from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
-        S3ArtifactStoreConfig,
-    )
-
-    return S3ArtifactStore(
-        name="",
-        id=uuid4(),
-        config=S3ArtifactStoreConfig(path="s3://tmp"),
-        flavor="s3",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=uuid4(),
-        workspace=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
-
-
-@pytest.fixture
 def local_container_registry():
     """Fixture that creates a local container registry for testing."""
     return BaseContainerRegistry(
@@ -490,4 +177,519 @@ def remote_container_registry():
         workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_step_operator() -> BaseStepOperator:
+    """Fixture that creates a stub step operator for testing."""
+
+    class StubStepOperator(BaseStepOperator):
+        def launch(self, info, entrypoint_command) -> None:
+            pass
+
+    return StubStepOperator(
+        name="",
+        id=uuid4(),
+        config=BaseStepOperatorConfig(),
+        flavor="stub",
+        type=StackComponentType.STEP_OPERATOR,
+        user=uuid4(),
+        workspace=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@step
+def _empty_step() -> None:
+    """Empty step for testing."""
+
+
+@pytest.fixture
+def empty_step():
+    """Pytest fixture that returns an empty (no input, no output) step."""
+    return _empty_step
+
+
+@pytest.fixture
+def generate_empty_steps():
+    """Pytest fixture that returns a function that generates multiple empty steps."""
+
+    def _generate_empty_steps(count: int):
+        output = []
+
+        for i in range(count):
+
+            @step(name=f"step_{i}")
+            def _step_function() -> None:
+                pass
+
+            output.append(_step_function)
+
+        return output
+
+    return _generate_empty_steps
+
+
+@pytest.fixture
+def one_step_pipeline():
+    """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
+
+    @pipeline
+    def _pipeline(step_):
+        step_()
+
+    return _pipeline
+
+
+@pytest.fixture
+def unconnected_two_step_pipeline():
+    """Pytest fixture that returns a pipeline which takes two steps `step_1` and `step_2`. The steps are not connected to each other."""
+
+    @pipeline
+    def _pipeline(step_1, step_2):
+        step_1()
+        step_2()
+
+    return _pipeline
+
+
+@step
+def _int_output_step() -> int:
+    return 1
+
+
+@pytest.fixture
+def int_step_output():
+    return StepArtifact(
+        invocation_id="id",
+        output_name="output_name",
+        annotation=int,
+        pipeline=Pipeline(name="test_pipeline", entrypoint=lambda: None),
+    )
+
+
+@pytest.fixture
+def step_with_two_int_inputs():
+    @step
+    def _step(input_1: int, input_2: int) -> None:
+        pass
+
+    return _step
+
+
+@pytest.fixture
+def sample_step_run_info(
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+) -> StepRunInfo:
+    step_run_info = StepRunInfo(
+        step_run_id=sample_step_run.id,
+        run_id=sample_pipeline_run.id,
+        run_name=sample_pipeline_run.name,
+        pipeline_step_name=sample_step_run.name,
+        config=sample_step_run.config,
+        pipeline=sample_pipeline_run.config,
+    )
+    return step_run_info
+
+
+@pytest.fixture
+def step_context_with_no_output(
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_step_run_info: StepRunInfo,
+) -> StepContext:
+    StepContext._clear()
+    return StepContext(
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=sample_step_run_info,
+        cache_enabled=True,
+        output_materializers={},
+        output_artifact_uris={},
+        output_artifact_configs={},
+    )
+
+
+@pytest.fixture
+def step_context_with_single_output(
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_step_run_info: StepRunInfo,
+) -> StepContext:
+    materializers = {"output_1": (BaseMaterializer,)}
+    artifact_uris = {"output_1": ""}
+    artifact_configs = {"output_1": None}
+    StepContext._clear()
+    return StepContext(
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=sample_step_run_info,
+        cache_enabled=True,
+        output_materializers=materializers,
+        output_artifact_uris=artifact_uris,
+        output_artifact_configs=artifact_configs,
+    )
+
+
+@pytest.fixture
+def step_context_with_two_outputs(
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_step_run_info: StepRunInfo,
+) -> StepContext:
+    materializers = {
+        "output_1": (BaseMaterializer,),
+        "output_2": (BaseMaterializer,),
+    }
+    artifact_uris = {
+        "output_1": "",
+        "output_2": "",
+    }
+    artifact_configs = {"output_1": None, "output_2": None}
+
+    StepContext._clear()
+    return StepContext(
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=sample_step_run_info,
+        cache_enabled=True,
+        output_materializers=materializers,
+        output_artifact_uris=artifact_uris,
+        output_artifact_configs=artifact_configs,
+    )
+
+
+@pytest.fixture
+def sample_user_model() -> UserResponse:
+    """Return a sample user model for testing purposes."""
+    return UserResponse(
+        id=uuid4(),
+        name="axl",
+        body=UserResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            is_service_account=False,
+            is_admin=True,
+        ),
+        metadata=UserResponseMetadata(),
+    )
+
+
+@pytest.fixture
+def sample_workspace_model() -> WorkspaceResponse:
+    """Return a sample workspace model for testing purposes."""
+    return WorkspaceResponse(
+        id=uuid4(),
+        name="axl",
+        body=WorkspaceResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+        ),
+        metadata=WorkspaceResponseMetadata(),
+    )
+
+
+@pytest.fixture
+def sample_step_request_model() -> StepRunRequest:
+    """Return a sample step model for testing purposes."""
+    spec = StepSpec.parse_obj(
+        {
+            "source": "module.step_class",
+            "upstream_steps": [],
+            "inputs": {},
+        }
+    )
+    config = StepConfiguration.parse_obj(
+        {"name": "step_name", "enable_cache": True}
+    )
+
+    return StepRunRequest(
+        name="sample_step",
+        pipeline_run_id=uuid4(),
+        status=ExecutionStatus.COMPLETED,
+        spec=spec,
+        config=config,
+        workspace=uuid4(),
+        user=uuid4(),
+        deployment=uuid4(),
+    )
+
+
+@pytest.fixture
+def sample_step_run(create_step_run) -> StepRunResponse:
+    """Return a sample step response model for testing purposes."""
+    return create_step_run()
+
+
+@pytest.fixture
+def sample_pipeline_run(
+    sample_user_model: UserResponse,
+    sample_workspace_model: WorkspaceResponse,
+) -> PipelineRunResponse:
+    """Return sample pipeline run view for testing purposes."""
+    return PipelineRunResponse(
+        id=uuid4(),
+        name="sample_run_name",
+        body=PipelineRunResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_user_model,
+            status=ExecutionStatus.COMPLETED,
+        ),
+        metadata=PipelineRunResponseMetadata(
+            workspace=sample_workspace_model,
+            config=PipelineConfiguration(name="aria_pipeline"),
+        ),
+    )
+
+
+@pytest.fixture
+def sample_pipeline_deployment_request_model() -> PipelineDeploymentRequest:
+    """Return sample pipeline deployment request for testing purposes."""
+    return PipelineDeploymentRequest(
+        user=uuid4(),
+        workspace=uuid4(),
+        run_name_template="aria-blupus",
+        pipeline_configuration=PipelineConfiguration(name="axls-pipeline"),
+        client_version="0.12.3",
+        server_version="0.12.3",
+        stack=uuid4(),
+    )
+
+
+@pytest.fixture
+def sample_pipeline_run_request_model() -> PipelineRunRequest:
+    """Return sample pipeline run view for testing purposes."""
+    return PipelineRunRequest(
+        name="sample_run_name",
+        config=PipelineConfiguration(name="aria_pipeline"),
+        num_steps=1,
+        status=ExecutionStatus.COMPLETED,
+        user=uuid4(),
+        workspace=uuid4(),
+        deployment=uuid4(),
+        pipeline=uuid4(),
+    )
+
+
+@pytest.fixture
+def sample_artifact_model() -> ArtifactResponse:
+    """Return a sample artifact model for testing purposes."""
+    return ArtifactResponse(
+        id=uuid4(),
+        name="sample_artifact",
+        body=ArtifactResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            tags=[],
+        ),
+        metadata=ArtifactResponseMetadata(
+            has_custom_name=True,
+        ),
+    )
+
+
+@pytest.fixture
+def sample_artifact_version_model(
+    sample_workspace_model, sample_user_model, sample_artifact_model
+) -> ArtifactVersionResponse:
+    """Return a sample artifact version model for testing purposes."""
+    return ArtifactVersionResponse(
+        id=uuid4(),
+        body=ArtifactVersionResponseBody(
+            artifact=sample_artifact_model,
+            version=1,
+            user=sample_user_model,
+            created=datetime.now(),
+            updated=datetime.now(),
+            uri="sample_uri",
+            type=ArtifactType.DATA,
+            materializer="sample_module.sample_materializer",
+            data_type="sample_module.sample_data_type",
+            tags=[],
+        ),
+        metadata=ArtifactVersionResponseMetadata(
+            workspace=sample_workspace_model,
+        ),
+    )
+
+
+@pytest.fixture
+def sample_artifact_request_model() -> ArtifactVersionRequest:
+    """Return a sample artifact model for testing purposes."""
+    return ArtifactVersionRequest(
+        name="sample_artifact",
+        version=1,
+        uri="sample_uri",
+        type=ArtifactType.DATA,
+        materializer="sample_materializer",
+        data_type="sample_data_type",
+        workspace=uuid4(),
+        user=uuid4(),
+    )
+
+
+@pytest.fixture
+def create_step_run(
+    sample_user_model: UserResponse,
+    sample_workspace_model: WorkspaceResponse,
+) -> Callable[..., StepRunResponse]:
+    """Fixture that returns a function which can be used to create a
+    customizable StepRunResponseModel."""
+
+    def f(
+        step_run_name: str = "step_run_name",
+        step_name: str = "step_name",
+        outputs: Optional[Dict[str, Any]] = None,
+        output_artifacts: Optional[Dict[str, ArtifactVersionResponse]] = None,
+        **kwargs: Any,
+    ) -> StepRunResponse:
+        spec = StepSpec.parse_obj(
+            {"source": "module.step_class", "upstream_steps": []}
+        )
+        config = StepConfiguration.parse_obj(
+            {
+                "name": step_name,
+                "outputs": outputs or {},
+            }
+        )
+        return StepRunResponse(
+            id=uuid4(),
+            name=step_run_name,
+            body=StepRunResponseBody(
+                status=ExecutionStatus.COMPLETED,
+                created=datetime.now(),
+                updated=datetime.now(),
+                user=sample_user_model,
+                outputs=output_artifacts or {},
+            ),
+            metadata=StepRunResponseMetadata(
+                pipeline_run_id=uuid4(),
+                deployment_id=uuid4(),
+                spec=spec,
+                config=config,
+                workspace=sample_workspace_model,
+                **kwargs,
+            ),
+        )
+
+    return f
+
+
+@pytest.fixture
+def create_pipeline_model(
+    sample_user_model: UserResponse,
+    sample_workspace_model: WorkspaceResponse,
+) -> Callable[..., PipelineResponse]:
+    """Fixture that returns a function which can be used to create a
+    customizable PipelineResponseModel."""
+
+    def f(
+        version: Optional[str] = None,
+        **kwargs: Any,
+    ) -> PipelineResponse:
+        metadata_kwargs = dict(
+            version_hash="",
+            workspace=sample_workspace_model,
+            spec=PipelineSpec(steps=[]),
+        )
+        metadata_kwargs.update(kwargs)
+        return PipelineResponse(
+            id=uuid4(),
+            name="sample_pipeline",
+            body=PipelineResponseBody(
+                created=datetime.now(),
+                updated=datetime.now(),
+                user=sample_user_model,
+                version=version or "1",
+            ),
+            metadata=PipelineResponseMetadata(
+                **metadata_kwargs,
+            ),
+        )
+
+    return f
+
+
+@pytest.fixture
+def sample_deployment_response_model(
+    sample_user_model: UserResponse,
+    sample_workspace_model: WorkspaceResponse,
+) -> PipelineDeploymentResponse:
+    return PipelineDeploymentResponse(
+        id=uuid4(),
+        body=PipelineDeploymentResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_user_model,
+        ),
+        metadata=PipelineDeploymentResponseMetadata(
+            workspace=sample_workspace_model,
+            run_name_template="",
+            pipeline_configuration={"name": ""},
+            client_version="0.12.3",
+            server_version="0.12.3",
+        ),
+    )
+
+
+@pytest.fixture
+def sample_build_response_model(
+    sample_user_model: UserResponse,
+    sample_workspace_model: WorkspaceResponse,
+) -> PipelineBuildResponse:
+    return PipelineBuildResponse(
+        id=uuid4(),
+        body=PipelineBuildResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_user_model,
+        ),
+        metadata=PipelineBuildResponseMetadata(
+            workspace=sample_workspace_model,
+            images={},
+            is_local=False,
+            contains_code=True,
+        ),
+    )
+
+
+@pytest.fixture
+def sample_code_repo_response_model(
+    sample_user_model: UserResponse,
+    sample_workspace_model: WorkspaceResponse,
+) -> CodeRepositoryResponse:
+    return CodeRepositoryResponse(
+        id=uuid4(),
+        name="name",
+        body=CodeRepositoryResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            user=sample_user_model,
+            source={"module": "zenml", "type": "internal"},
+        ),
+        metadata=CodeRepositoryResponseMetadata(
+            workspace=sample_workspace_model,
+            config={},
+        ),
+    )
+
+
+@pytest.fixture
+def sample_hub_plugin_response_model() -> HubPluginResponseModel:
+    return HubPluginResponseModel(
+        id=uuid4(),
+        author="AlexejPenner",
+        name="alexejs_ploogin",
+        version="3.14",
+        repository_url="https://github.com/zenml-io/zenml",
+        index_url="https://test.pypi.org/simple/",
+        package_name="ploogin",
+        status=PluginStatus.AVAILABLE,
+        created=datetime.now(),
+        updated=datetime.now(),
+        requirements=["ploogin==0.0.1", "zenml>=0.1.0"],
     )
