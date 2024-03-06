@@ -208,7 +208,45 @@ done
 IFS=$'\n' MIGRATION_VERSIONS=($(sort -t. -k 1,1n -k 2,2n -k 3,3n <<<"${MIGRATION_VERSIONS[*]}"))
 
 for i in "${!MIGRATION_VERSIONS[@]}"; do
-    # ... (existing code remains the same)
+    set -e  # Exit immediately if a command exits with a non-zero status
+    # Create a new virtual environment
+    python3 -m venv ".venv-$VERSION"
+    source ".venv-$VERSION/bin/activate"
+
+    # Install the specific version
+    pip3 install -U pip setuptools wheel
+
+    git checkout release/$VERSION
+    pip3 install -e ".[templates,server]"
+    # handles unpinned sqlmodel dependency in older versions
+    pip3 install "sqlmodel==0.0.8" "bcrypt==4.0.1"
+
+    # Get the major and minor version of Python
+    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+
+    # Check if the Python version is 3.9 and VERSION is > 0.47.0
+    if [[ "$PYTHON_VERSION" == "3.9" ]]; then
+        case "$VERSION" in
+            "0.47.0"|"0.50.0"|"0.51.0"|"0.52.0")
+                pip3 install importlib_metadata
+                ;;
+        esac
+    fi
+
+
+    if [ "$1" == "mysql" ]; then
+        zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+    fi
+
+    # Run the tests for this version
+    run_tests_for_version $VERSION
+
+    if [ "$1" == "mysql" ]; then
+        zenml disconnect
+        sleep 5
+    fi
+
+    deactivate
 done
 
 if [ "$1" == "mysql" ]; then

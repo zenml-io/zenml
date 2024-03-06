@@ -143,7 +143,29 @@ done
 IFS=$'\n' MIGRATION_VERSIONS=($(sort -t. -k 1,1n -k 2,2n -k 3,3n <<<"${MIGRATION_VERSIONS[*]}"))
 
 for i in "${!MIGRATION_VERSIONS[@]}"; do
-    # ... (existing code remains the same)
+    set -e  # Exit immediately if a command exits with a non-zero status
+    # Create a new virtual environment
+    python3 -m venv ".venv-$VERSION"
+    source ".venv-$VERSION/bin/activate"
+
+    # Install the specific version
+    pip3 install -U pip setuptools wheel
+
+    git checkout release/$VERSION
+    pip3 install -e ".[templates,server]"
+
+    export ZENML_ANALYTICS_OPT_IN=false
+    export ZENML_DEBUG=true
+
+    zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+
+    # Run the tests for this version
+    run_tests_for_version $VERSION
+
+    zenml disconnect
+    sleep 5
+
+    deactivate
 done
 
 zenml disconnect
