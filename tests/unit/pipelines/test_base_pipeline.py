@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
-from unittest.mock import ANY
+from unittest.mock import ANY, patch
 from uuid import uuid4
 
 import pytest
@@ -954,42 +954,45 @@ def test_running_pipeline_creates_and_uses_placeholder_run(
 ):
     """Tests that running a pipeline creates a placeholder run and later
     replaces it with the actual run."""
-    mock_create_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "create_run",
+    with patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run",
         wraps=clean_client.zen_store.create_run,
-    )
-    mock_get_or_create_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "get_or_create_run",
-        wraps=clean_client.zen_store.get_or_create_run,
-    )
+    ) as mock_create_run:
+        with patch(
+            "zenml.zen_stores.sql_zen_store.SqlZenStore.get_or_create_run",
+            wraps=clean_client.zen_store.get_or_create_run,
+        ) as mock_get_or_create_run:
+            pipeline_instance = empty_pipeline
+            assert clean_client.list_pipeline_runs().total == 0
 
-    pipeline_instance = empty_pipeline
-    assert clean_client.list_pipeline_runs().total == 0
+            pipeline_instance()
 
-    pipeline_instance()
+            mock_create_run.assert_called_once()
+            mock_get_or_create_run.assert_called_once()
 
-    mock_create_run.assert_called_once()
-    mock_get_or_create_run.assert_called_once()
+            placeholder_run_request = mock_create_run.call_args[0][
+                0
+            ]  # First arg
+            assert is_placeholder_request(placeholder_run_request)
 
-    placeholder_run_request = mock_create_run.call_args[0][0]  # First arg
-    assert is_placeholder_request(placeholder_run_request)
+            replace_request = mock_get_or_create_run.call_args[0][
+                0
+            ]  # First arg
+            assert not is_placeholder_request(replace_request)
 
-    replace_request = mock_get_or_create_run.call_args[0][0]  # First arg
-    assert not is_placeholder_request(replace_request)
+            runs = clean_client.list_pipeline_runs()
+            assert runs.total == 1
 
-    runs = clean_client.list_pipeline_runs()
-    assert runs.total == 1
-
-    run = runs[0]
-    assert run.status == ExecutionStatus.COMPLETED
-    assert (
-        run.orchestrator_environment
-        == replace_request.orchestrator_environment
-    )
-    assert run.orchestrator_run_id == replace_request.orchestrator_run_id
-    # assert run.deployment_id
+            run = runs[0]
+            assert run.status == ExecutionStatus.COMPLETED
+            assert (
+                run.orchestrator_environment
+                == replace_request.orchestrator_environment
+            )
+            assert (
+                run.orchestrator_run_id == replace_request.orchestrator_run_id
+            )
+            # assert run.deployment_id == placeholder_run_request.deployment_id
 
 
 def test_rerunning_deloyment_does_not_fail(
@@ -998,40 +1001,37 @@ def test_rerunning_deloyment_does_not_fail(
     empty_pipeline,  # noqa: F811
 ):
     """Tests that a deployment can be re-run without issues."""
-    mock_create_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "create_run",
+    with patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run",
         wraps=clean_client.zen_store.create_run,
-    )
-    mock_get_or_create_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "get_or_create_run",
-        wraps=clean_client.zen_store.get_or_create_run,
-    )
+    ) as mock_create_run:
+        with patch(
+            "zenml.zen_stores.sql_zen_store.SqlZenStore.get_or_create_run",
+            wraps=clean_client.zen_store.get_or_create_run,
+        ) as mock_get_or_create_run:
+            pipeline_instance = empty_pipeline
+            pipeline_instance()
 
-    pipeline_instance = empty_pipeline
-    pipeline_instance()
+            deployments = clean_client.list_deployments()
+            assert deployments.total == 1
+            deployment = deployments[0]
 
-    deployments = clean_client.list_deployments()
-    assert deployments.total == 1
-    deployment = deployments[0]
+            stack = clean_client.active_stack
 
-    stack = clean_client.active_stack
+            # Simulate re-running the deployment
+            stack.deploy_pipeline(deployment)
 
-    # Simulate re-running the deployment
-    stack.deploy_pipeline(deployment)
+            assert mock_create_run.call_count == 2
+            assert mock_get_or_create_run.call_count == 2
 
-    assert mock_create_run.call_count == 2
-    assert mock_get_or_create_run.call_count == 2
+            placeholder_request = mock_create_run.call_args_list[0][0][0]
+            assert is_placeholder_request(placeholder_request)
 
-    placeholder_request = mock_create_run.call_args_list[0][0][0]
-    assert is_placeholder_request(placeholder_request)
+            run_request = mock_create_run.call_args_list[1][0][0]
+            assert not is_placeholder_request(run_request)
 
-    run_request = mock_create_run.call_args_list[1][0][0]
-    assert not is_placeholder_request(run_request)
-
-    runs = clean_client.list_pipeline_runs(deployment_id=deployment.id)
-    assert runs.total == 2
+            runs = clean_client.list_pipeline_runs(deployment_id=deployment.id)
+            assert runs.total == 2
 
 
 def test_failure_during_initialization_deletes_placeholder_run(
@@ -1041,31 +1041,29 @@ def test_failure_during_initialization_deletes_placeholder_run(
 ):
     """Tests that when a pipeline run fails during initialization, the
     placeholder run that was created for it is deleted."""
-    mock_create_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "create_run",
+    with patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run",
         wraps=clean_client.zen_store.create_run,
-    )
-    mock_delete_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "delete_run",
-        wraps=clean_client.zen_store.delete_run,
-    )
+    ) as mock_create_run:
+        with patch(
+            "zenml.zen_stores.sql_zen_store.SqlZenStore.delete_run",
+            wraps=clean_client.zen_store.delete_run,
+        ) as mock_delete_run:
+            pipeline_instance = empty_pipeline
+            assert clean_client.list_pipeline_runs().total == 0
 
-    pipeline_instance = empty_pipeline
-    assert clean_client.list_pipeline_runs().total == 0
+            mocker.patch(
+                "zenml.stack.stack.Stack.deploy_pipeline",
+                side_effect=RuntimeError,
+            )
 
-    mocker.patch(
-        "zenml.stack.stack.Stack.deploy_pipeline", side_effect=RuntimeError
-    )
+            with pytest.raises(RuntimeError):
+                pipeline_instance()
 
-    with pytest.raises(RuntimeError):
-        pipeline_instance()
+            mock_create_run.assert_called_once()
+            mock_delete_run.assert_called_once()
 
-    mock_create_run.assert_called_once()
-    mock_delete_run.assert_called_once()
-
-    assert clean_client.list_pipeline_runs().total == 0
+            assert clean_client.list_pipeline_runs().total == 0
 
 
 def test_running_scheduled_pipeline_does_not_create_placeholder_run(
@@ -1075,18 +1073,17 @@ def test_running_scheduled_pipeline_does_not_create_placeholder_run(
 ):
     """Tests that running a scheduled pipeline does not create a placeholder run
     in the database."""
-    mock_create_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "create_run",
+    with patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run",
         wraps=clean_client.zen_store.create_run,
-    )
-    pipeline_instance = empty_pipeline
+    ) as mock_create_run:
+        pipeline_instance = empty_pipeline
 
-    scheduled_pipeline_instance = pipeline_instance.with_options(
-        schedule=Schedule(cron_expression="*/5 * * * *")
-    )
-    scheduled_pipeline_instance()
+        scheduled_pipeline_instance = pipeline_instance.with_options(
+            schedule=Schedule(cron_expression="*/5 * * * *")
+        )
+        scheduled_pipeline_instance()
 
-    mock_create_run.assert_called_once()
-    run_request = mock_create_run.call_args[0][0]  # First arg
-    assert not is_placeholder_request(run_request)
+        mock_create_run.assert_called_once()
+        run_request = mock_create_run.call_args[0][0]  # First arg
+        assert not is_placeholder_request(run_request)
