@@ -170,5 +170,3 @@ done
 
 zenml disconnect
 docker rm -f mariadb
-
-deactivate

@@ -253,5 +253,3 @@ if [ "$1" == "mysql" ]; then
     zenml disconnect
     docker rm -f mysql
 fi
-
-deactivate
