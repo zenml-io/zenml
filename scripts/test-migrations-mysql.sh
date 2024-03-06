@@ -184,6 +184,9 @@ function version_compare() {
     echo "="
 }
 
+# Start fresh again for this part
+rm -rf ~/.config/zenml
+
 # Test sequential migrations across multiple versions
 echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
 set -e

@@ -118,7 +118,11 @@ function version_compare() {
     fi
 }
 
+# Start fresh again for this part
+rm -rf ~/.config/zenml
+
 # Test sequential migrations across multiple versions
+
 echo "===== TESTING SEQUENTIAL MIGRATIONS ====="
 set -e
 python3 -m venv ".venv-sequential-migrations"
